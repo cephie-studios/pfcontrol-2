@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* @theme {
+  --color-accent: #1e40af;
+  --color-background: #3b82f6;
+} */
+
+html, body {
+  background-color: #1a1a1a;
+  color: #f2f2f2;
+}
+
+button {
+  cursor: pointer;
+}
