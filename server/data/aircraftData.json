@@ -1,0 +1,86 @@
+{
+    "A220": {
+        "name": "Airbus A220",
+        "wtc": "M"
+    },
+    "A320": {
+        "name": "Airbus A320",
+        "wtc": "M"
+    },
+    "A330": {
+        "name": "Airbus A330",
+        "wtc": "H"
+    },
+    "A350": {
+        "name": "Airbus A350",
+        "wtc": "H"
+    },
+    "B717": {
+        "name": "Boeing 717",
+        "wtc": "M"
+    },
+    "B727": {
+        "name": "Boeing 727",
+        "wtc": "M"
+    },
+    "B737": {
+        "name": "Boeing 737",
+        "wtc": "M"
+    },
+    "B757": {
+        "name": "Boeing 757",
+        "wtc": "M"
+    },
+    "B77W": {
+        "name": "Boeing 777",
+        "wtc": "H"
+    },
+    "B787": {
+        "name": "Boeing 787",
+        "wtc": "H"
+    },
+    "BE58": {
+        "name": "Baron G58",
+        "wtc": "L"
+    },
+    "C150": {
+        "name": "Cessna 150A",
+        "wtc": "L"
+    },
+    "C550": {
+        "name": "Cessna Citation II",
+        "wtc": "L"
+    },
+    "DH8D": {
+        "name": "Dash 8-Q400",
+        "wtc": "M"
+    },
+    "EUFI": {
+        "name": "Eurofighter Typhoon",
+        "wtc": "M"
+    },
+    "F100": {
+        "name": "Fokker 100",
+        "wtc": "M"
+    },
+    "HAWK": {
+        "name": "Hawk T1",
+        "wtc": "L"
+    },
+    "MD11": {
+        "name": "MD-11",
+        "wtc": "H"
+    },
+    "METR": {
+        "name": "Metroliner III",
+        "wtc": "L"
+    },
+    "P46T": {
+        "name": "Piper M350",
+        "wtc": "L"
+    },
+    "TBM9": {
+        "name": "TBM 900",
+        "wtc": "L"
+    }
+}

@@ -10,10 +10,11 @@
     "build:dev": "vite build --mode development"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.48.1",
-    "@clerk/themes": "^2.4.21",
     "@tailwindcss/vite": "^4.1.13",
+    "axios": "^1.12.2",
     "concurrently": "^9.2.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

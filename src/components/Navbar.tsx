@@ -9,12 +9,12 @@ export default function Navbar() {
 		<nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
 			<div className="max-w-7xl mx-auto px-6 lg:px-8">
 				<div className="flex justify-between items-center h-16">
-					<div className="flex items-center space-x-2">
+					<a href="/" className="flex items-center space-x-2">
 						<TowerControl className="h-8 w-8 text-blue-400" />
 						<span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
 							PFControl
 						</span>
-					</div>
+					</a>
 
 					{/* Desktop Navigation */}
 					<div className="hidden md:flex items-center space-x-8">
@@ -31,7 +31,7 @@ export default function Navbar() {
 							Create Session
 						</a>
 						<a
-							href="/view/pfatc"
+							href="/pfatc"
 							className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
 						>
 							PFATC Flights
