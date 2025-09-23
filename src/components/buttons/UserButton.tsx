@@ -82,7 +82,7 @@ export default function CustomUserButton({
 					onClick={logout}
 					className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300"
 				>
-					<LogOut className="w-4 w-4" />
+					<LogOut className="w-4" />
 					<span>Sign Out</span>
 				</button>
 			</div>
