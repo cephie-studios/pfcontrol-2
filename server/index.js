@@ -9,7 +9,7 @@ import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
 
 import dotenv from 'dotenv';
-import { authLimiter } from './middleware/security.js';
+
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 dotenv.config({ path: envFile });
 

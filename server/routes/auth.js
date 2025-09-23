@@ -19,7 +19,7 @@ const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-function isAdmin(userId) {
+export function isAdmin(userId) {
     try {
         const adminsPath = path.join(__dirname, '..', 'data', 'admins.json');
         const adminIds = JSON.parse(fs.readFileSync(adminsPath, 'utf8'));
@@ -29,6 +29,22 @@ function isAdmin(userId) {
         return false;
     }
 }
+
+export const verifyToken = (req, res, next) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
 
 router.get('/discord', (req, res) => {
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
@@ -111,22 +127,6 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
         res.status(500).json({ error: 'Authentication failed' });
     }
 });
-
-export const verifyToken = (req, res, next) => {
-    const token = req.cookies.auth_token;
-
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-};
 
 router.get('/me', verifyToken, async (req, res) => {
     try {
