@@ -268,7 +268,7 @@ export default function Sessions() {
 								</div>
 								{sessionToDelete && (
 									<div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-										<div className="bg-zinc-900 border-2 border-gray-800 rounded-lg max-w-md w-full p-6 animate-fade-in">
+										<div className="bg-zinc-900 border-2 border-red-600 rounded-lg max-w-md w-full p-6 animate-fade-in">
 											<div className="flex justify-between items-start mb-4">
 												<div className="flex items-center">
 													<div className="p-2 bg-red-900/30 rounded-full mr-3">

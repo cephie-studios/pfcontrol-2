@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import Create from './pages/Create';
 import Sessions from './pages/Sessions';
 
+import NotFound from './pages/NotFound';
+
 import Test from './pages/Test';
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
 				<Route path="/sessions" element={<Sessions />} />
 
 				<Route path="/test" element={<Test />} />
+
+				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</Router>
 	);

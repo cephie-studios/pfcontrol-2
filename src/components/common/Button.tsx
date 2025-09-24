@@ -30,7 +30,7 @@ export default function Button({
 		success:
 			'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl',
 		danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl',
-		ghost: 'bg-transparent hover:bg-blue-600 hover:text-white'
+		ghost: 'bg-transparent hover:text-white hover:border-blue-600 border-2 border-transparent text-gray-300'
 	};
 
 	const sizes = {

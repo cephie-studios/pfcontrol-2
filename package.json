@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "set NODE_ENV=development && concurrently \"vite\" \"nodemon server/index.js\"",
-    "prod": "set NODE_ENV=production && node server/index.js",
+    "dev": "set NODE_ENV=development && concurrently \"vite\" \"nodemon server/server.js\"",
+    "prod": "set NODE_ENV=production && node server/server.js",
     "build": "vite build --mode production",
     "build:dev": "vite build --mode development"
   },
