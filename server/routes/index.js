@@ -1,7 +1,7 @@
 import express from "express";
 
 import dataRouter from "./data.js";
-import sessionRouter from "./session.js";
+import sessionRouter from "./sessions.js";
 import authRouter from "./auth.js";
 
 const router = express.Router();

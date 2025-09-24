@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AlertCircle, Info } from 'lucide-react';
+import { useAuth } from '../hooks/auth/useAuth';
 import Navbar from '../components/Navbar';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import RunwayDropdown from '../components/dropdowns/RunwayDropdown';
@@ -14,6 +15,8 @@ export default function Create() {
 	const [isCreating, setIsCreating] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
 
+	const { user } = useAuth();
+
 	const handleCreateSession = async () => {
 		if (!selectedAirport || !selectedRunway) {
 			setError('Please select both airport and runway');
@@ -24,17 +27,22 @@ export default function Create() {
 		setError('');
 
 		try {
-			// TODO: Replace with actual API call to create session
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			console.log(
-				'Creating session for:',
-				selectedAirport,
-				'Runway:',
-				selectedRunway,
-				'PFATC:',
-				isPFATCNetwork
+			await fetch(
+				`${import.meta.env.VITE_SERVER_URL}/api/sessions/create`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						airportIcao: selectedAirport,
+						activeRunway: selectedRunway,
+						isPFATC: isPFATCNetwork,
+						createdBy: user?.userId
+					})
+				}
 			);
+			console.log(user?.userId);
 		} catch {
 			console.error('Error creating session:');
 			setError('Failed to create session');

@@ -13,7 +13,7 @@ export default function Home() {
 		<div className="min-h-screen">
 			<Navbar />
 
-			<section className="relative min-h-[97vh] flex items-center justify-between overflow-hidden px-36 bg-gradient-to-b from-black via-zinc-900 to-slate-900">
+			<section className="relative min-h-[97vh] flex items-center justify-between overflow-hidden px-36 bg-gradient-to-b from-black via-zinc-900 to-blue-950">
 				<div className="flex flex-col justify-center mt-16">
 					<div>
 						<h1 className="text-[8rem] font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent">
@@ -118,7 +118,7 @@ export default function Home() {
 				</div>
 
 				<svg
-					className="absolute bottom-0 w-full h-24 fill-slate-900"
+					className="absolute bottom-0 w-full h-24 fill-blue-950"
 					viewBox="0 0 1440 120"
 					preserveAspectRatio="none"
 				>
@@ -126,7 +126,7 @@ export default function Home() {
 				</svg>
 			</section>
 
-			<section className="relative bg-gradient-to-b from-slate-900 via-zinc-900 to-black py-20">
+			<section className="relative bg-gradient-to-b from-blue-950 via-zinc-900 to-black py-20">
 				<div className="max-w-7xl mx-auto mb-36">
 					<div className="text-center mb-16">
 						<h2
@@ -257,7 +257,7 @@ export default function Home() {
 				</svg>
 			</section>
 
-			<section className="relative bg-black py-20">
+			<section className="relative bg-gradient-to-b from-black via-zinc-900 to-blue-950 py-20">
 				<div className="max-w-7xl mx-auto">
 					<div className="flex flex-col md:flex-row items-center gap-8 lg:gap-16">
 						<div className="w-full md:w-1/2 space-y-6">

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, List } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 
 interface CustomUserButtonProps {
@@ -148,11 +148,21 @@ export default function CustomUserButton({
 						<button
 							onClick={() => {
 								setIsDropdownOpen(false);
-								// Add profile/settings functionality here
+								window.location.href = '/sessions';
 							}}
 							className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
 						>
-							<Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-200" />
+							<List className="w-4 h-4" />
+							<span className="font-medium">My Sessions</span>
+						</button>
+
+						<button
+							onClick={() => {
+								setIsDropdownOpen(false);
+							}}
+							className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
+						>
+							<Settings className="w-4 h-4" />
 							<span className="font-medium">Settings</span>
 						</button>
 
@@ -163,7 +173,7 @@ export default function CustomUserButton({
 							}}
 							className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-600/20 hover:text-red-300 transition-all duration-200 group"
 						>
-							<LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
+							<LogOut className="w-4 h-4" />
 							<span className="font-medium">Sign Out</span>
 						</button>
 					</div>
