@@ -1,23 +1,38 @@
+export type Position = 'POSITION' | 'DEL' | 'GND' | 'TWR' | 'APP';
+
 export interface Flight {
-    id: number;
-    session_id: string;
+    id: string | number;
+    session_id?: string;
     callsign?: string;
+    aircraft?: string;
     aircraft_type?: string;
+    flightType?: string;
+    flight_type?: string;
     departure?: string;
     arrival?: string;
+    alternate?: string;
     route?: string;
     sid?: string;
+    star?: string;
     runway?: string;
-    cleared_fl?: string;
-    status?: string;
-    remark?: string;
-    clearance?: string;
-    stand?: string;
-    wake_turbulence?: string;
-    flight_type?: string;
-    rfl?: string;
-    squawk?: string;
+    clearedFL?: string;
     cfl?: string;
+    cruisingFL?: string;
+    rfl?: string;
+    stand?: string;
+    remark?: string;
+    timestamp?: string;
     created_at?: string;
     updated_at?: string;
+    status?: string;
+    clearance?: boolean | string;
+    position?: Position;
+    squawk?: string;
+    wake_turbulence?: string;
+    userId?: string;
+    IP_address?: string;
+    animationState?: {
+        updatedFields: string[];
+        updateTimestamp: number;
+    };
 }

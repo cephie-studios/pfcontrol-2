@@ -1,10 +1,17 @@
-import { TowerControl, Menu, X } from 'lucide-react';
+import { TowerControl, Menu, X, ClipboardCopy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import CustomUserButton from './buttons/UserButton';
+import Button from './common/Button';
 
-export default function Navbar() {
+type NavbarProps = {
+	sessionId?: string;
+	accessId?: string;
+};
+
+export default function Navbar({ sessionId, accessId }: NavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [atTop, setAtTop] = useState(true);
+	const [copied, setCopied] = useState<string | null>(null);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -53,6 +60,16 @@ export default function Navbar() {
 			: 'bg-black/30 backdrop-blur-md border-white/10'
 	].join(' ');
 
+	const handleCopy = async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(text);
+			setTimeout(() => setCopied(null), 1200);
+		} catch {
+			console.error('Failed to copy text to clipboard');
+		}
+	};
+
 	return (
 		<nav className={navClass}>
 			<div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -64,14 +81,40 @@ export default function Navbar() {
 						</span>
 					</a>
 
+					{sessionId && accessId && (
+						<div className="flex-1 flex justify-center items-center space-x-4">
+							<Button
+								variant="primary"
+								className="flex items-center space-x-2"
+								onClick={() =>
+									handleCopy(`/submit/${sessionId}`)
+								}
+							>
+								<ClipboardCopy className="w-4 h-4" />
+								<span>Copy Submit Link</span>
+							</Button>
+							<Button
+								variant="danger"
+								className="flex items-center space-x-2"
+								onClick={() =>
+									handleCopy(
+										`/view/${sessionId}?accessId=${accessId}`
+									)
+								}
+							>
+								<ClipboardCopy className="w-4 h-4" />
+								<span>Copy View Link</span>
+							</Button>
+							{copied && (
+								<span className="ml-2 text-green-400 text-sm">
+									Copied!
+								</span>
+							)}
+						</div>
+					)}
+
 					{/* Desktop Navigation */}
 					<div className="hidden md:flex items-center space-x-8">
-						<a
-							href="/"
-							className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
-						>
-							Home
-						</a>
 						<a
 							href="/team"
 							className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
@@ -116,25 +159,18 @@ export default function Navbar() {
 				<div className="mobile-menu-container relative md:hidden">
 					<div
 						className={`
-							absolute top-2 right-0 w-80 max-w-[calc(100vw-2rem)]
-							bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50
-							rounded-2xl shadow-2xl overflow-hidden
-							transform transition-all duration-300 ease-out origin-top-right
-							${
+                            absolute top-2 right-0 w-80 max-w-[calc(100vw-2rem)]
+                            bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50
+                            rounded-2xl shadow-2xl overflow-hidden
+                            transform transition-all duration-300 ease-out origin-top-right
+                            ${
 								isMenuOpen
 									? 'opacity-100 scale-100 translate-y-0'
 									: 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
 							}
-						`}
+                        `}
 					>
 						<div className="py-2">
-							<a
-								href="/"
-								className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"
-								onClick={() => setIsMenuOpen(false)}
-							>
-								Home
-							</a>
 							<a
 								href="/team"
 								className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"

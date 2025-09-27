@@ -149,7 +149,7 @@ export default function CustomUserButton({
 		<div className={`relative ${className}`} ref={dropdownRef}>
 			<button
 				onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-				className="flex items-center space-x-3 hover:border-blue-500 text-white px-4 py-2 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-zinc-900"
+				className="flex items-center space-x-3 hover:border-blue-500 text-white px-4 py-2 rounded-full font-medium transition-all duration-300 hover:shadow-xl hover:bg-zinc-900"
 			>
 				{user.avatar ? (
 					<img

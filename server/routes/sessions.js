@@ -13,13 +13,13 @@ import {
     getSessionsByUserDetailed
 } from '../db/sessions.js';
 import { generateSessionId, generateAccessId } from '../tools/ids.js';
-import { verifyToken } from './auth.js';
+import requireAuth from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 initializeSessionsTable();
 
 // POST: /api/sessions/create - Create new session
-router.post('/create', async (req, res) => {
+router.post('/create', requireAuth, async (req, res) => {
     try {
         const { airportIcao, createdBy, isPFATC = false, activeRunway = null } = req.body;
         if (!airportIcao || !createdBy) {
@@ -50,7 +50,7 @@ router.post('/create', async (req, res) => {
 });
 
 // GET: /api/sessions/mine - Get user's sessions
-router.get('/mine', verifyToken, async (req, res) => {
+router.get('/mine', requireAuth, async (req, res) => {
     try {
         const userId = req.user.userId;
         const sessions = await getSessionsByUserDetailed(userId);
@@ -62,7 +62,7 @@ router.get('/mine', verifyToken, async (req, res) => {
 });
 
 // GET: /api/sessions/:sessionId - Get session by ID
-router.get('/:sessionId', async (req, res) => {
+router.get('/:sessionId', requireAuth, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const session = await getSessionById(sessionId);
@@ -113,7 +113,7 @@ router.put('/:sessionId', async (req, res) => {
 });
 
 // POST: /api/sessions/update-name - Rename session
-router.post('/update-name', verifyToken, async (req, res) => {
+router.post('/update-name', requireAuth, async (req, res) => {
     try {
         const { sessionId, name } = req.body;
         if (!sessionId || typeof name !== 'string' || name.length > 50) {
@@ -131,7 +131,7 @@ router.post('/update-name', verifyToken, async (req, res) => {
 });
 
 // POST: /api/sessions/delete - Delete session (POST for compatibility)
-router.post('/delete', verifyToken, async (req, res) => {
+router.post('/delete', requireAuth, async (req, res) => {
     try {
         const { sessionId } = req.body;
         if (!sessionId) {

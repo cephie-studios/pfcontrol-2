@@ -93,7 +93,7 @@ export default function Submit() {
 			const flight = await addFlight(sessionId!, {
 				...form,
 				flight_type: form.flight_type,
-				cleared_fl: form.cruisingFL,
+				clearedFL: form.cruisingFL,
 				status: 'PENDING'
 			});
 			setSubmittedFlight(flight);

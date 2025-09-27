@@ -196,7 +196,7 @@ export default function Sessions() {
 								className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-lg p-5 transition-all hover:bg-gray-800/70 block relative"
 							>
 								<Link
-									to={`/view/${session.sessionId}`}
+									to={`/view/${session.sessionId}/?accessId=${session.accessId}`}
 									className="block"
 								>
 									<div className="flex items-center mb-3">

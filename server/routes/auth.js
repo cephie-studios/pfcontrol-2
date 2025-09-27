@@ -1,12 +1,12 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createOrUpdateUser, getUserById } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN } from '../tools/detectVPN.js';
+import requireAuth from '../middleware/isAuthenticated.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,33 +18,6 @@ const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
-
-function isAdmin(userId) {
-    try {
-        const adminsPath = path.join(__dirname, '..', 'data', 'admins.json');
-        const adminIds = JSON.parse(fs.readFileSync(adminsPath, 'utf8'));
-        return adminIds.includes(userId);
-    } catch (error) {
-        console.error('Error reading admin IDs:', error);
-        return false;
-    }
-}
-
-const verifyToken = (req, res, next) => {
-    const token = req.cookies.auth_token;
-
-    if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-};
 
 // GET: /api/auth/discord
 router.get('/discord', (req, res) => {
@@ -131,7 +104,7 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
 });
 
 // GET: /api/auth/me
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', requireAuth, async (req, res) => {
     try {
         const user = await getUserById(req.user.userId);
 
