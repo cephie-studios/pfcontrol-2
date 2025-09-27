@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import express from 'express';
@@ -40,7 +39,7 @@ app.use(
     })
 );
 
-app.get(/.*/, (req, res) => {
+app.get('/{*any}', (req, res) => {
     res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
 });
 

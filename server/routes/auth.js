@@ -19,7 +19,7 @@ const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export function isAdmin(userId) {
+function isAdmin(userId) {
     try {
         const adminsPath = path.join(__dirname, '..', 'data', 'admins.json');
         const adminIds = JSON.parse(fs.readFileSync(adminsPath, 'utf8'));
@@ -30,7 +30,7 @@ export function isAdmin(userId) {
     }
 }
 
-export const verifyToken = (req, res, next) => {
+const verifyToken = (req, res, next) => {
     const token = req.cookies.auth_token;
 
     if (!token) {
@@ -46,11 +46,13 @@ export const verifyToken = (req, res, next) => {
     }
 };
 
+// GET: /api/auth/discord
 router.get('/discord', (req, res) => {
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
     res.redirect(discordAuthUrl);
 });
 
+// GET: /api/auth/discord/callback
 router.get('/discord/callback', authLimiter, async (req, res) => {
     const { code } = req.query;
 
@@ -128,6 +130,7 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     }
 });
 
+// GET: /api/auth/me
 router.get('/me', verifyToken, async (req, res) => {
     try {
         const user = await getUserById(req.user.userId);
@@ -148,6 +151,7 @@ router.get('/me', verifyToken, async (req, res) => {
     }
 });
 
+// POST: /api/auth/logout
 router.post('/logout', (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,

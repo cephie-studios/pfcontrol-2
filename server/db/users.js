@@ -1,3 +1,4 @@
+// db/users.js
 import pool from './connection.js';
 import { encrypt, decrypt } from '../tools/encryption.js';
 

@@ -15,8 +15,7 @@ const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 
 const router = express.Router();
 
-// --------
-
+// GET: /api/data/airports
 router.get('/airports', (req, res) => {
     try {
         if (!fs.existsSync(airportsPath)) {
@@ -31,6 +30,7 @@ router.get('/airports', (req, res) => {
     }
 });
 
+// GET: /api/data/aircrafts
 router.get('/aircrafts', (req, res) => {
     try {
         if (!fs.existsSync(aircraftPath)) {
@@ -45,8 +45,7 @@ router.get('/aircrafts', (req, res) => {
     }
 });
 
-// --------
-
+// GET: /api/data/airports/:icao/runways
 router.get('/airports/:icao/runways', (req, res) => {
     try {
         if (!fs.existsSync(airportsPath)) {

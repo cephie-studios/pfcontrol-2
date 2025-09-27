@@ -18,7 +18,7 @@ import { verifyToken } from './auth.js';
 const router = express.Router();
 initializeSessionsTable();
 
-// Create new session
+// POST: /api/sessions/create - Create new session
 router.post('/create', async (req, res) => {
     try {
         const { airportIcao, createdBy, isPFATC = false, activeRunway = null } = req.body;
@@ -49,7 +49,7 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// Get user's sessions
+// GET: /api/sessions/mine - Get user's sessions
 router.get('/mine', verifyToken, async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -61,6 +61,7 @@ router.get('/mine', verifyToken, async (req, res) => {
     }
 });
 
+// GET: /api/sessions/:sessionId - Get session by ID
 router.get('/:sessionId', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -85,6 +86,7 @@ router.get('/:sessionId', async (req, res) => {
     }
 });
 
+// PUT: /api/sessions/:sessionId - Update session
 router.put('/:sessionId', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -110,7 +112,7 @@ router.put('/:sessionId', async (req, res) => {
     }
 });
 
-// Rename session
+// POST: /api/sessions/update-name - Rename session
 router.post('/update-name', verifyToken, async (req, res) => {
     try {
         const { sessionId, name } = req.body;
@@ -128,7 +130,7 @@ router.post('/update-name', verifyToken, async (req, res) => {
     }
 });
 
-// Delete session (POST for compatibility)
+// POST: /api/sessions/delete - Delete session (POST for compatibility)
 router.post('/delete', verifyToken, async (req, res) => {
     try {
         const { sessionId } = req.body;
@@ -146,6 +148,7 @@ router.post('/delete', verifyToken, async (req, res) => {
     }
 });
 
+// GET: /api/sessions/ - Get all sessions
 router.get('/', async (req, res) => {
     try {
         const sessions = await getAllSessions();

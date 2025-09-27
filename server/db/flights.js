@@ -1,3 +1,4 @@
+// db/flights.js
 import flightsPool from './flightsConnection.js';
 
 export async function getFlightsBySession(sessionId) {
