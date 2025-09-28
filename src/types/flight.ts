@@ -28,7 +28,7 @@ export interface Flight {
     clearance?: boolean | string;
     position?: Position;
     squawk?: string;
-    wake_turbulence?: string;
+    wtc?: string;
     userId?: string;
     IP_address?: string;
     animationState?: {

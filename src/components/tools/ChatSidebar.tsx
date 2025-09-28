@@ -60,7 +60,7 @@ export default function ChatSidebar({
 				socketRef.current = null;
 			}
 		};
-	}, [sessionId, accessId, open]);
+	}, [sessionId, accessId, open, user]);
 
 	useEffect(() => {
 		if (messagesEndRef.current) {

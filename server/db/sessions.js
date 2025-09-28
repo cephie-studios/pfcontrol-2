@@ -69,6 +69,9 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
             clearedFL VARCHAR(8),
             cruisingFL VARCHAR(8),
             status VARCHAR(16),
+            squawk VARCHAR(8),
+            sid VARCHAR(16),
+            wtc VARCHAR(2),
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
         )
