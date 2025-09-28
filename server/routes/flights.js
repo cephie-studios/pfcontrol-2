@@ -1,10 +1,11 @@
+// routes/flights.js
 import express from 'express';
 import { getFlightsBySession, addFlight, updateFlight, deleteFlight } from '../db/flights.js';
 import requireAuth from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 
-// GET: /api/flights/:sessionId - Get all flights for a session
+// GET: /api/flights/:sessionId - get all flights for a session
 router.get('/:sessionId', requireAuth, async (req, res) => {
     try {
         const flights = await getFlightsBySession(req.params.sessionId);
@@ -15,7 +16,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
     }
 });
 
-// POST: /api/flights/:sessionId - Add a flight to a session
+// POST: /api/flights/:sessionId - add a flight to a session
 router.post('/:sessionId', requireAuth, async (req, res) => {
     try {
         const flight = await addFlight(req.params.sessionId, req.body);
@@ -26,7 +27,7 @@ router.post('/:sessionId', requireAuth, async (req, res) => {
     }
 });
 
-// PUT: /api/flights/:sessionId/:flightId - Update a flight
+// PUT: /api/flights/:sessionId/:flightId - update a flight
 router.put('/:sessionId/:flightId', requireAuth, async (req, res) => {
     try {
         const flight = await updateFlight(req.params.sessionId, req.params.flightId, req.body);
@@ -36,7 +37,7 @@ router.put('/:sessionId/:flightId', requireAuth, async (req, res) => {
     }
 });
 
-// DELETE: /api/flights/:sessionId/:flightId - Delete a flight
+// DELETE: /api/flights/:sessionId/:flightId - delete a flight
 router.delete('/:sessionId/:flightId', requireAuth, async (req, res) => {
     try {
         await deleteFlight(req.params.sessionId, req.params.flightId);

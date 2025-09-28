@@ -1,3 +1,4 @@
+// server.js
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
@@ -9,7 +10,9 @@ import http from 'http';
 
 import { setupChatWebsocket } from './websockets/chatWebsocket.js';
 
+// check environment
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+const cors_origin = process.env.NODE_ENV === 'production' ? ['https://control.pfconnect.online'] : ['http://localhost:5000', 'http://localhost:5173', 'https://control.pfconnect.online'];
 dotenv.config({ path: envFile });
 
 const PORT = process.env.PORT || 5000;
@@ -19,7 +22,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors({
-    origin: ['http://localhost:5000', 'http://localhost:5173', 'https://control.pfconnect.online'],
+    origin: cors_origin,
     credentials: true
 }));
 app.use(cookieParser());
@@ -29,6 +32,7 @@ app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
 
+// start logic
 app.use(
     express.static(path.join(__dirname, "..", "dist"), {
         setHeaders: (res, path) => {

@@ -1,3 +1,4 @@
+// routes/sessions.js
 import express from 'express';
 import {
     initializeSessionsTable,

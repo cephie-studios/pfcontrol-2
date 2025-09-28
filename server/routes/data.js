@@ -1,3 +1,4 @@
+// routes/data.js
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -15,7 +16,7 @@ const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 
 const router = express.Router();
 
-// GET: /api/data/airports
+// GET: /api/data/airports - list of airports
 router.get('/airports', (req, res) => {
     try {
         if (!fs.existsSync(airportsPath)) {
@@ -30,7 +31,7 @@ router.get('/airports', (req, res) => {
     }
 });
 
-// GET: /api/data/aircrafts
+// GET: /api/data/aircrafts - list of aircrafts
 router.get('/aircrafts', (req, res) => {
     try {
         if (!fs.existsSync(aircraftPath)) {
@@ -45,7 +46,7 @@ router.get('/aircrafts', (req, res) => {
     }
 });
 
-// GET: /api/data/frequencies
+// GET: /api/data/frequencies - list of airport frequencies
 router.get('/frequencies', (req, res) => {
     try {
         if (!fs.existsSync(airportsPath)) {
@@ -104,7 +105,7 @@ router.get('/frequencies', (req, res) => {
     }
 });
 
-// GET: /api/data/airports/:icao/runways
+// GET: /api/data/airports/:icao/runways - runways for specific airport
 router.get('/airports/:icao/runways', (req, res) => {
     try {
         if (!fs.existsSync(airportsPath)) {

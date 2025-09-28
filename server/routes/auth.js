@@ -1,3 +1,4 @@
+// routes/auth.js
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
@@ -15,13 +16,13 @@ const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// GET: /api/auth/discord
+// GET: /api/auth/discord - redirect to Discord for authentication
 router.get('/discord', (req, res) => {
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
     res.redirect(discordAuthUrl);
 });
 
-// GET: /api/auth/discord/callback
+// GET: /api/auth/discord/callback - handle Discord OAuth2 callback
 router.get('/discord/callback', authLimiter, async (req, res) => {
     const { code } = req.query;
 
@@ -99,7 +100,7 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     }
 });
 
-// GET: /api/auth/me
+// GET: /api/auth/me - get current user info
 router.get('/me', requireAuth, async (req, res) => {
     try {
         const user = await getUserById(req.user.userId);
@@ -120,7 +121,7 @@ router.get('/me', requireAuth, async (req, res) => {
     }
 });
 
-// POST: /api/auth/logout
+// POST: /api/auth/logout - log out user
 router.post('/logout', (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,

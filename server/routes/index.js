@@ -1,5 +1,7 @@
+// routes/index.js
 import express from "express";
 
+// import routers
 import dataRouter from "./data.js";
 import sessionRouter from "./sessions.js";
 import flightsRouter from "./flights.js";
@@ -8,6 +10,7 @@ import chatsRouter from "./chats.js";
 
 const router = express.Router();
 
+// use routers
 router.use("/data", dataRouter);
 router.use("/sessions", sessionRouter);
 router.use("/flights", flightsRouter);

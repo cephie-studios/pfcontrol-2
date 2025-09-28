@@ -1,10 +1,11 @@
+// routes/chats.js
 import express from 'express';
 import { addChatMessage, getChatMessages, deleteChatMessage } from '../db/chats.js';
 import requireAuth from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 
-// GET: /api/chats/:sessionId - Get recent messages
+// GET: /api/chats/:sessionId - get recent messages
 router.get('/:sessionId', requireAuth, async (req, res) => {
     try {
         const messages = await getChatMessages(req.params.sessionId);
@@ -14,7 +15,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
     }
 });
 
-// POST: /api/chats/:sessionId - Add a message (for fallback, not websocket)
+// POST: /api/chats/:sessionId - add a message (for fallback, not websocket)
 router.post('/:sessionId', requireAuth, async (req, res) => {
     try {
         const { message } = req.body;
@@ -31,7 +32,7 @@ router.post('/:sessionId', requireAuth, async (req, res) => {
     }
 });
 
-// DELETE: /api/chats/:sessionId/:messageId - Delete own message
+// DELETE: /api/chats/:sessionId/:messageId - delete own message
 router.delete('/:sessionId/:messageId', requireAuth, async (req, res) => {
     try {
         const success = await deleteChatMessage(
