@@ -1,7 +1,7 @@
 // middlewares/isAuthenticated.js
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function requireAuth(req, res, next) {
     const token = req.cookies.auth_token;

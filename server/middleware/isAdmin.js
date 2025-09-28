@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function getAdminIds() {
     try {
@@ -26,7 +26,7 @@ function isAdmin(userId) {
 }
 
 function requireAdmin(req, res, next) {
-    const token = req.cookies.token;
+    const token = req.cookies.auth_token;
     if (!token) return res.status(401).json({ error: "Not authenticated" });
 
     try {
