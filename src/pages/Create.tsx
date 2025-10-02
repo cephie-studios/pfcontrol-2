@@ -34,7 +34,6 @@ export default function Create() {
 				isPFATC: isPFATCNetwork,
 				createdBy: user?.userId || 'unknown'
 			});
-			console.log(user?.userId);
 		} catch {
 			console.error('Error creating session:');
 			setError('Failed to create session');

@@ -1,32 +1,143 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { updateFlight, deleteFlight } from '../../utils/fetch/flights';
 import type { Flight } from '../../types/flight';
-import { EyeOff, Eye, Trash2 } from 'lucide-react';
+import { EyeOff, Eye, Trash2, FileSpreadsheet } from 'lucide-react';
+import Checkbox from '../common/Checkbox';
+import TextInput from '../common/TextInput';
+import AirportDropdown from '../dropdowns/AirportDropdown';
+import RunwayDropdown from '../dropdowns/RunwayDropdown';
+import AircraftDropdown from '../dropdowns/AircraftDropdown';
+import SidDropdown from '../dropdowns/SidDropdown';
+import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
 
 interface DepartureTableProps {
 	flights: Flight[];
+	onFlightUpdate: (
+		flightId: string | number,
+		updates: Partial<Flight>
+	) => void;
+	onFlightDelete: (flightId: string | number) => void;
+	onFlightChange?: (
+		flightId: string | number,
+		updates: Partial<Flight>
+	) => void;
 }
 
-export default function DepartureTable({ flights }: DepartureTableProps) {
-	const { sessionId } = useParams<{ sessionId?: string }>();
+export default function DepartureTable({
+	flights,
+	onFlightDelete,
+	onFlightChange
+}: DepartureTableProps) {
 	const [showHidden, setShowHidden] = useState(false);
 
 	const handleHideFlight = async (flightId: string | number) => {
-		try {
-			if (!sessionId) return;
-			await updateFlight(sessionId, flightId, { hidden: true });
-		} catch (err) {
-			console.error('Failed to hide flight:', err);
+		if (onFlightChange) {
+			onFlightChange(flightId, { hidden: true });
+		}
+	};
+
+	const handleUnhideFlight = async (flightId: string | number) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { hidden: false });
 		}
 	};
 
 	const handleDeleteFlight = async (flightId: string | number) => {
-		try {
-			if (!sessionId) return;
-			await deleteFlight(flightId as number);
-		} catch (err) {
-			console.error('Failed to delete flight:', err);
+		onFlightDelete(flightId);
+	};
+
+	const handleToggleClearance = (
+		flightId: string | number,
+		checked: boolean
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { clearance: checked });
+		}
+	};
+
+	const isClearanceChecked = (
+		clearance: boolean | string | undefined
+	): boolean => {
+		if (typeof clearance === 'boolean') {
+			return clearance;
+		}
+		if (typeof clearance === 'string') {
+			return clearance.toLowerCase() === 'true';
+		}
+		return false;
+	};
+
+	const handleRemarkChange = (flightId: string | number, remark: string) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { remark });
+		}
+	};
+
+	const handleCallsignChange = (
+		flightId: string | number,
+		callsign: string
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { callsign });
+		}
+	};
+
+	const handleStandChange = (flightId: string | number, stand: string) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { stand });
+		}
+	};
+
+	const handleSquawkChange = (flightId: string | number, squawk: string) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { squawk });
+		}
+	};
+
+	const handleArrivalChange = (
+		flightId: string | number,
+		arrival: string
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { arrival });
+		}
+	};
+
+	const handleRunwayChange = (flightId: string | number, runway: string) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { runway });
+		}
+	};
+
+	const handleAircraftChange = (
+		flightId: string | number,
+		aircraft: string
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { aircraft });
+		}
+	};
+
+	const handleSidChange = (flightId: string | number, sid: string) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { sid });
+		}
+	};
+
+	const handleCruisingFLChange = (
+		flightId: string | number,
+		cruisingFL: string
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { cruisingFL });
+		}
+	};
+
+	const handleClearedFLChange = (
+		flightId: string | number,
+		clearedFL: string
+	) => {
+		if (onFlightChange) {
+			onFlightChange(flightId, { clearedFL });
 		}
 	};
 
@@ -36,40 +147,44 @@ export default function DepartureTable({ flights }: DepartureTableProps) {
 
 	return (
 		<div className="mt-8 px-4">
-			<div className="mb-2 flex items-center gap-2">
-				<button
-					className="bg-zinc-800 text-blue-200 px-3 py-1 rounded flex items-center gap-1"
-					onClick={() => setShowHidden((v) => !v)}
-				>
-					{showHidden ? (
-						<Eye className="w-4 h-4" />
-					) : (
-						<EyeOff className="w-4 h-4" />
-					)}
-					{showHidden ? 'Hide hidden flights' : 'Show hidden flights'}
-				</button>
-			</div>
-			<table className="min-w-full bg-zinc-900 rounded-lg overflow-hidden">
+			{flights.some((flight) => flight.hidden) && (
+				<div className="mb-2 flex items-center gap-2">
+					<button
+						className="bg-zinc-800 text-blue-200 px-3 py-1 rounded flex items-center gap-1"
+						onClick={() => setShowHidden((v) => !v)}
+					>
+						{showHidden ? (
+							<Eye className="w-4 h-4" />
+						) : (
+							<EyeOff className="w-4 h-4" />
+						)}
+						{showHidden
+							? 'Hide hidden flights'
+							: 'Show hidden flights'}
+					</button>
+				</div>
+			)}
+			<table className="min-w-full bg-zinc-900 rounded-lg">
 				<thead>
 					<tr className="bg-blue-950 text-blue-200">
-						<th className="py-3 px-4 text-left">TIME</th>
-						<th className="py-3 px-4 text-left">CALLSIGN</th>
-						<th className="py-3 px-4 text-left">STAND</th>
-						<th className="py-3 px-4 text-left">ATYP</th>
-						<th className="py-3 px-4 text-left">W</th>
-						<th className="py-3 px-4 text-left">V</th>
-						<th className="py-3 px-4 text-left">ADES</th>
-						<th className="py-3 px-4 text-left">RWY</th>
-						<th className="py-3 px-4 text-left">SID</th>
-						<th className="py-3 px-4 text-left">RFL</th>
-						<th className="py-3 px-4 text-left">CFL</th>
-						<th className="py-3 px-4 text-left">ASSR</th>
-						<th className="py-3 px-4 text-left">C</th>
-						<th className="py-3 px-4 text-left">STS</th>
-						<th className="py-3 px-4 text-left">RMK</th>
-						<th className="py-3 px-4 text-left">PDC</th>
-						<th className="py-3 px-4 text-left">HIDE</th>
-						<th className="py-3 px-4 text-left">DEL</th>
+						<th className="py-2.5 px-4 text-left">TIME</th>
+						<th className="py-2.5 px-4 text-left">CALLSIGN</th>
+						<th className="py-2.5 px-4 text-left">STAND</th>
+						<th className="py-2.5 px-4 text-left">ATYP</th>
+						<th className="py-2.5 px-4 text-left">W</th>
+						<th className="py-2.5 px-4 text-left">V</th>
+						<th className="py-2.5 px-4 text-left">ADES</th>
+						<th className="py-2.5 px-4 text-left">RWY</th>
+						<th className="py-2.5 px-4 text-left">SID</th>
+						<th className="py-2.5 px-4 text-left">RFL</th>
+						<th className="py-2.5 px-4 text-left">CFL</th>
+						<th className="py-2.5 px-4 text-left">ASSR</th>
+						<th className="py-2.5 px-4 text-left">C</th>
+						<th className="py-2.5 px-4 text-left">STS</th>
+						<th className="py-2.5 px-4 text-left">RMK</th>
+						<th className="py-2.5 px-4 text-left">PDC</th>
+						<th className="py-2.5 px-4 text-left">HIDE</th>
+						<th className="py-2.5 px-4 text-left">DEL</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -104,13 +219,50 @@ export default function DepartureTable({ flights }: DepartureTableProps) {
 										: '-'}
 								</td>
 								<td className="py-2 px-4">
-									{flight.callsign || '-'}
+									<TextInput
+										value={flight.callsign || ''}
+										onChange={(value) =>
+											handleCallsignChange(
+												flight.id,
+												value
+											)
+										}
+										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+										placeholder="-"
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.currentTarget.blur();
+											}
+										}}
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.stand || '-'}
+									<TextInput
+										value={flight.stand || ''}
+										onChange={(value) =>
+											handleStandChange(flight.id, value)
+										}
+										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+										placeholder="-"
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.currentTarget.blur();
+											}
+										}}
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.aircraft || '-'}
+									<AircraftDropdown
+										value={flight.aircraft}
+										onChange={(type) =>
+											handleAircraftChange(
+												flight.id,
+												type
+											)
+										}
+										size="xs"
+										showFullName={false}
+									/>
 								</td>
 								<td className="py-2 px-4">
 									{flight.wtc || '-'}
@@ -119,56 +271,137 @@ export default function DepartureTable({ flights }: DepartureTableProps) {
 									{flight.flight_type || '-'}
 								</td>
 								<td className="py-2 px-4">
-									{flight.arrival || '-'}
+									<AirportDropdown
+										value={flight.arrival}
+										onChange={(icao) =>
+											handleArrivalChange(flight.id, icao)
+										}
+										size="xs"
+										showFullName={false}
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.runway || '-'}
+									<RunwayDropdown
+										airportIcao={flight.departure || ''}
+										value={flight.runway}
+										onChange={(runway) =>
+											handleRunwayChange(
+												flight.id,
+												runway
+											)
+										}
+										size="xs"
+										placeholder="-"
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.sid || '-'}
+									<SidDropdown
+										airportIcao={flight.departure || ''}
+										value={flight.sid}
+										onChange={(sid) =>
+											handleSidChange(flight.id, sid)
+										}
+										size="xs"
+										placeholder="-"
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.cruisingFL || '-'}
+									<AltitudeDropdown
+										value={flight.cruisingFL}
+										onChange={(alt) =>
+											handleCruisingFLChange(
+												flight.id,
+												alt
+											)
+										}
+										size="xs"
+										placeholder="-"
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.clearedFL || '-'}
+									<AltitudeDropdown
+										value={flight.clearedFL}
+										onChange={(alt) =>
+											handleClearedFLChange(
+												flight.id,
+												alt
+											)
+										}
+										size="xs"
+										placeholder="-"
+									/>
 								</td>
 								<td className="py-2 px-4">
-									{flight.squawk || '-'}
+									<TextInput
+										value={flight.squawk || ''}
+										onChange={(value) =>
+											handleSquawkChange(flight.id, value)
+										}
+										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+										placeholder="-"
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.currentTarget.blur();
+											}
+										}}
+									/>
 								</td>
 								<td className="py-2 px-4">
-									<input
-										type="checkbox"
-										checked={!!flight.clearance}
-										readOnly
+									<Checkbox
+										checked={isClearanceChecked(
+											flight.clearance
+										)}
+										onChange={(checked) =>
+											handleToggleClearance(
+												flight.id,
+												checked
+											)
+										}
+										label=""
+										checkedClass="bg-green-600 border-green-600"
 									/>
 								</td>
 								<td className="py-2 px-4">
 									{flight.status || '-'}
 								</td>
 								<td className="py-2 px-4">
-									{flight.remark || '-'}
+									<TextInput
+										value={flight.remark || ''}
+										onChange={(value) =>
+											handleRemarkChange(flight.id, value)
+										}
+										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+										placeholder="-"
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') {
+												e.currentTarget.blur();
+											}
+										}}
+									/>
 								</td>
 								<td className="py-2 px-4">
 									<button
-										className="bg-blue-700 text-white px-2 py-1 rounded"
+										className="text-gray-400 hover:text-blue-500 px-2 py-1 rounded"
 										onClick={() => {
 											/* open PDC modal logic here */
 										}}
 									>
-										PDC
+										<FileSpreadsheet />
 									</button>
 								</td>
 								<td className="py-2 px-4">
 									<button
-										title="Hide"
-										className="text-gray-400 hover:text-red-500"
-										onClick={() =>
-											handleHideFlight(flight.id)
+										title={
+											flight.hidden ? 'Unhide' : 'Hide'
 										}
-										disabled={flight.hidden}
+										className="text-gray-400 hover:text-blue-500"
+										onClick={() =>
+											flight.hidden
+												? handleUnhideFlight(flight.id)
+												: handleHideFlight(flight.id)
+										}
 									>
-										<EyeOff />
+										{flight.hidden ? <Eye /> : <EyeOff />}
 									</button>
 								</td>
 								<td className="py-2 px-4">

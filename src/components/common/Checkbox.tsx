@@ -5,13 +5,15 @@ interface CheckboxProps {
 	onChange: (checked: boolean) => void;
 	label: ReactNode;
 	className?: string;
+	checkedClass?: string;
 }
 
 export default function Checkbox({
 	checked,
 	onChange,
 	label,
-	className = ''
+	className = '',
+	checkedClass = 'bg-blue-600 border-blue-600'
 }: CheckboxProps) {
 	return (
 		<label
@@ -20,15 +22,13 @@ export default function Checkbox({
 			<div className="relative">
 				<input
 					type="checkbox"
-					className="hidden"
+					className="absolute inset-0 w-6 h-6 opacity-0 cursor-pointer"
 					checked={checked}
 					onChange={(e) => onChange(e.target.checked)}
 				/>
 				<div
 					className={`w-6 h-6 border-2 rounded-md transition-colors ${
-						checked
-							? 'bg-blue-600 border-blue-600'
-							: 'border-gray-400'
+						checked ? checkedClass : 'border-gray-400'
 					}`}
 				>
 					{checked && (

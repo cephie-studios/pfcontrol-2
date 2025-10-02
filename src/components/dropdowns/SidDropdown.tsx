@@ -1,59 +1,59 @@
 import { useEffect, useState } from 'react';
-import { fetchRunways } from '../../utils/fetch/data';
+import { fetchSids } from '../../utils/fetch/data';
 import Dropdown from '../common/Dropdown';
 
-interface RunwayDropdownProps {
+interface SidDropdownProps {
 	airportIcao: string;
-	onChange: (runway: string) => void;
+	onChange: (sid: string) => void;
 	value?: string;
 	disabled?: boolean;
 	size?: 'xs' | 'sm' | 'md' | 'lg';
 	placeholder?: string;
 }
 
-export default function RunwayDropdown({
+export default function SidDropdown({
 	airportIcao,
 	onChange,
 	value,
 	disabled = false,
 	size = 'md',
-	placeholder = 'Select Runway'
-}: RunwayDropdownProps) {
-	const [runways, setRunways] = useState<string[]>([]);
+	placeholder = 'Select SID'
+}: SidDropdownProps) {
+	const [sids, setSids] = useState<string[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 
 	useEffect(() => {
-		async function loadRunways() {
+		async function loadSids() {
 			if (!airportIcao) {
-				setRunways([]);
+				setSids([]);
 				return;
 			}
 
 			setIsLoading(true);
 			try {
-				const data = await fetchRunways(airportIcao);
-				setRunways(data || []);
+				const data = await fetchSids(airportIcao);
+				setSids(data || []);
 			} catch (error) {
-				console.error('Error fetching runways:', error);
-				setRunways([]);
+				console.error('Error fetching SIDs:', error);
+				setSids([]);
 			} finally {
 				setIsLoading(false);
 			}
 		}
 
-		loadRunways();
+		loadSids();
 	}, [airportIcao]);
 
-	const dropdownOptions = runways.map((runway) => ({
-		value: runway,
-		label: runway
+	const dropdownOptions = sids.map((sid) => ({
+		value: sid,
+		label: sid
 	}));
 
 	const getDisplayValue = (selectedValue: string) => {
 		if (!selectedValue) {
 			if (!airportIcao) return 'Select Airport First';
-			if (isLoading) return 'Loading runways...';
-			if (runways.length === 0) return 'No runways available';
+			if (isLoading) return 'Loading SIDs...';
+			if (sids.length === 0) return 'No SIDs available';
 			return placeholder;
 		}
 		return selectedValue;
@@ -66,7 +66,7 @@ export default function RunwayDropdown({
 			value={value}
 			onChange={onChange}
 			disabled={
-				disabled || !airportIcao || isLoading || runways.length === 0
+				disabled || !airportIcao || isLoading || sids.length === 0
 			}
 			getDisplayValue={getDisplayValue}
 			size={size}

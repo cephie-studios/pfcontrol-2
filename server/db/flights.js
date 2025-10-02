@@ -1,4 +1,3 @@
-
 import { generateSID, generateSquawk, getWakeTurbulence, generateRandomId } from '../utils/flightUtils.js';
 import flightsPool from './connections/flightsConnection.js';
 
@@ -59,8 +58,13 @@ export async function updateFlight(sessionId, flightId, updates) {
     let idx = 1;
 
     for (const [key, value] of Object.entries(updates)) {
+        let processedValue = value;
+        if (key === 'clearance' && typeof value === 'string') {
+            processedValue = value.toLowerCase() === 'true';
+        }
+
         fields.push(`${key} = $${idx++}`);
-        values.push(value);
+        values.push(processedValue);
     }
     values.push(flightId);
 

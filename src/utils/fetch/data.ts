@@ -31,3 +31,7 @@ export function fetchFrequencies(): Promise<AirportFrequency[]> {
 export function fetchRunways(icao: string): Promise<string[]> {
     return fetchData<string>(`airports/${icao}/runways`);
 }
+
+export function fetchSids(icao: string): Promise<string[]> {
+    return fetchData<string>(`airports/${icao}/sids`);
+}

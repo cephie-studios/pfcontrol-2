@@ -6,14 +6,16 @@ interface AircraftDropdownProps {
 	value?: string;
 	onChange: (aircraftType: string) => void;
 	disabled?: boolean;
-	size?: 'sm' | 'md' | 'lg';
+	size?: 'xs' | 'sm' | 'md' | 'lg';
+	showFullName?: boolean;
 }
 
 export default function AircraftDropdown({
 	value,
 	onChange,
 	disabled = false,
-	size = 'md'
+	size = 'md',
+	showFullName = true
 }: AircraftDropdownProps) {
 	const [aircraftList, setAircraftList] = useState<
 		{ type: string; name: string }[]
@@ -34,13 +36,17 @@ export default function AircraftDropdown({
 
 	const dropdownOptions = aircraftList.map((ac) => ({
 		value: ac.type,
-		label: `${ac.type} - ${ac.name}`
+		label: showFullName ? `${ac.type} - ${ac.name}` : ac.type
 	}));
 
 	const getDisplayValue = (selectedValue: string) => {
 		if (!selectedValue) return 'Select Aircraft';
 		const found = aircraftList.find((ac) => ac.type === selectedValue);
-		return found ? `${found.type} - ${found.name}` : selectedValue;
+		return found
+			? showFullName
+				? `${found.type} - ${found.name}`
+				: found.type
+			: selectedValue;
 	};
 
 	return (

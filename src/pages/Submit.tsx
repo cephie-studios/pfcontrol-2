@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
 import Button from '../components/common/Button';
@@ -27,6 +27,7 @@ import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
+import { createFlightsSocket } from '../sockets/flightsSocket';
 
 interface SessionData {
 	sessionId: string;
@@ -38,6 +39,8 @@ interface SessionData {
 export default function Submit() {
 	const { sessionId } = useParams<{ sessionId: string }>();
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const accessId = searchParams.get('accessId') ?? undefined;
 
 	const [session, setSession] = useState<SessionData | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -57,6 +60,9 @@ export default function Submit() {
 	});
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [flightsSocket, setFlightsSocket] = useState<ReturnType<
+		typeof createFlightsSocket
+	> | null>(null);
 
 	useEffect(() => {
 		if (!sessionId) return;
@@ -74,6 +80,33 @@ export default function Submit() {
 			.finally(() => setLoading(false));
 	}, [sessionId]);
 
+	useEffect(() => {
+		if (!sessionId || !accessId) return;
+
+		const socket = createFlightsSocket(
+			sessionId,
+			accessId,
+			() => {},
+			(flight: Flight) => {
+				setSubmittedFlight(flight);
+				setSuccess(true);
+				setIsSubmitting(false);
+			},
+			() => {},
+			(error) => {
+				console.error('Flight error:', error);
+				setError('Failed to submit flight.');
+				setIsSubmitting(false);
+			}
+		);
+
+		setFlightsSocket(socket);
+
+		return () => {
+			socket.socket.disconnect();
+		};
+	}, [sessionId, accessId]);
+
 	const handleChange = (name: string) => (value: string) => {
 		setForm((f) => ({ ...f, [name]: value }));
 	};
@@ -90,19 +123,28 @@ export default function Submit() {
 			return;
 		}
 
-		try {
-			const flight = await addFlight(sessionId!, {
+		if (flightsSocket) {
+			flightsSocket.addFlight({
 				...form,
 				flight_type: form.flight_type,
 				clearedFL: form.cruisingFL,
 				status: 'PENDING'
 			});
-			setSubmittedFlight(flight);
-			setSuccess(true);
-		} catch {
-			setError('Failed to submit flight.');
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			try {
+				const flight = await addFlight(sessionId!, {
+					...form,
+					flight_type: form.flight_type,
+					clearedFL: form.cruisingFL,
+					status: 'PENDING'
+				});
+				setSubmittedFlight(flight);
+				setSuccess(true);
+			} catch {
+				setError('Failed to submit flight.');
+			} finally {
+				setIsSubmitting(false);
+			}
 		}
 	};
 

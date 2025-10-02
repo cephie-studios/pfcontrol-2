@@ -1,33 +1,20 @@
-import type { MetarResponse, MetarData } from '../../types/metar';
+import type { MetarData } from '../../types/metar';
+
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchMetar(icao: string): Promise<MetarData | null> {
     try {
-        const response = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`);
+        const response = await fetch(`${API_BASE_URL}/api/metar/${icao}`, {
+            credentials: 'include'
+        });
         
         if (!response.ok) {
             console.error('Network response was not ok:', response.statusText);
             return null;
         }
 
-        const text = await response.text();
-        if (!text) {
-            console.error('Empty response from METAR API');
-            return null;
-        }
-
-        let data: MetarResponse;
-        try {
-            data = JSON.parse(text);
-        } catch (jsonError) {
-            console.error('Error parsing METAR JSON:', jsonError);
-            return null;
-        }
-
-        if (data && data.length > 0) {
-            return data[0];
-        }
-        
-        return null;
+        const data: MetarData = await response.json();
+        return data;
     } catch (error) {
         console.error('Error fetching METAR:', error);
         return null;

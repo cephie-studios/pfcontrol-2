@@ -124,4 +124,23 @@ router.get('/airports/:icao/runways', (req, res) => {
     }
 });
 
+// GET: /api/data/airports/:icao/sids - sids for specific airport
+router.get('/airports/:icao/sids', (req, res) => {
+    try {
+        if (!fs.existsSync(airportsPath)) {
+            return res.status(404).json({ error: "Airport data not found" });
+        }
+
+        const data = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
+        const airport = data.find((a) => a.icao === req.params.icao);
+        if (!airport) {
+            return res.status(404).json({ error: "Airport not found" });
+        }
+        res.json(airport.sids || []);
+    } catch (error) {
+        console.error("Error reading airport data:", error);
+        res.status(500).json({ error: "Internal server error", message: "Error reading airport data" });
+    }
+});
+
 export default router;

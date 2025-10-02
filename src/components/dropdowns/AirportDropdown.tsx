@@ -7,14 +7,16 @@ interface AirportDropdownProps {
 	onChange: (icao: string) => void;
 	value?: string;
 	disabled?: boolean;
-	size?: 'sm' | 'md' | 'lg';
+	size?: 'xs' | 'sm' | 'md' | 'lg';
+	showFullName?: boolean;
 }
 
 export default function AirportDropdown({
 	onChange,
 	value,
 	disabled = false,
-	size = 'md'
+	size = 'md',
+	showFullName = true
 }: AirportDropdownProps) {
 	const [airports, setAirports] = useState<Airport[]>([]);
 
@@ -28,12 +30,17 @@ export default function AirportDropdown({
 
 	const dropdownOptions = airports.map((airport) => ({
 		value: airport.icao,
-		label: `${airport.icao} - ${airport.name}`
+		label: showFullName ? `${airport.icao} - ${airport.name}` : airport.icao
 	}));
 
 	const getDisplayValue = (selectedValue: string) => {
 		if (!selectedValue) return 'Select Airport';
-		return selectedValue;
+		const found = airports.find((ap) => ap.icao === selectedValue);
+		return found
+			? showFullName
+				? `${found.icao} - ${found.name}`
+				: found.icao
+			: selectedValue;
 	};
 
 	return (

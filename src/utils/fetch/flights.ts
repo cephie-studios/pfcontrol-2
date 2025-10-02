@@ -32,8 +32,8 @@ export async function updateFlight(sessionId: string, flightId: string | number,
     return res.json();
 }
 
-export async function deleteFlight(flightId: number): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/api/flights/${flightId}`, {
+export async function deleteFlight(sessionId: string, flightId: string | number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/api/flights/${sessionId}/${flightId}`, {
         method: 'DELETE',
         credentials: 'include'
     });

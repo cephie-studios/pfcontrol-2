@@ -15,7 +15,6 @@ export function setupChatWebsocket(httpServer) {
         const sessionId = socket.handshake.query.sessionId;
         const accessId = socket.handshake.query.accessId;
 
-        // Validate accessId for sessionId
         const valid = await validateSessionAccess(sessionId, accessId);
         if (!valid) {
             socket.disconnect(true);
@@ -32,7 +31,17 @@ export function setupChatWebsocket(httpServer) {
                 avatar: user.avatar,
                 message
             });
-            io.to(sessionId).emit('chatMessage', chatMsg);
+
+            const formattedMsg = {
+                id: chatMsg.id,
+                userId: chatMsg.user_id,
+                username: chatMsg.username,
+                avatar: chatMsg.avatar,
+                message: chatMsg.message,
+                sent_at: chatMsg.sent_at
+            };
+
+            io.to(sessionId).emit('chatMessage', formattedMsg);
         });
     });
 }

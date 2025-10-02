@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchChatMessages } from '../../utils/fetch/chats';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { createChatSocket } from '../../sockets/chatSocket';
-import { Trash, X } from 'lucide-react';
+import { Send, Trash, X } from 'lucide-react';
 import Button from '../common/Button';
 
 interface ChatMessage {
@@ -30,6 +30,7 @@ export default function ChatSidebar({
 	const { user } = useAuth();
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState('');
+	const [hoveredMessage, setHoveredMessage] = useState<number | null>(null);
 	const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,12 +45,6 @@ export default function ChatSidebar({
 			sessionId,
 			accessId,
 			(msg: ChatMessage) => {
-				console.log(
-					'Received chat message:',
-					msg,
-					'Current user:',
-					user
-				);
 				setMessages((prev) => [...prev, msg]);
 			}
 		);
@@ -103,7 +98,7 @@ export default function ChatSidebar({
 			style={{ zIndex: 100 }}
 		>
 			<div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
-				<span className="font-bold text-lg text-blue-300">
+				<span className="font-extrabold text-xl text-blue-300">
 					Session Chat
 				</span>
 				<button
@@ -119,9 +114,11 @@ export default function ChatSidebar({
 					return (
 						<div
 							key={msg.id}
-							className={`flex items-start gap-3 ${
+							className={`flex items-start gap-3 relative ${
 								isOwn ? 'justify-end' : ''
 							}`}
+							onMouseEnter={() => setHoveredMessage(msg.id)}
+							onMouseLeave={() => setHoveredMessage(null)}
 						>
 							{!isOwn && (
 								<img
@@ -130,7 +127,11 @@ export default function ChatSidebar({
 									className="w-9 h-9 rounded-full border-2 border-blue-700 shadow"
 								/>
 							)}
-							<div className={`${isOwn ? 'text-right' : ''}`}>
+							<div
+								className={`${
+									isOwn ? 'text-right' : ''
+								} relative group`}
+							>
 								<div className="text-xs text-gray-400 mb-1">
 									<span className="font-semibold text-blue-300">
 										{msg.username}
@@ -145,7 +146,7 @@ export default function ChatSidebar({
 									)}
 								</div>
 								<div
-									className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow ${
+									className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow relative ${
 										isOwn
 											? 'bg-blue-800 text-white ml-auto max-w-xs'
 											: 'bg-zinc-800 text-white'
@@ -168,13 +169,15 @@ export default function ChatSidebar({
 									}
 								>
 									{msg.message}
-									{isOwn && (
+
+									{/* Delete button - only show on hover for own messages */}
+									{isOwn && hoveredMessage === msg.id && (
 										<button
-											className="ml-2 text-xs text-red-400 hover:underline"
+											className="absolute -top-2 -right-2 bg-zinc-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
 											onClick={() => handleDelete(msg.id)}
 											title="Delete message"
 										>
-											<Trash className="inline h-3 w-3" />
+											<Trash className="h-3 w-3" />
 										</button>
 									)}
 								</div>
@@ -193,7 +196,7 @@ export default function ChatSidebar({
 			</div>
 			<div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-bl-3xl flex gap-2">
 				<input
-					className="flex-1 bg-zinc-800 text-white px-4 py-2 rounded-l-xl rounded-tr-xl border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="flex-1 bg-zinc-800 text-white px-4 py-2 rounded-full border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
@@ -201,13 +204,13 @@ export default function ChatSidebar({
 					aria-label="Type a message"
 				/>
 				<Button
-					variant="primary"
+					variant="outline"
 					size="md"
-					className="rounded-xl px-6 py-2"
+					className="rounded-full px-6 py-2"
 					onClick={sendMessage}
 					disabled={!input.trim()}
 				>
-					Send
+					<Send className="h-5 w-5" />
 				</Button>
 			</div>
 		</div>

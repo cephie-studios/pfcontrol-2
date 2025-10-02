@@ -9,8 +9,9 @@ import dotenv from 'dotenv';
 import http from 'http';
 
 import { setupChatWebsocket } from './websockets/chatWebsocket.js';
+import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket.js';
+import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
 
-// check environment
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
 const cors_origin = process.env.NODE_ENV === 'production' ? ['https://control.pfconnect.online'] : ['http://localhost:5000', 'http://localhost:5173', 'https://control.pfconnect.online'];
 dotenv.config({ path: envFile });
@@ -32,7 +33,6 @@ app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-// start logic
 app.use(
     express.static(path.join(__dirname, "..", "dist"), {
         setHeaders: (res, path) => {
@@ -49,6 +49,8 @@ app.get('/{*any}', (req, res) => {
 
 const server = http.createServer(app);
 setupChatWebsocket(server);
+setupSessionUsersWebsocket(server);
+setupFlightsWebsocket(server);
 
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

@@ -6,6 +6,7 @@ import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
 import Toolbar from '../components/tools/Toolbar';
 import DepartureTable from '../components/tables/DepartureTable';
+import { createFlightsSocket } from '../sockets/flightsSocket';
 
 interface SessionData {
 	sessionId: string;
@@ -22,6 +23,9 @@ export default function Flights() {
 	const [session, setSession] = useState<SessionData | null>(null);
 	const [flights, setFlights] = useState<Flight[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [flightsSocket, setFlightsSocket] = useState<ReturnType<
+		typeof createFlightsSocket
+	> | null>(null);
 
 	useEffect(() => {
 		if (!sessionId) return;
@@ -33,6 +37,63 @@ export default function Flights() {
 			.then((data) => setFlights(data))
 			.finally(() => setLoading(false));
 	}, [sessionId]);
+
+	useEffect(() => {
+		if (!sessionId || !accessId) return;
+		const socket = createFlightsSocket(
+			sessionId,
+			accessId,
+			// onFlightUpdated
+			(flight: Flight) => {
+				setFlights((prev) =>
+					prev.map((f) => (f.id === flight.id ? flight : f))
+				);
+			},
+			// onFlightAdded
+			(flight: Flight) => {
+				setFlights((prev) => [...prev, flight]);
+			},
+			// onFlightDeleted
+			({ flightId }) => {
+				setFlights((prev) =>
+					prev.filter((flight) => flight.id !== flightId)
+				);
+			},
+			// onFlightError
+			(error) => {
+				console.error('Flight websocket error:', error);
+			}
+		);
+		setFlightsSocket(socket);
+		return () => {
+			socket.socket.disconnect();
+		};
+	}, [sessionId, accessId]);
+
+	const handleFlightUpdate = (
+		flightId: string | number,
+		updates: Partial<Flight>
+	) => {
+		if (flightsSocket) {
+			flightsSocket.updateFlight(flightId, updates);
+		} else {
+			setFlights((prev) =>
+				prev.map((flight) =>
+					flight.id === flightId ? { ...flight, ...updates } : flight
+				)
+			);
+		}
+	};
+
+	const handleFlightDelete = (flightId: string | number) => {
+		if (flightsSocket) {
+			flightsSocket.deleteFlight(flightId);
+		} else {
+			setFlights((prev) =>
+				prev.filter((flight) => flight.id !== flightId)
+			);
+		}
+	};
 
 	return (
 		<div className="min-h-screen bg-black text-white">
@@ -49,7 +110,12 @@ export default function Flights() {
 							Loading departures...
 						</div>
 					) : (
-						<DepartureTable flights={flights} />
+						<DepartureTable
+							flights={flights}
+							onFlightUpdate={handleFlightUpdate}
+							onFlightDelete={handleFlightDelete}
+							onFlightChange={flightsSocket?.updateFlight}
+						/>
 					)}
 				</div>
 			</div>
