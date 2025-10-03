@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../hooks/auth/useAuth';
 import { createSession } from '../utils/fetch/sessions';
@@ -10,6 +11,7 @@ import Button from '../components/common/Button';
 import WindDisplay from '../components/tools/WindDisplay';
 
 export default function Create() {
+	const navigate = useNavigate();
 	const [selectedAirport, setSelectedAirport] = useState<string>('');
 	const [selectedRunway, setSelectedRunway] = useState<string>('');
 	const [isPFATCNetwork, setIsPFATCNetwork] = useState<boolean>(false);
@@ -28,12 +30,15 @@ export default function Create() {
 		setError('');
 
 		try {
-			await createSession({
+			const newSession = await createSession({
 				airportIcao: selectedAirport,
 				activeRunway: selectedRunway,
 				isPFATC: isPFATCNetwork,
 				createdBy: user?.userId || 'unknown'
 			});
+			navigate(
+				`/view/${newSession.sessionId}?accessId=${newSession.accessId}`
+			);
 		} catch {
 			console.error('Error creating session:');
 			setError('Failed to create session');

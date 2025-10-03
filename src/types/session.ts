@@ -11,6 +11,11 @@ export interface SessionInfo {
     customName?: string;
     isLegacy: boolean;
     flightCount: number;
+    atis?: {
+        letter: string;
+        text: string;
+        timestamp: string;
+    }
 }
 
 export interface SessionUser {

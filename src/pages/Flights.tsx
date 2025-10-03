@@ -144,7 +144,7 @@ export default function Flights() {
 					backgroundPosition: 'center',
 					backgroundRepeat: 'no-repeat',
 					backgroundAttachment: 'fixed',
-					opacity: 0.5,
+					opacity: 0.2,
 					pointerEvents: 'none'
 				}}
 			/>
