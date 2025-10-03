@@ -6,6 +6,7 @@ import Sessions from './pages/Sessions';
 import Submit from './pages/Submit';
 import Flights from './pages/Flights';
 import Settings from './pages/Settings';
+import PFATCFlights from './pages/PFATCFlights';
 
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -17,6 +18,7 @@ export default function App() {
 		<Router>
 			<Routes>
 				<Route path="/" element={<Home />} />
+				<Route path="/pfatc" element={<PFATCFlights />} />
 				<Route path="/submit/:sessionId" element={<Submit />} />
 				<Route
 					path="/create"

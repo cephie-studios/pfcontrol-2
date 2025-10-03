@@ -21,6 +21,35 @@ export async function getFlightsBySession(sessionId) {
     return flights;
 }
 
+export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
+    try {
+        const tableName = `flights_${sessionId}`;
+
+        const tableExists = await flightsPool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = $1
+            )
+        `, [tableName]);
+
+        if (!tableExists.rows[0].exists) {
+            return [];
+        }
+
+        const result = await flightsPool.query(
+            `SELECT * FROM ${tableName} 
+             WHERE created_at >= NOW() - INTERVAL '${hoursBack} hours'
+             ORDER BY created_at ASC`
+        );
+
+        const flights = result.rows.map(flight => sanitizeFlightForClient(flight));
+        return flights;
+    } catch (error) {
+        console.error(`Error fetching flights for session ${sessionId}:`, error);
+        return [];
+    }
+}
+
 function validateFlightFields(updates) {
     if (updates.callsign && updates.callsign.length > 16) {
         throw new Error('Callsign must be 16 characters or less');

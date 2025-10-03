@@ -1,0 +1,126 @@
+import { Server as SocketServer } from 'socket.io';
+import { getAllSessions } from '../db/sessions.js';
+import { getFlightsBySessionWithTime } from '../db/flights.js';
+
+let io;
+const activeOverviewClients = new Set();
+
+export function setupOverviewWebsocket(httpServer, sessionUsersIO) {
+    io = new SocketServer(httpServer, {
+        path: '/sockets/overview',
+        cors: {
+            origin: ['http://localhost:5173', 'http://localhost:5000', 'https://control.pfconnect.online'],
+            credentials: true
+        }
+    });
+
+    io.on('connection', async (socket) => {
+        activeOverviewClients.add(socket.id);
+
+        try {
+            const overviewData = await getOverviewData(sessionUsersIO);
+            socket.emit('overviewData', overviewData);
+        } catch (error) {
+            console.error('Error sending initial overview data:', error);
+            socket.emit('overviewError', { error: 'Failed to fetch overview data' });
+        }
+
+        socket.on('disconnect', () => {
+            activeOverviewClients.delete(socket.id);
+        });
+    });
+
+    setInterval(async () => {
+        if (activeOverviewClients.size > 0) {
+            try {
+                const overviewData = await getOverviewData(sessionUsersIO);
+                io.emit('overviewData', overviewData);
+            } catch (error) {
+                console.error('Error broadcasting overview data:', error);
+            }
+        }
+    }, 30000);
+
+    return io;
+}
+
+async function getOverviewData(sessionUsersIO) {
+    try {
+        const allSessions = await getAllSessions();
+        const pfatcSessions = allSessions.filter(session => session.is_pfatc);
+        const activeSessions = [];
+        const activeUsers = sessionUsersIO?.activeUsers || new Map();
+
+        for (const session of pfatcSessions) {
+            const sessionUsers = activeUsers.get(session.session_id);
+            const isActive = sessionUsers && sessionUsers.length > 0;
+
+            if (isActive) {
+                try {
+                    const flights = await getFlightsBySessionWithTime(session.session_id, 2);
+
+                    activeSessions.push({
+                        sessionId: session.session_id,
+                        airportIcao: session.airport_icao,
+                        activeRunway: session.active_runway,
+                        createdAt: session.created_at,
+                        createdBy: session.created_by,
+                        isPFATC: session.is_pfatc,
+                        activeUsers: sessionUsers.length,
+                        flights: flights || [],
+                        flightCount: flights ? flights.length : 0
+                    });
+                } catch (error) {
+                    console.error(`Error fetching flights for session ${session.session_id}:`, error);
+                    activeSessions.push({
+                        sessionId: session.session_id,
+                        airportIcao: session.airport_icao,
+                        activeRunway: session.active_runway,
+                        createdAt: session.created_at,
+                        createdBy: session.created_by,
+                        isPFATC: session.is_pfatc,
+                        activeUsers: sessionUsers.length,
+                        flights: [],
+                        flightCount: 0
+                    });
+                }
+            }
+        }
+
+        const arrivalsByAirport = {};
+        activeSessions.forEach(session => {
+            session.flights.forEach(flight => {
+                if (flight.arrival) {
+                    const arrivalIcao = flight.arrival.toUpperCase();
+                    if (!arrivalsByAirport[arrivalIcao]) {
+                        arrivalsByAirport[arrivalIcao] = [];
+                    }
+                    arrivalsByAirport[arrivalIcao].push({
+                        ...flight,
+                        sessionId: session.sessionId,
+                        departureAirport: session.airportIcao
+                    });
+                }
+            });
+        });
+
+        return {
+            activeSessions,
+            totalActiveSessions: activeSessions.length,
+            totalFlights: activeSessions.reduce((sum, session) => sum + session.flightCount, 0),
+            arrivalsByAirport,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Error in getOverviewData:', error);
+        throw error;
+    }
+}
+
+export function getOverviewIO() {
+    return io;
+}
+
+export function hasOverviewClients() {
+    return activeOverviewClients.size > 0;
+}
