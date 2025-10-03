@@ -10,7 +10,9 @@ import {
 import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
 import { useAuth } from '../../hooks/auth/useAuth';
+import { playSound, SOUNDS } from '../../utils/playSound';
 import type { Position, SessionUser } from '../../types/session';
+import type { ChatMention } from '../../types/chats';
 import WindDisplay from './WindDisplay';
 import Button from '../common/Button';
 import RunwayDropdown from '../dropdowns/RunwayDropdown';
@@ -37,6 +39,7 @@ export default function Toolbar({
 	const [position, setPosition] = useState<Position | null>('ALL');
 	const [chatOpen, setChatOpen] = useState(false);
 	const [activeUsers, setActiveUsers] = useState<SessionUser[]>([]);
+	const [unreadMentions, setUnreadMentions] = useState<ChatMention[]>([]);
 	const [connectionStatus, setConnectionStatus] = useState<
 		'Connected' | 'Reconnecting' | 'Disconnected'
 	>('Disconnected');
@@ -60,6 +63,23 @@ export default function Toolbar({
 		return avatar;
 	};
 
+	const handleMentionReceived = (mention: ChatMention) => {
+		setUnreadMentions((prev) => [...prev, mention]);
+
+		playSound(SOUNDS.CHAT_NOTIFICATION, 0.7).catch((error) => {
+			console.warn('Failed to play chat notification sound:', error);
+		});
+	};
+
+	const handleChatOpen = () => {
+		setChatOpen(true);
+		setUnreadMentions([]);
+	};
+
+	const handleChatClose = () => {
+		setChatOpen(false);
+	};
+
 	useEffect(() => {
 		if (!sessionId || !accessId || !user) return;
 
@@ -75,7 +95,8 @@ export default function Toolbar({
 			() => setConnectionStatus('Connected'),
 			() => setConnectionStatus('Disconnected'),
 			() => setConnectionStatus('Reconnecting'),
-			() => setConnectionStatus('Connected')
+			() => setConnectionStatus('Connected'),
+			handleMentionReceived
 		);
 
 		return () => {
@@ -90,6 +111,12 @@ export default function Toolbar({
 			setRunway(activeRunway);
 		}
 	}, [activeRunway]);
+
+	useEffect(() => {
+		if (chatOpen) {
+			setUnreadMentions([]);
+		}
+	}, [chatOpen]);
 
 	const getStatusColor = () => {
 		switch (connectionStatus) {
@@ -225,20 +252,27 @@ export default function Toolbar({
 				</Button>
 
 				<Button
-					className="flex items-center gap-2 px-4 py-2"
-					aria-label="Settings"
+					className="flex items-center gap-2 px-4 py-2 relative"
+					aria-label="Chat"
 					size="sm"
-					onClick={() => setChatOpen(!chatOpen)}
+					onClick={handleChatOpen}
 				>
 					<MessageCircle className="w-5 h-5" />
 					<span className="hidden sm:inline font-medium">Chat</span>
+					{unreadMentions.length > 0 && (
+						<div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+							{unreadMentions.length}
+						</div>
+					)}
 				</Button>
 
 				<ChatSidebar
 					sessionId={sessionId ?? ''}
 					accessId={accessId ?? ''}
 					open={chatOpen}
-					onClose={() => setChatOpen(false)}
+					onClose={handleChatClose}
+					sessionUsers={activeUsers}
+					onMentionReceived={handleMentionReceived}
 				/>
 
 				<Button

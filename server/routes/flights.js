@@ -38,6 +38,12 @@ router.post('/:sessionId', requireAuth, async (req, res) => {
 // PUT: /api/flights/:sessionId/:flightId - update a flight (for external access/fallback)
 router.put('/:sessionId/:flightId', requireAuth, async (req, res) => {
     try {
+        if (req.body.callsign && req.body.callsign.length > 16) {
+            return res.status(400).json({ error: 'Callsign too long' });
+        }
+        if (req.body.stand && req.body.stand.length > 8) {
+            return res.status(400).json({ error: 'Stand too long' });
+        }
         const flight = await updateFlight(req.params.sessionId, req.params.flightId, req.body);
         if (!flight) {
             return res.status(404).json({ error: 'Flight not found' });

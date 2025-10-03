@@ -18,6 +18,9 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 router.post('/:sessionId', requireAuth, async (req, res) => {
     try {
         const { message } = req.body;
+        if (message.length > 500) {
+            return res.status(400).json({ error: 'Message too long' });
+        }
         const user = req.user;
         const chatMsg = await addChatMessage(req.params.sessionId, {
             userId: user.userId,

@@ -158,7 +158,7 @@ export default function DepartureTable({
 
 	if (visibleFlights.length === 0) {
 		return (
-			<div className="mt-8 px-4 py-6 text-center text-gray-400">
+			<div className="mt-24 px-4 py-6 text-center text-gray-400">
 				No departures found.
 			</div>
 		);
@@ -270,6 +270,7 @@ export default function DepartureTable({
 										}
 										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 										placeholder="-"
+										maxLength={16}
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.currentTarget.blur();
@@ -285,6 +286,7 @@ export default function DepartureTable({
 										}
 										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 										placeholder="-"
+										maxLength={8}
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.currentTarget.blur();
@@ -380,6 +382,8 @@ export default function DepartureTable({
 										}
 										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 										placeholder="-"
+										maxLength={4}
+										pattern="[0-9]*"
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.currentTarget.blur();
@@ -423,6 +427,7 @@ export default function DepartureTable({
 										}
 										className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 										placeholder="-"
+										maxLength={50}
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.currentTarget.blur();

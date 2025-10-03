@@ -20,7 +20,7 @@ export async function sendChatMessage(sessionId: string, message: string) {
 }
 
 export async function deleteChatMessage(sessionId: string, messageId: number) {
-    const res = await fetch(`${API_BASE_URL}/api/chats/${sessionId}/messages/${messageId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}`, {
         method: 'DELETE',
         credentials: 'include'
     });

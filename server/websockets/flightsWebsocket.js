@@ -45,6 +45,16 @@ export function setupFlightsWebsocket(httpServer) {
 
         socket.on('updateFlight', async ({ flightId, updates }) => {
             try {
+                if (updates.callsign && updates.callsign.length > 16) {
+                    socket.emit('flightError', { action: 'update', flightId, error: 'Callsign too long' });
+                    return;
+                }
+
+                if (updates.stand && updates.stand.length > 8) {
+                    socket.emit('flightError', { action: 'update', flightId, error: 'Stand too long' });
+                    return;
+                }
+
                 if (updates.clearance !== undefined) {
                     if (typeof updates.clearance === 'string') {
                         updates.clearance = updates.clearance.toLowerCase() === 'true';

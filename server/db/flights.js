@@ -21,6 +21,35 @@ export async function getFlightsBySession(sessionId) {
     return flights;
 }
 
+function validateFlightFields(updates) {
+    if (updates.callsign && updates.callsign.length > 16) {
+        throw new Error('Callsign must be 16 characters or less');
+    }
+    if (updates.stand && updates.stand.length > 8) {
+        throw new Error('Stand must be 8 characters or less');
+    }
+    if (updates.squawk) {
+        if (updates.squawk.length > 4 || !/^\d{1,4}$/.test(updates.squawk)) {
+            throw new Error('Squawk must be up to 4 numeric digits');
+        }
+    }
+    if (updates.remark && updates.remark.length > 50) {
+        throw new Error('Remark must be 50 characters or less');
+    }
+    if (updates.cruisingFL !== undefined) {
+        const fl = parseInt(updates.cruisingFL, 10);
+        if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
+            throw new Error('Cruising FL must be between 0 and 200 in 50-step increments');
+        }
+    }
+    if (updates.clearedFL !== undefined) {
+        const fl = parseInt(updates.clearedFL, 10);
+        if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
+            throw new Error('Cleared FL must be between 0 and 200 in 50-step increments');
+        }
+    }
+}
+
 export async function addFlight(sessionId, flightData) {
     const tableName = `flights_${sessionId}`;
     const fields = ['session_id'];
@@ -101,6 +130,8 @@ export async function updateFlight(sessionId, flightId, updates) {
         dbUpdates.clearedfl = dbUpdates.clearedFL;
         delete dbUpdates.clearedFL;
     }
+
+    validateFlightFields(updates);
 
     for (const [key, value] of Object.entries(dbUpdates)) {
         let processedValue = value;

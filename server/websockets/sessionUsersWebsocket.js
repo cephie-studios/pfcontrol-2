@@ -41,6 +41,7 @@ export function setupSessionUsersWebsocket(httpServer) {
         }
 
         socket.join(sessionId);
+        socket.join(`user-${user.userId}`);
 
         io.to(sessionId).emit('sessionUsersUpdate', users);
 
@@ -59,4 +60,12 @@ export function setupSessionUsersWebsocket(httpServer) {
             }
         });
     });
+
+    io.sendMentionToUser = (userId, mention) => {
+        io.to(`user-${userId}`).emit('chatMention', mention);
+    };
+
+    io.activeUsers = activeUsers;
+
+    return io;
 }

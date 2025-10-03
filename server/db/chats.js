@@ -9,19 +9,20 @@ export async function ensureChatTable(sessionId) {
             username VARCHAR(32),
             avatar VARCHAR(128),
             message TEXT NOT NULL,
+            mentions TEXT[],
             sent_at TIMESTAMP DEFAULT NOW()
         )
     `);
 }
 
-export async function addChatMessage(sessionId, { userId, username, avatar, message }) {
+export async function addChatMessage(sessionId, { userId, username, avatar, message, mentions = [] }) {
     await ensureChatTable(sessionId);
     const encryptedMsg = encrypt(message);
     const result = await chatsPool.query(
-        `INSERT INTO chat_${sessionId} (user_id, username, avatar, message) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [String(userId), username, avatar, encryptedMsg]
+        `INSERT INTO chat_${sessionId} (user_id, username, avatar, message, mentions) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [String(userId), username, avatar, encryptedMsg, mentions]
     );
-    return { ...result.rows[0], message };
+    return { ...result.rows[0], message, mentions };
 }
 
 export async function getChatMessages(sessionId, limit = 50) {
@@ -46,6 +47,7 @@ export async function getChatMessages(sessionId, limit = 50) {
                 username: row.username,
                 avatar: row.avatar,
                 message: decryptedMsg || '',
+                mentions: row.mentions || [],
                 sent_at: row.sent_at
             };
         })

@@ -47,8 +47,8 @@ app.get('/{*any}', (req, res) => {
 });
 
 const server = http.createServer(app);
-setupChatWebsocket(server);
-setupSessionUsersWebsocket(server);
+const sessionUsersIO = setupSessionUsersWebsocket(server);
+setupChatWebsocket(server, sessionUsersIO);
 setupFlightsWebsocket(server);
 
 server.listen(PORT, () => {

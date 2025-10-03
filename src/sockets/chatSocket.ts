@@ -1,29 +1,47 @@
 import io from 'socket.io-client';
+import type { ChatMessage, ChatMention } from '../types/chats';
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
 export function createChatSocket(
     sessionId: string,
     accessId: string,
-    onMessage: (msg: ChatMessage) => void
+    userId: string,
+    onMessage: (msg: ChatMessage) => void,
+    onMessageDeleted?: (data: { messageId: number }) => void,
+    onDeleteError?: (data: { messageId: number; error: string }) => void,
+    onActiveChatUsers?: (users: string[]) => void,
+    onMention?: (mention: ChatMention) => void
 ) {
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/chat',
-        query: { sessionId, accessId }
+        query: { sessionId, accessId, userId }
     });
     socket.emit('joinSession', sessionId);
 
     socket.on('chatMessage', onMessage);
+    
+    if (onMessageDeleted) {
+        socket.on('messageDeleted', onMessageDeleted);
+    }
 
-    return socket;
-}
+    if (onDeleteError) {
+        socket.on('deleteError', onDeleteError);
+    }
 
-export interface ChatMessage {
-    id: number;
-    userId: string;
-    username: string;
-    avatar?: string;
-    message: string;
-    sent_at: string;
+    if (onActiveChatUsers) {
+        socket.on('activeChatUsers', onActiveChatUsers);
+    }
+
+    if (onMention) {
+        socket.on('chatMention', onMention);
+    }
+
+    return {
+        socket,
+        deleteMessage: (messageId: number, userId: string) => {
+            socket.emit('deleteMessage', { messageId, userId });
+        }
+    };
 }

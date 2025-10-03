@@ -196,6 +196,7 @@ export default function DepartureTableMobile({
 									}
 									className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 									placeholder="-"
+									maxLength={16}
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.currentTarget.blur();
@@ -212,6 +213,7 @@ export default function DepartureTableMobile({
 									}
 									className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 									placeholder="-"
+									maxLength={8}
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.currentTarget.blur();
@@ -303,6 +305,8 @@ export default function DepartureTableMobile({
 									}
 									className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 									placeholder="-"
+									maxLength={4}
+									pattern="[0-9]*"
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.currentTarget.blur();
@@ -346,6 +350,7 @@ export default function DepartureTableMobile({
 									}
 									className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
 									placeholder="-"
+									maxLength={50}
 									onKeyDown={(e) => {
 										if (e.key === 'Enter') {
 											e.currentTarget.blur();
