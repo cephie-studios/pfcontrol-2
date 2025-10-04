@@ -3,11 +3,15 @@ import {
 	BarChart3,
 	Users,
 	Database,
-	Activity,
 	ChevronLeft,
 	ChevronRight,
-	Shield
+	Shield,
+	ChevronDown,
+	Ban,
+	LayoutDashboard,
+	ShieldAlert
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '../ProtectedRoute';
 
 interface AdminSidebarProps {
@@ -21,37 +25,70 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
 	const location = useLocation();
 
-	const menuItems = [
+	const [generalCollapsed, setGeneralCollapsed] = useState(false);
+	const [usersCollapsed, setUsersCollapsed] = useState(false);
+	const [showText, setShowText] = useState(!collapsed);
+
+	useEffect(() => {
+		if (!collapsed) {
+			const timer = setTimeout(() => setShowText(true), 300);
+			return () => clearTimeout(timer);
+		} else {
+			setShowText(false);
+		}
+	}, [collapsed]);
+
+	const sections = [
 		{
-			icon: BarChart3,
-			label: 'Overview',
-			path: '/admin',
-			description: 'Dashboard & Analytics'
+			title: 'General',
+			icon: LayoutDashboard,
+			collapsed: generalCollapsed,
+			setCollapsed: setGeneralCollapsed,
+			items: [
+				{
+					icon: BarChart3,
+					label: 'Overview',
+					path: '/admin'
+				},
+				{
+					icon: Users,
+					label: 'Users',
+					path: '/admin/users'
+				},
+				{
+					icon: Database,
+					label: 'Sessions',
+					path: '/admin/sessions'
+				}
+			]
 		},
 		{
-			icon: Users,
-			label: 'Users',
-			path: '/admin/users',
-			description: 'User Management'
-		},
-		{
-			icon: Activity,
-			label: 'Sessions',
-			path: '/admin/sessions',
-			description: 'Session Management'
-		},
-		{
-			icon: Database,
-			label: 'System',
-			path: '/admin/system',
-			description: 'System Information'
+			title: 'Security',
+			icon: Shield,
+			collapsed: usersCollapsed,
+			setCollapsed: setUsersCollapsed,
+			items: [
+				{
+					icon: Ban,
+					label: 'Bans',
+					path: '/admin/bans'
+				},
+				{
+					icon: ShieldAlert,
+					label: 'Audit Log',
+					path: '/admin/audit',
+					textColor: 'orange-400'
+				}
+			]
 		}
 	];
+
+	const allItems = sections.flatMap((section) => section.items);
 
 	return (
 		<ProtectedRoute requireAdmin={true}>
 			<div
-				className={`bg-zinc-900 border-r border-zinc-700/50 transition-all duration-300 h-fit-screen ${
+				className={`bg-black border-r border-zinc-700/50 transition-all duration-300 h-fit-screen ${
 					collapsed ? 'w-16' : 'w-64'
 				} flex flex-col`}
 			>
@@ -61,15 +98,18 @@ export default function AdminSidebar({
 						{!collapsed && (
 							<div className="flex items-center space-x-3">
 								<div className="p-2 bg-blue-500/20 rounded-lg">
-									<Shield className="w-5 h-5 text-blue-400" />
+									<LayoutDashboard className="w-5 h-5 text-blue-400" />
 								</div>
-								<div>
+								<div
+									className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
+										showText
+											? 'w-auto opacity-100'
+											: 'w-0 opacity-0'
+									}`}
+								>
 									<h2 className="text-white font-semibold">
 										Admin Panel
 									</h2>
-									<p className="text-zinc-400 text-xs">
-										System Management
-									</p>
 								</div>
 							</div>
 						)}
@@ -88,41 +128,104 @@ export default function AdminSidebar({
 
 				{/* Navigation */}
 				<nav className="flex-1 p-4">
-					<div className="space-y-2">
-						{menuItems.map((item) => {
-							const Icon = item.icon;
-							const isActive = location.pathname === item.path;
+					{collapsed ? (
+						<div className="space-y-1">
+							{allItems.map((item) => {
+								const Icon = item.icon;
+								const isActive =
+									location.pathname === item.path;
 
-							return (
-								<Link
-									key={item.path}
-									to={item.path}
-									className={`
-                                    flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
-                                    ${
-										isActive
-											? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-											: 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-									}
-                                    ${collapsed ? 'justify-center' : ''}
-                                `}
-									title={collapsed ? item.label : undefined}
-								>
-									<Icon className="w-5 h-5 flex-shrink-0" />
-									{!collapsed && (
-										<div className="flex-1 min-w-0">
-											<div className="font-medium">
-												{item.label}
+								return (
+									<Link
+										key={item.path}
+										to={item.path}
+										className={`
+                                            flex items-center justify-center px-3 py-3 rounded-xl transition-all duration-200
+                                            ${
+												isActive
+													? 'text-blue-400'
+													: 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+											}
+                                        `}
+										title={item.label}
+									>
+										<Icon className="w-5 h-5 flex-shrink-0" />
+									</Link>
+								);
+							})}
+						</div>
+					) : (
+						<div className="space-y-2">
+							{sections.map((section) => {
+								const SectionIcon = section.icon;
+								return (
+									<div key={section.title}>
+										<button
+											onClick={() =>
+												section.setCollapsed(
+													!section.collapsed
+												)
+											}
+											className="flex items-center justify-between w-full px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200"
+										>
+											<div className="flex items-center space-x-2">
+												<SectionIcon className="w-4 h-4 flex-shrink-0" />
+												<span className="font-medium">
+													{section.title}
+												</span>
 											</div>
-											<div className="text-xs opacity-75 truncate">
-												{item.description}
+											{section.collapsed ? (
+												<ChevronRight className="w-4 h-4" />
+											) : (
+												<ChevronDown className="w-4 h-4" />
+											)}
+										</button>
+										<div
+											className={`overflow-hidden transition-all duration-300 ease-in-out ${
+												section.collapsed
+													? 'max-h-0 opacity-0'
+													: 'max-h-96 opacity-100'
+											}`}
+										>
+											<div className="space-y-1 ml-2">
+												{section.items.map((item) => {
+													const Icon = item.icon;
+													const isActive =
+														location.pathname ===
+														item.path;
+
+													return (
+														<Link
+															key={item.path}
+															to={item.path}
+															className={`
+                                                            flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
+                                                            ${
+																isActive
+																	? `text-${
+																			item.textColor ||
+																			'blue-400'
+																	  }`
+																	: 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+															}
+                                                        `}
+														>
+															<Icon className="w-5 h-5 flex-shrink-0" />
+															<div className="flex-1 min-w-0">
+																<div className="font-medium">
+																	{item.label}
+																</div>
+															</div>
+														</Link>
+													);
+												})}
 											</div>
 										</div>
-									)}
-								</Link>
-							);
-						})}
-					</div>
+									</div>
+								);
+							})}
+						</div>
+					)}
 				</nav>
 			</div>
 		</ProtectedRoute>

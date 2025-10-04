@@ -6,5 +6,6 @@ export interface User {
     discriminator: string;
     avatar: string | null;
     isAdmin: boolean;
+    isBanned: boolean;
     settings: Settings;
 }

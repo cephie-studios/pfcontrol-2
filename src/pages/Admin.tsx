@@ -1,5 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Shield, Users, Activity, Database, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+	Users,
+	Activity,
+	Database,
+	TrendingUp,
+	LayoutDashboard
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import Loader from '../components/common/Loader';
@@ -9,13 +15,12 @@ import {
 	LinearScale,
 	PointElement,
 	LineElement,
-	BarElement,
 	Title,
 	Tooltip,
 	Legend,
 	Filler
 } from 'chart.js';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import ProtectedRoute from '../components/ProtectedRoute';
 import {
 	fetchAdminStatistics,
@@ -24,13 +29,11 @@ import {
 } from '../utils/fetch/admin';
 import Button from '../components/common/Button';
 
-// Register Chart.js components
 ChartJS.register(
 	CategoryScale,
 	LinearScale,
 	PointElement,
 	LineElement,
-	BarElement,
 	Title,
 	Tooltip,
 	Legend,
@@ -44,17 +47,27 @@ export default function Admin() {
 	const [timeRange, setTimeRange] = useState(30);
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		fetchStats();
-	}, [timeRange]);
-
-	const fetchStats = async () => {
+	const fetchStats = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
 
 			const data = await fetchAdminStatistics(timeRange);
-			setStats(data);
+			const periodTotals = data.daily.reduce(
+				(acc, day) => ({
+					total_logins: acc.total_logins + day.logins_count,
+					total_sessions: acc.total_sessions + day.new_sessions_count,
+					total_flights: acc.total_flights + day.new_flights_count,
+					total_users: acc.total_users + day.new_users_count
+				}),
+				{
+					total_logins: 0,
+					total_sessions: 0,
+					total_flights: 0,
+					total_users: 0
+				}
+			);
+			setStats({ ...data, totals: periodTotals });
 		} catch (error) {
 			console.error('Error fetching admin statistics:', error);
 			setError(
@@ -65,9 +78,13 @@ export default function Admin() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [timeRange]);
 
-	const formatChartData = (daily: DailyStats[]) => {
+	useEffect(() => {
+		fetchStats();
+	}, [fetchStats]);
+
+	const formatLoginsData = (daily: DailyStats[]) => {
 		const labels = daily.map((item) =>
 			new Date(item.date).toLocaleDateString('en-US', {
 				month: 'short',
@@ -91,7 +108,22 @@ export default function Admin() {
 					pointHoverBorderColor: '#1E40AF',
 					pointRadius: 4,
 					pointHoverRadius: 6
-				},
+				}
+			]
+		};
+	};
+
+	const formatSessionsData = (daily: DailyStats[]) => {
+		const labels = daily.map((item) =>
+			new Date(item.date).toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric'
+			})
+		);
+
+		return {
+			labels,
+			datasets: [
 				{
 					label: 'Sessions',
 					data: daily.map((item) => item.new_sessions_count),
@@ -105,7 +137,22 @@ export default function Admin() {
 					pointHoverBorderColor: '#047857',
 					pointRadius: 4,
 					pointHoverRadius: 6
-				},
+				}
+			]
+		};
+	};
+
+	const formatFlightsData = (daily: DailyStats[]) => {
+		const labels = daily.map((item) =>
+			new Date(item.date).toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric'
+			})
+		);
+
+		return {
+			labels,
+			datasets: [
 				{
 					label: 'Flights',
 					data: daily.map((item) => item.new_flights_count),
@@ -124,43 +171,12 @@ export default function Admin() {
 		};
 	};
 
-	const formatBarChartData = (daily: DailyStats[]) => {
-		return {
-			labels: daily.map((item) =>
-				new Date(item.date).toLocaleDateString('en-US', {
-					month: 'short',
-					day: 'numeric'
-				})
-			),
-			datasets: [
-				{
-					label: 'New Users',
-					data: daily.map((item) => item.new_users_count),
-					backgroundColor: 'rgba(245, 158, 11, 0.8)',
-					borderColor: '#F59E0B',
-					borderWidth: 2,
-					borderRadius: 6,
-					borderSkipped: false
-				}
-			]
-		};
-	};
-
 	const chartOptions = {
 		responsive: true,
 		maintainAspectRatio: false,
 		plugins: {
 			legend: {
-				position: 'top' as const,
-				labels: {
-					color: '#D1D5DB',
-					font: {
-						size: 12,
-						weight: 500
-					},
-					usePointStyle: true,
-					pointStyle: 'circle'
-				}
+				display: false
 			},
 			tooltip: {
 				backgroundColor: 'rgba(17, 24, 39, 0.95)',
@@ -211,60 +227,9 @@ export default function Admin() {
 		}
 	};
 
-	const barChartOptions = {
-		responsive: true,
-		maintainAspectRatio: false,
-		plugins: {
-			legend: {
-				position: 'top' as const,
-				labels: {
-					color: '#D1D5DB',
-					font: {
-						size: 12,
-						weight: 500
-					}
-				}
-			},
-			tooltip: {
-				backgroundColor: 'rgba(17, 24, 39, 0.95)',
-				titleColor: '#F9FAFB',
-				bodyColor: '#D1D5DB',
-				borderColor: '#374151',
-				borderWidth: 1,
-				cornerRadius: 8
-			}
-		},
-		scales: {
-			x: {
-				grid: {
-					color: 'rgba(55, 65, 81, 0.3)',
-					drawBorder: false
-				},
-				ticks: {
-					color: '#9CA3AF',
-					font: {
-						size: 11
-					}
-				}
-			},
-			y: {
-				grid: {
-					color: 'rgba(55, 65, 81, 0.3)',
-					drawBorder: false
-				},
-				ticks: {
-					color: '#9CA3AF',
-					font: {
-						size: 11
-					}
-				}
-			}
-		}
-	};
-
 	return (
 		<ProtectedRoute requireAdmin={true}>
-			<div className="min-h-screen bg-zinc-950 text-white">
+			<div className="min-h-screen bg-black text-white">
 				<Navbar />
 
 				<div className="flex pt-16">
@@ -278,21 +243,20 @@ export default function Admin() {
 						<div className="mb-8">
 							<div className="flex items-center mb-4">
 								<div className="p-3 bg-blue-500/20 rounded-xl mr-4">
-									<Shield className="h-8 w-8 text-blue-400" />
+									<LayoutDashboard className="h-8 w-8 text-blue-400" />
 								</div>
 								<div>
-									<h1 className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2">
+									<h1
+										className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
+										style={{ lineHeight: 1.2 }}
+									>
 										Admin Overview
 									</h1>
-									<p className="text-zinc-400">
-										System analytics and management
-										dashboard
-									</p>
 								</div>
 							</div>
 
 							{/* Time Range Selector */}
-							<div className="flex space-x-2">
+							<div className="flex space-x-2 pt-4">
 								{[7, 30, 90].map((days) => (
 									<Button
 										key={days}
@@ -333,7 +297,7 @@ export default function Admin() {
 							<>
 								{/* Stats Cards */}
 								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
+									<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
 										<div className="flex items-center justify-between mb-4">
 											<div className="p-3 bg-blue-500/20 rounded-xl">
 												<Users className="w-6 h-6 text-blue-400" />
@@ -349,7 +313,7 @@ export default function Admin() {
 										</p>
 									</div>
 
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
+									<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
 										<div className="flex items-center justify-between mb-4">
 											<div className="p-3 bg-green-500/20 rounded-xl">
 												<Activity className="w-6 h-6 text-green-400" />
@@ -365,7 +329,7 @@ export default function Admin() {
 										</p>
 									</div>
 
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
+									<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
 										<div className="flex items-center justify-between mb-4">
 											<div className="p-3 bg-purple-500/20 rounded-xl">
 												<Database className="w-6 h-6 text-purple-400" />
@@ -381,7 +345,7 @@ export default function Admin() {
 										</p>
 									</div>
 
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
+									<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
 										<div className="flex items-center justify-between mb-4">
 											<div className="p-3 bg-orange-500/20 rounded-xl">
 												<TrendingUp className="w-6 h-6 text-orange-400" />
@@ -399,15 +363,15 @@ export default function Admin() {
 								</div>
 
 								{/* Charts */}
-								<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-									{/* Activity Chart */}
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
+								<div className="space-y-8">
+									{/* Flights Chart - Full Width */}
+									<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
 										<h3 className="text-xl font-semibold text-white mb-6">
-											Daily Activity
+											Flights
 										</h3>
 										<div className="h-80">
 											<Line
-												data={formatChartData(
+												data={formatFlightsData(
 													stats.daily
 												)}
 												options={chartOptions}
@@ -415,18 +379,36 @@ export default function Admin() {
 										</div>
 									</div>
 
-									{/* New Users Chart */}
-									<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl p-6">
-										<h3 className="text-xl font-semibold text-white mb-6">
-											New Users
-										</h3>
-										<div className="h-80">
-											<Bar
-												data={formatBarChartData(
-													stats.daily
-												)}
-												options={barChartOptions}
-											/>
+									{/* Sessions and Logins - Side by Side */}
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+										{/* Sessions Chart */}
+										<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
+											<h3 className="text-xl font-semibold text-white mb-6">
+												Sessions
+											</h3>
+											<div className="h-80">
+												<Line
+													data={formatSessionsData(
+														stats.daily
+													)}
+													options={chartOptions}
+												/>
+											</div>
+										</div>
+
+										{/* Logins Chart */}
+										<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
+											<h3 className="text-xl font-semibold text-white mb-6">
+												Logins
+											</h3>
+											<div className="h-80">
+												<Line
+													data={formatLoginsData(
+														stats.daily
+													)}
+													options={chartOptions}
+												/>
+											</div>
 										</div>
 									</div>
 								</div>

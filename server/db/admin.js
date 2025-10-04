@@ -2,6 +2,8 @@ import pool from './connections/connection.js';
 import flightsPool from './connections/flightsConnection.js';
 import { getAllSessions } from './sessions.js';
 import { cleanupOldStatistics } from './statistics.js';
+import { isAdmin } from '../middleware/isAdmin.js';
+import { decrypt } from '../tools/encryption.js';
 
 export async function getDailyStatistics(days = 30) {
     try {
@@ -138,7 +140,7 @@ export async function getAllUsers(page = 1, limit = 50) {
             SELECT
                 id, username, discriminator, avatar, last_login,
                 ip_address, is_vpn, total_sessions_created,
-                total_minutes, created_at
+                total_minutes, created_at, settings
             FROM users
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
@@ -147,8 +149,26 @@ export async function getAllUsers(page = 1, limit = 50) {
         const countResult = await pool.query('SELECT COUNT(*) FROM users');
         const totalUsers = parseInt(countResult.rows[0].count);
 
+        // Add is_admin field and decrypt settings for each user
+        const usersWithAdminStatus = result.rows.map(user => {
+            let decryptedSettings = null;
+            try {
+                if (user.settings) {
+                    decryptedSettings = decrypt(JSON.parse(user.settings));
+                }
+            } catch (error) {
+                console.warn(`Failed to decrypt settings for user ${user.id}`);
+            }
+
+            return {
+                ...user,
+                is_admin: isAdmin(user.id),
+                settings: decryptedSettings
+            };
+        });
+
         return {
-            users: result.rows,
+            users: usersWithAdminStatus,
             pagination: {
                 page,
                 limit,

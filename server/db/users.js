@@ -218,7 +218,6 @@ export async function updateUserSettings(id, settings) {
             throw new Error('User not found');
         }
 
-        // Shallow merge: Replace top-level properties entirely since client sends full objects
         const mergedSettings = { ...existingUser.settings, ...settings };
 
         const encryptedSettings = encrypt(mergedSettings);

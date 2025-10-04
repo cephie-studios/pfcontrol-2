@@ -8,7 +8,7 @@ import chatsRouter from "./chats.js";
 import metarRoutes from './metar.js';
 import atisRouter from './atis.js';
 import uploadsRouter from './uploads.js';
-import adminRouter from './admin.js';
+import adminRouter from './admin/index.js';
 
 const router = express.Router();
 

@@ -1,3 +1,5 @@
+import type { Settings } from "../../types/settings";
+
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
 
 export interface DailyStats {
@@ -31,6 +33,8 @@ export interface AdminUser {
     total_sessions_created: number;
     total_minutes: number;
     created_at: string;
+    is_admin: boolean;
+    settings?: Settings;
 }
 
 export interface AdminUsersResponse {
@@ -76,6 +80,35 @@ export interface SystemInfo {
     };
 }
 
+export interface AuditLog {
+    id: number;
+    admin_id: string;
+    admin_username: string;
+    action_type: string;
+    target_user_id?: string;
+    target_username?: string;
+    details: Record<string, unknown>;
+    ip_address?: string;
+    user_agent?: string;
+    timestamp: string;
+}
+
+export interface AuditLogsResponse {
+    logs: AuditLog[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+}
+
+export interface RevealIPResponse {
+    userId: string;
+    username: string;
+    ip_address: string;
+}
+
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
         credentials: 'include',
@@ -113,4 +146,40 @@ export async function fetchAdminSessions(): Promise<AdminSession[]> {
 
 export async function fetchSystemInfo(): Promise<SystemInfo> {
     return makeAdminRequest('/system-info');
+}
+
+export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
+    return makeAdminRequest(`/users/${userId}/reveal-ip`, {
+        method: 'POST'
+    });
+}
+
+export async function fetchAuditLogs(
+    page: number = 1,
+    limit: number = 50,
+    filters: {
+        adminId?: string;
+        actionType?: string;
+        targetUserId?: string;
+        dateFrom?: string;
+        dateTo?: string;
+    } = {}
+): Promise<AuditLogsResponse> {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...Object.fromEntries(
+            Object.entries(filters).filter(([, value]) => value != null && value !== '')
+        )
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/audit-logs?${params}`, {
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch audit logs');
+    }
+
+    return response.json();
 }
