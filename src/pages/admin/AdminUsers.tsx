@@ -114,7 +114,10 @@ export default function AdminUsers() {
 		}
 	};
 
-	const formatIPAddress = (ip: string, userId: string) => {
+	const formatIPAddress = (ip: string | null | undefined, userId: string) => {
+		if (!ip) {
+			return '***.***.***.**';
+		}
 		if (revealedIPs.has(userId)) {
 			return ip;
 		}
