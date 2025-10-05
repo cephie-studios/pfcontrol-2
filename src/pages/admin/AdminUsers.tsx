@@ -81,7 +81,13 @@ export default function AdminUsers() {
 				filterAdmin
 			);
 
-			setUsers(data.users);
+			const sortedUsers = data.users.sort(
+				(a, b) =>
+					new Date(b.last_login).getTime() -
+					new Date(a.last_login).getTime()
+			);
+
+			setUsers(sortedUsers);
 			setTotalPages(data.pagination.pages);
 		} catch (err) {
 			const errorMessage =

@@ -181,7 +181,7 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
                 total_minutes, created_at, settings
             FROM users
             ${whereClause}
-            ORDER BY created_at DESC
+            ORDER BY last_login DESC NULLS LAST
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `, [...queryParams, limit, offset]);
 
