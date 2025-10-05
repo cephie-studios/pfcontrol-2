@@ -8,6 +8,7 @@ import ProtectedRoute from '../../components/ProtectedRoute';
 import Button from '../../components/common/Button';
 import TextInput from '../../components/common/TextInput';
 import Loader from '../../components/common/Loader';
+import Toast from '../../components/common/Toast';
 
 interface BanRecord {
 	id: number;
@@ -39,6 +40,7 @@ export default function AdminBan() {
 	const [bans, setBans] = useState<BanRecord[]>([]);
 	const [bansLoading, setBansLoading] = useState(true);
 	const [bansError, setBansError] = useState<string | null>(null);
+	const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
 	useEffect(() => {
 		fetchBans();
@@ -53,8 +55,12 @@ export default function AdminBan() {
 					(ban) => ban.active
 				)
 			);
-		} catch {
+		} catch (err) {
 			setBansError('Failed to load bans');
+			setToast({
+				message: err instanceof Error ? err.message : 'Failed to load bans',
+				type: 'error'
+			});
 		} finally {
 			setBansLoading(false);
 		}
@@ -63,6 +69,7 @@ export default function AdminBan() {
 	const handleBan = async () => {
 		setLoading(true);
 		setError(null);
+		setSuccess(false);
 		try {
 			if (banType === 'user' && !userIdInput) {
 				throw new Error('User ID is required');
@@ -77,10 +84,20 @@ export default function AdminBan() {
 				reason,
 				expiresAt
 			});
-			setSuccess(true);
+			setToast({
+				message: `Successfully banned ${banType === 'user' ? 'user' : 'IP'}`,
+				type: 'success'
+			});
+			setUserIdInput('');
+			setIpInput('');
+			setReason('');
+			setExpiresAt('');
 			fetchBans();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to ban');
+			setToast({
+				message: err instanceof Error ? err.message : 'Failed to ban',
+				type: 'error'
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -89,9 +106,16 @@ export default function AdminBan() {
 	const handleUnban = async (userIdOrIp: string) => {
 		try {
 			await unbanUser(userIdOrIp);
+			setToast({
+				message: 'Successfully unbanned',
+				type: 'success'
+			});
 			fetchBans();
-		} catch {
-			setError('Failed to unban');
+		} catch (err) {
+			setToast({
+				message: err instanceof Error ? err.message : 'Failed to unban',
+				type: 'error'
+			});
 		}
 	};
 
@@ -276,16 +300,6 @@ export default function AdminBan() {
 											</Button>
 										</div>
 									</div>
-									{error && (
-										<div className="text-red-400">
-											{error}
-										</div>
-									)}
-									{success && (
-										<div className="text-green-400">
-											Banned successfully.
-										</div>
-									)}
 									<Button
 										onClick={handleBan}
 										disabled={loading || !reason}
@@ -366,6 +380,15 @@ export default function AdminBan() {
 					</div>
 				</div>
 			</div>
+
+			{/* Toast Notification */}
+			{toast && (
+				<Toast
+					message={toast.message}
+					type={toast.type}
+					onClose={() => setToast(null)}
+				/>
+			)}
 		</ProtectedRoute>
 	);
 }

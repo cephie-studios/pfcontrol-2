@@ -46,4 +46,4 @@ function requireAdmin(req, res, next) {
     }
 }
 
-export { requireAdmin, isAdmin };
+export { requireAdmin, isAdmin, getAdminIds };

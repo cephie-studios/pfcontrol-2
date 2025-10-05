@@ -10,6 +10,7 @@ import {
     updateSessionName,
     getSessionsByUserDetailed
 } from '../db/sessions.js';
+import { addSessionToUser } from '../db/users.js';
 import { generateSessionId, generateAccessId } from '../tools/ids.js';
 import { recordNewSession } from '../db/statistics.js';
 import requireAuth from '../middleware/isAuthenticated.js';
@@ -34,6 +35,8 @@ router.post('/create', requireAuth, async (req, res) => {
         }
 
         await createSession({ sessionId, accessId, activeRunway, airportIcao, createdBy, isPFATC });
+
+        await addSessionToUser(createdBy, sessionId);
 
         await recordNewSession();
 

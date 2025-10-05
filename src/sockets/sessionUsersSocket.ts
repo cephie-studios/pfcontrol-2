@@ -17,6 +17,7 @@ interface CustomSocket extends Socket {
     emitAtisGenerated?: (data: unknown) => void;
     emitFieldEditingStart?: (flightId: string | number, fieldName: string) => void;
     emitFieldEditingStop?: (flightId: string | number, fieldName: string) => void;
+    emitPositionChange?: (position: string) => void;
 }
 
 export function createSessionUsersSocket(
@@ -29,7 +30,8 @@ export function createSessionUsersSocket(
     onReconnecting?: () => void,
     onReconnect?: () => void,
     onMention?: (mention: ChatMention) => void,
-    onFieldEditingUpdate?: (editingStates: FieldEditingState[]) => void
+    onFieldEditingUpdate?: (editingStates: FieldEditingState[]) => void,
+    position?: string
 ) {
     const socket = io(SOCKET_URL, {
         withCredentials: true,
@@ -37,7 +39,8 @@ export function createSessionUsersSocket(
         query: {
             sessionId,
             accessId,
-            user: JSON.stringify(user)
+            user: JSON.stringify(user),
+            position: position || 'ALL'
         }
     }) as CustomSocket;
 
@@ -74,6 +77,10 @@ export function createSessionUsersSocket(
 
     socket.emitFieldEditingStop = (flightId: string | number, fieldName: string) => {
         socket.emit('fieldEditingStop', { flightId, fieldName });
+    };
+
+    socket.emitPositionChange = (position: string) => {
+        socket.emit('positionChange', { position });
     };
 
     return socket;
