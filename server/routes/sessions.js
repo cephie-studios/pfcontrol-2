@@ -67,6 +67,27 @@ router.get('/mine', requireAuth, async (req, res) => {
     }
 });
 
+// GET: /api/sessions/:sessionId/submit - Get basic session info for submit page (public)
+router.get('/:sessionId/submit', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await getSessionById(sessionId);
+        if (!session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        res.json({
+            sessionId: session.session_id,
+            airportIcao: session.airport_icao,
+            activeRunway: session.active_runway,
+            isPFATC: session.is_pfatc
+        });
+    } catch (error) {
+        console.error('Error fetching session for submit:', error);
+        res.status(500).json({ error: 'Internal server error', message: 'Failed to fetch session' });
+    }
+});
+
 // GET: /api/sessions/:sessionId - Get session by ID
 router.get('/:sessionId', requireSessionAccess, async (req, res) => {
     try {

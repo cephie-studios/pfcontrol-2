@@ -112,7 +112,6 @@ export async function cleanupOldStatistics() {
             DELETE FROM daily_statistics
             WHERE date < CURRENT_DATE - INTERVAL '90 days'
         `);
-        console.log(`Cleaned up ${result.rowCount} old statistics records.`);
         lastCleanupTime = now;
     } catch (error) {
         console.error('Error cleaning up old statistics:', error);

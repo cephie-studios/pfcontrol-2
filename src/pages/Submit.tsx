@@ -69,7 +69,11 @@ export default function Submit() {
 		if (!sessionId || initialLoadComplete) return;
 
 		setLoading(true);
-		fetch(`${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}`)
+		fetch(
+			`${
+				import.meta.env.VITE_SERVER_URL
+			}/api/sessions/${sessionId}/submit`
+		)
 			.then((res) => (res.ok ? res.json() : Promise.reject(res)))
 			.then((data) => {
 				setSession(data);
@@ -459,7 +463,10 @@ export default function Submit() {
 									<div>
 										<label className="flex items-center mb-2 text-sm font-medium text-gray-300">
 											<ArrowUpDown className="h-4 w-4 mr-2 text-gray-400" />
-											Cruising Flight Level
+											Cruising Flight Level{' '}
+											<span className="text-red-400 ml-1">
+												*
+											</span>
 										</label>
 										<input
 											type="text"

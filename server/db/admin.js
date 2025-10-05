@@ -277,7 +277,6 @@ export async function getAdminSessions() {
         `);
 
         const activeUsers = getActiveUsers();
-        console.log('Active users map:', activeUsers);
 
         const sessionsWithFlights = await Promise.all(
             sessionsResult.rows.map(async (session) => {
