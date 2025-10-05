@@ -14,6 +14,7 @@ import {
     X,
     Wind,
 	Database,
+	RefreshCw,
 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import AdminSidebar from "../../components/admin/AdminSidebar";
@@ -553,6 +554,18 @@ export default function AdminSessions() {
                                         </span>
                                     </button>
                                 </div>
+
+                                {/* Refresh Button */}
+                                <Button
+                                    onClick={fetchSessions}
+                                    variant="outline"
+                                    size="sm"
+                                    className="px-4 py-3 flex items-center space-x-2"
+                                    disabled={loading}
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                    <span className="hidden sm:inline">Refresh</span>
+                                </Button>
                             </div>
                         </div>
 

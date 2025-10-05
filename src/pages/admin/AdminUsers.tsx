@@ -33,6 +33,7 @@ export default function AdminUsers() {
     const [page, setPage] = useState(1);
     const [limit] = useState(50);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [filterAdmin, setFilterAdmin] = useState<string>("all");
@@ -83,6 +84,7 @@ export default function AdminUsers() {
 
             setUsers(data.users);
             setTotalPages(data.pagination.pages);
+            setTotalUsers(data.pagination.total);
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "Failed to fetch users"
@@ -377,12 +379,17 @@ export default function AdminUsers() {
                                 <div className="p-3 bg-green-500/20 rounded-xl mr-4">
                                     <Users className="h-8 w-8 text-green-400" />
                                 </div>
-                                <h1
-                                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"
-                                    style={{ lineHeight: 1.4 }}
-                                >
-                                    User Management
-                                </h1>
+                                <div>
+                                    <h1
+                                        className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"
+                                        style={{ lineHeight: 1.2 }}
+                                    >
+                                        User Management
+                                    </h1>
+                                    <p className="text-zinc-400">
+                                        {totalUsers} total user{totalUsers !== 1 ? 's' : ''}
+                                    </p>
+                                </div>
                             </div>
                             {/* Search and Filter */}
                             <div className="flex space-x-4">
