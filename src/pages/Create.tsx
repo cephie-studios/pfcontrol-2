@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useData } from '../hooks/data/useData';
 import { createSession } from '../utils/fetch/sessions';
+import { generateATIS } from '../utils/fetch/atis';
 import Navbar from '../components/Navbar';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import RunwayDropdown from '../components/dropdowns/RunwayDropdown';
 import Checkbox from '../components/common/Checkbox';
 import Button from '../components/common/Button';
 import WindDisplay from '../components/tools/WindDisplay';
+import AtisReminderModal from '../components/modals/AtisReminderModal';
 
 export default function Create() {
 	const navigate = useNavigate();
@@ -17,8 +20,18 @@ export default function Create() {
 	const [isPFATCNetwork, setIsPFATCNetwork] = useState<boolean>(false);
 	const [isCreating, setIsCreating] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [showAtisModal, setShowAtisModal] = useState<boolean>(false);
+	const [sessionInfo, setSessionInfo] = useState<{ sessionId: string; accessId: string } | null>(null);
+	const [atisText, setAtisText] = useState<string>('');
 
 	const { user } = useAuth();
+	const { airports } = useData();
+
+	// Get the selected airport name, control name, and APP frequency
+	const selectedAirportData = airports?.find(airport => airport.icao === selectedAirport);
+	const selectedAirportName = selectedAirportData?.name || '';
+	const selectedAirportControlName = selectedAirportData?.controlName || selectedAirportName;
+	const selectedAirportAppFrequency = selectedAirportData?.allFrequencies?.APP || '123.456';
 
 	const handleCreateSession = async () => {
 		if (!selectedAirport || !selectedRunway) {
@@ -36,14 +49,32 @@ export default function Create() {
 				isPFATC: isPFATCNetwork,
 				createdBy: user?.userId || 'unknown'
 			});
-			navigate(
-				`/view/${newSession.sessionId}?accessId=${newSession.accessId}`
-			);
+
+			// Generate ATIS with identifier "A"
+			const atisResponse = await generateATIS({
+				sessionId: newSession.sessionId,
+				ident: 'A',
+				icao: selectedAirport,
+				landing_runways: [selectedRunway],
+				departing_runways: [selectedRunway]
+			});
+
+			setSessionInfo(newSession);
+			setAtisText(atisResponse.atisText);
+			setShowAtisModal(true);
 		} catch {
 			console.error('Error creating session:');
 			setError('Failed to create session');
 		} finally {
 			setIsCreating(false);
+		}
+	};
+
+	const handleContinueToSession = () => {
+		if (sessionInfo) {
+			navigate(
+				`/view/${sessionInfo.sessionId}?accessId=${sessionInfo.accessId}`
+			);
 		}
 	};
 
@@ -179,6 +210,19 @@ export default function Create() {
 					</div>
 				</div>
 			</div>
+			{showAtisModal && sessionInfo && (
+				<AtisReminderModal
+					onContinue={handleContinueToSession}
+					atisText={atisText}
+					accessId={sessionInfo.accessId}
+					userId={user?.userId || ''}
+					sessionId={sessionInfo.sessionId}
+					airportIcao={selectedAirport}
+					airportName={selectedAirportName}
+					airportControlName={selectedAirportControlName}
+					airportAppFrequency={selectedAirportAppFrequency}
+				/>
+			)}
 		</div>
 	);
 }

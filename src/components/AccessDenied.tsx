@@ -1,5 +1,6 @@
 import Navbar from './Navbar';
 import { ArrowLeft } from 'lucide-react';
+import { FaDiscord } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 interface AccessDeniedProps {
@@ -81,17 +82,28 @@ export default function AccessDenied({
 					<p className="text-lg mb-8 text-gray-400">
 						{displayDescription}
 					</p>
+					{errorType == 'tester-required' && (
+						<Link
+							to="https://discord.gg/tN3K4Ek2dE"
+							className={`inline-flex items-center px-8 py-4 rounded-full ${
+								'bg-[#4f62a5] hover:bg-[#384366]'
+							} text-white text-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl`}
+						>
+							<FaDiscord className="mr-3 h-6 w-6 group-hover:-translate-x-1 transition-transform duration-300" />
+							Support Server
+						</Link>
+					)}
 					{errorType !== 'tester-required' && (
 						<Link
-							to="/"
+							to="https://discord.gg/tN3K4Ek2dE"
 							className={`inline-flex items-center px-8 py-4 rounded-full ${
 								errorType === 'invalid-session'
 									? 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800'
-									: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+									: 'bg-[#4f62a5] hover:bg-[#384366]'
 							} text-white text-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl`}
 						>
-							<ArrowLeft className="mr-3 h-6 w-6 group-hover:-translate-x-1 transition-transform duration-300" />
-							Go Home
+							<FaDiscord className="mr-3 h-6 w-6 group-hover:-translate-x-1 transition-transform duration-300" />
+							Support Server
 						</Link>
 					)}
 				</div>

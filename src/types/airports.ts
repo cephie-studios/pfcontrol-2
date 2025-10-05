@@ -16,6 +16,7 @@ export type ArrivalsMap = Record<string, string>;
 export interface Airport {
     icao: string;
     name: string;
+    controlName?: string;
     picture: string;
     allFrequencies: AirportFrequencies;
     sids: Sid[];
