@@ -1,7 +1,8 @@
 import express from 'express';
-import { createAuditLogger, logIPAccess } from '../../middleware/auditLogger.js';
+import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { getAllUsers, syncUserSessionCounts } from '../../db/admin.js';
 import { getUserById } from '../../db/users.js';
+import { logAdminAction } from '../../db/audit.js';
 
 const router = express.Router();
 
@@ -32,27 +33,19 @@ router.post('/:userId/reveal-ip', async (req, res) => {
         }
 
         if (req.user?.userId) {
-            try {
-                const auditData = {
-                    adminId: req.user.userId,
-                    adminUsername: req.user.username || 'Unknown',
-                    actionType: 'IP_ADDRESS_VIEWED',
-                    targetUserId: userId,
-                    targetUsername: user.username,
-                    ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
-                    userAgent: req.get('User-Agent'),
-                    details: {
-                        method: req.method,
-                        url: req.originalUrl,
-                        revealedIP: user.ipAddress,
-                        timestamp: new Date().toISOString()
-                    }
-                };
-
-                await logIPAccess(auditData);
-            } catch (auditError) {
-                console.error('Failed to log IP access audit:', auditError);
-            }
+            await logAdminAction({
+                adminId: req.user.userId,
+                adminUsername: req.user.username || 'Unknown',
+                actionType: 'IP_REVEALED',
+                targetUserId: userId,
+                targetUsername: user.username,
+                ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+                userAgent: req.get('User-Agent'),
+                details: {
+                    revealedIP: user.ipAddress,
+                    timestamp: new Date().toISOString()
+                }
+            });
         }
 
         res.json({

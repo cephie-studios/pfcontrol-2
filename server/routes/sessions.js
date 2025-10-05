@@ -158,12 +158,22 @@ router.post('/update-name', requireAuth, requireSessionOwnership, async (req, re
 });
 
 // POST: /api/sessions/delete - Delete session (POST for compatibility)
-router.post('/delete', requireAuth, requireSessionOwnership, async (req, res) => {
+router.post('/delete', requireAuth, async (req, res) => {
     try {
         const { sessionId } = req.body;
         if (!sessionId) {
             return res.status(400).json({ error: 'Session ID required' });
         }
+
+        const session = await getSessionById(sessionId);
+        if (!session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        if (session.created_by !== req.user.userId) {
+            return res.status(403).json({ error: 'You can only delete your own sessions' });
+        }
+
         const deleted = await deleteSession(sessionId);
         if (!deleted) {
             return res.status(404).json({ error: 'Session not found' });

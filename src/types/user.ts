@@ -5,8 +5,13 @@ export interface User {
     username: string;
     discriminator: string;
     avatar: string | null;
+    settings: Settings;
+    lastLogin: string;
+    totalSessionsCreated: number;
     isAdmin: boolean;
     isBanned: boolean;
-    isTester?: boolean;
-    settings: Settings;
+    isTester: boolean;
+    roleId?: number;
+    roleName?: string;
+    rolePermissions?: Record<string, boolean>;
 }

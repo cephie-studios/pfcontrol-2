@@ -131,6 +131,9 @@ router.get('/me', requireAuth, async (req, res) => {
             isAdmin: isAdmin(req.user.userId),
             isBanned: !!banRecord,
             isTester: await isTester(req.user.userId),
+            roleId: user.roleId,
+            roleName: user.roleName,
+            rolePermissions: user.rolePermissions,
         });
     } catch (error) {
         console.error('Error fetching user:', error);

@@ -46,6 +46,9 @@ export interface AdminUser {
     created_at: string;
     is_admin: boolean;
     settings?: Settings;
+    roleId?: number;
+    roleName?: string;
+    rolePermissions?: Record<string, boolean>;
 }
 
 export interface AdminUsersResponse {
@@ -159,6 +162,22 @@ export interface Notification {
     custom_color?: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface Role {
+    id: number;
+    name: string;
+    description: string;
+    permissions: Record<string, boolean>;
+    user_count?: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UserWithRole extends AdminUser {
+    role_id?: number;
+    role_name?: string;
+    role_permissions?: Record<string, boolean>;
 }
 
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
@@ -308,4 +327,54 @@ export async function deleteNotification(id: number): Promise<void> {
     await makeAdminRequest(`/notifications/${id}`, {
         method: 'DELETE',
     });
+}
+
+export async function fetchRoles(): Promise<Role[]> {
+    return makeAdminRequest('/roles');
+}
+
+export async function createRole(roleData: {
+    name: string;
+    description: string;
+    permissions: Record<string, boolean>;
+}): Promise<Role> {
+    return makeAdminRequest('/roles', {
+        method: 'POST',
+        body: JSON.stringify(roleData)
+    });
+}
+
+export async function updateRole(id: number, roleData: {
+    name?: string;
+    description?: string;
+    permissions?: Record<string, boolean>;
+}): Promise<Role> {
+    return makeAdminRequest(`/roles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(roleData)
+    });
+}
+
+export async function deleteRole(id: number): Promise<void> {
+    return makeAdminRequest(`/roles/${id}`, {
+        method: 'DELETE'
+    });
+}
+
+export async function assignRoleToUser(userId: string, roleId: number): Promise<void> {
+    return makeAdminRequest(`/roles/assign`, {
+        method: 'POST',
+        body: JSON.stringify({ userId, roleId })
+    });
+}
+
+export async function removeRoleFromUser(userId: string): Promise<void> {
+    return makeAdminRequest(`/roles/remove`, {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+    });
+}
+
+export async function fetchUsersWithRoles(): Promise<UserWithRole[]> {
+    return makeAdminRequest('/roles/users');
 }

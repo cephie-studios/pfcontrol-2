@@ -22,87 +22,131 @@ import AdminBan from './pages/admin/AdminBan';
 import AdminSessions from './pages/admin/AdminSessions';
 import AdminTesters from './pages/admin/AdminTesters';
 import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminRoles from './pages/admin/AdminRoles';
 
 export default function App() {
-	const { user } = useAuth();
+    const { user } = useAuth();
 
-	return (
-		<Router>
-			{user && user.isBanned ? (
-				<AccessDenied errorType="banned" />
-			) : (
-				<Routes>
-					<Route
-						path="/*"
-						element={
-							<ProtectedRoute>
-								<Routes>
-									<Route index element={<Home />} />
-									<Route
-										path="pfatc"
-										element={<PFATCFlights />}
-									/>
-									<Route path="create" element={<Create />} />
-									<Route
-										path="sessions"
-										element={<Sessions />}
-									/>
-									<Route
-										path="view/:sessionId"
-										element={<Flights />}
-									/>
-									<Route
-										path="settings"
-										element={<Settings />}
-									/>
-									<Route path="*" element={<NotFound />} />
-								</Routes>
-							</ProtectedRoute>
-						}
-					/>
+    return (
+        <Router>
+            {user && user.isBanned ? (
+                <AccessDenied errorType="banned" />
+            ) : (
+                <Routes>
+                    <Route
+                        path="/*"
+                        element={
+                            <ProtectedRoute>
+                                <Routes>
+                                    <Route index element={<Home />} />
+                                    <Route
+                                        path="pfatc"
+                                        element={<PFATCFlights />}
+                                    />
+                                    <Route path="create" element={<Create />} />
+                                    <Route
+                                        path="sessions"
+                                        element={<Sessions />}
+                                    />
+                                    <Route
+                                        path="view/:sessionId"
+                                        element={<Flights />}
+                                    />
+                                    <Route
+                                        path="settings"
+                                        element={<Settings />}
+                                    />
+                                    <Route path="*" element={<NotFound />} />
+                                </Routes>
+                            </ProtectedRoute>
+                        }
+                    />
 
-					<Route path="/submit/:sessionId" element={<Submit />} />
-					<Route path="/login" element={<Login />} />
+                    <Route path="/submit/:sessionId" element={<Submit />} />
+                    <Route path="/login" element={<Login />} />
 
-					<Route
-						path="/admin/*"
-						element={
-							<ProtectedRoute
-								requireAdmin={true}
-								requireTester={false}
-							>
-								<Routes>
-									<Route index element={<Admin />} />
-									<Route
-										path="users"
-										element={<AdminUsers />}
-									/>
-									<Route
-										path="audit"
-										element={<AdminAudit />}
-									/>
-									<Route path="bans" element={<AdminBan />} />
-									<Route
-										path="sessions"
-										element={<AdminSessions />}
-									/>
-									<Route
-										path="testers"
-										element={<AdminTesters />}
-									/>
-									<Route
-										path="notifications"
-										element={<AdminNotifications />}
-									/>
-									<Route path="*" element={<NotFound />} />
-								</Routes>
-							</ProtectedRoute>
-						}
-					/>
+                    <Route
+                        path="/admin/*"
+                        element={
+                            <ProtectedRoute
+                                requireAdmin={false}
+                                requireTester={false}
+                                requirePermission="admin"
+                            >
+                                <Routes>
+                                    <Route
+                                        index
+                                        element={
+                                            <ProtectedRoute requirePermission="admin">
+                                                <Admin />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="users"
+                                        element={
+                                            <ProtectedRoute requirePermission="users">
+                                                <AdminUsers />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="audit"
+                                        element={
+                                            <ProtectedRoute requirePermission="audit">
+                                                <AdminAudit />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="bans"
+                                        element={
+                                            <ProtectedRoute requirePermission="bans">
+                                                <AdminBan />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="sessions"
+                                        element={
+                                            <ProtectedRoute requirePermission="sessions">
+                                                <AdminSessions />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="testers"
+                                        element={
+                                            <ProtectedRoute requirePermission="testers">
+                                                <AdminTesters />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="notifications"
+                                        element={
+                                            <ProtectedRoute requirePermission="notifications">
+                                                <AdminNotifications />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="roles"
+                                        element={
+                                            <ProtectedRoute requirePermission="roles">
+                                                <AdminRoles />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route path="*" element={<NotFound />} />
+                                </Routes>
+                            </ProtectedRoute>
+                        }
+                    />
 
-					<Route path="*" element={<NotFound />} />
-				</Routes>
-			)}
-		</Router>
-	);
+                    <Route path="*" element={<NotFound />} />
+                </Routes>
+            )}
+        </Router>
+    );
 }

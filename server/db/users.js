@@ -172,7 +172,12 @@ export async function createOrUpdateUser(userData) {
 
 export async function getUserById(id) {
     try {
-        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        const result = await pool.query(`
+            SELECT u.*, r.name as role_name, r.permissions as role_permissions
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            WHERE u.id = $1
+        `, [id]);
 
         if (result.rows.length === 0) {
             return null;
@@ -203,7 +208,10 @@ export async function getUserById(id) {
             totalSessionsCreated: user.total_sessions_created,
             totalMinutes: user.total_minutes,
             createdAt: user.created_at,
-            updatedAt: user.updated_at
+            updatedAt: user.updated_at,
+            roleId: user.role_id,
+            roleName: user.role_name,
+            rolePermissions: user.role_permissions ? JSON.parse(user.role_permissions) : null
         };
     } catch (error) {
         console.error('Error fetching user:', error);

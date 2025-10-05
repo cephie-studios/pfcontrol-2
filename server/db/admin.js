@@ -140,27 +140,24 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
     try {
         const offset = (page - 1) * limit;
 
-        // Build WHERE clause based on filters
         let whereConditions = [];
         let queryParams = [];
         let paramIndex = 1;
 
-        // Search filter (username or ID)
         if (search && search.trim()) {
-            whereConditions.push(`(username ILIKE $${paramIndex} OR id = $${paramIndex + 1})`);
+            whereConditions.push(`(u.username ILIKE $${paramIndex} OR u.id = $${paramIndex + 1})`);
             queryParams.push(`%${search.trim()}%`, search.trim());
             paramIndex += 2;
         }
 
-        // Admin filter (at database level using admin IDs)
         if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
             const adminIds = getAdminIds();
             if (adminIds.length > 0) {
                 const placeholders = adminIds.map((_, i) => `$${paramIndex + i}`).join(', ');
                 if (filterAdmin === 'admin') {
-                    whereConditions.push(`id IN (${placeholders})`);
+                    whereConditions.push(`u.id IN (${placeholders})`);
                 } else {
-                    whereConditions.push(`id NOT IN (${placeholders})`);
+                    whereConditions.push(`u.id NOT IN (${placeholders})`);
                 }
                 queryParams.push(...adminIds);
                 paramIndex += adminIds.length;
@@ -178,18 +175,20 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
 
         const result = await pool.query(`
             SELECT
-                id, username, discriminator, avatar, last_login,
-                ip_address, is_vpn, total_sessions_created,
-                total_minutes, created_at, settings
-            FROM users
+                u.id, u.username, u.discriminator, u.avatar, u.last_login,
+                u.ip_address, u.is_vpn, u.total_sessions_created,
+                u.total_minutes, u.created_at, u.settings,
+                u.role_id, r.name as role_name, r.permissions as role_permissions
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
             ${whereClause}
-            ORDER BY last_login DESC NULLS LAST
+            ORDER BY u.last_login DESC NULLS LAST
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `, [...queryParams, limit, offset]);
 
         const countQuery = whereConditions.length > 0
-            ? `SELECT COUNT(*) FROM users ${whereClause}`
-            : 'SELECT COUNT(*) FROM users';
+            ? `SELECT COUNT(*) FROM users u ${whereClause}`
+            : 'SELECT COUNT(*) FROM users u';
 
         const countResult = await pool.query(
             countQuery,
@@ -197,7 +196,6 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         );
         const totalUsers = parseInt(countResult.rows[0].count);
 
-        // Add is_admin field and decrypt settings for each user
         const usersWithAdminStatus = result.rows.map(user => {
             let decryptedSettings = null;
             try {
@@ -208,10 +206,27 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
                 console.warn(`Failed to decrypt settings for user ${user.id}`);
             }
 
+            let rolePermissions = null;
+            try {
+                if (user.role_permissions) {
+                    if (typeof user.role_permissions === 'string') {
+                        rolePermissions = JSON.parse(user.role_permissions);
+                    } else if (typeof user.role_permissions === 'object') {
+                        rolePermissions = user.role_permissions;
+                    }
+                }
+            } catch (error) {
+                console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
+                rolePermissions = null;
+            }
+
             return {
                 ...user,
                 is_admin: isAdmin(user.id),
-                settings: decryptedSettings
+                settings: decryptedSettings,
+                roleId: user.role_id,
+                roleName: user.role_name,
+                rolePermissions: rolePermissions
             };
         });
 

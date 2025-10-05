@@ -5,87 +5,102 @@ import { getTesterSettings } from '../utils/fetch/data';
 import AccessDenied from './AccessDenied';
 
 interface ProtectedRouteProps {
-	children: React.ReactNode;
-	requireAdmin?: boolean;
-	requireTester?: boolean;
-	requireAuth?: boolean;
-	accessDeniedMessage?: string;
+    children: React.ReactNode;
+    requireAdmin?: boolean;
+    requireTester?: boolean;
+    requireAuth?: boolean;
+    requirePermission?: string;
+    accessDeniedMessage?: string;
 }
 
 export default function ProtectedRoute({
-	children,
-	requireAdmin = false,
-	requireTester = true,
-	requireAuth = true
+    children,
+    requireAdmin = false,
+    requireTester = true,
+    requireAuth = true,
+    requirePermission,
 }: ProtectedRouteProps) {
-	const { user, isLoading } = useAuth();
-	const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
-		null
-	);
+    const { user, isLoading } = useAuth();
+    const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
+        null
+    );
 
-	useEffect(() => {
-		if (!requireTester || (user && user.isAdmin)) {
-			setTesterGateEnabled(false);
-			return;
-		}
+    useEffect(() => {
+        if (!requireTester || (user && user.isAdmin)) {
+            setTesterGateEnabled(false);
+            return;
+        }
 
-		const checkGateStatus = async () => {
-			try {
-				const settings = await getTesterSettings();
+        const checkGateStatus = async () => {
+            try {
+                const settings = await getTesterSettings();
 
-				if (
-					settings &&
-					typeof settings.tester_gate_enabled === 'boolean'
-				) {
-					setTesterGateEnabled(settings.tester_gate_enabled);
-				} else {
-					console.error(
-						'Failed to fetch tester settings or invalid response:',
-						settings
-					);
-					setTesterGateEnabled(true);
-				}
-			} catch (error) {
-				console.error('Error fetching tester settings:', error);
-				setTesterGateEnabled(true);
-			}
-		};
+                if (
+                    settings &&
+                    typeof settings.tester_gate_enabled === 'boolean'
+                ) {
+                    setTesterGateEnabled(settings.tester_gate_enabled);
+                } else {
+                    console.error(
+                        'Failed to fetch tester settings or invalid response:',
+                        settings
+                    );
+                    setTesterGateEnabled(true);
+                }
+            } catch (error) {
+                console.error('Error fetching tester settings:', error);
+                setTesterGateEnabled(true);
+            }
+        };
 
-		checkGateStatus();
-	}, [requireTester, user]);
+        checkGateStatus();
+    }, [requireTester, user]);
 
-	if (isLoading || (requireTester && testerGateEnabled === null)) {
-		return null;
-	}
+    if (isLoading || (requireTester && testerGateEnabled === null)) {
+        return null;
+    }
 
-	if (requireAuth && !user) {
-		return <Navigate to="/login" replace />;
-	}
-	if (user && user.isBanned) {
-		return <AccessDenied errorType="banned" />;
-	}
-	if (requireAdmin && user && !user.isAdmin) {
-		return <AccessDenied message="Administrator Access Required" />;
-	}
-	if (
-		requireTester &&
-		testerGateEnabled &&
-		user &&
-		!user.isAdmin &&
-		!user.isTester
-	) {
-		return (
-			<AccessDenied
-				message="Tester Access Required"
-				description="This application is currently in testing. Please contact an administrator if you believe you should have access."
-				errorType="tester-required"
-			/>
-		);
-	}
+    if (requireAuth && !user) {
+        return <Navigate to="/login" replace />;
+    }
+    if (user && user.isBanned) {
+        return <AccessDenied errorType="banned" />;
+    }
+    if (requireAdmin && user && !user.isAdmin) {
+        return <AccessDenied message="Administrator Access Required" />;
+    }
 
-	if (!requireAuth && requireTester && testerGateEnabled && !user) {
-		return <Navigate to="/login" replace />;
-	}
+    if (requirePermission && user && !user.isAdmin) {
+        const hasPermission =
+            user.rolePermissions && user.rolePermissions[requirePermission];
+        if (!hasPermission) {
+            return (
+                <AccessDenied
+                    message="Insufficient Permissions"
+                    description={`You need '${requirePermission}' permission to access this page.`}
+                />
+            );
+        }
+    }
+    if (
+        requireTester &&
+        testerGateEnabled &&
+        user &&
+        !user.isAdmin &&
+        !user.isTester
+    ) {
+        return (
+            <AccessDenied
+                message="Tester Access Required"
+                description="This application is currently in testing. Please contact an administrator if you believe you should have access."
+                errorType="tester-required"
+            />
+        );
+    }
 
-	return <>{children}</>;
+    if (!requireAuth && requireTester && testerGateEnabled && !user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <>{children}</>;
 }
