@@ -109,8 +109,9 @@ export async function getAuditLogs(page = 1, limit = 50, filters = {}) {
         let paramCount = 1;
 
         if (filters.adminId) {
-            conditions.push(`admin_id = $${paramCount++}`);
-            values.push(filters.adminId);
+            conditions.push(`(admin_id ILIKE $${paramCount} OR admin_username ILIKE $${paramCount})`);
+            values.push(`%${filters.adminId}%`);
+            paramCount++;
         }
 
         if (filters.actionType) {
@@ -119,8 +120,9 @@ export async function getAuditLogs(page = 1, limit = 50, filters = {}) {
         }
 
         if (filters.targetUserId) {
-            conditions.push(`target_user_id = $${paramCount++}`);
-            values.push(filters.targetUserId);
+            conditions.push(`(target_user_id ILIKE $${paramCount} OR target_username ILIKE $${paramCount})`);
+            values.push(`%${filters.targetUserId}%`);
+            paramCount++;
         }
 
         if (filters.dateFrom) {
@@ -172,6 +174,31 @@ export async function getAuditLogs(page = 1, limit = 50, filters = {}) {
     } catch (error) {
         console.error('Error fetching audit logs:', error);
         console.error('Error stack:', error.stack);
+        throw error;
+    }
+}
+
+export async function getAuditLogById(logId) {
+    try {
+        const result = await pool.query(`
+            SELECT
+                id, admin_id, admin_username, action_type, target_user_id,
+                target_username, details, ip_address, user_agent, timestamp
+            FROM audit_log
+            WHERE id = $1
+        `, [logId]);
+
+        if (result.rows.length === 0) {
+            return null;
+        }
+
+        const log = result.rows[0];
+        return {
+            ...log,
+            details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+        };
+    } catch (error) {
+        console.error('Error fetching audit log by ID:', error);
         throw error;
     }
 }

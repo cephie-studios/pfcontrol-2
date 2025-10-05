@@ -2,8 +2,9 @@ import pool from './connections/connection.js';
 import flightsPool from './connections/flightsConnection.js';
 import { getAllSessions } from './sessions.js';
 import { cleanupOldStatistics } from './statistics.js';
-import { isAdmin } from '../middleware/isAdmin.js';
+import { isAdmin, getAdminIds } from '../middleware/isAdmin.js';
 import { decrypt } from '../tools/encryption.js';
+import { getActiveUsers } from '../websockets/sessionUsersWebsocket.js';
 
 export async function getDailyStatistics(days = 30) {
     try {
@@ -132,9 +133,46 @@ async function backfillStatistics() {
     }
 }
 
-export async function getAllUsers(page = 1, limit = 50) {
+export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin = 'all') {
     try {
         const offset = (page - 1) * limit;
+
+        // Build WHERE clause based on filters
+        let whereConditions = [];
+        let queryParams = [];
+        let paramIndex = 1;
+
+        // Search filter (username or ID)
+        if (search && search.trim()) {
+            whereConditions.push(`(username ILIKE $${paramIndex} OR id = $${paramIndex + 1})`);
+            queryParams.push(`%${search.trim()}%`, search.trim());
+            paramIndex += 2;
+        }
+
+        // Admin filter (at database level using admin IDs)
+        if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
+            const adminIds = getAdminIds();
+            if (adminIds.length > 0) {
+                const placeholders = adminIds.map((_, i) => `$${paramIndex + i}`).join(', ');
+                if (filterAdmin === 'admin') {
+                    whereConditions.push(`id IN (${placeholders})`);
+                } else {
+                    whereConditions.push(`id NOT IN (${placeholders})`);
+                }
+                queryParams.push(...adminIds);
+                paramIndex += adminIds.length;
+            } else if (filterAdmin === 'admin') {
+                // No admins defined, return empty result
+                return {
+                    users: [],
+                    pagination: { page, limit, total: 0, pages: 0 }
+                };
+            }
+        }
+
+        const whereClause = whereConditions.length > 0
+            ? `WHERE ${whereConditions.join(' AND ')}`
+            : '';
 
         const result = await pool.query(`
             SELECT
@@ -142,11 +180,19 @@ export async function getAllUsers(page = 1, limit = 50) {
                 ip_address, is_vpn, total_sessions_created,
                 total_minutes, created_at, settings
             FROM users
+            ${whereClause}
             ORDER BY created_at DESC
-            LIMIT $1 OFFSET $2
-        `, [limit, offset]);
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `, [...queryParams, limit, offset]);
 
-        const countResult = await pool.query('SELECT COUNT(*) FROM users');
+        const countQuery = whereConditions.length > 0
+            ? `SELECT COUNT(*) FROM users ${whereClause}`
+            : 'SELECT COUNT(*) FROM users';
+
+        const countResult = await pool.query(
+            countQuery,
+            whereConditions.length > 0 ? queryParams : []
+        );
         const totalUsers = parseInt(countResult.rows[0].count);
 
         // Add is_admin field and decrypt settings for each user
@@ -213,22 +259,46 @@ export async function getSystemInfo() {
 
 export async function getAdminSessions() {
     try {
-        const sessions = await getAllSessions();
+        const sessionsResult = await pool.query(`
+            SELECT
+                s.session_id,
+                s.access_id,
+                s.airport_icao,
+                s.active_runway,
+                (s.created_at AT TIME ZONE 'UTC') as created_at,
+                s.created_by,
+                s.is_pfatc,
+                u.username,
+                u.discriminator,
+                u.avatar
+            FROM sessions s
+            LEFT JOIN users u ON s.created_by = u.id
+            ORDER BY s.created_at DESC
+        `);
+
+        const activeUsers = getActiveUsers();
+        console.log('Active users map:', activeUsers);
 
         const sessionsWithFlights = await Promise.all(
-            sessions.map(async (session) => {
+            sessionsResult.rows.map(async (session) => {
                 try {
                     const flightResult = await flightsPool.query(
                         `SELECT COUNT(*) FROM flights_${session.session_id}`
                     );
+                    const activeSessionUsers = activeUsers.get(session.session_id) || [];
                     return {
                         ...session,
-                        flight_count: parseInt(flightResult.rows[0].count, 10)
+                        flight_count: parseInt(flightResult.rows[0].count, 10),
+                        active_users: activeSessionUsers,
+                        active_user_count: activeSessionUsers.length
                     };
                 } catch (error) {
+                    const activeSessionUsers = activeUsers.get(session.session_id) || [];
                     return {
                         ...session,
-                        flight_count: 0
+                        flight_count: 0,
+                        active_users: activeSessionUsers,
+                        active_user_count: activeSessionUsers.length
                     };
                 }
             })
@@ -237,6 +307,38 @@ export async function getAdminSessions() {
         return sessionsWithFlights;
     } catch (error) {
         console.error('Error fetching admin sessions:', error);
+        throw error;
+    }
+}
+
+export async function syncUserSessionCounts() {
+    try {
+        // Get all sessions grouped by user
+        const result = await pool.query(`
+            SELECT created_by, COUNT(*) as session_count
+            FROM sessions
+            GROUP BY created_by
+        `);
+
+        // Update each user's total_sessions_created
+        for (const row of result.rows) {
+            await pool.query(`
+                UPDATE users
+                SET total_sessions_created = $2
+                WHERE id = $1
+            `, [row.created_by, parseInt(row.session_count, 10)]);
+        }
+
+        // Set total_sessions_created to 0 for users with no sessions
+        await pool.query(`
+            UPDATE users
+            SET total_sessions_created = 0
+            WHERE id NOT IN (SELECT DISTINCT created_by FROM sessions)
+        `);
+
+        return { message: 'Session counts synced successfully', updatedUsers: result.rows.length };
+    } catch (error) {
+        console.error('Error syncing user session counts:', error);
         throw error;
     }
 }

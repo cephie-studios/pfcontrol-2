@@ -169,6 +169,17 @@ export function setupSessionUsersWebsocket(httpServer) {
             removeFieldEditingState(sessionId, user.userId, flightId, fieldName);
         });
 
+        socket.on('positionChange', ({ position }) => {
+            const users = activeUsers.get(sessionId);
+            if (users) {
+                const userIndex = users.findIndex(u => u.id === user.userId);
+                if (userIndex !== -1) {
+                    users[userIndex].position = position;
+                    io.to(sessionId).emit('sessionUsersUpdate', users);
+                }
+            }
+        });
+
         socket.on('disconnect', () => {
             const users = activeUsers.get(sessionId);
             if (users) {
@@ -207,6 +218,10 @@ export function setupSessionUsersWebsocket(httpServer) {
     io.activeUsers = activeUsers;
 
     return io;
+}
+
+export function getActiveUsers() {
+    return activeUsers;
 }
 
 async function generateAutoATIS(sessionId, config, io) {

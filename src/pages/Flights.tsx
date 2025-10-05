@@ -306,7 +306,8 @@ export default function Flights() {
 			() => {},
 			handleMentionReceived,
 			(editingStates: FieldEditingState[]) =>
-				setFieldEditingStates(editingStates)
+				setFieldEditingStates(editingStates),
+			position
 		);
 
 		setSessionUsersSocket(socket);
@@ -322,6 +323,13 @@ export default function Flights() {
 			}
 		};
 	}, [sessionId, accessId, user]);
+
+	// Update position without reconnecting socket
+	useEffect(() => {
+		if (sessionUsersSocket && sessionUsersSocket.emitPositionChange) {
+			sessionUsersSocket.emitPositionChange(position);
+		}
+	}, [position, sessionUsersSocket]);
 
 	const handleFlightUpdate = (
 		flightId: string | number,

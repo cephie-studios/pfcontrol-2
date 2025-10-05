@@ -19,6 +19,7 @@ import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAudit from './pages/admin/AdminAudit';
 import AdminBan from './pages/admin/AdminBan';
+import AdminSessions from './pages/admin/AdminSessions';
 import Loader from './components/common/Loader';
 
 export default function App() {
@@ -104,6 +105,14 @@ export default function App() {
 						element={
 							<ProtectedRoute requireAdmin={true}>
 								<AdminBan />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/admin/sessions"
+						element={
+							<ProtectedRoute requireAdmin={true}>
+								<AdminSessions />
 							</ProtectedRoute>
 						}
 					/>

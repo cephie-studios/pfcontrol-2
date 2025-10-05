@@ -47,6 +47,14 @@ export interface AdminUsersResponse {
     };
 }
 
+export interface SessionUser {
+    id: string;
+    username: string;
+    avatar: string | null;
+    joinedAt: number;
+    position: string;
+}
+
 export interface AdminSession {
     session_id: string;
     access_id: string;
@@ -56,6 +64,11 @@ export interface AdminSession {
     created_by: string;
     is_pfatc: boolean;
     flight_count: number;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+    active_users?: SessionUser[];
+    active_user_count?: number;
 }
 
 export interface SystemInfo {
@@ -154,8 +167,19 @@ export async function fetchAdminStatistics(days: number = 30): Promise<AdminStat
     return makeAdminRequest(`/statistics?days=${days}`);
 }
 
-export async function fetchAdminUsers(page: number = 1, limit: number = 50): Promise<AdminUsersResponse> {
-    return makeAdminRequest(`/users?page=${page}&limit=${limit}`);
+export async function fetchAdminUsers(
+    page: number = 1,
+    limit: number = 50,
+    search: string = '',
+    filterAdmin: string = 'all'
+): Promise<AdminUsersResponse> {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(search && { search }),
+        filterAdmin
+    });
+    return makeAdminRequest(`/users?${params.toString()}`);
 }
 
 export async function fetchAdminSessions(): Promise<AdminSession[]> {
@@ -168,6 +192,12 @@ export async function fetchSystemInfo(): Promise<SystemInfo> {
 
 export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
     return makeAdminRequest(`/users/${userId}/reveal-ip`, {
+        method: 'POST'
+    });
+}
+
+export async function revealAuditLogIP(logId: number): Promise<{ logId: number; ip_address: string }> {
+    return makeAdminRequest(`/audit-logs/${logId}/reveal-ip`, {
         method: 'POST'
     });
 }
@@ -218,4 +248,16 @@ export async function fetchAuditLogs(
     }
 
     return response.json();
+}
+
+export async function deleteAdminSession(sessionId: string): Promise<{ message: string; sessionId: string }> {
+    return makeAdminRequest(`/sessions/${sessionId}`, {
+        method: 'DELETE'
+    });
+}
+
+export async function logSessionJoin(sessionId: string): Promise<{ message: string; sessionId: string }> {
+    return makeAdminRequest(`/sessions/${sessionId}/join`, {
+        method: 'POST'
+    });
 }
