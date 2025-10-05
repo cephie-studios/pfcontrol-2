@@ -59,9 +59,17 @@ export default function Create() {
 				departing_runways: [selectedRunway]
 			});
 
-			setSessionInfo(newSession);
-			setAtisText(atisResponse.atisText);
-			setShowAtisModal(true);
+			// Only show ATIS modal if PFATC Network checkbox is selected
+			if (isPFATCNetwork) {
+				setSessionInfo(newSession);
+				setAtisText(atisResponse.atisText);
+				setShowAtisModal(true);
+			} else {
+				// Go directly to session if not PFATC
+				navigate(
+					`/view/${newSession.sessionId}?accessId=${newSession.accessId}`
+				);
+			}
 		} catch {
 			console.error('Error creating session:');
 			setError('Failed to create session');
