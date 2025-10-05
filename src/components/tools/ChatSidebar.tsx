@@ -104,7 +104,7 @@ export default function ChatSidebar({
 				socketRef.current = null;
 			}
 		};
-	}, [sessionId, accessId, open, user, onMentionReceived]);
+	}, [sessionId, accessId, open, user]);
 
 	useEffect(() => {
 		if (messagesEndRef.current) {
@@ -305,8 +305,8 @@ export default function ChatSidebar({
 										className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow relative ${
 											isOwn
 												? 'bg-blue-800 text-white ml-auto max-w-xs'
-												: 'bg-zinc-800 text-white'
-										}`}
+												: 'bg-zinc-800 text-white max-w-xs'
+										} break-words overflow-wrap-anywhere`}
 										style={
 											isOwn
 												? {
@@ -326,6 +326,7 @@ export default function ChatSidebar({
 										}
 									>
 										<div
+											className="break-words whitespace-pre-wrap"
 											dangerouslySetInnerHTML={{
 												__html: renderMessage(
 													msg.message
