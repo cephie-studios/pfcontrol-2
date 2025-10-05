@@ -450,7 +450,7 @@ export default function AdminUsers() {
 												Sessions
 											</th>
 											<th className="px-6 py-4 text-left text-zinc-400 font-medium">
-												Admin
+												Role
 											</th>
 											<th className="px-6 py-4 text-left text-zinc-400 font-medium">
 												Actions
@@ -478,9 +478,14 @@ export default function AdminUsers() {
 																<Users className="w-4 h-4 text-zinc-400" />
 															</div>
 														)}
-														<span className="text-white font-medium">
-															{user.username}
-														</span>
+														<div className="flex flex-col">
+															<span className="text-white font-medium">
+																{user.username}
+															</span>
+															<span className="text-zinc-400 text-xs">
+																{user.id}
+															</span>
+														</div>
 													</div>
 												</td>
 												<td className="px-6 py-4 text-zinc-300">
