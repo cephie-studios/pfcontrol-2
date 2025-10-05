@@ -216,7 +216,7 @@ export default function Footer() {
 						</p>
 					</div>
 					<div className="flex items-center space-x-2 text-gray-500 text-sm">
-						<span>Version 2.0.0.0</span>
+						<span>Version 2.0.0.1</span>
 					</div>
 				</div>
 			</div>
