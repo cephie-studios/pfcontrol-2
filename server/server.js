@@ -19,6 +19,7 @@ const cors_origin = process.env.NODE_ENV === 'production'
     : ['http://localhost:9901', 'http://localhost:5173', 'https://control.pfconnect.online'];
 dotenv.config({ path: envFile });
 console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DISCORD_REDIRECT_URI:', process.env.DISCORD_REDIRECT_URI);
 
 const requiredEnv = [
     'DISCORD_CLIENT_ID',
