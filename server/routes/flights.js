@@ -18,7 +18,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post('/:sessionId', requireAuth, async (req, res) => {
+router.post('/:sessionId', async (req, res) => {
     try {
         const flightData = {
             ...req.body,
