@@ -20,6 +20,21 @@ const cors_origin = process.env.NODE_ENV === 'production'
 dotenv.config({ path: envFile });
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
+const requiredEnv = [
+    'DISCORD_CLIENT_ID',
+    'DISCORD_CLIENT_SECRET',
+    'DISCORD_REDIRECT_URI',
+    'FRONTEND_URL',
+    'JWT_SECRET',
+    'POSTGRES_DB_URL',
+    'PORT'
+];
+const missingEnv = requiredEnv.filter((key) => !process.env[key] || process.env[key] === '');
+if (missingEnv.length > 0) {
+    console.error('Missing required environment variables:', missingEnv.join(', '));
+    process.exit(1);
+}
+
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'production' ? 9900 : 9901);
 if (!PORT || PORT === '' || PORT == undefined) {
     console.error('PORT is not defined');
