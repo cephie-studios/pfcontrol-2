@@ -13,8 +13,8 @@ import { useSettings } from '../hooks/settings/useSettings';
 import type { Flight } from '../types/flight';
 import type { Position } from '../types/session';
 import type {
-	ArrivalsTableColumnSettings,
-	DepartureTableColumnSettings
+    ArrivalsTableColumnSettings,
+    DepartureTableColumnSettings,
 } from '../types/settings';
 import type { FieldEditingState } from '../sockets/sessionUsersSocket';
 import Navbar from '../components/Navbar';
@@ -27,693 +27,705 @@ import AccessDenied from '../components/AccessDenied';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 interface SessionData {
-	sessionId: string;
-	airportIcao: string;
-	activeRunway?: string;
-	atis?: unknown;
-	isPFATC: boolean;
+    sessionId: string;
+    airportIcao: string;
+    activeRunway?: string;
+    atis?: unknown;
+    isPFATC: boolean;
 }
 
 interface AvailableImage {
-	filename: string;
-	path: string;
-	extension: string;
+    filename: string;
+    path: string;
+    extension: string;
 }
 
 export default function Flights() {
-	const { sessionId } = useParams<{ sessionId?: string }>();
-	const [searchParams] = useSearchParams();
-	const accessId = searchParams.get('accessId') ?? undefined;
-	const isMobile = useMediaQuery({ maxWidth: 1000 });
+    const { sessionId } = useParams<{ sessionId?: string }>();
+    const [searchParams] = useSearchParams();
+    const accessId = searchParams.get('accessId') ?? undefined;
+    const isMobile = useMediaQuery({ maxWidth: 1000 });
 
-	const [accessError, setAccessError] = useState<string | null>(null);
-	const [validatingAccess, setValidatingAccess] = useState(true);
-	const [session, setSession] = useState<SessionData | null>(null);
-	const [flights, setFlights] = useState<Flight[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-	const [flightsSocket, setFlightsSocket] = useState<ReturnType<
-		typeof createFlightsSocket
-	> | null>(null);
-	const [arrivalsSocket, setArrivalsSocket] = useState<ReturnType<
-		typeof createArrivalsSocket
-	> | null>(null);
-	const [lastSessionId, setLastSessionId] = useState<string | null>(null);
-	const [availableImages, setAvailableImages] = useState<AvailableImage[]>(
-		[]
-	);
-	const [startupSoundPlayed, setStartupSoundPlayed] = useState(false);
-	const { user } = useAuth();
-	const { settings } = useSettings();
-	const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
-		'departures'
-	);
-	const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
-	const [localHiddenFlights, setLocalHiddenFlights] = useState<
-		Set<string | number>
-	>(new Set());
-	const [position, setPosition] = useState<Position>('ALL');
-	const [fieldEditingStates, setFieldEditingStates] = useState<
-		FieldEditingState[]
-	>([]);
-	const [sessionUsersSocket, setSessionUsersSocket] = useState<ReturnType<
-		typeof createSessionUsersSocket
-	> | null>(null);
+    const [accessError, setAccessError] = useState<string | null>(null);
+    const [validatingAccess, setValidatingAccess] = useState(true);
+    const [session, setSession] = useState<SessionData | null>(null);
+    const [flights, setFlights] = useState<Flight[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const [flightsSocket, setFlightsSocket] = useState<ReturnType<
+        typeof createFlightsSocket
+    > | null>(null);
+    const [arrivalsSocket, setArrivalsSocket] = useState<ReturnType<
+        typeof createArrivalsSocket
+    > | null>(null);
+    const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+    const [availableImages, setAvailableImages] = useState<AvailableImage[]>(
+        []
+    );
+    const [startupSoundPlayed, setStartupSoundPlayed] = useState(false);
+    const { user } = useAuth();
+    const { settings } = useSettings();
+    const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
+        'departures'
+    );
+    const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
+    const [localHiddenFlights, setLocalHiddenFlights] = useState<
+        Set<string | number>
+    >(new Set());
+    const [position, setPosition] = useState<Position>('ALL');
+    const [fieldEditingStates, setFieldEditingStates] = useState<
+        FieldEditingState[]
+    >([]);
+    const [sessionUsersSocket, setSessionUsersSocket] = useState<ReturnType<
+        typeof createSessionUsersSocket
+    > | null>(null);
 
-	const handleMentionReceived = () => {
-		if (user) {
-			playSoundWithSettings(
-				'chatNotificationSound',
-				user.settings,
-				0.7
-			).catch((error) => {
-				console.warn('Failed to play chat notification sound:', error);
-			});
-		}
-	};
+    const handleMentionReceived = () => {
+        if (user) {
+            playSoundWithSettings(
+                'chatNotificationSound',
+                user.settings,
+                0.7
+            ).catch((error) => {
+                console.warn('Failed to play chat notification sound:', error);
+            });
+        }
+    };
 
-	type AtisData = {
-		letter?: string;
-		updatedBy?: string;
-		isAutoGenerated?: boolean;
-	};
+    type AtisData = {
+        letter?: string;
+        updatedBy?: string;
+        isAutoGenerated?: boolean;
+    };
 
-	const handleAtisUpdateFromSocket = (data: {
-		atis?: AtisData;
-		updatedBy?: string;
-		isAutoGenerated?: boolean;
-	}) => {
-		if (data.atis?.letter) {
-			console.log('ATIS updated:', data);
-		}
-	};
+    const handleAtisUpdateFromSocket = (data: {
+        atis?: AtisData;
+        updatedBy?: string;
+        isAutoGenerated?: boolean;
+    }) => {
+        if (data.atis?.letter) {
+            console.log('ATIS updated:', data);
+        }
+    };
 
-	useEffect(() => {
-		const loadImages = async () => {
-			try {
-				const data = await fetchBackgrounds();
-				setAvailableImages(data);
-			} catch (error) {
-				console.error('Error loading available images:', error);
-			}
-		};
-		loadImages();
-	}, []);
+    useEffect(() => {
+        const loadImages = async () => {
+            try {
+                const data = await fetchBackgrounds();
+                setAvailableImages(data);
+            } catch (error) {
+                console.error('Error loading available images:', error);
+            }
+        };
+        loadImages();
+    }, []);
 
-	useEffect(() => {
-		if (!sessionId) {
-			setAccessError('Session ID is required');
-			setValidatingAccess(false);
-			return;
-		}
+    useEffect(() => {
+        if (!sessionId) {
+            setAccessError('Session ID is required');
+            setValidatingAccess(false);
+            return;
+        }
 
-		if (!accessId) {
-			setAccessError(
-				'Access ID is required. Please use a valid session link.'
-			);
-			setValidatingAccess(false);
-			return;
-		}
+        if (!accessId) {
+            setAccessError(
+                'Access ID is required. Please use a valid session link.'
+            );
+            setValidatingAccess(false);
+            return;
+        }
 
-		setValidatingAccess(false);
-		setAccessError(null);
-	}, [sessionId, accessId]);
+        setValidatingAccess(false);
+        setAccessError(null);
+    }, [sessionId, accessId]);
 
-	useEffect(() => {
-		if (
-			!sessionId ||
-			sessionId === lastSessionId ||
-			initialLoadComplete ||
-			accessError
-		)
-			return;
+    useEffect(() => {
+        if (
+            !sessionId ||
+            sessionId === lastSessionId ||
+            initialLoadComplete ||
+            accessError
+        )
+            return;
 
-		setLoading(true);
-		setLastSessionId(sessionId);
+        setLoading(true);
+        setLastSessionId(sessionId);
 
-		Promise.all([
-			fetchSession(sessionId, accessId ?? '').catch((error) => {
-				console.error('Error fetching session:', error);
-				if (
-					error.message?.includes('403') ||
-					error.message?.includes('Invalid session access')
-				) {
-					setAccessError('Invalid access link or session expired');
-				} else if (
-					error.message?.includes('404') ||
-					error.message?.includes('not found')
-				) {
-					setAccessError('Session not found');
-				} else {
-					setAccessError('Unable to access session');
-				}
-				return null;
-			}),
-			fetchFlights(sessionId).catch((error) => {
-				console.error('Error fetching flights:', error);
-				return [];
-			})
-		])
-			.then(([sessionData, flightsData]) => {
-				if (sessionData) {
-					setSession(sessionData);
-				}
-				setFlights(flightsData);
-				setInitialLoadComplete(true);
-				if (!startupSoundPlayed && user && settings) {
-					playSoundWithSettings('startupSound', settings, 0.7).catch(
-						(error) => {
-							console.warn(
-								'Failed to play session startup sound:',
-								error
-							);
-						}
-					);
-					setStartupSoundPlayed(true);
-				}
-			})
-			.finally(() => {
-				setLoading(false);
-			});
-	}, [
-		sessionId,
-		accessId,
-		lastSessionId,
-		initialLoadComplete,
-		startupSoundPlayed,
-		user,
-		settings,
-		accessError
-	]);
+        Promise.all([
+            fetchSession(sessionId, accessId ?? '').catch((error) => {
+                console.error('Error fetching session:', error);
+                if (
+                    error.message?.includes('403') ||
+                    error.message?.includes('Invalid session access')
+                ) {
+                    setAccessError('Invalid access link or session expired');
+                } else if (
+                    error.message?.includes('404') ||
+                    error.message?.includes('not found')
+                ) {
+                    setAccessError('Session not found');
+                } else {
+                    setAccessError('Unable to access session');
+                }
+                return null;
+            }),
+            fetchFlights(sessionId).catch((error) => {
+                console.error('Error fetching flights:', error);
+                return [];
+            }),
+        ])
+            .then(([sessionData, flightsData]) => {
+                if (sessionData) {
+                    setSession(sessionData);
+                }
+                setFlights(flightsData);
+                setInitialLoadComplete(true);
+                if (!startupSoundPlayed && user && settings) {
+                    playSoundWithSettings('startupSound', settings, 0.7).catch(
+                        (error) => {
+                            console.warn(
+                                'Failed to play session startup sound:',
+                                error
+                            );
+                        }
+                    );
+                    setStartupSoundPlayed(true);
+                }
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, [
+        sessionId,
+        accessId,
+        lastSessionId,
+        initialLoadComplete,
+        startupSoundPlayed,
+        user,
+        settings,
+        accessError,
+    ]);
 
-	// Don't initialize sockets if there's an access error
-	useEffect(() => {
-		if (!sessionId || !accessId || !initialLoadComplete || accessError)
-			return;
+    // Don't initialize sockets if there's an access error
+    useEffect(() => {
+        if (!sessionId || !accessId || !initialLoadComplete || accessError)
+            return;
 
-		const socket = createFlightsSocket(
-			sessionId,
-			accessId,
-			// onFlightUpdated
-			(flight: Flight) => {
-				setFlights((prev) =>
-					prev.map((f) => (f.id === flight.id ? flight : f))
-				);
-			},
-			// onFlightAdded
-			(flight: Flight) => {
-				setFlights((prev) => [...prev, flight]);
-				if (user && settings) {
-					playSoundWithSettings('newStripSound', settings, 0.7).catch(
-						(error) => {
-							console.warn(
-								'Failed to play new strip sound:',
-								error
-							);
-						}
-					);
-				}
-			},
-			// onFlightDeleted
-			({ flightId }) => {
-				setFlights((prev) =>
-					prev.filter((flight) => flight.id !== flightId)
-				);
-			},
-			// onFlightError
-			(error) => {
-				console.error('Flight websocket error:', error);
-			}
-		);
-		socket.socket.on('sessionUpdated', (updates) => {
-			setSession((prev) => (prev ? { ...prev, ...updates } : null));
-		});
-		setFlightsSocket(socket);
-		return () => {
-			socket.socket.disconnect();
-		};
-	}, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
+        const socket = createFlightsSocket(
+            sessionId,
+            accessId,
+            // onFlightUpdated
+            (flight: Flight) => {
+                setFlights((prev) =>
+                    prev.map((f) => (f.id === flight.id ? flight : f))
+                );
+            },
+            // onFlightAdded
+            (flight: Flight) => {
+                setFlights((prev) => [...prev, flight]);
+                if (user && settings) {
+                    playSoundWithSettings('newStripSound', settings, 0.7).catch(
+                        (error) => {
+                            console.warn(
+                                'Failed to play new strip sound:',
+                                error
+                            );
+                        }
+                    );
+                }
+            },
+            // onFlightDeleted
+            ({ flightId }) => {
+                setFlights((prev) =>
+                    prev.filter((flight) => flight.id !== flightId)
+                );
+            },
+            // onFlightError
+            (error) => {
+                console.error('Flight websocket error:', error);
+            }
+        );
+        socket.socket.on('sessionUpdated', (updates) => {
+            setSession((prev) => (prev ? { ...prev, ...updates } : null));
+        });
+        setFlightsSocket(socket);
+        return () => {
+            socket.socket.disconnect();
+        };
+    }, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
 
-	useEffect(() => {
-		if (
-			!sessionId ||
-			!accessId ||
-			!initialLoadComplete ||
-			!session?.isPFATC
-		)
-			return;
+    useEffect(() => {
+        if (
+            !sessionId ||
+            !accessId ||
+            !initialLoadComplete ||
+            !session?.isPFATC
+        )
+            return;
 
-		const socket = createArrivalsSocket(
-			sessionId,
-			accessId,
-			// onArrivalUpdated
-			(flight: Flight) => {
-				setExternalArrivals((prev) =>
-					prev.map((f) => (f.id === flight.id ? flight : f))
-				);
-			},
-			// onArrivalError
-			(error) => {
-				console.error('Arrival websocket error:', error);
-			},
-			// onInitialExternalArrivals
-			(flights: Flight[]) => {
-				console.log('Received initial external arrivals:', flights);
-				setExternalArrivals(flights);
-			}
-		);
-		setArrivalsSocket(socket);
-		return () => {
-			socket.socket.disconnect();
-		};
-	}, [sessionId, accessId, initialLoadComplete, session?.isPFATC]);
+        const socket = createArrivalsSocket(
+            sessionId,
+            accessId,
+            // onArrivalUpdated
+            (flight: Flight) => {
+                setExternalArrivals((prev) =>
+                    prev.map((f) => (f.id === flight.id ? flight : f))
+                );
+            },
+            // onArrivalError
+            (error) => {
+                console.error('Arrival websocket error:', error);
+            },
+            // onInitialExternalArrivals
+            (flights: Flight[]) => {
+                console.log('Received initial external arrivals:', flights);
+                setExternalArrivals(flights);
+            }
+        );
+        setArrivalsSocket(socket);
+        return () => {
+            socket.socket.disconnect();
+        };
+    }, [sessionId, accessId, initialLoadComplete, session?.isPFATC]);
 
-	useEffect(() => {
-		if (!sessionId || !accessId || !user) return;
+    useEffect(() => {
+        if (!sessionId || !accessId || !user) return;
 
-		const socket = createSessionUsersSocket(
-			sessionId,
-			accessId,
-			{
-				userId: user.userId,
-				username: user.username,
-				avatar: user.avatar
-			},
-			() => {},
-			() => {},
-			() => {},
-			() => {},
-			() => {},
-			handleMentionReceived,
-			(editingStates: FieldEditingState[]) =>
-				setFieldEditingStates(editingStates),
-			position
-		);
+        const socket = createSessionUsersSocket(
+            sessionId,
+            accessId,
+            {
+                userId: user.userId,
+                username: user.username,
+                avatar: user.avatar,
+            },
+            () => {},
+            () => {},
+            () => {},
+            () => {},
+            () => {},
+            handleMentionReceived,
+            (editingStates: FieldEditingState[]) =>
+                setFieldEditingStates(editingStates),
+            position
+        );
 
-		setSessionUsersSocket(socket);
+        setSessionUsersSocket(socket);
 
-		if (socket) {
-			socket.on('atisUpdate', handleAtisUpdateFromSocket);
-		}
+        if (socket) {
+            socket.on('atisUpdate', handleAtisUpdateFromSocket);
+        }
 
-		return () => {
-			if (socket) {
-				socket.off('atisUpdate', handleAtisUpdateFromSocket);
-				socket.disconnect();
-			}
-		};
-	}, [sessionId, accessId, user]);
+        return () => {
+            if (socket) {
+                socket.off('atisUpdate', handleAtisUpdateFromSocket);
+                socket.disconnect();
+            }
+        };
+    }, [sessionId, accessId, user]);
 
-	// Update position without reconnecting socket
-	useEffect(() => {
-		if (sessionUsersSocket && sessionUsersSocket.emitPositionChange) {
-			sessionUsersSocket.emitPositionChange(position);
-		}
-	}, [position, sessionUsersSocket]);
+    // Update position without reconnecting socket
+    useEffect(() => {
+        if (sessionUsersSocket && sessionUsersSocket.emitPositionChange) {
+            sessionUsersSocket.emitPositionChange(position);
+        }
+    }, [position, sessionUsersSocket]);
 
-	const handleFlightUpdate = (
-		flightId: string | number,
-		updates: Partial<Flight>
-	) => {
-		if (Object.prototype.hasOwnProperty.call(updates, 'hidden')) {
-			if (updates.hidden) {
-				setLocalHiddenFlights((prev) => new Set(prev).add(flightId));
-			} else {
-				setLocalHiddenFlights((prev) => {
-					const newSet = new Set(prev);
-					newSet.delete(flightId);
-					return newSet;
-				});
-			}
-			return;
-		}
+    const handleFlightUpdate = (
+        flightId: string | number,
+        updates: Partial<Flight>
+    ) => {
+        if (Object.prototype.hasOwnProperty.call(updates, 'hidden')) {
+            if (updates.hidden) {
+                setLocalHiddenFlights((prev) => new Set(prev).add(flightId));
+            } else {
+                setLocalHiddenFlights((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(flightId);
+                    return newSet;
+                });
+            }
+            return;
+        }
 
-		const isExternalArrival = externalArrivals.some(
-			(f) => f.id === flightId
-		);
+        const isExternalArrival = externalArrivals.some(
+            (f) => f.id === flightId
+        );
 
-		if (isExternalArrival && arrivalsSocket) {
-			arrivalsSocket.updateArrival(flightId, updates);
-		} else if (flightsSocket) {
-			flightsSocket.updateFlight(flightId, updates);
-		} else {
-			setFlights((prev) =>
-				prev.map((flight) =>
-					flight.id === flightId ? { ...flight, ...updates } : flight
-				)
-			);
-		}
-	};
+        if (isExternalArrival && arrivalsSocket) {
+            arrivalsSocket.updateArrival(flightId, updates);
+        } else if (flightsSocket) {
+            flightsSocket.updateFlight(flightId, updates);
+        } else {
+            setFlights((prev) =>
+                prev.map((flight) =>
+                    flight.id === flightId ? { ...flight, ...updates } : flight
+                )
+            );
+        }
+    };
 
-	const handleFlightDelete = (flightId: string | number) => {
-		if (flightsSocket) {
-			flightsSocket.deleteFlight(flightId);
-		} else {
-			setFlights((prev) =>
-				prev.filter((flight) => flight.id !== flightId)
-			);
-		}
-	};
+    const handleFlightDelete = (flightId: string | number) => {
+        if (flightsSocket) {
+            flightsSocket.deleteFlight(flightId);
+        } else {
+            setFlights((prev) =>
+                prev.filter((flight) => flight.id !== flightId)
+            );
+        }
+    };
 
-	const handleRunwayChange = async (selectedRunway: string) => {
-		if (!sessionId) return;
-		try {
-			await updateSession(sessionId, { activeRunway: selectedRunway });
-			setSession((prev) =>
-				prev ? { ...prev, activeRunway: selectedRunway } : null
-			);
-			if (flightsSocket) {
-				flightsSocket.updateSession({ activeRunway: selectedRunway });
-			}
-		} catch (error) {
-			console.error('Failed to update runway:', error);
-		}
-	};
+    const handleRunwayChange = async (selectedRunway: string) => {
+        if (!sessionId) return;
+        try {
+            await updateSession(sessionId, { activeRunway: selectedRunway });
+            setSession((prev) =>
+                prev ? { ...prev, activeRunway: selectedRunway } : null
+            );
+            if (flightsSocket) {
+                flightsSocket.updateSession({ activeRunway: selectedRunway });
+            }
+        } catch (error) {
+            console.error('Failed to update runway:', error);
+        }
+    };
 
-	const handleViewChange = (view: 'departures' | 'arrivals') => {
-		setCurrentView(view);
-	};
+    const handleViewChange = (view: 'departures' | 'arrivals') => {
+        setCurrentView(view);
+    };
 
-	const getAllowedStatuses = (pos: Position): string[] => {
-		switch (pos) {
-			case 'ALL':
-				return [];
-			case 'DEL':
-				return ['PENDING', 'STUP'];
-			case 'GND':
-				return ['STUP', 'PUSH', 'TAXI'];
-			case 'TWR':
-				return ['TAXI', 'RWY', 'DEPA'];
-			case 'APP':
-				return ['RWY', 'DEPA'];
-			default:
-				return [];
-		}
-	};
+    const getAllowedStatuses = (pos: Position): string[] => {
+        switch (pos) {
+            case 'ALL':
+                return [];
+            case 'DEL':
+                return ['PENDING', 'STUP'];
+            case 'GND':
+                return ['STUP', 'PUSH', 'TAXI'];
+            case 'TWR':
+                return ['TAXI', 'RWY', 'DEPA'];
+            case 'APP':
+                return ['RWY', 'DEPA'];
+            default:
+                return [];
+        }
+    };
 
-	const departureFlights = useMemo(() => {
-		return flights
-			.filter(
-				(flight) =>
-					flight.departure?.toUpperCase() ===
-					session?.airportIcao?.toUpperCase()
-			)
-			.map((flight) => ({
-				...flight,
-				hidden: localHiddenFlights.has(flight.id)
-			}));
-	}, [flights, session?.airportIcao, localHiddenFlights]);
+    const departureFlights = useMemo(() => {
+        return flights
+            .filter(
+                (flight) =>
+                    flight.departure?.toUpperCase() ===
+                    session?.airportIcao?.toUpperCase()
+            )
+            .map((flight) => ({
+                ...flight,
+                hidden: localHiddenFlights.has(flight.id),
+            }));
+    }, [flights, session?.airportIcao, localHiddenFlights]);
 
-	const arrivalFlights = useMemo(() => {
-		const ownArrivals = flights.filter(
-			(flight) =>
-				flight.arrival?.toUpperCase() ===
-				session?.airportIcao?.toUpperCase()
-		);
+    const arrivalFlights = useMemo(() => {
+        const ownArrivals = flights.filter(
+            (flight) =>
+                flight.arrival?.toUpperCase() ===
+                session?.airportIcao?.toUpperCase()
+        );
 
-		let baseArrivals = ownArrivals;
-		if (session?.isPFATC) {
-			baseArrivals = [...ownArrivals, ...externalArrivals];
-		}
+        let baseArrivals = ownArrivals;
+        if (session?.isPFATC) {
+            baseArrivals = [...ownArrivals, ...externalArrivals];
+        }
 
-		return baseArrivals.map((flight) => ({
-			...flight,
-			hidden: localHiddenFlights.has(flight.id)
-		}));
-	}, [
-		flights,
-		externalArrivals,
-		session?.airportIcao,
-		session?.isPFATC,
-		localHiddenFlights
-	]);
+        return baseArrivals.map((flight) => ({
+            ...flight,
+            hidden: localHiddenFlights.has(flight.id),
+        }));
+    }, [
+        flights,
+        externalArrivals,
+        session?.airportIcao,
+        session?.isPFATC,
+        localHiddenFlights,
+    ]);
 
-	const filteredFlights = useMemo(() => {
-		let baseFlights: Flight[] = [];
+    const filteredFlights = useMemo(() => {
+        let baseFlights: Flight[] = [];
 
-		if (currentView === 'arrivals') {
-			const ownArrivals = flights.filter(
-				(flight) =>
-					flight.arrival?.toUpperCase() ===
-					session?.airportIcao?.toUpperCase()
-			);
+        if (currentView === 'arrivals') {
+            const ownArrivals = flights.filter(
+                (flight) =>
+                    flight.arrival?.toUpperCase() ===
+                    session?.airportIcao?.toUpperCase()
+            );
 
-			if (session?.isPFATC) {
-				baseFlights = [...ownArrivals, ...externalArrivals];
-			} else {
-				baseFlights = ownArrivals;
-			}
-		} else {
-			baseFlights = flights.filter(
-				(flight) =>
-					flight.departure?.toUpperCase() ===
-					session?.airportIcao?.toUpperCase()
-			);
-		}
+            if (session?.isPFATC) {
+                baseFlights = [...ownArrivals, ...externalArrivals];
+            } else {
+                baseFlights = ownArrivals;
+            }
+        } else {
+            baseFlights = flights.filter(
+                (flight) =>
+                    flight.departure?.toUpperCase() ===
+                    session?.airportIcao?.toUpperCase()
+            );
+        }
 
-		if (currentView === 'departures' && position !== 'ALL') {
-			const allowedStatuses = getAllowedStatuses(position);
-			baseFlights = baseFlights.filter((flight) =>
-				allowedStatuses.includes(flight.status || '')
-			);
-		}
+        if (currentView === 'departures' && position !== 'ALL') {
+            const allowedStatuses = getAllowedStatuses(position);
+            baseFlights = baseFlights.filter((flight) =>
+                allowedStatuses.includes(flight.status || '')
+            );
+        }
 
-		return baseFlights.map((flight) => ({
-			...flight,
-			hidden: localHiddenFlights.has(flight.id)
-		}));
-	}, [
-		flights,
-		externalArrivals,
-		currentView,
-		session?.airportIcao,
-		session?.isPFATC,
-		localHiddenFlights,
-		position
-	]);
+        return baseFlights.map((flight) => ({
+            ...flight,
+            hidden: localHiddenFlights.has(flight.id),
+        }));
+    }, [
+        flights,
+        externalArrivals,
+        currentView,
+        session?.airportIcao,
+        session?.isPFATC,
+        localHiddenFlights,
+        position,
+    ]);
 
-	const selectedImage = settings?.backgroundImage?.selectedImage;
-	let backgroundImage = 'url("/assets/app/backgrounds/mdpc_01.png")';
+    const backgroundImage = useMemo(() => {
+        const selectedImage = settings?.backgroundImage?.selectedImage;
+        let bgImage = 'url("/assets/app/backgrounds/mdpc_01.png")';
 
-	const getImageUrl = (filename: string | null): string | null => {
-		if (!filename || filename === 'random' || filename === 'favorites') {
-			return filename;
-		}
-		if (filename.startsWith('https://api.cephie.app/')) {
-			return filename;
-		}
-		return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-	};
+        const getImageUrl = (filename: string | null): string | null => {
+            if (
+                !filename ||
+                filename === 'random' ||
+                filename === 'favorites'
+            ) {
+                return filename;
+            }
+            if (filename.startsWith('https://api.cephie.app/')) {
+                return filename;
+            }
+            return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
+        };
 
-	if (selectedImage === 'random') {
-		if (availableImages.length > 0) {
-			const randomIndex = Math.floor(
-				Math.random() * availableImages.length
-			);
-			backgroundImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-		}
-	} else if (selectedImage === 'favorites') {
-		const favorites = settings?.backgroundImage?.favorites || [];
-		if (favorites.length > 0) {
-			const randomFav =
-				favorites[Math.floor(Math.random() * favorites.length)];
-			const favImageUrl = getImageUrl(randomFav);
-			if (
-				favImageUrl &&
-				favImageUrl !== 'random' &&
-				favImageUrl !== 'favorites'
-			) {
-				backgroundImage = `url(${favImageUrl})`;
-			}
-		}
-	} else if (selectedImage) {
-		const imageUrl = getImageUrl(selectedImage);
-		if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-			backgroundImage = `url(${imageUrl})`;
-		}
-	}
+        if (selectedImage === 'random') {
+            if (availableImages.length > 0) {
+                const randomIndex = Math.floor(
+                    Math.random() * availableImages.length
+                );
+                bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
+            }
+        } else if (selectedImage === 'favorites') {
+            const favorites = settings?.backgroundImage?.favorites || [];
+            if (favorites.length > 0) {
+                const randomFav =
+                    favorites[Math.floor(Math.random() * favorites.length)];
+                const favImageUrl = getImageUrl(randomFav);
+                if (
+                    favImageUrl &&
+                    favImageUrl !== 'random' &&
+                    favImageUrl !== 'favorites'
+                ) {
+                    bgImage = `url(${favImageUrl})`;
+                }
+            }
+        } else if (selectedImage) {
+            const imageUrl = getImageUrl(selectedImage);
+            if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+                bgImage = `url(${imageUrl})`;
+            }
+        }
 
-	const showCombinedView = !isMobile && settings?.layout?.showCombinedView;
-	const flightRowOpacity = settings?.layout?.flightRowOpacity ?? 100;
+        return bgImage;
+    }, [
+        settings?.backgroundImage?.selectedImage,
+        settings?.backgroundImage?.favorites,
+        availableImages,
+    ]);
 
-	const getBackgroundStyle = (opacity: number) => {
-		if (opacity === 0) {
-			return { backgroundColor: 'transparent' };
-		}
-		const alpha = opacity / 100;
-		return {
-			backgroundColor: `rgba(0, 0, 0, ${alpha})`
-		};
-	};
+    const showCombinedView = !isMobile && settings?.layout?.showCombinedView;
+    const flightRowOpacity = settings?.layout?.flightRowOpacity ?? 100;
 
-	const backgroundStyle = getBackgroundStyle(flightRowOpacity);
+    const getBackgroundStyle = (opacity: number) => {
+        if (opacity === 0) {
+            return { backgroundColor: 'transparent' };
+        }
+        const alpha = opacity / 100;
+        return {
+            backgroundColor: `rgba(0, 0, 0, ${alpha})`,
+        };
+    };
 
-	const defaultDepartureColumns: DepartureTableColumnSettings = {
-		time: true,
-		callsign: true,
-		stand: true,
-		aircraft: true,
-		wakeTurbulence: true,
-		flightType: true,
-		arrival: true,
-		runway: true,
-		sid: true,
-		rfl: true,
-		cfl: true,
-		squawk: true,
-		clearance: true,
-		status: true,
-		remark: true,
-		pdc: true,
-		hide: true,
-		delete: true
-	};
+    const backgroundStyle = getBackgroundStyle(flightRowOpacity);
 
-	const defaultArrivalsColumns: ArrivalsTableColumnSettings = {
-		time: true,
-		callsign: true,
-		gate: true,
-		aircraft: true,
-		wakeTurbulence: true,
-		flightType: true,
-		departure: true,
-		runway: true,
-		star: true,
-		rfl: true,
-		cfl: true,
-		squawk: true,
-		status: true,
-		remark: true,
-		hide: true
-	};
+    const defaultDepartureColumns: DepartureTableColumnSettings = {
+        time: true,
+        callsign: true,
+        stand: true,
+        aircraft: true,
+        wakeTurbulence: true,
+        flightType: true,
+        arrival: true,
+        runway: true,
+        sid: true,
+        rfl: true,
+        cfl: true,
+        squawk: true,
+        clearance: true,
+        status: true,
+        remark: true,
+        pdc: true,
+        hide: true,
+        delete: true,
+    };
 
-	const departureColumns = {
-		...defaultDepartureColumns,
-		...settings?.departureTableColumns
-	};
-	const arrivalsColumns = {
-		...defaultArrivalsColumns,
-		...settings?.arrivalsTableColumns
-	};
+    const defaultArrivalsColumns: ArrivalsTableColumnSettings = {
+        time: true,
+        callsign: true,
+        gate: true,
+        aircraft: true,
+        wakeTurbulence: true,
+        flightType: true,
+        departure: true,
+        runway: true,
+        star: true,
+        rfl: true,
+        cfl: true,
+        squawk: true,
+        status: true,
+        remark: true,
+        hide: true,
+    };
 
-	const handleFieldEditingStart = (
-		flightId: string | number,
-		fieldName: string
-	) => {
-		if (sessionUsersSocket?.emitFieldEditingStart) {
-			sessionUsersSocket.emitFieldEditingStart(flightId, fieldName);
-		}
-	};
+    const departureColumns = {
+        ...defaultDepartureColumns,
+        ...settings?.departureTableColumns,
+    };
+    const arrivalsColumns = {
+        ...defaultArrivalsColumns,
+        ...settings?.arrivalsTableColumns,
+    };
 
-	const handleFieldEditingStop = (
-		flightId: string | number,
-		fieldName: string
-	) => {
-		if (sessionUsersSocket?.emitFieldEditingStop) {
-			sessionUsersSocket.emitFieldEditingStop(flightId, fieldName);
-		}
-	};
+    const handleFieldEditingStart = (
+        flightId: string | number,
+        fieldName: string
+    ) => {
+        if (sessionUsersSocket?.emitFieldEditingStart) {
+            sessionUsersSocket.emitFieldEditingStart(flightId, fieldName);
+        }
+    };
 
-	// Early return for validation states
-	if (validatingAccess) {
-		return (
-			<div className="min-h-screen text-white relative">
-				<div className="relative z-10">
-					<Navbar sessionId={sessionId} accessId={accessId} />
-					<div className="pt-16">
-						<div className="text-center py-12 text-gray-400">
-							Validating access...
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	}
+    const handleFieldEditingStop = (
+        flightId: string | number,
+        fieldName: string
+    ) => {
+        if (sessionUsersSocket?.emitFieldEditingStop) {
+            sessionUsersSocket.emitFieldEditingStop(flightId, fieldName);
+        }
+    };
 
-	if (accessError) {
-		return (
-			<AccessDenied
-				message={accessError}
-				sessionId={sessionId}
-				accessId={accessId}
-			/>
-		);
-	}
+    // Early return for validation states
+    if (validatingAccess) {
+        return (
+            <div className="min-h-screen text-white relative">
+                <div className="relative z-10">
+                    <Navbar sessionId={sessionId} accessId={accessId} />
+                    <div className="pt-16">
+                        <div className="text-center py-12 text-gray-400">
+                            Validating access...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-	return (
-		<div className="min-h-screen text-white relative">
-			<div
-				aria-hidden
-				className="absolute inset-0 z-0"
-				style={{
-					backgroundImage,
-					backgroundSize: 'cover',
-					backgroundPosition: 'center',
-					backgroundRepeat: 'no-repeat',
-					backgroundAttachment: 'fixed',
-					opacity: 0.2,
-					pointerEvents: 'none'
-				}}
-			/>
-			<div className="relative z-10">
-				<Navbar sessionId={sessionId} accessId={accessId} />
-				<div className="pt-16">
-					<Toolbar
-						icao={session ? session.airportIcao : ''}
-						sessionId={sessionId}
-						accessId={accessId}
-						activeRunway={session?.activeRunway}
-						onRunwayChange={handleRunwayChange}
-						isPFATC={session?.isPFATC}
-						currentView={currentView}
-						onViewChange={handleViewChange}
-						showViewTabs={!showCombinedView}
-						position={position}
-						onPositionChange={setPosition}
-					/>
-					<div className="-mt-4">
-						{loading ? (
-							<div className="text-center py-12 text-gray-400">
-								Loading {currentView}...
-							</div>
-						) : showCombinedView ? (
-							<CombinedFlightsTable
-								departureFlights={departureFlights}
-								arrivalFlights={arrivalFlights}
-								onFlightDelete={handleFlightDelete}
-								onFlightChange={handleFlightUpdate}
-								backgroundStyle={backgroundStyle}
-							/>
-						) : (
-							<>
-								{currentView === 'departures' ? (
-									<DepartureTable
-										flights={filteredFlights}
-										onFlightDelete={handleFlightDelete}
-										onFlightChange={handleFlightUpdate}
-										backgroundStyle={backgroundStyle}
-										departureColumns={departureColumns}
-										fieldEditingStates={fieldEditingStates}
-										onFieldEditingStart={
-											handleFieldEditingStart
-										}
-										onFieldEditingStop={
-											handleFieldEditingStop
-										}
-									/>
-								) : (
-									<ArrivalsTable
-										flights={filteredFlights}
-										onFlightChange={handleFlightUpdate}
-										backgroundStyle={backgroundStyle}
-										arrivalsColumns={arrivalsColumns}
-									/>
-								)}
-							</>
-						)}
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+    if (accessError) {
+        return (
+            <AccessDenied
+                message={accessError}
+                sessionId={sessionId}
+                accessId={accessId}
+            />
+        );
+    }
+
+    return (
+        <div className="min-h-screen text-white relative">
+            <div
+                aria-hidden
+                className="absolute inset-0 z-0"
+                style={{
+                    backgroundImage,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed',
+                    opacity: 0.2,
+                    pointerEvents: 'none',
+                }}
+            />
+            <div className="relative z-10">
+                <Navbar sessionId={sessionId} accessId={accessId} />
+                <div className="pt-16">
+                    <Toolbar
+                        icao={session ? session.airportIcao : ''}
+                        sessionId={sessionId}
+                        accessId={accessId}
+                        activeRunway={session?.activeRunway}
+                        onRunwayChange={handleRunwayChange}
+                        isPFATC={session?.isPFATC}
+                        currentView={currentView}
+                        onViewChange={handleViewChange}
+                        showViewTabs={!showCombinedView}
+                        position={position}
+                        onPositionChange={setPosition}
+                    />
+                    <div className="-mt-4">
+                        {loading ? (
+                            <div className="text-center py-12 text-gray-400">
+                                Loading {currentView}...
+                            </div>
+                        ) : showCombinedView ? (
+                            <CombinedFlightsTable
+                                departureFlights={departureFlights}
+                                arrivalFlights={arrivalFlights}
+                                onFlightDelete={handleFlightDelete}
+                                onFlightChange={handleFlightUpdate}
+                                backgroundStyle={backgroundStyle}
+                            />
+                        ) : (
+                            <>
+                                {currentView === 'departures' ? (
+                                    <DepartureTable
+                                        flights={filteredFlights}
+                                        onFlightDelete={handleFlightDelete}
+                                        onFlightChange={handleFlightUpdate}
+                                        backgroundStyle={backgroundStyle}
+                                        departureColumns={departureColumns}
+                                        fieldEditingStates={fieldEditingStates}
+                                        onFieldEditingStart={
+                                            handleFieldEditingStart
+                                        }
+                                        onFieldEditingStop={
+                                            handleFieldEditingStop
+                                        }
+                                    />
+                                ) : (
+                                    <ArrivalsTable
+                                        flights={filteredFlights}
+                                        onFlightChange={handleFlightUpdate}
+                                        backgroundStyle={backgroundStyle}
+                                        arrivalsColumns={arrivalsColumns}
+                                    />
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
