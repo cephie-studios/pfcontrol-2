@@ -36,12 +36,12 @@ button {
 }
 
 /* Departure Table */
-@media (max-width: 1750px) {
+@media (max-width: 1800px) {
   .column-rwy, .column-w {
     display: none;
   }
 }
-@media (max-width: 1500px) {
+@media (max-width: 1600px) {
   .column-pdc, .column-hide, .column-time {
     display: none;
   }
