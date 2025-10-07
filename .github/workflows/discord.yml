@@ -1,19 +1,19 @@
 name: Discord Commit Notification
 
 on:
-    push:
-        branches:
-            - main
+  push:
+    branches:
+      - main
 
 jobs:
-    notify:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Send commit to Discord
-              uses: ilshidur/action-discord@master
-              with:
-                  webhook: ${{ secrets.DISCORD_WEBHOOK }}
-                  message: |
-                      Neuer Commit auf **${{ github.repository }}**:
-                      ${{ github.actor }} hat gepusht:
-                      ${{ github.event.head_commit.message }}
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send commit to Discord
+        uses: ilshidur/action-discord@master
+        with:
+          args: >
+            ${{ secrets.DISCORD_WEBHOOK }}
+            "Neuer Commit auf **${{ github.repository }}**:
+            ${{ github.actor }} hat gepusht:
+            ${{ github.event.head_commit.message }}"
