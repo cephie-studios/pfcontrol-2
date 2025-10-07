@@ -10,7 +10,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Send commit to Discord
-              uses: Ilshidur/action-discord@v2
+              uses: ilshidur/action-discord@v1
               with:
                   webhook: ${{ secrets.DISCORD_WEBHOOK }}
                   message: |
