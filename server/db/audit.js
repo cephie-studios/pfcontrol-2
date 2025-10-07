@@ -1,4 +1,5 @@
 import pool from './connections/connection.js';
+import { encrypt, decrypt } from '../tools/encryption.js';
 
 async function initializeAuditTable() {
     try {
@@ -20,14 +21,13 @@ async function initializeAuditTable() {
                     target_user_id VARCHAR(20),
                     target_username VARCHAR(32),
                     details JSONB,
-                    ip_address INET,
+                    ip_address TEXT,
                     user_agent TEXT,
                     timestamp TIMESTAMP DEFAULT NOW(),
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             `);
 
-            // Create indexes for better performance
             await pool.query(`
                 CREATE INDEX IF NOT EXISTS idx_audit_log_admin_id ON audit_log(admin_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
@@ -35,11 +35,10 @@ async function initializeAuditTable() {
                 CREATE INDEX IF NOT EXISTS idx_audit_log_target_user_id ON audit_log(target_user_id);
             `);
         } else {
-            // Check table structure
             const columns = await pool.query(`
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = 'audit_log' 
+                SELECT column_name, data_type
+                FROM information_schema.columns
+                WHERE table_name = 'audit_log'
                 ORDER BY ordinal_position
             `);
         }
@@ -62,8 +61,7 @@ export async function logAdminAction(actionData) {
     } = actionData;
 
     try {
-        // Test database connection first
-        await pool.query('SELECT 1');
+        const encryptedIP = ipAddress ? encrypt(ipAddress) : null;
 
         const result = await pool.query(`
             INSERT INTO audit_log (
@@ -79,17 +77,13 @@ export async function logAdminAction(actionData) {
             targetUserId,
             targetUsername,
             JSON.stringify(details),
-            ipAddress,
+            encryptedIP ? JSON.stringify(encryptedIP) : null,
             userAgent
         ]);
 
         return result.rows[0].id;
     } catch (error) {
         console.error('Error logging admin action:', error);
-        console.error('Error code:', error.code);
-        console.error('Error detail:', error.detail);
-        console.error('Action data:', actionData);
-        console.error('Error stack:', error.stack);
         throw error;
     }
 }
@@ -144,6 +138,24 @@ export async function getAuditLogs(page = 1, limit = 50, filters = {}) {
 
         const result = await pool.query(query, values);
 
+        const logs = result.rows.map(log => {
+            let decryptedIP = null;
+            if (log.ip_address) {
+                try {
+                    const parsed = JSON.parse(log.ip_address);
+                    decryptedIP = decrypt(parsed);
+                } catch (error) {
+                    console.warn(`Failed to parse/decrypt ip_address for audit log ${log.id}:`, error.message);
+                    decryptedIP = decrypt(log.ip_address);
+                }
+            }
+            return {
+                ...log,
+                ip_address: decryptedIP,
+                details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+            };
+        });
+
         // Get total count for pagination
         let countQuery = 'SELECT COUNT(*) FROM audit_log';
         const countValues = [];
@@ -160,10 +172,7 @@ export async function getAuditLogs(page = 1, limit = 50, filters = {}) {
         const totalLogs = parseInt(countResult.rows[0].count);
 
         return {
-            logs: result.rows.map(log => ({
-                ...log,
-                details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
-            })),
+            logs,
             pagination: {
                 page,
                 limit,
@@ -193,8 +202,20 @@ export async function getAuditLogById(logId) {
         }
 
         const log = result.rows[0];
+        let decryptedIP = null;
+        if (log.ip_address) {
+            try {
+                const parsed = JSON.parse(log.ip_address);
+                decryptedIP = decrypt(parsed);
+            } catch (error) {
+                console.warn(`Failed to parse/decrypt ip_address for audit log ${logId}:`, error.message);
+                decryptedIP = decrypt(log.ip_address);
+            }
+        }
+
         return {
             ...log,
+            ip_address: decryptedIP,
             details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
         };
     } catch (error) {

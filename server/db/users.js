@@ -21,7 +21,7 @@ async function initializeUsersTable() {
                     access_token TEXT,
                     refresh_token TEXT,
                     last_login TIMESTAMP DEFAULT NOW(),
-                    ip_address INET,
+                    ip_address TEXT,
                     is_vpn BOOLEAN DEFAULT false,
                     sessions TEXT DEFAULT '[]',
                     last_session_created TIMESTAMP,
@@ -109,6 +109,8 @@ export async function createOrUpdateUser(userData) {
 
         const existingUser = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
 
+        const encryptedIP = encrypt(ipAddress);
+
         if (existingUser.rows.length > 0) {
             const encryptedAccessToken = encrypt(accessToken);
             const encryptedRefreshToken = encrypt(refreshToken);
@@ -132,7 +134,7 @@ export async function createOrUpdateUser(userData) {
                 avatar,
                 JSON.stringify(encryptedAccessToken),
                 JSON.stringify(encryptedRefreshToken),
-                ipAddress,
+                JSON.stringify(encryptedIP),
                 isVpn
             ]);
 
@@ -156,7 +158,7 @@ export async function createOrUpdateUser(userData) {
                 avatar,
                 JSON.stringify(encryptedAccessToken),
                 JSON.stringify(encryptedRefreshToken),
-                ipAddress,
+                JSON.stringify(encryptedIP),
                 isVpn,
                 JSON.stringify(encryptedSessions),
                 JSON.stringify(encryptedSettings)
@@ -251,6 +253,32 @@ export async function getUserById(id) {
             }
         }
 
+        let decryptedIP = null;
+        if (user.ip_address) {
+            try {
+                if (typeof user.ip_address === 'string' && user.ip_address.trim().startsWith('{')) {
+                    const parsed = JSON.parse(user.ip_address);
+                    decryptedIP = decrypt(parsed);
+                } else if (
+                    typeof user.ip_address === 'object' &&
+                    user.ip_address.iv && user.ip_address.data && user.ip_address.authTag
+                ) {
+                    decryptedIP = decrypt(user.ip_address);
+                } else if (
+                    typeof user.ip_address === 'string' &&
+                    user.ip_address.split('.').length === 4
+                ) {
+                    decryptedIP = user.ip_address;
+                } else {
+                    decryptedIP = null;
+                }
+            } catch (error) {
+                console.warn(`Failed to parse/decrypt ip_address for user ${user.id}:`, error.message);
+                decryptedIP = null;
+            }
+        }
+        user.ip_address = decryptedIP;
+
         return {
             id: user.id,
             username: user.username,
@@ -259,7 +287,7 @@ export async function getUserById(id) {
             accessToken: decryptedAccessToken,
             refreshToken: decryptedRefreshToken,
             lastLogin: user.last_login,
-            ipAddress: user.ip_address,
+            ipAddress: decryptedIP,
             isVpn: user.is_vpn,
             sessions: decryptedSessions,
             lastSessionCreated: user.last_session_created,

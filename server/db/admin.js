@@ -3,8 +3,8 @@ import flightsPool from './connections/flightsConnection.js';
 import { getAllSessions } from './sessions.js';
 import { cleanupOldStatistics } from './statistics.js';
 import { isAdmin, getAdminIds } from '../middleware/isAdmin.js';
-import { decrypt } from '../tools/encryption.js';
 import { getActiveUsers } from '../websockets/sessionUsersWebsocket.js';
+import { decrypt } from '../tools/encryption.js';
 
 export async function getDailyStatistics(days = 30) {
     try {
@@ -219,6 +219,24 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
                 console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
                 rolePermissions = null;
             }
+
+            let decryptedIP = null;
+            if (user.ip_address) {
+                try {
+                    if (typeof user.ip_address === 'string' && user.ip_address.trim().startsWith('{')) {
+                        const parsed = JSON.parse(user.ip_address);
+                        decryptedIP = decrypt(parsed);
+                    } else if (typeof user.ip_address === 'object' && user.ip_address.iv && user.ip_address.data && user.ip_address.authTag) {
+                        decryptedIP = decrypt(user.ip_address);
+                    } else {
+                        decryptedIP = user.ip_address;
+                    }
+                } catch (error) {
+                    console.warn(`Failed to parse/decrypt ip_address for user ${user.id}:`, error.message);
+                    decryptedIP = user.ip_address;
+                }
+            }
+            user.ip_address = decryptedIP;
 
             return {
                 ...user,

@@ -7,7 +7,8 @@ import { detectVPN } from '../tools/detectVPN.js';
 import { isAdmin } from '../middleware/isAdmin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
 import { isUserBanned } from '../db/ban.js';
-import { isTester } from '../db/testers.js'; // Import from db instead of middleware
+import { isTester } from '../db/testers.js';
+import { getClientIp } from '../tools/getIpAddress.js';
 import requireAuth from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
@@ -58,8 +59,8 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
 
         const discordUser = userResponse.data;
 
-        const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
-        const isVpn = await detectVPN(ipAddress);
+        const ipAddress = getClientIp(req);
+        const isVpn = await detectVPN(req);
 
         const existingUser = await getUserById(discordUser.id);
         const isNewUser = !existingUser;
