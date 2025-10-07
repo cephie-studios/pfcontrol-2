@@ -8,9 +8,6 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Copy frontend env for Vite build
-COPY .env.vite.production .env.production
-
 # Install all dependencies (including dev dependencies)
 RUN npm install
 

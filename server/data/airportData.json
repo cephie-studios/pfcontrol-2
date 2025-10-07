@@ -3,6 +3,7 @@
         "icao": "MDPC",
         "name": "Punta Cana International Airport",
         "controlName": "Punta Cana",
+        "elevation": 46,
         "picture": "/images/destinations/mdpc.png",
         "allFrequencies": {
             "APP": "119.750",
@@ -166,6 +167,7 @@
         "icao": "EGKK",
         "name": "London Gatwick International Airport",
         "controlName": "Gatwick",
+        "elevation": 280,
         "picture": "/images/destinations/egkk.png",
         "allFrequencies": {
             "APP": "126.825",
@@ -241,6 +243,7 @@
         "icao": "LCLK",
         "name": "Larnaca International Airport",
         "controlName": "Larnaca",
+        "elevation": 75,
         "picture": "/images/destinations/lclk.png",
         "allFrequencies": {
             "APP": "130.200",
@@ -326,6 +329,7 @@
         "icao": "LCPH",
         "name": "Paphos International Airport",
         "controlName": "Paphos",
+        "elevation": 98,
         "allFrequencies": {
             "APP": "119.900",
             "TWR": "130.625",
@@ -401,6 +405,7 @@
     "icao": "LCRA",
     "name": "Akrotiri Airport",
     "controlName": "Akrotiri",
+    "elevation": 88,
     "allFrequencies": {
         "APP": "n/a",
         "TWR": "130.075",
@@ -476,6 +481,7 @@
         "icao": "GCLP",
         "name": "Gran Canaria Airport",
         "controlName": "Gran Canaria",
+        "elevation": 96,
         "picture": "/images/destinations/gclp.png",
         "allFrequencies": {
             "APP": "124.300",
@@ -607,6 +613,7 @@
         "icao": "EGHI",
         "name": "Southampton Airport",
         "controlName": "Southampton",
+        "elevation": 44,
         "picture": "/images/destinations/eghi.png",
         "allFrequencies": {
             "APP": "n/a",
@@ -682,6 +689,7 @@
         "icao": "EFKT",
         "name": "Kittilä Airport",
         "controlName": "Kittilä",
+        "elevation": 124,
         "picture": "/images/destinations/efkt.png",
         "allFrequencies": {
             "APP": "n/a",
@@ -757,6 +765,7 @@
         "icao": "LEMH",
         "name": "Menorca Airport",
         "controlName": "Menorca",
+        "elevation": 299,
         "picture": "/images/destinations/lemh.png",
         "allFrequencies": {
             "APP": "120.700",
@@ -832,6 +841,7 @@
         "icao": "MDST",
         "name": "Aeropuerto Internacional del Cibao",
         "controlName": "Santiago",
+        "elevation": 624,
         "picture": "/images/destinations/mdst.png",
         "allFrequencies": {
             "APP": "n/a",
@@ -876,6 +886,7 @@
         "icao": "MDAB",
         "name": "Arroyo Barril Airport",
         "controlName": "Samaná",
+        "elevation": 30,
         "picture": "/images/destinations/mdab.png",
         "allFrequencies": {
             "APP": "n/a",
@@ -951,6 +962,7 @@
         "icao": "MTCA",
         "name": "Antoine-Simon Airport ",
         "controlName": "Les Cayes",
+        "elevation": 203,
         "picture": "/images/destinations/mtca.png",
         "allFrequencies": {
             "APP": "n/a",
@@ -1026,6 +1038,7 @@
         "icao": "MDCR",
         "name": "Cabo Rojo Airport",
         "controlName": "Cabo Rojo",
+        "elevation": 30,
         "allFrequencies": {
             "APP": "n/a",
             "TWR": "n/a",

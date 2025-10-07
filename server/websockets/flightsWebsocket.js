@@ -1,8 +1,9 @@
 import { Server as SocketServer } from 'socket.io';
 import { addFlight, updateFlight, deleteFlight } from '../db/flights.js';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
-import { updateSession, getAllSessions } from '../db/sessions.js';
+import { updateSession, getAllSessions, getSessionById } from '../db/sessions.js';
 import { getArrivalsIO } from './arrivalsWebsocket.js';
+import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
 
 let io;
 const updateTimers = new Map();
@@ -30,6 +31,11 @@ export function setupFlightsWebsocket(httpServer) {
 
         socket.on('updateFlight', async ({ flightId, updates }) => {
             try {
+                // Log all updates to see what's being received
+                if (updates.status || updates.callsign) {
+                    console.log(`[FlightWS] Received update for ${updates.callsign || flightId}:`, JSON.stringify(updates));
+                }
+
                 // Handle local hide/unhide - don't process these on server
                 if (updates.hasOwnProperty('hidden')) {
                     return; // Ignore hidden field updates
@@ -56,6 +62,15 @@ export function setupFlightsWebsocket(httpServer) {
                     io.to(sessionId).emit('flightUpdated', updatedFlight);
 
                     await broadcastToArrivalSessions(updatedFlight);
+
+                    // Handle logbook status changes
+                    if (updates.status && updatedFlight.callsign) {
+                        console.log(`[FlightWS] Detected status change: ${updatedFlight.callsign} -> ${updates.status}`);
+                        // Get session's airport to determine origin vs destination
+                        const session = await getSessionById(sessionId);
+                        const controllerAirport = session?.airport_icao || null;
+                        await handleFlightStatusChange(updatedFlight.callsign, updates.status, controllerAirport);
+                    }
                 } else {
                     socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
                 }

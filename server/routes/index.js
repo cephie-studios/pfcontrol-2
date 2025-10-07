@@ -10,6 +10,7 @@ import metarRoutes from './metar.js';
 import atisRouter from './atis.js';
 import uploadsRouter from './uploads.js';
 import adminRouter from './admin/index.js';
+import logbookRouter from './logbook.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/metar', metarRoutes);
 router.use('/atis', atisRouter);
 router.use('/uploads', uploadsRouter);
 router.use('/admin', adminRouter);
+router.use('/logbook', logbookRouter);
 
 router.get('/version', async (req, res) => {
     try {

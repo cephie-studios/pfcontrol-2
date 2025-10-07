@@ -43,6 +43,11 @@ export function setupArrivalsWebsocket(httpServer) {
 
         socket.on('updateArrival', async ({ flightId, updates }) => {
             try {
+                // Log all arrival updates to see what's being received
+                if (updates.status) {
+                    console.log(`[ArrivalWS] Received update for ${flightId}:`, JSON.stringify(updates));
+                }
+
                 const sourceSessionId = await findFlightSourceSession(flightId, session.airport_icao);
 
                 if (!sourceSessionId) {

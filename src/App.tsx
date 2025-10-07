@@ -8,6 +8,8 @@ import Submit from './pages/Submit';
 import Flights from './pages/Flights';
 import Settings from './pages/Settings';
 import PFATCFlights from './pages/PFATCFlights';
+import Logbook from './pages/Logbook';
+import FlightDetail from './pages/FlightDetail';
 
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -55,6 +57,14 @@ export default function App() {
                                     <Route
                                         path="settings"
                                         element={<Settings />}
+                                    />
+                                    <Route
+                                        path="logbook"
+                                        element={<Logbook />}
+                                    />
+                                    <Route
+                                        path="logbook/:flightId"
+                                        element={<FlightDetail />}
                                     />
                                     <Route path="*" element={<NotFound />} />
                                 </Routes>

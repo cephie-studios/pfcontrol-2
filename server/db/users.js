@@ -300,7 +300,9 @@ export async function getUserById(id) {
             updatedAt: user.updated_at,
             roleId: user.role_id,
             roleName: user.role_name,
-            rolePermissions: rolePermissions
+            rolePermissions: rolePermissions,
+            robloxUserId: user.roblox_user_id,
+            robloxUsername: user.roblox_username
         };
     } catch (error) {
         console.error('Error fetching user:', error);
@@ -354,6 +356,44 @@ export async function addSessionToUser(userId, sessionId) {
         return await getUserById(userId);
     } catch (error) {
         console.error('Error adding session to user:', error);
+        throw error;
+    }
+}
+
+export async function updateRobloxAccount(userId, { robloxUserId, robloxUsername, accessToken, refreshToken }) {
+    try {
+        await pool.query(`
+            UPDATE users SET
+                roblox_user_id = $2,
+                roblox_username = $3,
+                roblox_access_token = $4,
+                roblox_refresh_token = $5,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [userId, robloxUserId, robloxUsername, accessToken, refreshToken]);
+
+        return await getUserById(userId);
+    } catch (error) {
+        console.error('Error updating Roblox account:', error);
+        throw error;
+    }
+}
+
+export async function unlinkRobloxAccount(userId) {
+    try {
+        await pool.query(`
+            UPDATE users SET
+                roblox_user_id = NULL,
+                roblox_username = NULL,
+                roblox_access_token = NULL,
+                roblox_refresh_token = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [userId]);
+
+        return await getUserById(userId);
+    } catch (error) {
+        console.error('Error unlinking Roblox account:', error);
         throw error;
     }
 }
