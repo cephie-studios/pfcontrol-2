@@ -11,6 +11,7 @@ import BackgroundImageSettings from '../components/Settings/BackgroundImageSetti
 import SoundSettings from '../components/Settings/SoundSettings';
 import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
+import AccountSettings from '../components/Settings/AccountSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
@@ -215,6 +216,8 @@ export default function Settings() {
 			{/* Content */}
 			<div className="max-w-5xl mx-auto px-6 py-8">
 				<div className="space-y-8">
+					<AccountSettings />
+
 					<TableColumnSettings
 						departureColumns={
 							localSettings?.departureTableColumns || {

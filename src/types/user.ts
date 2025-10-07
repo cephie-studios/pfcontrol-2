@@ -14,4 +14,6 @@ export interface User {
     roleId?: number;
     roleName?: string;
     rolePermissions?: Record<string, boolean>;
+    robloxUserId?: string | null;
+    robloxUsername?: string | null;
 }

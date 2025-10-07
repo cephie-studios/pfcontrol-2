@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
-import { createOrUpdateUser, getUserById, updateUserSettings } from '../db/users.js';
+import { createOrUpdateUser, getUserById, updateUserSettings, updateRobloxAccount, unlinkRobloxAccount } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN } from '../tools/detectVPN.js';
 import { isAdmin } from '../middleware/isAdmin.js';
@@ -18,6 +18,10 @@ const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
+
+const ROBLOX_CLIENT_ID = process.env.ROBLOX_CLIENT_ID;
+const ROBLOX_CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET;
+const ROBLOX_REDIRECT_URI = process.env.ROBLOX_REDIRECT_URI;
 
 // GET: /api/auth/discord - redirect to Discord for authentication
 router.get('/discord', (req, res) => {
@@ -111,6 +115,88 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     }
 });
 
+// GET: /api/auth/roblox - redirect to Roblox for authentication
+router.get('/roblox', requireAuth, (req, res) => {
+    const state = jwt.sign({ userId: req.user.userId }, JWT_SECRET, { expiresIn: '15m' });
+
+    // Build params properly
+    const params = new URLSearchParams({
+        client_id: ROBLOX_CLIENT_ID,
+        redirect_uri: ROBLOX_REDIRECT_URI,
+        response_type: 'code',
+        scope: 'openid profile',
+        state: state
+    });
+
+    const robloxAuthUrl = `https://apis.roblox.com/oauth/v1/authorize?${params.toString()}`;
+    res.redirect(robloxAuthUrl);
+});
+
+// GET: /api/auth/roblox/callback - handle Roblox OAuth2 callback
+router.get('/roblox/callback', authLimiter, async (req, res) => {
+    const { code, state } = req.query;
+
+    if (!code || !state) {
+        return res.redirect(FRONTEND_URL + '/settings?error=roblox_auth_failed');
+    }
+
+    try {
+        // Verify state token
+        const decoded = jwt.verify(state, JWT_SECRET);
+        const userId = decoded.userId;
+
+        // Exchange code for tokens
+        const tokenResponse = await axios.post('https://apis.roblox.com/oauth/v1/token',
+            new URLSearchParams({
+                client_id: ROBLOX_CLIENT_ID,
+                client_secret: ROBLOX_CLIENT_SECRET,
+                grant_type: 'authorization_code',
+                code: code,
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }
+        );
+
+        const { access_token, refresh_token } = tokenResponse.data;
+
+        // Get user info
+        const userResponse = await axios.get('https://apis.roblox.com/oauth/v1/userinfo', {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+            },
+        });
+
+        const robloxUser = userResponse.data;
+
+        // Update user with Roblox info
+        await updateRobloxAccount(userId, {
+            robloxUserId: robloxUser.sub,
+            robloxUsername: robloxUser.preferred_username || robloxUser.name,
+            accessToken: access_token,
+            refreshToken: refresh_token
+        });
+
+        res.redirect(FRONTEND_URL + '/settings?roblox_linked=true');
+    } catch (error) {
+        console.error('Roblox auth error:', error);
+        res.redirect(FRONTEND_URL + '/settings?error=roblox_auth_failed');
+    }
+});
+
+// POST: /api/auth/roblox/unlink - unlink Roblox account
+router.post('/roblox/unlink', requireAuth, async (req, res) => {
+    try {
+        await unlinkRobloxAccount(req.user.userId);
+        res.json({ success: true, message: 'Roblox account unlinked' });
+    } catch (error) {
+        console.error('Error unlinking Roblox:', error);
+        res.status(500).json({ error: 'Failed to unlink Roblox account' });
+    }
+});
+
 // GET: /api/auth/me - get current user info
 router.get('/me', requireAuth, async (req, res) => {
     try {
@@ -135,6 +221,8 @@ router.get('/me', requireAuth, async (req, res) => {
             roleId: user.roleId,
             roleName: user.roleName,
             rolePermissions: user.rolePermissions,
+            robloxUserId: user.robloxUserId,
+            robloxUsername: user.robloxUsername,
         });
     } catch (error) {
         console.error('Error fetching user:', error);

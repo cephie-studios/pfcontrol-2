@@ -27,7 +27,7 @@ airportData.forEach(airport => {
     airportElevations[airport.icao] = airport.elevation || 0;
 });
 
-const PFATC_SERVER_ID = '713fGxP';  // Test server
+const PFATC_SERVER_ID = '2ykygVZiX5';
 
 // Flight phase thresholds
 const PHASE_THRESHOLDS = {

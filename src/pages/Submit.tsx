@@ -19,7 +19,8 @@ import {
 	ParkingCircle,
 	Loader2,
 	MapPinCheck,
-	Plane
+	Plane,
+	BookOpen
 } from 'lucide-react';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { addFlight } from '../utils/fetch/flights';
@@ -29,6 +30,7 @@ import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
+import { useAuth } from '../hooks/auth/useAuth';
 
 interface SessionData {
 	sessionId: string;
@@ -41,12 +43,15 @@ export default function Submit() {
 	const { sessionId } = useParams<{ sessionId: string }>();
 	const [searchParams] = useSearchParams();
 	const accessId = searchParams.get('accessId') ?? undefined;
+	const { user } = useAuth();
 
 	const [session, setSession] = useState<SessionData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState(false);
 	const [submittedFlight, setSubmittedFlight] = useState<Flight | null>(null);
+	const [logWithLogbook, setLogWithLogbook] = useState(false);
+	const [testerGateEnabled, setTesterGateEnabled] = useState(false);
 	const [form, setForm] = useState({
 		callsign: '',
 		aircraft_type: '',
@@ -65,21 +70,28 @@ export default function Submit() {
 	> | null>(null);
 	const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
+	// Check if logbook should be disabled (test gate on AND not a tester/admin)
+	const isLogbookDisabled = testerGateEnabled && !user?.isTester && !user?.isAdmin;
+	const hasRobloxLinked = !!user?.robloxUsername;
+
 	useEffect(() => {
 		if (!sessionId || initialLoadComplete) return;
 
 		setLoading(true);
-		fetch(
-			`${
-				import.meta.env.VITE_SERVER_URL
-			}/api/sessions/${sessionId}/submit`
-		)
-			.then((res) => (res.ok ? res.json() : Promise.reject(res)))
-			.then((data) => {
-				setSession(data);
+
+		// Fetch session data and tester gate settings in parallel
+		Promise.all([
+			fetch(`${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`)
+				.then((res) => (res.ok ? res.json() : Promise.reject(res))),
+			fetch(`${import.meta.env.VITE_SERVER_URL}/api/data/settings`)
+				.then((res) => (res.ok ? res.json() : Promise.reject(res)))
+		])
+			.then(([sessionData, settings]) => {
+				setSession(sessionData);
+				setTesterGateEnabled(settings.tester_gate_enabled || false);
 				setForm((f) => ({
 					...f,
-					departure: data.airportIcao || ''
+					departure: sessionData.airportIcao || ''
 				}));
 				setInitialLoadComplete(true);
 			})
@@ -130,6 +142,28 @@ export default function Submit() {
 			return;
 		}
 
+		// If logbook is enabled, start tracking the flight
+		if (logWithLogbook && hasRobloxLinked && !isLogbookDisabled) {
+			try {
+				await fetch(`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/start`, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						robloxUsername: user?.robloxUsername,
+						callsign: form.callsign,
+						departureIcao: form.departure,
+						arrivalIcao: form.arrival,
+						route: form.route,
+						aircraftIcao: form.aircraft_type
+					})
+				});
+			} catch (error) {
+				console.error('Failed to start logbook tracking:', error);
+				// Don't block flight submission if logbook fails
+			}
+		}
+
 		if (flightsSocket) {
 			flightsSocket.addFlight({
 				...form,
@@ -158,6 +192,7 @@ export default function Submit() {
 	const handleCreateAnother = () => {
 		setSuccess(false);
 		setSubmittedFlight(null);
+		setLogWithLogbook(false);
 		setForm({
 			callsign: '',
 			aircraft_type: '',
@@ -515,6 +550,72 @@ export default function Submit() {
 									className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
 								/>
 							</div>
+
+							{/* Logbook Checkbox */}
+							<div className={`bg-gray-800/50 rounded-xl border-2 border-gray-700 p-5 transition-all ${isLogbookDisabled || !hasRobloxLinked ? 'opacity-50' : 'hover:border-blue-600/50'}`}>
+								<label className={`flex items-start ${isLogbookDisabled || !hasRobloxLinked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+									{/* Custom Checkbox */}
+									<div className="relative flex-shrink-0 mt-0.5">
+										<input
+											type="checkbox"
+											checked={logWithLogbook}
+											onChange={(e) => setLogWithLogbook(e.target.checked)}
+											disabled={isLogbookDisabled || !hasRobloxLinked}
+											className="sr-only peer"
+										/>
+										<div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+											logWithLogbook
+												? 'bg-blue-600 border-blue-600'
+												: 'bg-gray-700 border-gray-600'
+										} ${
+											isLogbookDisabled || !hasRobloxLinked
+												? 'cursor-not-allowed'
+												: 'peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2 peer-focus:ring-offset-gray-900 cursor-pointer hover:border-blue-500'
+										}`}>
+											{logWithLogbook && (
+												<Check className="h-4 w-4 text-white" strokeWidth={3} />
+											)}
+										</div>
+									</div>
+
+									<div className="ml-4 flex-1">
+										<div className="flex items-center mb-1">
+											<BookOpen className="h-5 w-5 text-blue-400 mr-2" />
+											<span className="text-base font-semibold text-white">
+												Log with PFConnect Logbook
+											</span>
+										</div>
+										<p className="text-sm text-gray-400 leading-relaxed">
+											Automatically track your flight with detailed telemetry, landing rate, and statistics
+										</p>
+									</div>
+								</label>
+
+								{!hasRobloxLinked && (
+									<div className="mt-3 ml-10 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+										<div className="flex items-start justify-between">
+											<p className="text-xs text-yellow-400 flex items-start flex-1">
+												<AlertTriangle className="h-3.5 w-3.5 mr-1.5 mt-0.5 flex-shrink-0" />
+												Link your Roblox account in Settings to use the logbook
+											</p>
+											<a
+												href="/settings"
+												className="ml-3 text-xs font-semibold text-yellow-300 hover:text-yellow-200 underline whitespace-nowrap transition-colors"
+											>
+												Go to Settings →
+											</a>
+										</div>
+									</div>
+								)}
+								{hasRobloxLinked && isLogbookDisabled && (
+									<div className="mt-3 ml-10 p-3 bg-gray-700/30 border border-gray-600/50 rounded-lg">
+										<p className="text-xs text-gray-400">
+											PFControl LogBook is currently only available to testers
+										</p>
+									</div>
+								)}
+							</div>
+
 							<div className="mt-8">
 								<Button
 									type="submit"
