@@ -151,32 +151,45 @@ export default function Sessions() {
             {/* Header */}
             <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50">
                 <div className="max-w-7xl mx-auto px-6 py-12 pt-28">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
+                    <div
+                        className="
+                flex flex-col gap-5 items-start 
+                sm:flex-row sm:items-center sm:justify-between sm:gap-0
+                mb-4
+            "
+                    >
+                        <div className="flex items-center w-full sm:w-auto">
                             <div className="p-3 bg-blue-500/20 rounded-xl mr-4">
                                 <Workflow className="h-8 w-8 text-blue-400" />
                             </div>
                             <div>
                                 <h1
-                                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
-                                    style={{ lineHeight: 1.4 }}
+                                    className="
+                            text-3xl sm:text-5xl
+                            text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 
+                            font-extrabold mb-0 sm:mb-2
+                        "
+                                    style={{ lineHeight: 1.2 }}
                                 >
                                     My Sessions
                                 </h1>
                             </div>
                         </div>
-                        <p className="text-zinc-400">
+                        <p className="text-zinc-400 mt-2 sm:mt-0 w-full sm:w-auto text-base sm:text-lg text-left sm:text-right">
                             {sessions.length}/10 sessions created
                         </p>
                         <Button
                             onClick={() => (window.location.href = '/create')}
                             size="md"
                             disabled={sessions.length >= 10}
-                            className={
-                                sessions.length >= 10
-                                    ? 'opacity-50 cursor-not-allowed'
-                                    : ''
-                            }
+                            className={`
+                    mt-2 sm:mt-0 w-full sm:w-auto
+                    ${
+                        sessions.length >= 10
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                    }
+                `}
                         >
                             Create New Session
                         </Button>
