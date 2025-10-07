@@ -14,7 +14,7 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
-
+import ACARS from './pages/ACARS';
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAudit from './pages/admin/AdminAudit';

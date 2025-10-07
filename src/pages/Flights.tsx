@@ -253,7 +253,15 @@ export default function Flights() {
             socket.socket.disconnect();
         };
     }, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
-
+    // helper to issue PDC (emits to flights websocket)
+    const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
+        if (!flightsSocket?.socket) {
+            console.warn('handleIssuePDC: no flights socket available');
+            throw new Error('No flights socket');
+        }
+        // emit the dedicated event the server expects
+        flightsSocket.socket.emit('issuePDC', { flightId, pdcText });
+    };
     useEffect(() => {
         if (
             !sessionId ||
@@ -299,11 +307,11 @@ export default function Flights() {
                 username: user.username,
                 avatar: user.avatar,
             },
-            () => {},
-            () => {},
-            () => {},
-            () => {},
-            () => {},
+            () => { },
+            () => { },
+            () => { },
+            () => { },
+            () => { },
             handleMentionReceived,
             (editingStates: FieldEditingState[]) =>
                 setFieldEditingStates(editingStates),
@@ -695,6 +703,7 @@ export default function Flights() {
                                 onFlightDelete={handleFlightDelete}
                                 onFlightChange={handleFlightUpdate}
                                 backgroundStyle={backgroundStyle}
+                                onIssuePDC={handleIssuePDC} // <-- forward the handler here
                             />
                         ) : (
                             <>

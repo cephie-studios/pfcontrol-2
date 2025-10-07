@@ -152,6 +152,18 @@ export async function addFlight(sessionId, flightData) {
 
 export async function updateFlight(sessionId, flightId, updates) {
     const tableName = `flights_${sessionId}`;
+
+    // add this block to create missing text columns safely
+    const safeCols = Object.keys(updates).filter(k => /^[a-zA-Z0-9_]+$/.test(k));
+    for (const col of safeCols) {
+        try {
+            await flightsPool.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${col}" text;`);
+        } catch (err) {
+            // ignore - column creation failure shouldn't stop update
+            console.error('Could not ensure column exists:', col, err?.message || err);
+        }
+    }
+
     const fields = [];
     const values = [];
     let idx = 1;

@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
 import dotenv from 'dotenv';
 import http from 'http';
-
+import jwt from 'jsonwebtoken'
 import { setupChatWebsocket } from './websockets/chatWebsocket.js';
 import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket.js';
 import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';

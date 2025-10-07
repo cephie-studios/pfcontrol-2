@@ -11,9 +11,11 @@ interface PDCModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	flight: Flight | null;
+	// NEW: controller callback to send/issue the PDC (will emit to server)
+	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
 }
 
-const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight }) => {
+const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC }) => {
 	const { frequencies, fetchAirportData, fetchedAirports } = useData();
 	const [airportFreqs, setAirportFreqs] = useState<AirportFrequencies>({});
 	const [customFreqs, setCustomFreqs] = useState<AirportFrequencies>(() => {
@@ -527,26 +529,32 @@ IDENTIFIER: ${identifier}`;
 							<Button
 								onClick={copyToClipboard}
 								disabled={loading}
-								className={`flex items-center gap-2
-                                ${
-									copied
-										? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white'
-										: ''
-								}`}
 								size="sm"
 							>
-								{copied ? (
-									<>
-										<CheckCircle className="h-4 w-4" />
-										Copied!
-									</>
-								) : (
-									<>
-										<Copy className="h-4 w-4" />
-										Copy PDC
-									</>
-								)}
+								Copy PDC
 							</Button>
+
+							{/* NEW: Issue PDC to pilot via flights websocket */}
+							{typeof onIssuePDC === 'function' && (
+								<Button
+									onClick={async () => {
+										if (!flight) return;
+										const pdcText = generatePDCText();
+										try {
+											await onIssuePDC(flight.id, pdcText);
+											onClose();
+										} catch (err) {
+											console.error('Issue PDC failed', err);
+											setError('Failed to issue PDC');
+										}
+									}}
+									disabled={loading}
+									size="sm"
+								>
+									Issue PDC to Pilot
+								</Button>
+							)}
+
 							<Button
 								onClick={onClose}
 								variant="outline"

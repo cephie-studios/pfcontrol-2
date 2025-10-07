@@ -20,15 +20,35 @@ export function setupFlightsWebsocket(httpServer) {
         const sessionId = socket.handshake.query.sessionId;
         const accessId = socket.handshake.query.accessId;
 
-        const valid = await validateSessionAccess(sessionId, accessId);
-        if (!valid) {
+        // Basic session check
+        if (!sessionId) {
             socket.disconnect(true);
             return;
         }
 
+        // Determine role:
+        // - If an accessId is provided and validates -> controller (full privileges)
+        // - If no accessId provided -> pilot (limited privileges: can listen & addFlight)
+        // This avoids giving pilots controller access while still allowing them to receive events.
+        let role = 'pilot';
+        if (accessId) {
+            const valid = await validateSessionAccess(sessionId, accessId);
+            if (!valid) {
+                socket.disconnect(true);
+                return;
+            }
+            role = 'controller';
+        }
+        socket.data.role = role;
+
         socket.join(sessionId);
 
         socket.on('updateFlight', async ({ flightId, updates }) => {
+            // restrict updates from pilots (controllers only)
+            if (socket.data.role !== 'controller') {
+                socket.emit('flightError', { action: 'update', flightId, error: 'Not authorized' });
+                return;
+            }
             try {
                 // Handle local hide/unhide - don't process these on server
                 if (updates.hasOwnProperty('hidden')) {
@@ -99,6 +119,11 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('deleteFlight', async (flightId) => {
+            // controllers only
+            if (socket.data.role !== 'controller') {
+                socket.emit('flightError', { action: 'delete', flightId, error: 'Not authorized' });
+                return;
+            }
             try {
                 await deleteFlight(sessionId, flightId);
                 io.to(sessionId).emit('flightDeleted', { flightId });
@@ -109,6 +134,11 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('updateSession', async (updates) => {
+            // controllers only
+            if (socket.data.role !== 'controller') {
+                socket.emit('sessionError', { error: 'Not authorized' });
+                return;
+            }
             try {
                 const updatedSession = await updateSession(sessionId, updates);
                 if (updatedSession) {
@@ -121,6 +151,39 @@ export function setupFlightsWebsocket(httpServer) {
             } catch (error) {
                 console.error('Error updating session via websocket:', error);
                 socket.emit('sessionError', { error: 'Failed to update session' });
+            }
+        });
+
+        // NEW: controller issues a PDC for a flight -> persist & broadcast
+        socket.on('issuePDC', async ({ flightId, pdcText, targetPilotUserId }) => {
+            // controllers only
+            if (socket.data.role !== 'controller') {
+                socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Not authorized' });
+                return;
+            }
+            try {
+                if (!flightId) {
+                    socket.emit('flightError', { action: 'issuePDC', error: 'Missing flightId' });
+                    return;
+                }
+
+                // Use pdc_remarks (frontend checks this). Avoid writing unknown columns.
+                const updates = {
+                    pdc_remarks: pdcText
+                };
+
+                const updatedFlight = await updateFlight(sessionId, flightId, updates);
+                if (updatedFlight) {
+                    io.to(sessionId).emit('flightUpdated', updatedFlight);
+                    io.to(sessionId).emit('pdcIssued', { flightId, pdcText, updatedFlight });
+
+                    await broadcastToArrivalSessions(updatedFlight);
+                } else {
+                    socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Flight not found' });
+                }
+            } catch (error) {
+                console.error('Error issuing PDC via websocket:', error);
+                socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Failed to issue PDC' });
             }
         });
     });

@@ -31,6 +31,8 @@ interface DepartureTableProps {
 		fieldName: string
 	) => void;
 	onFieldEditingStop?: (flightId: string | number, fieldName: string) => void;
+	// NEW
+	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
 }
 
 export default function DepartureTable({
@@ -60,7 +62,8 @@ export default function DepartureTable({
 	},
 	fieldEditingStates = [],
 	onFieldEditingStart,
-	onFieldEditingStop
+	onFieldEditingStop,
+	onIssuePDC
 }: DepartureTableProps) {
 	const [showHidden, setShowHidden] = useState(false);
 	const [pdcModalOpen, setPdcModalOpen] = useState(false);
@@ -237,6 +240,7 @@ export default function DepartureTable({
 		}
 	};
 
+	// when rendering mobile variant
 	if (isMobile) {
 		return (
 			<>
@@ -252,6 +256,7 @@ export default function DepartureTable({
 					isOpen={pdcModalOpen}
 					onClose={handlePDCClose}
 					flight={selectedFlight}
+					onIssuePDC={onIssuePDC}
 				/>
 			</>
 		);
@@ -809,6 +814,7 @@ export default function DepartureTable({
 				isOpen={pdcModalOpen}
 				onClose={handlePDCClose}
 				flight={selectedFlight}
+				onIssuePDC={onIssuePDC}
 			/>
 		</div>
 	);
