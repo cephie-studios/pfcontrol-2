@@ -23,6 +23,7 @@ import DepartureTable from '../components/tables/DepartureTable';
 import ArrivalsTable from '../components/tables/ArrivalsTable';
 import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
+import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -82,6 +83,14 @@ export default function Flights() {
     const [sessionUsersSocket, setSessionUsersSocket] = useState<ReturnType<
         typeof createSessionUsersSocket
     > | null>(null);
+    const [customDepartureFlights, setCustomDepartureFlights] = useState<
+        Flight[]
+    >([]);
+    const [customArrivalFlights, setCustomArrivalFlights] = useState<Flight[]>(
+        []
+    );
+    const [showAddDepartureModal, setShowAddDepartureModal] = useState(false);
+    const [showAddArrivalModal, setShowAddArrivalModal] = useState(false);
 
     const handleMentionReceived = () => {
         if (user) {
@@ -398,6 +407,28 @@ export default function Flights() {
             return;
         }
 
+        // Check if it's a custom departure flight
+        const isCustomDeparture = customDepartureFlights.some(
+            (f) => f.id === flightId
+        );
+        if (isCustomDeparture) {
+            setCustomDepartureFlights((prev) =>
+                prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f))
+            );
+            return;
+        }
+
+        // Check if it's a custom arrival flight
+        const isCustomArrival = customArrivalFlights.some(
+            (f) => f.id === flightId
+        );
+        if (isCustomArrival) {
+            setCustomArrivalFlights((prev) =>
+                prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f))
+            );
+            return;
+        }
+
         const isExternalArrival = externalArrivals.some(
             (f) => f.id === flightId
         );
@@ -416,6 +447,29 @@ export default function Flights() {
     };
 
     const handleFlightDelete = (flightId: string | number) => {
+        // Check if it's a custom departure flight
+        const isCustomDeparture = customDepartureFlights.some(
+            (f) => f.id === flightId
+        );
+        if (isCustomDeparture) {
+            setCustomDepartureFlights((prev) =>
+                prev.filter((f) => f.id !== flightId)
+            );
+            return;
+        }
+
+        // Check if it's a custom arrival flight
+        const isCustomArrival = customArrivalFlights.some(
+            (f) => f.id === flightId
+        );
+        if (isCustomArrival) {
+            setCustomArrivalFlights((prev) =>
+                prev.filter((f) => f.id !== flightId)
+            );
+            return;
+        }
+
+        // Regular flight deletion via WebSocket
         if (flightsSocket) {
             flightsSocket.deleteFlight(flightId);
         } else {
@@ -423,6 +477,52 @@ export default function Flights() {
                 prev.filter((flight) => flight.id !== flightId)
             );
         }
+    };
+
+    const handleAddCustomDeparture = (flightData: Partial<Flight>) => {
+        const newFlight: Flight = {
+            id: `custom-dep-${Date.now()}`,
+            session_id: sessionId || '',
+            callsign: flightData.callsign || '',
+            aircraft: flightData.aircraft || '',
+            departure: session?.airportIcao || '',
+            arrival: flightData.arrival || '',
+            flight_type: flightData.flight_type || 'IFR',
+            stand: flightData.stand,
+            runway: flightData.runway,
+            sid: flightData.sid,
+            cruisingFL: flightData.cruisingFL,
+            clearedFL: flightData.clearedFL,
+            squawk: flightData.squawk,
+            wtc: flightData.wtc || 'M',
+            status: flightData.status || 'PENDING',
+            remark: flightData.remark,
+            hidden: false,
+        };
+        setCustomDepartureFlights((prev) => [...prev, newFlight]);
+    };
+
+    const handleAddCustomArrival = (flightData: Partial<Flight>) => {
+        const newFlight: Flight = {
+            id: `custom-arr-${Date.now()}`,
+            session_id: sessionId || '',
+            callsign: flightData.callsign || '',
+            aircraft: flightData.aircraft || '',
+            departure: flightData.departure || '',
+            arrival: session?.airportIcao || '',
+            flight_type: flightData.flight_type || 'IFR',
+            gate: flightData.gate,
+            runway: flightData.runway,
+            star: flightData.star,
+            cruisingFL: flightData.cruisingFL,
+            clearedFL: flightData.clearedFL,
+            squawk: flightData.squawk,
+            wtc: flightData.wtc || 'M',
+            status: flightData.status || 'APPR',
+            remark: flightData.remark,
+            hidden: false,
+        };
+        setCustomArrivalFlights((prev) => [...prev, newFlight]);
     };
 
     const handleRunwayChange = async (selectedRunway: string) => {
@@ -462,7 +562,7 @@ export default function Flights() {
     };
 
     const departureFlights = useMemo(() => {
-        return flights
+        const regularDepartures = flights
             .filter(
                 (flight) =>
                     flight.departure?.toUpperCase() ===
@@ -472,7 +572,15 @@ export default function Flights() {
                 ...flight,
                 hidden: localHiddenFlights.has(flight.id),
             }));
-    }, [flights, session?.airportIcao, localHiddenFlights]);
+
+        // Combine regular flights with custom flights
+        return [...regularDepartures, ...customDepartureFlights];
+    }, [
+        flights,
+        session?.airportIcao,
+        localHiddenFlights,
+        customDepartureFlights,
+    ]);
 
     const arrivalFlights = useMemo(() => {
         const ownArrivals = flights.filter(
@@ -486,16 +594,20 @@ export default function Flights() {
             baseArrivals = [...ownArrivals, ...externalArrivals];
         }
 
-        return baseArrivals.map((flight) => ({
+        const mappedArrivals = baseArrivals.map((flight) => ({
             ...flight,
             hidden: localHiddenFlights.has(flight.id),
         }));
+
+        // Combine regular arrivals with custom arrivals
+        return [...mappedArrivals, ...customArrivalFlights];
     }, [
         flights,
         externalArrivals,
         session?.airportIcao,
         session?.isPFATC,
         localHiddenFlights,
+        customArrivalFlights,
     ]);
 
     const filteredFlights = useMemo(() => {
@@ -513,12 +625,18 @@ export default function Flights() {
             } else {
                 baseFlights = ownArrivals;
             }
+
+            // Add custom arrival flights
+            baseFlights = [...baseFlights, ...customArrivalFlights];
         } else {
             baseFlights = flights.filter(
                 (flight) =>
                     flight.departure?.toUpperCase() ===
                     session?.airportIcao?.toUpperCase()
             );
+
+            // Add custom departure flights
+            baseFlights = [...baseFlights, ...customDepartureFlights];
         }
 
         if (currentView === 'departures' && position !== 'ALL') {
@@ -540,6 +658,8 @@ export default function Flights() {
         session?.isPFATC,
         localHiddenFlights,
         position,
+        customDepartureFlights,
+        customArrivalFlights,
     ]);
 
     const backgroundImage = useMemo(() => {
@@ -753,39 +873,111 @@ export default function Flights() {
                         ) : (
                             <>
                                 {currentView === 'departures' ? (
-                                    <DepartureTable
-                                        flights={filteredFlights}
-                                        onFlightDelete={handleFlightDelete}
-                                        onFlightChange={handleFlightUpdate}
-                                        backgroundStyle={backgroundStyle}
-                                        departureColumns={departureColumns}
-                                        fieldEditingStates={fieldEditingStates}
-                                        onFieldEditingStart={
-                                            handleFieldEditingStart
-                                        }
-                                        onFieldEditingStop={
-                                            handleFieldEditingStop
-                                        }
-                                        flashFlightId={null}
-                                        onToggleClearance={
-                                            handleToggleClearance
-                                        }
-                                        flashingPDCIds={flashingPDCIds}
-                                        onIssuePDC={handleIssuePDC}
-                                    />
+                                    <>
+                                        <DepartureTable
+                                            flights={filteredFlights}
+                                            onFlightDelete={handleFlightDelete}
+                                            onFlightChange={handleFlightUpdate}
+                                            backgroundStyle={backgroundStyle}
+                                            departureColumns={departureColumns}
+                                            fieldEditingStates={
+                                                fieldEditingStates
+                                            }
+                                            onFieldEditingStart={
+                                                handleFieldEditingStart
+                                            }
+                                            onFieldEditingStop={
+                                                handleFieldEditingStop
+                                            }
+                                            flashFlightId={null}
+                                            onToggleClearance={
+                                                handleToggleClearance
+                                            }
+                                            flashingPDCIds={flashingPDCIds}
+                                            onIssuePDC={handleIssuePDC}
+                                        />
+                                        <div className="flex justify-center mt-4 mb-6">
+                                            <button
+                                                onClick={() =>
+                                                    setShowAddDepartureModal(
+                                                        true
+                                                    )
+                                                }
+                                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                            >
+                                                <svg
+                                                    className="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M12 4v16m8-8H4"
+                                                    />
+                                                </svg>
+                                                <span>
+                                                    Add Custom Departure
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </>
                                 ) : (
-                                    <ArrivalsTable
-                                        flights={filteredFlights}
-                                        onFlightChange={handleFlightUpdate}
-                                        backgroundStyle={backgroundStyle}
-                                        arrivalsColumns={arrivalsColumns}
-                                    />
+                                    <>
+                                        <ArrivalsTable
+                                            flights={filteredFlights}
+                                            onFlightChange={handleFlightUpdate}
+                                            backgroundStyle={backgroundStyle}
+                                            arrivalsColumns={arrivalsColumns}
+                                        />
+                                        <div className="flex justify-center mt-4 mb-6">
+                                            <button
+                                                onClick={() =>
+                                                    setShowAddArrivalModal(true)
+                                                }
+                                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                            >
+                                                <svg
+                                                    className="w-5 h-5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M12 4v16m8-8H4"
+                                                    />
+                                                </svg>
+                                                <span>Add Custom Arrival</span>
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Modals */}
+            <AddCustomFlightModal
+                isOpen={showAddDepartureModal}
+                onClose={() => setShowAddDepartureModal(false)}
+                onAdd={handleAddCustomDeparture}
+                flightType="departure"
+                airportIcao={session?.airportIcao}
+            />
+            <AddCustomFlightModal
+                isOpen={showAddArrivalModal}
+                onClose={() => setShowAddArrivalModal(false)}
+                onAdd={handleAddCustomArrival}
+                flightType="arrival"
+                airportIcao={session?.airportIcao}
+            />
         </div>
     );
 }
