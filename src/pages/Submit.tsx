@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
 import Button from '../components/common/Button';
@@ -19,7 +19,8 @@ import {
 	ParkingCircle,
 	Loader2,
 	MapPinCheck,
-	Plane
+	Plane,
+	BookOpen
 } from 'lucide-react';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { addFlight } from '../utils/fetch/flights';
@@ -29,6 +30,7 @@ import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
+import { useAuth } from '../hooks/auth/useAuth';
 
 interface SessionData {
 	sessionId: string;
@@ -38,15 +40,19 @@ interface SessionData {
 }
 
 export default function Submit() {
-	const { sessionId } = useParams<{ sessionId: string }>();
-	const [searchParams] = useSearchParams();
-	const accessId = searchParams.get('accessId') ?? undefined;
+    const { sessionId } = useParams<{ sessionId: string }>();
+    const [searchParams] = useSearchParams();
+    const accessId = searchParams.get('accessId') ?? undefined;
+    const { user } = useAuth();
+	const navigate = useNavigate();
 
 	const [session, setSession] = useState<SessionData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState(false);
 	const [submittedFlight, setSubmittedFlight] = useState<Flight | null>(null);
+	const [logWithLogbook, setLogWithLogbook] = useState(false);
+	const [testerGateEnabled, setTesterGateEnabled] = useState(false);
 	const [form, setForm] = useState({
 		callsign: '',
 		aircraft_type: '',
@@ -65,32 +71,112 @@ export default function Submit() {
 	> | null>(null);
 	const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-	// ACARS / PDC state (non-breaking, distinct from existing submission flow)
+	// NEW: ACARS/PDC UI state — non intrusive, does not modify submission flow
 	const [pdcReceived, setPdcReceived] = useState(false);
 	const [pdcContent, setPdcContent] = useState<string | null>(null);
-	const [flightId, setFlightId] = useState<string | null>(null);
-	const [pdcRequestFlash, setPdcRequestFlash] = useState(false);
-
-	// keep a ref to submittedFlight to avoid effect re-creation / stale closures
+	// keep a stable ref so the listener can match the latest submitted flight without re-creating socket
 	const submittedFlightRef = React.useRef<Flight | null>(null);
 	useEffect(() => {
+		// keep ref in sync with state
 		submittedFlightRef.current = submittedFlight;
 	}, [submittedFlight]);
+
+	// Lightweight read-only listener for pdcIssued — created only when session loaded.
+	// This listener does NOT replace or modify the existing flightsSocket used for submission.
+	useEffect(() => {
+		if (!sessionId || !initialLoadComplete) return;
+
+		let listenerWrapper: any | null = null;
+		try {
+			// createFlightsSocket returns an object exposing .socket — we pass undefined for accessId so
+			// this is a read/listen-only connection for pilots (does not change submission flow).
+			listenerWrapper = createFlightsSocket(sessionId, '', () => {}, () => {}, () => {}, () => {});
+		} catch (err) {
+			// defensive: if socket creation fails, do not break Submit page
+			console.debug('PDC listener creation failed', err);
+			return;
+		}
+
+		const handlePdcIssued = (payload: any) => {
+			try {
+				const ptext =
+					payload?.pdcText ??
+					payload?.updatedFlight?.pdc_remarks ??
+					payload?.updatedFlight?.pdc_text ??
+					null;
+				if (!ptext) return;
+
+				const sf = submittedFlightRef.current;
+				let matches = false;
+
+				// match by id if available
+				if (sf && payload?.flightId !== undefined && payload?.flightId !== null) {
+					matches = String(payload.flightId) === String(sf.id);
+				}
+
+				// fallback: match by updatedFlight callsign/departure/arrival
+				if (!matches && sf && payload?.updatedFlight) {
+					const uf = payload.updatedFlight;
+					if (uf.callsign === sf.callsign && uf.departure === sf.departure && uf.arrival === sf.arrival) {
+						matches = true;
+					}
+				}
+
+				// if pilot submitted via REST and we don't yet have submittedFlight, try matching to form values
+				if (!matches && payload?.updatedFlight) {
+					const uf = payload.updatedFlight;
+					if (uf.callsign === form.callsign && uf.departure === form.departure && uf.arrival === form.arrival) {
+						matches = true;
+					}
+				}
+
+				if (matches) {
+					setPdcContent(String(ptext));
+					setPdcReceived(true);
+				}
+			} catch (err) {
+				console.error('Error handling pdcIssued in Submit listener', err);
+			}
+		};
+
+		try {
+			if (listenerWrapper && listenerWrapper.socket) {
+				listenerWrapper.socket.on('pdcIssued', handlePdcIssued);
+			}
+		} catch (err) {
+			console.debug('Could not attach pdcIssued handler', err);
+		}
+
+		return () => {
+			try {
+				if (listenerWrapper && listenerWrapper.socket) {
+					listenerWrapper.socket.off('pdcIssued', handlePdcIssued);
+					listenerWrapper.socket.disconnect();
+				}
+			} catch (e) {}
+		};
+	}, [sessionId, initialLoadComplete, form]);
+
+	const isLogbookDisabled = testerGateEnabled && !user?.isTester && !user?.isAdmin;
+	const hasRobloxLinked = !!user?.robloxUsername;
 
 	useEffect(() => {
 		if (!sessionId || initialLoadComplete) return;
 
 		setLoading(true);
-		fetch(
-			`${import.meta.env.VITE_SERVER_URL
-			}/api/sessions/${sessionId}/submit`
-		)
-			.then((res) => (res.ok ? res.json() : Promise.reject(res)))
-			.then((data) => {
-				setSession(data);
+
+		Promise.all([
+			fetch(`${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`)
+				.then((res) => (res.ok ? res.json() : Promise.reject(res))),
+			fetch(`${import.meta.env.VITE_SERVER_URL}/api/data/settings`)
+				.then((res) => (res.ok ? res.json() : Promise.reject(res)))
+		])
+			.then(([sessionData, settings]) => {
+				setSession(sessionData);
+				setTesterGateEnabled(settings.tester_gate_enabled || false);
 				setForm((f) => ({
 					...f,
-					departure: data.airportIcao || ''
+					departure: sessionData.airportIcao || ''
 				}));
 				setInitialLoadComplete(true);
 			})
@@ -99,126 +185,30 @@ export default function Submit() {
 	}, [sessionId, initialLoadComplete]);
 
 	useEffect(() => {
-		// keep existing socket creation for controller/pilot flows that use accessId intact:
-		if (sessionId && accessId && initialLoadComplete) {
-			const socket = createFlightsSocket(
-				sessionId,
-				accessId,
-				() => { },
-				(flight: Flight) => {
-					setSubmittedFlight(flight);
-					setFlightId(String(flight.id)); // store id for matching
-					setSuccess(true);
-					setIsSubmitting(false);
-				},
-				() => { },
-				(error) => {
-					console.error('Flight error:', error);
-					setError('Failed to submit flight.');
-					setIsSubmitting(false);
-				}
-			);
-			setFlightsSocket(socket);
-			return () => {
-				try { socket.socket.disconnect(); } catch (e) { }
-			};
-		}
+		if (!sessionId || !accessId || !initialLoadComplete) return;
 
-		// Additionally: create a lightweight listener socket for PDC events even when accessId is NOT present.
-		// This does not replace the flightsSocket used for submission — it only listens for pdcIssued/flightUpdated.
-		if (sessionId && initialLoadComplete && !accessId) {
-			// create listener without accessId (pass undefined) so pilots can listen only
-			const listener = createFlightsSocket(
-				sessionId,
-				'',
-				// onFlightUpdated
-				(flight: Flight) => {
-					const sf = submittedFlightRef.current;
-					if (!sf) return;
-					const matches =
-						flight.id === sf.id ||
-						(flight.callsign === sf.callsign &&
-							flight.departure === sf.departure &&
-							flight.arrival === sf.arrival);
-					if (!matches) return;
-					const pdcText =
-						(flight as any).pdc_remarks ??
-						(flight as any).pdc_text ??
-						(flight as any).pdc ??
-						null;
-					if (pdcText) {
-						setSubmittedFlight(flight);
-						setPdcContent(typeof pdcText === 'string' ? pdcText : String(pdcText));
-						setPdcReceived(true);
-					}
-				},
-				// onFlightAdded
-				(flight: Flight) => {
-					// if pilot submitted via REST and server returns flight with PDC already attached, handle it
-					setFlightId(String(flight.id)); // store id when flight is added via socket
-					const pdcText =
-						(flight as any).pdc_remarks ??
-						(flight as any).pdc_text ??
-						(flight as any).pdc ??
-						null;
-					if (pdcText) {
-						setSubmittedFlight(flight);
-						setPdcContent(typeof pdcText === 'string' ? pdcText : String(pdcText));
-						setPdcReceived(true);
-					}
-				},
-				() => { },
-				(error) => {
-					console.debug('PDC listener socket error (Submit):', error);
-				}
-			);
-
-			// store listener so we can emit requestPDC from this page even when no accessId
-			setFlightsSocket(listener);
-
-			// also listen for dedicated pdcIssued events
-			try {
-				listener.socket.on('pdcIssued', (payload: { flightId?: string | number; pdcText?: string; updatedFlight?: Flight }) => {
-					const { flightId: payloadFId, pdcText, updatedFlight } = payload || {};
-					const sf = submittedFlightRef.current;
-					let matches = false;
-					if (sf && payloadFId !== undefined) matches = String(payloadFId) === String(sf.id);
-					if (!matches && sf && updatedFlight) {
-						matches =
-							updatedFlight.callsign === sf.callsign &&
-							updatedFlight.departure === sf.departure &&
-							updatedFlight.arrival === sf.arrival;
-					}
-					// if pilot submitted via REST and we don't yet have submittedFlight, try matching updatedFlight to form
-					if (!matches && updatedFlight) {
-						matches =
-							updatedFlight.callsign === form.callsign &&
-							updatedFlight.departure === form.departure &&
-							updatedFlight.arrival === form.arrival;
-					}
-					if (matches) {
-						const flightToUse = updatedFlight ?? submittedFlightRef.current;
-						if (flightToUse) {
-							setSubmittedFlight(flightToUse);
-							submittedFlightRef.current = flightToUse;
-						}
-						if (pdcText) {
-							setPdcContent(pdcText);
-							setPdcReceived(true);
-						}
-					}
-				});
-			} catch (e) {
-				/* ignore if listener.socket not available */ console.debug('Could not attach pdcIssued listener', e);
+		const socket = createFlightsSocket(
+			sessionId,
+			accessId,
+			() => {},
+			(flight: Flight) => {
+				setSubmittedFlight(flight);
+				setSuccess(true);
+				setIsSubmitting(false);
+			},
+			() => {},
+			(error) => {
+				console.error('Flight error:', error);
+				setError('Failed to submit flight.');
+				setIsSubmitting(false);
 			}
+		);
 
-			return () => {
-				try {
-					listener.socket.off('pdcIssued');
-					listener.socket.disconnect();
-				} catch (e) { }
-			};
-		}
+		setFlightsSocket(socket);
+
+		return () => {
+			socket.socket.disconnect();
+		};
 	}, [sessionId, accessId, initialLoadComplete]);
 
 	const handleChange = (name: string) => (value: string) => {
@@ -235,6 +225,26 @@ export default function Submit() {
 			setError('Please fill all required fields.');
 			setIsSubmitting(false);
 			return;
+		}
+
+		if (logWithLogbook && hasRobloxLinked && !isLogbookDisabled) {
+			try {
+				await fetch(`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/start`, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						robloxUsername: user?.robloxUsername,
+						callsign: form.callsign,
+						departureIcao: form.departure,
+						arrivalIcao: form.arrival,
+						route: form.route,
+						aircraftIcao: form.aircraft_type
+					})
+				});
+			} catch (error) {
+				console.error('Failed to start logbook tracking:', error);
+			}
 		}
 
 		if (flightsSocket) {
@@ -265,6 +275,7 @@ export default function Submit() {
 	const handleCreateAnother = () => {
 		setSuccess(false);
 		setSubmittedFlight(null);
+		setLogWithLogbook(false);
 		setForm({
 			callsign: '',
 			aircraft_type: '',
@@ -276,21 +287,6 @@ export default function Submit() {
 			flight_type: 'IFR',
 			cruisingFL: ''
 		});
-	};
-
-	// Request PDC: emit requestPDC and flash the 'C' indicator
-	const handleRequestPDC = () => {
-		const id = submittedFlight?.id ?? flightId;
-		if (!id) return;
-		try {
-			if (flightsSocket?.socket) {
-				flightsSocket.socket.emit('requestPDC', { flightId: id, callsign: submittedFlight?.callsign ?? form.callsign });
-			}
-		} catch (e) {
-			console.debug('requestPDC emit failed', e);
-		}
-		setPdcRequestFlash(true);
-		setTimeout(() => setPdcRequestFlash(false), 3000);
 	};
 
 	if (loading) {
@@ -347,30 +343,58 @@ export default function Submit() {
 				</div>
 				{/* Success Message */}
 				{success && submittedFlight && (
-					<div className="bg-green-900/30 border border-green-700 rounded-xl mb-8 overflow-hidden">
-						<div className="bg-green-900/50 p-4 border-b border-green-700 flex items-center">
-							<div className="bg-green-700 rounded-full p-2 mr-3">
-								<Check className="h-6 w-6 text-green-200" />
+					<>
+						{logWithLogbook && (
+							<div className="bg-blue-900/30 border border-blue-700 rounded-xl mb-4 overflow-hidden">
+								<div className="p-5 flex items-start justify-between">
+									<div className="flex items-start flex-1">
+										<div className="bg-blue-600 rounded-full p-2 mr-3 flex-shrink-0">
+											<BookOpen className="h-5 w-5 text-white" />
+										</div>
+										<div className="flex-1">
+											<h3 className="text-base font-semibold text-blue-200 mb-1">
+												Flight Tracking Active
+											</h3>
+											<p className="text-blue-300 text-sm mb-3">
+												Your flight is now being tracked in your logbook. View real-time telemetry, altitude, speed, and more!
+											</p>
+											<a
+												href="/logbook"
+												className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+											>
+												<BookOpen className="h-4 w-4 mr-2" />
+												View Live Flight
+											</a>
+										</div>
+									</div>
+								</div>
 							</div>
-							<div className="flex-1">
-								<h3 className="text-lg font-semibold text-green-200">
-									Flight Plan Submitted Successfully!
-								</h3>
-								<p className="text-green-300 text-sm">
-									Your flight plan has been submitted to ATC
-									and is awaiting clearance.
-								</p>
+						)}
+
+						<div className="bg-green-900/30 border border-green-700 rounded-xl mb-8 overflow-hidden">
+							<div className="bg-green-900/50 p-4 border-b border-green-700 flex items-center">
+								<div className="bg-green-700 rounded-full p-2 mr-3">
+									<Check className="h-6 w-6 text-green-200" />
+								</div>
+								<div className="flex-1">
+									<h3 className="text-lg font-semibold text-green-200">
+										Flight Plan Submitted Successfully!
+									</h3>
+									<p className="text-green-300 text-sm">
+										Your flight plan has been submitted to ATC
+										and is awaiting clearance.
+									</p>
+								</div>
+								<button
+									onClick={() => {
+										setSuccess(false);
+										setSubmittedFlight(null);
+									}}
+									className="text-green-300 hover:text-green-100 ml-4"
+								>
+									<X className="h-5 w-5" />
+								</button>
 							</div>
-							<button
-								onClick={() => {
-									setSuccess(false);
-									setSubmittedFlight(null);
-								}}
-								className="text-green-300 hover:text-green-100 ml-4"
-							>
-								<X className="h-5 w-5" />
-							</button>
-						</div>
 						<div className="p-6">
 							<div className="flex items-center mb-4">
 								<ClipboardList className="h-5 w-5 text-green-400 mr-2" />
@@ -384,26 +408,9 @@ export default function Submit() {
 										<span className="text-sm font-medium text-gray-400">
 											Callsign:
 										</span>
-										<div className="flex items-center gap-3">
-											<p className="text-white font-semibold">
-												{submittedFlight.callsign}
-											</p>
-
-											{/* C checkbox indicator */}
-											<button
-												type="button"
-												className={`ml-2 inline-flex items-center justify-center w-6 h-6 rounded border ${pdcRequestFlash ? 'ring-2 ring-blue-400 animate-pulse' : 'border-gray-600'}`}
-												aria-label="PDC requested"
-												title="PDC requested indicator"
-											>
-												<span className="text-xs font-bold text-white">C</span>
-											</button>
-
-											{/* Request PDC button */}
-											<Button onClick={handleRequestPDC} className="ml-3 px-3 py-1 text-sm">
-												Request PDC
-											</Button>
-										</div>
+										<p className="text-white font-semibold">
+											{submittedFlight.callsign}
+										</p>
 									</div>
 									<div>
 										<span className="text-sm font-medium text-gray-400">
@@ -461,7 +468,18 @@ export default function Submit() {
 									)}
 								</div>
 							</div>
-							{/* ACARS / PDC panel: inline so Submit remains self-contained */}
+							{submittedFlight.remark && (
+								<div className="mt-4 pt-4 border-t border-green-800">
+									<span className="text-sm font-medium text-gray-400">
+										Remarks:
+									</span>
+									<p className="text-white mt-1">
+										{submittedFlight.remark}
+									</p>
+								</div>
+							)}
+
+							{/* NEW: lightweight PDC display for pilots (non-intrusive) */}
 							{pdcReceived && pdcContent && (
 								<div className="mt-6 p-4 bg-blue-900/20 border border-blue-700 rounded-md">
 									<h4 className="text-sm font-semibold text-blue-200 mb-2">
@@ -492,29 +510,35 @@ export default function Submit() {
 									</div>
 								</div>
 							)}
-
-							{/* existing remarks + create another */}
-							{submittedFlight.remark && (
-								<div className="mt-4 pt-4 border-t border-green-800">
-									<span className="text-sm font-medium text-gray-400">
-										Remarks:
-									</span>
-									<p className="text-white mt-1">
-										{submittedFlight.remark}
-									</p>
-								</div>
-							)}
 							<div className="mt-6 pt-4 border-t border-green-800">
-								<Button
-									onClick={handleCreateAnother}
-									className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors"
-								>
-									<PlusCircle className="h-5 w-5 mr-2" />
-									Create Another Flight Plan
-								</Button>
+								<div className="flex gap-3">
+									<Button
+										onClick={handleCreateAnother}
+										className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors"
+									>
+										<PlusCircle className="h-5 w-5 mr-2" />
+										Create Another Flight Plan
+									</Button>
+
+									{/* Open ACARS (opens ACARS page for this session; passes flightId as query) */}
+									<Button
+										onClick={() =>
+											navigate(
+												`/acars/${sessionId}?flightId=${encodeURIComponent(
+													String(submittedFlight.id)
+												)}`
+											)
+										}
+										variant="outline"
+										className="flex items-center justify-center text-white py-3 px-4 rounded-lg transition-colors"
+									>
+										Open ACARS
+									</Button>
+								</div>
 							</div>
 						</div>
 					</div>
+					</>
 				)}
 
 				{/* Form */}
@@ -687,6 +711,72 @@ export default function Submit() {
 									className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
 								/>
 							</div>
+
+							{/* Logbook Checkbox */}
+							<div className={`bg-gray-800/50 rounded-xl border-2 border-gray-700 p-5 transition-all ${isLogbookDisabled || !hasRobloxLinked ? 'opacity-50' : 'hover:border-blue-600/50'}`}>
+								<label className={`flex items-start ${isLogbookDisabled || !hasRobloxLinked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+									{/* Custom Checkbox */}
+									<div className="relative flex-shrink-0 mt-0.5">
+										<input
+											type="checkbox"
+											checked={logWithLogbook}
+											onChange={(e) => setLogWithLogbook(e.target.checked)}
+											disabled={isLogbookDisabled || !hasRobloxLinked}
+											className="sr-only peer"
+										/>
+										<div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+											logWithLogbook
+												? 'bg-blue-600 border-blue-600'
+												: 'bg-gray-700 border-gray-600'
+										} ${
+											isLogbookDisabled || !hasRobloxLinked
+												? 'cursor-not-allowed'
+												: 'peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2 peer-focus:ring-offset-gray-900 cursor-pointer hover:border-blue-500'
+										}`}>
+											{logWithLogbook && (
+												<Check className="h-4 w-4 text-white" strokeWidth={3} />
+											)}
+										</div>
+									</div>
+
+									<div className="ml-4 flex-1">
+										<div className="flex items-center mb-1">
+											<BookOpen className="h-5 w-5 text-blue-400 mr-2" />
+											<span className="text-base font-semibold text-white">
+												Log with PFConnect Logbook
+											</span>
+										</div>
+										<p className="text-sm text-gray-400 leading-relaxed">
+											Automatically track your flight with detailed telemetry, landing rate, and statistics
+										</p>
+									</div>
+								</label>
+
+								{!hasRobloxLinked && (
+									<div className="mt-3 ml-10 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+										<div className="flex items-start justify-between">
+											<p className="text-xs text-yellow-400 flex items-start flex-1">
+												<AlertTriangle className="h-3.5 w-3.5 mr-1.5 mt-0.5 flex-shrink-0" />
+												Link your Roblox account in Settings to use the logbook
+											</p>
+											<a
+												href="/settings"
+												className="ml-3 text-xs font-semibold text-yellow-300 hover:text-yellow-200 underline whitespace-nowrap transition-colors"
+											>
+												Go to Settings →
+											</a>
+										</div>
+									</div>
+								)}
+								{hasRobloxLinked && isLogbookDisabled && (
+									<div className="mt-3 ml-10 p-3 bg-gray-700/30 border border-gray-600/50 rounded-lg">
+										<p className="text-xs text-gray-400">
+											PFControl LogBook is currently only available to testers
+										</p>
+									</div>
+								)}
+							</div>
+
 							<div className="mt-8">
 								<Button
 									type="submit"

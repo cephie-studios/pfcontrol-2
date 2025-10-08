@@ -186,6 +186,23 @@ export function setupFlightsWebsocket(httpServer) {
                 socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Failed to issue PDC' });
             }
         });
+
+        // client requests that controllers issue a PDC for a flight
+        socket.on('requestPDC', ({ flightId, callsign, note }) => {
+            try {
+                // broadcast to everyone in session (controllers should respond by flashing their flightstrip)
+                io.to(sessionId).emit('pdcRequest', {
+                    flightId,
+                    callsign: callsign ?? null,
+                    note: note ?? null,
+                    requestedBy: socket.handshake.auth?.userId ?? socket.handshake.query?.username ?? null,
+                    ts: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error('Error handling requestPDC:', err);
+                socket.emit('flightError', { action: 'requestPDC', flightId, error: 'Failed to request PDC' });
+            }
+        });
     });
 
     return io;

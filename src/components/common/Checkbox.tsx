@@ -6,6 +6,8 @@ interface CheckboxProps {
 	label: ReactNode;
 	className?: string;
 	checkedClass?: string;
+	// NEW: pass a flashing flag from parent to highlight this checkbox (avoids referencing external vars)
+	flashing?: boolean;
 }
 
 export default function Checkbox({
@@ -13,7 +15,8 @@ export default function Checkbox({
 	onChange,
 	label,
 	className = '',
-	checkedClass = 'bg-blue-600 border-blue-600'
+	checkedClass = 'bg-blue-600 border-blue-600',
+	flashing = false
 }: CheckboxProps) {
 	return (
 		<label
@@ -22,14 +25,14 @@ export default function Checkbox({
 			<div className="relative">
 				<input
 					type="checkbox"
-					className="absolute inset-0 w-6 h-6 opacity-0 cursor-pointer"
+					className="absolute inset-0 w-6 h-6 opacity-0 cursor-pointer "
 					checked={checked}
 					onChange={(e) => onChange(e.target.checked)}
 				/>
 				<div
 					className={`w-6 h-6 border-2 rounded-md transition-colors ${
 						checked ? checkedClass : 'border-gray-400'
-					}`}
+					} ${flashing ? 'ring-2 ring-blue-400 animate-pulse' : ''}`}
 				>
 					{checked && (
 						<svg

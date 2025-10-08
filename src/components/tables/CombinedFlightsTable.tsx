@@ -11,6 +11,7 @@ interface CombinedFlightsTableProps {
 		updates: Partial<Flight>
 	) => void;
 	backgroundStyle?: React.CSSProperties;
+	flashFlightId: string | null;
 	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
 }
 
@@ -20,7 +21,8 @@ export default function CombinedFlightsTable({
 	onFlightDelete,
 	onFlightChange,
 	onIssuePDC,
-	backgroundStyle
+	backgroundStyle,
+	flashFlightId
 }: CombinedFlightsTableProps) {
 	return (
 		<div className="space-y-12 mt-8">
@@ -34,6 +36,7 @@ export default function CombinedFlightsTable({
 					onFlightChange={onFlightChange ?? (() => {})}
 					backgroundStyle={backgroundStyle}
 					onIssuePDC={onIssuePDC}
+					flashFlightId={flashFlightId}
 				/>
 			</div>
 

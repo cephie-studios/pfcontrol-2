@@ -30,6 +30,7 @@ interface DepartureTableProps {
 		flightId: string | number,
 		fieldName: string
 	) => void;
+	flashFlightId: string | null;
 	onFieldEditingStop?: (flightId: string | number, fieldName: string) => void;
 	// NEW
 	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;

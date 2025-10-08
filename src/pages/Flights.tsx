@@ -68,6 +68,7 @@ export default function Flights() {
     const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
         'departures'
     );
+    const [flashFlightId, setFlashFlightId] = useState<string | null>(null);
     const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
     const [localHiddenFlights, setLocalHiddenFlights] = useState<
         Set<string | number>
@@ -338,6 +339,26 @@ export default function Flights() {
             sessionUsersSocket.emitPositionChange(position);
         }
     }, [position, sessionUsersSocket]);
+
+    useEffect(() => {
+        if (!flightsSocket?.socket) return;
+        const onPdcRequest = (payload: { flightId?: string | number }) => {
+            try {
+                const id = payload?.flightId;
+                if (!id) return;
+                setFlashFlightId(String(id));
+                setTimeout(() => {
+                    setFlashFlightId((cur) => (cur === String(id) ? null : cur));
+                }, 3000);
+            } catch (e) {
+                console.debug('pdcRequest handler error', e);
+            }
+        };
+        flightsSocket.socket.on('pdcRequest', onPdcRequest);
+        return () => {
+            try { flightsSocket.socket.off('pdcRequest', onPdcRequest); } catch (e) { }
+        };
+    }, [flightsSocket]);
 
     const handleFlightUpdate = (
         flightId: string | number,
@@ -704,6 +725,7 @@ export default function Flights() {
                                 onFlightChange={handleFlightUpdate}
                                 backgroundStyle={backgroundStyle}
                                 onIssuePDC={handleIssuePDC} // <-- forward the handler here
+                                flashFlightId={flashFlightId} // <-- new: which flight should flash "C"
                             />
                         ) : (
                             <>
@@ -721,6 +743,7 @@ export default function Flights() {
                                         onFieldEditingStop={
                                             handleFieldEditingStop
                                         }
+                                        flashFlightId={flashFlightId}
                                     />
                                 ) : (
                                     <ArrivalsTable
