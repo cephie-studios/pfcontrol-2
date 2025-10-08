@@ -26,7 +26,6 @@ import {
     revealUserIP,
     fetchRoles,
     assignRoleToUser,
-    removeRoleFromUser,
     type AdminUser,
     type Role,
 } from '../../utils/fetch/admin';
@@ -594,8 +593,8 @@ export default function AdminUsers() {
                                                                 tableUser.id ? (
                                                                     <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
                                                                 ) : revealedIPs.has(
-                                                                    tableUser.id
-                                                                ) ? (
+                                                                      tableUser.id
+                                                                  ) ? (
                                                                     <EyeOff className="w-4 h-4" />
                                                                 ) : (
                                                                     <Eye className="w-4 h-4" />
@@ -629,16 +628,20 @@ export default function AdminUsers() {
                                                                 Developer
                                                             </span>
                                                         )}
-                                                        {!tableUser.is_admin && tableUser.roleName && (
-                                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 w-fit">
-                                                                {tableUser.roleName}
-                                                            </span>
-                                                        )}
-                                                        {!tableUser.is_admin && !tableUser.roleName && (
-                                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-zinc-600/20 text-zinc-400 border border-zinc-600/30 w-fit">
-                                                                No Role
-                                                            </span>
-                                                        )}
+                                                        {!tableUser.is_admin &&
+                                                            tableUser.roleName && (
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 w-fit">
+                                                                    {
+                                                                        tableUser.roleName
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        {!tableUser.is_admin &&
+                                                            !tableUser.roleName && (
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-zinc-600/20 text-zinc-400 border border-zinc-600/30 w-fit">
+                                                                    No Role
+                                                                </span>
+                                                            )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -932,19 +935,25 @@ export default function AdminUsers() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Database className="w-4 h-4 text-zinc-400" />
-                                            <span className="text-zinc-300 text-sm">Roblox Account</span>
+                                            <span className="text-zinc-300 text-sm">
+                                                Roblox Account
+                                            </span>
                                         </div>
                                         {selectedUser.roblox_username ? (
                                             <div className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-green-400" />
                                                 <span className="text-green-400 text-sm font-medium">
-                                                    {selectedUser.roblox_username}
+                                                    {
+                                                        selectedUser.roblox_username
+                                                    }
                                                 </span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
                                                 <X className="w-4 h-4 text-red-400" />
-                                                <span className="text-red-400 text-sm">Not Linked</span>
+                                                <span className="text-red-400 text-sm">
+                                                    Not Linked
+                                                </span>
                                             </div>
                                         )}
                                     </div>
@@ -953,7 +962,9 @@ export default function AdminUsers() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <User className="w-4 h-4 text-zinc-400" />
-                                            <span className="text-zinc-300 text-sm">Public Profile</span>
+                                            <span className="text-zinc-300 text-sm">
+                                                Public Profile
+                                            </span>
                                         </div>
                                         <Link
                                             to={`/pilots/${selectedUser.username}`}

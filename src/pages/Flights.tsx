@@ -52,7 +52,9 @@ export default function Flights() {
     const [flights, setFlights] = useState<Flight[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-    const [flashingPDCIds, setFlashingPDCIds] = useState<Set<string>>(new Set());
+    const [flashingPDCIds, setFlashingPDCIds] = useState<Set<string>>(
+        new Set()
+    );
     const [flightsSocket, setFlightsSocket] = useState<ReturnType<
         typeof createFlightsSocket
     > | null>(null);
@@ -69,7 +71,6 @@ export default function Flights() {
     const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
         'departures'
     );
-    const [flashFlightId, setFlashFlightId] = useState<string | null>(null);
     const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
     const [localHiddenFlights, setLocalHiddenFlights] = useState<
         Set<string | number>
@@ -256,7 +257,10 @@ export default function Flights() {
         };
     }, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
     // helper to issue PDC (emits to flights websocket)
-    const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
+    const handleIssuePDC = async (
+        flightId: string | number,
+        pdcText: string
+    ) => {
         if (!flightsSocket?.socket) {
             console.warn('handleIssuePDC: no flights socket available');
             throw new Error('No flights socket');
@@ -309,11 +313,11 @@ export default function Flights() {
                 username: user.username,
                 avatar: user.avatar,
             },
-            () => { },
-            () => { },
-            () => { },
-            () => { },
-            () => { },
+            () => {},
+            () => {},
+            () => {},
+            () => {},
+            () => {},
             handleMentionReceived,
             (editingStates: FieldEditingState[]) =>
                 setFieldEditingStates(editingStates),
@@ -347,13 +351,12 @@ export default function Flights() {
         const onPdcRequest = (payload: { flightId?: string | number }) => {
             const id = payload?.flightId;
             if (!id) return;
-            setFlashingPDCIds(prev => {
+            setFlashingPDCIds((prev) => {
                 const next = new Set(prev);
                 next.add(String(id));
                 return next;
             });
         };
-
 
         flightsSocket.socket.on('pdcRequest', onPdcRequest);
         return () => {
@@ -361,20 +364,22 @@ export default function Flights() {
         };
     }, [flightsSocket]);
 
-const handleToggleClearance = (flightId: string | number, checked: boolean) => {
-  // Persist as boolean
-  handleFlightUpdate(flightId, { clearance: checked });
+    const handleToggleClearance = (
+        flightId: string | number,
+        checked: boolean
+    ) => {
+        // Persist as boolean
+        handleFlightUpdate(flightId, { clearance: checked });
 
-  // Always stop flashing once checked
-  if (checked) {
-    setFlashingPDCIds(prev => {
-      const next = new Set(prev);
-      next.delete(String(flightId));
-      return next;
-    });
-  }
-};
-
+        // Always stop flashing once checked
+        if (checked) {
+            setFlashingPDCIds((prev) => {
+                const next = new Set(prev);
+                next.delete(String(flightId));
+                return next;
+            });
+        }
+    };
 
     const handleFlightUpdate = (
         flightId: string | number,
@@ -740,11 +745,10 @@ const handleToggleClearance = (flightId: string | number, checked: boolean) => {
                                 onFlightDelete={handleFlightDelete}
                                 onFlightChange={handleFlightUpdate}
                                 backgroundStyle={backgroundStyle}
-                                onIssuePDC={handleIssuePDC} // <-- forward the handler here
-                                flashFlightId={flashFlightId}
+                                onIssuePDC={handleIssuePDC}
+                                flashFlightId={null}
                                 onToggleClearance={handleToggleClearance}
                                 flashingPDCIds={flashingPDCIds}
-                            // <-- new: which flight should flash "C"
                             />
                         ) : (
                             <>
@@ -762,8 +766,10 @@ const handleToggleClearance = (flightId: string | number, checked: boolean) => {
                                         onFieldEditingStop={
                                             handleFieldEditingStop
                                         }
-                                        flashFlightId={flashFlightId}
-                                        onToggleClearance={handleToggleClearance}
+                                        flashFlightId={null}
+                                        onToggleClearance={
+                                            handleToggleClearance
+                                        }
                                         flashingPDCIds={flashingPDCIds}
                                         onIssuePDC={handleIssuePDC}
                                     />

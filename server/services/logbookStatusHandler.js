@@ -1,13 +1,6 @@
 import { activateFlightByCallsign, completeFlightByCallsign } from '../db/logbook.js';
 import pool from '../db/connections/connection.js';
 
-/**
- * Handle flight status changes from controller interface
- * @param {string} callsign - Flight callsign
- * @param {string} status - New status from controller
- * @param {string} controllerAirport - ICAO code of the controller's airport
- * @returns {Promise<{action: string, flightId: number|null}>}
- */
 export async function handleFlightStatusChange(callsign, status, controllerAirport = null) {
     if (!callsign || !status) {
         return { action: 'none', flightId: null };
@@ -18,9 +11,7 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
     let modifiedStatus = status;
 
     try {
-        // If controller set TAXI or RWY and we know their airport, determine origin vs destination
         if (controllerAirport && (normalizedStatus === 'taxi' || normalizedStatus === 'rwy')) {
-            // Get flight's departure and arrival airports
             const flightInfo = await pool.query(`
                 SELECT departure_icao, arrival_icao
                 FROM logbook_flights
@@ -32,17 +23,13 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
                 const { departure_icao, arrival_icao } = flightInfo.rows[0];
 
                 if (controllerAirport.toUpperCase() === departure_icao?.toUpperCase()) {
-                    // Controller is at departure airport = origin
                     modifiedStatus = normalizedStatus === 'taxi' ? 'origin_taxi' : 'origin_runway';
                 } else if (controllerAirport.toUpperCase() === arrival_icao?.toUpperCase()) {
-                    // Controller is at arrival airport = destination
                     modifiedStatus = normalizedStatus === 'taxi' ? 'destination_taxi' : 'destination_runway';
                 }
             }
         }
 
-        // Update controller_status for the flight (so we can display it in UI)
-        // Try updating via active flights table first (for flights being actively tracked)
         let updateResult = await pool.query(`
             UPDATE logbook_flights lf
             SET controller_status = $2
@@ -51,7 +38,6 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
             RETURNING lf.id
         `, [callsign, modifiedStatus]);
 
-        // If no rows updated, try updating directly by callsign (for flights not in active tracking yet)
         if (updateResult.rowCount === 0) {
             updateResult = await pool.query(`
                 UPDATE logbook_flights
@@ -67,10 +53,6 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
             console.debug(`[Logbook] No flight found to update status for ${callsign}`);
         }
 
-
-        // Activate flight when controller sets status to "departure" or "approach"
-        // "departure" = departure controller releasing the flight
-        // "approach" = arrival controller picking up the flight (in case departure controller didn't track it)
         if (normalizedStatus === 'departure' || normalizedStatus === 'approach') {
             const flightId = await activateFlightByCallsign(callsign);
             if (flightId) {
@@ -79,7 +61,6 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
             }
         }
 
-        // Complete flight when controller sets status to "gate"
         else if (normalizedStatus === 'gate') {
             const flightId = await completeFlightByCallsign(callsign);
             if (flightId) {
@@ -88,7 +69,6 @@ export async function handleFlightStatusChange(callsign, status, controllerAirpo
             }
         }
 
-        // Log if no action was taken (flight not in logbook or wrong state)
         if (result.action === 'none' && (normalizedStatus === 'departure' || normalizedStatus === 'gate')) {
             console.debug(`[Logbook] No action for ${callsign} status: ${normalizedStatus} (not tracked or invalid state)`);
         }
