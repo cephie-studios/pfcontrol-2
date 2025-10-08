@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
@@ -9,7 +9,6 @@ import {
 	Clock,
 	MapPin,
 	TrendingUp,
-	TrendingDown,
 	Award,
 	Gauge,
 	AlertCircle,
@@ -106,8 +105,43 @@ export default function FlightDetail() {
 
 	// Debug state
 	const [showDebug, setShowDebug] = useState(false);
-	const [debugData, setDebugData] = useState<any>(null);
+	const [debugData, setDebugData] = useState<{ type: string; data: unknown } | null>(null);
 	const [debugLoading, setDebugLoading] = useState(false);
+
+	const fetchFlightDetails = useCallback(async () => {
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightId}`,
+				{ credentials: 'include' }
+			);
+			if (res.ok) {
+				const data = await res.json();
+				setFlight(data);
+				setLastFetchTime(Date.now()); // Track when we got fresh data
+			} else {
+				setError('Flight not found');
+			}
+		} catch {
+			setError('Failed to load flight details');
+		} finally {
+			setLoading(false);
+		}
+	}, [flightId]);
+
+	const fetchTelemetry = useCallback(async () => {
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightId}/telemetry`,
+				{ credentials: 'include' }
+			);
+			if (res.ok) {
+				const data = await res.json();
+				setTelemetry(data);
+			}
+		} catch (err) {
+			console.error('Failed to load telemetry:', err);
+		}
+	}, [flightId]);
 
 	useEffect(() => {
 		fetchFlightDetails();
@@ -134,7 +168,7 @@ export default function FlightDetail() {
 			clearInterval(pollInterval);
 			clearTimeout(checkPolling);
 		};
-	}, [flightId, flight?.is_active]);
+	}, [flightId, flight?.is_active, fetchFlightDetails, fetchTelemetry]);
 
 	// Live duration counter for active flights
 	// Server calculates duration_minutes from created_at every 5s
@@ -162,41 +196,6 @@ export default function FlightDetail() {
 
 		return () => clearInterval(interval);
 	}, [flight?.is_active, flight?.duration_minutes, lastFetchTime]);
-
-	const fetchFlightDetails = async () => {
-		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightId}`,
-				{ credentials: 'include' }
-			);
-			if (res.ok) {
-				const data = await res.json();
-				setFlight(data);
-				setLastFetchTime(Date.now()); // Track when we got fresh data
-			} else {
-				setError('Flight not found');
-			}
-		} catch (err) {
-			setError('Failed to load flight details');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const fetchTelemetry = async () => {
-		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightId}/telemetry`,
-				{ credentials: 'include' }
-			);
-			if (res.ok) {
-				const data = await res.json();
-				setTelemetry(data);
-			}
-		} catch (err) {
-			console.error('Failed to load telemetry:', err);
-		}
-	};
 
 	const handleShare = async () => {
 		setShareLoading(true);
@@ -388,7 +387,7 @@ export default function FlightDetail() {
 			);
 			if (res.ok) {
 				const data = await res.json();
-				const currentFlight = data.find((f: any) => f.id === parseInt(flightId || '0'));
+				const currentFlight = data.find((f: Flight) => f.id === flightId);
 				setDebugData({ type: 'flight-data', data: currentFlight });
 			}
 		} catch (err) {

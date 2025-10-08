@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Users,
@@ -79,12 +79,7 @@ export default function AdminUsers() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Fetch users and roles when debounced search, page, or filter changes
-    useEffect(() => {
-        fetchData();
-    }, [page, debouncedSearch, filterAdmin]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -114,7 +109,12 @@ export default function AdminUsers() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit, debouncedSearch, filterAdmin]);
+
+    // Fetch users and roles when debounced search, page, or filter changes
+    useEffect(() => {
+        fetchData();
+    }, [page, debouncedSearch, filterAdmin, fetchData]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);

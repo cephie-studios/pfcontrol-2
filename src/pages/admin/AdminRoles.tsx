@@ -31,6 +31,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    type DragEndEvent,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -60,7 +61,6 @@ import {
     type Role,
     type UserWithRole,
 } from '../../utils/fetch/admin';
-import type { DragEndEvent } from '@dnd-kit/core';
 
 const AVAILABLE_PERMISSIONS = [
     {
@@ -485,6 +485,7 @@ export default function AdminRoles() {
         })
     );
 
+    // Handle drag end - update role priorities
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 

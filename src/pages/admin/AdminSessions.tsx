@@ -15,7 +15,21 @@ import {
 	Wind,
 	Database,
 	RefreshCw,
-	TowerControl
+	TowerControl,
+	Star,
+	Shield,
+	Wrench,
+	Award,
+	Crown,
+	Trophy,
+	Zap,
+	Target,
+	Heart,
+	Sparkles,
+	Flame,
+	TrendingUp,
+	FlaskConical,
+	Braces
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -39,6 +53,33 @@ const sortOptions = [
 	{ value: 'airport', label: 'Sort by Airport' },
 	{ value: 'creator', label: 'Sort by Creator' }
 ];
+
+const getIconComponent = (iconName: string) => {
+	const icons: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+		Star,
+		Shield,
+		Wrench,
+		Award,
+		Crown,
+		Trophy,
+		Zap,
+		Target,
+		Heart,
+		Sparkles,
+		Flame,
+		TrendingUp,
+		FlaskConical,
+		Braces
+	};
+	return icons[iconName] || Star;
+};
+
+const getHighestRole = (roles?: Array<{ id: number; name: string; color: string; icon: string; priority: number }>) => {
+	if (!roles || roles.length === 0) return null;
+	return roles.reduce((highest, current) =>
+		current.priority > highest.priority ? current : highest
+	);
+};
 
 export default function AdminSessions() {
 	const [searchParams] = useSearchParams();
@@ -303,9 +344,9 @@ export default function AdminSessions() {
 					{/* Details */}
 					<div className="space-y-2 mb-4">
 						<div className="flex items-center justify-between text-sm">
-							<span className="text-zinc-400">Active Runway</span>
+							<span className="text-zinc-400">Flights</span>
 							<span className="text-white font-medium">
-								{session.active_runway || 'N/A'}
+								{session.flight_count || 0}
 							</span>
 						</div>
 						<div className="flex items-center justify-between text-sm">
@@ -355,7 +396,7 @@ export default function AdminSessions() {
 							Controllers
 						</th>
 						<th className="px-6 py-4 text-left text-zinc-400 font-medium">
-							Runway
+							Flights
 						</th>
 						<th className="px-6 py-4 text-left text-zinc-400 font-medium">
 							Actions
@@ -441,7 +482,7 @@ export default function AdminSessions() {
 							</td>
 							<td className="px-6 py-4">
 								<span className="text-white font-medium">
-									{session.active_runway || 'N/A'}
+									{session.flight_count || 0}
 								</span>
 							</td>
 							<td className="px-6 py-4">
@@ -744,51 +785,88 @@ export default function AdminSessions() {
 								) : (
 									<div className="space-y-2">
 										{selectedSession.active_users.map(
-											(user) => (
-												<div
-													key={user.id}
-													className="flex items-center space-x-3 bg-zinc-700/50 rounded-lg p-2"
-												>
-													{getAvatarUrl(
-														user.id,
-														user.avatar,
-														32
-													) ? (
-														<img
-															src={
-																getAvatarUrl(
-																	user.id,
-																	user.avatar,
-																	32
-																)!
-															}
-															alt={user.username}
-															className="w-8 h-8 rounded-full"
-														/>
-													) : (
-														<div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-															<Users className="w-4 h-4 text-zinc-400" />
-														</div>
-													)}
-													<div className="flex-1">
-														<div className="text-white text-sm font-medium">
-															{user.username}{' '}
-															<span className="text-zinc-500 font-mono text-xs">
-																({user.id})
-															</span>
-														</div>
-														{user.position &&
-															user.position !==
-																'POSITION' && (
-																<div className="text-xs text-zinc-400">
-																	{
-																		user.position
+											(user) => {
+												const highestRole = getHighestRole(user.roles);
+												const RoleIcon = highestRole ? getIconComponent(highestRole.icon) : null;
+
+												return (
+													<div
+														key={user.id}
+														className="flex items-center space-x-3 bg-zinc-700/50 rounded-lg p-2 group relative"
+													>
+														<div className="relative">
+															{getAvatarUrl(
+																user.id,
+																user.avatar,
+																32
+															) ? (
+																<img
+																	src={
+																		getAvatarUrl(
+																			user.id,
+																			user.avatar,
+																			32
+																		)!
 																	}
+																	alt={user.username}
+																	className="w-8 h-8 rounded-full transition-all"
+																	style={{
+																		border: `2px solid ${highestRole?.color || '#71717a'}`
+																	}}
+																/>
+															) : (
+																<div
+																	className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center transition-all"
+																	style={{
+																		border: `2px solid ${highestRole?.color || '#71717a'}`
+																	}}
+																>
+																	<Users className="w-4 h-4 text-zinc-400" />
 																</div>
 															)}
+
+															{/* Role Tooltip */}
+															{highestRole && RoleIcon && (
+																<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-zinc-900 border-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
+																	style={{
+																		borderColor: highestRole.color
+																	}}
+																>
+																	<div className="flex items-center gap-2">
+																		<RoleIcon
+																			className="w-3.5 h-3.5"
+																			style={{ color: highestRole.color }}
+																		/>
+																		<span
+																			className="text-sm font-semibold"
+																			style={{ color: highestRole.color }}
+																		>
+																			{highestRole.name}
+																		</span>
+																	</div>
+																</div>
+															)}
+														</div>
+														<div className="flex-1">
+															<div className="text-white text-sm font-medium">
+																{user.username}{' '}
+																<span className="text-zinc-500 font-mono text-xs">
+																	({user.id})
+																</span>
+															</div>
+															{user.position &&
+																user.position !==
+																	'POSITION' && (
+																	<div className="text-xs text-zinc-400">
+																		{
+																			user.position
+																		}
+																	</div>
+																)}
+														</div>
 													</div>
-												</div>
-											)
+												);
+											}
 										)}
 									</div>
 								)}

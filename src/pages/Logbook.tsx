@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState, useCallback, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
@@ -81,33 +81,8 @@ export default function Logbook() {
 
 	// Debug state
 	const [showDebug, setShowDebug] = useState(false);
-	const [debugData, setDebugData] = useState<any>(null);
+	const [debugData, setDebugData] = useState<{ type: string; data: unknown } | null>(null);
 	const [debugLoading, setDebugLoading] = useState(false);
-
-	useEffect(() => {
-		fetchStats();
-		fetchActiveFlights();
-		fetchFlights();
-		fetchNotifications();
-	}, [page]);
-
-	// Auto-refresh notifications every 10 seconds
-	useEffect(() => {
-		const interval = setInterval(() => {
-			fetchNotifications();
-		}, 10000);
-
-		return () => clearInterval(interval);
-	}, []);
-
-	// Auto-refresh active flights every 5 seconds
-	useEffect(() => {
-		const interval = setInterval(() => {
-			fetchActiveFlights();
-		}, 5000);
-
-		return () => clearInterval(interval);
-	}, []);
 
 	const fetchStats = async () => {
 		try {
@@ -157,7 +132,7 @@ export default function Logbook() {
 		}
 	};
 
-	const fetchFlights = async () => {
+	const fetchFlights = useCallback(async () => {
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights?page=${page}&limit=20&status=completed`,
@@ -172,12 +147,37 @@ export default function Logbook() {
 			} else {
 				setError('Failed to load flights');
 			}
-		} catch (err) {
+		} catch {
 			setError('Failed to load flights');
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [page]);
+
+	useEffect(() => {
+		fetchStats();
+		fetchActiveFlights();
+		fetchFlights();
+		fetchNotifications();
+	}, [page, fetchFlights]);
+
+	// Auto-refresh notifications every 10 seconds
+	useEffect(() => {
+		const interval = setInterval(() => {
+			fetchNotifications();
+		}, 10000);
+
+		return () => clearInterval(interval);
+	}, []);
+
+	// Auto-refresh active flights every 5 seconds
+	useEffect(() => {
+		const interval = setInterval(() => {
+			fetchActiveFlights();
+		}, 5000);
+
+		return () => clearInterval(interval);
+	}, []);
 
 	const fetchNotifications = async () => {
 		try {

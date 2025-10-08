@@ -8,6 +8,20 @@ import {
     RefreshCw,
     PlaneLanding,
     PlaneTakeoff,
+    Star,
+    Shield,
+    Wrench,
+    Award,
+    Crown,
+    Trophy,
+    Zap,
+    Target,
+    Heart,
+    Sparkles,
+    Flame,
+    TrendingUp,
+    FlaskConical,
+    Braces,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
@@ -42,6 +56,41 @@ interface ToolbarProps {
     onPositionChange: (pos: Position) => void;
 }
 
+const getIconComponent = (iconName: string) => {
+    const icons: Record<string, any> = {
+        Star,
+        Shield,
+        Wrench,
+        Award,
+        Crown,
+        Trophy,
+        Zap,
+        Target,
+        Heart,
+        Sparkles,
+        Flame,
+        TrendingUp,
+        FlaskConical,
+        Braces,
+    };
+    return icons[iconName] || Star;
+};
+
+const getHighestRole = (
+    roles?: Array<{
+        id: number;
+        name: string;
+        color: string;
+        icon: string;
+        priority: number;
+    }>
+) => {
+    if (!roles || roles.length === 0) return null;
+    return roles.reduce((highest, current) =>
+        current.priority > highest.priority ? current : highest
+    );
+};
+
 export default function Toolbar({
     icao,
     sessionId,
@@ -63,7 +112,6 @@ export default function Toolbar({
     const [connectionStatus, setConnectionStatus] = useState<
         'Connected' | 'Reconnecting' | 'Disconnected'
     >('Disconnected');
-    const [tooltipUser, setTooltipUser] = useState<SessionUser | null>(null);
     const [atisLetter, setAtisLetter] = useState<string>('A');
     const [atisFlash, setAtisFlash] = useState<boolean>(false);
     const socketRef = useRef<ReturnType<typeof io> | null>(null);
@@ -292,25 +340,68 @@ export default function Toolbar({
 
             <div className="flex flex-col items-center gap-1 flex-1 relative">
                 <div className="relative flex">
-                    {activeUsers.slice(0, 5).map((user, index) => (
-                        <img
-                            key={user.id}
-                            src={getAvatarUrl(user.id, user.avatar)}
-                            alt={user.username}
-                            className="w-8 h-8 rounded-full border-2 border-white shadow-md cursor-pointer"
-                            onError={(e) => {
-                                e.currentTarget.src =
-                                    '/assets/app/default/avatar.webp';
-                            }}
-                            onMouseEnter={() => setTooltipUser(user)}
-                            onMouseLeave={() => setTooltipUser(null)}
-                            style={{
-                                position: 'relative',
-                                left: `${index * -10}px`,
-                                zIndex: 10 - index,
-                            }}
-                        />
-                    ))}
+                    {activeUsers.slice(0, 5).map((user, index) => {
+                        const highestRole = getHighestRole(user.roles);
+                        const RoleIcon = highestRole
+                            ? getIconComponent(highestRole.icon)
+                            : null;
+
+                        return (
+                            <div
+                                key={user.id}
+                                className="relative group"
+                                style={{
+                                    position: 'relative',
+                                    left: `${index * -10}px`,
+                                    zIndex: 999999,
+                                }}
+                            >
+                                <img
+                                    src={getAvatarUrl(user.id, user.avatar)}
+                                    alt={user.username}
+                                    className="w-8 h-8 rounded-full shadow-md cursor-pointer transition-all"
+                                    onError={(e) => {
+                                        e.currentTarget.src =
+                                            '/assets/app/default/avatar.webp';
+                                    }}
+                                    style={{
+                                        border: `2px solid ${
+                                            highestRole?.color || '#ffffff'
+                                        }`,
+                                    }}
+                                />
+                                {/* Combined tooltip for username and role */}
+                                <div
+                                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
+                                    style={{
+                                        borderColor: highestRole?.color || '#71717a',
+                                        zIndex: 999999,
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-white">
+                                            {user.username}
+                                        </span>
+                                        {highestRole && RoleIcon && (
+                                            <>
+                                                <span className="text-white/50">•</span>
+                                                <RoleIcon
+                                                    className="w-3.5 h-3.5"
+                                                    style={{ color: highestRole.color }}
+                                                />
+                                                <span
+                                                    className="text-sm font-semibold"
+                                                    style={{ color: highestRole.color }}
+                                                >
+                                                    {highestRole.name}
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                     {activeUsers.length > 5 && (
                         <div
                             className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold"
@@ -320,11 +411,6 @@ export default function Toolbar({
                         </div>
                     )}
                 </div>
-                {tooltipUser && (
-                    <div className="absolute top-[-40px] left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded shadow-lg z-50">
-                        {tooltipUser.username}
-                    </div>
-                )}
                 <div className="flex items-center gap-1">
                     {icao && (
                         <span className="text-md text-gray-300 mr-2 font-bold">

@@ -1,6 +1,8 @@
 import { Server as SocketServer } from 'socket.io';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
+import { getUserRoles } from '../db/roles.js';
+import { isAdmin } from '../middleware/isAdmin.js';
 
 const activeUsers = new Map();
 const sessionATISConfigs = new Map();
@@ -108,12 +110,33 @@ export function setupSessionUsersWebsocket(httpServer) {
             activeUsers.set(sessionId, []);
         }
         const users = activeUsers.get(sessionId);
+
+        // Fetch user roles
+        let userRoles = [];
+        try {
+            userRoles = await getUserRoles(user.userId);
+        } catch (error) {
+            console.error('Error fetching user roles:', error);
+        }
+
+        // Add Developer pseudo-role for admins (highest priority)
+        if (isAdmin(user.userId)) {
+            userRoles.unshift({
+                id: -1,
+                name: 'Developer',
+                color: '#3B82F6',
+                icon: 'Braces',
+                priority: 999999
+            });
+        }
+
         const sessionUser = {
             id: user.userId,
             username: user.username,
             avatar: user.avatar || null,
             joinedAt: Date.now(),
-            position: socket.handshake.query.position || 'POSITION'
+            position: socket.handshake.query.position || 'POSITION',
+            roles: userRoles
         };
         const existingUserIndex = users.findIndex(u => u.id === sessionUser.id);
         if (existingUserIndex === -1) {

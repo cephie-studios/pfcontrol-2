@@ -68,6 +68,13 @@ export interface SessionUser {
     avatar: string | null;
     joinedAt: number;
     position: string;
+    roles?: Array<{
+        id: number;
+        name: string;
+        color: string;
+        icon: string;
+        priority: number;
+    }>;
 }
 
 export interface AdminSession {
