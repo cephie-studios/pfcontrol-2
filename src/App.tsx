@@ -57,10 +57,6 @@ export default function App() {
                                         element={<Flights />}
                                     />
                                     <Route
-                                    path="acars/:sessionId"
-                                    element={<ACARS />}
-                                    />
-                                    <Route
                                         path="settings"
                                         element={<Settings />}
                                     />
@@ -78,10 +74,17 @@ export default function App() {
                         }
                     />
 
-                    <Route path="/submit/:sessionId" element={<Submit />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/flight/:shareToken" element={<PublicFlightView />} />
-                    <Route path="/pilots/:username" element={<PilotProfile />} />
+                    <Route path="/submit/:sessionId" element={<Submit />} />
+                    <Route path="acars/:sessionId" element={<ACARS />} />
+                    <Route
+                        path="/flight/:shareToken"
+                        element={<PublicFlightView />}
+                    />
+                    <Route
+                        path="/pilots/:username"
+                        element={<PilotProfile />}
+                    />
 
                     <Route
                         path="/admin/*"

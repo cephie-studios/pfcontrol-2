@@ -1,9 +1,28 @@
 import { useState, useEffect } from 'react';
 import {
-    Plus, Edit, Trash2, Users, Check, X, ShieldUser,
-    Star, Shield, Wrench, Award, TrendingUp,
-    Crown, Zap, Target, Heart, Sparkles, Flame,
-    Trophy, GripVertical, FlaskConical, Search, Filter
+    Plus,
+    Edit,
+    Trash2,
+    Users,
+    Check,
+    X,
+    ShieldUser,
+    Star,
+    Shield,
+    Wrench,
+    Award,
+    TrendingUp,
+    Crown,
+    Zap,
+    Target,
+    Heart,
+    Sparkles,
+    Flame,
+    Trophy,
+    GripVertical,
+    FlaskConical,
+    Search,
+    Filter,
 } from 'lucide-react';
 import {
     DndContext,
@@ -41,6 +60,7 @@ import {
     type Role,
     type UserWithRole,
 } from '../../utils/fetch/admin';
+import type { DragEndEvent } from '@dnd-kit/core';
 
 const AVAILABLE_PERMISSIONS = [
     {
@@ -102,12 +122,20 @@ const AVAILABLE_ICONS = [
 ];
 
 const PRESET_COLORS = [
-    '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1',
-    '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#84CC16'
+    '#EF4444',
+    '#F59E0B',
+    '#10B981',
+    '#3B82F6',
+    '#6366F1',
+    '#8B5CF6',
+    '#EC4899',
+    '#14B8A6',
+    '#F97316',
+    '#84CC16',
 ];
 
 const getIconComponent = (iconName: string) => {
-    const iconOption = AVAILABLE_ICONS.find(i => i.value === iconName);
+    const iconOption = AVAILABLE_ICONS.find((i) => i.value === iconName);
     return iconOption?.icon || Star;
 };
 
@@ -437,7 +465,11 @@ export default function AdminRoles() {
         setFormPermissions(role.permissions);
         setFormColor(role.color || '#6366F1');
         setFormIcon(role.icon || 'Star');
-        setFormPriority(typeof role.priority === 'number' && !isNaN(role.priority) ? role.priority : 0);
+        setFormPriority(
+            typeof role.priority === 'number' && !isNaN(role.priority)
+                ? role.priority
+                : 0
+        );
         setShowEditModal(true);
     };
 
@@ -446,7 +478,6 @@ export default function AdminRoles() {
         setShowCreateModal(true);
     };
 
-    // Drag-and-drop sensors
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -454,8 +485,7 @@ export default function AdminRoles() {
         })
     );
 
-    // Handle drag end - update role priorities
-    const handleDragEnd = async (event: any) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (!over || active.id === over.id) {
@@ -471,13 +501,11 @@ export default function AdminRoles() {
 
         const newRoles = arrayMove(roles, oldIndex, newIndex);
 
-        // Update priorities based on new order (highest priority first)
-        // Filter out any roles with invalid IDs
         const rolePriorities = newRoles
             .filter((role) => role.id && !isNaN(role.id))
             .map((role, index) => ({
                 id: role.id,
-                priority: newRoles.length - index, // Reverse so first item has highest priority
+                priority: newRoles.length - index,
             }));
 
         if (rolePriorities.length === 0) {
@@ -488,7 +516,6 @@ export default function AdminRoles() {
             return;
         }
 
-        // Optimistically update UI
         setRoles(newRoles);
 
         try {
@@ -514,14 +541,19 @@ export default function AdminRoles() {
 
     // Filter users based on search and role filter
     const filteredUsers = users.filter((user) => {
-        const matchesSearch = user.username.toLowerCase().includes(userSearch.toLowerCase());
+        const matchesSearch = user.username
+            .toLowerCase()
+            .includes(userSearch.toLowerCase());
 
         if (roleFilter === 'all') {
             return matchesSearch;
         } else if (roleFilter === 'no-role') {
             return matchesSearch && (!user.roles || user.roles.length === 0);
         } else {
-            return matchesSearch && user.roles?.some(role => role.id.toString() === roleFilter);
+            return (
+                matchesSearch &&
+                user.roles?.some((role) => role.id.toString() === roleFilter)
+            );
         }
     });
 
@@ -582,18 +614,31 @@ export default function AdminRoles() {
                                     onDragEnd={handleDragEnd}
                                 >
                                     <SortableContext
-                                        items={roles.filter(role => role.id && !isNaN(role.id)).map((role) => role.id)}
+                                        items={roles
+                                            .filter(
+                                                (role) =>
+                                                    role.id && !isNaN(role.id)
+                                            )
+                                            .map((role) => role.id)}
                                         strategy={verticalListSortingStrategy}
                                     >
                                         <div className="space-y-4">
-                                            {roles.filter(role => role.id && !isNaN(role.id)).map((role) => (
-                                                <SortableRoleItem
-                                                    key={role.id}
-                                                    role={role}
-                                                    onEdit={openEditModal}
-                                                    onDelete={handleDeleteRole}
-                                                />
-                                            ))}
+                                            {roles
+                                                .filter(
+                                                    (role) =>
+                                                        role.id &&
+                                                        !isNaN(role.id)
+                                                )
+                                                .map((role) => (
+                                                    <SortableRoleItem
+                                                        key={role.id}
+                                                        role={role}
+                                                        onEdit={openEditModal}
+                                                        onDelete={
+                                                            handleDeleteRole
+                                                        }
+                                                    />
+                                                ))}
                                         </div>
                                     </SortableContext>
                                 </DndContext>
@@ -613,7 +658,9 @@ export default function AdminRoles() {
                                             type="text"
                                             placeholder="Search by username..."
                                             value={userSearch}
-                                            onChange={(e) => setUserSearch(e.target.value)}
+                                            onChange={(e) =>
+                                                setUserSearch(e.target.value)
+                                            }
                                             className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
                                         />
                                     </div>
@@ -623,12 +670,18 @@ export default function AdminRoles() {
                                             value={roleFilter}
                                             onChange={setRoleFilter}
                                             options={[
-                                                { value: 'all', label: 'All Roles' },
-                                                { value: 'no-role', label: 'No Role' },
-                                                ...roles.map(role => ({
+                                                {
+                                                    value: 'all',
+                                                    label: 'All Roles',
+                                                },
+                                                {
+                                                    value: 'no-role',
+                                                    label: 'No Role',
+                                                },
+                                                ...roles.map((role) => ({
                                                     value: role.id.toString(),
-                                                    label: role.name
-                                                }))
+                                                    label: role.name,
+                                                })),
                                             ]}
                                             placeholder="Filter by role..."
                                             className="pl-10"
@@ -669,41 +722,63 @@ export default function AdminRoles() {
                                                         <span className="text-zinc-400 text-xs block mb-2">
                                                             {user.id}
                                                         </span>
-                                                        {user.roles && user.roles.length > 0 && (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {user.roles.map((role) => {
-                                                                    const RoleIcon = getIconComponent(role.icon);
-                                                                    return (
-                                                                        <div
-                                                                            key={role.id}
-                                                                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all group"
-                                                                            style={{
-                                                                                backgroundColor: `${role.color}15`,
-                                                                                borderColor: `${role.color}40`,
-                                                                            }}
-                                                                        >
-                                                                            <RoleIcon
-                                                                                className="w-3 h-3"
-                                                                                style={{ color: role.color }}
-                                                                            />
-                                                                            <span
-                                                                                className="text-xs font-medium"
-                                                                                style={{ color: role.color }}
-                                                                            >
-                                                                                {role.name}
-                                                                            </span>
-                                                                            <button
-                                                                                onClick={() => handleRemoveRole(user.id, role.id)}
-                                                                                className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                                title="Remove role"
-                                                                            >
-                                                                                <X className="w-3 h-3 text-zinc-400 hover:text-white" />
-                                                                            </button>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
+                                                        {user.roles &&
+                                                            user.roles.length >
+                                                                0 && (
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {user.roles.map(
+                                                                        (
+                                                                            role
+                                                                        ) => {
+                                                                            const RoleIcon =
+                                                                                getIconComponent(
+                                                                                    role.icon
+                                                                                );
+                                                                            return (
+                                                                                <div
+                                                                                    key={
+                                                                                        role.id
+                                                                                    }
+                                                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all group"
+                                                                                    style={{
+                                                                                        backgroundColor: `${role.color}15`,
+                                                                                        borderColor: `${role.color}40`,
+                                                                                    }}
+                                                                                >
+                                                                                    <RoleIcon
+                                                                                        className="w-3 h-3"
+                                                                                        style={{
+                                                                                            color: role.color,
+                                                                                        }}
+                                                                                    />
+                                                                                    <span
+                                                                                        className="text-xs font-medium"
+                                                                                        style={{
+                                                                                            color: role.color,
+                                                                                        }}
+                                                                                    >
+                                                                                        {
+                                                                                            role.name
+                                                                                        }
+                                                                                    </span>
+                                                                                    <button
+                                                                                        onClick={() =>
+                                                                                            handleRemoveRole(
+                                                                                                user.id,
+                                                                                                role.id
+                                                                                            )
+                                                                                        }
+                                                                                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                        title="Remove role"
+                                                                                    >
+                                                                                        <X className="w-3 h-3 text-zinc-400 hover:text-white" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            );
+                                                                        }
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
@@ -714,20 +789,31 @@ export default function AdminRoles() {
                                                                 label: '+ Add Role',
                                                             },
                                                             ...roles
-                                                                .filter(role =>
-                                                                    !user.roles?.some(ur => ur.id === role.id)
+                                                                .filter(
+                                                                    (role) =>
+                                                                        !user.roles?.some(
+                                                                            (
+                                                                                ur
+                                                                            ) =>
+                                                                                ur.id ===
+                                                                                role.id
+                                                                        )
                                                                 )
-                                                                .map(role => ({
-                                                                    value: role.id.toString(),
-                                                                    label: role.name,
-                                                                }))
+                                                                .map(
+                                                                    (role) => ({
+                                                                        value: role.id.toString(),
+                                                                        label: role.name,
+                                                                    })
+                                                                ),
                                                         ]}
                                                         value=""
                                                         onChange={(val) => {
                                                             if (val !== '') {
                                                                 handleAssignRole(
                                                                     user.id,
-                                                                    parseInt(val)
+                                                                    parseInt(
+                                                                        val
+                                                                    )
                                                                 );
                                                             }
                                                         }}
@@ -791,24 +877,36 @@ export default function AdminRoles() {
                                                 Icon
                                             </label>
                                             <div className="grid grid-cols-4 gap-2">
-                                                {AVAILABLE_ICONS.map((iconOption) => {
-                                                    const IconComponent = iconOption.icon;
-                                                    return (
-                                                        <button
-                                                            key={iconOption.value}
-                                                            type="button"
-                                                            onClick={() => setFormIcon(iconOption.value)}
-                                                            className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                                                                formIcon === iconOption.value
-                                                                    ? 'border-rose-500 bg-rose-500/20'
-                                                                    : 'border-zinc-700 hover:border-zinc-600'
-                                                            }`}
-                                                            title={iconOption.label}
-                                                        >
-                                                            <IconComponent className="w-5 h-5 text-white mx-auto" />
-                                                        </button>
-                                                    );
-                                                })}
+                                                {AVAILABLE_ICONS.map(
+                                                    (iconOption) => {
+                                                        const IconComponent =
+                                                            iconOption.icon;
+                                                        return (
+                                                            <button
+                                                                key={
+                                                                    iconOption.value
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setFormIcon(
+                                                                        iconOption.value
+                                                                    )
+                                                                }
+                                                                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                                                                    formIcon ===
+                                                                    iconOption.value
+                                                                        ? 'border-rose-500 bg-rose-500/20'
+                                                                        : 'border-zinc-700 hover:border-zinc-600'
+                                                                }`}
+                                                                title={
+                                                                    iconOption.label
+                                                                }
+                                                            >
+                                                                <IconComponent className="w-5 h-5 text-white mx-auto" />
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
                                             </div>
                                         </div>
 
@@ -818,32 +916,50 @@ export default function AdminRoles() {
                                             </label>
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-5 gap-2">
-                                                    {PRESET_COLORS.map((color) => (
-                                                        <button
-                                                            key={color}
-                                                            type="button"
-                                                            onClick={() => setFormColor(color)}
-                                                            className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
-                                                                formColor === color
-                                                                    ? 'border-white ring-2 ring-white/50'
-                                                                    : 'border-transparent'
-                                                            }`}
-                                                            style={{ backgroundColor: color }}
-                                                            title={color}
-                                                        />
-                                                    ))}
+                                                    {PRESET_COLORS.map(
+                                                        (color) => (
+                                                            <button
+                                                                key={color}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setFormColor(
+                                                                        color
+                                                                    )
+                                                                }
+                                                                className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
+                                                                    formColor ===
+                                                                    color
+                                                                        ? 'border-white ring-2 ring-white/50'
+                                                                        : 'border-transparent'
+                                                                }`}
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        color,
+                                                                }}
+                                                                title={color}
+                                                            />
+                                                        )
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="color"
                                                         value={formColor}
-                                                        onChange={(e) => setFormColor(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setFormColor(
+                                                                e.target.value
+                                                            )
+                                                        }
                                                         className="w-full h-10 rounded-lg border-2 border-zinc-700 bg-zinc-800 cursor-pointer"
                                                     />
                                                     <input
                                                         type="text"
                                                         value={formColor}
-                                                        onChange={(e) => setFormColor(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setFormColor(
+                                                                e.target.value
+                                                            )
+                                                        }
                                                         className="w-24 h-10 px-3 bg-zinc-800 border-2 border-zinc-700 rounded-lg text-white text-sm font-mono"
                                                         placeholder="#000000"
                                                     />
@@ -854,13 +970,16 @@ export default function AdminRoles() {
 
                                     <div>
                                         <label className="block text-zinc-300 mb-2">
-                                            Priority (higher numbers appear first)
+                                            Priority (higher numbers appear
+                                            first)
                                         </label>
                                         <TextInput
                                             value={formPriority.toString()}
                                             onChange={(val) => {
                                                 const parsed = parseInt(val);
-                                                setFormPriority(isNaN(parsed) ? 0 : parsed);
+                                                setFormPriority(
+                                                    isNaN(parsed) ? 0 : parsed
+                                                );
                                             }}
                                             placeholder="0"
                                         />
@@ -995,24 +1114,36 @@ export default function AdminRoles() {
                                                 Icon
                                             </label>
                                             <div className="grid grid-cols-4 gap-2">
-                                                {AVAILABLE_ICONS.map((iconOption) => {
-                                                    const IconComponent = iconOption.icon;
-                                                    return (
-                                                        <button
-                                                            key={iconOption.value}
-                                                            type="button"
-                                                            onClick={() => setFormIcon(iconOption.value)}
-                                                            className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                                                                formIcon === iconOption.value
-                                                                    ? 'border-rose-500 bg-rose-500/20'
-                                                                    : 'border-zinc-700 hover:border-zinc-600'
-                                                            }`}
-                                                            title={iconOption.label}
-                                                        >
-                                                            <IconComponent className="w-5 h-5 text-white mx-auto" />
-                                                        </button>
-                                                    );
-                                                })}
+                                                {AVAILABLE_ICONS.map(
+                                                    (iconOption) => {
+                                                        const IconComponent =
+                                                            iconOption.icon;
+                                                        return (
+                                                            <button
+                                                                key={
+                                                                    iconOption.value
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setFormIcon(
+                                                                        iconOption.value
+                                                                    )
+                                                                }
+                                                                className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                                                                    formIcon ===
+                                                                    iconOption.value
+                                                                        ? 'border-rose-500 bg-rose-500/20'
+                                                                        : 'border-zinc-700 hover:border-zinc-600'
+                                                                }`}
+                                                                title={
+                                                                    iconOption.label
+                                                                }
+                                                            >
+                                                                <IconComponent className="w-5 h-5 text-white mx-auto" />
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
                                             </div>
                                         </div>
 
@@ -1022,32 +1153,50 @@ export default function AdminRoles() {
                                             </label>
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-5 gap-2">
-                                                    {PRESET_COLORS.map((color) => (
-                                                        <button
-                                                            key={color}
-                                                            type="button"
-                                                            onClick={() => setFormColor(color)}
-                                                            className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
-                                                                formColor === color
-                                                                    ? 'border-white ring-2 ring-white/50'
-                                                                    : 'border-transparent'
-                                                            }`}
-                                                            style={{ backgroundColor: color }}
-                                                            title={color}
-                                                        />
-                                                    ))}
+                                                    {PRESET_COLORS.map(
+                                                        (color) => (
+                                                            <button
+                                                                key={color}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setFormColor(
+                                                                        color
+                                                                    )
+                                                                }
+                                                                className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
+                                                                    formColor ===
+                                                                    color
+                                                                        ? 'border-white ring-2 ring-white/50'
+                                                                        : 'border-transparent'
+                                                                }`}
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        color,
+                                                                }}
+                                                                title={color}
+                                                            />
+                                                        )
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="color"
                                                         value={formColor}
-                                                        onChange={(e) => setFormColor(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setFormColor(
+                                                                e.target.value
+                                                            )
+                                                        }
                                                         className="w-full h-10 rounded-lg border-2 border-zinc-700 bg-zinc-800 cursor-pointer"
                                                     />
                                                     <input
                                                         type="text"
                                                         value={formColor}
-                                                        onChange={(e) => setFormColor(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setFormColor(
+                                                                e.target.value
+                                                            )
+                                                        }
                                                         className="w-24 h-10 px-3 bg-zinc-800 border-2 border-zinc-700 rounded-lg text-white text-sm font-mono"
                                                         placeholder="#000000"
                                                     />
@@ -1058,13 +1207,16 @@ export default function AdminRoles() {
 
                                     <div>
                                         <label className="block text-zinc-300 mb-2">
-                                            Priority (higher numbers appear first)
+                                            Priority (higher numbers appear
+                                            first)
                                         </label>
                                         <TextInput
                                             value={formPriority.toString()}
                                             onChange={(val) => {
                                                 const parsed = parseInt(val);
-                                                setFormPriority(isNaN(parsed) ? 0 : parsed);
+                                                setFormPriority(
+                                                    isNaN(parsed) ? 0 : parsed
+                                                );
                                             }}
                                             placeholder="0"
                                         />

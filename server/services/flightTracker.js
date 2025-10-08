@@ -20,7 +20,15 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load airport data
+
+const debug = (message, type = 'log') => {
+    if (process.env.DEBUG === 'true') {
+        if (type === 'error') console.error(message);
+        else if (type === 'warn') console.warn(message);
+        else console.log(message);
+    }
+};
+
 const airportData = JSON.parse(readFileSync(join(__dirname, '../data/airportData.json'), 'utf-8'));
 const airportElevations = {};
 airportData.forEach(airport => {
@@ -29,7 +37,6 @@ airportData.forEach(airport => {
 
 const PFATC_SERVER_ID = '2ykygVZiX5';
 
-// Flight phase thresholds
 const PHASE_THRESHOLDS = {
     GROUND_ALT_BUFFER: 50,    // +/- 50ft from airport elevation = ground
     TAKEOFF_SPEED: 80,        // Above 80kts + climbing = takeoff
@@ -38,7 +45,6 @@ const PHASE_THRESHOLDS = {
     LANDING_SPEED: 100,       // Below 100kts on ground = landed
 };
 
-// Get ground level for an airport (elevation +/- 50ft)
 function getGroundLevel(arrivalIcao) {
     const elevation = airportElevations[arrivalIcao] || 0;
     return {
@@ -48,13 +54,11 @@ function getGroundLevel(arrivalIcao) {
     };
 }
 
-// Check if altitude is at ground level for given airport
 function isAtGroundLevel(altitude, arrivalIcao) {
     const ground = getGroundLevel(arrivalIcao);
     return altitude >= ground.min && altitude <= ground.max;
 }
 
-// Flight state detection thresholds
 const STATE_THRESHOLDS = {
     MOVEMENT_SPEED: 5,        // Speed > 5kts = movement detected
     STATIONARY_SPEED: 3,      // Speed < 3kts = stationary
@@ -88,12 +92,10 @@ class FlightTracker {
     loadProxies() {
         const proxies = [];
 
-        // Load from comma-separated PROXY_URL
         if (process.env.PROXY_URL) {
             proxies.push(...process.env.PROXY_URL.split(',').map(p => p.trim()));
         }
 
-        // Also support PROXY_URL_1, PROXY_URL_2, etc.
         let i = 1;
         while (process.env[`PROXY_URL_${i}`]) {
             proxies.push(process.env[`PROXY_URL_${i}`]);
@@ -112,7 +114,6 @@ class FlightTracker {
     }
 
     async initialize() {
-        // Setup protobuf schema
         this.protobufRoot = new protobuf.Root();
         const data = this.protobufRoot.define("data");
 
@@ -135,22 +136,19 @@ class FlightTracker {
 
         this.planesType = this.protobufRoot.lookupType("data.planes");
 
-        // Connect to WebSocket
         this.connect();
 
-        // Start timeout checker (runs every 60 seconds)
         this.startTimeoutChecker();
     }
 
     startTimeoutChecker() {
         setInterval(async () => {
             await this.checkTimeouts();
-        }, 60000); // Check every minute
+        }, 60000);
     }
 
     async checkTimeouts() {
         try {
-            // Cancel pending flights that never departed (30 min timeout)
             const cancelResult = await pool.query(`
                 UPDATE logbook_flights
                 SET flight_status = 'cancelled'
@@ -161,11 +159,10 @@ class FlightTracker {
 
             if (cancelResult.rows.length > 0) {
                 for (const flight of cancelResult.rows) {
-                    console.log(`⏱️ [Flight Tracker] Flight ${flight.callsign} cancelled - never departed`);
+                    debug(`⏱️ [Flight Tracker] Flight ${flight.callsign} cancelled - never departed`);
                 }
             }
 
-            // Abort active flights with no telemetry after landing (10 min timeout)
             const abortResult = await pool.query(`
                 UPDATE logbook_flights f
                 SET flight_status = 'aborted'
@@ -179,8 +176,7 @@ class FlightTracker {
 
             if (abortResult.rows.length > 0) {
                 for (const flight of abortResult.rows) {
-                    console.log(`⚠️ [Flight Tracker] Flight ${flight.callsign} aborted - tracking lost after landing`);
-                    // Clean up active tracking
+                    debug(`⚠️ [Flight Tracker] Flight ${flight.callsign} aborted - tracking lost after landing`);
                     await pool.query(`
                         DELETE FROM logbook_active_flights
                         WHERE flight_id = $1
@@ -189,13 +185,13 @@ class FlightTracker {
             }
 
         } catch (err) {
-            console.error('[Flight Tracker] Error checking timeouts:', err);
+            debug(`[Flight Tracker] Error checking timeouts: ${err}`, 'error');
         }
     }
 
     connect() {
         if (this.connectionFailed || this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.log('\x1b[33m%s\x1b[0m', '[Flight Tracker] Max reconnection attempts reached or connection permanently failed. Flight tracking disabled.');
+            debug('[Flight Tracker] Max reconnection attempts reached or connection permanently failed. Flight tracking disabled.');
             return;
         }
 
@@ -206,7 +202,6 @@ class FlightTracker {
             }
         };
 
-        // Add proxy support if configured
         const proxyUrl = this.getNextProxy();
         if (proxyUrl) {
             wsOptions.agent = new HttpsProxyAgent(proxyUrl);
@@ -216,10 +211,10 @@ class FlightTracker {
 
         this.socket.on('open', () => {
             const proxyInfo = proxyUrl ? ` (proxy ${this.currentProxyIndex}/${this.proxies.length})` : '';
-            console.log('\x1b[32m%s\x1b[0m', `✅ [Flight Tracker] WebSocket connected to PFATC server${proxyInfo}`);
-            console.log('📡 [Flight Tracker] Ready to receive plane data and track active flights');
+            debug(`✅ [Flight Tracker] WebSocket connected to PFATC server${proxyInfo}`);
+            debug('📡 [Flight Tracker] Ready to receive plane data and track active flights');
             this.isConnected = true;
-            this.reconnectAttempts = 0; // Reset on successful connection
+            this.reconnectAttempts = 0;
         });
 
         this.socket.on('message', async (data) => {
@@ -232,22 +227,20 @@ class FlightTracker {
             if (!this.connectionFailed && this.reconnectAttempts < this.maxReconnectAttempts) {
                 this.reconnectAttempts++;
                 const backoffDelay = this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1);
-                console.log('\x1b[33m%s\x1b[0m', `[Flight Tracker] WebSocket closed. Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${backoffDelay}ms`);
+                debug(`[Flight Tracker] WebSocket closed. Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${backoffDelay}ms`);
                 setTimeout(() => this.connect(), backoffDelay);
             }
         });
 
         this.socket.on('error', (err) => {
-            // Check if it's a 403 Forbidden error
             if (err.message && err.message.includes('403')) {
-                console.error('\x1b[31m%s\x1b[0m', '[Flight Tracker] Access denied (403). The Project Flight API may require authentication or have IP restrictions. Flight tracking disabled.');
+                debug('[Flight Tracker] Access denied (403). The Project Flight API may require authentication or have IP restrictions. Flight tracking disabled.', 'error');
                 this.connectionFailed = true;
                 if (this.socket) {
                     this.socket.removeAllListeners();
                 }
             } else if (this.reconnectAttempts === 0) {
-                // Only log the first error to avoid spam
-                console.error('[Flight Tracker] WebSocket error:', err.message);
+                debug(`[Flight Tracker] WebSocket error: ${err.message}`, 'error');
             }
         });
     }
@@ -258,13 +251,11 @@ class FlightTracker {
             const decoded = this.planesType.decode(buffer);
             const object = this.planesType.toObject(decoded, { defaults: true });
 
-            // Filter for PFATC server planes
             const pfatcPlanes = object.planes.filter(plane => plane.server_id === PFATC_SERVER_ID);
 
-            // Log plane count every 30 seconds (avoid spam)
             const now = Date.now();
             if (!this.lastPlaneCountLog || (now - this.lastPlaneCountLog) >= 30000) {
-                console.log(`📡 [Flight Tracker] Received data: ${pfatcPlanes.length} plane(s) in PFATC server`);
+                debug(`📡 [Flight Tracker] Received data: ${pfatcPlanes.length} plane(s) in PFATC server`);
                 this.lastPlaneCountLog = now;
             }
 
@@ -272,19 +263,17 @@ class FlightTracker {
                 await this.processPlane(plane);
             }
         } catch (err) {
-            console.error('[Flight Tracker] Failed to decode protobuf message:', err);
+            debug(`[Flight Tracker] Failed to decode protobuf message: ${err}`, 'error');
         }
     }
 
     async processPlane(plane) {
         try {
-            // Check if this user is being tracked
             const activeFlight = await getActiveFlightByUsername(plane.roblox_username);
             if (!activeFlight) return;
 
-            // Log when we find a tracked flight (only once per flight)
             if (!this.flightData.has(plane.roblox_username)) {
-                console.log(`✈️  [Flight Tracker] Now tracking ${plane.roblox_username} (${activeFlight.callsign}) - alt: ${Math.round(plane.altitude)}ft, spd: ${Math.round(plane.speed)}kts`);
+                debug(`✈️  [Flight Tracker] Now tracking ${plane.roblox_username} (${activeFlight.callsign}) - alt: ${Math.round(plane.altitude)}ft, spd: ${Math.round(plane.speed)}kts`);
             }
 
             const currentData = {
@@ -300,7 +289,6 @@ class FlightTracker {
 
             const previousData = this.flightData.get(plane.roblox_username);
 
-            // Get controller status, arrival airport, and flight status from database
             const flightResult = await pool.query(`
                 SELECT controller_status, arrival_icao, flight_status FROM logbook_flights WHERE id = $1
             `, [activeFlight.flight_id]);
@@ -308,8 +296,6 @@ class FlightTracker {
             const arrivalIcao = flightResult.rows[0]?.arrival_icao;
             const flightStatus = flightResult.rows[0]?.flight_status;
 
-            // Clear controller status if aircraft is cruising (above 1,000 ft and level)
-            // This allows frontend to show telemetry-based phase instead of stale controller status
             if (controllerStatus?.toLowerCase() === 'depa' && currentData.altitude > 1000 && previousData) {
                 const vs = this.calculateVerticalSpeed(currentData, previousData);
                 if (Math.abs(vs) < 300) {
@@ -320,21 +306,17 @@ class FlightTracker {
                 }
             }
 
-            // ===== FLIGHT STATE DETECTION =====
             await this.detectFlightState(activeFlight, currentData, previousData, controllerStatus);
 
-            // Detect flight phase (hybrid: controller status + telemetry)
             const phase = previousData
                 ? this.detectHybridPhase(currentData, previousData, controllerStatus, arrivalIcao, flightStatus)
                 : 'unknown';
 
-            // Store telemetry point (sample every 5 seconds)
             const lastTelemetry = this.lastTelemetryTime.get(plane.roblox_username);
             const shouldStoreTelemetry = !lastTelemetry ||
                 (currentData.timestamp.getTime() - lastTelemetry) >= 5000;
 
             if (shouldStoreTelemetry) {
-                // Calculate vertical speed if we have previous data
                 const verticalSpeed = previousData
                     ? this.calculateVerticalSpeed(currentData, previousData)
                     : 0;
@@ -350,7 +332,6 @@ class FlightTracker {
                     verticalSpeed: verticalSpeed
                 });
 
-                // Update flight model and livery if not set
                 if (plane.model && !activeFlight.aircraft_model) {
                     await pool.query(`
                         UPDATE logbook_flights
@@ -359,11 +340,9 @@ class FlightTracker {
                     `, [plane.model, plane.livery, activeFlight.flight_id]);
                 }
 
-                // Update last telemetry time
                 this.lastTelemetryTime.set(plane.roblox_username, currentData.timestamp.getTime());
             }
 
-            // Update active flight state (every message for real-time tracking)
             await updateActiveFlightState(plane.roblox_username, {
                 altitude: currentData.altitude,
                 speed: currentData.speed,
@@ -373,7 +352,6 @@ class FlightTracker {
                 phase: phase
             });
 
-            // Track approach altitudes for landing rate
             if (phase === 'approach' || phase === 'landing') {
                 await addApproachAltitude(
                     plane.roblox_username,
@@ -382,11 +360,9 @@ class FlightTracker {
                 );
             }
 
-            // Check for landing
             if (await this.detectLanding(currentData, previousData, activeFlight, arrivalIcao)) {
-                // Mark landing detected and start waypoint collection
                 if (!activeFlight.landing_detected) {
-                    console.log(`🛬 [Flight Tracker] Landing detected: ${activeFlight.callsign}`);
+                    debug(`🛬 [Flight Tracker] Landing detected: ${activeFlight.callsign}`);
 
                     await pool.query(`
                         UPDATE logbook_active_flights
@@ -395,17 +371,15 @@ class FlightTracker {
                         WHERE roblox_username = $1
                     `, [plane.roblox_username]);
 
-                    // Start collecting waypoint data from username WebSocket
                     const proxyUrl = this.proxies.length > 0 ? this.proxies[this.currentProxyIndex % this.proxies.length] : null;
                     await startLandingDataCollection(plane.roblox_username, proxyUrl);
                 }
             }
 
-            // Store current data for next iteration (for phase detection)
             this.flightData.set(plane.roblox_username, currentData);
 
         } catch (err) {
-            console.error(`[Flight Tracker] Error processing plane for ${plane.roblox_username}:`, err);
+            debug(`[Flight Tracker] Error processing plane for ${plane.roblox_username}: ${err}`, 'error');
         }
     }
 
@@ -413,116 +387,94 @@ class FlightTracker {
         const alt = current.altitude;
         const speed = current.speed;
 
-        // Calculate vertical speed in fpm (not just altitude difference)
         let vs = 0;
         if (previous && previous.timestamp) {
             const altChange = current.altitude - previous.altitude;
-            const timeChange = (current.timestamp - previous.timestamp) / 1000; // seconds
+            const timeChange = (current.timestamp - previous.timestamp) / 1000;
             if (timeChange > 0) {
-                vs = Math.round((altChange / timeChange) * 60); // Convert to fpm
+                vs = Math.round((altChange / timeChange) * 60);
             }
         }
 
         const status = controllerStatus?.toLowerCase();
 
         // === PENDING FLIGHT - AWAITING CLEARANCE ===
-        // Show "awaiting_clearance" for pending flights on the ground with low/no speed
         if (flightStatus === 'pending' && isAtGroundLevel(alt, arrivalIcao) && speed <= 12) {
             return 'awaiting_clearance';
         }
 
         // === GROUND PHASES ===
 
-        // PUSH/STUP - Controller only
         if (status === 'push' || status === 'stup') {
             return 'push';
         }
 
-        // ORIGIN/DESTINATION TAXI - Controller sets these based on their airport
         if (status === 'origin_taxi') {
             return 'origin_taxi';
         }
         if (status === 'destination_taxi') {
             return 'destination_taxi';
         }
-        // Generic TAXI fallback (for telemetry-based detection or legacy status)
         if (status === 'taxi' || (isAtGroundLevel(alt, arrivalIcao) && speed > 12)) {
             return 'taxi';
         }
 
-        // ORIGIN/DESTINATION RUNWAY - Controller sets these based on their airport
         if (status === 'origin_runway') {
             return 'origin_runway';
         }
         if (status === 'destination_runway') {
             return 'destination_runway';
         }
-        // Generic RWY fallback (for legacy status)
         if (status === 'rwy') {
             return 'rwy';
         }
 
-        // GATE - Controller only (prevents false "parked" during ground holding)
         if (status === 'gate') {
             return 'parked';
         }
 
         // === AIRBORNE PHASES ===
 
-        // TAKEOFF/CLIMB - Controller sets DEPA/DEPARTURE, but only use it below 10,000ft
-        // Above 10,000ft, switch to telemetry-based detection (since there are no center controllers)
         if ((status === 'depa' || status === 'departure') && alt < 10000) {
             return 'climb';
         }
 
-        // APPROACH - Controller sets APPR
         if (status === 'appr' || status === 'approach') {
             return 'approach';
         }
 
         // === TELEMETRY-BASED DETECTION (when no controller status) ===
 
-        // On ground - detect taxi, or show "taxi" if at destination airport (even when stationary)
         if (isAtGroundLevel(alt, arrivalIcao)) {
-            // If moving, definitely taxi
             if (speed > 12) {
                 return 'taxi';
             }
-            // If stationary but at destination airport (active flight that has landed), show taxi
-            // This prevents "unknown" when there's no destination controller
             if (flightStatus === 'active' && arrivalIcao && isAtGroundLevel(alt, arrivalIcao)) {
                 return 'taxi';
             }
-            // Otherwise unknown (prevents false "parked" at origin during holding)
             return 'unknown';
         }
 
-        // Takeoff/Climb - >80kts AND climbing
         if (speed > 80 && vs > 0) {
             return 'climb';
         }
 
-        // Climb - VS is positive (climbing at more than 300 fpm)
         if (vs > 300) {
             return 'climb';
         }
 
-        // Cruise - VS levels off relatively (between -300 and +300 fpm)
         if (Math.abs(vs) < 300 && alt > 1000) {
             return 'cruise';
         }
 
-        // Descent - VS is negative (descending at more than 300 fpm)
         if (vs < -300 && alt > PHASE_THRESHOLDS.APPROACH_ALT) {
             return 'descent';
         }
 
-        // Approach - Below 3000ft and descending
         if (alt <= PHASE_THRESHOLDS.APPROACH_ALT && vs < 0) {
             return 'approach';
         }
 
-        // Landing
         if (alt < 100 && vs < 0) {
             return 'landing';
         }
@@ -532,7 +484,6 @@ class FlightTracker {
 
     async detectFlightState(activeFlight, currentData, previousData, controllerStatus) {
         try {
-            // Get flight status and arrival airport from database
             const flightResult = await pool.query(`
                 SELECT flight_status, controller_managed, arrival_icao FROM logbook_flights WHERE id = $1
             `, [activeFlight.flight_id]);
@@ -543,15 +494,12 @@ class FlightTracker {
             const currentStatus = flightResult.rows[0].flight_status;
             const controllerManaged = flightResult.rows[0].controller_managed;
 
-            // Skip automated state detection if controller is managing the flight
-            // EXCEPT when controller has set status to GATE (allow completion)
             if (controllerManaged && controllerStatus?.toLowerCase() !== 'gate') {
                 return;
             }
 
             // === PENDING -> ACTIVE Detection ===
             if (currentStatus === 'pending') {
-                // Set initial position if not set
                 if (!activeFlight.initial_position_x) {
                     await pool.query(`
                         UPDATE logbook_active_flights
@@ -561,7 +509,6 @@ class FlightTracker {
                         WHERE roblox_username = $3
                     `, [currentData.x, currentData.y, activeFlight.roblox_username]);
 
-                    // Also store departure position in main flight table
                     await pool.query(`
                         UPDATE logbook_flights
                         SET departure_position_x = $1,
@@ -572,7 +519,6 @@ class FlightTracker {
                     return;
                 }
 
-                // Detect movement from initial position
                 const distance = this.calculateDistance(
                     activeFlight.initial_position_x,
                     activeFlight.initial_position_y,
@@ -584,7 +530,6 @@ class FlightTracker {
                 const hasMovedDistance = distance > STATE_THRESHOLDS.MOVEMENT_DISTANCE;
                 const isAirborne = !isAtGroundLevel(currentData.altitude, arrivalIcao);
 
-                // Flight becomes ACTIVE when: moving with speed, or moved significant distance, or airborne
                 if ((hasSpeed && hasMovedDistance) || isAirborne) {
                     await pool.query(`
                         UPDATE logbook_flights
@@ -601,7 +546,7 @@ class FlightTracker {
                         WHERE roblox_username = $1
                     `, [activeFlight.roblox_username]);
 
-                    console.log(`✈️ [Flight Tracker] Flight ${activeFlight.callsign} is now ACTIVE`);
+                    debug(`✈️ [Flight Tracker] Flight ${activeFlight.callsign} is now ACTIVE`);
                 }
             }
 
@@ -611,7 +556,6 @@ class FlightTracker {
                 const onGround = isAtGroundLevel(currentData.altitude, arrivalIcao);
 
                 if (isStationary && onGround) {
-                    // Start tracking stationary time
                     if (!activeFlight.stationary_since) {
                         await pool.query(`
                             UPDATE logbook_active_flights
@@ -622,11 +566,9 @@ class FlightTracker {
                             WHERE roblox_username = $3
                         `, [currentData.x, currentData.y, activeFlight.roblox_username]);
                     } else {
-                        // Check if stationary long enough to send notification (30 seconds)
                         const stationaryDuration = (new Date() - new Date(activeFlight.stationary_since)) / 1000;
 
                         if (stationaryDuration >= 30 && !activeFlight.stationary_notification_sent) {
-                            // Send notification to user prompting them to end the flight
                             const userResult = await pool.query(`
                                 SELECT user_id FROM logbook_flights WHERE id = $1
                             `, [activeFlight.flight_id]);
@@ -640,7 +582,6 @@ class FlightTracker {
                                     `Your flight ${activeFlight.callsign} has arrived at the gate. You can end your flight from the logbook page, or it will automatically complete if you disconnect.`
                                 ]);
 
-                                // Mark notification as sent
                                 await pool.query(`
                                     UPDATE logbook_active_flights
                                     SET stationary_notification_sent = true
@@ -648,12 +589,8 @@ class FlightTracker {
                                 `, [activeFlight.roblox_username]);
                             }
                         }
-
-                        // Don't auto-complete while user is still connected
-                        // The checkForMissingFlights() function will auto-complete when user disconnects
                     }
                 } else if (currentData.speed > STATE_THRESHOLDS.STATIONARY_SPEED) {
-                    // Reset stationary timer if aircraft starts moving again
                     if (activeFlight.stationary_since) {
                         await pool.query(`
                             UPDATE logbook_active_flights
@@ -668,27 +605,23 @@ class FlightTracker {
             }
 
         } catch (err) {
-            console.error(`[Flight Tracker] Error detecting flight state:`, err);
+            debug(`[Flight Tracker] Error detecting flight state: ${err}`, 'error');
         }
     }
 
     calculateVerticalSpeed(current, previous) {
         const altChange = current.altitude - previous.altitude;
-        const timeChange = (current.timestamp - previous.timestamp) / 1000; // seconds
+        const timeChange = (current.timestamp - previous.timestamp) / 1000;
 
         if (timeChange === 0) return 0;
 
         const feetPerSecond = altChange / timeChange;
-        return Math.round(feetPerSecond * 60); // Convert to feet per minute
+        return Math.round(feetPerSecond * 60);
     }
 
     async detectLanding(current, previous, activeFlight, arrivalIcao = null) {
         if (!previous) return false;
 
-        // Landing conditions:
-        // 1. Altitude at ground level (+/- 50ft from airport elevation)
-        // 2. Speed below 100kts
-        // 3. Was in air before (previous altitude > 100ft)
         const isOnGround = isAtGroundLevel(current.altitude, arrivalIcao);
         const lowSpeed = current.speed < PHASE_THRESHOLDS.LANDING_SPEED;
         const wasInAir = previous.altitude > 100;
@@ -698,10 +631,8 @@ class FlightTracker {
 
     async handleFlightCompletion(activeFlight, robloxUsername) {
         try {
-            // Stop landing data collection and finalize waypoint selection
             await stopLandingDataCollection(robloxUsername);
 
-            // Get all telemetry for calculations
             const telemetryResult = await pool.query(`
                 SELECT * FROM logbook_telemetry
                 WHERE flight_id = $1
@@ -711,7 +642,6 @@ class FlightTracker {
             const telemetry = telemetryResult.rows;
 
             if (telemetry.length < 2) {
-                // Not enough data, mark as aborted
                 await pool.query(`
                     UPDATE logbook_flights
                     SET flight_status = 'aborted'
@@ -723,50 +653,41 @@ class FlightTracker {
                 return;
             }
 
-            // Calculate stats
             const stats = await this.calculateFlightStats(telemetry, activeFlight);
 
-            // Finalize flight
             await finalizeFlight(activeFlight.flight_id, stats);
 
-            // Get user_id for this flight
             const flightResult = await pool.query(`
                 SELECT user_id FROM logbook_flights WHERE id = $1
             `, [activeFlight.flight_id]);
 
             if (flightResult.rows[0]) {
-                // Update user stats cache
                 await updateUserStatsCache(flightResult.rows[0].user_id);
             }
 
-            // Clean up
             await removeActiveFlightTracking(robloxUsername);
             this.flightData.delete(robloxUsername);
             this.lastTelemetryTime.delete(robloxUsername);
 
         } catch (err) {
-            console.error(`[Flight Tracker] Error completing flight:`, err);
+            debug(`[Flight Tracker] Error completing flight: ${err}`, 'error');
         }
     }
 
     async calculateFlightStats(telemetry, activeFlight) {
-        // Duration
         const firstPoint = telemetry[0];
         const lastPoint = telemetry[telemetry.length - 1];
         const durationMs = new Date(lastPoint.timestamp) - new Date(firstPoint.timestamp);
         const durationMinutes = Math.round(durationMs / 60000);
 
-        // Max altitude and speed
         const maxAltitude = Math.max(...telemetry.map(t => t.altitude_ft || 0));
         const maxSpeed = Math.max(...telemetry.map(t => t.speed_kts || 0));
 
-        // Average speed (excluding ground operations)
         const airbornePoints = telemetry.filter(t => t.altitude_ft > 100);
         const averageSpeed = airbornePoints.length > 0
             ? Math.round(airbornePoints.reduce((sum, t) => sum + (t.speed_kts || 0), 0) / airbornePoints.length)
             : 0;
 
-        // Distance (sum of distances between points)
         let totalDistance = 0;
         for (let i = 1; i < telemetry.length; i++) {
             const prev = telemetry[i - 1];
@@ -774,15 +695,12 @@ class FlightTracker {
             const distance = this.calculateDistance(prev.x, prev.y, curr.x, curr.y);
             totalDistance += distance;
         }
-        totalDistance = Math.round(totalDistance * 0.000539957); // Convert to nautical miles (assuming meters)
+        totalDistance = Math.round(totalDistance * 0.000539957);
 
-        // Landing rate
         const landingRate = await calculateLandingRate(activeFlight.roblox_username);
 
-        // Smoothness score
         const smoothnessScore = this.calculateSmoothnessScore(telemetry);
 
-        // Landing score
         const landingScore = landingRate ? this.calculateLandingScore(landingRate) : null;
 
         return {
@@ -808,10 +726,8 @@ class FlightTracker {
             const speedDelta = Math.abs((telemetry[i].speed_kts || 0) - (telemetry[i - 1].speed_kts || 0));
             const altDelta = Math.abs((telemetry[i].altitude_ft || 0) - (telemetry[i - 1].altitude_ft || 0));
 
-            // Penalize sudden speed changes > 20kts
             if (speedDelta > 20) score -= 2;
 
-            // Penalize sudden altitude changes > 500ft
             if (altDelta > 500) score -= 3;
         }
 
@@ -821,11 +737,11 @@ class FlightTracker {
     calculateLandingScore(landingRate) {
         const rate = Math.abs(landingRate);
 
-        if (rate < 100) return 100;                    // Butter landing
-        if (rate < 300) return 100 - ((rate - 100) / 2);  // Good
-        if (rate < 600) return 80 - ((rate - 300) / 15);  // Acceptable
-        if (rate < 1000) return 60 - ((rate - 600) / 10); // Hard
-        return Math.max(0, 20 - ((rate - 1000) / 50));    // Very hard
+        if (rate < 100) return 100;
+        if (rate < 300) return 100 - ((rate - 100) / 2);
+        if (rate < 600) return 80 - ((rate - 300) / 15);
+        if (rate < 1000) return 60 - ((rate - 600) / 10);
+        return Math.max(0, 20 - ((rate - 1000) / 50));
     }
 
     startFlightMonitoring() {
@@ -850,9 +766,7 @@ class FlightTracker {
 
                 if (lastTelemetry && (now - lastTelemetry) > this.flightNotFoundTimeout) {
 
-                    // If flight has landed, complete it instead of deleting
                     if (flight.landing_detected) {
-                        // Store arrival position
                         if (flight.stationary_position_x && flight.stationary_position_y) {
                             await pool.query(`
                                 UPDATE logbook_flights
@@ -862,18 +776,12 @@ class FlightTracker {
                             `, [flight.stationary_position_x, flight.stationary_position_y, flight.flight_id]);
                         }
 
-                        // Complete the flight
                         await this.handleFlightCompletion(flight, flight.roblox_username);
                     } else {
-                        // Flight hasn't landed yet - delete it and notify user
-
-                        // Delete active tracking first (due to foreign key constraint)
                         await removeActiveFlightTracking(flight.roblox_username);
 
-                        // Then delete the flight
                         await pool.query(`DELETE FROM logbook_flights WHERE id = $1`, [flight.flight_id]);
 
-                        // Send notification
                         await pool.query(`
                             INSERT INTO user_notifications (user_id, type, title, message, created_at)
                             VALUES ($1, 'error', 'Flight Not Found', $2, NOW())
@@ -883,7 +791,6 @@ class FlightTracker {
                         ]);
                     }
 
-                    // Clean up memory
                     this.lastTelemetryTime.delete(flight.roblox_username);
                     this.flightData.delete(flight.roblox_username);
                 } else if (!lastTelemetry) {
@@ -891,7 +798,7 @@ class FlightTracker {
                 }
             }
         } catch (error) {
-            console.error('[Flight Tracker] Error checking for missing flights:', error);
+            debug(`[Flight Tracker] Error checking for missing flights: ${error}`, 'error');
         }
     }
 
@@ -902,7 +809,6 @@ class FlightTracker {
     }
 }
 
-// Create singleton instance
 const flightTracker = new FlightTracker();
 
 export default flightTracker;
