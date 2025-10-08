@@ -8,32 +8,49 @@ import type { Flight } from '../../types/flight';
 
 // Aircraft data with Wake Turbulence Categories
 const AIRCRAFT_WTC_MAP: Record<string, string> = {
+    // Light (L)
+    BE58: 'L',
+    C150: 'L',
+    C550: 'L',
+    HAWK: 'L',
+    METR: 'L',
+    P46T: 'L',
+    TBM9: 'L',
+
+    // Medium (M)
     A220: 'M',
     A320: 'M',
-    A330: 'H',
-    A350: 'H',
+    A319: 'M',
+    A321: 'M',
     B717: 'M',
     B727: 'M',
     B737: 'M',
+    B738: 'M',
     B757: 'M',
-    B77W: 'H',
-    B787: 'H',
+    DH8D: 'M',
+    EUFI: 'M',
+    F100: 'M',
     MD80: 'M',
     E145: 'M',
     CRJ7: 'M',
     AT72: 'M',
-    DH8D: 'M',
-    B738: 'M',
-    A319: 'M',
-    A321: 'M',
+
+    // Heavy (H)
+    A330: 'H',
+    A350: 'H',
+    A359: 'H',
     B744: 'H',
     B748: 'H',
+    B77W: 'H',
+    B77L: 'H',
+    B77F: 'H',
+    B787: 'H',
+    B789: 'H',
+    MD11: 'H',
+
+    // Super (J)
     A388: 'J',
     AN225: 'J',
-    B77L: 'H',
-    B789: 'H',
-    A359: 'H',
-    B77F: 'H',
 };
 
 interface AddCustomFlightModalProps {
