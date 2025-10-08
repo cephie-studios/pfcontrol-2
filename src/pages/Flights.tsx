@@ -765,7 +765,7 @@ const handleToggleClearance = (flightId: string | number, checked: boolean) => {
                                         flashFlightId={flashFlightId}
                                         onToggleClearance={handleToggleClearance}
                                         flashingPDCIds={flashingPDCIds}
-
+                                        onIssuePDC={handleIssuePDC}
                                     />
                                 ) : (
                                     <ArrivalsTable
