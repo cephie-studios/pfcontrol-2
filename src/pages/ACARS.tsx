@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
@@ -15,20 +15,36 @@ export default function ACARS() {
     const [messages, setMessages] = useState<{ id: string; flightId?: string | number; text: string; ts: string }[]>([]);
     const [socketWrapper, setSocketWrapper] = useState<any>(null);
     const [flashingFlightId, setFlashingFlightId] = useState<string | number | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    useEffect(() => {
+        // preload the sound
+        audioRef.current = new Audio('/assets/app/sounds/1382795303253708921.ogg');
+        audioRef.current.volume = 1; // tweak to taste
+    }, []);
 
     useEffect(() => {
         if (!sessionId) return;
         setLoading(true);
 
         // Connect as a viewer (no accessId) so ACARS receives pdcIssued
-        const wrapper = createFlightsSocket(sessionId, '', () => {}, () => {}, () => {}, () => {});
+        const wrapper = createFlightsSocket(sessionId, '', () => { }, () => { }, () => { }, () => { });
         setSocketWrapper(wrapper);
+
+        const playPdcSound = () => {
+            const a = audioRef.current;
+            if (!a) return;
+            try {
+                a.currentTime = 0; // restart if spammed
+                a.play().catch(() => { }); // ignore autoplay errors
+            } catch { }
+        };
 
         const handlePdc = (payload: any) => {
             try {
                 // pdcText might be top-level or inside updatedFlight
                 const ptext = payload?.pdcText ?? payload?.updatedFlight?.pdc_remarks ?? payload?.updatedFlight?.pdc_text ?? null;
                 if (!ptext) return;
+                playPdcSound();
                 const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
                 setMessages((m) => [{ id, flightId: payload?.flightId ?? payload?.updatedFlight?.id, text: String(ptext), ts: new Date().toISOString() }, ...m]);
             } catch (e) {
@@ -51,7 +67,7 @@ export default function ACARS() {
                 wrapper.socket.off('pdcIssued', handlePdc);
                 wrapper.socket.off('connect', handleConnect);
                 wrapper.socket.disconnect();
-            } catch (e) {}
+            } catch (e) { }
         };
     }, [sessionId]);
 
@@ -74,10 +90,12 @@ export default function ACARS() {
     return (
         <div className="min-h-screen bg-gray-950 text-white">
             <Navbar />
-            <div className="container mx-auto px-4 py-8 max-w-3xl">
+
+            <div className="container mx-auto px-4 pt-16 pb-8 max-w-3xl">
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-2xl font-bold">ACARS / PDC Inbox</h1>
                     <div className="flex gap-2">
+
                         <Button onClick={() => navigate(`/submit/${sessionId}`)} variant="outline">Back to Submit</Button>
                         <Button onClick={() => handleRequestPDC(requestedFlightIdFromQuery)} variant="primary">Request PDC</Button>
                     </div>
@@ -95,7 +113,6 @@ export default function ACARS() {
                                         {m.flightId && <div className="text-xs text-gray-400">Flight ID: {m.flightId}</div>}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button onClick={() => handleRequestPDC(m.flightId)} size="sm" variant="outline">Request PDC for this flight</Button>
                                         {String(flashingFlightId) === String(m.flightId) && (
                                             <div className="inline-flex items-center justify-center w-6 h-6 rounded border ring-2 ring-blue-400 animate-pulse">
                                                 <span className="text-xs font-bold text-white">C</span>

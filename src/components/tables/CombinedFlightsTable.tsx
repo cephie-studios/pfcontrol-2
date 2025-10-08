@@ -13,6 +13,8 @@ interface CombinedFlightsTableProps {
 	backgroundStyle?: React.CSSProperties;
 	flashFlightId: string | null;
 	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
+	onToggleClearance: (flightId: string | number, checked: boolean) => void;
+	flashingPDCIds: Set<string>;
 }
 
 export default function CombinedFlightsTable({
@@ -22,7 +24,9 @@ export default function CombinedFlightsTable({
 	onFlightChange,
 	onIssuePDC,
 	backgroundStyle,
-	flashFlightId
+	flashFlightId,
+	onToggleClearance,
+	flashingPDCIds
 }: CombinedFlightsTableProps) {
 	return (
 		<div className="space-y-12 mt-8">
@@ -33,10 +37,12 @@ export default function CombinedFlightsTable({
 				<DepartureTable
 					flights={departureFlights}
 					onFlightDelete={onFlightDelete}
-					onFlightChange={onFlightChange ?? (() => {})}
+					onFlightChange={onFlightChange ?? (() => { })}
 					backgroundStyle={backgroundStyle}
 					onIssuePDC={onIssuePDC}
 					flashFlightId={flashFlightId}
+					onToggleClearance={onToggleClearance}
+					flashingPDCIds={flashingPDCIds}
 				/>
 			</div>
 

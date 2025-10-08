@@ -34,6 +34,8 @@ interface DepartureTableProps {
 	onFieldEditingStop?: (flightId: string | number, fieldName: string) => void;
 	// NEW
 	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
+	onToggleClearance: (flightId: string | number, checked: boolean) => void;
+	flashingPDCIds: Set<string>;
 }
 
 export default function DepartureTable({
@@ -41,6 +43,7 @@ export default function DepartureTable({
 	onFlightDelete,
 	onFlightChange,
 	backgroundStyle,
+	flashFlightId,
 	departureColumns = {
 		time: true,
 		callsign: true,
@@ -64,7 +67,10 @@ export default function DepartureTable({
 	fieldEditingStates = [],
 	onFieldEditingStart,
 	onFieldEditingStop,
-	onIssuePDC
+	onIssuePDC,
+
+	onToggleClearance,
+	flashingPDCIds
 }: DepartureTableProps) {
 	const [showHidden, setShowHidden] = useState(false);
 	const [pdcModalOpen, setPdcModalOpen] = useState(false);
@@ -87,26 +93,12 @@ export default function DepartureTable({
 		onFlightDelete(flightId);
 	};
 
-	const handleToggleClearance = (
-		flightId: string | number,
-		checked: boolean
-	) => {
-		if (onFlightChange) {
-			onFlightChange(flightId, { clearance: checked });
-		}
-	};
-
-	const isClearanceChecked = (
-		clearance: boolean | string | undefined
-	): boolean => {
-		if (typeof clearance === 'boolean') {
-			return clearance;
-		}
-		if (typeof clearance === 'string') {
-			return clearance.toLowerCase() === 'true';
-		}
+	const isClearanceChecked = (v: boolean | string | undefined) => {
+		if (typeof v === 'boolean') return v;
+		if (typeof v === 'string') return ['true', 'c', 'yes', '1'].includes(v.trim().toLowerCase());
 		return false;
 	};
+
 
 	const handleRemarkChange = (flightId: string | number, remark: string) => {
 		if (onFlightChange) {
@@ -397,75 +389,76 @@ export default function DepartureTable({
 									flight.id,
 									'remark'
 								);
-
+								const isFlashing =
+									flashingPDCIds?.has(String(flight.id)) &&
+									!isClearanceChecked(flight.clearance);
 								return (
 									<tr
 										key={flight.id}
-										className={`flight-row ${
-											flight.hidden
-												? 'opacity-60 text-gray-400'
-												: ''
-										}`}
+										className={`flight-row ${flight.hidden
+											? 'opacity-60 text-gray-400'
+											: ''
+											}`}
 										style={backgroundStyle}
 									>
 										{/* Time column is always visible */}
 										<td className="py-2 px-4 column-time">
 											{flight.timestamp
 												? new Date(
-														flight.timestamp
-												  ).toLocaleTimeString(
-														'en-GB',
-														{
-															hour: '2-digit',
-															minute: '2-digit',
-															timeZone: 'UTC'
-														}
-												  )
+													flight.timestamp
+												).toLocaleTimeString(
+													'en-GB',
+													{
+														hour: '2-digit',
+														minute: '2-digit',
+														timeZone: 'UTC'
+													}
+												)
 												: '-'}
 										</td>
 										{departureColumns.callsign !==
 											false && (
-											<td className="py-2 px-4">
-												<TextInput
-													value={
-														flight.callsign || ''
-													}
-													onChange={(value) =>
-														handleCallsignChange(
-															flight.id,
-															value
-														)
-													}
-													className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
-													placeholder="-"
-													maxLength={16}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.currentTarget.blur();
+												<td className="py-2 px-4">
+													<TextInput
+														value={
+															flight.callsign || ''
 														}
-													}}
-													editingAvatar={
-														callsignEditingState?.avatar ||
-														null
-													}
-													editingUsername={
-														callsignEditingState?.username
-													}
-													onFocus={() =>
-														handleFieldFocus(
-															flight.id,
-															'callsign'
-														)
-													}
-													onBlur={() =>
-														handleFieldBlur(
-															flight.id,
-															'callsign'
-														)
-													}
-												/>
-											</td>
-										)}
+														onChange={(value) =>
+															handleCallsignChange(
+																flight.id,
+																value
+															)
+														}
+														className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+														placeholder="-"
+														maxLength={16}
+														onKeyDown={(e) => {
+															if (e.key === 'Enter') {
+																e.currentTarget.blur();
+															}
+														}}
+														editingAvatar={
+															callsignEditingState?.avatar ||
+															null
+														}
+														editingUsername={
+															callsignEditingState?.username
+														}
+														onFocus={() =>
+															handleFieldFocus(
+																flight.id,
+																'callsign'
+															)
+														}
+														onBlur={() =>
+															handleFieldBlur(
+																flight.id,
+																'callsign'
+															)
+														}
+													/>
+												</td>
+											)}
 										{departureColumns.stand !== false && (
 											<td className="py-2 px-4 column-stand">
 												<TextInput
@@ -508,32 +501,32 @@ export default function DepartureTable({
 										)}
 										{departureColumns.aircraft !==
 											false && (
-											<td className="py-2 px-4">
-												<AircraftDropdown
-													value={flight.aircraft}
-													onChange={(type) =>
-														handleAircraftChange(
-															flight.id,
-															type
-														)
-													}
-													size="xs"
-													showFullName={false}
-												/>
-											</td>
-										)}
+												<td className="py-2 px-4">
+													<AircraftDropdown
+														value={flight.aircraft}
+														onChange={(type) =>
+															handleAircraftChange(
+																flight.id,
+																type
+															)
+														}
+														size="xs"
+														showFullName={false}
+													/>
+												</td>
+											)}
 										{departureColumns.wakeTurbulence !==
 											false && (
-											<td className="py-2 px-4 column-w">
-												{flight.wtc || '-'}
-											</td>
-										)}
+												<td className="py-2 px-4 column-w">
+													{flight.wtc || '-'}
+												</td>
+											)}
 										{departureColumns.flightType !==
 											false && (
-											<td className="py-2 px-4">
-												{flight.flight_type || '-'}
-											</td>
-										)}
+												<td className="py-2 px-4">
+													{flight.flight_type || '-'}
+												</td>
+											)}
 										{departureColumns.arrival !== false && (
 											<td className="py-2 px-4">
 												<AirportDropdown
@@ -675,21 +668,14 @@ export default function DepartureTable({
 												</div>
 											</td>
 										)}
-										{departureColumns.clearance !==
-											false && (
+										{departureColumns.clearance !== false && (
 											<td className="py-2 px-4">
 												<Checkbox
-													checked={isClearanceChecked(
-														flight.clearance
-													)}
-													onChange={(checked) =>
-														handleToggleClearance(
-															flight.id,
-															checked
-														)
-													}
+													checked={isClearanceChecked(flight.clearance)}
+													onChange={() => onToggleClearance(flight.id, !isClearanceChecked(flight.clearance))} // or: onToggleClearance(flight.id)
 													label=""
 													checkedClass="bg-green-600 border-green-600"
+													flashing={isFlashing}
 												/>
 											</td>
 										)}
@@ -773,11 +759,11 @@ export default function DepartureTable({
 													onClick={() =>
 														flight.hidden
 															? handleUnhideFlight(
-																	flight.id
-															  )
+																flight.id
+															)
 															: handleHideFlight(
-																	flight.id
-															  )
+																flight.id
+															)
 													}
 												>
 													{flight.hidden ? (

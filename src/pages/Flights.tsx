@@ -52,6 +52,7 @@ export default function Flights() {
     const [flights, setFlights] = useState<Flight[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const [flashingPDCIds, setFlashingPDCIds] = useState<Set<string>>(new Set());
     const [flightsSocket, setFlightsSocket] = useState<ReturnType<
         typeof createFlightsSocket
     > | null>(null);
@@ -342,23 +343,38 @@ export default function Flights() {
 
     useEffect(() => {
         if (!flightsSocket?.socket) return;
+
         const onPdcRequest = (payload: { flightId?: string | number }) => {
-            try {
-                const id = payload?.flightId;
-                if (!id) return;
-                setFlashFlightId(String(id));
-                setTimeout(() => {
-                    setFlashFlightId((cur) => (cur === String(id) ? null : cur));
-                }, 3000);
-            } catch (e) {
-                console.debug('pdcRequest handler error', e);
-            }
+            const id = payload?.flightId;
+            if (!id) return;
+            setFlashingPDCIds(prev => {
+                const next = new Set(prev);
+                next.add(String(id));
+                return next;
+            });
         };
+
+
         flightsSocket.socket.on('pdcRequest', onPdcRequest);
         return () => {
-            try { flightsSocket.socket.off('pdcRequest', onPdcRequest); } catch (e) { }
+            flightsSocket.socket.off('pdcRequest', onPdcRequest);
         };
     }, [flightsSocket]);
+
+const handleToggleClearance = (flightId: string | number, checked: boolean) => {
+  // Persist as boolean
+  handleFlightUpdate(flightId, { clearance: checked });
+
+  // Always stop flashing once checked
+  if (checked) {
+    setFlashingPDCIds(prev => {
+      const next = new Set(prev);
+      next.delete(String(flightId));
+      return next;
+    });
+  }
+};
+
 
     const handleFlightUpdate = (
         flightId: string | number,
@@ -725,7 +741,10 @@ export default function Flights() {
                                 onFlightChange={handleFlightUpdate}
                                 backgroundStyle={backgroundStyle}
                                 onIssuePDC={handleIssuePDC} // <-- forward the handler here
-                                flashFlightId={flashFlightId} // <-- new: which flight should flash "C"
+                                flashFlightId={flashFlightId}
+                                onToggleClearance={handleToggleClearance}
+                                flashingPDCIds={flashingPDCIds}
+                            // <-- new: which flight should flash "C"
                             />
                         ) : (
                             <>
@@ -744,6 +763,9 @@ export default function Flights() {
                                             handleFieldEditingStop
                                         }
                                         flashFlightId={flashFlightId}
+                                        onToggleClearance={handleToggleClearance}
+                                        flashingPDCIds={flashingPDCIds}
+
                                     />
                                 ) : (
                                     <ArrivalsTable
