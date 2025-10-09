@@ -24,6 +24,7 @@ export interface SessionUser {
 	avatar: string | null;
 	joinedAt: number;
 	position: Position;
+    roles: { id: number; name: string; color: string; icon: string; priority: number; }[];
 }
 
 export interface ChatMention {

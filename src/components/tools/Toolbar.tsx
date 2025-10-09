@@ -53,11 +53,14 @@ interface ToolbarProps {
     onViewChange?: (view: 'departures' | 'arrivals') => void;
     showViewTabs?: boolean;
     position: Position;
-    onPositionChange: (pos: Position) => void;
+    onPositionChange: (position: Position) => void;
 }
 
 const getIconComponent = (iconName: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<
+        string,
+        React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+    > = {
         Star,
         Shield,
         Wrench,
@@ -160,7 +163,6 @@ export default function Toolbar({
         }
     };
 
-    // Wrapper function for ChatSidebar that expects ChatMention from chats.ts
     const handleChatSidebarMention = (mention: ChatMention) => {
         setUnreadMentions((prev) => [...prev, mention]);
         if (user) {
@@ -353,7 +355,7 @@ export default function Toolbar({
                                 style={{
                                     position: 'relative',
                                     left: `${index * -10}px`,
-                                    zIndex: 999999,
+                                    zIndex: 40, // Changed from 999999 to 40
                                 }}
                             >
                                 <img
@@ -374,8 +376,9 @@ export default function Toolbar({
                                 <div
                                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
                                     style={{
-                                        borderColor: highestRole?.color || '#71717a',
-                                        zIndex: 999999,
+                                        borderColor:
+                                            highestRole?.color || '#71717a',
+                                        zIndex: 998,
                                     }}
                                 >
                                     <div className="flex items-center gap-2">
@@ -384,14 +387,20 @@ export default function Toolbar({
                                         </span>
                                         {highestRole && RoleIcon && (
                                             <>
-                                                <span className="text-white/50">•</span>
+                                                <span className="text-white/50">
+                                                    •
+                                                </span>
                                                 <RoleIcon
                                                     className="w-3.5 h-3.5"
-                                                    style={{ color: highestRole.color }}
+                                                    style={{
+                                                        color: highestRole.color,
+                                                    }}
                                                 />
                                                 <span
                                                     className="text-sm font-semibold"
-                                                    style={{ color: highestRole.color }}
+                                                    style={{
+                                                        color: highestRole.color,
+                                                    }}
                                                 >
                                                     {highestRole.name}
                                                 </span>

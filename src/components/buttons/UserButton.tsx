@@ -6,7 +6,7 @@ import {
     ChevronDown,
     List,
     LayoutDashboard,
-    BookOpen,
+    Notebook,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/auth/useAuth';
@@ -130,7 +130,7 @@ export default function CustomUserButton({
                         }
                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
                     >
-                        <BookOpen className="w-4 h-4" />
+                        <Notebook className="w-4 h-4" />
                         <span>Logbook</span>
                     </button>
 
@@ -253,7 +253,7 @@ export default function CustomUserButton({
                             }}
                             className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
                         >
-                            <BookOpen className="w-4 h-4" />
+                            <Notebook className="w-4 h-4" />
                             <span className="font-medium">Logbook</span>
                         </button>
 

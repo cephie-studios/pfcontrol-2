@@ -153,10 +153,10 @@ export default function Sessions() {
                 <div className="max-w-7xl mx-auto px-6 py-12 pt-28">
                     <div
                         className="
-                flex flex-col gap-5 items-start 
-                sm:flex-row sm:items-center sm:justify-between sm:gap-0
-                mb-4
-            "
+				flex flex-col gap-5 items-start
+				sm:flex-row sm:items-center sm:justify-between sm:gap-0
+				mb-4
+			"
                     >
                         <div className="flex items-center w-full sm:w-auto">
                             <div className="p-3 bg-blue-500/20 rounded-xl mr-4">
@@ -165,11 +165,11 @@ export default function Sessions() {
                             <div>
                                 <h1
                                     className="
-                            text-3xl sm:text-5xl
-                            text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 
-                            font-extrabold mb-0 sm:mb-2
-                        "
-                                    style={{ lineHeight: 1.2 }}
+							text-3xl sm:text-5xl
+							text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600
+							font-extrabold mb-0 sm:mb-2
+						"
+                                    style={{ lineHeight: 1.4 }}
                                 >
                                     My Sessions
                                 </h1>
@@ -183,13 +183,9 @@ export default function Sessions() {
                             size="md"
                             disabled={sessions.length >= 10}
                             className={`
-                    mt-2 sm:mt-0 w-full sm:w-auto
-                    ${
-                        sessions.length >= 10
-                            ? 'opacity-50 cursor-not-allowed'
-                            : ''
-                    }
-                `}
+					mt-2 sm:mt-0 w-full sm:w-auto
+					${sessions.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}
+				`}
                         >
                             Create New Session
                         </Button>

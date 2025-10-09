@@ -23,6 +23,7 @@ import {
     FlaskConical,
     Search,
     Filter,
+    TowerControl,
 } from 'lucide-react';
 import {
     DndContext,
@@ -119,6 +120,7 @@ const AVAILABLE_ICONS = [
     { value: 'Flame', label: 'Flame', icon: Flame },
     { value: 'TrendingUp', label: 'Trending Up', icon: TrendingUp },
     { value: 'FlaskConical', label: 'Flask', icon: FlaskConical },
+    { value: 'TowerControl', label: 'Tower Control', icon: TowerControl },
 ];
 
 const PRESET_COLORS = [
@@ -139,7 +141,6 @@ const getIconComponent = (iconName: string) => {
     return iconOption?.icon || Star;
 };
 
-// Sortable Role Item Component
 function SortableRoleItem({
     role,
     onEdit,
@@ -485,7 +486,6 @@ export default function AdminRoles() {
         })
     );
 
-    // Handle drag end - update role priorities
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
@@ -525,7 +525,6 @@ export default function AdminRoles() {
                 message: 'Role priorities updated successfully',
                 type: 'success',
             });
-            // Refresh to get updated data from server
             fetchData();
         } catch (error) {
             setToast({
@@ -535,12 +534,10 @@ export default function AdminRoles() {
                         : 'Failed to update role priorities',
                 type: 'error',
             });
-            // Revert on error
             fetchData();
         }
     };
 
-    // Filter users based on search and role filter
     const filteredUsers = users.filter((user) => {
         const matchesSearch = user.username
             .toLowerCase()

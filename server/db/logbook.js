@@ -63,7 +63,7 @@ export async function initializeLogbookTables() {
                 waypoint_landing_rate INTEGER,
 
                 -- Sharing
-                share_token VARCHAR(64) UNIQUE,
+                share_token VARCHAR(16) UNIQUE,
 
                 created_at TIMESTAMP DEFAULT NOW()
             )
@@ -183,7 +183,7 @@ export async function initializeLogbookTables() {
             { name: 'activated_at', type: 'TIMESTAMP' },
             { name: 'landed_at', type: 'TIMESTAMP' },
             { name: 'controller_status', type: 'VARCHAR(50)' },
-            { name: 'share_token', type: 'VARCHAR(64) UNIQUE' }
+            { name: 'share_token', type: 'VARCHAR(16) UNIQUE' }
         ];
 
         for (const col of columnsToAdd) {

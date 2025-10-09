@@ -1,13 +1,15 @@
 import { useAuth } from '../../hooks/auth/useAuth';
 import { Link2, ExternalLink, UserX } from 'lucide-react';
-import { SiRoblox } from "react-icons/si";
+import { SiRoblox } from 'react-icons/si';
 import Button from '../common/Button';
 
 export default function AccountSettings() {
     const { user, refreshUser } = useAuth();
 
     const handleLinkRoblox = () => {
-        window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
+        window.location.href = `${
+            import.meta.env.VITE_SERVER_URL
+        }/api/auth/roblox`;
     };
 
     const handleUnlinkRoblox = async () => {
@@ -20,7 +22,7 @@ export default function AccountSettings() {
                 `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox/unlink`,
                 {
                     method: 'POST',
-                    credentials: 'include'
+                    credentials: 'include',
                 }
             );
 
@@ -36,13 +38,15 @@ export default function AccountSettings() {
     };
 
     return (
-        <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6">
+        <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6">
             <div className="flex items-center mb-6">
                 <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
                     <Link2 className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-white">Account Connections</h2>
+                    <h2 className="text-xl font-bold text-white">
+                        Account Connections
+                    </h2>
                     <p className="text-sm text-zinc-400">
                         Link your accounts to enable additional features
                     </p>
@@ -72,7 +76,8 @@ export default function AccountSettings() {
                                 </div>
                             ) : (
                                 <p className="text-zinc-400 text-sm mt-1">
-                                    Link your Roblox account to track flights in your logbook
+                                    Link your Roblox account to track flights in
+                                    your logbook
                                 </p>
                             )}
                         </div>
