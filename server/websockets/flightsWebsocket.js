@@ -22,7 +22,10 @@ export function setupFlightsWebsocket(httpServer) {
         const sessionId = socket.handshake.query.sessionId;
         const accessId = socket.handshake.query.accessId;
 
+        console.log(`[Flights Socket] Connection attempt - SessionID: ${sessionId || 'missing'}, AccessID: ${accessId ? 'provided' : 'missing'}, Socket ID: ${socket.id}`);
+
         if (!sessionId) {
+            console.warn(`[Flights Socket] Rejected connection ${socket.id} - Missing sessionId`);
             socket.disconnect(true);
             return;
         }
@@ -31,6 +34,7 @@ export function setupFlightsWebsocket(httpServer) {
         if (accessId) {
             const valid = await validateSessionAccess(sessionId, accessId);
             if (!valid) {
+                console.warn(`[Flights Socket] Rejected connection ${socket.id} - Invalid session access for sessionId: ${sessionId}`);
                 socket.disconnect(true);
                 return;
             }
@@ -38,6 +42,7 @@ export function setupFlightsWebsocket(httpServer) {
         }
         socket.data.role = role;
 
+        console.log(`[Flights Socket] Connection accepted - SessionID: ${sessionId}, Role: ${role}, Socket ID: ${socket.id}`);
         socket.join(sessionId);
 
         socket.on('updateFlight', async ({ flightId, updates }) => {
@@ -226,6 +231,10 @@ export function setupFlightsWebsocket(httpServer) {
             } catch (err) {
                 socket.emit('flightError', { action: 'contactMe', flightId, error: 'Failed to send contact message' });
             }
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log(`[Flights Socket] Disconnected - SessionID: ${sessionId}, Socket ID: ${socket.id}, Reason: ${reason}`);
         });
     });
 

@@ -271,7 +271,7 @@ export default function Flights() {
         return () => {
             socket.socket.disconnect();
         };
-    }, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
+    }, [sessionId, accessId, initialLoadComplete, user, settings]);
     const handleIssuePDC = async (
         flightId: string | number,
         pdcText: string
@@ -474,11 +474,12 @@ export default function Flights() {
             (f) => f.id === flightId
         );
 
-        if (isExternalArrival && arrivalsSocket) {
+        if (isExternalArrival && arrivalsSocket?.socket?.connected) {
             arrivalsSocket.updateArrival(flightId, updates);
-        } else if (flightsSocket) {
+        } else if (flightsSocket?.socket?.connected) {
             flightsSocket.updateFlight(flightId, updates);
         } else {
+            console.warn('Socket not connected, updating local state only');
             setFlights((prev) =>
                 prev.map((flight) =>
                     flight.id === flightId ? { ...flight, ...updates } : flight
@@ -511,9 +512,10 @@ export default function Flights() {
         }
 
         // Regular flight deletion via WebSocket
-        if (flightsSocket) {
+        if (flightsSocket?.socket?.connected) {
             flightsSocket.deleteFlight(flightId);
         } else {
+            console.warn('Socket not connected, updating local state only');
             setFlights((prev) =>
                 prev.filter((flight) => flight.id !== flightId)
             );
@@ -573,8 +575,10 @@ export default function Flights() {
             setSession((prev) =>
                 prev ? { ...prev, activeRunway: selectedRunway } : null
             );
-            if (flightsSocket) {
+            if (flightsSocket?.socket?.connected) {
                 flightsSocket.updateSession({ activeRunway: selectedRunway });
+            } else {
+                console.warn('Socket not connected, runway updated via API only');
             }
         } catch (error) {
             console.error('Failed to update runway:', error);
