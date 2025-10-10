@@ -82,7 +82,7 @@ export default function CustomUserButton({
         return (
             <div className={`w-full space-y-3 ${className}`}>
                 <Link
-                    to={`/pilot/${user.username}`}
+                    to={`/pilots/${user.username}`}
                     onClick={() => handleAction()}
                     className="flex items-center space-x-3 px-4 py-3 bg-zinc-800/60 rounded-xl border border-zinc-700/50 hover:bg-zinc-700/60 transition-colors"
                 >
