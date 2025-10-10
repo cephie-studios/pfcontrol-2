@@ -30,28 +30,33 @@ export async function getFlightsBySession(sessionId) {
 }
 
 export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
-    const tableName = `flights_${sessionId}`;
-    const result = await flightsPool.query(
-        `SELECT acars_token FROM ${tableName} WHERE id = $1`,
-        [flightId]
-    );
+    try {
+        const tableName = `flights_${sessionId}`;
+        const result = await flightsPool.query(
+            `SELECT acars_token FROM ${tableName} WHERE id = $1`,
+            [flightId]
+        );
 
-    if (result.rows.length === 0) {
+        if (result.rows.length === 0) {
+            return { valid: false };
+        }
+
+        const isValid = result.rows[0].acars_token === acarsToken;
+
+        if (!isValid) {
+            return { valid: false };
+        }
+
+        const session = await getSessionById(sessionId);
+
+        return {
+            valid: true,
+            accessId: session?.access_id || null
+        };
+    } catch (error) {
+        console.error('Error validating ACARS access:', error);
         return { valid: false };
     }
-
-    const isValid = result.rows[0].acars_token === acarsToken;
-
-    if (!isValid) {
-        return { valid: false };
-    }
-
-    const session = await getSessionById(sessionId);
-
-    return {
-        valid: true,
-        accessId: session?.access_id || null
-    };
 }
 
 export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
