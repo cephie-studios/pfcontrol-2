@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Copy, CheckCircle, Loader, Info, Plane } from 'lucide-react';
 import { useData } from '../../hooks/data/useData';
 import type { Flight } from '../../types/flight';
@@ -11,7 +11,6 @@ interface PDCModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	flight: Flight | null;
-	// NEW: controller callback to send/issue the PDC (will emit to server)
 	onIssuePDC?: (flightId: string | number, pdcText: string) => Promise<void> | void;
 }
 

@@ -1,10 +1,12 @@
 import { useContext, createContext } from 'react';
 import type { Airport, AirportFrequency } from '../../types/airports';
 import type { Aircraft } from '../../types/aircraft';
+import type { Airline } from '../../types/airlines';
 
 interface DataContextType {
 	airports: Airport[];
 	aircrafts: Aircraft[];
+	airlines: Airline[];
 	frequencies: AirportFrequency[];
 	airportRunways: Record<string, string[]>;
 	airportSids: Record<string, string[]>;

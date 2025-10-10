@@ -4,6 +4,7 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { updateSession, getAllSessions, getSessionById } from '../db/sessions.js';
 import { getArrivalsIO } from './arrivalsWebsocket.js';
 import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
+import flightsPool from '../db/connections/flightsConnection.js';
 
 let io;
 const updateTimers = new Map();
@@ -21,16 +22,11 @@ export function setupFlightsWebsocket(httpServer) {
         const sessionId = socket.handshake.query.sessionId;
         const accessId = socket.handshake.query.accessId;
 
-        // Basic session check
         if (!sessionId) {
             socket.disconnect(true);
             return;
         }
 
-        // Determine role:
-        // - If an accessId is provided and validates -> controller (full privileges)
-        // - If no accessId provided -> pilot (limited privileges: can listen & addFlight)
-        // This avoids giving pilots controller access while still allowing them to receive events.
         let role = 'pilot';
         if (accessId) {
             const valid = await validateSessionAccess(sessionId, accessId);
@@ -45,20 +41,13 @@ export function setupFlightsWebsocket(httpServer) {
         socket.join(sessionId);
 
         socket.on('updateFlight', async ({ flightId, updates }) => {
-            // restrict updates from pilots (controllers only)
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'update', flightId, error: 'Not authorized' });
                 return;
             }
             try {
-                // Log all updates to see what's being received
-                if (updates.status || updates.callsign) {
-                    console.log(`[FlightWS] Received update for ${updates.callsign || flightId}:`, JSON.stringify(updates));
-                }
-
-                // Handle local hide/unhide - don't process these on server
                 if (updates.hasOwnProperty('hidden')) {
-                    return; // Ignore hidden field updates
+                    return;
                 }
 
                 if (updates.callsign && updates.callsign.length > 16) {
@@ -83,10 +72,7 @@ export function setupFlightsWebsocket(httpServer) {
 
                     await broadcastToArrivalSessions(updatedFlight);
 
-                    // Handle logbook status changes
                     if (updates.status && updatedFlight.callsign) {
-                        console.log(`[FlightWS] Detected status change: ${updatedFlight.callsign} -> ${updates.status}`);
-                        // Get session's airport to determine origin vs destination
                         const session = await getSessionById(sessionId);
                         const controllerAirport = session?.airport_icao || null;
                         await handleFlightStatusChange(updatedFlight.callsign, updates.status, controllerAirport);
@@ -104,12 +90,10 @@ export function setupFlightsWebsocket(httpServer) {
                         await updateFlight(sessionId, flightId, updates);
                         updateTimers.delete(timerKey);
                     } catch (error) {
-                        console.error('Error saving flight update to DB:', error);
                     }
                 }, 1000));
 
             } catch (error) {
-                console.error('Error updating flight via websocket:', error);
                 socket.emit('flightError', { action: 'update', flightId, error: 'Failed to update flight' });
             }
         });
@@ -124,17 +108,18 @@ export function setupFlightsWebsocket(httpServer) {
 
                 const flight = await addFlight(sessionId, enhancedFlightData);
 
-                io.to(sessionId).emit('flightAdded', flight);
+                socket.emit('flightAdded', flight);
 
-                await broadcastToArrivalSessions(flight);
+                const { acars_token, user_id, ip_address, ...sanitizedFlight } = flight;
+                socket.to(sessionId).emit('flightAdded', sanitizedFlight);
+
+                await broadcastToArrivalSessions(sanitizedFlight);
             } catch (error) {
-                console.error('Error adding flight via websocket:', error);
                 socket.emit('flightError', { action: 'add', error: 'Failed to add flight' });
             }
         });
 
         socket.on('deleteFlight', async (flightId) => {
-            // controllers only
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'delete', flightId, error: 'Not authorized' });
                 return;
@@ -143,13 +128,11 @@ export function setupFlightsWebsocket(httpServer) {
                 await deleteFlight(sessionId, flightId);
                 io.to(sessionId).emit('flightDeleted', { flightId });
             } catch (error) {
-                console.error('Error deleting flight via websocket:', error);
                 socket.emit('flightError', { action: 'delete', flightId, error: 'Failed to delete flight' });
             }
         });
 
         socket.on('updateSession', async (updates) => {
-            // controllers only
             if (socket.data.role !== 'controller') {
                 socket.emit('sessionError', { error: 'Not authorized' });
                 return;
@@ -164,14 +147,11 @@ export function setupFlightsWebsocket(httpServer) {
                     socket.emit('sessionError', { error: 'Session not found or update failed' });
                 }
             } catch (error) {
-                console.error('Error updating session via websocket:', error);
                 socket.emit('sessionError', { error: 'Failed to update session' });
             }
         });
 
-        // NEW: controller issues a PDC for a flight -> persist & broadcast
         socket.on('issuePDC', async ({ flightId, pdcText, targetPilotUserId }) => {
-            // controllers only
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Not authorized' });
                 return;
@@ -181,8 +161,6 @@ export function setupFlightsWebsocket(httpServer) {
                     socket.emit('flightError', { action: 'issuePDC', error: 'Missing flightId' });
                     return;
                 }
-
-                // Use pdc_remarks (frontend checks this). Avoid writing unknown columns.
                 const updates = {
                     pdc_remarks: pdcText
                 };
@@ -197,15 +175,12 @@ export function setupFlightsWebsocket(httpServer) {
                     socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Flight not found' });
                 }
             } catch (error) {
-                console.error('Error issuing PDC via websocket:', error);
                 socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Failed to issue PDC' });
             }
         });
 
-        // client requests that controllers issue a PDC for a flight
         socket.on('requestPDC', ({ flightId, callsign, note }) => {
             try {
-                // broadcast to everyone in session (controllers should respond by flashing their flightstrip)
                 io.to(sessionId).emit('pdcRequest', {
                     flightId,
                     callsign: callsign ?? null,
@@ -214,8 +189,42 @@ export function setupFlightsWebsocket(httpServer) {
                     ts: new Date().toISOString()
                 });
             } catch (err) {
-                console.error('Error handling requestPDC:', err);
                 socket.emit('flightError', { action: 'requestPDC', flightId, error: 'Failed to request PDC' });
+            }
+        });
+
+        socket.on('contactMe', async ({ flightId, message }) => {
+            if (socket.data.role !== 'controller') {
+                socket.emit('flightError', { action: 'contactMe', flightId, error: 'Not authorized' });
+                return;
+            }
+            try {
+                const allSessions = await getAllSessions();
+                let targetSessionId = sessionId;
+
+                for (const session of allSessions) {
+                    try {
+                        const tableName = `flights_${session.session_id}`;
+                        const result = await flightsPool.query(
+                            `SELECT session_id FROM ${tableName} WHERE id = $1`,
+                            [flightId]
+                        );
+                        if (result.rows.length > 0) {
+                            targetSessionId = session.session_id;
+                            break;
+                        }
+                    } catch (err) {
+                        continue;
+                    }
+                }
+
+                io.to(targetSessionId).emit('contactMe', {
+                    flightId,
+                    message: message || 'CONTACT CONTROLLER ON FREQUENCY',
+                    ts: new Date().toISOString()
+                });
+            } catch (err) {
+                socket.emit('flightError', { action: 'contactMe', flightId, error: 'Failed to send contact message' });
             }
         });
     });
@@ -240,7 +249,6 @@ async function broadcastToArrivalSessions(flight) {
             }
         }
     } catch (error) {
-        console.error('Error broadcasting to arrival sessions:', error);
     }
 }
 

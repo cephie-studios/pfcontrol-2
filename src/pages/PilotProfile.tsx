@@ -164,7 +164,13 @@ export default function PilotProfile() {
     };
 
     const getIconComponent = (iconName: string) => {
-        const icons: Record<string, any> = {
+        const icons: Record<
+            string,
+            React.ComponentType<{
+                className?: string;
+                style?: React.CSSProperties;
+            }>
+        > = {
             Shield,
             Star,
             Wrench,

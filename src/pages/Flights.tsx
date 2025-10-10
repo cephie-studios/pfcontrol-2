@@ -24,6 +24,7 @@ import ArrivalsTable from '../components/tables/ArrivalsTable';
 import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
+import ContactAcarsModal from '../components/modals/ContactAcarsModal';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -91,6 +92,13 @@ export default function Flights() {
     );
     const [showAddDepartureModal, setShowAddDepartureModal] = useState(false);
     const [showAddArrivalModal, setShowAddArrivalModal] = useState(false);
+    const [showContactAcarsModal, setShowContactAcarsModal] = useState(false);
+    const [activeAcarsFlights, setActiveAcarsFlights] = useState<
+        Set<string | number>
+    >(new Set());
+    const [activeAcarsFlightData, setActiveAcarsFlightData] = useState<
+        Flight[]
+    >([]);
 
     const handleMentionReceived = () => {
         if (user) {
@@ -218,7 +226,6 @@ export default function Flights() {
         accessError,
     ]);
 
-    // Don't initialize sockets if there's an access error
     useEffect(() => {
         if (!sessionId || !accessId || !initialLoadComplete || accessError)
             return;
@@ -265,7 +272,6 @@ export default function Flights() {
             socket.socket.disconnect();
         };
     }, [sessionId, accessId, initialLoadComplete, user, settings, accessError]);
-    // helper to issue PDC (emits to flights websocket)
     const handleIssuePDC = async (
         flightId: string | number,
         pdcText: string
@@ -274,9 +280,44 @@ export default function Flights() {
             console.warn('handleIssuePDC: no flights socket available');
             throw new Error('No flights socket');
         }
-        // emit the dedicated event the server expects
         flightsSocket.socket.emit('issuePDC', { flightId, pdcText });
     };
+
+    useEffect(() => {
+        if (!showContactAcarsModal) return;
+
+        const fetchActiveAcars = async () => {
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`,
+                    {
+                        credentials: 'include',
+                    }
+                );
+
+                if (response.ok) {
+                    const flights: Flight[] = await response.json();
+                    setActiveAcarsFlightData(flights);
+                    setActiveAcarsFlights(new Set(flights.map((f) => f.id)));
+                }
+            } catch {
+                // Ignore errors
+            }
+        };
+
+        fetchActiveAcars();
+    }, [showContactAcarsModal]);
+
+    const handleSendContact = async (
+        flightId: string | number,
+        message: string
+    ) => {
+        if (!flightsSocket?.socket) {
+            throw new Error('No flights socket');
+        }
+        flightsSocket.socket.emit('contactMe', { flightId, message });
+    };
+
     useEffect(() => {
         if (
             !sessionId ||
@@ -852,6 +893,9 @@ export default function Flights() {
                         showViewTabs={!showCombinedView}
                         position={position}
                         onPositionChange={setPosition}
+                        onContactAcarsClick={() =>
+                            setShowContactAcarsModal(true)
+                        }
                     />
                     <div className="-mt-4">
                         {loading ? (
@@ -859,17 +903,63 @@ export default function Flights() {
                                 Loading {currentView}...
                             </div>
                         ) : showCombinedView ? (
-                            <CombinedFlightsTable
-                                departureFlights={departureFlights}
-                                arrivalFlights={arrivalFlights}
-                                onFlightDelete={handleFlightDelete}
-                                onFlightChange={handleFlightUpdate}
-                                backgroundStyle={backgroundStyle}
-                                onIssuePDC={handleIssuePDC}
-                                flashFlightId={null}
-                                onToggleClearance={handleToggleClearance}
-                                flashingPDCIds={flashingPDCIds}
-                            />
+                            <>
+                                <CombinedFlightsTable
+                                    departureFlights={departureFlights}
+                                    arrivalFlights={arrivalFlights}
+                                    onFlightDelete={handleFlightDelete}
+                                    onFlightChange={handleFlightUpdate}
+                                    backgroundStyle={backgroundStyle}
+                                    onIssuePDC={handleIssuePDC}
+                                    flashFlightId={null}
+                                    onToggleClearance={handleToggleClearance}
+                                    flashingPDCIds={flashingPDCIds}
+                                />
+                                <div className="flex justify-center gap-4 mt-4 mb-6">
+                                    <button
+                                        onClick={() =>
+                                            setShowAddDepartureModal(true)
+                                        }
+                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                    >
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M12 4v16m8-8H4"
+                                            />
+                                        </svg>
+                                        <span>Add Custom Departure</span>
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            setShowAddArrivalModal(true)
+                                        }
+                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                    >
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M12 4v16m8-8H4"
+                                            />
+                                        </svg>
+                                        <span>Add Custom Arrival</span>
+                                    </button>
+                                </div>
+                            </>
                         ) : (
                             <>
                                 {currentView === 'departures' ? (
@@ -977,6 +1067,14 @@ export default function Flights() {
                 onAdd={handleAddCustomArrival}
                 flightType="arrival"
                 airportIcao={session?.airportIcao}
+            />
+            <ContactAcarsModal
+                isOpen={showContactAcarsModal}
+                onClose={() => setShowContactAcarsModal(false)}
+                flights={activeAcarsFlightData}
+                onSendContact={handleSendContact}
+                activeAcarsFlights={activeAcarsFlights}
+                airportIcao={session?.airportIcao || ''}
             />
         </div>
     );

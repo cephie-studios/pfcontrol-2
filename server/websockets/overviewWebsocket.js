@@ -1,5 +1,5 @@
 import { Server as SocketServer } from 'socket.io';
-import { getAllSessions } from '../db/sessions.js';
+import { getAllSessions, decrypt } from '../db/sessions.js';
 import { getFlightsBySessionWithTime } from '../db/flights.js';
 
 let io;
@@ -59,6 +59,21 @@ async function getOverviewData(sessionUsersIO) {
                 try {
                     const flights = await getFlightsBySessionWithTime(session.session_id, 2);
 
+                    let atisData = null;
+                    if (session.atis) {
+                        try {
+                            const encryptedAtis = JSON.parse(session.atis);
+                            atisData = decrypt(encryptedAtis);
+                        } catch (err) {
+                            console.error('Error decrypting ATIS:', err);
+                        }
+                    }
+
+                    const controllers = sessionUsers.map(user => ({
+                        username: user.username || 'Unknown',
+                        role: user.role || 'APP'
+                    }));
+
                     activeSessions.push({
                         sessionId: session.session_id,
                         airportIcao: session.airport_icao,
@@ -67,11 +82,19 @@ async function getOverviewData(sessionUsersIO) {
                         createdBy: session.created_by,
                         isPFATC: session.is_pfatc,
                         activeUsers: sessionUsers.length,
+                        controllers: controllers,
+                        atis: atisData,
                         flights: flights || [],
                         flightCount: flights ? flights.length : 0
                     });
                 } catch (error) {
                     console.error(`Error fetching flights for session ${session.session_id}:`, error);
+
+                    const controllers = sessionUsers.map(user => ({
+                        username: user.username || 'Unknown',
+                        role: user.role || 'APP'
+                    }));
+
                     activeSessions.push({
                         sessionId: session.session_id,
                         airportIcao: session.airport_icao,
@@ -80,6 +103,8 @@ async function getOverviewData(sessionUsersIO) {
                         createdBy: session.created_by,
                         isPFATC: session.is_pfatc,
                         activeUsers: sessionUsers.length,
+                        controllers: controllers,
+                        atis: null,
                         flights: [],
                         flightCount: 0
                     });

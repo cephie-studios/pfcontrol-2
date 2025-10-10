@@ -1,9 +1,15 @@
-import { generateSID, generateSquawk, getWakeTurbulence, generateRandomId } from '../utils/flightUtils.js';
+import {
+    generateSID,
+    generateSquawk,
+    getWakeTurbulence,
+    generateRandomId,
+} from '../utils/flightUtils.js';
 import { getSessionById } from './sessions.js';
 import flightsPool from './connections/flightsConnection.js';
+import crypto from 'crypto';
 
 function sanitizeFlightForClient(flight) {
-    const { user_id, ip_address, ...sanitizedFlight } = flight;
+    const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
     return {
         ...sanitizedFlight,
         cruisingFL: flight.cruisingfl,
@@ -17,20 +23,39 @@ export async function getFlightsBySession(sessionId) {
         `SELECT * FROM ${tableName} ORDER BY created_at ASC`
     );
 
-    const flights = result.rows.map(flight => sanitizeFlightForClient(flight));
+    const flights = result.rows.map((flight) =>
+        sanitizeFlightForClient(flight)
+    );
     return flights;
+}
+
+export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
+    const tableName = `flights_${sessionId}`;
+    const result = await flightsPool.query(
+        `SELECT acars_token FROM ${tableName} WHERE id = $1`,
+        [flightId]
+    );
+
+    if (result.rows.length === 0) {
+        return false;
+    }
+
+    return result.rows[0].acars_token === acarsToken;
 }
 
 export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
     try {
         const tableName = `flights_${sessionId}`;
 
-        const tableExists = await flightsPool.query(`
+        const tableExists = await flightsPool.query(
+            `
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_name = $1
             )
-        `, [tableName]);
+        `,
+            [tableName]
+        );
 
         if (!tableExists.rows[0].exists) {
             return [];
@@ -38,14 +63,19 @@ export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
 
         const result = await flightsPool.query(
             `SELECT * FROM ${tableName} 
-             WHERE created_at >= NOW() - INTERVAL '${hoursBack} hours'
-             ORDER BY created_at ASC`
+            WHERE created_at >= NOW() - INTERVAL '${hoursBack} hours'
+            ORDER BY created_at ASC`
         );
 
-        const flights = result.rows.map(flight => sanitizeFlightForClient(flight));
+        const flights = result.rows.map((flight) =>
+            sanitizeFlightForClient(flight)
+        );
         return flights;
     } catch (error) {
-        console.error(`Error fetching flights for session ${sessionId}:`, error);
+        console.error(
+            `Error fetching flights for session ${sessionId}:`,
+            error
+        );
         return [];
     }
 }
@@ -68,13 +98,17 @@ function validateFlightFields(updates) {
     if (updates.cruisingFL !== undefined) {
         const fl = parseInt(updates.cruisingFL, 10);
         if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
-            throw new Error('Cruising FL must be between 0 and 200 in 50-step increments');
+            throw new Error(
+                'Cruising FL must be between 0 and 200 in 50-step increments'
+            );
         }
     }
     if (updates.clearedFL !== undefined) {
         const fl = parseInt(updates.clearedFL, 10);
         if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
-            throw new Error('Cleared FL must be between 0 and 200 in 50-step increments');
+            throw new Error(
+                'Cleared FL must be between 0 and 200 in 50-step increments'
+            );
         }
     }
 }
@@ -82,7 +116,9 @@ function validateFlightFields(updates) {
 export async function addFlight(sessionId, flightData) {
     const tableName = `flights_${sessionId}`;
     try {
-        await flightsPool.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS gate VARCHAR(8);`);
+        await flightsPool.query(
+            `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS gate VARCHAR(8);`
+        );
     } catch (error) {
         // Column might already exist, continue
     }
@@ -98,6 +134,7 @@ export async function addFlight(sessionId, flightData) {
     if (!flightData.timestamp) {
         flightData.timestamp = new Date().toISOString();
     }
+    flightData.acars_token = crypto.randomBytes(4).toString('hex');
 
     if (flightData.aircraft_type) {
         flightData.aircraft = flightData.aircraft_type;
@@ -113,7 +150,10 @@ export async function addFlight(sessionId, flightData) {
                 flightData.runway = session.active_runway;
             }
         } catch (error) {
-            console.error('Error fetching session for runway assignment:', error);
+            console.error(
+                'Error fetching session for runway assignment:',
+                error
+            );
         }
     }
 
@@ -147,20 +187,32 @@ export async function addFlight(sessionId, flightData) {
     const result = await flightsPool.query(query, values);
 
     const flight = result.rows[0];
-    return sanitizeFlightForClient(flight);
+    return {
+        ...flight,
+        cruisingFL: flight.cruisingfl,
+        clearedFL: flight.clearedfl,
+    };
 }
 
 export async function updateFlight(sessionId, flightId, updates) {
     const tableName = `flights_${sessionId}`;
 
     // add this block to create missing text columns safely
-    const safeCols = Object.keys(updates).filter(k => /^[a-zA-Z0-9_]+$/.test(k));
+    const safeCols = Object.keys(updates).filter((k) =>
+        /^[a-zA-Z0-9_]+$/.test(k)
+    );
     for (const col of safeCols) {
         try {
-            await flightsPool.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${col}" text;`);
+            await flightsPool.query(
+                `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS "${col}" text;`
+            );
         } catch (err) {
             // ignore - column creation failure shouldn't stop update
-            console.error('Could not ensure column exists:', col, err?.message || err);
+            console.error(
+                'Could not ensure column exists:',
+                col,
+                err?.message || err
+            );
         }
     }
 
@@ -204,5 +256,7 @@ export async function updateFlight(sessionId, flightId, updates) {
 
 export async function deleteFlight(sessionId, flightId) {
     const tableName = `flights_${sessionId}`;
-    await flightsPool.query(`DELETE FROM ${tableName} WHERE id = $1`, [flightId]);
+    await flightsPool.query(`DELETE FROM ${tableName} WHERE id = $1`, [
+        flightId,
+    ]);
 }

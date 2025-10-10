@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
 const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
+const airlinesPath = path.join(__dirname, '..', 'data', 'airlineData.json');
 const backgroundsPath = path.join(__dirname, '..', '..', 'public', 'assets', 'app', 'backgrounds');
 
 const router = express.Router();
@@ -45,6 +46,21 @@ router.get('/aircrafts', (req, res) => {
     } catch (error) {
         console.error("Error reading aircraft data:", error);
         res.status(500).json({ error: "Internal server error", message: "Error reading aircraft data" });
+    }
+});
+
+// GET: /api/data/airlines - list of airlines
+router.get('/airlines', (req, res) => {
+    try {
+        if (!fs.existsSync(airlinesPath)) {
+            return res.status(404).json({ error: "Airline data not found" });
+        }
+
+        const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
+        res.json(data);
+    } catch (error) {
+        console.error("Error reading airline data:", error);
+        res.status(500).json({ error: "Internal server error", message: "Error reading airline data" });
     }
 });
 

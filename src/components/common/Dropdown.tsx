@@ -73,6 +73,7 @@ export default function Dropdown({
 	return (
 		<div className="relative" ref={dropdownRef}>
 			<button
+				type="button"
 				onClick={() => !disabled && setIsOpen(!isOpen)}
 				disabled={disabled}
 				className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
@@ -112,6 +113,7 @@ export default function Dropdown({
                     `}</style>
 					{allowClear && (
 						<button
+							type="button"
 							className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 text-gray-400"
 							onClick={() => handleOptionClick('')}
 						>
@@ -120,6 +122,7 @@ export default function Dropdown({
 					)}
 					{options.map((option) => (
 						<button
+							type="button"
 							key={option.value}
 							className={`block w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white
                                 ${
