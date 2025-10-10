@@ -9,7 +9,7 @@ import flightsPool from './connections/flightsConnection.js';
 import crypto from 'crypto';
 
 function sanitizeFlightForClient(flight) {
-    const { user_id, ip_address, ...sanitizedFlight } = flight;
+    const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
     return {
         ...sanitizedFlight,
         cruisingFL: flight.cruisingfl,
@@ -27,6 +27,20 @@ export async function getFlightsBySession(sessionId) {
         sanitizeFlightForClient(flight)
     );
     return flights;
+}
+
+export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
+    const tableName = `flights_${sessionId}`;
+    const result = await flightsPool.query(
+        `SELECT acars_token FROM ${tableName} WHERE id = $1`,
+        [flightId]
+    );
+
+    if (result.rows.length === 0) {
+        return false;
+    }
+
+    return result.rows[0].acars_token === acarsToken;
 }
 
 export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
@@ -173,7 +187,11 @@ export async function addFlight(sessionId, flightData) {
     const result = await flightsPool.query(query, values);
 
     const flight = result.rows[0];
-    return sanitizeFlightForClient(flight);
+    return {
+        ...flight,
+        cruisingFL: flight.cruisingfl,
+        clearedFL: flight.clearedfl,
+    };
 }
 
 export async function updateFlight(sessionId, flightId, updates) {

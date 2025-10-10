@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Radio, Plane, MapPin } from 'lucide-react';
 import Button from '../common/Button';
+import Dropdown from '../common/Dropdown';
 import type { Flight } from '../../types/flight';
+import { fetchFrequencies } from '../../utils/fetch/data';
 
 interface ContactAcarsModalProps {
     isOpen: boolean;
     onClose: () => void;
     flights: Flight[];
     onSendContact: (flightId: string | number, message: string) => void;
+    activeAcarsFlights: Set<string | number>;
+    airportIcao: string;
 }
 
 export default function ContactAcarsModal({
@@ -15,12 +19,47 @@ export default function ContactAcarsModal({
     onClose,
     flights,
     onSendContact,
+    activeAcarsFlights,
+    airportIcao,
 }: ContactAcarsModalProps) {
     const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
     const [customMessage, setCustomMessage] = useState('');
     const [sending, setSending] = useState(false);
+    const [selectedPosition, setSelectedPosition] = useState<string>('TWR');
+    const [frequencies, setFrequencies] = useState<{ type: string; freq: string }[]>([]);
 
-    const flightsWithAcars = flights.filter(f => f.acars_token);
+    const flightsWithAcars = flights.filter(f => activeAcarsFlights.has(f.id));
+
+    useEffect(() => {
+        const loadFrequencies = async () => {
+            try {
+                const freqData = await fetchFrequencies();
+                const airportFreq = freqData.find((f: any) => f.icao === airportIcao);
+                const freqs = Array.isArray(airportFreq?.frequencies) ? airportFreq.frequencies : [];
+                setFrequencies(freqs);
+
+                // Set default position to first available frequency, preferring TWR
+                if (freqs.length > 0) {
+                    const twr = freqs.find(f => f.type === 'TWR');
+                    setSelectedPosition(twr ? 'TWR' : freqs[0].type);
+                }
+            } catch (error) {
+                setFrequencies([]);
+            }
+        };
+
+        if (airportIcao) {
+            loadFrequencies();
+        }
+    }, [airportIcao]);
+
+    const getDefaultMessage = () => {
+        const freq = frequencies.find(f => f.type === selectedPosition);
+        if (freq) {
+            return `CONTACT ME ON ${airportIcao}_${selectedPosition} ${freq.freq}`;
+        }
+        return 'CONTACT ME ON FREQUENCY';
+    };
 
     const handleSend = async () => {
         if (!selectedFlight) return;
@@ -29,7 +68,7 @@ export default function ContactAcarsModal({
         try {
             await onSendContact(
                 selectedFlight.id,
-                customMessage || 'CONTACT ME ON FREQUENCY'
+                customMessage || getDefaultMessage()
             );
             setCustomMessage('');
             setSelectedFlight(null);
@@ -122,17 +161,38 @@ export default function ContactAcarsModal({
                                 </div>
                             </div>
 
+                            {/* Position Selector */}
+                            {selectedFlight && frequencies.length > 0 && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-300 mb-3">
+                                        Contact as
+                                    </label>
+                                    <Dropdown
+                                        options={frequencies.map(freq => ({
+                                            value: freq.type,
+                                            label: `${freq.type} - ${freq.freq}`
+                                        }))}
+                                        value={selectedPosition}
+                                        onChange={setSelectedPosition}
+                                        size="sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Default message: "{getDefaultMessage()}"
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Custom Message */}
                             {selectedFlight && (
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Message (optional)
+                                        Custom Message (optional)
                                     </label>
                                     <input
                                         type="text"
                                         value={customMessage}
                                         onChange={(e) => setCustomMessage(e.target.value)}
-                                        placeholder="CONTACT ME ON FREQUENCY (default)"
+                                        placeholder={getDefaultMessage()}
                                         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         maxLength={100}
                                     />

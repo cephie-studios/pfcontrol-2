@@ -48,14 +48,10 @@ export default function ACARS() {
 
     const playNotificationSound = (messageType: AcarsMessage['type']) => {
         if (messageType === 'warning' || messageType === 'pdc' || messageType === 'contact') {
-            audioRef.current?.play().catch(() => {
-                console.log('Autoplay blocked');
-            });
+            audioRef.current?.play().catch(() => {});
         }
         else if (messageType === 'system' || messageType === 'atis') {
-            chatPopRef.current?.play().catch(() => {
-                console.log('Autoplay blocked');
-            });
+            chatPopRef.current?.play().catch(() => {});
         }
     };
 
@@ -70,30 +66,46 @@ export default function ACARS() {
             }
 
             try {
-                const response = await fetch(
+                const validateResponse = await fetch(
+                    `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}/${flightId}/validate-acars?accessId=${accessId}`,
+                    { credentials: 'include' }
+                );
+
+                if (!validateResponse.ok) {
+                    throw new Error('Failed to validate access');
+                }
+
+                const { valid } = await validateResponse.json();
+                if (!valid) {
+                    throw new Error('Invalid access token');
+                }
+
+                const flightResponse = await fetch(
                     `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}`,
                     { credentials: 'include' }
                 );
 
-                if (!response.ok) {
+                if (!flightResponse.ok) {
                     throw new Error('Failed to load flight data');
                 }
 
-                const flights: Flight[] = await response.json();
+                const flights: Flight[] = await flightResponse.json();
                 const currentFlight = flights.find(f => String(f.id) === String(flightId));
 
                 if (!currentFlight) {
                     throw new Error('Flight not found');
                 }
 
-                if (currentFlight.acars_token !== accessId) {
-                    throw new Error('Invalid access token');
-                }
-
                 setFlight(currentFlight);
                 setLoading(false);
+
+                await fetch(`${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ sessionId, flightId, acarsToken: accessId })
+                });
             } catch (err) {
-                console.error('ACARS validation error:', err);
                 setError(err instanceof Error ? err.message : 'Access denied');
                 setLoading(false);
             }
@@ -101,6 +113,25 @@ export default function ACARS() {
 
         validateAndLoad();
     }, [sessionId, flightId, accessId]);
+
+    useEffect(() => {
+        if (!sessionId || !flightId) return;
+
+        const handleUnload = async () => {
+            await fetch(`${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active/${sessionId}/${flightId}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                keepalive: true
+            });
+        };
+
+        window.addEventListener('beforeunload', handleUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleUnload);
+            handleUnload();
+        };
+    }, [sessionId, flightId]);
 
     useEffect(() => {
         if (!flight || dataLoading || initializedRef.current) return;
@@ -170,7 +201,6 @@ export default function ACARS() {
                         }
                     }
                 } catch (error) {
-                    console.error('Error checking logbook tracking:', error);
                 }
             }
 
@@ -195,7 +225,9 @@ export default function ACARS() {
     }, []);
 
     useEffect(() => {
-        if (!sessionId || loading) return;
+        if (!sessionId || loading) {
+            return;
+        }
 
         const socket = createFlightsSocket(
             sessionId,
@@ -232,6 +264,7 @@ export default function ACARS() {
 
         return () => {
             socket.socket.disconnect();
+            socketRef.current = null;
         };
     }, [sessionId, flightId, loading]);
 
