@@ -83,7 +83,8 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
             position JSONB,
             squawk VARCHAR(8),
             wtc VARCHAR(4),
-            hidden BOOLEAN DEFAULT false
+            hidden BOOLEAN DEFAULT false,
+            acars_token VARCHAR(16)
         )
     `);
 }
@@ -190,7 +191,7 @@ export async function deleteSession(sessionId) {
 
 export async function getAllSessions() {
     const result = await pool.query(
-        'SELECT session_id, airport_icao, created_at, created_by, is_pfatc, active_runway FROM sessions ORDER BY created_at DESC'
+        'SELECT session_id, airport_icao, created_at, created_by, is_pfatc, active_runway, atis FROM sessions ORDER BY created_at DESC'
     );
     return result.rows;
 }

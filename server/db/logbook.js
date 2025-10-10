@@ -1,10 +1,9 @@
 import pool from './connections/connection.js';
 import { isAdmin } from '../middleware/isAdmin.js';
 
-// Initialize all logbook tables
 export async function initializeLogbookTables() {
     try {
-        // Main flights table
+        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS logbook_flights (
                 id SERIAL PRIMARY KEY,
@@ -69,7 +68,6 @@ export async function initializeLogbookTables() {
             )
         `);
 
-        // Telemetry table for time-series data
         await pool.query(`
             CREATE TABLE IF NOT EXISTS logbook_telemetry (
                 id SERIAL PRIMARY KEY,
@@ -93,7 +91,6 @@ export async function initializeLogbookTables() {
             )
         `);
 
-        // Active flights tracking table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS logbook_active_flights (
                 id SERIAL PRIMARY KEY,
@@ -138,7 +135,6 @@ export async function initializeLogbookTables() {
             )
         `);
 
-        // Stats cache table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS logbook_stats_cache (
                 user_id VARCHAR(20) PRIMARY KEY,
@@ -170,14 +166,12 @@ export async function initializeLogbookTables() {
             )
         `);
 
-        // Create indexes
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_logbook_user ON logbook_flights(user_id)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_logbook_roblox ON logbook_flights(roblox_username)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_logbook_status ON logbook_flights(flight_status)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_telemetry_flight ON logbook_telemetry(flight_id, timestamp)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_active_flights_callsign ON logbook_active_flights(callsign)`);
 
-        // Add missing columns if they don't exist (migration)
         const columnsToAdd = [
             { name: 'controller_managed', type: 'BOOLEAN DEFAULT false' },
             { name: 'activated_at', type: 'TIMESTAMP' },
@@ -203,7 +197,6 @@ export async function initializeLogbookTables() {
             }
         }
 
-        // Add missing columns to logbook_active_flights (migration)
         const activeFlightColumnsToAdd = [
             { name: 'initial_position_x', type: 'DOUBLE PRECISION' },
             { name: 'initial_position_y', type: 'DOUBLE PRECISION' },
@@ -233,7 +226,6 @@ export async function initializeLogbookTables() {
             }
         }
 
-        // Add missing columns to logbook_stats_cache (migration)
         const statsCacheColumnsToAdd = [
             { name: 'total_flight_time_minutes', type: 'INTEGER DEFAULT 0' },
             { name: 'favorite_departure', type: 'VARCHAR(4)' },
@@ -265,22 +257,24 @@ export async function initializeLogbookTables() {
     }
 }
 
-// Create a new flight entry
 export async function createFlight({ userId, robloxUserId, robloxUsername, callsign, departureIcao, arrivalIcao, route, aircraftIcao }) {
+    
+    const crypto = await import('crypto');
+    const shareToken = crypto.randomBytes(4).toString('hex'); 
+
     const result = await pool.query(`
         INSERT INTO logbook_flights (
             user_id, roblox_user_id, roblox_username, callsign,
             departure_icao, arrival_icao, route, aircraft_icao,
-            flight_status, logged_from_submit
+            flight_status, logged_from_submit, share_token
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', true)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', true, $9)
         RETURNING id
-    `, [userId, robloxUserId, robloxUsername, callsign, departureIcao, arrivalIcao, route, aircraftIcao]);
+    `, [userId, robloxUserId, robloxUsername, callsign, departureIcao, arrivalIcao, route, aircraftIcao, shareToken]);
 
     return result.rows[0].id;
 }
 
-// Start tracking an active flight
 export async function startActiveFlightTracking(robloxUsername, callsign, flightId) {
     await pool.query(`
         INSERT INTO logbook_active_flights (roblox_username, callsign, flight_id)
@@ -288,11 +282,8 @@ export async function startActiveFlightTracking(robloxUsername, callsign, flight
         ON CONFLICT (roblox_username)
         DO UPDATE SET callsign = $2, flight_id = $3, created_at = NOW()
     `, [robloxUsername, callsign, flightId]);
-
-    console.log(`🎯 [Logbook] Started tracking: ${callsign} (${robloxUsername}) - Flight tracker will look for this Roblox username in PFATC server`);
 }
 
-// Get active flight by Roblox username
 export async function getActiveFlightByUsername(robloxUsername) {
     const result = await pool.query(`
         SELECT * FROM logbook_active_flights
@@ -302,7 +293,6 @@ export async function getActiveFlightByUsername(robloxUsername) {
     return result.rows[0] || null;
 }
 
-// Store telemetry point
 export async function storeTelemetryPoint(flightId, { x, y, altitude, speed, heading, timestamp, phase, verticalSpeed }) {
     await pool.query(`
         INSERT INTO logbook_telemetry (
@@ -312,9 +302,8 @@ export async function storeTelemetryPoint(flightId, { x, y, altitude, speed, hea
     `, [flightId, timestamp, x, y, altitude, speed, heading, phase, verticalSpeed ?? 0]);
 }
 
-// Update active flight state
 export async function updateActiveFlightState(robloxUsername, { altitude, speed, heading, x, y, phase }) {
-    const result = await pool.query(`
+    await pool.query(`
         UPDATE logbook_active_flights
         SET last_update = NOW(),
             last_altitude = $2,
@@ -324,22 +313,9 @@ export async function updateActiveFlightState(robloxUsername, { altitude, speed,
             last_y = $6,
             current_phase = $7
         WHERE roblox_username = $1
-        RETURNING flight_id
     `, [robloxUsername, altitude, speed, heading, x, y, phase]);
-
-    // Log every 10th update to avoid spam (but show initial update)
-    if (!updateActiveFlightState.updateCount) updateActiveFlightState.updateCount = {};
-    if (!updateActiveFlightState.updateCount[robloxUsername]) {
-        updateActiveFlightState.updateCount[robloxUsername] = 0;
-    }
-    updateActiveFlightState.updateCount[robloxUsername]++;
-
-    if (updateActiveFlightState.updateCount[robloxUsername] === 1 || updateActiveFlightState.updateCount[robloxUsername] % 10 === 0) {
-        console.log(`📊 [Logbook] Updated state for ${robloxUsername}: alt=${altitude}ft, spd=${speed}kts, hdg=${heading}°, phase=${phase}`);
-    }
 }
 
-// Add altitude reading to approach array
 export async function addApproachAltitude(robloxUsername, altitude, timestamp) {
     await pool.query(`
         UPDATE logbook_active_flights
@@ -354,7 +330,6 @@ export async function addApproachAltitude(robloxUsername, altitude, timestamp) {
         WHERE roblox_username = $1
     `, [robloxUsername, altitude, timestamp]);
 
-    // Keep only last 30 readings
     await pool.query(`
         UPDATE logbook_active_flights
         SET approach_altitudes = approach_altitudes[greatest(1, array_length(approach_altitudes, 1) - 29):],
@@ -363,9 +338,8 @@ export async function addApproachAltitude(robloxUsername, altitude, timestamp) {
     `, [robloxUsername]);
 }
 
-// Calculate landing rate from approach data
 export async function calculateLandingRate(robloxUsername) {
-    // Get the flight_id and check for waypoint landing rate
+    
     const flightResult = await pool.query(`
         SELECT laf.flight_id, lf.waypoint_landing_rate
         FROM logbook_active_flights laf
@@ -379,13 +353,11 @@ export async function calculateLandingRate(robloxUsername) {
 
     const { flight_id: flightId, waypoint_landing_rate } = flightResult.rows[0];
 
-    // Priority 1: Use waypoint landing rate if available (from Project Flight API)
     if (waypoint_landing_rate !== null && waypoint_landing_rate !== undefined) {
         console.log(`[Landing Rate] Using waypoint data: ${waypoint_landing_rate} fpm`);
         return waypoint_landing_rate;
     }
 
-    // Priority 2: Fallback to telemetry-based calculation
     const telemetryResult = await pool.query(`
         SELECT altitude_ft, vertical_speed_fpm, timestamp, flight_phase
         FROM logbook_telemetry
@@ -400,12 +372,10 @@ export async function calculateLandingRate(robloxUsername) {
         return null;
     }
 
-    // Return the vertical speed at the lowest altitude point (touchdown)
     console.log(`[Landing Rate] Using telemetry data: ${telemetryResult.rows[0].vertical_speed_fpm} fpm`);
     return telemetryResult.rows[0].vertical_speed_fpm || null;
 }
 
-// Finalize flight with calculated stats
 export async function finalizeFlight(flightId, stats) {
     await pool.query(`
         UPDATE logbook_flights
@@ -433,7 +403,6 @@ export async function finalizeFlight(flightId, stats) {
     ]);
 }
 
-// Remove active flight tracking
 export async function removeActiveFlightTracking(robloxUsername) {
     await pool.query(`
         DELETE FROM logbook_active_flights
@@ -441,7 +410,6 @@ export async function removeActiveFlightTracking(robloxUsername) {
     `, [robloxUsername]);
 }
 
-// Get active flight by callsign
 export async function getActiveFlightByCallsign(callsign) {
     const result = await pool.query(`
         SELECT laf.*, lf.id as flight_id, lf.user_id, lf.flight_status
@@ -453,13 +421,11 @@ export async function getActiveFlightByCallsign(callsign) {
     return result.rows[0] || null;
 }
 
-// Activate flight when controller sets status to "departure"
 export async function activateFlightByCallsign(callsign) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Check if flight exists and is in pending state
         const result = await client.query(`
             UPDATE logbook_flights lf
             SET flight_status = 'active',
@@ -489,15 +455,11 @@ export async function activateFlightByCallsign(callsign) {
     }
 }
 
-// Complete flight when controller sets status to "gate"
 export async function completeFlightByCallsign(callsign) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Get flight data and stats in a single optimized query
-        // Allow completing from both 'active' and 'pending' states
-        // (pending = never departed but arriving, e.g., arrival controller picks up flight that departure never tracked)
         const flightResult = await client.query(`
             WITH flight_data AS (
                 SELECT lf.*, laf.roblox_username, laf.approach_altitudes, laf.approach_timestamps
@@ -533,7 +495,6 @@ export async function completeFlightByCallsign(callsign) {
         if (flightResult.rows.length === 0) {
             await client.query('ROLLBACK');
 
-            // Check if flight exists at all in logbook
             const checkFlight = await client.query(`
                 SELECT lf.flight_status, lf.callsign, laf.callsign as active_callsign
                 FROM logbook_flights lf
@@ -553,7 +514,6 @@ export async function completeFlightByCallsign(callsign) {
 
         const flightData = flightResult.rows[0];
 
-        // Calculate distance from telemetry (need to iterate through points)
         const telemetryPoints = await client.query(`
             SELECT x, y, timestamp
             FROM logbook_telemetry
@@ -573,7 +533,6 @@ export async function completeFlightByCallsign(callsign) {
             }
         }
 
-        // Calculate duration using SQL to avoid timezone issues
         const durationResult = await client.query(`
             SELECT EXTRACT(EPOCH FROM (NOW() - COALESCE(flight_start, created_at))) / 60 AS duration_minutes
             FROM logbook_flights
@@ -581,7 +540,6 @@ export async function completeFlightByCallsign(callsign) {
         `, [flightData.id]);
         const durationMinutes = Math.round(durationResult.rows[0].duration_minutes);
 
-        // Calculate landing rate from approach data
         let landingRate = null;
         if (flightData.approach_altitudes && flightData.approach_altitudes.length >= 2) {
             const altitudes = flightData.approach_altitudes;
@@ -598,7 +556,6 @@ export async function completeFlightByCallsign(callsign) {
             }
         }
 
-        // Calculate landing score (only if we have landing rate data)
         let landingScore = null;
         if (landingRate !== null) {
             const absLandingRate = Math.abs(landingRate);
@@ -613,10 +570,8 @@ export async function completeFlightByCallsign(callsign) {
             else landingScore = 20;
         }
 
-        // Calculate smoothness score (only if we have enough telemetry)
         let smoothnessScore = null;
 
-        // Fetch full telemetry data for smoothness calculation
         const telemetryData = await client.query(`
             SELECT speed_kts, vertical_speed_fpm, heading
             FROM logbook_telemetry
@@ -636,7 +591,6 @@ export async function completeFlightByCallsign(callsign) {
                 const curr = telemetryData.rows[i];
                 validComparisons++;
 
-                // Speed smoothness
                 if (prev.speed_kts != null && curr.speed_kts != null) {
                     const speedChange = Math.abs(curr.speed_kts - prev.speed_kts);
                     if (speedChange > 30) speedPenalty += 3;
@@ -644,7 +598,6 @@ export async function completeFlightByCallsign(callsign) {
                     else if (speedChange > 10) speedPenalty += 1;
                 }
 
-                // Vertical speed smoothness
                 if (prev.vertical_speed_fpm != null && curr.vertical_speed_fpm != null) {
                     const vsChange = Math.abs(curr.vertical_speed_fpm - prev.vertical_speed_fpm);
                     if (vsChange > 500) verticalSpeedPenalty += 3;
@@ -652,7 +605,6 @@ export async function completeFlightByCallsign(callsign) {
                     else if (vsChange > 150) verticalSpeedPenalty += 1;
                 }
 
-                // Heading smoothness
                 if (prev.heading != null && curr.heading != null) {
                     let headingChange = Math.abs(curr.heading - prev.heading);
                     if (headingChange > 180) headingChange = 360 - headingChange;
@@ -662,7 +614,6 @@ export async function completeFlightByCallsign(callsign) {
                 }
             }
 
-            // Calculate final score
             if (validComparisons > 0) {
                 const totalPenalty = (speedPenalty * 0.4) + (verticalSpeedPenalty * 0.4) + (headingPenalty * 0.2);
                 const avgPenalty = totalPenalty / validComparisons;
@@ -672,7 +623,6 @@ export async function completeFlightByCallsign(callsign) {
             smoothnessScore = Math.max(0, Math.min(100, Math.round(score)));
         }
 
-        // Update flight with final stats
         await client.query(`
             UPDATE logbook_flights
             SET flight_end = NOW(),
@@ -699,7 +649,6 @@ export async function completeFlightByCallsign(callsign) {
             landingScore
         ]);
 
-        // Remove active flight tracking
         await client.query(`
             DELETE FROM logbook_active_flights
             WHERE callsign = $1
@@ -707,12 +656,11 @@ export async function completeFlightByCallsign(callsign) {
 
         await client.query('COMMIT');
 
-        // Update user stats cache (outside transaction for performance)
         try {
             await updateUserStatsCache(flightData.user_id);
         } catch (error) {
             console.error('Error updating user stats cache:', error);
-            // Don't fail the whole operation if stats cache update fails
+            
         }
 
         return flightData.id;
@@ -725,7 +673,6 @@ export async function completeFlightByCallsign(callsign) {
     }
 }
 
-// Calculate flight statistics from telemetry data
 function calculateFlightStats(flightData, telemetryData, activeFlight) {
     if (!telemetryData || telemetryData.length === 0) {
         return {
@@ -740,12 +687,10 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
         };
     }
 
-    // Calculate duration
     const startTime = flightData.flight_start || flightData.created_at;
     const endTime = new Date();
     const durationMinutes = Math.round((endTime - new Date(startTime)) / 60000);
 
-    // Calculate distance (sum of segments)
     let totalDistance = 0;
     for (let i = 1; i < telemetryData.length; i++) {
         const prev = telemetryData[i - 1];
@@ -753,22 +698,19 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
         if (prev.x && prev.y && curr.x && curr.y) {
             const dx = curr.x - prev.x;
             const dy = curr.y - prev.y;
-            const distance = Math.sqrt(dx * dx + dy * dy) / 1852; // Convert to NM
+            const distance = Math.sqrt(dx * dx + dy * dy) / 1852; 
             totalDistance += distance;
         }
     }
 
-    // Calculate max altitude and speed
     const maxAltitude = Math.max(...telemetryData.map(t => t.altitude_ft || 0));
     const maxSpeed = Math.max(...telemetryData.map(t => t.speed_kts || 0));
 
-    // Calculate average speed (excluding stationary periods)
     const speeds = telemetryData.filter(t => t.speed_kts > 10).map(t => t.speed_kts);
     const averageSpeed = speeds.length > 0
         ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length)
         : 0;
 
-    // Calculate landing rate from stored approach data
     let landingRate = null;
     if (activeFlight.approach_altitudes && activeFlight.approach_altitudes.length >= 2) {
         const altitudes = activeFlight.approach_altitudes;
@@ -785,7 +727,6 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
         }
     }
 
-    // Calculate smoothness score (0-100, based on multiple factors)
     let smoothnessScore = 100;
 
     if (telemetryData.length > 2) {
@@ -799,34 +740,30 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
             const curr = telemetryData[i];
             validComparisons++;
 
-            // Speed smoothness (penalize sudden changes)
             if (prev.speed_kts != null && curr.speed_kts != null) {
                 const speedChange = Math.abs(curr.speed_kts - prev.speed_kts);
-                if (speedChange > 30) speedPenalty += 3;      // Very harsh acceleration/deceleration
-                else if (speedChange > 20) speedPenalty += 2; // Harsh
-                else if (speedChange > 10) speedPenalty += 1; // Moderate
+                if (speedChange > 30) speedPenalty += 3;      
+                else if (speedChange > 20) speedPenalty += 2; 
+                else if (speedChange > 10) speedPenalty += 1; 
             }
 
-            // Vertical speed smoothness (penalize jerky climbs/descents)
             if (prev.vertical_speed_fpm != null && curr.vertical_speed_fpm != null) {
                 const vsChange = Math.abs(curr.vertical_speed_fpm - prev.vertical_speed_fpm);
-                if (vsChange > 500) verticalSpeedPenalty += 3;      // Very jerky
-                else if (vsChange > 300) verticalSpeedPenalty += 2; // Jerky
-                else if (vsChange > 150) verticalSpeedPenalty += 1; // Moderate
+                if (vsChange > 500) verticalSpeedPenalty += 3;      
+                else if (vsChange > 300) verticalSpeedPenalty += 2; 
+                else if (vsChange > 150) verticalSpeedPenalty += 1; 
             }
 
-            // Heading smoothness (penalize sudden turns)
             if (prev.heading != null && curr.heading != null) {
-                // Handle 360-degree wraparound (e.g., 355 to 5 degrees is a 10-degree turn)
+                
                 let headingChange = Math.abs(curr.heading - prev.heading);
                 if (headingChange > 180) headingChange = 360 - headingChange;
 
-                if (headingChange > 30) headingPenalty += 2;      // Sharp turn
-                else if (headingChange > 20) headingPenalty += 1; // Moderate turn
+                if (headingChange > 30) headingPenalty += 2;      
+                else if (headingChange > 20) headingPenalty += 1; 
             }
         }
 
-        // Calculate final score (weighted average of all factors)
         if (validComparisons > 0) {
             const totalPenalty = (speedPenalty * 0.4) + (verticalSpeedPenalty * 0.4) + (headingPenalty * 0.2);
             const avgPenalty = totalPenalty / validComparisons;
@@ -836,7 +773,6 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
 
     smoothnessScore = Math.max(0, Math.min(100, Math.round(smoothnessScore)));
 
-    // Calculate landing score (0-100, based on landing rate)
     let landingScore = 50;
     if (landingRate !== null) {
         const absLandingRate = Math.abs(landingRate);
@@ -863,14 +799,11 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
     };
 }
 
-// Get user flights with pagination
 export async function getUserFlights(userId, page = 1, limit = 20, status = 'completed') {
     const offset = (page - 1) * limit;
 
-    // Use different ordering based on status (safe because we control the value)
     const useCreatedAt = (status === 'pending' || status === 'active');
 
-    // Join with active flights to get current_phase for active/pending flights
     const result = await pool.query(`
         SELECT lf.*, laf.current_phase
         FROM logbook_flights lf
@@ -897,7 +830,6 @@ export async function getUserFlights(userId, page = 1, limit = 20, status = 'com
     };
 }
 
-// Get single flight with telemetry
 export async function getFlightById(flightId) {
     const result = await pool.query(`
         SELECT * FROM logbook_flights
@@ -907,18 +839,15 @@ export async function getFlightById(flightId) {
     return result.rows[0] || null;
 }
 
-// Get active flight data with real-time telemetry
 export async function getActiveFlightData(flightId) {
-    // Get flight details
+    
     const flight = await getFlightById(flightId);
     if (!flight) return null;
 
-    // If flight is not active, return regular flight data
     if (flight.flight_status !== 'active' && flight.flight_status !== 'pending') {
         return flight;
     }
 
-    // Get active tracking data
     const activeResult = await pool.query(`
         SELECT * FROM logbook_active_flights
         WHERE flight_id = $1
@@ -926,7 +855,6 @@ export async function getActiveFlightData(flightId) {
 
     const activeData = activeResult.rows[0];
 
-    // Calculate in-progress stats from telemetry
     const statsResult = await pool.query(`
         SELECT
             COUNT(*) as telemetry_count,
@@ -939,7 +867,6 @@ export async function getActiveFlightData(flightId) {
 
     const stats = statsResult.rows[0];
 
-    // Calculate distance from telemetry
     const distanceResult = await pool.query(`
         WITH telemetry_points AS (
             SELECT x, y, timestamp,
@@ -962,7 +889,6 @@ export async function getActiveFlightData(flightId) {
     const totalDistanceNm = distanceResult.rows[0]?.total_distance ?
         Math.round(distanceResult.rows[0].total_distance) : null;
 
-    // Calculate smoothness score from telemetry
     const telemetryResult = await pool.query(`
         SELECT speed_kts, altitude_ft
         FROM logbook_telemetry
@@ -979,29 +905,24 @@ export async function getActiveFlightData(flightId) {
             const speedDelta = Math.abs((telemetry[i].speed_kts || 0) - (telemetry[i - 1].speed_kts || 0));
             const altDelta = Math.abs((telemetry[i].altitude_ft || 0) - (telemetry[i - 1].altitude_ft || 0));
 
-            // Penalize sudden speed changes > 20kts
             if (speedDelta > 20) score -= 2;
 
-            // Penalize sudden altitude changes > 500ft
             if (altDelta > 500) score -= 3;
         }
         smoothnessScore = Math.max(0, Math.min(100, score));
     }
 
-    // Calculate landing rate if landing has been detected
     let landingRate = null;
     if (activeData?.landing_detected && activeData?.roblox_username) {
         landingRate = await calculateLandingRate(activeData.roblox_username);
     }
 
-    // Calculate duration so far
     const durationMs = new Date() - new Date(flight.created_at);
     const durationMinutes = Math.round(durationMs / 60000);
 
-    // Merge data
     return {
         ...flight,
-        // Real-time data from active tracking
+        
         current_altitude: activeData?.last_altitude || null,
         current_speed: activeData?.last_speed || null,
         current_heading: activeData?.last_heading || null,
@@ -1009,7 +930,6 @@ export async function getActiveFlightData(flightId) {
         last_update: activeData?.last_update || null,
         landing_detected: activeData?.landing_detected || false,
 
-        // In-progress stats
         duration_minutes: durationMinutes,
         max_altitude_ft: stats.max_altitude_ft || null,
         max_speed_kts: stats.max_speed_kts || null,
@@ -1019,12 +939,10 @@ export async function getActiveFlightData(flightId) {
         landing_rate_fpm: landingRate,
         telemetry_count: parseInt(stats.telemetry_count) || 0,
 
-        // Flag to indicate this is live data
         is_active: true
     };
 }
 
-// Get flight telemetry
 export async function getFlightTelemetry(flightId) {
     const result = await pool.query(`
         SELECT * FROM logbook_telemetry
@@ -1035,7 +953,6 @@ export async function getFlightTelemetry(flightId) {
     return result.rows;
 }
 
-// Get or create user stats cache
 export async function getUserStats(userId) {
     let result = await pool.query(`
         SELECT * FROM logbook_stats_cache
@@ -1043,7 +960,7 @@ export async function getUserStats(userId) {
     `, [userId]);
 
     if (result.rows.length === 0) {
-        // Create initial stats
+        
         await pool.query(`
             INSERT INTO logbook_stats_cache (user_id)
             VALUES ($1)
@@ -1058,9 +975,8 @@ export async function getUserStats(userId) {
     return result.rows[0];
 }
 
-// Generate or retrieve share token for a flight
 export async function generateShareToken(flightId, userId) {
-    // Verify flight belongs to user
+    
     const flight = await pool.query(`
         SELECT share_token, user_id FROM logbook_flights WHERE id = $1
     `, [flightId]);
@@ -1073,16 +989,13 @@ export async function generateShareToken(flightId, userId) {
         throw new Error('Not authorized');
     }
 
-    // If already has a share token, return it
     if (flight.rows[0].share_token) {
         return flight.rows[0].share_token;
     }
 
-    // Generate new share token (64 char random string)
     const crypto = await import('crypto');
-    const shareToken = crypto.randomBytes(32).toString('hex');
+    const shareToken = crypto.randomBytes(4).toString('hex');
 
-    // Update flight with share token
     await pool.query(`
         UPDATE logbook_flights
         SET share_token = $1
@@ -1092,7 +1005,6 @@ export async function generateShareToken(flightId, userId) {
     return shareToken;
 }
 
-// Get flight by share token (public, no auth required)
 export async function getFlightByShareToken(shareToken) {
     const result = await pool.query(`
         SELECT
@@ -1110,10 +1022,9 @@ export async function getFlightByShareToken(shareToken) {
 
     const flight = result.rows[0];
 
-    // If active, get real-time data
     if (flight.flight_status === 'active' || flight.flight_status === 'pending') {
         const activeData = await getActiveFlightData(flight.id);
-        // Add Discord username to active data
+
         return {
             ...activeData,
             discord_username: flight.discord_username,
@@ -1124,9 +1035,7 @@ export async function getFlightByShareToken(shareToken) {
     return flight;
 }
 
-// Get public pilot profile by username
 export async function getPublicPilotProfile(username) {
-    // Get user info
     const userResult = await pool.query(`
         SELECT
             u.id,
@@ -1145,7 +1054,6 @@ export async function getPublicPilotProfile(username) {
 
     const user = userResult.rows[0];
 
-    // Get all roles for this user
     const rolesResult = await pool.query(`
         SELECT r.id, r.name, r.description, r.color, r.icon, r.priority
         FROM roles r
@@ -1154,10 +1062,7 @@ export async function getPublicPilotProfile(username) {
         ORDER BY r.priority DESC, r.created_at DESC
     `, [user.id]);
 
-    // Get user stats
     const stats = await getUserStats(user.id);
-
-    // Get recent flights (last 10 completed)
     const recentFlights = await pool.query(`
         SELECT
             id,
@@ -1177,7 +1082,6 @@ export async function getPublicPilotProfile(username) {
         LIMIT 10
     `, [user.id]);
 
-    // Get flight activity by month (last 12 months)
     const activityData = await pool.query(`
         SELECT
             DATE_TRUNC('month', flight_end) as month,
@@ -1200,7 +1104,6 @@ export async function getPublicPilotProfile(username) {
             member_since: user.created_at,
             is_admin: isAdmin(user.id),
             roles: rolesResult.rows,
-            // Legacy support
             role_name: rolesResult.rows[0]?.name || null,
             role_description: rolesResult.rows[0]?.description || null
         },
@@ -1210,9 +1113,7 @@ export async function getPublicPilotProfile(username) {
     };
 }
 
-// Update user stats cache
 export async function updateUserStatsCache(userId) {
-    // Calculate totals (only include flights with valid duration)
     const totals = await pool.query(`
         SELECT
             COUNT(*) as total_flights,
@@ -1223,7 +1124,6 @@ export async function updateUserStatsCache(userId) {
         WHERE user_id = $1 AND flight_status = 'completed'
     `, [userId]);
 
-    // Favorite aircraft
     const favAircraft = await pool.query(`
         SELECT aircraft_model, COUNT(*) as count
         FROM logbook_flights
@@ -1233,7 +1133,6 @@ export async function updateUserStatsCache(userId) {
         LIMIT 1
     `, [userId]);
 
-    // Favorite departure airport
     const favDeparture = await pool.query(`
         SELECT departure_icao, COUNT(*) as count
         FROM logbook_flights
@@ -1243,7 +1142,6 @@ export async function updateUserStatsCache(userId) {
         LIMIT 1
     `, [userId]);
 
-    // Smoothest landing (best landing rate)
     const smoothestLanding = await pool.query(`
         SELECT id, landing_rate_fpm
         FROM logbook_flights
@@ -1252,21 +1150,18 @@ export async function updateUserStatsCache(userId) {
         LIMIT 1
     `, [userId]);
 
-    // Average landing score
     const avgLandingScore = await pool.query(`
         SELECT AVG(landing_score) as avg_score
         FROM logbook_flights
         WHERE user_id = $1 AND flight_status = 'completed' AND landing_score IS NOT NULL
     `, [userId]);
 
-    // Highest altitude
     const highestAlt = await pool.query(`
         SELECT MAX(max_altitude_ft) as highest_altitude
         FROM logbook_flights
         WHERE user_id = $1 AND flight_status = 'completed'
     `, [userId]);
 
-    // Longest flight
     const longestFlight = await pool.query(`
         SELECT id, total_distance_nm
         FROM logbook_flights
@@ -1275,7 +1170,6 @@ export async function updateUserStatsCache(userId) {
         LIMIT 1
     `, [userId]);
 
-    // Safely extract values with proper defaults
     const totalFlights = parseInt(totals.rows[0].total_flights) || 0;
     const totalMinutes = parseInt(totals.rows[0].total_minutes) || 0;
     const totalHours = parseFloat(totals.rows[0].total_hours) || 0;
@@ -1312,7 +1206,7 @@ export async function updateUserStatsCache(userId) {
         favDeparture.rows[0]?.count || 0,
         smoothestLanding.rows[0]?.landing_rate_fpm || null,
         smoothestLanding.rows[0]?.id || null,
-        smoothestLanding.rows[0]?.landing_rate_fpm || null, // best_landing_rate (same as smoothest)
+        smoothestLanding.rows[0]?.landing_rate_fpm || null,
         avgLandingScore.rows[0]?.avg_score ? parseFloat(avgLandingScore.rows[0].avg_score) : null,
         highestAlt.rows[0]?.highest_altitude || null,
         longestFlight.rows[0]?.total_distance_nm ? parseFloat(longestFlight.rows[0].total_distance_nm) : null,
@@ -1320,13 +1214,11 @@ export async function updateUserStatsCache(userId) {
     ]);
 }
 
-// Delete flight by ID (user can only delete pending flights, admins can delete any)
 export async function deleteFlightById(flightId, userId, isAdmin = false) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // First check if flight exists and belongs to user
         const flightCheck = await client.query(`
             SELECT id, user_id, flight_status
             FROM logbook_flights
@@ -1340,31 +1232,26 @@ export async function deleteFlightById(flightId, userId, isAdmin = false) {
 
         const flight = flightCheck.rows[0];
 
-        // Check ownership
         if (flight.user_id !== userId && !isAdmin) {
             await client.query('ROLLBACK');
             return { success: false, error: 'Unauthorized' };
         }
 
-        // Regular users can only delete pending flights
         if (!isAdmin && flight.flight_status !== 'pending') {
             await client.query('ROLLBACK');
             return { success: false, error: 'Can only delete pending flights' };
         }
 
-        // Delete from active flights table if present
         await client.query(`
             DELETE FROM logbook_active_flights
             WHERE flight_id = $1
         `, [flightId]);
 
-        // Delete telemetry (will cascade anyway, but explicit is good)
         await client.query(`
             DELETE FROM logbook_telemetry
             WHERE flight_id = $1
         `, [flightId]);
 
-        // Delete the flight
         await client.query(`
             DELETE FROM logbook_flights
             WHERE id = $1
@@ -1372,7 +1259,6 @@ export async function deleteFlightById(flightId, userId, isAdmin = false) {
 
         await client.query('COMMIT');
 
-        // Update stats cache if it was a completed flight
         if (flight.flight_status === 'completed') {
             try {
                 await updateUserStatsCache(flight.user_id);
@@ -1391,15 +1277,7 @@ export async function deleteFlightById(flightId, userId, isAdmin = false) {
     }
 }
 
-// ==== WAYPOINT FUNCTIONS (Project Flight API landing data) ====
-
-/**
- * Store a waypoint from Project Flight username WebSocket
- * @param {string} robloxUsername - Roblox username
- * @param {Object} waypointData - Waypoint data {airport, runway, position_x, position_y, landing_speed, timestamp}
- */
 export async function storeWaypoint(robloxUsername, waypointData) {
-    // Get current waypoints
     const result = await pool.query(`
         SELECT collected_waypoints FROM logbook_active_flights
         WHERE roblox_username = $1
@@ -1412,25 +1290,15 @@ export async function storeWaypoint(robloxUsername, waypointData) {
 
     const existingWaypoints = result.rows[0].collected_waypoints || [];
 
-    // Add new waypoint to array
     const updatedWaypoints = [...existingWaypoints, waypointData];
 
-    // Update database
     await pool.query(`
         UPDATE logbook_active_flights
         SET collected_waypoints = $2::jsonb
         WHERE roblox_username = $1
     `, [robloxUsername, JSON.stringify(updatedWaypoints)]);
 
-    console.log(`[Waypoint] Stored waypoint for ${robloxUsername}: ${waypointData.airport} ${waypointData.runway} @ ${waypointData.landing_speed} fpm`);
 }
-
-/**
- * Finalize landing rate from collected waypoints
- * Selects the oldest waypoint from the recent cluster (ignores old waypoints)
- * @param {string} robloxUsername - Roblox username
- * @returns {Promise<Object|null>} Selected waypoint data or null
- */
 export async function finalizeLandingFromWaypoints(robloxUsername) {
     const result = await pool.query(`
         SELECT collected_waypoints, flight_id
@@ -1450,31 +1318,23 @@ export async function finalizeLandingFromWaypoints(robloxUsername) {
         return null;
     }
 
-    // Find the most recent waypoint timestamp
     const timestamps = waypoints.map(w => w.timestamp);
     const maxTimestamp = Math.max(...timestamps);
 
-    // Filter waypoints to recent cluster (within 90 seconds of most recent)
     const recentCluster = waypoints.filter(w => {
         const timeDiff = maxTimestamp - w.timestamp;
-        return timeDiff <= 90; // 90 second window
+        return timeDiff <= 90; 
     });
 
     if (recentCluster.length === 0) {
-        console.log(`[Waypoint] No recent waypoints found for ${robloxUsername}`);
         return null;
     }
-
-    // Pick the HARDEST landing from the recent cluster (matches what the game displays)
     const selectedWaypoint = recentCluster.reduce((hardest, current) => {
         const hardestRate = Math.abs(hardest.landing_speed);
         const currentRate = Math.abs(current.landing_speed);
         return currentRate > hardestRate ? current : hardest;
     });
 
-    console.log(`[Waypoint] Selected waypoint for ${robloxUsername}:`, selectedWaypoint);
-
-    // Update flight record with waypoint landing data
     await pool.query(`
         UPDATE logbook_flights
         SET waypoint_landing_rate = $2,
@@ -1485,6 +1345,4 @@ export async function finalizeLandingFromWaypoints(robloxUsername) {
 
     return selectedWaypoint;
 }
-
-// Initialize tables on startup
 initializeLogbookTables();

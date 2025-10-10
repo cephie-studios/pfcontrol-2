@@ -24,6 +24,7 @@ import ArrivalsTable from '../components/tables/ArrivalsTable';
 import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
+import ContactAcarsModal from '../components/modals/ContactAcarsModal';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -91,6 +92,7 @@ export default function Flights() {
     );
     const [showAddDepartureModal, setShowAddDepartureModal] = useState(false);
     const [showAddArrivalModal, setShowAddArrivalModal] = useState(false);
+    const [showContactAcarsModal, setShowContactAcarsModal] = useState(false);
 
     const handleMentionReceived = () => {
         if (user) {
@@ -277,6 +279,18 @@ export default function Flights() {
         // emit the dedicated event the server expects
         flightsSocket.socket.emit('issuePDC', { flightId, pdcText });
     };
+
+    const handleSendContact = async (
+        flightId: string | number,
+        message: string
+    ) => {
+        if (!flightsSocket?.socket) {
+            console.warn('handleSendContact: no flights socket available');
+            throw new Error('No flights socket');
+        }
+        flightsSocket.socket.emit('contactMe', { flightId, message });
+    };
+
     useEffect(() => {
         if (
             !sessionId ||
@@ -852,6 +866,7 @@ export default function Flights() {
                         showViewTabs={!showCombinedView}
                         position={position}
                         onPositionChange={setPosition}
+                        onContactAcarsClick={() => setShowContactAcarsModal(true)}
                     />
                     <div className="-mt-4">
                         {loading ? (
@@ -977,6 +992,12 @@ export default function Flights() {
                 onAdd={handleAddCustomArrival}
                 flightType="arrival"
                 airportIcao={session?.airportIcao}
+            />
+            <ContactAcarsModal
+                isOpen={showContactAcarsModal}
+                onClose={() => setShowContactAcarsModal(false)}
+                flights={flights}
+                onSendContact={handleSendContact}
             />
         </div>
     );

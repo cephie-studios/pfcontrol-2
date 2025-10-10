@@ -76,6 +76,35 @@ router.get('/pilot/:username', async (req, res) => {
     }
 });
 
+// Public route to check if a callsign is being tracked
+router.get('/check-tracking/:callsign', async (req, res) => {
+    try {
+        const { callsign } = req.params;
+        const activeFlight = await pool.query(
+            `SELECT id, roblox_username, share_token
+            FROM logbook_flights
+            WHERE UPPER(callsign) = UPPER($1)
+            AND flight_status IN ('active', 'pending')
+            LIMIT 1`,
+            [callsign]
+        );
+
+        if (activeFlight.rows.length > 0) {
+            res.json({
+                isTracked: true,
+                flightId: activeFlight.rows[0].id,
+                username: activeFlight.rows[0].roblox_username,
+                shareToken: activeFlight.rows[0].share_token
+            });
+        } else {
+            res.json({ isTracked: false });
+        }
+    } catch (error) {
+        console.error('Error checking flight tracking:', error);
+        res.status(500).json({ error: 'Failed to check tracking status' });
+    }
+});
+
 // All routes below require authentication
 router.use(requireAuth);
 

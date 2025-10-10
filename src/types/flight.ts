@@ -31,6 +31,8 @@ export interface Flight {
         updateTimestamp: number;
     };
     hidden?: boolean;
+    acars_token?: string;
+    pdc_remarks?: string;
 }
 
 export interface AdminFlight extends Flight {

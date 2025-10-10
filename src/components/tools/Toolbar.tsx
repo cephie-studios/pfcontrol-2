@@ -22,6 +22,7 @@ import {
     TrendingUp,
     FlaskConical,
     Braces,
+    Radio,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
@@ -54,6 +55,7 @@ interface ToolbarProps {
     showViewTabs?: boolean;
     position: Position;
     onPositionChange: (position: Position) => void;
+    onContactAcarsClick?: () => void;
 }
 
 const getIconComponent = (iconName: string) => {
@@ -106,6 +108,7 @@ export default function Toolbar({
     showViewTabs = true,
     position,
     onPositionChange,
+    onContactAcarsClick,
 }: ToolbarProps) {
     const [runway, setRunway] = useState(activeRunway || '');
     const [chatOpen, setChatOpen] = useState(false);
@@ -355,7 +358,7 @@ export default function Toolbar({
                                 style={{
                                     position: 'relative',
                                     left: `${index * -10}px`,
-                                    zIndex: 40, // Changed from 999999 to 40
+                                    zIndex: 40,
                                 }}
                             >
                                 <img
@@ -479,7 +482,7 @@ export default function Toolbar({
                         { value: 'TWR', label: 'Tower' },
                         { value: 'APP', label: 'Approach' },
                     ]}
-                    value={position} // Updated to use prop
+                    value={position}
                     onChange={handlePositionChange}
                     placeholder="Select Position"
                     disabled={!icao}
@@ -524,6 +527,16 @@ export default function Toolbar({
                             {unreadMentions.length}
                         </div>
                     )}
+                </Button>
+
+                <Button
+                    className="flex items-center gap-2 px-4 py-2"
+                    aria-label="Contact"
+                    size="sm"
+                    onClick={onContactAcarsClick}
+                >
+                    <Radio className="w-5 h-5" />
+                    <span className="hidden sm:inline font-medium">Contact</span>
                 </Button>
 
                 <ChatSidebar

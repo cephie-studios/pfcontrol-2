@@ -1,5 +1,6 @@
 import type { Airport, AirportFrequency } from '../../types/airports';
 import type { Aircraft } from '../../types/aircraft';
+import type { Airline } from '../../types/airlines';
 import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 
@@ -30,6 +31,10 @@ export function fetchAirports(): Promise<Airport[]> {
 
 export function fetchAircrafts(): Promise<Aircraft[]> {
     return fetchData<Aircraft>('aircrafts');
+}
+
+export function fetchAirlines(): Promise<Airline[]> {
+    return fetchData<Airline>('airlines');
 }
 
 export function fetchFrequencies(): Promise<AirportFrequency[]> {

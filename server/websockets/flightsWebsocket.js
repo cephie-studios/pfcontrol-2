@@ -218,6 +218,23 @@ export function setupFlightsWebsocket(httpServer) {
                 socket.emit('flightError', { action: 'requestPDC', flightId, error: 'Failed to request PDC' });
             }
         });
+
+        socket.on('contactMe', ({ flightId, message }) => {
+            if (socket.data.role !== 'controller') {
+                socket.emit('flightError', { action: 'contactMe', flightId, error: 'Not authorized' });
+                return;
+            }
+            try {
+                io.to(sessionId).emit('contactMe', {
+                    flightId,
+                    message: message || 'CONTACT CONTROLLER ON FREQUENCY',
+                    ts: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error('Error handling contactMe:', err);
+                socket.emit('flightError', { action: 'contactMe', flightId, error: 'Failed to send contact message' });
+            }
+        });
     });
 
     return io;

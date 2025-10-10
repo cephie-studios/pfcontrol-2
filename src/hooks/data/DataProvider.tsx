@@ -2,15 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
 	fetchAirports,
 	fetchAircrafts,
+	fetchAirlines,
 	fetchFrequencies
 } from '../../utils/fetch/data';
 import type { Airport, AirportFrequency } from '../../types/airports';
 import type { Aircraft } from '../../types/aircraft';
+import type { Airline } from '../../types/airlines';
 import { DataContext } from './useData';
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
 	const [airports, setAirports] = useState<Airport[]>([]);
 	const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
+	const [airlines, setAirlines] = useState<Airline[]>([]);
 	const [frequencies, setFrequencies] = useState<AirportFrequency[]>([]);
 	const [airportRunways, setAirportRunways] = useState<
 		Record<string, string[]>
@@ -78,7 +81,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		async function loadStaticData() {
 			try {
-				const [airportsData, aircraftsData, frequenciesData] =
+				const [airportsData, aircraftsData, airlinesData, frequenciesData] =
 					await Promise.all([
 						fetchAirports().catch((err) => {
 							console.error('Failed to fetch airports:', err);
@@ -86,6 +89,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 						}),
 						fetchAircrafts().catch((err) => {
 							console.error('Failed to fetch aircrafts:', err);
+							return [];
+						}),
+						fetchAirlines().catch((err) => {
+							console.error('Failed to fetch airlines:', err);
 							return [];
 						}),
 						fetchFrequencies().catch((err) => {
@@ -96,6 +103,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
 				setAirports(Array.isArray(airportsData) ? airportsData : []);
 				setAircrafts(Array.isArray(aircraftsData) ? aircraftsData : []);
+				setAirlines(Array.isArray(airlinesData) ? airlinesData : []);
 				setFrequencies(
 					Array.isArray(frequenciesData) ? frequenciesData : []
 				);
@@ -104,6 +112,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 				console.error('Error loading static data:', err);
 				setAirports([]);
 				setAircrafts([]);
+				setAirlines([]);
 				setFrequencies([]);
 			} finally {
 				setLoading(false);
@@ -118,6 +127,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 			value={{
 				airports,
 				aircrafts,
+				airlines,
 				frequencies,
 				airportRunways,
 				airportSids,

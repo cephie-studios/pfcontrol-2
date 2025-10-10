@@ -11,6 +11,15 @@ export interface OverviewSession {
     createdBy: string;
     isPFATC: boolean;
     activeUsers: number;
+    controllers?: Array<{
+        username: string;
+        role: string;
+    }>;
+    atis?: {
+        letter: string;
+        text: string;
+        timestamp: string;
+    } | null;
     flights: Flight[];
     flightCount: number;
 }

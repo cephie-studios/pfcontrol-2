@@ -37,6 +37,7 @@ interface SessionData {
     airportIcao: string;
     activeRunway?: string;
     atis?: unknown;
+	isPFATC?: boolean;
 }
 
 export default function Submit() {
@@ -210,7 +211,11 @@ export default function Submit() {
             () => {},
             (flight: Flight) => {
                 setSubmittedFlight(flight);
-                setSuccess(true);
+				if (session?.isPFATC){
+					navigate(`/acars/${sessionId}/${flight.id}?accessId=${flight.acars_token}`);
+				} else {
+					setSuccess(true);
+				}
                 setIsSubmitting(false);
             },
             () => {},
@@ -285,7 +290,11 @@ export default function Submit() {
                     status: 'PENDING',
                 });
                 setSubmittedFlight(flight);
-                setSuccess(true);
+                if(session?.isPFATC){
+					navigate(`/acars/${sessionId}/${flight.id}/?accessId=${flight.acars_token}`);
+				} else {
+					setSuccess(true);
+				}
             } catch {
                 setError('Failed to submit flight.');
             } finally {

@@ -77,7 +77,7 @@ export default function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/submit/:sessionId" element={<Submit />} />
                     <Route
-                        path="acars/:sessionId"
+                        path="acars/:sessionId/:flightId"
                         element={<ACARS />}
                     />
                     <Route
