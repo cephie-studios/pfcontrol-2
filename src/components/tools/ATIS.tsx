@@ -18,6 +18,7 @@ interface ATISData {
 interface ATISProps {
 	icao: string;
 	sessionId?: string;
+	accessId?: string;
 	activeRunway?: string;
 	open: boolean;
 	onClose: () => void;
@@ -28,6 +29,7 @@ interface ATISProps {
 export default function ATIS({
 	icao,
 	sessionId,
+	accessId,
 	activeRunway,
 	open,
 	onClose,
@@ -80,11 +82,11 @@ export default function ATIS({
 
 	useEffect(() => {
 		const loadPreviousATIS = async () => {
-			if (!sessionId || !icao || !open) return;
+			if (!sessionId || !accessId || !icao || !open) return;
 
 			setIsLoadingPreviousATIS(true);
 			try {
-				const sessionData = await fetchSession(sessionId);
+				const sessionData = await fetchSession(sessionId, accessId);
 
 				if (sessionData?.atis) {
 					let atisData = null;
@@ -219,7 +221,7 @@ export default function ATIS({
 		};
 
 		loadPreviousATIS();
-	}, [sessionId, icao, open, availableRunways]);
+	}, [sessionId, accessId, icao, open, availableRunways]);
 
 	useEffect(() => {
 		if (icao && !fetchedAirports.has(icao)) {

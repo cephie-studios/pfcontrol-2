@@ -140,7 +140,7 @@ export default function Toolbar({
         }
     };
 
-    const getAvatarUrl = (userId: string, avatar: string | null) => {
+    const getAvatarUrl = (avatar: string | null) => {
         if (!avatar) return '/assets/app/default/avatar.webp';
         return avatar;
     };
@@ -358,11 +358,11 @@ export default function Toolbar({
                                 style={{
                                     position: 'relative',
                                     left: `${index * -10}px`,
-                                    zIndex: 40, // Changed from 999999 to 40
+                                    zIndex: 40,
                                 }}
                             >
                                 <img
-                                    src={getAvatarUrl(user.id, user.avatar)}
+                                    src={getAvatarUrl(user.avatar)}
                                     alt={user.username}
                                     className="w-8 h-8 rounded-full shadow-md cursor-pointer transition-all"
                                     onError={(e) => {
@@ -482,7 +482,7 @@ export default function Toolbar({
                         { value: 'TWR', label: 'Tower' },
                         { value: 'APP', label: 'Approach' },
                     ]}
-                    value={position} // Updated to use prop
+                    value={position}
                     onChange={handlePositionChange}
                     placeholder="Select Position"
                     disabled={!icao}
@@ -567,6 +567,7 @@ export default function Toolbar({
                 <ATIS
                     icao={icao ?? ''}
                     sessionId={sessionId ?? ''}
+                    accessId={accessId ?? ''}
                     activeRunway={activeRunway}
                     open={atisOpen}
                     onClose={handleAtisClose}
