@@ -86,8 +86,8 @@ router.get('/:sessionId/:flightId/validate-acars', async (req, res) => {
             return res.status(400).json({ valid: false, error: 'Missing access token' });
         }
 
-        const isValid = await validateAcarsAccess(sessionId, flightId, acarsToken);
-        res.json({ valid: isValid });
+        const result = await validateAcarsAccess(sessionId, flightId, acarsToken);
+        res.json(result);
     } catch (error) {
         res.status(500).json({ valid: false, error: 'Validation failed' });
     }
@@ -102,8 +102,8 @@ router.post('/acars/active', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const isValid = await validateAcarsAccess(sessionId, flightId, acarsToken);
-        if (!isValid) {
+        const result = await validateAcarsAccess(sessionId, flightId, acarsToken);
+        if (!result.valid) {
             return res.status(403).json({ error: 'Invalid ACARS token' });
         }
 

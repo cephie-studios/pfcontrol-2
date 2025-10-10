@@ -11,8 +11,6 @@ export function createFlightsSocket(
     onFlightDeleted: (data: { flightId: string | number }) => void,
     onFlightError?: (error: { action: string; flightId?: string | number; error: string }) => void
 ) {
-    console.log(`[createFlightsSocket] Creating socket with SessionID: "${sessionId}", AccessID: "${accessId}"`);
-
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/flights',
@@ -23,19 +21,8 @@ export function createFlightsSocket(
         timeout: 10000
     });
 
-    // Add error handlers for better debugging
-    socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error.message);
-    });
-
-    socket.on('error', (error) => {
-        console.error('Socket error:', error);
-    });
-
     socket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
         if (reason === 'io server disconnect') {
-            // Server disconnected the socket, try to reconnect manually
             socket.connect();
         }
     });

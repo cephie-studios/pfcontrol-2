@@ -37,10 +37,24 @@ export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
     );
 
     if (result.rows.length === 0) {
-        return false;
+        return { valid: false };
     }
 
-    return result.rows[0].acars_token === acarsToken;
+    const isValid = result.rows[0].acars_token === acarsToken;
+
+    if (!isValid) {
+        return { valid: false };
+    }
+
+    const sessionResult = await flightsPool.query(
+        `SELECT access_id FROM sessions WHERE session_id = $1`,
+        [sessionId]
+    );
+
+    return {
+        valid: true,
+        accessId: sessionResult.rows[0]?.access_id || null
+    };
 }
 
 export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {

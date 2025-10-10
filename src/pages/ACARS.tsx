@@ -38,6 +38,7 @@ export default function ACARS() {
     const [activeSessions, setActiveSessions] = useState<OverviewSession[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [pdcRequested, setPdcRequested] = useState(false);
+    const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const chatPopRef = useRef<HTMLAudioElement | null>(null);
@@ -88,10 +89,12 @@ export default function ACARS() {
                     throw new Error('Failed to validate access');
                 }
 
-                const { valid } = await validateResponse.json();
+                const { valid, accessId: sessionAccess } = await validateResponse.json();
                 if (!valid) {
                     throw new Error('Invalid access token');
                 }
+
+                setSessionAccessId(sessionAccess);
 
                 const flightResponse = await fetch(
                     `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}`,
@@ -251,13 +254,13 @@ export default function ACARS() {
     }, []);
 
     useEffect(() => {
-        if (!sessionId || loading) {
+        if (!sessionId || loading || !sessionAccessId) {
             return;
         }
 
         const socket = createFlightsSocket(
             sessionId,
-            accessId || '',
+            sessionAccessId,
             () => {},
             () => {},
             () => {},
@@ -305,7 +308,7 @@ export default function ACARS() {
             socket.socket.disconnect();
             socketRef.current = null;
         };
-    }, [sessionId, flightId, loading, accessId]);
+    }, [sessionId, flightId, loading, sessionAccessId]);
 
     useEffect(() => {
         const overviewSocket = createOverviewSocket((data) => {
