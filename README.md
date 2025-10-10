@@ -47,7 +47,6 @@ npm run dev
 
 **Note:**
 
--   Make sure Docker is installed and running on your machine.
 -   For any issues or missing environment variables, reach out to the maintainers.
 
 ---

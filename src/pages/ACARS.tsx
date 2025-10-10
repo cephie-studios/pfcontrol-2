@@ -257,7 +257,7 @@ export default function ACARS() {
 
         const socket = createFlightsSocket(
             sessionId,
-            '',
+            accessId || '',
             () => {},
             () => {},
             () => {},
@@ -305,7 +305,7 @@ export default function ACARS() {
             socket.socket.disconnect();
             socketRef.current = null;
         };
-    }, [sessionId, flightId, loading]);
+    }, [sessionId, flightId, loading, accessId]);
 
     useEffect(() => {
         const overviewSocket = createOverviewSocket((data) => {
