@@ -568,7 +568,7 @@ class FlightTracker {
                     } else {
                         const stationaryDuration = (new Date() - new Date(activeFlight.stationary_since)) / 1000;
 
-                        if (stationaryDuration >= 30 && !activeFlight.stationary_notification_sent) {
+                        if (stationaryDuration >= 60 && !activeFlight.stationary_notification_sent) {
                             const userResult = await pool.query(`
                                 SELECT user_id FROM logbook_flights WHERE id = $1
                             `, [activeFlight.flight_id]);

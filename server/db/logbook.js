@@ -922,13 +922,14 @@ export async function getActiveFlightData(flightId) {
 
     return {
         ...flight,
-        
+
         current_altitude: activeData?.last_altitude || null,
         current_speed: activeData?.last_speed || null,
         current_heading: activeData?.last_heading || null,
         current_phase: activeData?.current_phase || null,
         last_update: activeData?.last_update || null,
         landing_detected: activeData?.landing_detected || false,
+        stationary_notification_sent: activeData?.stationary_notification_sent || false,
 
         duration_minutes: durationMinutes,
         max_altitude_ft: stats.max_altitude_ft || null,

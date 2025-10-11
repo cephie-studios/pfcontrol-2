@@ -76,6 +76,7 @@ interface Flight {
 	current_phase?: string | null;
 	last_update?: string | null;
 	landing_detected?: boolean;
+	stationary_notification_sent?: boolean;
 	telemetry_count?: number;
 }
 
@@ -107,6 +108,10 @@ export default function FlightDetail() {
 	const [showDebug, setShowDebug] = useState(false);
 	const [debugData, setDebugData] = useState<{ type: string; data: unknown } | null>(null);
 	const [debugLoading, setDebugLoading] = useState(false);
+
+	// Completion popup state
+	const [showCompletionPopup, setShowCompletionPopup] = useState(false);
+	const [completingFlight, setCompletingFlight] = useState(false);
 
 	const fetchFlightDetails = useCallback(async () => {
 		try {
@@ -197,6 +202,13 @@ export default function FlightDetail() {
 		return () => clearInterval(interval);
 	}, [flight?.is_active, flight?.duration_minutes, lastFetchTime]);
 
+	// Show completion popup when flight is stationary
+	useEffect(() => {
+		if (flight?.stationary_notification_sent && !showCompletionPopup && !completingFlight) {
+			setShowCompletionPopup(true);
+		}
+	}, [flight?.stationary_notification_sent, showCompletionPopup, completingFlight]);
+
 	const handleShare = async () => {
 		setShareLoading(true);
 		try {
@@ -223,6 +235,33 @@ export default function FlightDetail() {
 			console.error('Failed to generate share link:', err);
 		} finally {
 			setShareLoading(false);
+		}
+	};
+
+	const handleCompleteFlight = async () => {
+		setCompletingFlight(true);
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightId}/complete`,
+				{
+					method: 'POST',
+					credentials: 'include'
+				}
+			);
+
+			if (res.ok) {
+				setShowCompletionPopup(false);
+				fetchFlightDetails();
+				navigate('/logbook');
+			} else {
+				const data = await res.json();
+				alert(data.error || 'Failed to complete flight');
+			}
+		} catch (err) {
+			console.error('Failed to complete flight:', err);
+			alert('Failed to complete flight');
+		} finally {
+			setCompletingFlight(false);
 		}
 	};
 
@@ -644,6 +683,59 @@ export default function FlightDetail() {
 			</div>
 
 			<div className="container mx-auto max-w-6xl px-4 py-8">
+
+				{/* Completion Popup Modal */}
+				{showCompletionPopup && (
+					<div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+						<div className="bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-green-600/50 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-green-500/20">
+							<div className="flex items-center gap-4 mb-6">
+								<div className="p-3 bg-green-500/20 rounded-xl">
+									<Check className="h-8 w-8 text-green-400" />
+								</div>
+								<div>
+									<h2 className="text-2xl font-bold text-white">Flight Ready to Complete</h2>
+									<p className="text-gray-400 text-sm mt-1">You've arrived at the gate</p>
+								</div>
+							</div>
+
+							<p className="text-gray-300 mb-6">
+								Your flight <span className="font-bold text-blue-300">{flight?.callsign}</span> has been stationary for over 1 minute.
+								Would you like to complete your flight now?
+							</p>
+
+							<div className="flex gap-3">
+								<button
+									onClick={() => setShowCompletionPopup(false)}
+									disabled={completingFlight}
+									className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									Not Yet
+								</button>
+								<button
+									onClick={handleCompleteFlight}
+									disabled={completingFlight}
+									className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+								>
+									{completingFlight ? (
+										<>
+											<RefreshCw className="h-4 w-4 animate-spin" />
+											Completing...
+										</>
+									) : (
+										<>
+											<Check className="h-4 w-4" />
+											Complete Flight
+										</>
+									)}
+								</button>
+							</div>
+
+							<p className="text-xs text-gray-500 mt-4 text-center">
+								Your flight will automatically complete if you leave the game
+							</p>
+						</div>
+					</div>
+				)}
 
 				{/* Real-Time Status - Only for active flights */}
 				{isActive && (
