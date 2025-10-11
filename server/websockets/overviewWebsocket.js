@@ -11,22 +11,36 @@ export function setupOverviewWebsocket(httpServer, sessionUsersIO) {
         cors: {
             origin: ['http://localhost:5173', 'http://localhost:9901', 'https://control.pfconnect.online', 'https://test.pfconnect.online'],
             credentials: true
-        }
+        },
+        transports: ['websocket', 'polling'],
+        allowEIO3: true // Support older clients
+    });
+
+    // Log all connection attempts
+    io.engine.on('connection_error', (err) => {
+        console.error('[Overview Socket] Engine connection error:', err);
     });
 
     io.on('connection', async (socket) => {
+        console.log('[Overview Socket] Client connected:', socket.id);
         activeOverviewClients.add(socket.id);
 
         try {
             const overviewData = await getOverviewData(sessionUsersIO);
             socket.emit('overviewData', overviewData);
+            console.log('[Overview Socket] Sent initial data to:', socket.id);
         } catch (error) {
-            console.error('Error sending initial overview data:', error);
+            console.error('[Overview Socket] Error sending initial data:', error);
             socket.emit('overviewError', { error: 'Failed to fetch overview data' });
         }
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', (reason) => {
+            console.log('[Overview Socket] Client disconnected:', socket.id, 'Reason:', reason);
             activeOverviewClients.delete(socket.id);
+        });
+
+        socket.on('error', (error) => {
+            console.error('[Overview Socket] Socket error for', socket.id, ':', error);
         });
     });
 

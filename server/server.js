@@ -71,6 +71,22 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        websockets: {
+            overview: '/sockets/overview',
+            flights: '/sockets/flights',
+            sessionUsers: '/sockets/session-users',
+            chat: '/sockets/chat',
+            arrivals: '/sockets/arrivals'
+        }
+    });
+});
+
 app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
