@@ -40,10 +40,18 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 	};
 
 	const generateRandomIdentifier = (): string => {
-		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-		return Array.from({ length: 4 }, () =>
-			characters.charAt(Math.floor(Math.random() * characters.length))
-		).join('');
+		const squawk = getSquawk();
+		const firstThreeNumbers = squawk.substring(0, 3);
+		
+		let firstLetter = 'A';
+		if (flight?.callsign) {
+			const letters = flight.callsign.match(/[A-Z]/i);
+			if (letters && letters.length > 0) {
+				firstLetter = letters[0].toUpperCase();
+			}
+		}
+		
+		return firstThreeNumbers + firstLetter;
 	};
 
 	const [autoSquawk] = useState(() => generateRandomSquawk());
