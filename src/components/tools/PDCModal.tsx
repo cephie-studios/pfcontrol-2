@@ -40,6 +40,21 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 		).join('');
 	};
 
+	// Helper function that takes squawk as parameter (like Java)
+	const generateIdentifier = (squawk: string, callsign?: string): string => {
+		const firstThreeNumbers = squawk.substring(0, 3);
+
+		let firstLetter = 'A';
+		if (callsign) {
+			const letters = callsign.match(/[A-Z]/i);
+			if (letters && letters.length > 0) {
+				firstLetter = letters[0].toUpperCase();
+			}
+		}
+
+		return firstThreeNumbers + firstLetter;
+	};
+
 	const [autoSquawk] = useState(() => generateRandomSquawk());
 
 	useEffect(() => {
@@ -135,25 +150,9 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 		return flight?.squawk || autoSquawk;
 	};
 
-	const [autoIdentifier] = useState(() => {
-		// Generate identifier from squawk and callsign
-		const squawk = getSquawk();
-		const firstThreeNumbers = squawk.substring(0, 3);
-
-		let firstLetter = 'A';
-		if (flight?.callsign) {
-			const letters = flight.callsign.match(/[A-Z]/i);
-			if (letters && letters.length > 0) {
-				firstLetter = letters[0].toUpperCase();
-			}
-		}
-
-		return firstThreeNumbers + firstLetter;
-	});
-
-	const getIdentifier = (): string => {
+	const getIdentifier = (squawk: string): string => {
 		if (useCustomIdentifier && customIdentifier) return customIdentifier;
-		return autoIdentifier;
+		return generateIdentifier(squawk, flight?.callsign);
 	};
 
 	const getEquipment = (): string => {
@@ -183,7 +182,7 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 		if (!flight) return '';
 
 		const squawk = getSquawk();
-		const identifier = getIdentifier();
+		const identifier = getIdentifier(squawk);
 		const equipment = getEquipment();
 		const sidText = flight.sid || 'DCT';
 		const freqs = getFrequencies();
@@ -552,7 +551,7 @@ IDENTIFIER: ${identifier}`;
 									value={
 										useCustomIdentifier
 											? customIdentifier
-											: autoIdentifier
+											: getIdentifier(getSquawk())
 									}
 									onChange={handleIdentifierChange}
 									placeholder="e.g. AB12"
