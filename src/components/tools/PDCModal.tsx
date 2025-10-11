@@ -42,22 +42,6 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 
 	const [autoSquawk] = useState(() => generateRandomSquawk());
 
-	const [autoIdentifier] = useState(() => {
-		// Generate identifier from squawk and callsign
-		const squawk = flight?.squawk || autoSquawk;
-		const firstThreeNumbers = squawk.substring(0, 3);
-
-		let firstLetter = 'A';
-		if (flight?.callsign) {
-			const letters = flight.callsign.match(/[A-Z]/i);
-			if (letters && letters.length > 0) {
-				firstLetter = letters[0].toUpperCase();
-			}
-		}
-
-		return firstThreeNumbers + firstLetter;
-	});
-
 	useEffect(() => {
 		localStorage.setItem(
 			'customPDCFrequencies',
@@ -150,6 +134,22 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 		if (useCustomSquawk && customSquawk) return customSquawk;
 		return flight?.squawk || autoSquawk;
 	};
+
+	const [autoIdentifier] = useState(() => {
+		// Generate identifier from squawk and callsign
+		const squawk = flight?.squawk || autoSquawk;
+		const firstThreeNumbers = squawk.substring(0, 3);
+
+		let firstLetter = 'A';
+		if (flight?.callsign) {
+			const letters = flight.callsign.match(/[A-Z]/i);
+			if (letters && letters.length > 0) {
+				firstLetter = letters[0].toUpperCase();
+			}
+		}
+
+		return firstThreeNumbers + firstLetter;
+	});
 
 	const getIdentifier = (): string => {
 		if (useCustomIdentifier && customIdentifier) return customIdentifier;
