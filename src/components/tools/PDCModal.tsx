@@ -137,7 +137,7 @@ const PDCModal: React.FC<PDCModalProps> = ({ isOpen, onClose, flight, onIssuePDC
 
 	const [autoIdentifier] = useState(() => {
 		// Generate identifier from squawk and callsign
-		const squawk = flight?.squawk || getSquawk();
+		const squawk = getSquawk();
 		const firstThreeNumbers = squawk.substring(0, 3);
 
 		let firstLetter = 'A';
