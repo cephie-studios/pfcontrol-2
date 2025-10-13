@@ -577,10 +577,10 @@ NOTES:
         const socket = createFlightsSocket(
             sessionId,
             sessionAccessId,
-            () => {},
-            () => {},
-            () => {},
-            () => {}
+            () => { },
+            () => { },
+            () => { },
+            () => { }
         );
 
         socketRef.current = socket;
@@ -817,128 +817,128 @@ NOTES:
                         <div className="flex" style={{ height: 'calc(100vh - 200px)' }}>
                             {showSidebar && (
                                 <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
-                    <div className="p-3 border-b border-gray-800">
-                        <h3 className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5" />
-                            CONTROLLERS
-                        </h3>
-                        <div className="space-y-2 text-xs">
-                            {activeSessions.map((session) => (
-                                <div
-                                    key={session.sessionId}
-                                    className="text-gray-300"
-                                >
-                                    <div className="font-semibold text-cyan-400 text-xs">
-                                        {session.airportIcao}
+                                    <div className="p-3 border-b border-gray-800">
+                                        <h3 className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
+                                            <User className="w-3.5 h-3.5" />
+                                            CONTROLLERS
+                                        </h3>
+                                        <div className="space-y-2 text-xs">
+                                            {activeSessions.map((session) => (
+                                                <div
+                                                    key={session.sessionId}
+                                                    className="text-gray-300"
+                                                >
+                                                    <div className="font-semibold text-cyan-400 text-xs">
+                                                        {session.airportIcao}
+                                                    </div>
+                                                    {session.controllers &&
+                                                        session.controllers.length > 0 ? (
+                                                        <div className="ml-2 mt-1 space-y-1">
+                                                            {session.controllers.map((controller, idx) => {
+                                                                const isCurrentUser =
+                                                                    !!user &&
+                                                                    controller.username === user.username;
+                                                                const isVatsimLinked =
+                                                                    isCurrentUser && !!user?.vatsimCid;
+                                                                const hasControllerRating =
+                                                                    isVatsimLinked &&
+                                                                    !!user?.vatsimRatingShort &&
+                                                                    user.vatsimRatingShort !== 'OBS' &&
+                                                                    user.vatsimRatingShort !== 'SUS';
+                                                                return (
+                                                                    <div key={idx} className="">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-gray-400 text-base">•</span>
+                                                                            <a className="text-white text-base md:text-lg font-semibold" href={`${window.location.origin}/pilots/${controller.username}`}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer">
+                                                                                {controller.username}
+                                                                            </a>
+                                                                            {isVatsimLinked && hasControllerRating && (
+                                                                                <span className="relative group inline-flex items-center justify-center rounded-full bg-white p-0.5">
+                                                                                    <img
+                                                                                        src="/assets/images/vatsim.svg"
+                                                                                        alt="VATSIM"
+                                                                                        className="h-3 w-3"
+                                                                                        style={{ transform: 'rotate(180deg)' }}
+                                                                                    />
+                                                                                    <span
+                                                                                        className="absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] md:text-xs font-medium text-white bg-gradient-to-r from-cyan-500 to-green-500 shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-100"
+                                                                                    >
+                                                                                        <span className="font-bold">{user.vatsimRatingShort}</span> | This user holds a controller rating on VATSIM
+                                                                                    </span>
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="text-gray-500 text-sm md:text-base">
+                                                                                ({controller.role})
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-[10px] text-gray-500 ml-2">
+                                                            {session.activeUsers} controller(s)
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {activeSessions.length === 0 && (
+                                                <div className="text-gray-500 text-[10px]">
+                                                    No active controllers
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    {session.controllers &&
-                                    session.controllers.length > 0 ? (
-                                        <div className="ml-2 mt-1 space-y-1">
-                                            {session.controllers.map((controller, idx) => {
-                                                const isCurrentUser =
-                                                    !!user &&
-                                                    controller.username === user.username;
-                                                const isVatsimLinked =
-                                                    isCurrentUser && !!user?.vatsimCid;
-                                                const hasControllerRating =
-                                                    isVatsimLinked &&
-                                                    !!user?.vatsimRatingShort &&
-                                                    user.vatsimRatingShort !== 'OBS';
-                                                const infoText = hasControllerRating
-                                                    ? 'This user holds a controller rating on VATSIM'
-                                                    : 'This user is registered on VATSIM';
-                                                return (
-                                                    <div key={idx} className="">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-gray-400 text-base">•</span>
-                                                            <span className="text-white text-base md:text-lg font-semibold">
-                                                                {controller.username}
-                                                            </span>
-                                                            {isVatsimLinked && (
-                                                                <span className="relative group inline-flex items-center justify-center rounded-full bg-white p-0.5">
-                                                                    <img
-                                                                        src="/assets/images/vatsim.svg"
-                                                                        alt="VATSIM"
-                                                                        className="h-3 w-3"
-                                                                        style={{ transform: 'rotate(180deg)' }}
-                                                                    />
-                                                                    <span
-                                                                        className="absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] md:text-xs font-medium text-white bg-gradient-to-r from-cyan-500 to-green-500 shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-100"
-                                                                    >
-                                                                        {infoText}
-                                                                    </span>
-                                                                </span>
-                                                            )}
-                                                            <span className="text-gray-500 text-sm md:text-base">
-                                                                ({controller.role})
-                                                            </span>
+
+                                    <div className="p-3 flex-1 overflow-y-auto">
+                                        <h3 className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
+                                            <Radio className="w-3.5 h-3.5" />
+                                            ATIS
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {activeSessions
+                                                .filter(
+                                                    (session) =>
+                                                        session.atis && session.atis.text
+                                                )
+                                                .map((session) => (
+                                                    <div
+                                                        key={session.sessionId}
+                                                        className="text-xs cursor-pointer hover:bg-gray-800 p-2 rounded-lg transition-colors border border-gray-800 hover:border-gray-700"
+                                                        onDoubleClick={() =>
+                                                            handleAtisClick(session)
+                                                        }
+                                                        title="Double-click to send to terminal"
+                                                    >
+                                                        <div className="font-bold text-blue-400 text-[11px] mb-0.5">
+                                                            {session.airportIcao} INFO{' '}
+                                                            {session.atis?.letter}
+                                                        </div>
+                                                        <div className="text-gray-500 text-[9px]">
+                                                            {session.atis?.timestamp &&
+                                                                new Date(
+                                                                    session.atis.timestamp
+                                                                ).toLocaleTimeString('en-US', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                    timeZone: 'UTC',
+                                                                    hour12: false,
+                                                                })}
+                                                            Z
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="text-[10px] text-gray-500 ml-2">
-                                            {session.activeUsers} controller(s)
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                            {activeSessions.length === 0 && (
-                                <div className="text-gray-500 text-[10px]">
-                                    No active controllers
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="p-3 flex-1 overflow-y-auto">
-                        <h3 className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
-                            <Radio className="w-3.5 h-3.5" />
-                            ATIS
-                        </h3>
-                        <div className="space-y-2">
-                            {activeSessions
-                                .filter(
-                                    (session) =>
-                                        session.atis && session.atis.text
-                                )
-                                .map((session) => (
-                                    <div
-                                        key={session.sessionId}
-                                        className="text-xs cursor-pointer hover:bg-gray-800 p-2 rounded-lg transition-colors border border-gray-800 hover:border-gray-700"
-                                        onDoubleClick={() =>
-                                            handleAtisClick(session)
-                                        }
-                                        title="Double-click to send to terminal"
-                                    >
-                                        <div className="font-bold text-blue-400 text-[11px] mb-0.5">
-                                            {session.airportIcao} INFO{' '}
-                                            {session.atis?.letter}
-                                        </div>
-                                        <div className="text-gray-500 text-[9px]">
-                                            {session.atis?.timestamp &&
-                                                new Date(
-                                                    session.atis.timestamp
-                                                ).toLocaleTimeString('en-US', {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                    timeZone: 'UTC',
-                                                    hour12: false,
-                                                })}
-                                            Z
+                                                ))}
+                                            {activeSessions.filter((s) => s.atis && s.atis.text)
+                                                .length === 0 && (
+                                                    <div className="text-[10px] text-gray-500">
+                                                        No ATIS available
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
-                                ))}
-                            {activeSessions.filter((s) => s.atis && s.atis.text)
-                                .length === 0 && (
-                                <div className="text-[10px] text-gray-500">
-                                    No ATIS available
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                            </div>
                             )}
 
                             <div className="flex-1 flex flex-col bg-black">
@@ -960,23 +960,23 @@ NOTES:
                                     </div>
                                 </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5">
-                        {messages.map((msg) => (
-                            <div
-                                key={msg.id}
-                                className={getMessageColor(msg.type)}
-                            >
-                                <span className="text-gray-500">
-                                    {formatTimestamp(msg.timestamp)}
-                                </span>{' '}
-                                <span className="font-bold">
-                                    [{msg.station}]:
-                                </span>{' '}
-                                {renderMessageText(msg)}
-                            </div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                    </div>
+                                <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5">
+                                    {messages.map((msg) => (
+                                        <div
+                                            key={msg.id}
+                                            className={getMessageColor(msg.type)}
+                                        >
+                                            <span className="text-gray-500">
+                                                {formatTimestamp(msg.timestamp)}
+                                            </span>{' '}
+                                            <span className="font-bold">
+                                                [{msg.station}]:
+                                            </span>{' '}
+                                            {renderMessageText(msg)}
+                                        </div>
+                                    ))}
+                                    <div ref={messagesEndRef} />
+                                </div>
 
                                 <div className="bg-gray-900 border-t border-gray-800 p-3">
                                     <div className="flex gap-2">
@@ -1004,24 +1004,24 @@ NOTES:
                         />
 
                         <div style={{ width: `${notesWidth}%` }} className="flex-shrink-0">
-                        <div className="bg-gray-900 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden">
-                            <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
-                                <div className="flex items-center gap-2">
-                                    <StickyNote className="w-4 h-4 text-blue-500" />
-                                    <span className="text-sm font-mono text-gray-300">
-                                        Flight Notes
-                                    </span>
+                            <div className="bg-gray-900 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden">
+                                <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <StickyNote className="w-4 h-4 text-blue-500" />
+                                        <span className="text-sm font-mono text-gray-300">
+                                            Flight Notes
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-4" style={{ height: 'calc(100vh - 200px)' }}>
+                                    <textarea
+                                        value={notes}
+                                        onChange={handleNotesChange}
+                                        placeholder="Loading flight plan details..."
+                                        className="w-full h-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs text-gray-300 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600"
+                                    />
                                 </div>
                             </div>
-                            <div className="p-4" style={{ height: 'calc(100vh - 200px)' }}>
-                                <textarea
-                                    value={notes}
-                                    onChange={handleNotesChange}
-                                    placeholder="Loading flight plan details..."
-                                    className="w-full h-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs text-gray-300 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600"
-                                />
-                            </div>
-                        </div>
                         </div>
                     </>
                 )}
@@ -1034,209 +1034,206 @@ NOTES:
                         />
 
                         <div className="flex-1 min-w-0">
-                    <div ref={chartContainerRef} className={`bg-gray-900 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden h-full ${isChartFullscreen ? 'bg-black' : ''}`}>
-                        <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Map className="w-4 h-4 text-purple-500" />
-                                    <span className="text-sm font-mono text-gray-300">
-                                        Charts
-                                    </span>
-                                </div>
-                                {selectedChart && (
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={handleZoomOut}
-                                            className="p-1 hover:bg-gray-700 rounded transition-colors"
-                                            title="Zoom Out"
-                                        >
-                                            <ZoomOut className="w-4 h-4 text-gray-400" />
-                                        </button>
-                                        <button
-                                            onClick={handleResetZoom}
-                                            className="px-2 py-1 hover:bg-gray-700 rounded transition-colors text-[10px] text-gray-400 font-mono"
-                                            title="Reset Zoom"
-                                        >
-                                            {Math.round(chartZoom * 100)}%
-                                        </button>
-                                        <button
-                                            onClick={handleZoomIn}
-                                            className="p-1 hover:bg-gray-700 rounded transition-colors"
-                                            title="Zoom In"
-                                        >
-                                            <ZoomIn className="w-4 h-4 text-gray-400" />
-                                        </button>
-                                        <button
-                                            onClick={handleToggleFullscreen}
-                                            className="p-1 hover:bg-gray-700 rounded transition-colors ml-2"
-                                            title="Toggle Fullscreen"
-                                        >
-                                            {isChartFullscreen ? (
-                                                <Minimize className="w-4 h-4 text-gray-400" />
-                                            ) : (
-                                                <Maximize className="w-4 h-4 text-gray-400" />
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div
-                            className="flex"
-                            style={{ height: isChartFullscreen ? 'calc(100vh - 60px)' : 'calc(100vh - 200px)' }}
-                            onMouseMove={handleChartListMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
-                        >
-                            <div
-                                className="border-r border-gray-800 overflow-y-auto overflow-x-hidden p-3 flex-shrink-0"
-                                style={{ width: `${chartListWidth}px` }}
-                            >
-                                {flight && (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <h4 className="text-xs font-semibold text-cyan-400 mb-2 flex items-center gap-1">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                                                {flight.departure}
-                                            </h4>
-                                            <div className="space-y-1">
-                                                {getChartsForAirport(flight.departure || '').map((chart, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        onClick={() => {
-                                                            setSelectedChart(chart.path);
-                                                            setChartLoadError(false);
-                                                        }}
-                                                        className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${
-                                                            selectedChart === chart.path
-                                                                ? 'border-cyan-500 bg-cyan-950'
-                                                                : 'border-gray-800 hover:border-gray-700'
-                                                        }`}
-                                                    >
-                                                        <div className="text-gray-300 break-words">{chart.name}</div>
-                                                        <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                            <div ref={chartContainerRef} className={`bg-gray-900 rounded-2xl shadow-2xl border border-gray-800 overflow-hidden h-full ${isChartFullscreen ? 'bg-black' : ''}`}>
+                                <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-3 border-b border-gray-700">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Map className="w-4 h-4 text-purple-500" />
+                                            <span className="text-sm font-mono text-gray-300">
+                                                Charts
+                                            </span>
                                         </div>
-
-                                        <div>
-                                            <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                                                {flight.arrival}
-                                            </h4>
-                                            <div className="space-y-1">
-                                                {getChartsForAirport(flight.arrival || '').map((chart, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        onClick={() => {
-                                                            setSelectedChart(chart.path);
-                                                            setChartLoadError(false);
-                                                        }}
-                                                        className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${
-                                                            selectedChart === chart.path
-                                                                ? 'border-green-500 bg-green-950'
-                                                                : 'border-gray-800 hover:border-gray-700'
-                                                        }`}
-                                                    >
-                                                        <div className="text-gray-300 break-words">{chart.name}</div>
-                                                        <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {flight.alternate && (
-                                            <div>
-                                                <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                                                    {flight.alternate}
-                                                </h4>
-                                                <div className="space-y-1">
-                                                    {getChartsForAirport(flight.alternate).map((chart, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            onClick={() => {
-                                                                setSelectedChart(chart.path);
-                                                                setChartLoadError(false);
-                                                            }}
-                                                            className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${
-                                                                selectedChart === chart.path
-                                                                    ? 'border-yellow-500 bg-yellow-950'
-                                                                    : 'border-gray-800 hover:border-gray-700'
-                                                            }`}
-                                                        >
-                                                            <div className="text-gray-300 break-words">{chart.name}</div>
-                                                            <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                        {selectedChart && (
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={handleZoomOut}
+                                                    className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                                    title="Zoom Out"
+                                                >
+                                                    <ZoomOut className="w-4 h-4 text-gray-400" />
+                                                </button>
+                                                <button
+                                                    onClick={handleResetZoom}
+                                                    className="px-2 py-1 hover:bg-gray-700 rounded transition-colors text-[10px] text-gray-400 font-mono"
+                                                    title="Reset Zoom"
+                                                >
+                                                    {Math.round(chartZoom * 100)}%
+                                                </button>
+                                                <button
+                                                    onClick={handleZoomIn}
+                                                    className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                                    title="Zoom In"
+                                                >
+                                                    <ZoomIn className="w-4 h-4 text-gray-400" />
+                                                </button>
+                                                <button
+                                                    onClick={handleToggleFullscreen}
+                                                    className="p-1 hover:bg-gray-700 rounded transition-colors ml-2"
+                                                    title="Toggle Fullscreen"
+                                                >
+                                                    {isChartFullscreen ? (
+                                                        <Minimize className="w-4 h-4 text-gray-400" />
+                                                    ) : (
+                                                        <Maximize className="w-4 h-4 text-gray-400" />
+                                                    )}
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
-                            <div
-                                className="w-1 bg-gray-800 hover:bg-purple-500 cursor-col-resize transition-colors flex-shrink-0"
-                                onMouseDown={() => handleMouseDown('chartList')}
-                            />
-                            <div
-                                ref={chartViewRef}
-                                className="flex-1 bg-black overflow-hidden relative"
-                                onMouseDown={(e) => {
-                                    // Only handle chart pan if not resizing panels
-                                    if (!isDragging) {
-                                        handleChartMouseDown(e);
-                                    }
-                                }}
-                                onMouseMove={(e) => {
-                                    if (isChartDragging) {
-                                        handleChartMouseMove(e);
-                                        e.stopPropagation();
-                                    }
-                                }}
-                                onMouseUp={(e) => {
-                                    if (isChartDragging) {
-                                        handleChartMouseUp();
-                                        e.stopPropagation();
-                                    }
-                                }}
-                                onMouseLeave={handleChartMouseUp}
-                                style={{ cursor: isChartDragging ? 'grabbing' : selectedChart && !chartLoadError ? 'grab' : 'default' }}
-                            >
-                                {selectedChart ? (
-                                    chartLoadError ? (
-                                        <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                                            Chart not available
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                                            <img
-                                                key={selectedChart}
-                                                src={selectedChart}
-                                                alt="Airport Chart"
-                                                className="max-w-none max-h-full"
-                                                style={{
-                                                    transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
-                                                    transformOrigin: 'center',
-                                                    transition: isChartDragging ? 'none' : 'transform 0.1s ease-out',
-                                                    userSelect: 'none',
-                                                    pointerEvents: 'none'
-                                                }}
-                                                onLoad={() => setChartLoadError(false)}
-                                                onError={() => setChartLoadError(true)}
-                                                draggable={false}
-                                            />
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                                        Select a chart to view
+                                </div>
+                                <div
+                                    className="flex"
+                                    style={{ height: isChartFullscreen ? 'calc(100vh - 60px)' : 'calc(100vh - 200px)' }}
+                                    onMouseMove={handleChartListMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                >
+                                    <div
+                                        className="border-r border-gray-800 overflow-y-auto overflow-x-hidden p-3 flex-shrink-0"
+                                        style={{ width: `${chartListWidth}px` }}
+                                    >
+                                        {flight && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-cyan-400 mb-2 flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                                                        {flight.departure}
+                                                    </h4>
+                                                    <div className="space-y-1">
+                                                        {getChartsForAirport(flight.departure || '').map((chart, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    setSelectedChart(chart.path);
+                                                                    setChartLoadError(false);
+                                                                }}
+                                                                className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${selectedChart === chart.path
+                                                                        ? 'border-cyan-500 bg-cyan-950'
+                                                                        : 'border-gray-800 hover:border-gray-700'
+                                                                    }`}
+                                                            >
+                                                                <div className="text-gray-300 break-words">{chart.name}</div>
+                                                                <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-green-400 mb-2 flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                        {flight.arrival}
+                                                    </h4>
+                                                    <div className="space-y-1">
+                                                        {getChartsForAirport(flight.arrival || '').map((chart, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => {
+                                                                    setSelectedChart(chart.path);
+                                                                    setChartLoadError(false);
+                                                                }}
+                                                                className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${selectedChart === chart.path
+                                                                        ? 'border-green-500 bg-green-950'
+                                                                        : 'border-gray-800 hover:border-gray-700'
+                                                                    }`}
+                                                            >
+                                                                <div className="text-gray-300 break-words">{chart.name}</div>
+                                                                <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {flight.alternate && (
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-yellow-400 mb-2 flex items-center gap-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                                                            {flight.alternate}
+                                                        </h4>
+                                                        <div className="space-y-1">
+                                                            {getChartsForAirport(flight.alternate).map((chart, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    onClick={() => {
+                                                                        setSelectedChart(chart.path);
+                                                                        setChartLoadError(false);
+                                                                    }}
+                                                                    className={`bg-gray-950 border rounded p-2 text-[10px] transition-colors cursor-pointer ${selectedChart === chart.path
+                                                                            ? 'border-yellow-500 bg-yellow-950'
+                                                                            : 'border-gray-800 hover:border-gray-700'
+                                                                        }`}
+                                                                >
+                                                                    <div className="text-gray-300 break-words">{chart.name}</div>
+                                                                    <div className="text-[9px] text-gray-500 mt-0.5 break-words">{chart.type}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                    <div
+                                        className="w-1 bg-gray-800 hover:bg-purple-500 cursor-col-resize transition-colors flex-shrink-0"
+                                        onMouseDown={() => handleMouseDown('chartList')}
+                                    />
+                                    <div
+                                        ref={chartViewRef}
+                                        className="flex-1 bg-black overflow-hidden relative"
+                                        onMouseDown={(e) => {
+                                            // Only handle chart pan if not resizing panels
+                                            if (!isDragging) {
+                                                handleChartMouseDown(e);
+                                            }
+                                        }}
+                                        onMouseMove={(e) => {
+                                            if (isChartDragging) {
+                                                handleChartMouseMove(e);
+                                                e.stopPropagation();
+                                            }
+                                        }}
+                                        onMouseUp={(e) => {
+                                            if (isChartDragging) {
+                                                handleChartMouseUp();
+                                                e.stopPropagation();
+                                            }
+                                        }}
+                                        onMouseLeave={handleChartMouseUp}
+                                        style={{ cursor: isChartDragging ? 'grabbing' : selectedChart && !chartLoadError ? 'grab' : 'default' }}
+                                    >
+                                        {selectedChart ? (
+                                            chartLoadError ? (
+                                                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                                                    Chart not available
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                                                    <img
+                                                        key={selectedChart}
+                                                        src={selectedChart}
+                                                        alt="Airport Chart"
+                                                        className="max-w-none max-h-full"
+                                                        style={{
+                                                            transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
+                                                            transformOrigin: 'center',
+                                                            transition: isChartDragging ? 'none' : 'transform 0.1s ease-out',
+                                                            userSelect: 'none',
+                                                            pointerEvents: 'none'
+                                                        }}
+                                                        onLoad={() => setChartLoadError(false)}
+                                                        onError={() => setChartLoadError(true)}
+                                                        draggable={false}
+                                                    />
+                                                </div>
+                                            )
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                                                Select a chart to view
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
                         </div>
                     </>
                 )}
@@ -1266,13 +1263,11 @@ NOTES:
                     <div className="flex border-t border-gray-700">
                         <button
                             onClick={() => setMobileTab('terminal')}
-                            className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${
-                                settings?.acars?.notesEnabled || settings?.acars?.chartsEnabled ? 'border-r border-gray-700' : ''
-                            } ${
-                                mobileTab === 'terminal'
+                            className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${settings?.acars?.notesEnabled || settings?.acars?.chartsEnabled ? 'border-r border-gray-700' : ''
+                                } ${mobileTab === 'terminal'
                                     ? 'bg-gray-800 text-green-400'
                                     : 'text-gray-400 hover:bg-gray-800/50'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center justify-center gap-2">
                                 <Terminal className="w-4 h-4" />
@@ -1282,13 +1277,11 @@ NOTES:
                         {settings?.acars?.notesEnabled && (
                             <button
                                 onClick={() => setMobileTab('notes')}
-                                className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${
-                                    settings?.acars?.chartsEnabled ? 'border-r border-gray-700' : ''
-                                } ${
-                                    mobileTab === 'notes'
+                                className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${settings?.acars?.chartsEnabled ? 'border-r border-gray-700' : ''
+                                    } ${mobileTab === 'notes'
                                         ? 'bg-gray-800 text-blue-400'
                                         : 'text-gray-400 hover:bg-gray-800/50'
-                                }`}
+                                    }`}
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <StickyNote className="w-4 h-4" />
@@ -1299,11 +1292,10 @@ NOTES:
                         {settings?.acars?.chartsEnabled && (
                             <button
                                 onClick={() => setMobileTab('charts')}
-                                className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${
-                                    mobileTab === 'charts'
+                                className={`flex-1 px-4 py-3 text-xs font-mono transition-colors ${mobileTab === 'charts'
                                         ? 'bg-gray-800 text-purple-400'
                                         : 'text-gray-400 hover:bg-gray-800/50'
-                                }`}
+                                    }`}
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Map className="w-4 h-4" />
