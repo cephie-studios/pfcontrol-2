@@ -163,7 +163,20 @@ export default function PublicFlightView() {
             );
             if (res.ok) {
                 const data = await res.json();
-                setTelemetry(data);
+
+                const seen = new Map<number, TelemetryPoint>();
+                const deduplicated = data.filter((point: TelemetryPoint) => {
+                    const timestamp = new Date(point.timestamp).getTime();
+                    const roundedTime = Math.round(timestamp / 5000) * 5000;
+
+                    if (!seen.has(roundedTime)) {
+                        seen.set(roundedTime, point);
+                        return true;
+                    }
+                    return false;
+                });
+
+                setTelemetry(deduplicated);
             }
         } catch (err) {
             console.error('Failed to load telemetry:', err);

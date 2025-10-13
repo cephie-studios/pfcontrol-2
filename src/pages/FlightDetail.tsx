@@ -141,7 +141,20 @@ export default function FlightDetail() {
 			);
 			if (res.ok) {
 				const data = await res.json();
-				setTelemetry(data);
+
+				const seen = new Map<number, TelemetryPoint>();
+				const deduplicated = data.filter((point: TelemetryPoint) => {
+					const timestamp = new Date(point.timestamp).getTime();
+					const roundedTime = Math.round(timestamp / 5000) * 5000;
+
+					if (!seen.has(roundedTime)) {
+						seen.set(roundedTime, point);
+						return true;
+					}
+					return false;
+				});
+
+				setTelemetry(deduplicated);
 			}
 		} catch (err) {
 			console.error('Failed to load telemetry:', err);
@@ -941,7 +954,7 @@ export default function FlightDetail() {
 							{isActive && (
 								<span className="text-sm text-yellow-400 flex items-center gap-2 ml-auto">
 									<Clock className="h-4 w-4" />
-									Updates when flight completes
+									Updates in real time
 								</span>
 							)}
 						</div>
@@ -955,7 +968,7 @@ export default function FlightDetail() {
 											minute: '2-digit',
 											second: '2-digit',
 											timeZone: 'UTC'
-										}) + " UTC"
+										})
 									),
 									datasets: [
 										{
