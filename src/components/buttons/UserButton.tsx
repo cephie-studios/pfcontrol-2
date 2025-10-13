@@ -150,7 +150,11 @@ export default function CustomUserButton({
 
                     <button
                         onClick={() => {
-                            window.location.href = '/settings';
+                            window.open(
+                                '/settings',
+                                '_blank',
+                                'noopener,noreferrer'
+                            );
                         }}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
                     >
@@ -281,7 +285,11 @@ export default function CustomUserButton({
 
                         <button
                             onClick={() => {
-                                window.location.href = '/settings';
+                                window.open(
+                                    '/settings',
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                );
                             }}
                             className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
                         >

@@ -31,6 +31,7 @@ import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
 import { useAuth } from '../hooks/auth/useAuth';
+import Checkbox from '../components/common/Checkbox';
 
 interface SessionData {
     sessionId: string;
@@ -760,64 +761,41 @@ export default function Submit() {
                                             : 'hover:border-blue-600/50'
                                     }`}
                                 >
-                                    <label
-                                        className={`flex items-start ${
-                                            isLogbookDisabled || !hasRobloxLinked
-                                                ? 'cursor-not-allowed'
-                                                : 'cursor-pointer'
-                                        }`}
-                                    >
-                                        {/* Custom Checkbox */}
-                                        <div className="relative flex-shrink-0 mt-0.5">
-                                            <input
-                                                type="checkbox"
-                                                checked={logWithLogbook}
-                                                onChange={(e) =>
-                                                    setLogWithLogbook(
-                                                        e.target.checked
-                                                    )
-                                                }
-                                                disabled={
-                                                    isLogbookDisabled ||
-                                                    !hasRobloxLinked
-                                                }
-                                                className="sr-only peer"
-                                            />
-                                            <div
-                                                className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                                                    logWithLogbook
-                                                        ? 'bg-blue-600 border-blue-600'
-                                                        : 'bg-gray-700 border-gray-600'
-                                                } ${
-                                                    isLogbookDisabled ||
-                                                    !hasRobloxLinked
-                                                        ? 'cursor-not-allowed'
-                                                        : 'peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2 peer-focus:ring-offset-gray-900 cursor-pointer hover:border-blue-500'
-                                                }`}
-                                            >
-                                                {logWithLogbook && (
-                                                    <Check
-                                                        className="h-4 w-4 text-white"
-                                                        strokeWidth={3}
-                                                    />
-                                                )}
+                                    <Checkbox
+                                        checked={logWithLogbook}
+                                        onChange={(checked) => {
+                                            if (
+                                                !isLogbookDisabled &&
+                                                hasRobloxLinked
+                                            ) {
+                                                setLogWithLogbook(checked);
+                                            }
+                                        }}
+                                        label={
+                                            <div className="flex-1">
+                                                <div className="flex items-center mb-1">
+                                                    <Notebook className="h-4 w-4 text-blue-400 mr-1" />
+                                                    <span className="text-base font-semibold text-white">
+                                                        Log with PFConnect
+                                                        Logbook
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    Automatically track your
+                                                    flight with detailed
+                                                    telemetry, landing rate, and
+                                                    statistics
+                                                </p>
                                             </div>
-                                        </div>
-
-                                        <div className="ml-4 flex-1">
-                                            <div className="flex items-center mb-1">
-                                                <Notebook className="h-5 w-5 text-blue-400 mr-2" />
-                                                <span className="text-base font-semibold text-white">
-                                                    Log with PFConnect Logbook
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-400 leading-relaxed">
-                                                Automatically track your flight with
-                                                detailed telemetry, landing rate,
-                                                and statistics
-                                            </p>
-                                        </div>
-                                    </label>
+                                        }
+                                        className={
+                                            isLogbookDisabled ||
+                                            !hasRobloxLinked
+                                                ? 'opacity-50 cursor-not-allowed'
+                                                : ''
+                                        }
+                                        checkedClass="bg-blue-600 border-blue-600"
+                                    />
 
                                     {!hasRobloxLinked && (
                                         <div className="mt-3 ml-10 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
@@ -839,8 +817,8 @@ export default function Submit() {
                                     {hasRobloxLinked && isLogbookDisabled && (
                                         <div className="mt-3 ml-10 p-3 bg-gray-700/30 border border-gray-600/50 rounded-lg">
                                             <p className="text-xs text-gray-400">
-                                                PFControl LogBook is currently only
-                                                available to testers
+                                                PFControl LogBook is currently
+                                                only available to testers
                                             </p>
                                         </div>
                                     )}

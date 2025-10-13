@@ -3,7 +3,6 @@ import { isAdmin } from '../middleware/isAdmin.js';
 
 export async function initializeLogbookTables() {
     try {
-        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS logbook_flights (
                 id SERIAL PRIMARY KEY,
@@ -258,9 +257,9 @@ export async function initializeLogbookTables() {
 }
 
 export async function createFlight({ userId, robloxUserId, robloxUsername, callsign, departureIcao, arrivalIcao, route, aircraftIcao }) {
-    
+
     const crypto = await import('crypto');
-    const shareToken = crypto.randomBytes(4).toString('hex'); 
+    const shareToken = crypto.randomBytes(4).toString('hex');
 
     const result = await pool.query(`
         INSERT INTO logbook_flights (
@@ -342,7 +341,7 @@ export async function addApproachAltitude(robloxUsername, altitude, timestamp) {
 }
 
 export async function calculateLandingRate(robloxUsername) {
-    
+
     const flightResult = await pool.query(`
         SELECT laf.flight_id, lf.waypoint_landing_rate
         FROM logbook_active_flights laf
@@ -663,7 +662,7 @@ export async function completeFlightByCallsign(callsign) {
             await updateUserStatsCache(flightData.user_id);
         } catch (error) {
             console.error('Error updating user stats cache:', error);
-            
+
         }
 
         return flightData.id;
@@ -701,7 +700,7 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
         if (prev.x && prev.y && curr.x && curr.y) {
             const dx = curr.x - prev.x;
             const dy = curr.y - prev.y;
-            const distance = Math.sqrt(dx * dx + dy * dy) / 1852; 
+            const distance = Math.sqrt(dx * dx + dy * dy) / 1852;
             totalDistance += distance;
         }
     }
@@ -745,25 +744,25 @@ function calculateFlightStats(flightData, telemetryData, activeFlight) {
 
             if (prev.speed_kts != null && curr.speed_kts != null) {
                 const speedChange = Math.abs(curr.speed_kts - prev.speed_kts);
-                if (speedChange > 30) speedPenalty += 3;      
-                else if (speedChange > 20) speedPenalty += 2; 
-                else if (speedChange > 10) speedPenalty += 1; 
+                if (speedChange > 30) speedPenalty += 3;
+                else if (speedChange > 20) speedPenalty += 2;
+                else if (speedChange > 10) speedPenalty += 1;
             }
 
             if (prev.vertical_speed_fpm != null && curr.vertical_speed_fpm != null) {
                 const vsChange = Math.abs(curr.vertical_speed_fpm - prev.vertical_speed_fpm);
-                if (vsChange > 500) verticalSpeedPenalty += 3;      
-                else if (vsChange > 300) verticalSpeedPenalty += 2; 
-                else if (vsChange > 150) verticalSpeedPenalty += 1; 
+                if (vsChange > 500) verticalSpeedPenalty += 3;
+                else if (vsChange > 300) verticalSpeedPenalty += 2;
+                else if (vsChange > 150) verticalSpeedPenalty += 1;
             }
 
             if (prev.heading != null && curr.heading != null) {
-                
+
                 let headingChange = Math.abs(curr.heading - prev.heading);
                 if (headingChange > 180) headingChange = 360 - headingChange;
 
-                if (headingChange > 30) headingPenalty += 2;      
-                else if (headingChange > 20) headingPenalty += 1; 
+                if (headingChange > 30) headingPenalty += 2;
+                else if (headingChange > 20) headingPenalty += 1;
             }
         }
 
@@ -843,7 +842,7 @@ export async function getFlightById(flightId) {
 }
 
 export async function getActiveFlightData(flightId) {
-    
+
     const flight = await getFlightById(flightId);
     if (!flight) return null;
 
@@ -964,7 +963,7 @@ export async function getUserStats(userId) {
     `, [userId]);
 
     if (result.rows.length === 0) {
-        
+
         await pool.query(`
             INSERT INTO logbook_stats_cache (user_id)
             VALUES ($1)
@@ -980,7 +979,6 @@ export async function getUserStats(userId) {
 }
 
 export async function generateShareToken(flightId, userId) {
-    
     const flight = await pool.query(`
         SELECT share_token, user_id FROM logbook_flights WHERE id = $1
     `, [flightId]);
@@ -1346,7 +1344,7 @@ export async function finalizeLandingFromWaypoints(robloxUsername) {
 
     const recentCluster = waypoints.filter(w => {
         const timeDiff = maxTimestamp - w.timestamp;
-        return timeDiff <= 90; 
+        return timeDiff <= 90;
     });
 
     if (recentCluster.length === 0) {

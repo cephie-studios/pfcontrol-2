@@ -25,6 +25,8 @@ import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
 import ContactAcarsModal from '../components/modals/ContactAcarsModal';
+import Button from '../components/common/Button';
+import Loader from '../components/common/Loader';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -260,14 +262,13 @@ export default function Flights() {
                 setFlights((prev) => [...prev, flight]);
                 const currentSettings = settingsRef.current;
                 if (currentSettings) {
-                    playSoundWithSettings('newStripSound', currentSettings, 0.7).catch(
-                        (error) => {
-                            console.warn(
-                                'Failed to play new strip sound:',
-                                error
-                            );
-                        }
-                    );
+                    playSoundWithSettings(
+                        'newStripSound',
+                        currentSettings,
+                        0.7
+                    ).catch((error) => {
+                        console.warn('Failed to play new strip sound:', error);
+                    });
                 }
             },
             // onFlightDeleted
@@ -418,9 +419,15 @@ export default function Flights() {
                 socket.disconnect();
             }
         };
-    }, [sessionId, accessId, user?.userId, user?.username, user?.avatar, handleMentionReceived]);
+    }, [
+        sessionId,
+        accessId,
+        user?.userId,
+        user?.username,
+        user?.avatar,
+        handleMentionReceived,
+    ]);
 
-    // Update position without reconnecting socket
     useEffect(() => {
         if (sessionUsersSocket && sessionUsersSocket.emitPositionChange) {
             sessionUsersSocket.emitPositionChange(position);
@@ -610,7 +617,9 @@ export default function Flights() {
             if (flightsSocket?.socket?.connected) {
                 flightsSocket.updateSession({ activeRunway: selectedRunway });
             } else {
-                console.warn('Socket not connected, runway updated via API only');
+                console.warn(
+                    'Socket not connected, runway updated via API only'
+                );
             }
         } catch (error) {
             console.error('Failed to update runway:', error);
@@ -879,11 +888,7 @@ export default function Flights() {
             <div className="min-h-screen text-white relative">
                 <div className="relative z-10">
                     <Navbar sessionId={sessionId} accessId={accessId} />
-                    <div className="pt-16">
-                        <div className="text-center py-12 text-gray-400">
-                            Validating access...
-                        </div>
-                    </div>
+                    <Loader />
                 </div>
             </div>
         );
@@ -952,11 +957,13 @@ export default function Flights() {
                                     flashingPDCIds={flashingPDCIds}
                                 />
                                 <div className="flex justify-center gap-4 mt-4 mb-6">
-                                    <button
+                                    <Button
                                         onClick={() =>
                                             setShowAddDepartureModal(true)
                                         }
-                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                        variant="primary"
+                                        size="sm"
+                                        className="flex items-center space-x-2"
                                     >
                                         <svg
                                             className="w-5 h-5"
@@ -972,12 +979,14 @@ export default function Flights() {
                                             />
                                         </svg>
                                         <span>Add Custom Departure</span>
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() =>
                                             setShowAddArrivalModal(true)
                                         }
-                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                        variant="primary"
+                                        size="sm"
+                                        className="flex items-center space-x-2"
                                     >
                                         <svg
                                             className="w-5 h-5"
@@ -993,7 +1002,7 @@ export default function Flights() {
                                             />
                                         </svg>
                                         <span>Add Custom Arrival</span>
-                                    </button>
+                                    </Button>
                                 </div>
                             </>
                         ) : (
@@ -1023,13 +1032,15 @@ export default function Flights() {
                                             onIssuePDC={handleIssuePDC}
                                         />
                                         <div className="flex justify-center mt-4 mb-6">
-                                            <button
+                                            <Button
                                                 onClick={() =>
                                                     setShowAddDepartureModal(
                                                         true
                                                     )
                                                 }
-                                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                                variant="primary"
+                                                size="sm"
+                                                className="flex items-center space-x-2"
                                             >
                                                 <svg
                                                     className="w-5 h-5"
@@ -1047,7 +1058,7 @@ export default function Flights() {
                                                 <span>
                                                     Add Custom Departure
                                                 </span>
-                                            </button>
+                                            </Button>
                                         </div>
                                     </>
                                 ) : (
@@ -1059,11 +1070,13 @@ export default function Flights() {
                                             arrivalsColumns={arrivalsColumns}
                                         />
                                         <div className="flex justify-center mt-4 mb-6">
-                                            <button
+                                            <Button
                                                 onClick={() =>
                                                     setShowAddArrivalModal(true)
                                                 }
-                                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                                                variant="primary"
+                                                size="sm"
+                                                className="flex items-center space-x-2"
                                             >
                                                 <svg
                                                     className="w-5 h-5"
@@ -1079,7 +1092,7 @@ export default function Flights() {
                                                     />
                                                 </svg>
                                                 <span>Add Custom Arrival</span>
-                                            </button>
+                                            </Button>
                                         </div>
                                     </>
                                 )}
