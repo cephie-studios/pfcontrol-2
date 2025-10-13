@@ -16,4 +16,8 @@ export interface User {
     rolePermissions?: Record<string, boolean>;
     robloxUserId?: string | null;
     robloxUsername?: string | null;
+    vatsimCid?: string | null;
+    vatsimRatingId?: number | null;
+    vatsimRatingShort?: string | null;
+    vatsimRatingLong?: string | null;
 }

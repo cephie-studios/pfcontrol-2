@@ -62,6 +62,10 @@ interface PilotProfile {
         discriminator: string;
         avatar: string | null;
         roblox_username: string | null;
+        roblox_user_id?: string | null;
+        vatsim_cid: string | null;
+        vatsim_rating_short: string | null;
+        vatsim_rating_long: string | null;
         member_since: string;
         is_admin: boolean;
         roles: Role[];
@@ -242,6 +246,27 @@ export default function PilotProfile() {
         );
     }
 
+    const mapLongToShort = (longName: string | null): string | null => {
+        if (!longName) return null;
+        const key = longName.toLowerCase();
+        if (key.includes('observer')) return 'OBS';
+        if (key.includes('student') && key.includes('1')) return 'S1';
+        if (key.includes('student') && key.includes('2')) return 'S2';
+        if (key.includes('student') && key.includes('3')) return 'S3';
+        if (key.startsWith('c1') || key.includes('controller 1') || key.includes('controller i')) return 'C1';
+        if (key.startsWith('c2') || key.includes('controller 2')) return 'C2';
+        if (key.startsWith('c3') || key.includes('controller 3')) return 'C3';
+        if (key.includes('instructor') && key.includes('1')) return 'I1';
+        if (key.includes('instructor') && key.includes('2')) return 'I2';
+        if (key.includes('instructor') && key.includes('3')) return 'I3';
+        if (key.includes('supervisor')) return 'SUP';
+        if (key.includes('administrator')) return 'ADM';
+        return null;
+    };
+
+    const displayVatsimRating =
+        profile.user.vatsim_rating_short || mapLongToShort(profile.user.vatsim_rating_long);
+
     const activityChartData = {
         labels: profile.activityData
             .map((d) => {
@@ -391,27 +416,92 @@ export default function PilotProfile() {
                                                 </div>
                                             );
                                         })}
+                                    {(displayVatsimRating || profile.user.vatsim_cid) && (
+                                        profile.user.vatsim_cid ? (
+                                            <a
+                                                href={`https://stats.vatsim.net/stats/${profile.user.vatsim_cid}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(42,160,240,0.3) 0%, rgba(49,196,243,0.3) 50%, rgba(46,204,113,0.3) 100%)',
+                                                    borderColor: 'rgba(42,160,240,0.3)',
+                                                    boxShadow: '0 4px 6px -1px rgba(42,160,240,0.2)'
+                                                }}
+                                            >
+                                                <span className="inline-flex items-center justify-center rounded-full bg-white p-1">
+                                                    <img
+                                                        src="/assets/images/vatsim.svg"
+                                                        alt="VATSIM"
+                                                        className="h-4 w-4"
+                                                        style={{ transform: 'rotate(180deg)' }}
+                                                    />
+                                                </span>
+                                                {displayVatsimRating && (
+                                                    <span className="text-base md:text-lg font-bold" style={{ color: '#3B82F6' }}>
+                                                        {displayVatsimRating}
+                                                    </span>
+                                                )}
+                                            </a>
+                                        ) : (
+                                            <div
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-default"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(42,160,240,0.3) 0%, rgba(49,196,243,0.3) 50%, rgba(46,204,113,0.3) 100%)',
+                                                    borderColor: 'rgba(42,160,240,0.3)',
+                                                    boxShadow: '0 4px 6px -1px rgba(42,160,240,0.2)'
+                                                }}
+                                            >
+                                                <span className="inline-flex items-center justify-center rounded-full bg-white p-1">
+                                                    <img
+                                                        src="/assets/images/vatsim.svg"
+                                                        alt="VATSIM"
+                                                        className="h-4 w-4"
+                                                        style={{ transform: 'rotate(180deg)' }}
+                                                    />
+                                                </span>
+                                                {displayVatsimRating && (
+                                                    <span className="text-base md:text-lg font-bold" style={{ color: '#3B82F6' }}>
+                                                        {displayVatsimRating}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )
+                                    )}
                                 </div>
                             )}
-                            <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start">
-                                {profile.user.roblox_username && (
-                                    <p className="text-base md:text-lg text-blue-300">
-                                        Roblox: {profile.user.roblox_username}
-                                    </p>
-                                )}
-                                <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
-                                    <Calendar className="h-4 w-4" />
-                                    <span className="text-sm">
-                                        Member since{' '}
-                                        {new Date(
-                                            profile.user.member_since
-                                        ).toLocaleDateString('en-US', {
-                                            month: 'long',
-                                            year: 'numeric',
-                                        })}
-                                    </span>
-                                </div>
+                        <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start">
+                            {profile.user.roblox_username && (
+                                <p className="text-base md:text-lg text-blue-300">
+                                    Roblox:{' '}
+                                    {profile.user.roblox_user_id ? (
+                                        <a
+                                            href={`https://www.roblox.com/users/${profile.user.roblox_user_id}/profile`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="underline hover:text-blue-200"
+                                        >
+                                            {profile.user.roblox_username}
+                                        </a>
+                                    ) : (
+                                        profile.user.roblox_username
+                                    )}
+                                </p>
+                            )}
+                            {/* VATSIM badge moved up to align with role badges */}
+                            <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
+                                <Calendar className="h-4 w-4" />
+                                <span className="text-sm">
+                                    Member since{' '}
+                                    {new Date(
+                                        profile.user.member_since
+                                    ).toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        year: 'numeric',
+                                    })}
+                                </span>
                             </div>
+                        </div>
                         </div>
                         <Button
                             onClick={handleShareProfile}
