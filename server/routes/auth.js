@@ -26,8 +26,8 @@ const ROBLOX_REDIRECT_URI = process.env.ROBLOX_REDIRECT_URI;
 // VATSIM OAuth (linking)
 const VATSIM_CLIENT_ID = process.env.VATSIM_CLIENT_ID;
 const VATSIM_CLIENT_SECRET = process.env.VATSIM_CLIENT_SECRET;
-const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI; // e.g., https://test.pfconnect.online/login/vatsim/callback
-const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE || 'https://auth.vatsim.net'; // set to https://auth-dev.vatsim.net for dev clients
+const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI;
+const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE
 
 // GET: /api/auth/discord - redirect to Discord for authentication
 router.get('/discord', (req, res) => {
@@ -212,7 +212,6 @@ router.get('/vatsim', requireAuth, (req, res) => {
         scope: 'full_name vatsim_details',
         state
     });
-    // Optional: force login screen if requested or set via unlink
     const forceCookie = req.cookies && req.cookies.vatsim_force === '1';
     if (req.query.force === '1' || req.query.force === 'true' || forceCookie) {
         params.set('prompt', 'login');
@@ -284,8 +283,7 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
             root?.controller_rating,
             root?.controller,
             root?.rating,
-            // sometimes wrapped one level down
-            root?.vatsim?.rating, // per VATSIM docs: { id, short, long }
+            root?.vatsim?.rating,
             root?.vatsim?.ratings?.controller,
         ].filter(Boolean);
         let ratingShort = null;
@@ -425,7 +423,6 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     try {
         const { unlinkVatsimAccount } = await import('../db/users.js');
         await unlinkVatsimAccount(req.user.userId);
-        // Set a short-lived cookie to force login on the next link attempt
         res.cookie('vatsim_force', '1', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',

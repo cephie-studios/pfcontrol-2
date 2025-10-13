@@ -41,10 +41,10 @@ async function initializeUsersTable() {
             `);
         } else {
             // Ensure VATSIM columns exist on existing installations
-            try { await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_cid VARCHAR(16)"); } catch {}
-            try { await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_id INTEGER"); } catch {}
-            try { await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_short VARCHAR(8)"); } catch {}
-            try { await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_long VARCHAR(32)"); } catch {}
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_cid VARCHAR(16)");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_id INTEGER");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_short VARCHAR(8)");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_long VARCHAR(32)");
         }
     } catch (error) {
         console.error('Error initializing users table:', error);
