@@ -8,7 +8,8 @@ import {
 	Calendar,
 	User,
 	Check,
-	ShieldX
+	ShieldX,
+	Menu
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -27,6 +28,7 @@ import { getTesterSettings } from '../../utils/fetch/data';
 
 export default function AdminTesters() {
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [testers, setTesters] = useState<Tester[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -148,20 +150,44 @@ export default function AdminTesters() {
 		<div className="min-h-screen bg-black text-white">
 			<Navbar />
 			<div className="flex pt-16">
-				<AdminSidebar
-					collapsed={sidebarCollapsed}
-					onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-				/>
-				<div className="flex-1 p-8">
+				{/* Mobile Sidebar Overlay */}
+				{mobileSidebarOpen && (
+					<div
+						className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+						onClick={() => setMobileSidebarOpen(false)}
+					/>
+				)}
+
+				{/* Desktop Sidebar */}
+				<div className="hidden lg:block">
+					<AdminSidebar
+						collapsed={sidebarCollapsed}
+						onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+					/>
+				</div>
+
+				{/* Mobile Sidebar */}
+				<div
+					className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+						mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+					}`}
+				>
+					<AdminSidebar
+						collapsed={false}
+						onToggle={() => setMobileSidebarOpen(false)}
+					/>
+				</div>
+
+				<div className="flex-1 p-4 sm:p-6 lg:p-8">
 					{/* Header */}
-					<div className="mb-8">
+					<div className="mb-6 sm:mb-8">
 						<div className="flex items-center mb-4">
-							<div className="p-3 bg-purple-500/20 rounded-xl mr-4">
-								<Shield className="h-8 w-8 text-purple-400" />
+							<div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl mr-3 sm:mr-4">
+								<Shield className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
 							</div>
 							<div>
 								<h1
-									className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600 font-extrabold mb-2"
+									className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600 font-extrabold mb-2"
 									style={{ lineHeight: 1.4 }}
 								>
 									Tester Management
@@ -321,7 +347,8 @@ export default function AdminTesters() {
 						<>
 							{/* Testers Table */}
 							<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
-								<table className="w-full">
+								<div className="overflow-x-auto">
+									<table className="w-full min-w-[800px]">
 									<thead className="bg-zinc-800">
 										<tr>
 											<th className="px-6 py-4 text-left text-zinc-400 font-medium">
@@ -435,6 +462,7 @@ export default function AdminTesters() {
 										)}
 									</tbody>
 								</table>
+								</div>
 							</div>
 
 							{/* Pagination */}
@@ -462,6 +490,14 @@ export default function AdminTesters() {
 					)}
 				</div>
 			</div>
+
+			{/* Floating Mobile Menu Button */}
+			<button
+				onClick={() => setMobileSidebarOpen(true)}
+				className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-purple-600 hover:bg-purple-700 rounded-full shadow-lg transition-colors"
+			>
+				<Menu className="h-6 w-6 text-white" />
+			</button>
 
 			{/* Toast */}
 			{toast && (

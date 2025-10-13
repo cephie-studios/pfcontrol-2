@@ -53,14 +53,24 @@ export interface ArrivalsTableColumnSettings {
     hide: boolean;
 }
 
+export interface AcarsSettings {
+    notesEnabled: boolean;
+    chartsEnabled: boolean;
+    terminalWidth: number;
+    notesWidth: number;
+}
+
 export interface Settings {
     backgroundImage: BackgroundImageSettings;
     sounds: {
         startupSound: SoundSettings;
         chatNotificationSound: SoundSettings;
         newStripSound: SoundSettings;
+        acarsBeep: SoundSettings;
+        acarsChatPop: SoundSettings;
     };
     layout: LayoutSettings;
     departureTableColumns: DepartureTableColumnSettings;
     arrivalsTableColumns: ArrivalsTableColumnSettings;
+    acars: AcarsSettings;
 }

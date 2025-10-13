@@ -1,6 +1,7 @@
 import pool from './connections/connection.js';
 import { encrypt, decrypt } from '../tools/encryption.js';
 import flightsPool from './connections/flightsConnection.js';
+import { validateSessionId } from '../utils/validation.js';
 
 export async function initializeSessionsTable() {
     try {
@@ -32,6 +33,8 @@ export async function initializeSessionsTable() {
 }
 
 export async function createSession({ sessionId, accessId, activeRunway, airportIcao, createdBy, isPFATC }) {
+    const validSessionId = validateSessionId(sessionId);
+
     const encryptedAtis = encrypt({
         letter: 'A',
         text: '',
@@ -44,7 +47,7 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
             created_by, is_pfatc, atis
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     `, [
-        sessionId,
+        validSessionId,
         accessId,
         activeRunway,
         airportIcao.toUpperCase(),
@@ -53,9 +56,8 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
         JSON.stringify(encryptedAtis)
     ]);
 
-    // Create flights table for this session
     await flightsPool.query(`
-        CREATE TABLE IF NOT EXISTS flights_${sessionId} (
+        CREATE TABLE IF NOT EXISTS flights_${validSessionId} (
             id VARCHAR(36) PRIMARY KEY,
             session_id VARCHAR(8) NOT NULL,
             user_id VARCHAR(36),
@@ -152,8 +154,9 @@ export async function getSessionsByUserDetailed(userId) {
     );
     const sessions = [];
     for (const row of result.rows) {
+        const validSessionId = validateSessionId(row.session_id);
         const flightCountResult = await flightsPool.query(
-            `SELECT COUNT(*) as count FROM flights_${row.session_id}`
+            `SELECT COUNT(*) as count FROM flights_${validSessionId}`
         );
         const flightCount = parseInt(flightCountResult.rows[0].count, 10);
         sessions.push({
@@ -173,17 +176,19 @@ export async function getSessionsByUserDetailed(userId) {
 }
 
 export async function deleteSession(sessionId) {
+    const validSessionId = validateSessionId(sessionId);
+
     const result = await pool.query(
         'DELETE FROM sessions WHERE session_id = $1 RETURNING session_id',
-        [sessionId]
+        [validSessionId]
     );
-    // Drop the flights table for this session
+
     if (result.rows[0]) {
-        const flightsTable = `flights_${sessionId}`;
+        const flightsTable = `flights_${validSessionId}`;
         try {
             await flightsPool.query(`DROP TABLE IF EXISTS ${flightsTable}`);
         } catch (err) {
-            console.error(`Error dropping flights table for session ${sessionId}:`, err);
+            console.error(`Error dropping flights table for session ${validSessionId}:`, err);
         }
     }
     return result.rows[0] || null;

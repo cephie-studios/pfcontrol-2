@@ -6,7 +6,9 @@ import {
 } from '../utils/flightUtils.js';
 import { getSessionById } from './sessions.js';
 import flightsPool from './connections/flightsConnection.js';
+import pool from './connections/connection.js';
 import crypto from 'crypto';
+import { validateSessionId, validateFlightId } from '../utils/validation.js';
 
 function sanitizeFlightForClient(flight) {
     const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
@@ -18,23 +20,68 @@ function sanitizeFlightForClient(flight) {
 }
 
 export async function getFlightsBySession(sessionId) {
-    const tableName = `flights_${sessionId}`;
-    const result = await flightsPool.query(
-        `SELECT * FROM ${tableName} ORDER BY created_at ASC`
-    );
+    const validSessionId = validateSessionId(sessionId);
+    const tableName = `flights_${validSessionId}`;
 
-    const flights = result.rows.map((flight) =>
-        sanitizeFlightForClient(flight)
-    );
-    return flights;
+    try {
+        const flightsResult = await flightsPool.query(
+            `SELECT * FROM ${tableName} ORDER BY created_at ASC`
+        );
+
+        const flights = flightsResult.rows;
+        const userIds = [...new Set(flights.map(f => f.user_id).filter(Boolean))];
+
+        let usersMap = new Map();
+        if (userIds.length > 0) {
+            try {
+                const usersResult = await pool.query(
+                    `SELECT id, username as discord_username, avatar as discord_avatar_url
+                     FROM users
+                     WHERE id = ANY($1)`,
+                    [userIds]
+                );
+
+                usersResult.rows.forEach(user => {
+                    usersMap.set(user.id, {
+                        discord_username: user.discord_username,
+                        discord_avatar_url: user.discord_avatar_url
+                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.discord_avatar_url}.png`
+                            : null
+                    });
+                });
+            } catch (userError) {
+                console.error('Error fetching user data:', userError);
+            }
+        }
+        const enrichedFlights = flights.map(flight => {
+            const sanitized = sanitizeFlightForClient(flight);
+
+            if (flight.user_id && usersMap.has(flight.user_id)) {
+                sanitized.user = usersMap.get(flight.user_id);
+            }
+
+            return sanitized;
+        });
+
+        return enrichedFlights;
+    } catch (error) {
+        console.error('Error fetching flights:', error);
+        // Fallback to basic query without user data
+        const result = await flightsPool.query(
+            `SELECT * FROM ${tableName} ORDER BY created_at ASC`
+        );
+        return result.rows.map((flight) => sanitizeFlightForClient(flight));
+    }
 }
 
 export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
     try {
-        const tableName = `flights_${sessionId}`;
+        const validSessionId = validateSessionId(sessionId);
+        const validFlightId = validateFlightId(flightId);
+        const tableName = `flights_${validSessionId}`;
         const result = await flightsPool.query(
             `SELECT acars_token FROM ${tableName} WHERE id = $1`,
-            [flightId]
+            [validFlightId]
         );
 
         if (result.rows.length === 0) {
@@ -61,12 +108,13 @@ export async function validateAcarsAccess(sessionId, flightId, acarsToken) {
 
 export async function getFlightsBySessionWithTime(sessionId, hoursBack = 2) {
     try {
-        const tableName = `flights_${sessionId}`;
+        const validSessionId = validateSessionId(sessionId);
+        const tableName = `flights_${validSessionId}`;
 
         const tableExists = await flightsPool.query(
             `
             SELECT EXISTS (
-                SELECT FROM information_schema.tables 
+                SELECT FROM information_schema.tables
                 WHERE table_name = $1
             )
         `,
@@ -130,7 +178,8 @@ function validateFlightFields(updates) {
 }
 
 export async function addFlight(sessionId, flightData) {
-    const tableName = `flights_${sessionId}`;
+    const validSessionId = validateSessionId(sessionId);
+    const tableName = `flights_${validSessionId}`;
     try {
         await flightsPool.query(
             `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS gate VARCHAR(8);`
@@ -140,7 +189,7 @@ export async function addFlight(sessionId, flightData) {
     }
 
     const fields = ['session_id'];
-    const values = [sessionId];
+    const values = [validSessionId];
     const placeholders = ['$1'];
     let idx = 2;
 
@@ -161,7 +210,7 @@ export async function addFlight(sessionId, flightData) {
 
     if (!flightData.runway) {
         try {
-            const session = await getSessionById(sessionId);
+            const session = await getSessionById(validSessionId);
             if (session && session.active_runway) {
                 flightData.runway = session.active_runway;
             }
@@ -211,11 +260,18 @@ export async function addFlight(sessionId, flightData) {
 }
 
 export async function updateFlight(sessionId, flightId, updates) {
-    const tableName = `flights_${sessionId}`;
+    const validSessionId = validateSessionId(sessionId);
+    const validFlightId = validateFlightId(flightId);
+    const tableName = `flights_${validSessionId}`;
 
-    // add this block to create missing text columns safely
+    const allowedColumns = [
+        'callsign', 'aircraft', 'departure', 'arrival', 'flight_type',
+        'stand', 'gate', 'runway', 'sid', 'star', 'cruisingfl', 'clearedfl',
+        'squawk', 'wtc', 'status', 'remark', 'clearance', 'pdc_remarks', 'hidden'
+    ];
+
     const safeCols = Object.keys(updates).filter((k) =>
-        /^[a-zA-Z0-9_]+$/.test(k)
+        allowedColumns.includes(k.toLowerCase())
     );
     for (const col of safeCols) {
         try {
@@ -257,7 +313,7 @@ export async function updateFlight(sessionId, flightId, updates) {
         fields.push(`${key} = $${idx++}`);
         values.push(processedValue);
     }
-    values.push(flightId);
+    values.push(validFlightId);
 
     const query = `
         UPDATE ${tableName} SET ${fields.join(', ')}, updated_at = NOW()
@@ -271,8 +327,10 @@ export async function updateFlight(sessionId, flightId, updates) {
 }
 
 export async function deleteFlight(sessionId, flightId) {
-    const tableName = `flights_${sessionId}`;
+    const validSessionId = validateSessionId(sessionId);
+    const validFlightId = validateFlightId(flightId);
+    const tableName = `flights_${validSessionId}`;
     await flightsPool.query(`DELETE FROM ${tableName} WHERE id = $1`, [
-        flightId,
+        validFlightId,
     ]);
 }

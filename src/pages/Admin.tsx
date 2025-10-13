@@ -8,6 +8,8 @@ import {
     Settings,
     Save,
     RefreshCw,
+    Menu,
+    X,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AdminSidebar from '../components/admin/AdminSidebar';
@@ -51,6 +53,7 @@ ChartJS.register(
 export default function Admin() {
     const { user } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState(30);
@@ -314,21 +317,52 @@ export default function Admin() {
             <Navbar />
 
             <div className="flex pt-16">
-                <AdminSidebar
-                    collapsed={sidebarCollapsed}
-                    onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                />
+                {/* Mobile Overlay */}
+                {mobileSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+                        onClick={() => setMobileSidebarOpen(false)}
+                    />
+                )}
 
-                <div className="flex-1 p-8">
+                {/* Desktop Sidebar */}
+                <div className="hidden lg:block">
+                    <AdminSidebar
+                        collapsed={sidebarCollapsed}
+                        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    />
+                </div>
+
+                {/* Mobile Sidebar */}
+                <div
+                    className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+                        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+                >
+                    <AdminSidebar
+                        collapsed={false}
+                        onToggle={() => setMobileSidebarOpen(false)}
+                    />
+                </div>
+
+                <div className="flex-1 p-4 sm:p-6 lg:p-8">
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setMobileSidebarOpen(true)}
+                        className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-colors"
+                    >
+                        <Menu className="h-6 w-6 text-white" />
+                    </button>
+
                     {/* Header */}
-                    <div className="mb-8">
+                    <div className="mb-6 sm:mb-8">
                         <div className="flex items-center mb-4">
-                            <div className="p-3 bg-blue-500/20 rounded-xl mr-4">
-                                <LayoutDashboard className="h-8 w-8 text-blue-400" />
+                            <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4">
+                                <LayoutDashboard className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
                             </div>
                             <div>
                                 <h1
-                                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
+                                    className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
                                     style={{ lineHeight: 1.2 }}
                                 >
                                     Admin Overview
@@ -337,7 +371,7 @@ export default function Admin() {
                         </div>
 
                         {/* Time Range Selector */}
-                        <div className="flex space-x-2 pt-4">
+                        <div className="flex flex-wrap gap-2 pt-4">
                             {[7, 30, 90].map((days) => (
                                 <Button
                                     key={days}
@@ -368,80 +402,80 @@ export default function Admin() {
                     ) : stats ? (
                         <>
                             {/* Stats Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="p-3 bg-blue-500/20 rounded-xl">
-                                            <Users className="w-6 h-6 text-blue-400" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl">
+                                            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                                         </div>
-                                        <TrendingUp className="w-5 h-5 text-green-400" />
+                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white mb-1">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
                                         {stats.totals?.total_users?.toLocaleString() ||
                                             '0'}
                                     </h3>
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-zinc-400 text-xs sm:text-sm">
                                         Total Users
                                     </p>
                                 </div>
 
-                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="p-3 bg-green-500/20 rounded-xl">
-                                            <Activity className="w-6 h-6 text-green-400" />
+                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl">
+                                            <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
                                         </div>
-                                        <TrendingUp className="w-5 h-5 text-green-400" />
+                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white mb-1">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
                                         {stats.totals?.total_sessions?.toLocaleString() ||
                                             '0'}
                                     </h3>
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-zinc-400 text-xs sm:text-sm">
                                         Total Sessions
                                     </p>
                                 </div>
 
-                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="p-3 bg-purple-500/20 rounded-xl">
-                                            <Database className="w-6 h-6 text-purple-400" />
+                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl">
+                                            <Database className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
                                         </div>
-                                        <TrendingUp className="w-5 h-5 text-green-400" />
+                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white mb-1">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
                                         {stats.totals?.total_flights?.toLocaleString() ||
                                             '0'}
                                     </h3>
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-zinc-400 text-xs sm:text-sm">
                                         Total Flights
                                     </p>
                                 </div>
 
-                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="p-3 bg-orange-500/20 rounded-xl">
-                                            <TrendingUp className="w-6 h-6 text-orange-400" />
+                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <div className="p-2 sm:p-3 bg-orange-500/20 rounded-xl">
+                                            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                                         </div>
-                                        <TrendingUp className="w-5 h-5 text-green-400" />
+                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white mb-1">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
                                         {stats.totals?.total_logins?.toLocaleString() ||
                                             '0'}
                                     </h3>
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-zinc-400 text-xs sm:text-sm">
                                         Total Logins
                                     </p>
                                 </div>
                             </div>
 
                             {/* Charts */}
-                            <div className="space-y-8">
+                            <div className="space-y-6 sm:space-y-8">
                                 {/* Flights Chart - Full Width */}
-                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                    <h3 className="text-xl font-semibold text-white mb-6">
+                                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                                         Flights
                                     </h3>
-                                    <div className="h-80">
+                                    <div className="h-64 sm:h-80">
                                         <Line
                                             data={formatFlightsData(
                                                 stats.daily
@@ -452,13 +486,13 @@ export default function Admin() {
                                 </div>
 
                                 {/* Sessions and Logins - Side by Side */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                                     {/* Sessions Chart */}
-                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                        <h3 className="text-xl font-semibold text-white mb-6">
+                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                                             Sessions
                                         </h3>
-                                        <div className="h-80">
+                                        <div className="h-64 sm:h-80">
                                             <Line
                                                 data={formatSessionsData(
                                                     stats.daily
@@ -469,11 +503,11 @@ export default function Admin() {
                                     </div>
 
                                     {/* Logins Chart */}
-                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                        <h3 className="text-xl font-semibold text-white mb-6">
+                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                                             Logins
                                         </h3>
-                                        <div className="h-80">
+                                        <div className="h-64 sm:h-80">
                                             <Line
                                                 data={formatLoginsData(
                                                     stats.daily
@@ -486,25 +520,25 @@ export default function Admin() {
                             </div>
                             {/* Developer Controls */}
                             {user?.isAdmin && (
-                                <div className="mt-8">
-                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                                        <div className="flex items-center mb-4">
+                                <div className="mt-6 sm:mt-8">
+                                    <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                                        <div className="flex items-center mb-3 sm:mb-4">
                                             <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
-                                                <Settings className="w-5 h-5 text-blue-400" />
+                                                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                                             </div>
-                                            <h2 className="text-xl font-semibold text-white">
+                                            <h2 className="text-lg sm:text-xl font-semibold text-white">
                                                 Application Settings
                                             </h2>
                                         </div>
 
                                         {/* Version Management */}
-                                        <div className="bg-zinc-900 rounded-lg p-4 border-2 border-zinc-700/50">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div>
-                                                    <h3 className="text-lg font-medium text-white mb-1">
+                                        <div className="bg-zinc-900 rounded-lg p-3 sm:p-4 border-2 border-zinc-700/50">
+                                            <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+                                                <div className="flex-1">
+                                                    <h3 className="text-base sm:text-lg font-medium text-white mb-1">
                                                         App Version
                                                     </h3>
-                                                    <p className="text-sm text-zinc-400">
+                                                    <p className="text-xs sm:text-sm text-zinc-400">
                                                         Manage the application
                                                         version displayed in the
                                                         footer
@@ -515,7 +549,7 @@ export default function Admin() {
                                                     variant="ghost"
                                                     size="sm"
                                                     disabled={versionLoading}
-                                                    className="p-2"
+                                                    className="p-2 flex-shrink-0"
                                                 >
                                                     <RefreshCw
                                                         className={`w-4 h-4 ${
@@ -570,8 +604,8 @@ export default function Admin() {
                                                         </div>
                                                     )}
 
-                                                    <div className="space-y-4 flex flex-col sm:flex-row sm:space-y-0 sm:space-x-4">
-                                                        <div>
+                                                    <div className="space-y-3 sm:space-y-4 flex flex-col sm:flex-row sm:space-y-0 sm:space-x-4">
+                                                        <div className="flex-1">
                                                             <input
                                                                 type="text"
                                                                 value={
@@ -584,7 +618,7 @@ export default function Admin() {
                                                                     )
                                                                 }
                                                                 placeholder="e.g., 2.0.0.4"
-                                                                className="w-full px-3 py-2 bg-zinc-700 border-2 border-zinc-600 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                                className="w-full px-3 py-2 text-sm sm:text-base bg-zinc-700 border-2 border-zinc-600 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                             />
                                                         </div>
                                                         <Button
@@ -599,7 +633,7 @@ export default function Admin() {
                                                             }
                                                             variant="primary"
                                                             size="sm"
-                                                            className="flex items-center justify-center space-x-2"
+                                                            className="flex items-center justify-center space-x-2 w-full sm:w-auto"
                                                         >
                                                             {isUpdatingVersion ? (
                                                                 <RefreshCw className="w-4 h-4 animate-spin" />

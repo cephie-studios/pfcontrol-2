@@ -51,20 +51,20 @@ export default function LayoutSettings({
 	return (
 		<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
 			{/* Header */}
-			<button
-				onClick={() => setIsExpanded(!isExpanded)}
-				className="w-full p-6 border-b border-zinc-700/50"
-			>
-				<div className="flex items-center justify-between">
-					<div className="flex items-center">
-						<div className="p-2 bg-green-500/20 rounded-lg mr-4">
-							<Layout className="h-6 w-6 text-green-400" />
+			<div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
+				<div className="flex items-center justify-between gap-3">
+					<div
+						className="flex items-center flex-1 min-w-0 cursor-pointer"
+						onClick={() => setIsExpanded(!isExpanded)}
+					>
+						<div className="p-2 bg-green-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+							<Layout className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
 						</div>
-						<div className="text-left">
-							<h3 className="text-xl font-semibold text-white">
+						<div className="text-left min-w-0">
+							<h3 className="text-lg sm:text-xl font-semibold text-white">
 								Layout Settings
 							</h3>
-							<p className="text-zinc-400 text-sm mt-1">
+							<p className="text-zinc-400 text-xs sm:text-sm mt-1 hidden sm:block">
 								Configure how flight tables are displayed and
 								their appearance
 							</p>
@@ -74,7 +74,7 @@ export default function LayoutSettings({
 						onClick={() => setIsExpanded(!isExpanded)}
 						variant="outline"
 						size="sm"
-						className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+						className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 p-2 flex-shrink-0"
 					>
 						{isExpanded ? (
 							<ChevronUp className="h-4 w-4" />
@@ -83,7 +83,7 @@ export default function LayoutSettings({
 						)}
 					</Button>
 				</div>
-			</button>
+			</div>
 
 			{/* Content */}
 			<div

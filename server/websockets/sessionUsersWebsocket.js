@@ -3,6 +3,7 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/isAdmin.js';
+import { validateSessionId, validateAccessId } from '../utils/validation.js';
 
 const activeUsers = new Map();
 const sessionATISConfigs = new Map();
@@ -95,16 +96,18 @@ export function setupSessionUsersWebsocket(httpServer) {
     }, 5000);
 
     io.on('connection', async (socket) => {
-        const sessionId = socket.handshake.query.sessionId;
-        const accessId = socket.handshake.query.accessId;
-        const user = JSON.parse(socket.handshake.query.user);
+        try {
+            const sessionId = validateSessionId(socket.handshake.query.sessionId);
+            const accessId = validateAccessId(socket.handshake.query.accessId);
+            const user = JSON.parse(socket.handshake.query.user);
 
-        // Only validate access ID, not ownership
-        const valid = await validateSessionAccess(sessionId, accessId);
-        if (!valid) {
-            socket.disconnect(true);
-            return;
-        }
+            socket.data.sessionId = sessionId;
+
+            const valid = await validateSessionAccess(sessionId, accessId);
+            if (!valid) {
+                socket.disconnect(true);
+                return;
+            }
 
         if (!activeUsers.has(sessionId)) {
             activeUsers.set(sessionId, []);
@@ -232,6 +235,10 @@ export function setupSessionUsersWebsocket(httpServer) {
                 broadcastFieldEditingStates(sessionId);
             }
         });
+        } catch (error) {
+            console.error('Invalid session or access ID:', error.message);
+            socket.disconnect(true);
+        }
     });
 
     io.sendMentionToUser = (userId, mention) => {

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Star, MessageSquare, Plane } from 'lucide-react';
+import { Star, MessageSquare, Plane, Radio } from 'lucide-react';
 
 const AudioVisualizerButton: React.FC<{
 	isPlaying: boolean;
 	onClick: (e: React.MouseEvent) => void;
 	label?: string;
-	variant?: 'default' | 'custom' | 'notification' | 'newstrip';
+	variant?: 'default' | 'custom' | 'notification' | 'newstrip' | 'acars-beep' | 'acars-chat';
 }> = ({ isPlaying, onClick, label = 'Test', variant = 'default' }) => {
 	const [glowIntensity, setGlowIntensity] = useState(0.3);
 
@@ -42,6 +42,14 @@ const AudioVisualizerButton: React.FC<{
 		variantClasses = isPlaying
 			? 'bg-green-600/80 hover:bg-green-600/90 border-green-500/80 hover:border-green-500/90 text-white shadow-lg'
 			: 'bg-green-600/60 hover:bg-green-600/80 border-green-500/60 hover:border-green-500/80 text-green-100 hover:text-white';
+	} else if (variant === 'acars-beep') {
+		variantClasses = isPlaying
+			? 'bg-cyan-600/80 hover:bg-cyan-600/90 border-cyan-500/80 hover:border-cyan-500/90 text-white shadow-lg'
+			: 'bg-cyan-600/60 hover:bg-cyan-600/80 border-cyan-500/60 hover:border-cyan-500/80 text-cyan-100 hover:text-white';
+	} else if (variant === 'acars-chat') {
+		variantClasses = isPlaying
+			? 'bg-orange-600/80 hover:bg-orange-600/90 border-orange-500/80 hover:border-orange-500/90 text-white shadow-lg'
+			: 'bg-orange-600/60 hover:bg-orange-600/80 border-orange-500/60 hover:border-orange-500/80 text-orange-100 hover:text-white';
 	} else {
 		// default variant
 		variantClasses = isPlaying
@@ -57,6 +65,10 @@ const AudioVisualizerButton: React.FC<{
 				return 'rgba(59, 130, 246';
 			case 'newstrip':
 				return 'rgba(34, 197, 94';
+			case 'acars-beep':
+				return 'rgba(34, 211, 238';
+			case 'acars-chat':
+				return 'rgba(249, 115, 22';
 			default:
 				return 'rgba(147, 51, 234';
 		}
@@ -108,6 +120,8 @@ const AudioVisualizerButton: React.FC<{
 					<MessageSquare className="h-4 w-4" />
 				)}
 				{variant === 'newstrip' && <Plane className="h-4 w-4" />}
+				{variant === 'acars-beep' && <Radio className="h-4 w-4" />}
+				{variant === 'acars-chat' && <MessageSquare className="h-4 w-4" />}
 				<span>{isPlaying ? 'Stop' : label}</span>
 			</div>
 

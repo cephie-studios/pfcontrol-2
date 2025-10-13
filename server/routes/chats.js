@@ -1,6 +1,7 @@
 import express from 'express';
 import { addChatMessage, getChatMessages, deleteChatMessage } from '../db/chats.js';
 import requireAuth from '../middleware/isAuthenticated.js';
+import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/chats/:sessionId - add a message (for fallback, not websocket)
-router.post('/:sessionId', requireAuth, async (req, res) => {
+router.post('/:sessionId', chatMessageLimiter, requireAuth, async (req, res) => {
     try {
         const { message } = req.body;
         if (message.length > 500) {

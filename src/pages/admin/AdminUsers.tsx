@@ -16,6 +16,7 @@ import {
     ExternalLink,
     User,
     Check,
+    Menu,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -37,6 +38,7 @@ import { useAuth } from '../../hooks/auth/useAuth';
 export default function AdminUsers() {
     const { user } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
@@ -426,24 +428,137 @@ export default function AdminUsers() {
         );
     };
 
+    type AcarsSettings = {
+        notesEnabled?: boolean;
+        chartsEnabled?: boolean;
+        terminalWidth?: number;
+        notesWidth?: number;
+    };
+
+    const renderAcarsSettings = (acarsSettings: AcarsSettings) => {
+        const { notesEnabled, chartsEnabled, terminalWidth, notesWidth } = acarsSettings || {};
+        const chartsWidth = 100 - (terminalWidth || 50) - (notesWidth || 20);
+
+        return (
+            <div className="space-y-4 p-4 bg-zinc-900 rounded-lg border-2 border-zinc-700">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                    ACARS Settings
+                </h3>
+                <div className="space-y-3">
+                    {/* Panel Status */}
+                    <div className="bg-zinc-800 p-3 rounded space-y-2">
+                        <div className="flex justify-between items-center text-sm text-zinc-300">
+                            <span>Notes Panel:</span>
+                            <span className={notesEnabled ? 'text-green-400' : 'text-red-400'}>
+                                {notesEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-zinc-300">
+                            <span>Charts Panel:</span>
+                            <span className={chartsEnabled ? 'text-green-400' : 'text-red-400'}>
+                                {chartsEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Panel Widths */}
+                    <div className="bg-zinc-800 p-3 rounded">
+                        <p className="text-xs text-zinc-400 mb-2">Panel Widths:</p>
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between items-center text-xs text-zinc-300">
+                                <span>Terminal:</span>
+                                <span className="text-green-400 font-medium">{terminalWidth || 50}%</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-zinc-300">
+                                <span>Notes:</span>
+                                <span className="text-blue-400 font-medium">{notesWidth || 20}%</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-zinc-300">
+                                <span>Charts:</span>
+                                <span className="text-purple-400 font-medium">{chartsWidth}%</span>
+                            </div>
+                        </div>
+
+                        {/* Visual Preview */}
+                        <div className="mt-3">
+                            <div className="h-2 flex rounded-full overflow-hidden">
+                                <div
+                                    style={{ width: `${terminalWidth || 50}%` }}
+                                    className="bg-green-500"
+                                    title={`Terminal: ${terminalWidth || 50}%`}
+                                />
+                                {notesEnabled && (
+                                    <div
+                                        style={{ width: `${notesWidth || 20}%` }}
+                                        className="bg-blue-500"
+                                        title={`Notes: ${notesWidth || 20}%`}
+                                    />
+                                )}
+                                {chartsEnabled && (
+                                    <div
+                                        style={{ width: `${chartsWidth}%` }}
+                                        className="bg-purple-500"
+                                        title={`Charts: ${chartsWidth}%`}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-black text-white">
             <Navbar />
             <div className="flex pt-16">
-                <AdminSidebar
-                    collapsed={sidebarCollapsed}
-                    onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                />
-                <div className="flex-1 p-8">
+                {/* Mobile Overlay */}
+                {mobileSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+                        onClick={() => setMobileSidebarOpen(false)}
+                    />
+                )}
+
+                {/* Desktop Sidebar */}
+                <div className="hidden lg:block">
+                    <AdminSidebar
+                        collapsed={sidebarCollapsed}
+                        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    />
+                </div>
+
+                {/* Mobile Sidebar */}
+                <div
+                    className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+                        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+                >
+                    <AdminSidebar
+                        collapsed={false}
+                        onToggle={() => setMobileSidebarOpen(false)}
+                    />
+                </div>
+
+                <div className="flex-1 p-4 sm:p-6 lg:p-8">
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setMobileSidebarOpen(true)}
+                        className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-green-600 hover:bg-green-700 rounded-full shadow-lg transition-colors"
+                    >
+                        <Menu className="h-6 w-6 text-white" />
+                    </button>
+
                     {/* Header */}
-                    <div className="mb-8">
+                    <div className="mb-6 sm:mb-8">
                         <div className="flex items-center mb-4">
-                            <div className="p-3 bg-green-500/20 rounded-xl mr-4">
-                                <Users className="h-8 w-8 text-green-400" />
+                            <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl mr-3 sm:mr-4">
+                                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
                             </div>
                             <div>
                                 <h1
-                                    className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"
+                                    className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"
                                     style={{ lineHeight: 1.2 }}
                                 >
                                     User Management
@@ -451,7 +566,7 @@ export default function AdminUsers() {
                             </div>
                         </div>
                         {/* Search and Filter */}
-                        <div className="flex space-x-4">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <div className="flex-1 relative group">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-green-400 transition-colors" />
                                 {loading && search !== debouncedSearch && (
@@ -465,7 +580,7 @@ export default function AdminUsers() {
                                     className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 hover:border-zinc-600"
                                 />
                             </div>
-                            <div className="relative w-52">
+                            <div className="relative w-full sm:w-52">
                                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400 z-10 ml-3 pointer-events-none" />
                                 <Dropdown
                                     options={filterOptions}
@@ -492,7 +607,8 @@ export default function AdminUsers() {
                         <>
                             {/* Users Table */}
                             <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
-                                <table className="w-full">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[800px]">
                                     <thead className="bg-zinc-800">
                                         <tr>
                                             <th className="px-6 py-4 text-left text-zinc-400 font-medium">
@@ -707,6 +823,7 @@ export default function AdminUsers() {
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
 
                             {/* Pagination */}
@@ -1017,6 +1134,9 @@ export default function AdminUsers() {
                                                     'Arrivals'
                                                 )}
                                             </div>
+                                            {selectedUser.settings.acars && renderAcarsSettings(
+                                                selectedUser.settings.acars as AcarsSettings
+                                            )}
                                         </>
                                     ) : (
                                         <p className="text-zinc-400 text-center">

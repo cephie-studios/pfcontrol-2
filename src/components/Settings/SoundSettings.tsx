@@ -1,6 +1,6 @@
 import { Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { SOUNDS } from '../../utils/playSound';
+import { SOUNDS, linearToLogVolume, playAudioWithGain } from '../../utils/playSound';
 import type { Settings } from '../../types/settings';
 import AudioVisualizerButton from './AudioVisualizerButton';
 import Button from '../common/Button';
@@ -31,6 +31,20 @@ const soundConfigs = [
         description: 'Plays when a new flight strip appears',
         sound: SOUNDS.NEW_STRIP,
         color: 'purple',
+    },
+    {
+        key: 'acarsBeep' as const,
+        label: 'ACARS Alert Sound (BEEP BEEP)',
+        description: 'Plays for PDC, warnings, and contact messages in ACARS',
+        sound: SOUNDS.ACARS_BEEP,
+        color: 'cyan',
+    },
+    {
+        key: 'acarsChatPop' as const,
+        label: 'ACARS Chat Sound',
+        description: 'Plays for system messages and ATIS in ACARS',
+        sound: SOUNDS.ACARS_CHAT_POP,
+        color: 'orange',
     },
 ];
 
@@ -84,10 +98,26 @@ export default function SoundSettings({
         try {
             setPlayingKey(soundKey);
             const audio = new Audio(config.sound);
-            audio.volume = Math.max(0, Math.min(1, soundSetting.volume / 100));
-            audio.play();
+            const logVolume = linearToLogVolume(soundSetting.volume);
+
+            const onCanPlay = () => {
+                audio.removeEventListener('canplaythrough', onCanPlay);
+                audio.removeEventListener('error', onError);
+
+                playAudioWithGain(audio, logVolume);
+            };
+
+            const onError = (error: Event) => {
+                audio.removeEventListener('canplaythrough', onCanPlay);
+                audio.removeEventListener('error', onError);
+                console.warn('Failed to play test sound:', error);
+                setPlayingKey(null);
+            };
+
+            audio.addEventListener('canplaythrough', onCanPlay);
+            audio.addEventListener('error', onError);
             audio.onended = () => setPlayingKey(null);
-            audio.onerror = () => setPlayingKey(null);
+            audio.load();
         } catch (error) {
             console.warn('Failed to play test sound:', error);
             setPlayingKey(null);
@@ -119,6 +149,20 @@ export default function SoundSettings({
                     border: 'border-purple-500/30',
                     hover: 'hover:bg-purple-500/30',
                 };
+            case 'cyan':
+                return {
+                    bg: 'bg-cyan-500/20',
+                    text: 'text-cyan-400',
+                    border: 'border-cyan-500/30',
+                    hover: 'hover:bg-cyan-500/30',
+                };
+            case 'orange':
+                return {
+                    bg: 'bg-orange-500/20',
+                    text: 'text-orange-400',
+                    border: 'border-orange-500/30',
+                    hover: 'hover:bg-orange-500/30',
+                };
             default:
                 return {
                     bg: 'bg-zinc-500/20',
@@ -132,20 +176,20 @@ export default function SoundSettings({
     return (
         <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
             {/* Header */}
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full p-6 border-b border-zinc-700/50"
-            >
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-orange-500/20 rounded-lg mr-4">
-                            <Volume2 className="h-6 w-6 text-orange-400" />
+            <div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
+                <div className="flex items-center justify-between gap-3">
+                    <div
+                        className="flex items-center flex-1 min-w-0 cursor-pointer"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                        <div className="p-2 bg-orange-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+                            <Volume2 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
                         </div>
-                        <div className="text-left">
-                            <h3 className="text-xl font-semibold text-white">
+                        <div className="text-left min-w-0">
+                            <h3 className="text-lg sm:text-xl font-semibold text-white">
                                 Sound Settings
                             </h3>
-                            <p className="text-zinc-400 text-sm mt-1">
+                            <p className="text-zinc-400 text-xs sm:text-sm mt-1 hidden sm:block">
                                 Configure audio notifications and their volume
                                 levels
                             </p>
@@ -155,7 +199,7 @@ export default function SoundSettings({
                         onClick={() => setIsExpanded(!isExpanded)}
                         variant="outline"
                         size="sm"
-                        className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                        className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 p-2 flex-shrink-0"
                     >
                         {isExpanded ? (
                             <ChevronUp className="h-4 w-4" />
@@ -164,7 +208,7 @@ export default function SoundSettings({
                         )}
                     </Button>
                 </div>
-            </button>
+            </div>
 
             {/* Content */}
             <div
@@ -251,6 +295,10 @@ export default function SoundSettings({
                                                             : key ===
                                                               'newStripSound'
                                                             ? 'newstrip'
+                                                            : key === 'acarsBeep'
+                                                            ? 'acars-beep'
+                                                            : key === 'acarsChatPop'
+                                                            ? 'acars-chat'
                                                             : 'custom'
                                                     }
                                                 />

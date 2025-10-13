@@ -16,7 +16,13 @@ export function createChatSocket(
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/chat',
-        query: { sessionId, accessId, userId }
+        query: { sessionId, accessId, userId },
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        timeout: 10000
     });
     socket.emit('joinSession', sessionId);
 

@@ -567,32 +567,13 @@ export default function Submit() {
                                     </div>
                                 )}
                                 <div className="mt-6 pt-4 border-t border-green-800">
-                                    <div className="flex gap-3">
-                                        <Button
-                                            onClick={handleCreateAnother}
-                                            className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors"
-                                        >
-                                            <PlusCircle className="h-5 w-5 mr-2" />
-                                            Create Another Flight Plan
-                                        </Button>
-
-                                        {/* Open ACARS (opens ACARS page for this session; passes flightId as query) */}
-                                        <Button
-                                            onClick={() =>
-                                                navigate(
-                                                    `/acars/${sessionId}?flightId=${encodeURIComponent(
-                                                        String(
-                                                            submittedFlight.id
-                                                        )
-                                                    )}`
-                                                )
-                                            }
-                                            variant="outline"
-                                            className="flex items-center justify-center text-white py-3 px-4 rounded-lg transition-colors"
-                                        >
-                                            Open ACARS
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        onClick={handleCreateAnother}
+                                        className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors"
+                                    >
+                                        <PlusCircle className="h-5 w-5 mr-2" />
+                                        Create Another Flight Plan
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -770,99 +751,101 @@ export default function Submit() {
                                 />
                             </div>
 
-                            {/* Logbook Checkbox */}
-                            <div
-                                className={`bg-gray-800/50 rounded-xl border-2 border-gray-700 p-5 transition-all ${
-                                    isLogbookDisabled || !hasRobloxLinked
-                                        ? 'opacity-50'
-                                        : 'hover:border-blue-600/50'
-                                }`}
-                            >
-                                <label
-                                    className={`flex items-start ${
+                            {/* Logbook Checkbox (only show for PFATC sessions) */}
+                            {session?.isPFATC && (
+                                <div
+                                    className={`bg-gray-800/50 rounded-xl border-2 border-gray-700 p-5 transition-all ${
                                         isLogbookDisabled || !hasRobloxLinked
-                                            ? 'cursor-not-allowed'
-                                            : 'cursor-pointer'
+                                            ? 'opacity-50'
+                                            : 'hover:border-blue-600/50'
                                     }`}
                                 >
-                                    {/* Custom Checkbox */}
-                                    <div className="relative flex-shrink-0 mt-0.5">
-                                        <input
-                                            type="checkbox"
-                                            checked={logWithLogbook}
-                                            onChange={(e) =>
-                                                setLogWithLogbook(
-                                                    e.target.checked
-                                                )
-                                            }
-                                            disabled={
-                                                isLogbookDisabled ||
-                                                !hasRobloxLinked
-                                            }
-                                            className="sr-only peer"
-                                        />
-                                        <div
-                                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                                                logWithLogbook
-                                                    ? 'bg-blue-600 border-blue-600'
-                                                    : 'bg-gray-700 border-gray-600'
-                                            } ${
-                                                isLogbookDisabled ||
-                                                !hasRobloxLinked
-                                                    ? 'cursor-not-allowed'
-                                                    : 'peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2 peer-focus:ring-offset-gray-900 cursor-pointer hover:border-blue-500'
-                                            }`}
-                                        >
-                                            {logWithLogbook && (
-                                                <Check
-                                                    className="h-4 w-4 text-white"
-                                                    strokeWidth={3}
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="ml-4 flex-1">
-                                        <div className="flex items-center mb-1">
-                                            <Notebook className="h-5 w-5 text-blue-400 mr-2" />
-                                            <span className="text-base font-semibold text-white">
-                                                Log with PFConnect Logbook
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-400 leading-relaxed">
-                                            Automatically track your flight with
-                                            detailed telemetry, landing rate,
-                                            and statistics
-                                        </p>
-                                    </div>
-                                </label>
-
-                                {!hasRobloxLinked && (
-                                    <div className="mt-3 ml-10 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
-                                        <div className="flex items-start justify-between">
-                                            <p className="text-xs text-yellow-400 flex items-start flex-1">
-                                                <AlertTriangle className="h-3.5 w-3.5 mr-1.5 mt-0.5 flex-shrink-0" />
-                                                Link your Roblox account in
-                                                Settings to use the logbook
-                                            </p>
-                                            <a
-                                                href="/settings"
-                                                className="ml-3 text-xs font-semibold text-yellow-300 hover:text-yellow-200 underline whitespace-nowrap transition-colors"
+                                    <label
+                                        className={`flex items-start ${
+                                            isLogbookDisabled || !hasRobloxLinked
+                                                ? 'cursor-not-allowed'
+                                                : 'cursor-pointer'
+                                        }`}
+                                    >
+                                        {/* Custom Checkbox */}
+                                        <div className="relative flex-shrink-0 mt-0.5">
+                                            <input
+                                                type="checkbox"
+                                                checked={logWithLogbook}
+                                                onChange={(e) =>
+                                                    setLogWithLogbook(
+                                                        e.target.checked
+                                                    )
+                                                }
+                                                disabled={
+                                                    isLogbookDisabled ||
+                                                    !hasRobloxLinked
+                                                }
+                                                className="sr-only peer"
+                                            />
+                                            <div
+                                                className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                                                    logWithLogbook
+                                                        ? 'bg-blue-600 border-blue-600'
+                                                        : 'bg-gray-700 border-gray-600'
+                                                } ${
+                                                    isLogbookDisabled ||
+                                                    !hasRobloxLinked
+                                                        ? 'cursor-not-allowed'
+                                                        : 'peer-focus:ring-2 peer-focus:ring-blue-500 peer-focus:ring-offset-2 peer-focus:ring-offset-gray-900 cursor-pointer hover:border-blue-500'
+                                                }`}
                                             >
-                                                Go to Settings →
-                                            </a>
+                                                {logWithLogbook && (
+                                                    <Check
+                                                        className="h-4 w-4 text-white"
+                                                        strokeWidth={3}
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {hasRobloxLinked && isLogbookDisabled && (
-                                    <div className="mt-3 ml-10 p-3 bg-gray-700/30 border border-gray-600/50 rounded-lg">
-                                        <p className="text-xs text-gray-400">
-                                            PFControl LogBook is currently only
-                                            available to testers
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+
+                                        <div className="ml-4 flex-1">
+                                            <div className="flex items-center mb-1">
+                                                <Notebook className="h-5 w-5 text-blue-400 mr-2" />
+                                                <span className="text-base font-semibold text-white">
+                                                    Log with PFConnect Logbook
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-400 leading-relaxed">
+                                                Automatically track your flight with
+                                                detailed telemetry, landing rate,
+                                                and statistics
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    {!hasRobloxLinked && (
+                                        <div className="mt-3 ml-10 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+                                            <div className="flex items-start justify-between">
+                                                <p className="text-xs text-yellow-400 flex items-start flex-1">
+                                                    <AlertTriangle className="h-3.5 w-3.5 mr-1.5 mt-0.5 flex-shrink-0" />
+                                                    Link your Roblox account in
+                                                    Settings to use the logbook
+                                                </p>
+                                                <a
+                                                    href="/settings"
+                                                    className="ml-3 text-xs font-semibold text-yellow-300 hover:text-yellow-200 underline whitespace-nowrap transition-colors"
+                                                >
+                                                    Go to Settings →
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {hasRobloxLinked && isLogbookDisabled && (
+                                        <div className="mt-3 ml-10 p-3 bg-gray-700/30 border border-gray-600/50 rounded-lg">
+                                            <p className="text-xs text-gray-400">
+                                                PFControl LogBook is currently only
+                                                available to testers
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="mt-8">
                                 <Button

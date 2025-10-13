@@ -57,10 +57,6 @@ export default function App() {
                                         element={<Flights />}
                                     />
                                     <Route
-                                        path="settings"
-                                        element={<Settings />}
-                                    />
-                                    <Route
                                         path="logbook"
                                         element={<Logbook />}
                                     />
@@ -87,6 +83,10 @@ export default function App() {
                     <Route
                         path="/pilots/:username"
                         element={<PilotProfile />}
+                    />
+                    <Route
+                        path="settings"
+                        element={<Settings />}
                     />
 
                     <Route
