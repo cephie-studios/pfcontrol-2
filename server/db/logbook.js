@@ -294,12 +294,15 @@ export async function getActiveFlightByUsername(robloxUsername) {
 }
 
 export async function storeTelemetryPoint(flightId, { x, y, altitude, speed, heading, timestamp, phase, verticalSpeed }) {
+    // Ensure timestamp is in UTC to prevent timezone-related duplicates
+    const utcTimestamp = timestamp instanceof Date ? timestamp.toISOString() : timestamp;
+
     await pool.query(`
         INSERT INTO logbook_telemetry (
             flight_id, timestamp, x, y, altitude_ft, speed_kts, heading, flight_phase, vertical_speed_fpm
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [flightId, timestamp, x, y, altitude, speed, heading, phase, verticalSpeed ?? 0]);
+        VALUES ($1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9)
+    `, [flightId, utcTimestamp, x, y, altitude, speed, heading, phase, verticalSpeed ?? 0]);
 }
 
 export async function updateActiveFlightState(robloxUsername, { altitude, speed, heading, x, y, phase }) {

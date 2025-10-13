@@ -29,7 +29,8 @@ import {
 	Flame,
 	TrendingUp,
 	FlaskConical,
-	Braces
+	Braces,
+	Menu
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -46,12 +47,14 @@ import {
 import ErrorScreen from '../../components/common/ErrorScreen';
 
 type ViewMode = 'grid' | 'list';
-type SortBy = 'date' | 'airport' | 'creator';
+type SortBy = 'date' | 'airport' | 'creator' | 'controllers' | 'flights';
 
 const sortOptions = [
 	{ value: 'date', label: 'Sort by Date' },
 	{ value: 'airport', label: 'Sort by Airport' },
-	{ value: 'creator', label: 'Sort by Creator' }
+	{ value: 'creator', label: 'Sort by Creator' },
+	{ value: 'controllers', label: 'Sort by Controllers' },
+	{ value: 'flights', label: 'Sort by Flights' }
 ];
 
 const getIconComponent = (iconName: string) => {
@@ -84,6 +87,7 @@ const getHighestRole = (roles?: Array<{ id: number; name: string; color: string;
 export default function AdminSessions() {
 	const [searchParams] = useSearchParams();
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 	const [sessions, setSessions] = useState<AdminSession[]>([]);
 	const [filteredSessions, setFilteredSessions] = useState<AdminSession[]>(
 		[]
@@ -158,6 +162,10 @@ export default function AdminSessions() {
 					return (a.username || a.created_by).localeCompare(
 						b.username || b.created_by
 					);
+				case 'controllers':
+					return (b.active_user_count || 0) - (a.active_user_count || 0);
+				case 'flights':
+					return (b.flight_count || 0) - (a.flight_count || 0);
 				default:
 					return 0;
 			}
@@ -380,7 +388,8 @@ export default function AdminSessions() {
 
 	const renderSessionList = () => (
 		<div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
-			<table className="w-full">
+			<div className="overflow-x-auto">
+				<table className="w-full min-w-[800px]">
 				<thead className="bg-zinc-800">
 					<tr>
 						<th className="px-6 py-4 text-left text-zinc-400 font-medium">
@@ -515,6 +524,7 @@ export default function AdminSessions() {
 					))}
 				</tbody>
 			</table>
+			</div>
 		</div>
 	);
 
@@ -523,21 +533,45 @@ export default function AdminSessions() {
 			<div className="min-h-screen bg-black text-white">
 				<Navbar />
 				<div className="flex pt-16">
-					<AdminSidebar
-						collapsed={sidebarCollapsed}
-						onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-					/>
-					<div className="flex-1 p-8">
+					{/* Mobile Sidebar Overlay */}
+					{mobileSidebarOpen && (
+						<div
+							className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+							onClick={() => setMobileSidebarOpen(false)}
+						/>
+					)}
+
+					{/* Desktop Sidebar */}
+					<div className="hidden lg:block">
+						<AdminSidebar
+							collapsed={sidebarCollapsed}
+							onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+						/>
+					</div>
+
+					{/* Mobile Sidebar */}
+					<div
+						className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+							mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+						}`}
+					>
+						<AdminSidebar
+							collapsed={false}
+							onToggle={() => setMobileSidebarOpen(false)}
+						/>
+					</div>
+
+					<div className="flex-1 p-4 sm:p-6 lg:p-8">
 						{/* Header */}
-						<div className="mb-8">
+						<div className="mb-6 sm:mb-8">
 							<div className="flex items-center justify-between mb-4">
 								<div className="flex items-center">
-									<div className="p-3 bg-yellow-500/20 rounded-xl mr-4">
-										<Database className="h-8 w-8 text-yellow-400" />
+									<div className="p-2 sm:p-3 bg-yellow-500/20 rounded-xl mr-3 sm:mr-4">
+										<Database className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400" />
 									</div>
 									<div>
 										<h1
-											className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 font-extrabold mb-2"
+											className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 font-extrabold mb-2"
 											style={{ lineHeight: 1.2 }}
 										>
 											Sessions
@@ -547,7 +581,7 @@ export default function AdminSessions() {
 							</div>
 
 							{/* Controls */}
-							<div className="flex flex-col md:flex-row gap-4">
+							<div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
 								{/* Search */}
 								<div className="flex-1 relative group">
 									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-yellow-400 transition-colors" />
@@ -648,6 +682,14 @@ export default function AdminSessions() {
 						)}
 					</div>
 				</div>
+
+				{/* Floating Mobile Menu Button */}
+				<button
+					onClick={() => setMobileSidebarOpen(true)}
+					className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-yellow-600 hover:bg-yellow-700 rounded-full shadow-lg transition-colors"
+				>
+					<Menu className="h-6 w-6 text-white" />
+				</button>
 			</div>
 
 			{/* More Actions Modal */}

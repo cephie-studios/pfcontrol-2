@@ -13,7 +13,13 @@ export function createArrivalsSocket(
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/arrivals',
-        query: { sessionId, accessId }
+        query: { sessionId, accessId },
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        timeout: 10000
     });
 
     socket.on('arrivalUpdated', onArrivalUpdated);

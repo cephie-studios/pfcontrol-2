@@ -5,9 +5,10 @@ import { updateSession, getAllSessions, getSessionById } from '../db/sessions.js
 import { getArrivalsIO } from './arrivalsWebsocket.js';
 import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
 import flightsPool from '../db/connections/flightsConnection.js';
+import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
+import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway, sanitizeMessage } from '../utils/sanitization.js';
 
 let io;
-const updateTimers = new Map();
 
 export function setupFlightsWebsocket(httpServer) {
     io = new SocketServer(httpServer, {
@@ -22,43 +23,51 @@ export function setupFlightsWebsocket(httpServer) {
         const sessionId = socket.handshake.query.sessionId;
         const accessId = socket.handshake.query.accessId;
 
-        if (!sessionId) {
+        try {
+            const validSessionId = validateSessionId(sessionId);
+            socket.data.sessionId = validSessionId;
+
+            let role = 'pilot';
+            if (accessId) {
+                const validAccessId = validateAccessId(accessId);
+                const valid = await validateSessionAccess(validSessionId, validAccessId);
+                if (!valid) {
+                    socket.disconnect(true);
+                    return;
+                }
+                role = 'controller';
+            }
+            socket.data.role = role;
+
+            socket.join(validSessionId);
+        } catch (error) {
+            console.error('Invalid session or access ID:', error.message);
             socket.disconnect(true);
             return;
         }
 
-        let role = 'pilot';
-        if (accessId) {
-            const valid = await validateSessionAccess(sessionId, accessId);
-            if (!valid) {
-                socket.disconnect(true);
-                return;
-            }
-            role = 'controller';
-        }
-        socket.data.role = role;
-
-        socket.join(sessionId);
-
         socket.on('updateFlight', async ({ flightId, updates }) => {
+            const sessionId = socket.data.sessionId;
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'update', flightId, error: 'Not authorized' });
                 return;
             }
             try {
+                validateFlightId(flightId);
                 if (updates.hasOwnProperty('hidden')) {
                     return;
                 }
 
-                if (updates.callsign && updates.callsign.length > 16) {
-                    socket.emit('flightError', { action: 'update', flightId, error: 'Callsign too long' });
-                    return;
-                }
-
-                if (updates.stand && updates.stand.length > 8) {
-                    socket.emit('flightError', { action: 'update', flightId, error: 'Stand too long' });
-                    return;
-                }
+                if (updates.callsign) updates.callsign = sanitizeCallsign(updates.callsign);
+                if (updates.remark) updates.remark = sanitizeString(updates.remark, 500);
+                if (updates.squawk) updates.squawk = sanitizeSquawk(updates.squawk);
+                if (updates.clearedFL) updates.clearedFL = sanitizeFlightLevel(updates.clearedFL);
+                if (updates.cruisingFL) updates.cruisingFL = sanitizeFlightLevel(updates.cruisingFL);
+                if (updates.runway) updates.runway = sanitizeRunway(updates.runway);
+                if (updates.stand) updates.stand = sanitizeString(updates.stand, 8);
+                if (updates.gate) updates.gate = sanitizeString(updates.gate, 8);
+                if (updates.sid) updates.sid = sanitizeString(updates.sid, 16);
+                if (updates.star) updates.star = sanitizeString(updates.star, 16);
 
                 if (updates.clearance !== undefined) {
                     if (typeof updates.clearance === 'string') {
@@ -81,24 +90,13 @@ export function setupFlightsWebsocket(httpServer) {
                     socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
                 }
 
-                const timerKey = `${sessionId}-${flightId}`;
-                if (updateTimers.has(timerKey)) {
-                    clearTimeout(updateTimers.get(timerKey));
-                }
-                updateTimers.set(timerKey, setTimeout(async () => {
-                    try {
-                        await updateFlight(sessionId, flightId, updates);
-                        updateTimers.delete(timerKey);
-                    } catch (error) {
-                    }
-                }, 1000));
-
             } catch (error) {
                 socket.emit('flightError', { action: 'update', flightId, error: 'Failed to update flight' });
             }
         });
 
         socket.on('addFlight', async (flightData) => {
+            const sessionId = socket.data.sessionId;
             try {
                 const enhancedFlightData = {
                     ...flightData,
@@ -120,11 +118,13 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('deleteFlight', async (flightId) => {
+            const sessionId = socket.data.sessionId;
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'delete', flightId, error: 'Not authorized' });
                 return;
             }
             try {
+                validateFlightId(flightId);
                 await deleteFlight(sessionId, flightId);
                 io.to(sessionId).emit('flightDeleted', { flightId });
             } catch (error) {
@@ -133,6 +133,7 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('updateSession', async (updates) => {
+            const sessionId = socket.data.sessionId;
             if (socket.data.role !== 'controller') {
                 socket.emit('sessionError', { error: 'Not authorized' });
                 return;
@@ -152,6 +153,7 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('issuePDC', async ({ flightId, pdcText, targetPilotUserId }) => {
+            const sessionId = socket.data.sessionId;
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'issuePDC', flightId, error: 'Not authorized' });
                 return;
@@ -161,14 +163,16 @@ export function setupFlightsWebsocket(httpServer) {
                     socket.emit('flightError', { action: 'issuePDC', error: 'Missing flightId' });
                     return;
                 }
+                validateFlightId(flightId);
+                const sanitizedPDC = sanitizeString(pdcText, 1000);
                 const updates = {
-                    pdc_remarks: pdcText
+                    pdc_remarks: sanitizedPDC
                 };
 
                 const updatedFlight = await updateFlight(sessionId, flightId, updates);
                 if (updatedFlight) {
                     io.to(sessionId).emit('flightUpdated', updatedFlight);
-                    io.to(sessionId).emit('pdcIssued', { flightId, pdcText, updatedFlight });
+                    io.to(sessionId).emit('pdcIssued', { flightId, pdcText: sanitizedPDC, updatedFlight });
 
                     await broadcastToArrivalSessions(updatedFlight);
                 } else {
@@ -180,11 +184,17 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('requestPDC', ({ flightId, callsign, note }) => {
+            const sessionId = socket.data.sessionId;
             try {
+                if (flightId) {
+                    validateFlightId(flightId);
+                }
+                const sanitizedCallsign = callsign ? sanitizeCallsign(callsign) : null;
+                const sanitizedNote = note ? sanitizeString(note, 200) : null;
                 io.to(sessionId).emit('pdcRequest', {
                     flightId,
-                    callsign: callsign ?? null,
-                    note: note ?? null,
+                    callsign: sanitizedCallsign,
+                    note: sanitizedNote,
                     requestedBy: socket.handshake.auth?.userId ?? socket.handshake.query?.username ?? null,
                     ts: new Date().toISOString()
                 });
@@ -194,11 +204,13 @@ export function setupFlightsWebsocket(httpServer) {
         });
 
         socket.on('contactMe', async ({ flightId, message }) => {
+            const sessionId = socket.data.sessionId;
             if (socket.data.role !== 'controller') {
                 socket.emit('flightError', { action: 'contactMe', flightId, error: 'Not authorized' });
                 return;
             }
             try {
+                validateFlightId(flightId);
                 const allSessions = await getAllSessions();
                 let targetSessionId = sessionId;
 
@@ -218,9 +230,10 @@ export function setupFlightsWebsocket(httpServer) {
                     }
                 }
 
+                const sanitizedMessage = message ? sanitizeString(message, 200) : 'CONTACT CONTROLLER ON FREQUENCY';
                 io.to(targetSessionId).emit('contactMe', {
                     flightId,
-                    message: message || 'CONTACT CONTROLLER ON FREQUENCY',
+                    message: sanitizedMessage,
                     ts: new Date().toISOString()
                 });
             } catch (err) {

@@ -41,7 +41,13 @@ export function createSessionUsersSocket(
             accessId,
             user: JSON.stringify(user),
             position: position || 'ALL'
-        }
+        },
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        timeout: 10000
     }) as CustomSocket;
 
     if (onConnect) {

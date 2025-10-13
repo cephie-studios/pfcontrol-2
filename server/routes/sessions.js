@@ -16,12 +16,14 @@ import { recordNewSession } from '../db/statistics.js';
 import { requireSessionAccess, requireSessionOwnership } from '../middleware/sessionAccess.js';
 import { getSessionsByUser } from '../db/sessions.js';
 import requireAuth from '../middleware/isAuthenticated.js';
+import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
+import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 
 const router = express.Router();
 initializeSessionsTable();
 
 // POST: /api/sessions/create - Create new session
-router.post('/create', requireAuth, async (req, res) => {
+router.post('/create', sessionCreationLimiter, requireAuth, async (req, res) => {
     try {
         const { airportIcao, createdBy, isPFATC = false, activeRunway = null } = req.body;
         if (!airportIcao || !createdBy) {
@@ -158,7 +160,8 @@ router.post('/update-name', requireAuth, requireSessionOwnership, async (req, re
         if (!sessionId || typeof name !== 'string' || name.length > 50) {
             return res.status(400).json({ error: 'Invalid sessionId or name' });
         }
-        const customName = await updateSessionName(sessionId, name.trim());
+        const sanitizedName = sanitizeAlphanumeric(name, 50);
+        const customName = await updateSessionName(sessionId, sanitizedName);
         if (!customName) {
             return res.status(404).json({ error: 'Session not found' });
         }

@@ -126,9 +126,9 @@ export default function AdminSidebar({
 
     return (
         <div
-            className={`bg-black border-r border-zinc-700/50 transition-all duration-300 h-fit-screen ${
+            className={`bg-black border-r border-zinc-700/50 transition-all duration-300 h-screen ${
                 collapsed ? 'w-16' : 'w-64'
-            } flex flex-col`}
+            } flex flex-col overflow-y-auto`}
         >
             {/* Header */}
             <div className="p-4 border-b border-zinc-700/50">

@@ -941,7 +941,7 @@ export default function FlightDetail() {
 							{isActive && (
 								<span className="text-sm text-yellow-400 flex items-center gap-2 ml-auto">
 									<Clock className="h-4 w-4" />
-									Updates when flight completes
+									Updates in real time
 								</span>
 							)}
 						</div>
@@ -955,7 +955,7 @@ export default function FlightDetail() {
 											minute: '2-digit',
 											second: '2-digit',
 											timeZone: 'UTC'
-										}) + " UTC"
+										})
 									),
 									datasets: [
 										{

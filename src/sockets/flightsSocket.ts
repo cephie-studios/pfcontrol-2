@@ -15,6 +15,8 @@ export function createFlightsSocket(
         withCredentials: true,
         path: '/sockets/flights',
         query: { sessionId, accessId },
+        transports: ['websocket', 'polling'],
+        upgrade: true,
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,

@@ -12,6 +12,7 @@ import SoundSettings from '../components/Settings/SoundSettings';
 import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
+import AcarsSettings from '../components/Settings/AcarsSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
@@ -196,14 +197,14 @@ export default function Settings() {
 
 			{/* Header */}
 			<div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50">
-				<div className="max-w-5xl mx-auto px-6 py-12 pt-28">
+				<div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pt-24 sm:pt-28">
 					<div className="flex items-center mb-4">
-						<div className="p-3 bg-blue-500/20 rounded-xl mr-4">
-							<SettingsIcon className="h-8 w-8 text-blue-400" />
+						<div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4">
+							<SettingsIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
 						</div>
 						<div>
 							<h1
-								className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
+								className="text-3xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
 								style={{ lineHeight: 1.4 }}
 							>
 								Settings
@@ -214,7 +215,7 @@ export default function Settings() {
 			</div>
 
 			{/* Content */}
-			<div className="max-w-5xl mx-auto px-6 py-8">
+			<div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 				<div className="space-y-8">
 					<AccountSettings />
 
@@ -270,6 +271,11 @@ export default function Settings() {
 						onChange={handleLocalSettingsChange}
 					/>
 
+					<AcarsSettings
+						settings={localSettings}
+						onChange={handleLocalSettingsChange}
+					/>
+
 					<SoundSettings
 						settings={localSettings}
 						onChange={handleLocalSettingsChange}
@@ -284,8 +290,8 @@ export default function Settings() {
 
 			{/* Save/Discard Bar */}
 			{hasChanges && !showDiscardToast && (
-				<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-					<div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 rounded-2xl p-4 shadow-2xl flex items-center space-x-4 min-w-[320px]">
+				<div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-50">
+					<div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 sm:min-w-[320px]">
 						<div className="flex-1">
 							<p className="text-white font-medium text-sm">
 								Unsaved changes
@@ -294,13 +300,13 @@ export default function Settings() {
 								Don't forget to save your settings
 							</p>
 						</div>
-						<div className="flex space-x-3">
+						<div className="flex gap-2 sm:gap-3">
 							<Button
 								onClick={handleDiscard}
 								variant="outline"
 								size="sm"
 								disabled={saving}
-								className="text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+								className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
 							>
 								Discard
 							</Button>
@@ -308,7 +314,7 @@ export default function Settings() {
 								onClick={handleSave}
 								disabled={saving}
 								size="sm"
-								className="text-xs bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
+								className="flex-1 sm:flex-none text-xs bg-blue-600 hover:bg-blue-700 flex items-center justify-center space-x-2"
 							>
 								{saving ? (
 									<>
@@ -329,23 +335,25 @@ export default function Settings() {
 
 			{/* Discard Warning Toast */}
 			{showDiscardToast && (
-				<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-					<div className="bg-red-900/95 backdrop-blur-md border border-red-600/50 rounded-2xl p-4 shadow-2xl flex items-center space-x-4 min-w-[380px]">
-						<AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-						<div className="flex-1">
-							<p className="text-white font-medium text-sm">
-								Unsaved changes will be lost
-							</p>
-							<p className="text-red-300 text-xs">
-								Are you sure you want to leave?
-							</p>
+				<div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-50">
+					<div className="bg-red-900/95 backdrop-blur-md border border-red-600/50 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 sm:min-w-[380px]">
+						<div className="flex items-start gap-3 sm:gap-4 flex-1">
+							<AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+							<div className="flex-1 min-w-0">
+								<p className="text-white font-medium text-sm">
+									Unsaved changes will be lost
+								</p>
+								<p className="text-red-300 text-xs">
+									Are you sure you want to leave?
+								</p>
+							</div>
 						</div>
-						<div className="flex space-x-3">
+						<div className="flex gap-2 sm:gap-3">
 							<Button
 								onClick={() => setShowDiscardToast(false)}
 								variant="outline"
 								size="sm"
-								className="text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+								className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
 							>
 								Cancel
 							</Button>
@@ -353,7 +361,7 @@ export default function Settings() {
 								onClick={handleForceLeave}
 								variant="danger"
 								size="sm"
-								className="text-xs bg-red-600 hover:bg-red-700"
+								className="flex-1 sm:flex-none text-xs bg-red-600 hover:bg-red-700 whitespace-nowrap"
 							>
 								Leave anyway
 							</Button>

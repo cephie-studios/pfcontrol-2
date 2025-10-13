@@ -1,10 +1,13 @@
 import express from 'express';
 import requireAuth from '../middleware/isAuthenticated.js';
+import optionalAuth from '../middleware/optionalAuth.js';
 import { getFlightsBySession, addFlight, updateFlight, deleteFlight, validateAcarsAccess } from '../db/flights.js';
 import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
 import { recordNewFlight } from '../db/statistics.js';
 import { getClientIp } from '../tools/getIpAddress.js';
 import flightsPool from '../db/connections/flightsConnection.js';
+import pool from '../db/connections/connection.js';
+import { flightCreationLimiter, acarsValidationLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
 
@@ -21,7 +24,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post('/:sessionId', async (req, res) => {
+router.post('/:sessionId', optionalAuth, flightCreationLimiter, async (req, res) => {
     try {
         const flightData = {
             ...req.body,
@@ -77,7 +80,7 @@ router.delete('/:sessionId/:flightId', requireAuth, async (req, res) => {
 });
 
 // GET: /api/flights/:sessionId/:flightId/validate-acars - validate ACARS access token
-router.get('/:sessionId/:flightId/validate-acars', async (req, res) => {
+router.get('/:sessionId/:flightId/validate-acars', acarsValidationLimiter, async (req, res) => {
     try {
         const { sessionId, flightId } = req.params;
         const acarsToken = req.query.accessId;
@@ -94,7 +97,7 @@ router.get('/:sessionId/:flightId/validate-acars', async (req, res) => {
 });
 
 // POST: /api/flights/acars/active - mark ACARS terminal as active
-router.post('/acars/active', async (req, res) => {
+router.post('/acars/active', acarsValidationLimiter, async (req, res) => {
     try {
         const { sessionId, flightId, acarsToken } = req.body;
 
@@ -143,7 +146,7 @@ router.get('/acars/active', async (req, res) => {
             try {
                 const tableName = `flights_${sessionId}`;
                 const result = await flightsPool.query(
-                    `SELECT id, callsign, departure, arrival, aircraft, session_id FROM ${tableName} WHERE id = $1`,
+                    `SELECT * FROM ${tableName} WHERE id = $1`,
                     [flightId]
                 );
 
@@ -155,7 +158,44 @@ router.get('/acars/active', async (req, res) => {
             }
         }
 
-        res.json(activeFlights);
+        // Fetch user data for all active flights
+        const userIds = [...new Set(activeFlights.map(f => f.user_id).filter(Boolean))];
+        let usersMap = new Map();
+
+        if (userIds.length > 0) {
+            try {
+                const usersResult = await pool.query(
+                    `SELECT id, username as discord_username, avatar as discord_avatar_url
+                     FROM users
+                     WHERE id = ANY($1)`,
+                    [userIds]
+                );
+
+                usersResult.rows.forEach(user => {
+                    usersMap.set(user.id, {
+                        discord_username: user.discord_username,
+                        discord_avatar_url: user.discord_avatar_url
+                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.discord_avatar_url}.png`
+                            : null
+                    });
+                });
+            } catch (userError) {
+                console.error('Error fetching user data for active ACARS:', userError);
+            }
+        }
+
+        // Enrich flights with user data
+        const enrichedFlights = activeFlights.map(flight => {
+            const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
+
+            if (flight.user_id && usersMap.has(flight.user_id)) {
+                sanitizedFlight.user = usersMap.get(flight.user_id);
+            }
+
+            return sanitizedFlight;
+        });
+
+        res.json(enrichedFlights);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch active ACARS terminals' });
     }

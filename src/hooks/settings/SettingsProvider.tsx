@@ -16,7 +16,9 @@ const defaultSettings: Settings = {
 	sounds: {
 		startupSound: { enabled: true, volume: 100 },
 		chatNotificationSound: { enabled: true, volume: 100 },
-		newStripSound: { enabled: true, volume: 100 }
+		newStripSound: { enabled: true, volume: 100 },
+		acarsBeep: { enabled: true, volume: 100 },
+		acarsChatPop: { enabled: true, volume: 100 }
 	},
 	layout: {
 		showCombinedView: false,
@@ -58,6 +60,12 @@ const defaultSettings: Settings = {
 		status: true,
 		remark: true,
 		hide: true
+	},
+	acars: {
+		notesEnabled: true,
+		chartsEnabled: true,
+		terminalWidth: 50,
+		notesWidth: 20
 	}
 };
 
@@ -95,6 +103,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 				arrivalsTableColumns: {
 					...defaultSettings.arrivalsTableColumns,
 					...userSettings.arrivalsTableColumns
+				},
+				acars: {
+					...defaultSettings.acars,
+					...userSettings.acars
 				}
 			};
 

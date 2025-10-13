@@ -342,16 +342,16 @@ export default function BackgroundImageSettings({
 	return (
 		<div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
 			{/* Header */}
-			<div className="p-6 border-b border-zinc-700/50">
+			<div className="p-4 sm:p-6 border-b border-zinc-700/50">
 				<div className="flex items-center">
-					<div className="p-2 bg-cyan-500/20 rounded-lg mr-4">
-						<ImageIcon className="h-6 w-6 text-cyan-400" />
+					<div className="p-2 bg-cyan-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+						<ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
 					</div>
-					<div>
-						<h3 className="text-xl font-semibold text-white">
+					<div className="min-w-0">
+						<h3 className="text-lg sm:text-xl font-semibold text-white">
 							Background Images
 						</h3>
-						<p className="text-zinc-400 text-sm mt-1">
+						<p className="text-zinc-400 text-xs sm:text-sm mt-1">
 							Choose from available backgrounds or upload your own
 							custom image
 						</p>
@@ -360,7 +360,7 @@ export default function BackgroundImageSettings({
 			</div>
 
 			{/* Content */}
-			<div className="p-6">
+			<div className="p-4 sm:p-6">
 				{error && (
 					<div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center">
 						<X className="h-5 w-5 text-red-400 mr-3 flex-shrink-0" />

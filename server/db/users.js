@@ -68,7 +68,9 @@ export async function createOrUpdateUser(userData) {
             sounds: {
                 startupSound: { enabled: true, volume: 100 },
                 chatNotificationSound: { enabled: true, volume: 100 },
-                newStripSound: { enabled: true, volume: 100 }
+                newStripSound: { enabled: true, volume: 100 },
+                acarsBeep: { enabled: true, volume: 100 },
+                acarsChatPop: { enabled: true, volume: 100 }
             },
             backgroundImage: {
                 selectedImage: null,
@@ -116,6 +118,12 @@ export async function createOrUpdateUser(userData) {
                 remark: true,
                 hide: true
             },
+            acars: {
+                notesEnabled: true,
+                chartsEnabled: true,
+                terminalWidth: 50,
+                notesWidth: 20
+            }
         };
 
         const existingUser = await pool.query('SELECT * FROM users WHERE id = $1', [id]);

@@ -4,6 +4,8 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, getAllSessions } from '../db/sessions.js';
 import { getFlightsIO } from './flightsWebsocket.js';
 import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
+import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
+import { sanitizeString, sanitizeSquawk, sanitizeFlightLevel } from '../utils/sanitization.js';
 
 let io;
 const updateTimers = new Map();
@@ -18,22 +20,26 @@ export function setupArrivalsWebsocket(httpServer) {
     });
 
     io.on('connection', async (socket) => {
-        const sessionId = socket.handshake.query.sessionId;
-        const accessId = socket.handshake.query.accessId;
+        try {
+            const sessionId = validateSessionId(socket.handshake.query.sessionId);
+            const accessId = validateAccessId(socket.handshake.query.accessId);
 
-        const valid = await validateSessionAccess(sessionId, accessId);
-        if (!valid) {
-            socket.disconnect(true);
-            return;
-        }
+            const valid = await validateSessionAccess(sessionId, accessId);
+            if (!valid) {
+                socket.disconnect(true);
+                return;
+            }
 
-        const session = await getSessionById(sessionId);
-        if (!session || !session.is_pfatc) {
-            socket.disconnect(true);
-            return;
-        }
+            const session = await getSessionById(sessionId);
+            if (!session || !session.is_pfatc) {
+                socket.disconnect(true);
+                return;
+            }
 
-        socket.join(sessionId);
+            socket.data.sessionId = sessionId;
+            socket.data.session = session;
+
+            socket.join(sessionId);
 
         try {
             const externalArrivals = await getExternalArrivals(session.airport_icao);
@@ -43,8 +49,11 @@ export function setupArrivalsWebsocket(httpServer) {
         }
 
         socket.on('updateArrival', async ({ flightId, updates }) => {
+            const sessionId = socket.data.sessionId;
+            const session = socket.data.session;
             try {
-                // Log all arrival updates to see what's being received
+                validateFlightId(flightId);
+
                 if (updates.status) {
                     console.log(`[ArrivalWS] Received update for ${flightId}:`, JSON.stringify(updates));
                 }
@@ -69,6 +78,12 @@ export function setupArrivalsWebsocket(httpServer) {
                     socket.emit('arrivalError', { action: 'update', flightId, error: 'No valid fields to update' });
                     return;
                 }
+
+                if (filteredUpdates.clearedFL) filteredUpdates.clearedFL = sanitizeFlightLevel(filteredUpdates.clearedFL);
+                if (filteredUpdates.star) filteredUpdates.star = sanitizeString(filteredUpdates.star, 16);
+                if (filteredUpdates.remark) filteredUpdates.remark = sanitizeString(filteredUpdates.remark, 500);
+                if (filteredUpdates.squawk) filteredUpdates.squawk = sanitizeSquawk(filteredUpdates.squawk);
+                if (filteredUpdates.gate) filteredUpdates.gate = sanitizeString(filteredUpdates.gate, 8);
 
                 const updatedFlight = await updateFlight(sourceSessionId, flightId, filteredUpdates);
 
@@ -98,6 +113,10 @@ export function setupArrivalsWebsocket(httpServer) {
                 socket.emit('arrivalError', { action: 'update', flightId, error: 'Failed to update arrival' });
             }
         });
+        } catch (error) {
+            console.error('Invalid session or access ID:', error.message);
+            socket.disconnect(true);
+        }
     });
 
     return io;

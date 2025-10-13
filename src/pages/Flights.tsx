@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
 import { fetchFlights } from '../utils/fetch/flights';
@@ -100,17 +100,29 @@ export default function Flights() {
         Flight[]
     >([]);
 
-    const handleMentionReceived = () => {
-        if (user) {
+    const userRef = useRef(user);
+    const settingsRef = useRef(settings);
+    const flightsSocketConnectedRef = useRef(false);
+    const arrivalsSocketConnectedRef = useRef(false);
+    const sessionUsersSocketConnectedRef = useRef(false);
+
+    useEffect(() => {
+        userRef.current = user;
+        settingsRef.current = settings;
+    }, [user, settings]);
+
+    const handleMentionReceived = useCallback(() => {
+        const currentUser = userRef.current;
+        if (currentUser) {
             playSoundWithSettings(
                 'chatNotificationSound',
-                user.settings,
+                currentUser.settings,
                 0.7
             ).catch((error) => {
                 console.warn('Failed to play chat notification sound:', error);
             });
         }
-    };
+    }, []);
 
     type AtisData = {
         letter?: string;
@@ -230,6 +242,10 @@ export default function Flights() {
         if (!sessionId || !accessId || !initialLoadComplete || accessError)
             return;
 
+        if (flightsSocketConnectedRef.current) return;
+
+        flightsSocketConnectedRef.current = true;
+
         const socket = createFlightsSocket(
             sessionId,
             accessId,
@@ -242,8 +258,9 @@ export default function Flights() {
             // onFlightAdded
             (flight: Flight) => {
                 setFlights((prev) => [...prev, flight]);
-                if (user && settings) {
-                    playSoundWithSettings('newStripSound', settings, 0.7).catch(
+                const currentSettings = settingsRef.current;
+                if (currentSettings) {
+                    playSoundWithSettings('newStripSound', currentSettings, 0.7).catch(
                         (error) => {
                             console.warn(
                                 'Failed to play new strip sound:',
@@ -269,9 +286,10 @@ export default function Flights() {
         });
         setFlightsSocket(socket);
         return () => {
+            flightsSocketConnectedRef.current = false;
             socket.socket.disconnect();
         };
-    }, [sessionId, accessId, initialLoadComplete, user, settings]);
+    }, [sessionId, accessId, initialLoadComplete]);
     const handleIssuePDC = async (
         flightId: string | number,
         pdcText: string
@@ -327,6 +345,10 @@ export default function Flights() {
         )
             return;
 
+        if (arrivalsSocketConnectedRef.current) return;
+
+        arrivalsSocketConnectedRef.current = true;
+
         const socket = createArrivalsSocket(
             sessionId,
             accessId,
@@ -348,6 +370,7 @@ export default function Flights() {
         );
         setArrivalsSocket(socket);
         return () => {
+            arrivalsSocketConnectedRef.current = false;
             socket.socket.disconnect();
         };
     }, [sessionId, accessId, initialLoadComplete, session?.isPFATC]);
@@ -355,13 +378,21 @@ export default function Flights() {
     useEffect(() => {
         if (!sessionId || !accessId || !user) return;
 
+        if (sessionUsersSocketConnectedRef.current) return;
+
+        sessionUsersSocketConnectedRef.current = true;
+
+        const userId = user.userId;
+        const username = user.username;
+        const avatar = user.avatar;
+
         const socket = createSessionUsersSocket(
             sessionId,
             accessId,
             {
-                userId: user.userId,
-                username: user.username,
-                avatar: user.avatar,
+                userId,
+                username,
+                avatar,
             },
             () => {},
             () => {},
@@ -371,7 +402,7 @@ export default function Flights() {
             handleMentionReceived,
             (editingStates: FieldEditingState[]) =>
                 setFieldEditingStates(editingStates),
-            position
+            'ALL'
         );
 
         setSessionUsersSocket(socket);
@@ -381,12 +412,13 @@ export default function Flights() {
         }
 
         return () => {
+            sessionUsersSocketConnectedRef.current = false;
             if (socket) {
                 socket.off('atisUpdate', handleAtisUpdateFromSocket);
                 socket.disconnect();
             }
         };
-    }, [sessionId, accessId, user]);
+    }, [sessionId, accessId, user?.userId, user?.username, user?.avatar, handleMentionReceived]);
 
     // Update position without reconnecting socket
     useEffect(() => {

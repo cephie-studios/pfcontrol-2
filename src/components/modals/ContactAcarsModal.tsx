@@ -89,89 +89,110 @@ export default function ContactAcarsModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-zinc-900 border-2 border-blue-800 rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-700 flex-shrink-0">
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center">
-                            <div className="p-2 bg-blue-900/30 rounded-full mr-3">
-                                <Radio className="h-6 w-6 text-blue-400" />
+                <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 border-b border-gray-700 flex-shrink-0">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/20 rounded-lg">
+                                <Radio className="h-5 w-5 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-semibold">
-                                    Contact ACARS Terminal
+                                <h3 className="text-lg font-semibold text-white font-mono">
+                                    Contact ACARS
                                 </h3>
-                                <p className="text-sm text-gray-400 mt-1">
-                                    Send a message to a flight's ACARS terminal
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Send message to flight terminal
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+                            className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
                         >
-                            <X className="h-5 w-5 text-gray-400" />
+                            <X className="h-5 w-5 text-gray-400 hover:text-white" />
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 bg-black">
                     {flightsWithAcars.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
-                            <Radio className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                            <p>No flights with active ACARS terminals</p>
-                            <p className="text-sm mt-2">
-                                Flights must open their ACARS terminal first
-                            </p>
+                        <div className="text-center py-12 text-gray-400">
+                            <div className="bg-gray-900 rounded-xl p-8 border border-gray-800">
+                                <Radio className="h-12 w-12 mx-auto mb-4 opacity-40 text-blue-400" />
+                                <p className="text-gray-300 font-medium">No active ACARS terminals</p>
+                                <p className="text-sm mt-2 text-gray-500">
+                                    Flights must open their ACARS terminal first
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         <>
                             {/* Flight Selection */}
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-300 mb-3">
+                                <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
                                     Select Flight
                                 </label>
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                                     {flightsWithAcars.map((flight) => (
                                         <button
                                             key={flight.id}
                                             onClick={() =>
                                                 setSelectedFlight(flight)
                                             }
-                                            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                            className={`w-full text-left p-4 rounded-xl border transition-all ${
                                                 selectedFlight?.id === flight.id
-                                                    ? 'border-blue-500 bg-blue-500/10'
-                                                    : 'border-gray-700 hover:border-gray-600 bg-gray-800/50'
+                                                    ? 'border-blue-500 bg-blue-950 shadow-lg shadow-blue-500/20'
+                                                    : 'border-gray-800 hover:border-gray-700 bg-gray-950 hover:bg-gray-900'
                                             }`}
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <Plane className="h-5 w-5 text-blue-400" />
-                                                    <div>
-                                                        <div className="font-semibold text-white">
-                                                            {flight.callsign}
-                                                        </div>
-                                                        <div className="text-sm text-gray-400 flex items-center gap-2 mt-1">
-                                                            <MapPin className="h-3 w-3" />
-                                                            {flight.departure} →{' '}
-                                                            {flight.arrival}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {selectedFlight?.id ===
-                                                    flight.id && (
-                                                    <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
-                                                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                                            <div className="flex items-center gap-3">
+                                                {/* Discord Avatar */}
+                                                {flight.user?.discord_avatar_url ? (
+                                                    <img
+                                                        src={flight.user.discord_avatar_url}
+                                                        alt={flight.user.discord_username || 'User'}
+                                                        className="w-12 h-12 rounded-full border-2 border-gray-700"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
+                                                        <Plane className="h-5 w-5 text-gray-400" />
                                                     </div>
                                                 )}
-                                            </div>
-                                            {flight.aircraft && (
-                                                <div className="text-xs text-gray-500 ml-8 mt-1">
-                                                    Aircraft: {flight.aircraft}
+
+                                                {/* Flight Info */}
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="font-semibold text-white font-mono text-sm">
+                                                                {flight.callsign}
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 mt-0.5">
+                                                                {flight.user?.discord_username || 'Unknown Pilot'}
+                                                            </div>
+                                                        </div>
+                                                        {selectedFlight?.id === flight.id && (
+                                                            <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
+                                                                <div className="h-2 w-2 rounded-full bg-white"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                                                        <div className="flex items-center gap-1">
+                                                            <MapPin className="h-3 w-3" />
+                                                            <span>{flight.departure} → {flight.arrival}</span>
+                                                        </div>
+                                                        {flight.aircraft && (
+                                                            <>
+                                                                <span className="text-gray-700">•</span>
+                                                                <span className="font-mono">{flight.aircraft}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -179,9 +200,9 @@ export default function ContactAcarsModal({
 
                             {/* Position Selector */}
                             {selectedFlight && frequencies.length > 0 && (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        Contact as
+                                <div className="mb-6">
+                                    <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+                                        Contact Position
                                     </label>
                                     <Dropdown
                                         options={frequencies.map((freq) => ({
@@ -192,17 +213,19 @@ export default function ContactAcarsModal({
                                         onChange={setSelectedPosition}
                                         size="sm"
                                     />
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        Default message: "{getDefaultMessage()}"
-                                    </p>
+                                    <div className="mt-3 bg-gray-950 border border-gray-800 rounded-lg p-3">
+                                        <p className="text-xs text-gray-500 font-mono">
+                                            Default: <span className="text-blue-400">"{getDefaultMessage()}"</span>
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Custom Message */}
                             {selectedFlight && (
                                 <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Custom Message (optional)
+                                    <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+                                        Custom Message (Optional)
                                     </label>
                                     <input
                                         type="text"
@@ -211,10 +234,10 @@ export default function ContactAcarsModal({
                                             setCustomMessage(e.target.value)
                                         }
                                         placeholder={getDefaultMessage()}
-                                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                                         maxLength={100}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-gray-500 mt-2">
                                         Leave blank to use default message
                                     </p>
                                 </div>
@@ -224,18 +247,19 @@ export default function ContactAcarsModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-700 flex justify-end gap-3 flex-shrink-0">
+                <div className="bg-gray-900 p-6 border-t border-gray-800 flex justify-end gap-3 flex-shrink-0">
                     <Button
                         variant="outline"
                         onClick={onClose}
                         disabled={sending}
+                        className="border-gray-700 hover:bg-gray-800 text-gray-300"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSend}
                         disabled={!selectedFlight || sending}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-600 shadow-lg shadow-blue-500/20"
                     >
                         {sending ? 'Sending...' : 'Send Message'}
                     </Button>

@@ -44,8 +44,8 @@ export function createOverviewSocket(
         reconnectionDelayMax: 5000,
         reconnectionAttempts: 10,
         timeout: 20000,
-        transports: ['polling', 'websocket'], // Start with polling to get fresh sid
-        forceNew: true, // Force new connection to get fresh session ID
+        transports: ['websocket', 'polling'],
+        upgrade: true,
         autoConnect: true
     });
 
