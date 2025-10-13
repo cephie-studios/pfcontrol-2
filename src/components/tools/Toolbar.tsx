@@ -377,7 +377,7 @@ export default function Toolbar({
                                 />
                                 {/* Combined tooltip for username and role */}
                                 <div
-                                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
+                                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-0.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
                                     style={{
                                         borderColor:
                                             highestRole?.color || '#71717a',
@@ -385,7 +385,7 @@ export default function Toolbar({
                                     }}
                                 >
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-white">
+                                        <span className="text-xs font-medium text-white">
                                             {user.username}
                                         </span>
                                         {highestRole && RoleIcon && (
@@ -394,13 +394,13 @@ export default function Toolbar({
                                                     •
                                                 </span>
                                                 <RoleIcon
-                                                    className="w-3.5 h-3.5"
+                                                    className="w-3 h-3"
                                                     style={{
                                                         color: highestRole.color,
                                                     }}
                                                 />
                                                 <span
-                                                    className="text-sm font-semibold"
+                                                    className="text-xs font-semibold"
                                                     style={{
                                                         color: highestRole.color,
                                                     }}
@@ -537,7 +537,9 @@ export default function Toolbar({
                         onClick={onContactAcarsClick}
                     >
                         <Radio className="w-5 h-5" />
-                        <span className="hidden sm:inline font-medium">Contact</span>
+                        <span className="hidden sm:inline font-medium">
+                            Contact
+                        </span>
                     </Button>
                 )}
 

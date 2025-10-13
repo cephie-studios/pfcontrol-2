@@ -283,7 +283,8 @@ export default function PilotProfile() {
                                 </h1>
                                 {(profile.user.is_admin ||
                                     (profile.user.roles &&
-                                        profile.user.roles.length > 0)) && (
+                                        profile.user.roles.length > 0) ||
+                                    isVatsimLinked) && (
                                     <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
                                         {profile.user.is_admin && (
                                             <div
@@ -395,14 +396,14 @@ export default function PilotProfile() {
                                             <img
                                                 src="/assets/images/vatsim.webp"
                                                 alt="VATSIM"
-                                                className="h-6 w-6"
+                                                className="h-6 w-6 p-1 bg-white rounded-full"
                                             />
                                             {isVatsimLinked ? (
                                                 <a
                                                     href={`https://stats.vatsim.net/stats/${profile.user.vatsim_cid}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-base md:text-lg text-blue-400 hover:underline hover:text-blue-300"
+                                                    className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-300"
                                                 >
                                                     {displayVatsimRating}
                                                 </a>

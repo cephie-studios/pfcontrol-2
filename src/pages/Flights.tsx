@@ -24,7 +24,7 @@ import ArrivalsTable from '../components/tables/ArrivalsTable';
 import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
-import ContactAcarsModal from '../components/modals/ContactAcarsModal';
+import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 
@@ -1117,8 +1117,8 @@ export default function Flights() {
                 flightType="arrival"
                 airportIcao={session?.airportIcao}
             />
-            <ContactAcarsModal
-                isOpen={showContactAcarsModal}
+            <ContactAcarsSidebar
+                open={showContactAcarsModal}
                 onClose={() => setShowContactAcarsModal(false)}
                 flights={activeAcarsFlightData}
                 onSendContact={handleSendContact}
