@@ -8,7 +8,7 @@ export default function VatsimCallback() {
     const hasSubmitted = useRef(false);
 
     useEffect(() => {
-        if (hasSubmitted.current) return; // prevent double-run in React StrictMode
+        if (hasSubmitted.current) return;
         hasSubmitted.current = true;
 
         const run = async () => {
@@ -20,25 +20,29 @@ export default function VatsimCallback() {
                 return;
             }
             try {
-                const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/exchange`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ code, state })
-                });
+                const res = await fetch(
+                    `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/exchange`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ code, state }),
+                    }
+                );
                 if (!res.ok) {
                     navigate('/settings?error=vatsim_link_failed');
                     return;
                 }
                 await refreshUser();
-                // Clean up query params to avoid accidental re-exchange on back/refresh
                 try {
                     const url = new URL(window.location.href);
                     url.search = '';
                     window.history.replaceState({}, '', url.toString());
-                } catch {}
+                } catch {
+                    // If URL API is not supported, do nothing
+                }
                 navigate('/settings?vatsim_linked=true');
-            } catch (err) {
+            } catch {
                 navigate('/settings?error=vatsim_link_failed');
             }
         };

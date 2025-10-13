@@ -827,14 +827,15 @@ export default function PublicFlightView() {
                         <div className="bg-gray-900/50 rounded-xl border-2 border-gray-800 p-6 overflow-x-auto">
                             <div className="flex items-center">
                                 {phases.map((item, index, array) => {
+                                    type PhaseColor = {
+                                        dot: string;
+                                        bg: string;
+                                        text: string;
+                                        baseColor: string;
+                                    };
                                     const phaseColor: Record<
                                         string,
-                                        {
-                                            dot: string;
-                                            bg: string;
-                                            text: string;
-                                            baseColor: string;
-                                        }
+                                        PhaseColor
                                     > = {
                                         taxi: {
                                             dot: 'bg-yellow-500 shadow-yellow-500/50',
@@ -897,7 +898,7 @@ export default function PublicFlightView() {
                                             baseColor: 'indigo-500',
                                         },
                                     };
-                                    const colors = (phaseColor as any)[
+                                    const colors: PhaseColor = phaseColor[
                                         item.phase
                                     ] || {
                                         dot: 'bg-gray-500 shadow-gray-500/50',

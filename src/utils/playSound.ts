@@ -22,7 +22,10 @@ export function playAudioWithGain(audioElement: HTMLAudioElement, volume: number
         return;
     }
 
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (
+        window.AudioContext ||
+        (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!
+    )();
     const source = audioContext.createMediaElementSource(audioElement);
     const gainNode = audioContext.createGain();
 
