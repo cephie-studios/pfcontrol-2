@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Loader from '../components/common/Loader';
 import {
@@ -91,6 +91,60 @@ export default function PublicFlightView() {
     const [liveDuration, setLiveDuration] = useState<number | null>(null);
     const [shareClicked, setShareClicked] = useState(false);
 
+    // Build phase timeline from telemetry
+    const phases = useMemo(() => {
+        if (!telemetry || telemetry.length < 2) return [] as Array<{ phase: string; startTime: Date; endTime: Date; duration: number }>;
+
+        const normalizePhase = (phase: string | null | undefined): string => {
+            if (!phase) return 'unknown';
+            const lower = phase.toLowerCase();
+            if (lower.includes('taxi')) return 'taxi';
+            if (lower.includes('takeoff')) return 'takeoff';
+            if (lower.includes('landing')) return 'landing';
+            if (lower.includes('runway')) return 'runway';
+            if (lower.includes('climb')) return 'climb';
+            if (lower.includes('cruise')) return 'cruise';
+            if (lower.includes('descent')) return 'descent';
+            if (lower.includes('approach')) return 'approach';
+            if (lower.includes('gate') || lower.includes('parked')) return 'gate';
+            return lower.replace(/\s+/g, '_');
+        };
+
+        const out: Array<{ phase: string; startTime: Date; endTime: Date; duration: number }> = [];
+        let current = normalizePhase(telemetry[0].flight_phase);
+        let start = new Date(telemetry[0].timestamp);
+        for (let i = 1; i < telemetry.length; i++) {
+            const n = normalizePhase(telemetry[i].flight_phase);
+            if (n !== current) {
+                const end = new Date(telemetry[i - 1].timestamp);
+                const dur = Math.round((end.getTime() - start.getTime()) / 60000);
+                if (dur >= 1) out.push({ phase: current, startTime: start, endTime: end, duration: dur });
+                current = n;
+                start = new Date(telemetry[i].timestamp);
+            }
+        }
+        const finalEnd = new Date(telemetry[telemetry.length - 1].timestamp);
+        const finalDur = Math.round((finalEnd.getTime() - start.getTime()) / 60000);
+        if (finalDur >= 1) out.push({ phase: current, startTime: start, endTime: finalEnd, duration: finalDur });
+
+        const filtered = out.filter(p => p.phase !== 'unknown');
+        const merged: typeof out = [];
+        for (const p of filtered) {
+            const last = merged[merged.length - 1];
+            if (last && last.phase === p.phase) {
+                last.endTime = p.endTime;
+                last.duration += p.duration;
+            } else {
+                merged.push({ ...p });
+            }
+        }
+        const last = merged[merged.length - 1];
+        if (last && last.phase === 'taxi') {
+            merged.push({ phase: 'gate', startTime: last.endTime, endTime: last.endTime, duration: 0 });
+        }
+        return merged;
+    }, [telemetry]);
+
     useEffect(() => {
         fetchFlightDetails();
         fetchTelemetry();
@@ -137,8 +191,7 @@ export default function PublicFlightView() {
     const fetchFlightDetails = async () => {
         try {
             const res = await fetch(
-                `${
-                    import.meta.env.VITE_SERVER_URL
+                `${import.meta.env.VITE_SERVER_URL
                 }/api/logbook/public/${shareToken}`
             );
             if (res.ok) {
@@ -157,8 +210,7 @@ export default function PublicFlightView() {
     const fetchTelemetry = async () => {
         try {
             const res = await fetch(
-                `${
-                    import.meta.env.VITE_SERVER_URL
+                `${import.meta.env.VITE_SERVER_URL
                 }/api/logbook/public/${shareToken}/telemetry`
             );
             if (res.ok) {
@@ -269,24 +321,24 @@ export default function PublicFlightView() {
             flight.flight_status === 'pending');
 
     const getPhaseColor = (phase: string | null | undefined) => {
-        const colors: Record<string, string> = {
-            awaiting_clearance: 'text-cyan-400 bg-cyan-900/30',
-            origin_taxi: 'text-gray-400 bg-gray-900/50',
-            destination_taxi: 'text-gray-400 bg-gray-900/50',
-            taxi: 'text-gray-400 bg-gray-900/50',
-            origin_runway: 'text-pink-400 bg-pink-900/30',
-            destination_runway: 'text-pink-400 bg-pink-900/30',
-            runway: 'text-pink-400 bg-pink-900/30',
-            climb: 'text-blue-400 bg-blue-900/30',
-            cruise: 'text-purple-400 bg-purple-900/30',
-            descent: 'text-yellow-400 bg-yellow-900/30',
-            approach: 'text-orange-400 bg-orange-900/30',
-            landing: 'text-red-400 bg-red-900/30',
-            push: 'text-indigo-400 bg-indigo-900/30',
-            parked: 'text-slate-400 bg-slate-900/30',
-        };
-        return colors[phase || ''] || 'text-gray-400 bg-gray-900/50';
-    };
+		const colors: Record<string, string> = {
+			awaiting_clearance: 'text-cyan-400 bg-cyan-900/30',
+			origin_taxi: 'text-gray-400 bg-gray-900/50',
+			destination_taxi: 'text-gray-400 bg-gray-900/50',
+			taxi: 'text-gray-400 bg-gray-900/50',
+			origin_runway: 'text-pink-400 bg-pink-900/30',
+			destination_runway: 'text-pink-400 bg-pink-900/30',
+			runway: 'text-pink-400 bg-pink-900/30',
+			climb: 'text-blue-400 bg-blue-900/30',
+			cruise: 'text-purple-400 bg-purple-900/30',
+			descent: 'text-yellow-400 bg-yellow-900/30',
+			approach: 'text-orange-400 bg-orange-900/30',
+			landing: 'text-red-400 bg-red-900/30',
+			push: 'text-indigo-400 bg-indigo-900/30',
+			parked: 'text-slate-400 bg-slate-900/30'
+		};
+		return colors[phase || ''] || 'text-gray-400 bg-gray-900/50';
+	};
 
     return (
         <div className="min-h-screen bg-gray-950 text-white">
@@ -314,13 +366,20 @@ export default function PublicFlightView() {
                                         'Unknown Aircraft'}
                                 </p>
                                 {flight.discord_username && (
-                                    <p className="text-blue-200 text-med mt-1">
+                                    <a href={`${window.location.origin}/pilots/${flight.discord_username}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="underline text-blue-300 hover:text-blue-200"
+                                    >
                                         @{flight.discord_username}
+
                                         {flight.discord_discriminator &&
                                             flight.discord_discriminator !==
-                                                '0' &&
+                                            '0' &&
                                             `#${flight.discord_discriminator}`}
-                                    </p>
+
+                                    </a>
+
                                 )}
                             </div>
                         </div>
@@ -392,10 +451,10 @@ export default function PublicFlightView() {
                                 </p>
                                 <p className="text-xl font-bold text-white">
                                     {flight.current_altitude !== null &&
-                                    flight.current_altitude !== undefined
+                                        flight.current_altitude !== undefined
                                         ? `${Math.round(
-                                              flight.current_altitude
-                                          ).toLocaleString()}`
+                                            flight.current_altitude
+                                        ).toLocaleString()}`
                                         : '---'}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">ft</p>
@@ -406,7 +465,7 @@ export default function PublicFlightView() {
                                 </p>
                                 <p className="text-xl font-bold text-white">
                                     {flight.current_speed !== null &&
-                                    flight.current_speed !== undefined
+                                        flight.current_speed !== undefined
                                         ? `${Math.round(flight.current_speed)}`
                                         : '---'}
                                 </p>
@@ -429,6 +488,8 @@ export default function PublicFlightView() {
                     </div>
                 )}
 
+                {/* Flight Phases Timeline */}
+                
                 {/* Flight Statistics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-gray-900/50 rounded-xl p-4 border-2 border-gray-800">
@@ -715,6 +776,75 @@ export default function PublicFlightView() {
                                     }}
                                     height={400}
                                 />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Flight Phases Timeline */}
+                {phases.length > 0 && (
+                    <div className="mb-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center text-white font-bold">Φ</div>
+                            <h2 className="text-2xl font-bold text-white">Flight Timeline</h2>
+                        </div>
+                        <div className="bg-gray-900/50 rounded-xl border-2 border-gray-800 p-6 overflow-x-auto">
+                            <div className="flex items-center">
+                                {phases.map((item, index, array) => {
+                                    const phaseColor: Record<string, { dot: string; bg: string; text: string; baseColor: string }> = {
+                                        taxi: { dot: 'bg-yellow-500 shadow-yellow-500/50', bg: 'bg-yellow-500/10', text: 'text-yellow-300', baseColor: 'yellow-500' },
+                                        runway: { dot: 'bg-orange-500 shadow-orange-500/50', bg: 'bg-orange-500/10', text: 'text-orange-300', baseColor: 'orange-500' },
+                                        takeoff: { dot: 'bg-rose-500 shadow-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-300', baseColor: 'rose-500' },
+                                        climb: { dot: 'bg-blue-500 shadow-blue-500/50', bg: 'bg-blue-500/10', text: 'text-blue-300', baseColor: 'blue-500' },
+                                        cruise: { dot: 'bg-purple-500 shadow-purple-500/50', bg: 'bg-purple-500/10', text: 'text-purple-300', baseColor: 'purple-500' },
+                                        descent: { dot: 'bg-yellow-500 shadow-yellow-500/50', bg: 'bg-yellow-500/10', text: 'text-yellow-300', baseColor: 'yellow-500' },
+                                        approach: { dot: 'bg-orange-500 shadow-orange-500/50', bg: 'bg-orange-500/10', text: 'text-orange-300', baseColor: 'orange-500' },
+                                        landing: { dot: 'bg-rose-500 shadow-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-300', baseColor: 'rose-500' },
+                                        gate: { dot: 'bg-green-500 shadow-green-500/50', bg: 'bg-green-500/10', text: 'text-green-300', baseColor: 'green-500' },
+                                        push: { dot: `bg-indigo-500 shadow-indigo-500/50`, bg: 'bg-indigo-500/50', text: 'text-indigo-300', baseColor: 'indigo-500'},
+                                    };
+                                    const colors = (phaseColor as any)[item.phase] || { dot: 'bg-gray-500 shadow-gray-500/50', bg: 'bg-gray-500/20', text: 'text-gray-300', baseColor: 'gray-500' };
+                                    const gradientMap: Record<string, string> = {
+                                        'taxi-runway': 'bg-gradient-to-r from-yellow-500 to-orange-500',
+                                        'runway-takeoff': 'bg-gradient-to-r from-orange-500 to-rose-500',
+                                        'takeoff-climb': 'bg-gradient-to-r from-rose-500 to-blue-500',
+                                        'climb-cruise': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                                        'cruise-descent': 'bg-gradient-to-r from-purple-500 to-yellow-500',
+                                        'descent-approach': 'bg-gradient-to-r from-yellow-500 to-orange-500',
+                                        'approach-landing': 'bg-gradient-to-r from-orange-500 to-rose-500',
+                                        'landing-taxi': 'bg-gradient-to-r from-rose-500 to-red-500',
+                                        'landing-gate': 'bg-gradient-to-r from-rose-500 to-green-500',
+                                    };
+                                    const nextPhase = index < array.length - 1 ? array[index + 1].phase : null;
+                                    const lineGradient = nextPhase && gradientMap[`${item.phase}-${nextPhase}`]
+                                        ? gradientMap[`${item.phase}-${nextPhase}`]
+                                        : (colors.dot as string).split(' ')[0];
+                                    const displayPhase = item.phase.replace(/_/g, ' ');
+                                    return (
+                                        <div key={index} className="flex items-center">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-8 h-8 rounded-full ${colors.dot} shadow-lg relative z-10 flex items-center justify-center border-4 border-gray-900`}>
+                                                    <div className={`w-3 h-3 rounded-full ${colors.dot} animate-pulse`}></div>
+                                                </div>
+                                                <div className={`mt-4 text-center min-w-[140px] px-4 py-3 rounded-xl ${colors.bg} border-2 border-gray-700/50 backdrop-blur-sm`}>
+                                                    <h3 className={`text-sm font-bold ${colors.text} capitalize mb-2`}>{displayPhase}</h3>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center justify-center gap-1 text-xs text-gray-400">
+                                                            <Clock className="w-3 h-3" />
+                                                            {item.startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
+                                                        </div>
+                                                        {item.phase !== 'gate' && (
+                                                            <div className="text-xs font-semibold text-gray-300">{item.duration} min</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {index < array.length - 1 && (
+                                                <div className={`h-1 w-20 mx-2 ${lineGradient} rounded-full shadow-sm`}></div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

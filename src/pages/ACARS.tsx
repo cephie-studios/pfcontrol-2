@@ -7,8 +7,7 @@ import Button from '../components/common/Button';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { createOverviewSocket } from '../sockets/overviewSocket';
 import { useData } from '../hooks/data/useData';
-import { useSettings } from '../hooks/settings/useSettings';
-import { linearToLogVolume, playAudioWithGain } from '../utils/playSound';
+import { useAuth } from '../hooks/auth/useAuth';
 import { parseCallsign, getAirportName } from '../utils/callsignParser';
 import type { Flight } from '../types/flight';
 import type { OverviewSession } from '../sockets/overviewSocket';
@@ -43,6 +42,7 @@ export default function ACARS() {
     const [isAuthError, setIsAuthError] = useState(false);
     const [pdcRequested, setPdcRequested] = useState(false);
     const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
+    const { user } = useAuth();
     const [notes, setNotes] = useState<string>('');
     const [terminalWidth, setTerminalWidth] = useState(50);
     const [notesWidth, setNotesWidth] = useState(20);
@@ -831,27 +831,49 @@ NOTES:
                                     </div>
                                     {session.controllers &&
                                     session.controllers.length > 0 ? (
-                                        <div className="ml-2 mt-0.5 space-y-0.5">
-                                            {session.controllers.map(
-                                                (controller, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="text-[10px] flex items-center gap-1"
-                                                    >
-                                                        <span className="text-gray-500">
-                                                            •
-                                                        </span>
-                                                        <span className="text-gray-300">
-                                                            {
-                                                                controller.username
-                                                            }
-                                                        </span>
-                                                        <span className="text-gray-600">
-                                                            ({controller.role})
-                                                        </span>
+                                        <div className="ml-2 mt-1 space-y-1">
+                                            {session.controllers.map((controller, idx) => {
+                                                const isCurrentUser =
+                                                    !!user &&
+                                                    controller.username === user.username;
+                                                const isVatsimLinked =
+                                                    isCurrentUser && !!user?.vatsimCid;
+                                                const hasControllerRating =
+                                                    isVatsimLinked &&
+                                                    !!user?.vatsimRatingShort &&
+                                                    user.vatsimRatingShort !== 'OBS';
+                                                const infoText = hasControllerRating
+                                                    ? 'This user holds a controller rating on VATSIM'
+                                                    : 'This user is registered on VATSIM';
+                                                return (
+                                                    <div key={idx} className="">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-gray-400 text-base">•</span>
+                                                            <span className="text-white text-base md:text-lg font-semibold">
+                                                                {controller.username}
+                                                            </span>
+                                                            {isVatsimLinked && (
+                                                                <span className="relative group inline-flex items-center justify-center rounded-full bg-white p-0.5">
+                                                                    <img
+                                                                        src="/assets/images/vatsim.svg"
+                                                                        alt="VATSIM"
+                                                                        className="h-3 w-3"
+                                                                        style={{ transform: 'rotate(180deg)' }}
+                                                                    />
+                                                                    <span
+                                                                        className="absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] md:text-xs font-medium text-white bg-gradient-to-r from-cyan-500 to-green-500 shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-100"
+                                                                    >
+                                                                        {infoText}
+                                                                    </span>
+                                                                </span>
+                                                            )}
+                                                            <span className="text-gray-500 text-sm md:text-base">
+                                                                ({controller.role})
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                )
-                                            )}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="text-[10px] text-gray-500 ml-2">

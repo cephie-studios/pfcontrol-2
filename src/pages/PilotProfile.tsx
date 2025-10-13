@@ -36,7 +36,7 @@ import {
     Legend,
 } from 'chart.js';
 import Button from '../components/common/Button';
-
+import { useNavigate } from 'react-router-dom';
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -109,7 +109,7 @@ export default function PilotProfile() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [shareClicked, setShareClicked] = useState(false);
-
+    const navigate = useNavigate()
     useEffect(() => {
         fetchProfile();
     }, [username]);
@@ -120,7 +120,31 @@ export default function PilotProfile() {
         setShareClicked(true);
         setTimeout(() => setShareClicked(false), 2000);
     };
-
+const handleShareFlight = async (flightid: string): Promise<string> => {
+    try {
+        const res = await fetch(
+            `${import.meta.env.VITE_SERVER_URL}/api/logbook/flights/${flightid}/share`,
+            {
+                method: 'POST',
+                credentials: 'include',
+            }
+        );
+        if (!res.ok) return '';
+        const data = await res.json();
+        if (data.shareToken) return `/flight/${data.shareToken}`;
+        if (data.shareUrl) {
+            try {
+                const u = new URL(data.shareUrl);
+                return u.pathname || data.shareUrl;
+            } catch {
+                return data.shareUrl;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return '';
+};
     const fetchProfile = async () => {
         try {
             const res = await fetch(
@@ -682,6 +706,10 @@ export default function PilotProfile() {
                                 return (
                                     <div
                                         key={flight.id}
+                                        onClick={async () => {
+                                            const url = await handleShareFlight(String(flight.id));
+                                            if (url) navigate(url);
+                                        }}
                                         className="bg-gray-900/50 rounded-xl border-2 border-gray-800 p-4 hover:border-blue-700/50 transition-all"
                                     >
                                         <div className="flex items-center justify-between">
@@ -701,8 +729,7 @@ export default function PilotProfile() {
                                                 </div>
                                                 <div className="flex items-center gap-4 text-sm text-gray-400">
                                                     <span className="font-mono">
-                                                        {flight.departure_icao}{' '}
-                                                        → {flight.arrival_icao}
+                                                        {flight.departure_icao} → {flight.arrival_icao}
                                                     </span>
                                                     <span>•</span>
                                                     <span>
