@@ -209,7 +209,7 @@ router.get('/vatsim', requireAuth, (req, res) => {
         client_id: String(VATSIM_CLIENT_ID),
         redirect_uri: VATSIM_REDIRECT_URI,
         response_type: 'code',
-        scope: 'full_name vatsim_details',
+        scope: 'vatsim_details',
         state
     });
     const forceCookie = req.cookies && req.cookies.vatsim_force === '1';

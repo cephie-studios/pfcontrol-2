@@ -72,7 +72,10 @@ export default function App() {
                     />
 
                     <Route path="/login" element={<Login />} />
-                    <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
+                    <Route
+                        path="/login/vatsim/callback"
+                        element={<VatsimCallback />}
+                    />
                     <Route path="/submit/:sessionId" element={<Submit />} />
                     <Route
                         path="acars/:sessionId/:flightId"
@@ -86,10 +89,7 @@ export default function App() {
                         path="/pilots/:username"
                         element={<PilotProfile />}
                     />
-                    <Route
-                        path="settings"
-                        element={<Settings />}
-                    />
+                    <Route path="settings" element={<Settings />} />
 
                     <Route
                         path="/admin/*"
