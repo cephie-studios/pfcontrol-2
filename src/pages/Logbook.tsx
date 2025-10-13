@@ -140,10 +140,10 @@ export default function Logbook() {
         if (!score)
             return {
                 text: 'N/A',
-                color: 'text-gray-400',
-                bg: 'bg-gradient-to-br from-gray-800/50 to-gray-900/50',
-                border: 'border-gray-600/50',
-                glow: 'shadow-gray-500/0',
+                color: 'text-zinc-400',
+                bg: 'bg-gradient-to-br from-zinc-800/50 to-zinc-900/50',
+                border: 'border-zinc-600/50',
+                glow: 'shadow-zinc-500/0',
             };
         if (score >= 90)
             return {
@@ -263,7 +263,7 @@ export default function Logbook() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-950 text-white">
+            <div className="min-h-screen bg-zinc-950 text-white">
                 <Navbar />
                 <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
                     <Loader />
@@ -273,7 +273,7 @@ export default function Logbook() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-950 text-white">
+        <div className="min-h-screen bg-zinc-950 text-white">
             <Navbar />
             {/* Hero Header */}
             <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 py-8 md:py-12">
@@ -411,7 +411,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 w-full"></div>
                             </div>
                         </div>
@@ -433,7 +433,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-green-600 to-green-400 w-full"></div>
                             </div>
                         </div>
@@ -457,7 +457,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-purple-600 to-purple-400 w-full"></div>
                             </div>
                         </div>
@@ -482,7 +482,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
                                     style={{
@@ -522,7 +522,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full bg-gradient-to-r from-cyan-600 to-cyan-400 ${
                                         stats.favorite_aircraft
@@ -554,7 +554,7 @@ export default function Logbook() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full bg-gradient-to-r from-orange-600 to-orange-400 ${
                                         stats.favorite_departure
@@ -659,7 +659,7 @@ export default function Logbook() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-4 text-sm text-gray-400">
+                                                <div className="flex items-center gap-4 text-sm text-zinc-400">
                                                     <span className="flex items-center gap-1.5">
                                                         <Plane className="h-3.5 w-3.5" />
                                                         {flight.aircraft_model ||
@@ -694,10 +694,10 @@ export default function Logbook() {
                                                         className="p-2.5 hover:bg-red-900/30 rounded-lg transition-colors group/delete border-2 border-transparent hover:border-red-700/50"
                                                         title="Delete flight"
                                                     >
-                                                        <Trash2 className="h-4 w-4 text-gray-500 group-hover/delete:text-red-400" />
+                                                        <Trash2 className="h-4 w-4 text-zinc-500 group-hover/delete:text-red-400" />
                                                     </button>
                                                 )}
-                                                <ChevronRight className="h-6 w-6 text-gray-600 group-hover:text-green-400 transition-colors" />
+                                                <ChevronRight className="h-6 w-6 text-zinc-600 group-hover:text-green-400 transition-colors" />
                                             </div>
                                         </div>
                                     </div>
@@ -717,14 +717,14 @@ export default function Logbook() {
                     </div>
 
                     {flights.length === 0 ? (
-                        <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl border-2 border-gray-800 p-16 text-center">
-                            <div className="p-4 bg-gray-800/50 rounded-full w-fit mx-auto mb-4">
-                                <Plane className="h-12 w-12 text-gray-600" />
+                        <div className="bg-zinc-900/30 backdrop-blur-sm rounded-xl border-2 border-zinc-800 p-16 text-center">
+                            <div className="p-4 bg-zinc-800/50 rounded-full w-fit mx-auto mb-4">
+                                <Plane className="h-12 w-12 text-zinc-600" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                            <h3 className="text-xl font-semibold text-zinc-300 mb-2">
                                 No flights logged yet
                             </h3>
-                            <p className="text-gray-500 max-w-md mx-auto">
+                            <p className="text-zinc-500 max-w-md mx-auto">
                                 Submit a flight plan with the logbook checkbox
                                 enabled to start tracking your flights
                             </p>
@@ -741,7 +741,7 @@ export default function Logbook() {
                                         onClick={() =>
                                             navigate(`/logbook/${flight.id}`)
                                         }
-                                        className="group bg-gray-900/30 hover:bg-gray-900/50 backdrop-blur-sm rounded-xl border-2 border-gray-800 hover:border-gray-700 p-5 cursor-pointer transition-all"
+                                        className="group bg-zinc-900/30 hover:bg-zinc-900/50 backdrop-blur-sm rounded-xl border-2 border-zinc-800 hover:border-zinc-700 p-5 cursor-pointer transition-all"
                                     >
                                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                             <div className="flex-1">
@@ -749,7 +749,7 @@ export default function Logbook() {
                                                     <h3 className="text-xl font-bold text-white">
                                                         {flight.callsign}
                                                     </h3>
-                                                    <span className="text-sm text-gray-400">
+                                                    <span className="text-sm text-zinc-400">
                                                         {flight.aircraft_model ||
                                                             flight.aircraft_icao}
                                                     </span>
@@ -757,13 +757,13 @@ export default function Logbook() {
 
                                                 <div className="flex items-center gap-4 mb-2">
                                                     <div className="flex items-center text-sm">
-                                                        <span className="font-semibold text-gray-300">
+                                                        <span className="font-semibold text-zinc-300">
                                                             {
                                                                 flight.departure_icao
                                                             }
                                                         </span>
-                                                        <ChevronRight className="h-4 w-4 mx-2 text-gray-600" />
-                                                        <span className="font-semibold text-gray-300">
+                                                        <ChevronRight className="h-4 w-4 mx-2 text-zinc-600" />
+                                                        <span className="font-semibold text-zinc-300">
                                                             {
                                                                 flight.arrival_icao
                                                             }
@@ -771,7 +771,7 @@ export default function Logbook() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                <div className="flex items-center gap-4 text-xs text-zinc-500">
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar className="h-3 w-3" />
                                                         {new Date(
@@ -809,7 +809,7 @@ export default function Logbook() {
                                                         >
                                                             {landingGrade.text}
                                                         </div>
-                                                        <div className="text-xs text-gray-300 text-center font-semibold mt-1">
+                                                        <div className="text-xs text-zinc-300 text-center font-semibold mt-1">
                                                             {
                                                                 flight.landing_rate_fpm
                                                             }{' '}
@@ -817,7 +817,7 @@ export default function Logbook() {
                                                         </div>
                                                     </div>
                                                 )}
-                                                <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-blue-400 transition-colors" />
+                                                <ChevronRight className="h-5 w-5 text-zinc-600 group-hover:text-blue-400 transition-colors" />
                                             </div>
                                         </div>
                                     </div>
@@ -850,7 +850,7 @@ export default function Logbook() {
                         </Button>
 
                         {showDebug && (
-                            <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border-2 border-red-700 p-6">
+                            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border-2 border-red-700 p-6">
                                 <h2 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
                                     <Terminal className="h-5 w-5" />
                                     Admin Debug Tools
@@ -933,9 +933,9 @@ export default function Logbook() {
                                 )}
 
                                 {debugData && !debugLoading && (
-                                    <div className="bg-black/50 rounded-lg p-4 border-2 border-gray-700">
+                                    <div className="bg-black/50 rounded-lg p-4 border-2 border-zinc-700">
                                         <div className="flex items-center justify-between mb-3">
-                                            <h3 className="text-sm font-semibold text-gray-300 uppercase">
+                                            <h3 className="text-sm font-semibold text-zinc-300 uppercase">
                                                 {debugData.type.replace(
                                                     /-/g,
                                                     ' '
@@ -945,12 +945,12 @@ export default function Logbook() {
                                                 onClick={() =>
                                                     setDebugData(null)
                                                 }
-                                                className="text-gray-500 hover:text-gray-300"
+                                                className="text-zinc-500 hover:text-zinc-300"
                                             >
                                                 <Trash className="h-4 w-4" />
                                             </button>
                                         </div>
-                                        <pre className="text-xs text-gray-300 overflow-auto max-h-96 whitespace-pre-wrap">
+                                        <pre className="text-xs text-zinc-300 overflow-auto max-h-96 whitespace-pre-wrap">
                                             {JSON.stringify(
                                                 debugData.data,
                                                 null,
@@ -961,40 +961,40 @@ export default function Logbook() {
                                 )}
 
                                 {/* Quick Stats Info */}
-                                <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border-2 border-gray-700">
-                                    <h3 className="text-sm font-semibold text-gray-400 mb-2">
+                                <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border-2 border-zinc-700">
+                                    <h3 className="text-sm font-semibold text-zinc-400 mb-2">
                                         Quick Info
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                                         <div>
-                                            <p className="text-gray-500">
+                                            <p className="text-zinc-500">
                                                 User ID
                                             </p>
-                                            <p className="text-gray-300 font-mono">
+                                            <p className="text-zinc-300 font-mono">
                                                 {user.userId}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-500">
+                                            <p className="text-zinc-500">
                                                 Total Flights
                                             </p>
-                                            <p className="text-gray-300 font-mono">
+                                            <p className="text-zinc-300 font-mono">
                                                 {stats?.total_flights || 0}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-500">
+                                            <p className="text-zinc-500">
                                                 Active Flights
                                             </p>
-                                            <p className="text-gray-300 font-mono">
+                                            <p className="text-zinc-300 font-mono">
                                                 {activeFlights.length}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-500">
+                                            <p className="text-zinc-500">
                                                 Page
                                             </p>
-                                            <p className="text-gray-300 font-mono">
+                                            <p className="text-zinc-300 font-mono">
                                                 {page}
                                             </p>
                                         </div>

@@ -159,9 +159,7 @@ export default function AccountSettings() {
                                     </span>
                                     <span className="text-zinc-500">•</span>
                                     <span className="text-zinc-300 text-sm">
-                                        {user?.vatsimRatingShort ||
-                                            user?.vatsimRatingLong ||
-                                            `CID ${user?.vatsimCid}`}
+                                        {user?.vatsimCid}
                                     </span>
                                 </div>
                             ) : (
