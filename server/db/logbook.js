@@ -1044,6 +1044,11 @@ export async function getPublicPilotProfile(username) {
             u.discriminator,
             u.avatar,
             u.roblox_username,
+            u.roblox_user_id,
+            u.vatsim_cid,
+            u.vatsim_rating_id,
+            u.vatsim_rating_short,
+            u.vatsim_rating_long,
             u.created_at
         FROM users u
         WHERE LOWER(u.username) = LOWER($1)
@@ -1054,6 +1059,16 @@ export async function getPublicPilotProfile(username) {
     }
 
     const user = userResult.rows[0];
+
+    // Fallback: derive short rating from numeric id if not stored as text
+    let vatsimShort = user.vatsim_rating_short;
+    if (!vatsimShort && (typeof user.vatsim_rating_id === 'number' || typeof user.vatsim_rating_id === 'string')) {
+        const ratingIdNum = typeof user.vatsim_rating_id === 'number' ? user.vatsim_rating_id : parseInt(user.vatsim_rating_id, 10);
+        const map = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
+        if (Number.isFinite(ratingIdNum) && Object.prototype.hasOwnProperty.call(map, ratingIdNum)) {
+            vatsimShort = map[ratingIdNum];
+        }
+    }
 
     const rolesResult = await pool.query(`
         SELECT r.id, r.name, r.description, r.color, r.icon, r.priority
@@ -1102,6 +1117,10 @@ export async function getPublicPilotProfile(username) {
             discriminator: user.discriminator,
             avatar: user.avatar,
             roblox_username: user.roblox_username,
+            roblox_user_id: user.roblox_user_id,
+            vatsim_cid: user.vatsim_cid,
+            vatsim_rating_short: vatsimShort,
+            vatsim_rating_long: user.vatsim_rating_long,
             member_since: user.created_at,
             is_admin: isAdmin(user.id),
             roles: rolesResult.rows,

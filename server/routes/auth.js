@@ -23,6 +23,12 @@ const ROBLOX_CLIENT_ID = process.env.ROBLOX_CLIENT_ID;
 const ROBLOX_CLIENT_SECRET = process.env.ROBLOX_CLIENT_SECRET;
 const ROBLOX_REDIRECT_URI = process.env.ROBLOX_REDIRECT_URI;
 
+// VATSIM OAuth (linking)
+const VATSIM_CLIENT_ID = process.env.VATSIM_CLIENT_ID;
+const VATSIM_CLIENT_SECRET = process.env.VATSIM_CLIENT_SECRET;
+const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI;
+const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE
+
 // GET: /api/auth/discord - redirect to Discord for authentication
 router.get('/discord', (req, res) => {
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
@@ -192,6 +198,245 @@ router.post('/roblox/unlink', requireAuth, async (req, res) => {
     }
 });
 
+// GET: /api/auth/vatsim - redirect to VATSIM for linking
+router.get('/vatsim', requireAuth, (req, res) => {
+    if (!VATSIM_CLIENT_ID || !VATSIM_REDIRECT_URI) {
+        return res.status(500).json({ error: 'VATSIM OAuth not configured' });
+    }
+
+    const state = jwt.sign({ userId: req.user.userId }, JWT_SECRET, { expiresIn: '15m' });
+    const params = new URLSearchParams({
+        client_id: String(VATSIM_CLIENT_ID),
+        redirect_uri: VATSIM_REDIRECT_URI,
+        response_type: 'code',
+        scope: 'full_name vatsim_details',
+        state
+    });
+    const forceCookie = req.cookies && req.cookies.vatsim_force === '1';
+    if (req.query.force === '1' || req.query.force === 'true' || forceCookie) {
+        params.set('prompt', 'login');
+        params.set('approval_prompt', 'force');
+        if (forceCookie) {
+            res.clearCookie('vatsim_force', { path: '/' });
+        }
+    }
+    const url = `${VATSIM_AUTH_BASE.replace(/\/$/, '')}/oauth/authorize?${params.toString()}`;
+    res.redirect(url);
+});
+
+// GET: /api/auth/vatsim/callback - handle VATSIM OAuth2 callback (server-side)
+router.get('/vatsim/callback', authLimiter, async (req, res) => {
+    const { code, state } = req.query;
+    if (!code || !state) {
+        return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
+    }
+
+    try {
+        let decoded;
+        try {
+            decoded = jwt.verify(String(state), JWT_SECRET);
+        } catch (err) {
+            return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
+        }
+        const userId = decoded?.userId;
+        if (!userId) {
+            return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
+        }
+
+        if (!VATSIM_CLIENT_ID || !VATSIM_CLIENT_SECRET || !VATSIM_REDIRECT_URI) {
+            return res.redirect(FRONTEND_URL + '/settings?error=vatsim_not_configured');
+        }
+
+        const basic = Buffer.from(`${VATSIM_CLIENT_ID}:${VATSIM_CLIENT_SECRET}`).toString('base64');
+        const tokenResponse = await axios.post(
+            `${VATSIM_AUTH_BASE.replace(/\/$/, '')}/oauth/token`,
+            new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: String(code),
+                redirect_uri: VATSIM_REDIRECT_URI,
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'Authorization': `Basic ${basic}`,
+                }
+            }
+        );
+
+        const { access_token } = tokenResponse.data || {};
+        if (!access_token) {
+            return res.redirect(FRONTEND_URL + '/settings?error=vatsim_token_failed');
+        }
+
+        const userResponse = await axios.get(`${VATSIM_AUTH_BASE.replace(/\/$/, '')}/api/user`, {
+            headers: { Authorization: `Bearer ${access_token}` },
+        });
+
+        const payload = userResponse.data || {};
+        const root = payload.data || payload.user || payload;
+        const cid = String(root?.cid ?? root?.id ?? '');
+        const candidates = [
+            root?.rating?.controller,
+            root?.ratings?.controller,
+            root?.ratings?.atc,
+            root?.controller_rating,
+            root?.controller,
+            root?.rating,
+            root?.vatsim?.rating,
+            root?.vatsim?.ratings?.controller,
+        ].filter(Boolean);
+        let ratingShort = null;
+        let ratingLong = null;
+        let numeric = null;
+        for (const r of candidates) {
+            if (r == null) continue;
+            if (typeof r === 'number' || typeof r === 'string') {
+                const n = typeof r === 'number' ? r : parseInt(String(r), 10);
+                if (Number.isFinite(n)) { numeric = n; break; }
+            } else if (typeof r === 'object') {
+                const id = r.id ?? r.rating ?? r.controller;
+                if (id != null) {
+                    const n = typeof id === 'number' ? id : parseInt(String(id), 10);
+                    if (Number.isFinite(n)) numeric = n;
+                }
+                ratingShort = r.short || r.short_name || ratingShort;
+                ratingLong = r.long || r.long_name || ratingLong;
+                if (numeric != null || ratingShort || ratingLong) break;
+            }
+        }
+        // parsed for VATSIM callback handled
+        const fallbackMap = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
+        const fallbackShort = ratingShort || (numeric != null && Number.isFinite(numeric) ? fallbackMap[numeric] || null : null);
+
+        const { updateVatsimAccount } = await import('../db/users.js');
+        await updateVatsimAccount(userId, {
+            vatsimCid: cid || null,
+            ratingId: Number.isFinite(numeric) ? numeric : null,
+            ratingShort: fallbackShort,
+            ratingLong: ratingLong || null,
+        });
+
+        res.redirect(FRONTEND_URL + '/settings?vatsim_linked=true');
+    } catch (error) {
+        console.error('VATSIM link error (callback):', error?.response?.data || error.message);
+        res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
+    }
+});
+
+// POST: /api/auth/vatsim/exchange - exchange code to link account
+router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
+    try {
+        const { code, state } = req.body || {};
+        if (!code || !state) {
+            return res.status(400).json({ error: 'Missing code or state' });
+        }
+        let decoded;
+        try {
+            decoded = jwt.verify(state, JWT_SECRET);
+        } catch (err) {
+            return res.status(400).json({ error: 'Invalid state' });
+        }
+        if (!decoded || decoded.userId !== req.user.userId) {
+            return res.status(400).json({ error: 'State/user mismatch' });
+        }
+        if (!VATSIM_CLIENT_ID || !VATSIM_CLIENT_SECRET || !VATSIM_REDIRECT_URI) {
+            return res.status(500).json({ error: 'VATSIM OAuth not configured' });
+        }
+
+        // Per VATSIM Connect docs, client must authenticate via HTTP Basic
+        const basic = Buffer.from(`${VATSIM_CLIENT_ID}:${VATSIM_CLIENT_SECRET}`).toString('base64');
+        const tokenResponse = await axios.post(
+            `${VATSIM_AUTH_BASE.replace(/\/$/, '')}/oauth/token`,
+            new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: String(code),
+                redirect_uri: VATSIM_REDIRECT_URI,
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'Authorization': `Basic ${basic}`,
+                }
+            }
+        );
+        const { access_token } = tokenResponse.data || {};
+        if (!access_token) {
+            return res.status(500).json({ error: 'Failed to retrieve VATSIM token' });
+        }
+        const userResponse = await axios.get(`${VATSIM_AUTH_BASE.replace(/\/$/, '')}/api/user`, {
+            headers: { Authorization: `Bearer ${access_token}` },
+        });
+        const payload = userResponse.data || {};
+        const root = payload.data || payload.user || payload;
+        const cid = String(root?.cid ?? root?.id ?? '');
+        const candidates2 = [
+            root?.rating?.controller,
+            root?.ratings?.controller,
+            root?.ratings?.atc,
+            root?.controller_rating,
+            root?.controller,
+            root?.rating,
+            root?.vatsim?.rating,
+            root?.vatsim?.ratings?.controller,
+        ].filter(Boolean);
+        let ratingShort2 = null;
+        let ratingLong2 = null;
+        let numeric2 = null;
+        for (const r of candidates2) {
+            if (r == null) continue;
+            if (typeof r === 'number' || typeof r === 'string') {
+                const n = typeof r === 'number' ? r : parseInt(String(r), 10);
+                if (Number.isFinite(n)) { numeric2 = n; break; }
+            } else if (typeof r === 'object') {
+                const id = r.id ?? r.rating ?? r.controller;
+                if (id != null) {
+                    const n = typeof id === 'number' ? id : parseInt(String(id), 10);
+                    if (Number.isFinite(n)) numeric2 = n;
+                }
+                ratingShort2 = r.short || r.short_name || ratingShort2;
+                ratingLong2 = r.long || r.long_name || ratingLong2;
+                if (numeric2 != null || ratingShort2 || ratingLong2) break;
+            }
+        }
+        // parsed for VATSIM exchange handled
+        const fallbackMap2 = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
+        const fallbackShort = ratingShort2 || (numeric2 != null && Number.isFinite(numeric2) ? fallbackMap2[numeric2] || null : null);
+
+        const { updateVatsimAccount } = await import('../db/users.js');
+        await updateVatsimAccount(req.user.userId, {
+            vatsimCid: cid || null,
+            ratingId: Number.isFinite(numeric) ? numeric : null,
+            ratingShort: fallbackShort,
+            ratingLong: ratingLong || null,
+        });
+        res.json({ success: true, vatsimCid: cid, ratingShort: fallbackShort, ratingLong });
+    } catch (error) {
+        console.error('VATSIM link error:', error?.response?.data || error.message);
+        res.status(500).json({ error: 'VATSIM link failed' });
+    }
+});
+
+// POST: /api/auth/vatsim/unlink - unlink
+router.post('/vatsim/unlink', requireAuth, async (req, res) => {
+    try {
+        const { unlinkVatsimAccount } = await import('../db/users.js');
+        await unlinkVatsimAccount(req.user.userId);
+        res.cookie('vatsim_force', '1', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 5 * 60 * 1000, // 5 minutes
+            path: '/',
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error unlinking VATSIM:', error);
+        res.status(500).json({ error: 'Failed to unlink VATSIM account' });
+    }
+});
+
 // GET: /api/auth/me - get current user info
 router.get('/me', requireAuth, async (req, res) => {
     try {
@@ -218,6 +463,10 @@ router.get('/me', requireAuth, async (req, res) => {
             rolePermissions: user.rolePermissions,
             robloxUserId: user.robloxUserId,
             robloxUsername: user.robloxUsername,
+            vatsimCid: user.vatsimCid,
+            vatsimRatingId: user.vatsimRatingId,
+            vatsimRatingShort: user.vatsimRatingShort,
+            vatsimRatingLong: user.vatsimRatingLong,
         });
     } catch (error) {
         console.error('Error fetching user:', error);

@@ -1,15 +1,41 @@
 import { useAuth } from '../../hooks/auth/useAuth';
-import { Link2, ExternalLink, UserX } from 'lucide-react';
+import { Link2, ExternalLink, UserX, TowerControl } from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
 import Button from '../common/Button';
 
 export default function AccountSettings() {
     const { user, refreshUser } = useAuth();
+    const isVatsimLinked = !!(
+        user?.vatsimCid || user?.vatsimRatingShort || user?.vatsimRatingLong
+    );
 
     const handleLinkRoblox = () => {
         window.location.href = `${
             import.meta.env.VITE_SERVER_URL
         }/api/auth/roblox`;
+    };
+
+    const handleLinkVatsim = () => {
+        // Always force VATSIM to show the login/consent screen when linking
+        window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim?force=1`;
+    };
+
+    const handleUnlinkVatsim = async () => {
+        if (!confirm('Unlink your VATSIM account?')) return;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/unlink`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+            if (res.ok) {
+                await refreshUser();
+            } else {
+                alert('Failed to unlink VATSIM account');
+            }
+        } catch (e) {
+            console.error('Unlink VATSIM error:', e);
+            alert('Failed to unlink VATSIM account');
+        }
     };
 
     const handleUnlinkRoblox = async () => {
@@ -101,6 +127,40 @@ export default function AccountSettings() {
                                 size="sm"
                                 className="bg-blue-600 hover:bg-blue-700 border-blue-600"
                             >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Link Account
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* VATSIM Account */}
+                <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                            <TowerControl className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-semibold text-base">VATSIM Account</h3>
+                            {isVatsimLinked ? (
+                                <div className="flex items-center space-x-2 mt-1">
+                                    <span className="text-green-400 text-sm font-medium">Connected</span>
+                                    <span className="text-zinc-500">•</span>
+                                    <span className="text-zinc-300 text-sm">{user?.vatsimRatingShort || user?.vatsimRatingLong || `CID ${user?.vatsimCid}`}</span>
+                                </div>
+                            ) : (
+                                <p className="text-zinc-400 text-sm mt-1">Link your VATSIM account to show controller rating on your profile</p>
+                            )}
+                        </div>
+                    </div>
+                    <div>
+                        {isVatsimLinked ? (
+                            <Button onClick={handleUnlinkVatsim} variant="outline" size="sm" className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600">
+                                <UserX className="w-4 h-4 mr-2" />
+                                Unlink
+                            </Button>
+                        ) : (
+                            <Button onClick={handleLinkVatsim} variant="primary" size="sm" className="bg-emerald-600 hover:bg-emerald-700 border-emerald-600">
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 Link Account
                             </Button>

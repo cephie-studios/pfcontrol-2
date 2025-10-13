@@ -14,6 +14,7 @@ import PublicFlightView from './pages/PublicFlightView';
 import PilotProfile from './pages/PilotProfile';
 
 import Login from './pages/Login';
+import VatsimCallback from './pages/VatsimCallback';
 import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -71,6 +72,7 @@ export default function App() {
                     />
 
                     <Route path="/login" element={<Login />} />
+                    <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
                     <Route path="/submit/:sessionId" element={<Submit />} />
                     <Route
                         path="acars/:sessionId/:flightId"

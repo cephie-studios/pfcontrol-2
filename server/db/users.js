@@ -30,10 +30,21 @@ async function initializeUsersTable() {
                     settings_updated_at TIMESTAMP DEFAULT NOW(),
                     total_sessions_created INTEGER DEFAULT 0,
                     total_minutes INTEGER DEFAULT 0,
+                    -- VATSIM linkage
+                    vatsim_cid VARCHAR(16),
+                    vatsim_rating_id INTEGER,
+                    vatsim_rating_short VARCHAR(8),
+                    vatsim_rating_long VARCHAR(32),
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
             `);
+        } else {
+            // Ensure VATSIM columns exist on existing installations
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_cid VARCHAR(16)");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_id INTEGER");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_short VARCHAR(8)");
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vatsim_rating_long VARCHAR(32)");
         }
     } catch (error) {
         console.error('Error initializing users table:', error);
@@ -310,7 +321,12 @@ export async function getUserById(id) {
             roleName: user.role_name,
             rolePermissions: rolePermissions,
             robloxUserId: user.roblox_user_id,
-            robloxUsername: user.roblox_username
+            robloxUsername: user.roblox_username,
+            // VATSIM linkage
+            vatsimCid: user.vatsim_cid,
+            vatsimRatingId: user.vatsim_rating_id,
+            vatsimRatingShort: user.vatsim_rating_short,
+            vatsimRatingLong: user.vatsim_rating_long
         };
     } catch (error) {
         console.error('Error fetching user:', error);
@@ -402,6 +418,44 @@ export async function unlinkRobloxAccount(userId) {
         return await getUserById(userId);
     } catch (error) {
         console.error('Error unlinking Roblox account:', error);
+        throw error;
+    }
+}
+
+export async function updateVatsimAccount(userId, { vatsimCid, ratingId, ratingShort, ratingLong }) {
+    try {
+        await pool.query(`
+            UPDATE users SET
+                vatsim_cid = $2,
+                vatsim_rating_id = $3,
+                vatsim_rating_short = $4,
+                vatsim_rating_long = $5,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [userId, vatsimCid, ratingId, ratingShort, ratingLong]);
+
+        return await getUserById(userId);
+    } catch (error) {
+        console.error('Error updating VATSIM account:', error);
+        throw error;
+    }
+}
+
+export async function unlinkVatsimAccount(userId) {
+    try {
+        await pool.query(`
+            UPDATE users SET
+                vatsim_cid = NULL,
+                vatsim_rating_id = NULL,
+                vatsim_rating_short = NULL,
+                vatsim_rating_long = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+        `, [userId]);
+
+        return await getUserById(userId);
+    } catch (error) {
+        console.error('Error unlinking VATSIM account:', error);
         throw error;
     }
 }
