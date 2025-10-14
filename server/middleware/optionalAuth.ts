@@ -1,13 +1,14 @@
 import jwt from "jsonwebtoken";
 import { getUserById } from "../db/users";
 import { isAdmin } from "./admin";
-import { Request, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import type { JwtPayloadClient } from "../types/JwtPayload";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export default async function optionalAuth(
     req: Request,
+    res: Response,
     next: NextFunction
 ) {
     const token = req.cookies.auth_token;
