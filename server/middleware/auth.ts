@@ -24,7 +24,6 @@ export default async function requireAuth(req: Request, res: Response, next: Nex
         }
 
         req.user = {
-            id: user.id,
             userId: decoded.userId,
             username: decoded.username,
             discriminator: decoded.discriminator,

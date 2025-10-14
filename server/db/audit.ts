@@ -2,7 +2,7 @@ import { mainDb } from "./connection";
 import { encrypt, decrypt } from "../utils/encryption";
 import { sql } from "kysely";
 
-interface AdminActionData {
+export interface AdminActionData {
   adminId: number | string;
   adminUsername: string;
   actionType: string;
