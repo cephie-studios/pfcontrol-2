@@ -1,4 +1,5 @@
 import { Kysely, PostgresDialect } from 'kysely';
+import { createMainTables } from './schemas';
 import pg from 'pg';
 import Redis from 'ioredis';
 
@@ -37,3 +38,8 @@ if (!process.env.REDIS_URL) {
   throw new Error('REDIS_URL is not defined in environment variables');
 }
 export const redisConnection = new Redis(process.env.REDIS_URL as string);
+
+createMainTables().catch((err) => {
+  console.error('Failed to create main tables:', err);
+  process.exit(1);
+});
