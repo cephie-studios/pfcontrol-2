@@ -16,6 +16,26 @@ import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
+const requiredEnv = [
+    'DISCORD_CLIENT_ID',
+    'DISCORD_CLIENT_SECRET',
+    'DISCORD_REDIRECT_URI',
+    'FRONTEND_URL',
+    'JWT_SECRET',
+    'POSTGRES_DB_URL',
+    'REDIS_URL',
+    'PORT',
+];
+const missingEnv = requiredEnv.filter(
+    (key) => !process.env[key] || process.env[key] === ''
+);
+if (missingEnv.length > 0) {
+    console.error(
+        'Missing required environment variables:',
+        missingEnv.join(', ')
+    );
+    process.exit(1);
+}
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9901;
 
@@ -52,7 +72,7 @@ app.use(express.static(path.join(__dirname, '..', '..', 'dist'), {
   }
 }));
 
-app.get(/.*/, (req, res) => {
+app.get('/{*any}', (req, res) => {
     res.sendFile(path.join(__dirname, '..', "..", "dist", "index.html"));
 });
 
