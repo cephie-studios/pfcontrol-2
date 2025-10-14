@@ -69,16 +69,16 @@ function validateFlightFields(updates: Partial<FlightsDatabase>) {
     if (typeof updates.remark === "string" && (updates.remark as string).length > 50) {
         throw new Error('Remark must be 50 characters or less');
     }
-    if (updates.cruisingFL !== undefined) {
-        const fl = parseInt(String(updates.cruisingFL), 10);
+    if (updates.cruisingfl !== undefined) {
+        const fl = parseInt(String(updates.cruisingfl), 10);
         if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
             throw new Error(
                 'Cruising FL must be between 0 and 200 in 50-step increments'
             );
         }
     }
-    if (updates.clearedFL !== undefined) {
-        const fl = parseInt(String(updates.clearedFL), 10);
+    if (updates.clearedfl !== undefined) {
+        const fl = parseInt(String(updates.clearedfl), 10);
         if (isNaN(fl) || fl < 0 || fl > 200 || fl % 5 !== 0) {
             throw new Error(
                 'Cleared FL must be between 0 and 200 in 50-step increments'
@@ -90,6 +90,18 @@ function validateFlightFields(updates: Partial<FlightsDatabase>) {
 export async function getFlightsBySession(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
   const tableName = `flights_${validSessionId}`;
+
+  let tableExistsResult: boolean;
+  try {
+    await flightsDb.selectFrom(tableName).select('id').limit(1).execute();
+    tableExistsResult = true;
+  } catch {
+    tableExistsResult = false;
+  }
+
+  if (!tableExistsResult) {
+    return [];
+  }
 
   try {
     const flights = await flightsDb
@@ -332,8 +344,12 @@ export async function updateFlight(
     let dbKey = key;
     if (key === 'cruisingFL') dbKey = 'cruisingfl';
     if (key === 'clearedFL') dbKey = 'clearedfl';
-    if (allowedColumns.includes(dbKey.toLowerCase())) {
-      dbUpdates[dbKey] = value;
+    if (allowedColumns.includes(key)) {
+      if (dbKey === 'clearance') {
+        dbUpdates[dbKey] = String(value);
+      } else {
+        dbUpdates[dbKey] = value;
+      }
     }
   }
 

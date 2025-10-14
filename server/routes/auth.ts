@@ -487,12 +487,12 @@ router.get('/me', requireAuth, async (req, res) => {
             roleId: user.roleId,
             roleName: user.roleName,
             rolePermissions: user.rolePermissions,
-            robloxUserId: user.robloxUserId,
-            robloxUsername: user.robloxUsername,
-            vatsimCid: user.vatsimCid,
-            vatsimRatingId: user.vatsimRatingId,
-            vatsimRatingShort: user.vatsimRatingShort,
-            vatsimRatingLong: user.vatsimRatingLong,
+            robloxUserId: user.roblox_user_id,
+            robloxUsername: user.roblox_username,
+            vatsimCid: user.vatsim_cid,
+            vatsimRatingId: user.vatsim_rating_id,
+            vatsimRatingShort: user.vatsim_rating_short,
+            vatsimRatingLong: user.vatsim_rating_long,
         });
     } catch (error) {
         console.error('Error fetching user:', error);

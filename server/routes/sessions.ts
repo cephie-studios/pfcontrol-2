@@ -6,7 +6,6 @@ import {
     deleteSession,
     getAllSessions,
     updateSessionName,
-    getSessionsByUserDetailed
 } from '../db/sessions';
 import { addSessionToUser } from '../db/users';
 import { generateSessionId, generateAccessId } from '../utils/ids';
@@ -86,16 +85,25 @@ router.post('/create', sessionCreationLimiter, requireAuth, async (req: Request,
     }
 });
 
-// GET: /api/sessions/mine - Get user's sessions
-router.get('/mine', requireAuth, async (req: Request, res: Response) => {
+// GET: /api/sessions/mine - Get sessions for the authenticated user
+router.get('/mine', requireAuth, async (req, res) => {
     try {
-        const user = req.user;
-        if (!isJwtPayloadClient(user)) {
+        const userId = req.user?.userId;
+        if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const userId = user.userId;
-        const sessions = await getSessionsByUserDetailed(userId);
-        res.json(sessions);
+        const sessions = await getSessionsByUser(userId);
+        res.json(sessions.map(session => ({
+            sessionId: session.session_id,
+            accessId: session.access_id,
+            airportIcao: session.airport_icao,
+            createdAt: session.created_at,
+            createdBy: session.created_by,
+            isPFATC: session.is_pfatc,
+            activeRunway: session.active_runway,
+            customName: session.custom_name,
+            flightCount: 0
+        })));
     } catch (error) {
         console.error('Error fetching user sessions:', error);
         res.status(500).json({ error: 'Internal server error', message: 'Failed to fetch user sessions' });

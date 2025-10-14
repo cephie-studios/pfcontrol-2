@@ -89,8 +89,8 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 if (updates.callsign && typeof updates.callsign === 'string') updates.callsign = sanitizeCallsign(updates.callsign);
                 if (updates.remark && typeof updates.remark === 'string') updates.remark = sanitizeString(updates.remark, 500);
                 if (updates.squawk && typeof updates.squawk === 'string') updates.squawk = sanitizeSquawk(updates.squawk);
-                if (updates.clearedfl && typeof updates.clearedfl === 'string') updates.clearedfl = sanitizeFlightLevel(updates.clearedfl);
-                if (updates.cruisingfl && typeof updates.cruisingfl === 'string') updates.cruisingfl = sanitizeFlightLevel(updates.cruisingfl);
+                if (updates.clearedFL && typeof updates.clearedFL === 'string') updates.clearedFL = sanitizeFlightLevel(updates.clearedFL);
+                if (updates.cruisingFL && typeof updates.cruisingFL === 'string') updates.cruisingFL = sanitizeFlightLevel(updates.cruisingFL);
                 if (updates.runway && typeof updates.runway === 'string') updates.runway = sanitizeRunway(updates.runway);
                 if (updates.stand && typeof updates.stand === 'string') updates.stand = sanitizeString(updates.stand, 8);
                 if (updates.gate && typeof updates.gate === 'string') updates.gate = sanitizeString(updates.gate, 8);
@@ -99,7 +99,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
                 if (updates.clearance !== undefined) {
                     if (typeof updates.clearance === 'string') {
-                        updates.clearance = (updates.clearance.toLowerCase() === 'true') ? 'true' : 'false';
+                        updates.clearance = updates.clearance.toLowerCase() === 'true';
                     }
                 }
 
@@ -117,8 +117,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 } else {
                     socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
                 }
-            } catch {
-                socket.emit('flightError', { action: 'update', flightId, error: 'Failed to update flight' });
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.error('Error updating flight:', error);
+                socket.emit('flightError', { action: 'update', flightId, error: errorMessage || 'Failed to update flight' });
             }
         });
 

@@ -15,11 +15,12 @@ interface MentionData {
     message: string;
     sessionId: string;
     timestamp: string;
+    [key: string]: unknown;
 }
 
 interface SessionUsersWebsocketIO {
     activeUsers?: Map<string, Array<{ id: string; username: string }>>;
-    sendMentionToUser: (userId: string, mentionData: MentionData) => void;
+    sendMentionToUser(userId: string, mentionData: MentionData): void;
 }
 
 export function setupChatWebsocket(httpServer: Server, sessionUsersWebsocketIO: SessionUsersWebsocketIO) {

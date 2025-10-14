@@ -8,6 +8,12 @@ import dotenv from 'dotenv';
 import http from 'http';
 import chalk from 'chalk';
 
+import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket';
+import { setupChatWebsocket } from './websockets/chatWebsocket';
+import { setupFlightsWebsocket } from './websockets/flightsWebsocket';
+import { setupOverviewWebsocket } from './websockets/overviewWebsocket';
+import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket';
+
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
 
@@ -28,7 +34,7 @@ app.use(cors({
       ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['*']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Credentials']
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -51,6 +57,11 @@ app.get(/.*/, (req, res) => {
 });
 
 const server = http.createServer(app);
+const sessionUsersIO = setupSessionUsersWebsocket(server);
+setupChatWebsocket(server, sessionUsersIO);
+setupFlightsWebsocket(server);
+setupOverviewWebsocket(server, sessionUsersIO);
+setupArrivalsWebsocket(server);
 
 server.listen(PORT, () => {
   console.log(chalk.green(`Server running on http://localhost:${PORT}`));

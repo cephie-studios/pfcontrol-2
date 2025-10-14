@@ -37,7 +37,9 @@ export function encrypt(text: unknown) {
 }
 
 export function decrypt(encryptedData: { iv: string; data: string; authTag: string }) {
-  if (!encryptedData) return null;
+  if (!encryptedData || typeof encryptedData !== 'object' || !encryptedData.iv || !encryptedData.data || !encryptedData.authTag) {
+    return null;
+  }
 
   try {
     const { iv, data, authTag } = encryptedData;
