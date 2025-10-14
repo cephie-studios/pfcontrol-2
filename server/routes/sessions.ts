@@ -18,7 +18,6 @@ import { sanitizeAlphanumeric } from '../utils/sanitization';
 
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload';
-import { decrypt } from '../utils/encryption';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
     return (
@@ -142,8 +141,9 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
         let atis = { letter: 'A', text: '', timestamp: new Date().toISOString() };
         if (session.atis) {
             try {
-                atis = decrypt(JSON.parse(session.atis));
-            } catch {
+                atis = JSON.parse(session.atis);
+            } catch (e) {
+                console.log('parse error:', e);
                 // fallback to default atis
             }
         }
@@ -176,7 +176,7 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
         let decryptedAtis = { letter: 'A', text: '', timestamp: new Date().toISOString() };
         if (session.atis) {
             try {
-                decryptedAtis = decrypt(JSON.parse(session.atis));
+                decryptedAtis = JSON.parse(session.atis);
             } catch {
                 // fallback to default atis
             }

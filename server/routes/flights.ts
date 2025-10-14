@@ -35,11 +35,11 @@ router.post('/:sessionId', optionalAuth, flightCreationLimiter, async (req, res)
 
         await recordNewFlight();
 
-    // Remove sensitive fields before broadcasting
-    const sanitizedFlight = flight ? Object.fromEntries(Object.entries(flight).filter(([k]) => !['acars_token', 'user_id', 'ip_address'].includes(k))) : {};
-    broadcastFlightEvent(req.params.sessionId, 'flightAdded', sanitizedFlight);
+        const sanitizedFlight = flight ? Object.fromEntries(Object.entries(flight).filter(([k]) => !['acars_token', 'user_id', 'ip_address'].includes(k))) : {};
+        broadcastFlightEvent(req.params.sessionId, 'flightAdded', sanitizedFlight);
         res.status(201).json(flight);
-    } catch {
+    } catch (err) {
+        console.error('Failed to add flight:', err);
         res.status(500).json({ error: 'Failed to add flight' });
     }
 });

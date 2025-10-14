@@ -209,7 +209,7 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         }
       }
 
-      const countQuery = query.clearSelect().select(({ fn }) => fn.countAll().as('count'));
+      const countQuery = query.clearSelect().clearOrderBy().select(({ fn }) => fn.countAll().as('count'));
       const countResult = await countQuery.executeTakeFirst();
       totalUsers = Number(countResult?.count) || 0;
 

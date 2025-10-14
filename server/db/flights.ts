@@ -299,6 +299,15 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     flightData.sid = sidResult.sid;
   }
 
+  if (flightData.cruisingFL !== undefined) {
+    flightData.cruisingfl = flightData.cruisingFL;
+    delete flightData.cruisingFL;
+  }
+  if (flightData.clearedFL !== undefined) {
+    flightData.clearedfl = flightData.clearedFL;
+    delete flightData.clearedFL;
+  }
+
   const { icao, ...flightDataForDb } = flightData;
 
   const result = await flightsDb
@@ -367,7 +376,13 @@ export async function updateFlight(
     throw new Error('No valid fields to update');
   }
 
-  dbUpdates.updated = new Date().toISOString();
+  dbUpdates.updated_at = new Date();
+
+  try {
+    await sql`ALTER TABLE ${sql.table(tableName)} ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP;`.execute(flightsDb);
+  } catch (err) {
+    console.error('Could not ensure column exists:', 'updated_at', String(err));
+  }
 
   const result = await flightsDb
     .updateTable(tableName)

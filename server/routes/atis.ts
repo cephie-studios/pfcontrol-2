@@ -84,10 +84,16 @@ router.post('/generate', requireAuth, async (req, res) => {
 
         const atisTimestamp = new Date().toISOString();
 
-        const updatedSession = await updateSession(sessionId, { atis: generatedAtis });
+        const atisData = {
+          letter: ident,
+          text: generatedAtis,
+          timestamp: atisTimestamp,
+        };
+        const updatedSession = await updateSession(sessionId, { atis: JSON.stringify(atisData) });
         if (!updatedSession) {
             throw new Error('Failed to update session with ATIS data');
         }
+        console.log('ATIS updated successfully. Session atis:', updatedSession.atis);
 
         res.json({
             atisText: generatedAtis,
