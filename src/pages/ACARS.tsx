@@ -330,7 +330,7 @@ NOTES:
         return () => {
             chartView.removeEventListener('wheel', handleWheel);
         };
-    }, [selectedChart, settings]);
+    }, [selectedChart]);
 
     useEffect(() => {
         if (initializedRef.current) return;
