@@ -1,7 +1,7 @@
-import { getUserById, updateUserSettings } from '../db/users';
+import { getUserById, updateUserSettings } from '../db/users.js';
 import express from 'express';
 import multer from 'multer';
-import requireAuth from '../middleware/auth';
+import requireAuth from '../middleware/auth.js';
 import FormData from 'form-data';
 import axios from 'axios';
 

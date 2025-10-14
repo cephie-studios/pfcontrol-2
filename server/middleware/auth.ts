@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { getUserById } from "../db/users";
+import { getUserById } from "../db/users.js";
 import { isAdmin } from "./admin.js";
 import { Request, Response, NextFunction } from "express";
 import { JwtPayload } from "../types/JwtPayload.js";

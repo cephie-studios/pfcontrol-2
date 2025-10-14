@@ -1,6 +1,6 @@
-import { mainDb } from "./connection";
+import { mainDb } from "./connection.js";
 import { sql } from "kysely";
-import { isAdmin } from "../middleware/admin";
+import { isAdmin } from "../middleware/admin.js";
 
 export async function getAllRoles() {
   try {

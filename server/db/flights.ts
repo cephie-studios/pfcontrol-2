@@ -1,9 +1,9 @@
-import { FlightsDatabase } from "./types/connection/FlightsDatabase";
-import { validateSessionId } from "../utils/validation";
-import { flightsDb, mainDb } from "./connection";
-import { validateFlightId } from "../utils/validation";
-import { getSessionById } from "./sessions";
-import { generateRandomId, generateSID, generateSquawk, getWakeTurbulence } from "../utils/flightUtils";
+import { FlightsDatabase } from "./types/connection/FlightsDatabase.js";
+import { validateSessionId } from "../utils/validation.js";
+import { flightsDb, mainDb } from "./connection.js";
+import { validateFlightId } from "../utils/validation.js";
+import { getSessionById } from "./sessions.js";
+import { generateRandomId, generateSID, generateSquawk, getWakeTurbulence } from "../utils/flightUtils.js";
 import crypto from "crypto";
 import { sql } from "kysely";
 

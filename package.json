@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "set NODE_ENV=development && concurrently \"vite\" \"npx nodemon\"",
-    "prod": "cross-env NODE_ENV=production node server/dist/server.js",
-    "build": "vite build --mode production",
+    "prod": "cross-env NODE_ENV=production node server/dist/main.js",
+    "build": "npm run build:server && vite build --mode production",
+    "build:server": "tsc --project server/tsconfig.json",
     "build:dev": "vite build --mode development",
     "build-only": "vite build",
     "lint": "eslint .",

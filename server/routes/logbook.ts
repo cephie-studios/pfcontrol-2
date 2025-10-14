@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { JwtPayloadClient } from '../types/JwtPayload';
+import { JwtPayloadClient } from '../types/JwtPayload.js';
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
 import { isAdmin, requireAdmin } from '../middleware/admin.js';
@@ -25,7 +25,7 @@ import {
     markAllNotificationsAsRead,
     deleteNotification
 } from '../db/userNotifications.js';
-import { mainDb } from '../db/connection';
+import { mainDb } from '../db/connection.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
     return (

@@ -1,4 +1,4 @@
-import { mainDb } from "./connection";
+import { mainDb } from "./connection.js";
 
 export async function getUserNotifications(userId: string, unreadOnly = false, limit = 20) {
   let query = mainDb

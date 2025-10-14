@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import { isTester as checkIsTester, getTesterSettings } from '../db/testers';
+import { isTester as checkIsTester, getTesterSettings } from '../db/testers.js';
 import { Request, Response, NextFunction } from "express";
-import type { JwtPayload } from "../types/JwtPayload";
+import type { JwtPayload } from "../types/JwtPayload.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

@@ -1,14 +1,14 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { addFlight, updateFlight, deleteFlight, type AddFlightData, type ClientFlight } from '../db/flights';
-import { validateSessionAccess } from '../middleware/sessionAccess';
-import { updateSession, getAllSessions, getSessionById } from '../db/sessions';
-import { getArrivalsIO } from './arrivalsWebsocket';
-import { handleFlightStatusChange } from '../services/logbookStatusHandler';
-import { flightsDb } from '../db/connection';
-import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation';
-import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway } from '../utils/sanitization';
+import { addFlight, updateFlight, deleteFlight, type AddFlightData, type ClientFlight } from '../db/flights.js';
+import { validateSessionAccess } from '../middleware/sessionAccess.js';
+import { updateSession, getAllSessions, getSessionById } from '../db/sessions.js';
+import { getArrivalsIO } from './arrivalsWebsocket.js';
+import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
+import { flightsDb } from '../db/connection.js';
+import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
+import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway } from '../utils/sanitization.js';
 import type { Server as HTTPServer } from 'http';
-import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase';
+import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
 
 interface FlightUpdateData {
     flightId: string | number;

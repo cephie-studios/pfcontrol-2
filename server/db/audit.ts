@@ -1,5 +1,5 @@
-import { mainDb } from "./connection";
-import { encrypt, decrypt } from "../utils/encryption";
+import { mainDb } from "./connection.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 
 export interface AdminActionData {

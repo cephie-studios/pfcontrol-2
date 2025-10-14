@@ -2,9 +2,9 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { getTesterSettings } from '../db/testers';
-import { getActiveNotifications } from '../db/notifications';
-import { mainDb, flightsDb } from '../db/connection';
+import { getTesterSettings } from '../db/testers.js';
+import { getActiveNotifications } from '../db/notifications.js';
+import { mainDb, flightsDb } from '../db/connection.js';
 import { sql } from 'kysely';
 
 import dotenv from 'dotenv';

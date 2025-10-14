@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { getAppVersion } from '../db/version';
+import { getAppVersion } from '../db/version.js';
 
 import dataRouter from "./data.js";
 import sessionRouter from "./sessions.js";

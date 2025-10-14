@@ -1,12 +1,12 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
 import optionalAuth from '../middleware/optionalAuth.js';
-import { getFlightsBySession, addFlight, updateFlight, deleteFlight, validateAcarsAccess } from '../db/flights';
-import { broadcastFlightEvent } from '../websockets/flightsWebsocket';
-import { recordNewFlight } from '../db/statistics';
-import { getClientIp } from '../utils/getIpAddress';
-import { mainDb, flightsDb } from '../db/connection';
-import { flightCreationLimiter, acarsValidationLimiter } from '../middleware/rateLimiting';
+import { getFlightsBySession, addFlight, updateFlight, deleteFlight, validateAcarsAccess } from '../db/flights.js';
+import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
+import { recordNewFlight } from '../db/statistics.js';
+import { getClientIp } from '../utils/getIpAddress.js';
+import { mainDb, flightsDb } from '../db/connection.js';
+import { flightCreationLimiter, acarsValidationLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import requireAuth from '../middleware/auth';
-import { updateSession } from '../db/sessions';
+import requireAuth from '../middleware/auth.js';
+import { updateSession } from '../db/sessions.js';
 
 const router = express.Router();
 
@@ -93,7 +93,6 @@ router.post('/generate', requireAuth, async (req, res) => {
         if (!updatedSession) {
             throw new Error('Failed to update session with ATIS data');
         }
-        console.log('ATIS updated successfully. Session atis:', updatedSession.atis);
 
         res.json({
             atisText: generatedAtis,

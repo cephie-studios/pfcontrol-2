@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
-import { getUserById } from "../db/users";
-import { isAdmin } from "./admin";
+import { getUserById } from "../db/users.js";
+import { isAdmin } from "./admin.js";
 import { Request, Response, NextFunction } from "express";
-import type { JwtPayloadClient } from "../types/JwtPayload";
+import type { JwtPayloadClient } from "../types/JwtPayload.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

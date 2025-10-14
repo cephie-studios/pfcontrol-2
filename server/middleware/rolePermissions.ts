@@ -1,6 +1,6 @@
-import { getUserById } from '../db/users';
-import { getRoleById } from '../db/roles';
-import { isAdmin } from './admin';
+import { getUserById } from '../db/users.js';
+import { getRoleById } from '../db/roles.js';
+import { isAdmin } from './admin.js';
 
 import { Request, Response, NextFunction } from 'express';
 

@@ -1,8 +1,8 @@
-import { logAdminAction } from '../db/audit';
-import { getClientIp } from '../utils/getIpAddress';
-import { encrypt } from '../utils/encryption';
+import { logAdminAction } from '../db/audit.js';
+import { getClientIp } from '../utils/getIpAddress.js';
+import { encrypt } from '../utils/encryption.js';
 import { Request, Response, NextFunction } from 'express';
-import type { AdminActionData } from '../db/audit';
+import type { AdminActionData } from '../db/audit.js';
 
 export function createAuditLogger(actionType: string) {
     return async (req: Request, res: Response, next: NextFunction) => {

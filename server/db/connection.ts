@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect } from 'kysely';
-import { createMainTables } from './schemas';
+import { createMainTables } from './schemas.js';
 import pg from 'pg';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';

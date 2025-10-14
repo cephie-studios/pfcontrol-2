@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getClientIp } from './getIpAddress';
+import { getClientIp } from './getIpAddress.js';
 import { Request } from 'express';
 
 export async function detectVPN(req: Request) {

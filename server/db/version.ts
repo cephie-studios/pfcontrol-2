@@ -1,4 +1,4 @@
-import { mainDb } from './connection'
+import { mainDb } from './connection.js'
 
 export async function getAppVersion() {
   const result = await mainDb

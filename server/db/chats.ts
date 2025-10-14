@@ -1,6 +1,6 @@
-import { chatsDb } from "./connection";
-import { encrypt, decrypt } from "../utils/encryption";
-import { validateSessionId } from "../utils/validation";
+import { chatsDb } from "./connection.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { validateSessionId } from "../utils/validation.js";
 import { sql } from "kysely";
 
 export async function ensureChatTable(sessionId: string) {

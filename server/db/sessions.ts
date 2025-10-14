@@ -1,6 +1,6 @@
-import { mainDb, flightsDb } from "./connection";
-import { validateSessionId } from "../utils/validation";
-import { encrypt } from "../utils/encryption";
+import { mainDb, flightsDb } from "./connection.js";
+import { validateSessionId } from "../utils/validation.js";
+import { encrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 
 interface CreateSessionParams {

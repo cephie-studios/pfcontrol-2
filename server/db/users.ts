@@ -1,8 +1,8 @@
-import { encrypt, decrypt } from "../utils/encryption";
-import type { Settings } from "./types/Settings";
-import { mainDb } from "./connection";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import type { Settings } from "./types/Settings.js";
+import { mainDb } from "./connection.js";
 import { sql } from "kysely";
-import { redisConnection } from "./connection";
+import { redisConnection } from "./connection.js";
 
 async function invalidateUserCache(userId: string) {
   await redisConnection.del(`user:${userId}`);

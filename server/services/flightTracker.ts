@@ -13,8 +13,8 @@ import {
   removeActiveFlightTracking,
   updateUserStatsCache
 } from '../db/logbook.js';
-import { flightsDb, mainDb } from '../db/connection.js';
-import { startLandingDataCollection, stopLandingDataCollection } from './landingDataFetcher';
+import { mainDb } from '../db/connection.js';
+import { startLandingDataCollection, stopLandingDataCollection } from './landingDataFetcher.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

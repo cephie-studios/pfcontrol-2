@@ -1,11 +1,11 @@
-import { mainDb, flightsDb } from "./connection";
-import { cleanupOldStatistics } from './statistics';
-import { getAllSessions } from './sessions';
+import { mainDb, flightsDb } from "./connection.js";
+import { cleanupOldStatistics } from './statistics.js';
+import { getAllSessions } from './sessions.js';
 import { sql } from 'kysely';
-import { redisConnection } from './connection';
-import { decrypt } from '../utils/encryption';
-import { getAdminIds, isAdmin } from '../middleware/admin';
-import { getActiveUsers } from "../websockets/sessionUsersWebsocket";
+import { redisConnection } from './connection.js';
+import { decrypt } from '../utils/encryption.js';
+import { getAdminIds, isAdmin } from '../middleware/admin.js';
+import { getActiveUsers } from "../websockets/sessionUsersWebsocket.js";
 
 async function calculateDirectStatistics() {
   try {

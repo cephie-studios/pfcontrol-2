@@ -1,7 +1,7 @@
 import express from 'express';
-import { addChatMessage, getChatMessages, deleteChatMessage } from '../db/chats';
-import { chatMessageLimiter } from '../middleware/rateLimiting';
-import requireAuth from '../middleware/auth';
+import { addChatMessage, getChatMessages, deleteChatMessage } from '../db/chats.js';
+import { chatMessageLimiter } from '../middleware/rateLimiting.js';
+import requireAuth from '../middleware/auth.js';
 
 const router = express.Router();
 

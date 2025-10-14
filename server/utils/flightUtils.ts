@@ -1,5 +1,5 @@
-import { getAirportData, getAircraftData } from "./getData";
-import { generateFlightId } from "./ids";
+import { getAirportData, getAircraftData } from "./getData.js";
+import { generateFlightId } from "./ids.js";
 
 export interface Flight {
     flightType?: string;

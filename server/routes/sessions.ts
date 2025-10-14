@@ -6,18 +6,18 @@ import {
     deleteSession,
     getAllSessions,
     updateSessionName,
-} from '../db/sessions';
-import { addSessionToUser } from '../db/users';
-import { generateSessionId, generateAccessId } from '../utils/ids';
-import { recordNewSession } from '../db/statistics';
-import { requireSessionAccess, requireSessionOwnership } from '../middleware/sessionAccess';
-import { getSessionsByUser } from '../db/sessions';
-import requireAuth from '../middleware/auth';
-import { sessionCreationLimiter } from '../middleware/rateLimiting';
-import { sanitizeAlphanumeric } from '../utils/sanitization';
+} from '../db/sessions.js';
+import { addSessionToUser } from '../db/users.js';
+import { generateSessionId, generateAccessId } from '../utils/ids.js';
+import { recordNewSession } from '../db/statistics.js';
+import { requireSessionAccess, requireSessionOwnership } from '../middleware/sessionAccess.js';
+import { getSessionsByUser } from '../db/sessions.js';
+import requireAuth from '../middleware/auth.js';
+import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
+import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 
 import { Request, Response } from 'express';
-import { JwtPayloadClient } from '../types/JwtPayload';
+import { JwtPayloadClient } from '../types/JwtPayload.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
     return (

@@ -1,4 +1,4 @@
-import { mainDb } from "../db/connection";
+import { mainDb } from "../db/connection.js";
 import { Request, Response, NextFunction } from 'express';
 
 export async function validateSessionAccess(sessionId: string, accessId: string) {

@@ -3,16 +3,16 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import apiRoutes from './routes/index';
+import apiRoutes from './routes/index.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import chalk from 'chalk';
 
-import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket';
-import { setupChatWebsocket } from './websockets/chatWebsocket';
-import { setupFlightsWebsocket } from './websockets/flightsWebsocket';
-import { setupOverviewWebsocket } from './websockets/overviewWebsocket';
-import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket';
+import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket.js';
+import { setupChatWebsocket } from './websockets/chatWebsocket.js';
+import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
+import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
+import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
@@ -46,14 +46,14 @@ app.get('/health', (_req, res) => {
 app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
-app.use(express.static(path.join(__dirname, '..', 'dist'), {
+app.use(express.static(path.join(__dirname, '..', '..', 'dist'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
   }
 }));
 
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "dist", "index.html"));
+    res.sendFile(path.join(__dirname, '..', "..", "dist", "index.html"));
 });
 
 const server = http.createServer(app);

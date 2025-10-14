@@ -1,8 +1,8 @@
 import { Server as SocketServer, Server } from 'socket.io';
-import { validateSessionAccess } from '../middleware/sessionAccess';
+import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
 import { getUserRoles } from '../db/roles.js';
-import { isAdmin } from '../middleware/admin';
+import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
 
