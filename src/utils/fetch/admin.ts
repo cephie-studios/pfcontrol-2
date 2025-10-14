@@ -244,10 +244,6 @@ export async function fetchAdminSessions(): Promise<AdminSession[]> {
     return makeAdminRequest('/sessions');
 }
 
-export async function fetchSystemInfo(): Promise<SystemInfo> {
-    return makeAdminRequest('/system-info');
-}
-
 export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
     return makeAdminRequest(`/users/${userId}/reveal-ip`, {
         method: 'POST'

@@ -1,0 +1,29 @@
+export interface UsersTable {
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar?: string;
+  access_token?: string;
+  refresh_token?: string;
+  last_login?: Date;
+  ip_address?: string;
+  is_vpn?: boolean;
+  sessions?: string;
+  last_session_created?: Date;
+  last_session_deleted?: Date;
+  settings?: string;
+  settings_updated_at?: Date;
+  total_sessions_created?: number;
+  total_minutes?: number;
+  vatsim_cid?: string;
+  vatsim_rating_id?: number;
+  vatsim_rating_short?: string;
+  vatsim_rating_long?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  roblox_user_id?: string;
+  roblox_username?: string;
+  roblox_access_token?: string | null;
+  roblox_refresh_token?: string | null;
+  role_id?: number;
+}

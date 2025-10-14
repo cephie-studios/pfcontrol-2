@@ -45,8 +45,11 @@ export async function createSession(data: {
     return res.json();
 }
 
-export async function updateSession(sessionId: string, updates: Partial<SessionInfo>): Promise<SessionInfo> {
-    const res = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}`, {
+export async function updateSession(sessionId: string, accessId: string, updates: Partial<SessionInfo>): Promise<SessionInfo> {
+    const url = new URL(`${API_BASE_URL}/api/sessions/${sessionId}`);
+    url.searchParams.append('accessId', accessId);
+
+    const res = await fetch(url.toString(), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
