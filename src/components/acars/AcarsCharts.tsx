@@ -15,8 +15,11 @@ interface AcarsChartsProps {
     onZoomOut: () => void;
     onResetZoom: () => void;
     onToggleFullscreen: () => void;
-    onMouseMove: (e: React.MouseEvent) => void;
+    onChartListMouseMove: (e: React.MouseEvent) => void;
     onMouseUp: () => void;
+    onChartMouseDown: (e: React.MouseEvent | React.TouchEvent) => void;
+    onChartMouseMove: (e: React.MouseEvent | React.TouchEvent) => void;
+    onChartMouseUp: (e?: React.MouseEvent | React.TouchEvent) => void;
     isChartDragging: boolean;
     chartContainerRef: React.RefObject<HTMLDivElement | null>;
     chartViewRef: React.RefObject<HTMLDivElement | null>;
@@ -37,8 +40,11 @@ export default function AcarsCharts({
     onResetZoom,
     onToggleFullscreen,
     onMouseDown,
-    onMouseMove,
+    onChartListMouseMove,
     onMouseUp,
+    onChartMouseDown,
+    onChartMouseMove,
+    onChartMouseUp,
     chartContainerRef,
     chartViewRef,
     isChartDragging,
@@ -101,7 +107,7 @@ export default function AcarsCharts({
                         ? 'calc(100vh - 60px)'
                         : 'calc(100vh - 200px)',
                 }}
-                onMouseMove={onMouseMove}
+                onMouseMove={onChartListMouseMove}
                 onMouseUp={onMouseUp}
                 onMouseLeave={onMouseUp}
             >
@@ -195,15 +201,32 @@ export default function AcarsCharts({
                     )}
                 </div>
                 <div
-                    className="w-1 bg-gray-800 hover:bg-purple-500 cursor-col-resize transition-colors flex-shrink-0"
+                    className="w-px bg-gray-800 hover:bg-gray-600 cursor-col-resize transition-colors flex-shrink-0"
                     onMouseDown={() => onMouseDown('chartList')}
                 />
                 <div
                     ref={chartViewRef}
                     className="flex-1 bg-black overflow-hidden relative"
-                    onMouseMove={isChartDragging ? onMouseMove : undefined}
-                    onMouseUp={onMouseUp}
-                    onMouseLeave={onMouseUp}
+                    onMouseDown={(e) => {
+                        if (selectedChart && !chartLoadError) {
+                            onChartMouseDown(e);
+                        }
+                    }}
+                    onMouseMove={(e) => {
+                        if (isChartDragging) {
+                            onChartMouseMove(e);
+                        }
+                    }}
+                    onMouseUp={(e) => {
+                        if (isChartDragging) {
+                            onChartMouseUp(e);
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (isChartDragging) {
+                            onChartMouseUp(e);
+                        }
+                    }}
                     style={{
                         cursor: isChartDragging
                             ? 'grabbing'

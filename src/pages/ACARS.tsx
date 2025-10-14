@@ -207,6 +207,8 @@ NOTES:
         | React.TouchEvent<Element>;
 
     const handleChartMouseDown = (e: ChartPointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         let clientX: number, clientY: number;
         if ('touches' in e) {
             if (e.touches.length === 0) return;
@@ -226,6 +228,8 @@ NOTES:
 
     const handleChartMouseMove = (e: ChartPointerEvent) => {
         if (!isChartDragging) return;
+        e.preventDefault();
+        e.stopPropagation();
         let clientX: number, clientY: number;
         if ('touches' in e) {
             if (e.touches.length === 0) return;
@@ -241,7 +245,11 @@ NOTES:
         });
     };
 
-    const handleChartMouseUp = () => {
+    const handleChartMouseUp = (e?: ChartPointerEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         setIsChartDragging(false);
     };
 
@@ -322,7 +330,7 @@ NOTES:
         return () => {
             chartView.removeEventListener('wheel', handleWheel);
         };
-    }, []);
+    }, [selectedChart, settings]);
 
     useEffect(() => {
         if (initializedRef.current) return;
@@ -631,25 +639,6 @@ NOTES:
         }
     };
 
-    const getMessageColor = (type: AcarsMessage['type']) => {
-        switch (type) {
-            case 'warning':
-                return 'text-red-400';
-            case 'pdc':
-                return 'text-cyan-400';
-            case 'Success':
-                return 'text-green-400';
-            case 'system':
-                return 'text-white';
-            case 'contact':
-                return 'text-orange-400';
-            case 'atis':
-                return 'text-blue-400';
-            default:
-                return 'text-white';
-        }
-    };
-
     const renderMessageText = (msg: AcarsMessage) => {
         return (
             <span className="whitespace-pre-wrap">
@@ -809,15 +798,46 @@ NOTES:
                                 onMouseDown={() => handleMouseDown('terminal')}
                             />
 
-                            <AcarsNote
-                                notes={notes}
-                                onNotesChange={handleNotesChange}
-                            />
+                            <div
+                                style={{ width: `${notesWidth}%` }}
+                                className="flex-shrink-0"
+                            >
+                                <AcarsNote
+                                    notes={notes}
+                                    onNotesChange={handleNotesChange}
+                                />
+                            </div>
 
                             <div
                                 className="w-1 bg-gray-800 hover:bg-blue-500 cursor-col-resize transition-colors mx-2"
                                 onMouseDown={() => handleMouseDown('notes')}
                             />
+
+                            <div className="flex-1 min-w-0">
+                                <AcarsCharts
+                                    flight={flight}
+                                    selectedChart={selectedChart}
+                                    chartZoom={chartZoom}
+                                    chartPan={chartPan}
+                                    isChartFullscreen={isChartFullscreen}
+                                    chartLoadError={chartLoadError}
+                                    chartListWidth={chartListWidth}
+                                    onSelectChart={setSelectedChart}
+                                    onZoomIn={handleZoomIn}
+                                    onZoomOut={handleZoomOut}
+                                    onResetZoom={handleResetZoom}
+                                    onToggleFullscreen={handleToggleFullscreen}
+                                    onChartListMouseMove={handleChartListMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onChartMouseDown={handleChartMouseDown}
+                                    onChartMouseMove={handleChartMouseMove}
+                                    onChartMouseUp={handleChartMouseUp}
+                                    isChartDragging={isChartDragging}
+                                    chartContainerRef={chartContainerRef}
+                                    chartViewRef={chartViewRef}
+                                    onMouseDown={handleMouseDown}
+                                />
+                            </div>
                         </>
                     )}
 
@@ -844,26 +864,31 @@ NOTES:
                                 onMouseDown={() => handleMouseDown('terminal')}
                             />
 
-                            <AcarsCharts
-                                flight={flight}
-                                selectedChart={selectedChart}
-                                chartZoom={chartZoom}
-                                chartPan={chartPan}
-                                isChartFullscreen={isChartFullscreen}
-                                chartLoadError={chartLoadError}
-                                chartListWidth={chartListWidth}
-                                onSelectChart={setSelectedChart}
-                                onZoomIn={handleZoomIn}
-                                onZoomOut={handleZoomOut}
-                                onResetZoom={handleResetZoom}
-                                onToggleFullscreen={handleToggleFullscreen}
-                                onMouseMove={handleChartListMouseMove}
-                                onMouseUp={handleMouseUp}
-                                isChartDragging={isChartDragging}
-                                chartContainerRef={chartContainerRef}
-                                chartViewRef={chartViewRef}
-                                onMouseDown={handleMouseDown}
-                            />
+                            <div className="flex-1 min-w-0">
+                                <AcarsCharts
+                                    flight={flight}
+                                    selectedChart={selectedChart}
+                                    chartZoom={chartZoom}
+                                    chartPan={chartPan}
+                                    isChartFullscreen={isChartFullscreen}
+                                    chartLoadError={chartLoadError}
+                                    chartListWidth={chartListWidth}
+                                    onSelectChart={setSelectedChart}
+                                    onZoomIn={handleZoomIn}
+                                    onZoomOut={handleZoomOut}
+                                    onResetZoom={handleResetZoom}
+                                    onToggleFullscreen={handleToggleFullscreen}
+                                    onChartListMouseMove={handleChartListMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onChartMouseDown={handleChartMouseDown}
+                                    onChartMouseMove={handleChartMouseMove}
+                                    onChartMouseUp={handleChartMouseUp}
+                                    isChartDragging={isChartDragging}
+                                    chartContainerRef={chartContainerRef}
+                                    chartViewRef={chartViewRef}
+                                    onMouseDown={handleMouseDown}
+                                />
+                            </div>
                         </>
                     )}
             </div>
