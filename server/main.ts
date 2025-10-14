@@ -60,7 +60,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', environment: process.env.NODE_ENV, timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', environment: process.env.NODE_ENV });
 });
 
 app.use('/api', apiRoutes);
