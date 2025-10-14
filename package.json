@@ -32,6 +32,7 @@
     "form-data": "^4.0.4",
     "helmet": "^8.1.0",
     "https-proxy-agent": "^7.0.6",
+    "ioredis": "^5.8.1",
     "jsonwebtoken": "^9.0.2",
     "kysely": "^0.28.8",
     "lucide-react": "^0.544.0",

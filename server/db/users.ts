@@ -2,8 +2,19 @@ import { encrypt, decrypt } from "../utils/encryption";
 import type { Settings } from "./types/Settings";
 import { mainDb } from "./connection";
 import { sql } from "kysely";
+import { redisConnection } from "./connection";
+
+async function invalidateUserCache(userId: string) {
+  await redisConnection.del(`user:${userId}`);
+}
 
 export async function getUserById(userId: string) {
+  const cacheKey = `user:${userId}`;
+  const cached = await redisConnection.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
   const user = await mainDb
     .selectFrom("users")
     .leftJoin("roles", "users.role_id", "roles.id")
@@ -14,7 +25,7 @@ export async function getUserById(userId: string) {
 
   if (!user) return null;
 
-  return {
+  const result = {
     ...user,
     access_token: user.access_token ? decrypt(JSON.parse(user.access_token)) : null,
     refresh_token: user.refresh_token ? decrypt(JSON.parse(user.refresh_token)) : null,
@@ -23,6 +34,9 @@ export async function getUserById(userId: string) {
     ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
     role_permissions: user.role_permissions || null
   };
+
+  await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 15); // cache for 15 minutes
+  return result;
 }
 
 export async function createOrUpdateUser(userData: {
@@ -146,6 +160,7 @@ export async function createOrUpdateUser(userData: {
     )
     .execute();
 
+    await invalidateUserCache(id);
   return await getUserById(id);
 }
 
@@ -168,6 +183,7 @@ export async function updateUserSettings(id: string, settings: Settings) {
     .where('id', '=', id)
     .execute();
 
+  await invalidateUserCache(id);
   return await getUserById(id);
 }
 
@@ -189,6 +205,7 @@ export async function addSessionToUser(userId: string, sessionId: string) {
     .where('id', '=', userId)
     .execute();
 
+  await invalidateUserCache(userId);
   return await getUserById(userId);
 }
 
@@ -205,6 +222,7 @@ export async function updateRobloxAccount(userId: string, { robloxUserId, roblox
     .where('id', '=', userId)
     .execute();
 
+  await invalidateUserCache(userId);
   return await getUserById(userId);
 }
 
@@ -221,6 +239,7 @@ export async function unlinkRobloxAccount(userId: string) {
     .where('id', '=', userId)
     .execute();
 
+  await invalidateUserCache(userId);
   return await getUserById(userId);
 }
 
@@ -237,6 +256,7 @@ export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId,
     .where('id', '=', userId)
     .execute();
 
+  await invalidateUserCache(userId);
   return await getUserById(userId);
 }
 
@@ -253,5 +273,6 @@ export async function unlinkVatsimAccount(userId: string) {
     .where('id', '=', userId)
     .execute();
 
+  await invalidateUserCache(userId);
   return await getUserById(userId);
 }

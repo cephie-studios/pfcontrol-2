@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
+import Redis from 'ioredis';
 
 import type { MainDatabase } from './types/connection/MainDatabase';
 import type { FlightsDatabase } from './types/connection/FlightsDatabase';
@@ -31,3 +32,8 @@ export const chatsDb = new Kysely<ChatsDatabase>({
     })
   })
 });
+
+if (!process.env.REDIS_URL) {
+  throw new Error('REDIS_URL is not defined in environment variables');
+}
+export const redisConnection = new Redis(process.env.REDIS_URL as string);
