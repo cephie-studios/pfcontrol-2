@@ -5,12 +5,31 @@ import { sql } from "kysely";
 import { redisConnection } from "./connection.js";
 
 async function invalidateUserCache(userId: string) {
-  await redisConnection.del(`user:${userId}`);
+  try {
+    await redisConnection.del(`user:${userId}`);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to invalidate cache for user ${userId}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to invalidate cache for user ${userId}:`, error);
+    }
+  }
 }
 
 export async function getUserById(userId: string) {
   const cacheKey = `user:${userId}`;
-  const cached = await redisConnection.get(cacheKey);
+  
+  let cached = null;
+  try {
+    cached = await redisConnection.get(cacheKey);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to read cache for user ${userId}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to read cache for user ${userId}:`, error);
+    }
+  }
+  
   if (cached) {
     return JSON.parse(cached);
   }
@@ -35,7 +54,16 @@ export async function getUserById(userId: string) {
     role_permissions: user.role_permissions || null
   };
 
-  await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 15); // cache for 15 minutes
+  try {
+    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30); // cache for 30 minutes
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to set cache for user ${userId}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to set cache for user ${userId}:`, error);
+    }
+  }
+  
   return result;
 }
 

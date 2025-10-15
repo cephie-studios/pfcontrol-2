@@ -40,9 +40,7 @@ export const chatsDb = new Kysely<ChatsDatabase>({
 if (!process.env.REDIS_URL) {
   throw new Error('REDIS_URL is not defined in environment variables');
 }
-export const redisConnection = new Redis(process.env.REDIS_URL as string, {
-  maxRetriesPerRequest: 3,
-});
+export const redisConnection = new Redis(process.env.REDIS_URL as string);
 
 redisConnection.on('error', (err) => {
   console.error('[Redis] Connection error:', err.message);
