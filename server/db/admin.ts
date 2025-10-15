@@ -294,8 +294,23 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
       };
     });
 
+    const usersWithCacheStatus = await Promise.all(
+      usersWithAdminStatus.map(async (user) => {
+        const cached = await redisConnection.exists(`user:${user.id}`);
+        return { ...user, cached: cached === 1 };
+      })
+    );
+
+    let filteredUsers = usersWithCacheStatus;
+    if (filterAdmin === 'cached') {
+      filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
+      totalUsers = filteredUsers.length;
+      const offset = (page - 1) * limit;
+      filteredUsers = filteredUsers.slice(offset, offset + limit);
+    }
+
     return {
-      users: usersWithAdminStatus,
+      users: filteredUsers,
       pagination: {
         page,
         limit,

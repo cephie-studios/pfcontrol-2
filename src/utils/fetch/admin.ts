@@ -50,6 +50,7 @@ export interface AdminUser {
     roleId?: number;
     roleName?: string;
     rolePermissions?: Record<string, boolean>;
+    cached?: boolean;
 }
 
 export interface AdminUsersResponse {
