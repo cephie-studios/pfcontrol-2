@@ -30,7 +30,7 @@ import AcarsSettings from '../components/Settings/AcarsSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
-import CustomTooltip from '../components/tutorial/CustomToolTip';
+import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Modal from '../components/common/Modal';
 import { useAuth } from '../hooks/auth/useAuth';
 

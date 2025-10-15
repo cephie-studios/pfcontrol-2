@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/auth/useAuth';
 import { steps } from '../components/tutorial/TutorialStepsHome';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import Modal from '../components/common/Modal';
-import CustomTooltip from '../components/tutorial/CustomToolTip';
+import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
