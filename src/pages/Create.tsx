@@ -13,7 +13,7 @@ import Button from '../components/common/Button';
 import WindDisplay from '../components/tools/WindDisplay';
 import AtisReminderModal from '../components/modals/AtisReminderModal';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
-import CustomTooltip from '../components/tutorial/CustomToolTip';
+import CustomTooltip from '../components/tutorial/CustomTooltip';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { steps } from '../components/tutorial/TutorialStepsCreate';
 
