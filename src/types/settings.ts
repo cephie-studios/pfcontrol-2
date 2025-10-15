@@ -73,4 +73,5 @@ export interface Settings {
     departureTableColumns: DepartureTableColumnSettings;
     arrivalsTableColumns: ArrivalsTableColumnSettings;
     acars: AcarsSettings;
+    tutorialCompleted: boolean;
 }

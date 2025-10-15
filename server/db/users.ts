@@ -147,7 +147,8 @@ export async function createOrUpdateUser(userData: {
       chartsEnabled: true,
       terminalWidth: 50,
       notesWidth: 20
-    }
+    },
+    tutorialCompleted: false,
   };
 
   const encryptedAccessToken = encrypt(accessToken);
@@ -303,4 +304,25 @@ export async function unlinkVatsimAccount(userId: string) {
 
   await invalidateUserCache(userId);
   return await getUserById(userId);
+}
+
+export async function updateTutorialStatus(id: string, completed: boolean) {
+  const existingUser = await getUserById(id);
+  if (!existingUser) throw new Error('User not found');
+
+  const mergedSettings = { ...existingUser.settings, tutorialCompleted: completed };
+  const encryptedSettings = encrypt(mergedSettings);
+
+  await mainDb
+    .updateTable('users')
+    .set({
+      settings: JSON.stringify(encryptedSettings),
+      settings_updated_at: sql`NOW()`,
+      updated_at: sql`NOW()`
+    })
+    .where('id', '=', id)
+    .execute();
+
+  await invalidateUserCache(id);
+  return await getUserById(id);
 }

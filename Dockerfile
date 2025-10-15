@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install ALL dependencies (including dev dependencies for build)
-RUN npm ci && npm cache clean --force
+RUN npm ci --legacy-peer-deps && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -39,7 +39,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Set NODE_ENV explicitly
 ENV NODE_ENV=production
