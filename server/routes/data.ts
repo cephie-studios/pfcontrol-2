@@ -4,7 +4,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
 import { getActiveNotifications } from '../db/notifications.js';
-import { mainDb, flightsDb } from '../db/connection.js';
+import { mainDb, flightsDb, redisConnection } from '../db/connection.js';
 import { sql } from 'kysely';
 
 import dotenv from 'dotenv';
@@ -238,39 +238,69 @@ router.get('/airports/:icao/stars', (req, res) => {
 
 // GET: /api/data/statistics
 router.get('/statistics', async (req, res) => {
-    try {
-        const { getAllSessions } = await import('../db/sessions.js');
-
-        const sessionsResult = await mainDb.selectFrom('sessions').select(sql`count(*)`.as('count')).executeTakeFirst();
-        const sessionsCreated = parseInt(sessionsResult!.count as string, 10);
-
-        const usersResult = await mainDb.selectFrom('users').select(sql`count(*)`.as('count')).executeTakeFirst();
-        const registeredUsers = parseInt(usersResult!.count as string, 10);
-
-        const sessions = await getAllSessions();
-        let flightsLogged = 0;
-        for (const session of sessions) {
-            try {
-                const tableName = `flights_${session.session_id}` as keyof typeof flightsDb.schema;
-                const flightResult = await flightsDb.selectFrom(tableName).select(sql`count(*)`.as('count')).executeTakeFirst();
-                flightsLogged += parseInt(flightResult!.count as string, 10);
-            } catch (error) {
-                const errMsg = error instanceof Error ? error.message : String(error);
-                console.warn(`Could not count flights for session ${session.session_id}:`, errMsg);
-            }
-        }
-
-        res.set('Cache-Control', 'public, max-age=3600');
-
-        res.json({
-            sessionsCreated,
-            registeredUsers,
-            flightsLogged
-        });
-    } catch (error) {
-        console.error('Error fetching statistics:', error);
-        res.status(500).json({ error: 'Internal server error', message: 'Failed to fetch statistics' });
+  const cacheKey = 'homepage:stats';
+  
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for homepage stats:', error.message);
+    }
+  }
+
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const sessionsCreated = await mainDb
+      .selectFrom('sessions')
+      .select(({ fn }) => fn.countAll().as('count'))
+      .where('created_at', '>=', thirtyDaysAgo)
+      .executeTakeFirst();
+
+    const registeredUsers = await mainDb
+      .selectFrom('users')
+      .select(({ fn }) => fn.countAll().as('count'))
+      .executeTakeFirst();
+
+    const sessions = await mainDb
+      .selectFrom('sessions')
+      .select(['session_id'])
+      .execute();
+
+    let flightsLogged = 0;
+    for (const session of sessions) {
+      try {
+        const tableName = `flights_${session.session_id}` as keyof typeof flightsDb.schema;
+        const flightResult = await flightsDb.selectFrom(tableName).select(sql`count(*)`.as('count')).executeTakeFirst();
+        flightsLogged += parseInt(flightResult!.count as string, 10);
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.warn(`Could not count flights for session ${session.session_id}:`, errMsg);
+      }
+    }
+
+    const result = {
+      sessionsCreated: Number(sessionsCreated?.count) || 0,
+      registeredUsers: Number(registeredUsers?.count) || 0,
+      flightsLogged
+    };
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    } catch (error) {
+      if (error instanceof Error) {
+      console.warn('[Redis] Failed to set cache for homepage stats:', error.message);
+      }
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching statistics:', error);
+    res.status(500).json({ error: 'Internal server error', message: 'Failed to fetch statistics' });
+  }
 });
 
 // GET: /api/data/settings
