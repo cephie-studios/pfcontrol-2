@@ -304,7 +304,6 @@ export default function Toolbar({
     }
   }, [chatOpen]);
 
-  // Add this useEffect to load initial ATIS data
   useEffect(() => {
     const loadInitialAtisData = async () => {
       if (!sessionId || !accessId) return;
@@ -368,7 +367,10 @@ export default function Toolbar({
         <FrequencyDisplay airportIcao={icao ?? ''} />
       </div>
 
-      <div className="flex flex-col items-center gap-1 flex-1 relative">
+      <div
+        id="toolbar-middle"
+        className="flex flex-col items-center gap-1 flex-1 relative"
+      >
         <div className="relative flex">
           {activeUsers.slice(0, 5).map((user, index) => {
             const highestRole = getHighestRole(user.roles);
@@ -442,12 +444,20 @@ export default function Toolbar({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {icao && (
-            <span className="text-md text-gray-300 mr-2 font-bold">{icao}</span>
+            <span
+              id="icao-display"
+              className="text-md text-gray-300 mr-2 font-bold"
+            >
+              {icao}
+            </span>
           )}
           {getStatusIcon()}
-          <span className={`text-xs ${getStatusColor()}`}>
+          <span
+            id="connection-status"
+            className={`text-xs ${getStatusColor()}`}
+          >
             {connectionStatus}
           </span>
         </div>
@@ -463,7 +473,7 @@ export default function Toolbar({
                 "
       >
         {isPFATC && showViewTabs && (
-          <div className="flex items-center gap-2">
+          <div id="view-tabs" className="flex items-center gap-2">
             <Button
               className={`p-1 rounded ${
                 currentView === 'departures'
@@ -505,6 +515,7 @@ export default function Toolbar({
           disabled={!icao}
           size="sm"
           className="min-w-[100px]"
+          id="position-dropdown"
         />
 
         <RunwayDropdown
@@ -512,6 +523,7 @@ export default function Toolbar({
           onChange={handleRunwayChange}
           value={runway}
           size="sm"
+          id="runway-dropdown-toolbar"
         />
 
         <Button
@@ -524,6 +536,7 @@ export default function Toolbar({
           size="sm"
           variant="outline"
           onClick={handleAtisOpen}
+          id="atis-button"
         >
           <Info className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">
@@ -536,6 +549,7 @@ export default function Toolbar({
           aria-label="Chat"
           size="sm"
           onClick={handleChatOpen}
+          id="chat-button"
         >
           <MessageCircle className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Chat</span>
@@ -552,6 +566,7 @@ export default function Toolbar({
             aria-label="Contact"
             size="sm"
             onClick={onContactAcarsClick}
+            id="contact-button"
           >
             <Radio className="w-5 h-5" />
             <span className="hidden sm:inline font-medium">Contact</span>
@@ -572,8 +587,13 @@ export default function Toolbar({
           aria-label="Settings"
           size="sm"
           onClick={() => {
-            window.open('/settings', '_blank');
+            const isTutorial = window.location.search.includes('tutorial');
+            window.open(
+              '/settings' + (isTutorial ? '?tutorial=true' : ''),
+              isTutorial ? '_self' : '_blank'
+            );
           }}
+          id="settings-button"
         >
           <Settings className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Settings</span>

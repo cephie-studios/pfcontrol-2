@@ -16,7 +16,7 @@ button {
 
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
-    width: 12px;
+    width: 8px;
     background: #000000;
 }
 

@@ -26,4 +26,5 @@ export interface UsersTable {
   roblox_access_token?: string | null;
   roblox_refresh_token?: string | null;
   role_id?: number;
+  tutorialCompleted?: boolean;
 }

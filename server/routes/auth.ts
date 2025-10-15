@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
-import { createOrUpdateUser, getUserById, updateUserSettings, updateRobloxAccount, unlinkRobloxAccount } from '../db/users.js';
+import { createOrUpdateUser, getUserById, updateUserSettings, updateRobloxAccount, unlinkRobloxAccount, updateTutorialStatus } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN } from '../utils/detectVPN.js';
 import { isAdmin } from '../middleware/admin.js';
@@ -459,6 +459,18 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error unlinking VATSIM:', error);
         res.status(500).json({ error: 'Failed to unlink VATSIM account' });
+    }
+});
+
+// PUT: /api/auth/tutorial - update tutorial completion status
+router.put('/tutorial', requireAuth, async (req, res) => {
+    try {
+        const { completed } = req.body;
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        await updateTutorialStatus(req.user.userId, completed);
+        res.json({ success: true });
+    } catch {
+        res.status(500).json({ error: 'Failed to update tutorial status' });
     }
 });
 

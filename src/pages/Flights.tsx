@@ -10,6 +10,8 @@ import { createSessionUsersSocket } from '../sockets/sessionUsersSocket';
 import { useAuth } from '../hooks/auth/useAuth';
 import { playSoundWithSettings } from '../utils/playSound';
 import { useSettings } from '../hooks/settings/useSettings';
+import { steps } from '../components/tutorial/TutorialStepsFlights';
+import { updateTutorialStatus } from '../utils/fetch/auth';
 import type { Flight } from '../types/flight';
 import type { Position } from '../types/session';
 import type {
@@ -27,6 +29,8 @@ import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
 import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
+import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import CustomTooltip from '../components/tutorial/CustomToolTip';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -48,6 +52,7 @@ export default function Flights() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
+  const startTutorial = searchParams.get('tutorial') === 'true';
   const isMobile = useMediaQuery({ maxWidth: 1000 });
 
   const [accessError, setAccessError] = useState<string | null>(null);
@@ -678,7 +683,6 @@ export default function Flights() {
         baseFlights = ownArrivals;
       }
 
-      // Add custom arrival flights
       baseFlights = [...baseFlights, ...customArrivalFlights];
     } else {
       baseFlights = flights.filter(
@@ -687,7 +691,6 @@ export default function Flights() {
           session?.airportIcao?.toUpperCase()
       );
 
-      // Add custom departure flights
       baseFlights = [...baseFlights, ...customDepartureFlights];
     }
 
@@ -842,6 +845,13 @@ export default function Flights() {
     }
   };
 
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      updateTutorialStatus(true);
+    }
+  };
+
   // Early return for validation states
   if (validatingAccess) {
     return (
@@ -920,6 +930,7 @@ export default function Flights() {
                     variant="primary"
                     size="sm"
                     className="flex items-center space-x-2"
+                    id="add-departure-btn"
                   >
                     <svg
                       className="w-5 h-5"
@@ -976,6 +987,7 @@ export default function Flights() {
                       onToggleClearance={handleToggleClearance}
                       flashingPDCIds={flashingPDCIds}
                       onIssuePDC={handleIssuePDC}
+                      id="departure-table"
                     />
                     <div className="flex justify-center mt-4 mb-6">
                       <Button
@@ -983,6 +995,7 @@ export default function Flights() {
                         variant="primary"
                         size="sm"
                         className="flex items-center space-x-2"
+                        id="add-departure-btn"
                       >
                         <svg
                           className="w-5 h-5"
@@ -1062,6 +1075,29 @@ export default function Flights() {
         onSendContact={handleSendContact}
         activeAcarsFlights={activeAcarsFlights}
         airportIcao={session?.airportIcao || ''}
+      />
+      <Joyride
+        steps={steps}
+        run={startTutorial}
+        callback={handleJoyrideCallback}
+        continuous
+        showProgress
+        showSkipButton
+        disableScrolling={true}
+        tooltipComponent={CustomTooltip}
+        styles={{
+          options: {
+            primaryColor: '#3b82f6',
+            textColor: '#ffffff',
+            backgroundColor: '#1f2937',
+            zIndex: 1000,
+          },
+          spotlight: {
+            border: '2px solid #fbbf24',
+            borderRadius: '24px',
+            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
+          },
+        }}
       />
     </div>
   );

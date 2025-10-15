@@ -1,9 +1,16 @@
 import { ArrowRight, Plane, Shield, TowerControl, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { fetchStatistics } from '../utils/fetch/data';
+import { useSearchParams } from 'react-router-dom';
+import { updateTutorialStatus } from '../utils/fetch/auth';
+import { useAuth } from '../hooks/auth/useAuth';
+import { steps } from '../components/tutorial/TutorialStepsHome';
+import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import Modal from '../components/common/Modal';
+import CustomTooltip from '../components/tutorial/CustomToolTip';
+import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
-import { fetchStatistics } from '../utils/fetch/data';
-import Footer from '../components/Footer';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -11,6 +18,31 @@ export default function Home() {
     registeredUsers: 0,
     flightsLogged: 0,
   });
+
+  const [searchParams] = useSearchParams();
+  const startTutorial = searchParams.get('tutorial') === 'true';
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && !user.settings?.tutorialCompleted && !startTutorial) {
+      setShowTutorialPrompt(true);
+    }
+  }, [user, startTutorial]);
+
+  const handleTutorialChoice = (start: boolean) => {
+    setShowTutorialPrompt(false);
+    if (start) {
+      window.location.href = '/?tutorial=true';
+    }
+  };
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      updateTutorialStatus(true);
+    }
+  };
 
   useEffect(() => {
     fetchStatistics().then((data) => {
@@ -46,9 +78,14 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
               <Button
-                onClick={() => (window.location.href = '/create')}
+                onClick={() =>
+                  (window.location.href = startTutorial
+                    ? '/create?tutorial=true'
+                    : '/create')
+                }
                 variant="outline"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
+                id="start-session-btn"
               >
                 Start Session Now
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -57,6 +94,7 @@ export default function Home() {
                 onClick={() => (window.location.href = '/pfatc')}
                 variant="ghost"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
+                id="pfatc-flights-btn"
               >
                 <TowerControl className="mr-2 h-5 w-5" />
                 See PFATC Flights
@@ -399,7 +437,11 @@ export default function Home() {
               </ul>
               <div className="pt-6">
                 <button
-                  onClick={() => (window.location.href = '/create')}
+                  onClick={() =>
+                    (window.location.href = startTutorial
+                      ? '/create?tutorial=true'
+                      : '/create')
+                  }
                   className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-base sm:text-lg font-medium transition-all"
                 >
                   Try the Latest Version Now
@@ -423,6 +465,56 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Joyride
+        steps={steps}
+        run={startTutorial}
+        callback={handleJoyrideCallback}
+        continuous
+        showProgress
+        showSkipButton
+        disableScrolling={true}
+        tooltipComponent={CustomTooltip}
+        styles={{
+          options: {
+            primaryColor: '#3b82f6',
+            textColor: '#ffffff',
+            backgroundColor: '#1f2937',
+            zIndex: 1000,
+          },
+          spotlight: {
+            border: '2px solid #fbbf24',
+            borderRadius: '24px',
+            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
+          },
+        }}
+      />
+
+      {showTutorialPrompt && (
+        <Modal
+          isOpen={showTutorialPrompt}
+          onClose={() => handleTutorialChoice(false)}
+          title="Welcome to PFControl!"
+          variant="primary"
+          footer={
+            <div className="flex justify-start space-x-3">
+              <Button onClick={() => handleTutorialChoice(true)}>
+                Yes, start tutorial
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleTutorialChoice(false)}
+              >
+                Skip
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-gray-300">
+            Would you like a quick tutorial to get started?
+          </p>
+        </Modal>
+      )}
 
       <Footer />
     </div>
