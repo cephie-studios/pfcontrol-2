@@ -48,107 +48,195 @@ interface Airport {
 const router = express.Router();
 
 // GET: /api/data/airports
-router.get('/airports', (req, res) => {
-    try {
-        if (!fs.existsSync(airportsPath)) {
-            return res.status(404).json({ error: "Airport data not found" });
-        }
-
-        const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
-        res.json(data);
-    } catch (error) {
-        console.error("Error reading airport data:", error);
-        res.status(500).json({ error: "Internal server error", message: "Error reading airport data" });
+router.get('/airports', async (req, res) => {
+  const cacheKey = 'data:airports';
+  
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for airports:', error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(airportsPath)) {
+      return res.status(404).json({ error: "Airport data not found" });
+    }
+
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); // Cache for 12 hours
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('[Redis] Failed to set cache for airports:', error.message);
+      }
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error reading airport data:", error);
+    res.status(500).json({ error: "Internal server error", message: "Error reading airport data" });
+  }
 });
 
 // GET: /api/data/aircrafts
-router.get('/aircrafts', (req, res) => {
-    try {
-        if (!fs.existsSync(aircraftPath)) {
-            return res.status(404).json({ error: "Aircraft data not found" });
-        }
-
-        const data = JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
-        res.json(data);
-    } catch (error) {
-        console.error("Error reading aircraft data:", error);
-        res.status(500).json({ error: "Internal server error", message: "Error reading aircraft data" });
+router.get('/aircrafts', async (req, res) => {
+  const cacheKey = 'data:aircrafts';
+  
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for aircrafts:', error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(aircraftPath)) {
+      return res.status(404).json({ error: "Aircraft data not found" });
+    }
+
+    const data = JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); // Cache for 12 hours
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('[Redis] Failed to set cache for aircrafts:', error.message);
+      }
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error reading aircraft data:", error);
+    res.status(500).json({ error: "Internal server error", message: "Error reading aircraft data" });
+  }
 });
 
 // GET: /api/data/airlines
-router.get('/airlines', (req, res) => {
-    try {
-        if (!fs.existsSync(airlinesPath)) {
-            return res.status(404).json({ error: "Airline data not found" });
-        }
-
-        const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
-        res.json(data);
-    } catch (error) {
-        console.error("Error reading airline data:", error);
-        res.status(500).json({ error: "Internal server error", message: "Error reading airline data" });
+router.get('/airlines', async (req, res) => {
+  const cacheKey = 'data:airlines';
+  
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for airlines:', error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(airlinesPath)) {
+      return res.status(404).json({ error: "Airline data not found" });
+    }
+
+    const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); // Cache for 12 hours
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('[Redis] Failed to set cache for airlines:', error.message);
+      }
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error reading airline data:", error);
+    res.status(500).json({ error: "Internal server error", message: "Error reading airline data" });
+  }
 });
 
 // GET: /api/data/frequencies
-router.get('/frequencies', (req, res) => {
-    try {
-        if (!fs.existsSync(airportsPath)) {
-            return res.status(404).json({ error: "Airport data not found" });
-        }
-
-        const freqOrder = ['APP', 'TWR', 'GND', 'DEL'];
-        const freqMapping = {
-            clearanceDelivery: 'DEL',
-            departure: 'DEP',
-            ground: 'GND',
-            tower: 'TWR',
-            approach: 'APP'
-        };
-
-        const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
-        const frequencies = data.map((airport: Airport) => {
-            const allFreqs = airport.allFrequencies || {};
-            const displayFreqs = freqOrder
-                .map(type => {
-                    let freq = allFreqs[type];
-                    if (!freq) {
-                        for (const [key, value] of Object.entries(freqMapping)) {
-                            if (value === type && allFreqs[key]) {
-                                freq = allFreqs[key];
-                                break;
-                            }
-                        }
-                    }
-                    return freq && freq.toLowerCase() !== 'n/a' ? { type, freq } : null;
-                })
-                .filter(Boolean);
-
-            const usedTypes = new Set(displayFreqs.map(f => f!.type));
-            const remainingFreqs = Object.entries(allFreqs)
-                .filter(([key, value]) =>
-                    !usedTypes.has(key) &&
-                    !Object.keys(freqMapping).includes(key) &&
-                    value && value.toLowerCase() !== 'n/a'
-                )
-                .slice(0, 4 - displayFreqs.length)
-                .map(([type, freq]) => ({ type: type.toUpperCase(), freq }));
-
-            const allDisplayFreqs = [...displayFreqs.filter(Boolean), ...remainingFreqs].slice(0, 4);
-
-            return {
-                icao: airport.icao,
-                name: airport.name,
-                frequencies: allDisplayFreqs
-            };
-        });
-        res.json(frequencies);
-    } catch (error) {
-        console.error("Error reading airport frequencies:", error);
-        res.status(500).json({ error: "Internal server error", message: "Error reading airport frequencies" });
+router.get('/frequencies', async (req, res) => {
+  const cacheKey = 'data:frequencies';
+  
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
     }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for frequencies:', error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(airportsPath)) {
+      return res.status(404).json({ error: "Airport data not found" });
+    }
+
+    const freqOrder = ['APP', 'TWR', 'GND', 'DEL'];
+    const freqMapping = {
+      clearanceDelivery: 'DEL',
+      departure: 'DEP',
+      ground: 'GND',
+      tower: 'TWR',
+      approach: 'APP'
+    };
+
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
+    const frequencies = data.map((airport: Airport) => {
+      const allFreqs = airport.allFrequencies || {};
+      const displayFreqs = freqOrder
+        .map(type => {
+          let freq = allFreqs[type];
+          if (!freq) {
+            for (const [key, value] of Object.entries(freqMapping)) {
+              if (value === type && allFreqs[key]) {
+                freq = allFreqs[key];
+                break;
+              }
+            }
+          }
+          return freq && freq.toLowerCase() !== 'n/a' ? { type, freq } : null;
+        })
+        .filter(Boolean);
+
+      const usedTypes = new Set(displayFreqs.map(f => f!.type));
+      const remainingFreqs = Object.entries(allFreqs)
+        .filter(([key, value]) =>
+          !usedTypes.has(key) &&
+          !Object.keys(freqMapping).includes(key) &&
+          value && value.toLowerCase() !== 'n/a'
+        )
+        .slice(0, 4 - displayFreqs.length)
+        .map(([type, freq]) => ({ type: type.toUpperCase(), freq }));
+
+      const allDisplayFreqs = [...displayFreqs.filter(Boolean), ...remainingFreqs].slice(0, 4);
+
+      return {
+        icao: airport.icao,
+        name: airport.name,
+        frequencies: allDisplayFreqs
+      };
+    });
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(frequencies), 'EX', 43200); // Cache for 12 hours
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('[Redis] Failed to set cache for frequencies:', error.message);
+      }
+    }
+
+    res.json(frequencies);
+  } catch (error) {
+    console.error("Error reading airport frequencies:", error);
+    res.status(500).json({ error: "Internal server error", message: "Error reading airport frequencies" });
+  }
 });
 
 // GET: /api/data/backgrounds
