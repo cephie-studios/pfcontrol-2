@@ -146,7 +146,7 @@ NOTES:
 
   const MIN_TERMINAL_WIDTH = 25;
   const MIN_NOTES_WIDTH = 15;
-  const MIN_CHARTS_WIDTH = 25;
+  const MIN_CHARTS_WIDTH = 15;
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
@@ -156,14 +156,17 @@ NOTES:
     const percentage = (x / rect.width) * 100;
 
     if (isDragging === 'terminal') {
-      const maxTerminalWidth = 100 - notesWidth - MIN_CHARTS_WIDTH;
+      const minChartsWidth = settings?.acars?.notesEnabled
+        ? MIN_CHARTS_WIDTH
+        : 10;
+      const maxTerminalWidth = 100 - notesWidth - minChartsWidth;
       const newTerminalWidth = Math.max(
         MIN_TERMINAL_WIDTH,
         Math.min(percentage, maxTerminalWidth)
       );
       setTerminalWidth(newTerminalWidth);
-      if (notesWidth > 100 - newTerminalWidth - MIN_CHARTS_WIDTH) {
-        setNotesWidth(100 - newTerminalWidth - MIN_CHARTS_WIDTH);
+      if (notesWidth > 100 - newTerminalWidth - minChartsWidth) {
+        setNotesWidth(100 - newTerminalWidth - minChartsWidth);
       }
     } else if (isDragging === 'notes') {
       const maxNotesWidth = 100 - terminalWidth - MIN_CHARTS_WIDTH;
@@ -561,6 +564,7 @@ NOTES:
           style={{ width: `${terminalWidth}%`, height: '100%' }}
           className="flex-shrink-0 flex flex-col"
         >
+          {/* Terminal panel content */}
           <div className="bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-zinc-800 flex flex-col h-full">
             <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700">
               <div className="flex items-center gap-3">
@@ -601,32 +605,51 @@ NOTES:
           </div>
         </div>
 
+        {/* Divider between terminal and notes (only if notes enabled) */}
         {settings?.acars?.notesEnabled && (
-          <>
-            <div
-              className="w-1 bg-zinc-800 hover:bg-blue-500 cursor-col-resize transition-colors mx-2"
-              onMouseDown={() => handleMouseDown('terminal')}
-              style={{ height: '100%' }}
-            />
-            <div
-              style={{ width: `${notesWidth}%`, height: '100%' }}
-              className="flex-shrink-0 flex flex-col"
-            >
-              <AcarsNotesPanel
-                notes={notes}
-                handleNotesChange={handleNotesChange}
-              />
-            </div>
-            {settings?.acars?.chartsEnabled && (
-              <div
-                className="w-1 bg-zinc-800 hover:bg-purple-500 cursor-col-resize transition-colors mx-2"
-                onMouseDown={() => handleMouseDown('notes')}
-                style={{ height: '100%' }}
-              />
-            )}
-          </>
+          <div
+            className="w-1 bg-zinc-800 hover:bg-blue-500 cursor-col-resize transition-colors mx-2"
+            onMouseDown={() => handleMouseDown('terminal')}
+            style={{ height: '100%' }}
+          />
         )}
 
+        {/* Notes panel (only if notes enabled) */}
+        {settings?.acars?.notesEnabled && (
+          <div
+            style={
+              settings?.acars?.chartsEnabled
+                ? { width: `${notesWidth}%`, height: '100%' }
+                : { height: '100%' }
+            }
+            className={`flex flex-col ${settings?.acars?.chartsEnabled ? 'flex-shrink-0' : 'flex-1'}`}
+          >
+            <AcarsNotesPanel
+              notes={notes}
+              handleNotesChange={handleNotesChange}
+            />
+          </div>
+        )}
+
+        {/* Divider between notes and charts (only if notes and charts enabled) */}
+        {settings?.acars?.notesEnabled && settings?.acars?.chartsEnabled && (
+          <div
+            className="w-1 bg-zinc-800 hover:bg-purple-500 cursor-col-resize transition-colors mx-2"
+            onMouseDown={() => handleMouseDown('notes')}
+            style={{ height: '100%' }}
+          />
+        )}
+
+        {/* Divider between terminal and charts (only if notes disabled and charts enabled) */}
+        {!settings?.acars?.notesEnabled && settings?.acars?.chartsEnabled && (
+          <div
+            className="w-1 bg-zinc-800 hover:bg-purple-500 cursor-col-resize transition-colors mx-2"
+            onMouseDown={() => handleMouseDown('terminal')}
+            style={{ height: '100%' }}
+          />
+        )}
+
+        {/* Charts panel (only if charts enabled) */}
         {settings?.acars?.chartsEnabled && (
           <div
             className="flex-1 min-w-0 flex flex-col"
