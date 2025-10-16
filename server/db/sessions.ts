@@ -1,5 +1,5 @@
 import { mainDb, flightsDb } from "./connection.js";
-import { addFlight } from './flights';
+import { addFlight } from './flights.js';
 import { validateSessionId } from "../utils/validation.js";
 import { encrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
