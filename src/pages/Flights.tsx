@@ -246,7 +246,7 @@ export default function Flights() {
     const socket = createFlightsSocket(
       sessionId,
       accessId,
-      // onFlightUpdated
+      user?.userId || '',
       (flight: Flight) => {
         setFlights((prev) =>
           prev.map((f) => (f.id === flight.id ? flight : f))

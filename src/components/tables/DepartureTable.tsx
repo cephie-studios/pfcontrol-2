@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useMediaQuery } from 'react-responsive';
 import { EyeOff, Eye, Trash2, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import type { Flight } from '../../types/flight';
@@ -74,6 +74,29 @@ export default function DepartureTable({
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const isMobile = useMediaQuery({ maxWidth: 1000 });
 
+  const [remarkValues, setRemarkValues] = useState<
+    Record<string | number, string>
+  >({});
+  const debounceTimeouts = useRef<Record<string | number, NodeJS.Timeout>>({});
+
+  const debouncedHandleRemarkChange = useCallback(
+    (flightId: string | number, remark: string) => {
+      setRemarkValues((prev) => ({ ...prev, [flightId]: remark }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { remark });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
   const handleHideFlight = async (flightId: string | number) => {
     if (onFlightChange) {
       onFlightChange(flightId, { hidden: true });
@@ -98,9 +121,7 @@ export default function DepartureTable({
   };
 
   const handleRemarkChange = (flightId: string | number, remark: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { remark });
-    }
+    debouncedHandleRemarkChange(flightId, remark);
   };
 
   const handleCallsignChange = (
@@ -572,16 +593,18 @@ export default function DepartureTable({
                     {departureColumns.remark !== false && (
                       <td className="py-2 px-4 column-rmk">
                         <TextInput
-                          value={flight.remark || ''}
+                          value={
+                            remarkValues[flight.id] ?? (flight.remark || '')
+                          }
                           onChange={(value) =>
                             handleRemarkChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
-                          maxLength={50}
+                          maxLength={500}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              e.currentTarget.blur();
+                              e.preventDefault();
                             }
                           }}
                           editingAvatar={remarkEditingState?.avatar || null}

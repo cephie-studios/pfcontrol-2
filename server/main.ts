@@ -14,6 +14,8 @@ import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
 import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 
+import { startStatsFlushing } from './utils/statisticsCache.js';
+
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
 const requiredEnv = [
@@ -82,6 +84,8 @@ setupChatWebsocket(server, sessionUsersIO);
 setupFlightsWebsocket(server);
 setupOverviewWebsocket(server, sessionUsersIO);
 setupArrivalsWebsocket(server);
+
+startStatsFlushing();
 
 server.listen(PORT, () => {
   console.log(chalk.green(`Server running on http://localhost:${PORT}`));

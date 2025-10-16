@@ -20,4 +20,6 @@ export interface User {
     vatsimRatingId?: number | null;
     vatsimRatingShort?: string | null;
     vatsimRatingLong?: string | null;
+    tutorialCompleted: boolean;
+    statistics: Record<string, number | Record<string, number>>;
 }
