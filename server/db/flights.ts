@@ -6,6 +6,7 @@ import { getSessionById } from "./sessions.js";
 import { generateRandomId, generateSID, generateSquawk, getWakeTurbulence } from "../utils/flightUtils.js";
 import crypto from "crypto";
 import { sql } from "kysely";
+import { incrementStat } from '../utils/statisticsCache.js';
 
 export interface ClientFlight {
   id: string;
@@ -237,6 +238,7 @@ export async function getFlightsBySessionWithTime(sessionId: string, hoursBack =
 
 export interface AddFlightData {
   id?: string;
+  user_id?: string;
   squawk?: string;
   wtc?: string;
   timestamp?: string;
@@ -328,6 +330,10 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
 
   if (!result) {
     throw new Error('Failed to insert flight');
+  }
+
+  if (flightData.user_id) {
+    incrementStat(flightData.user_id, 'total_flights_submitted', 1, 'total');
   }
 
   return sanitizeFlightForClient(result);

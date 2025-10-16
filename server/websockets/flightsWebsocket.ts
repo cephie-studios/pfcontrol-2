@@ -9,6 +9,7 @@ import { validateSessionId, validateAccessId, validateFlightId } from '../utils/
 import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway } from '../utils/sanitization.js';
 import type { Server as HTTPServer } from 'http';
 import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
+import { incrementStat } from '../utils/statisticsCache.js';
 
 interface FlightUpdateData {
     flightId: string | number;
@@ -50,6 +51,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     io.on('connection', async (socket: Socket) => {
         const sessionId = socket.handshake.query.sessionId as string;
         const accessId = socket.handshake.query.accessId as string;
+        const userId = socket.handshake.query.userId as string;
 
         try {
             const validSessionId = validateSessionId(sessionId);
@@ -103,6 +105,12 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     }
                 }
 
+                if (socket.data.role === 'controller' && updates && Object.keys(updates).length > 0) {
+                    if (userId) {
+                        incrementStat(userId, 'total_flight_edits', 1, 'total_edit_actions');
+                    }
+                }
+
                 const updatedFlight = await updateFlight(sessionId, flightId as string, updates);
                 if (updatedFlight) {
                     io.to(sessionId).emit('flightUpdated', updatedFlight);
@@ -129,7 +137,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             try {
                 const enhancedFlightData = {
                     ...flightData,
-                    user_id: (socket.handshake.auth)?.userId,
+                    user_id: userId,
                     ip_address: socket.handshake.address
                 };
 

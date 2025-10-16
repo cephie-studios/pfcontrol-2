@@ -505,6 +505,7 @@ router.get('/me', requireAuth, async (req, res) => {
             vatsimRatingId: user.vatsim_rating_id,
             vatsimRatingShort: user.vatsim_rating_short,
             vatsimRatingLong: user.vatsim_rating_long,
+            statistics: user.statistics || {},
         });
     } catch (error) {
         console.error('Error fetching user:', error);

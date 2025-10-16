@@ -1,5 +1,7 @@
 import { mainDb } from "./connection.js";
 import { sql } from "kysely";
+import { incrementStat } from "../utils/statisticsCache.js";
+import { decrypt } from "../utils/encryption.js";
 
 // Create indexes for performance
 export async function createLogbookIndexes() {
@@ -87,6 +89,7 @@ export async function createFlight({
     .returning('id')
     .executeTakeFirst();
 
+  incrementStat(userId, 'total_flights_submitted', 1, 'logged_with_logbook');
   return result?.id;
 }
 
@@ -757,30 +760,19 @@ export async function getFlightByShareToken(shareToken: string) {
 
 export async function getPublicPilotProfile(username: string) {
   const userResult = await mainDb
-    .selectFrom('users as u')
-    .select([
-      'u.id', 'u.username', 'u.discriminator', 'u.avatar',
-      'u.roblox_username', 'u.roblox_user_id', 'u.vatsim_cid',
-      'u.vatsim_rating_id', 'u.vatsim_rating_short', 'u.vatsim_rating_long',
-      'u.created_at'
-    ])
-    .where(sql`LOWER(u.username)`, '=', username.toLowerCase())
+    .selectFrom('users')
+    .selectAll()
+    .where('username', '=', username)
     .executeTakeFirst();
 
-  if (!userResult) {
-    return null;
-  }
+  if (!userResult) return null;
 
-  // Handle VATSIM rating fallback
-  let vatsimShort = userResult.vatsim_rating_short;
-  if (!vatsimShort && userResult.vatsim_rating_id) {
-    const ratingId = Number(userResult.vatsim_rating_id);
-    const ratingMap: Record<number, string> = {
-      0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 
-      6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM'
-    };
-    vatsimShort = ratingMap[ratingId] || undefined;
-  }
+  const settings = userResult.settings ? decrypt(JSON.parse(userResult.settings)) : {};
+  const privacySettings = {
+    displayControllerStatsOnProfile: settings.displayControllerStatsOnProfile ?? true,
+    displayPilotStatsOnProfile: settings.displayPilotStatsOnProfile ?? true,
+    displayLinkedAccountsOnProfile: settings.displayLinkedAccountsOnProfile ?? true,
+  };
 
   const rolesResult = await mainDb
     .selectFrom('roles as r')
@@ -823,15 +815,18 @@ export async function getPublicPilotProfile(username: string) {
   return {
     user: {
       ...userResult,
-      vatsim_rating_short: vatsimShort,
+      vatsim_rating_short: userResult.vatsim_rating_short,
       member_since: userResult.created_at,
       roles: rolesResult,
       role_name: rolesResult[0]?.name || null,
       role_description: rolesResult[0]?.description || null
     },
-    stats,
-    recentFlights,
-    activityData
+    stats: {
+      ...stats,
+    },
+    recentFlights: recentFlights,
+    activityData: activityData,
+    privacySettings,
   };
 }
 

@@ -53,4 +53,9 @@ export interface PilotProfile {
         flight_count: number;
         total_minutes: number;
     }>;
+    privacySettings: {
+        displayControllerStatsOnProfile: boolean;
+        displayPilotStatsOnProfile: boolean;
+        displayLinkedAccountsOnProfile: boolean;
+    };
 }

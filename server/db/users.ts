@@ -3,6 +3,7 @@ import type { Settings } from "./types/Settings.js";
 import { mainDb } from "./connection.js";
 import { sql } from "kysely";
 import { redisConnection } from "./connection.js";
+import { incrementStat } from '../utils/statisticsCache.js';
 
 async function invalidateUserCache(userId: string) {
   try {
@@ -51,7 +52,8 @@ export async function getUserById(userId: string) {
     sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
     settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
     ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
-    role_permissions: user.role_permissions || null
+    role_permissions: user.role_permissions || null,
+    statistics: user.statistics || {},
   };
 
   try {
@@ -149,6 +151,9 @@ export async function createOrUpdateUser(userData: {
       notesWidth: 20
     },
     tutorialCompleted: false,
+    displayControllerStatsOnProfile: true,
+    displayPilotStatsOnProfile: true,
+    displayLinkedAccountsOnProfile: true,
   };
 
   const encryptedAccessToken = encrypt(accessToken);
@@ -234,6 +239,7 @@ export async function addSessionToUser(userId: string, sessionId: string) {
     .where('id', '=', userId)
     .execute();
 
+  incrementStat(userId, 'total_sessions_created');
   await invalidateUserCache(userId);
   return await getUserById(userId);
 }
@@ -345,4 +351,22 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
 
   await invalidateUserCache(id);
   return await getUserById(id);
+}
+
+export async function updateUserStatistics(userId: string, stats: Record<string, any>) {
+  const existingUser = await getUserById(userId);
+  if (!existingUser) throw new Error('User not found');
+
+  const mergedStats = { ...existingUser.statistics, ...stats, last_updated: new Date().toISOString() };
+  
+  await mainDb
+    .updateTable('users')
+    .set({
+      statistics: JSON.stringify(mergedStats),
+      updated_at: sql`NOW()`
+    })
+    .where('id', '=', userId)
+    .execute();
+
+  await invalidateUserCache(userId);
 }

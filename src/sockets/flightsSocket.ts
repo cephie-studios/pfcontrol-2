@@ -6,6 +6,7 @@ const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 export function createFlightsSocket(
     sessionId: string,
     accessId: string,
+    userId: string,
     onFlightUpdated: (flight: Flight) => void,
     onFlightAdded: (flight: Flight) => void,
     onFlightDeleted: (data: { flightId: string | number }) => void,
@@ -14,7 +15,7 @@ export function createFlightsSocket(
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/flights',
-        query: { sessionId, accessId },
+        query: { sessionId, accessId, userId },
         transports: ['websocket', 'polling'],
         upgrade: true,
         reconnection: true,
