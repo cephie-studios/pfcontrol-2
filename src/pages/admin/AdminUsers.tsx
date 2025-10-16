@@ -1056,6 +1056,81 @@ export default function AdminUsers() {
                         renderAcarsSettings(
                           selectedUser.settings.acars as AcarsSettings
                         )}
+                      <div className="space-y-4 p-4 bg-zinc-900 rounded-lg border-2 border-zinc-700">
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                          Other Settings
+                        </h3>
+                        <div className="space-y-2 text-sm text-zinc-300">
+                          <div>
+                            <strong>Tutorial Completed:</strong>{' '}
+                            <span
+                              className={
+                                selectedUser.settings.tutorialCompleted
+                                  ? 'text-green-400'
+                                  : 'text-red-400'
+                              }
+                            >
+                              {selectedUser.settings.tutorialCompleted
+                                ? 'Yes'
+                                : 'No'}
+                            </span>
+                          </div>
+                          <div>
+                            <strong>Display Controller Stats:</strong>{' '}
+                            <span
+                              className={
+                                selectedUser.settings
+                                  .displayControllerStatsOnProfile
+                                  ? 'text-green-400'
+                                  : 'text-red-400'
+                              }
+                            >
+                              {selectedUser.settings
+                                .displayControllerStatsOnProfile
+                                ? 'Yes'
+                                : 'No'}
+                            </span>
+                          </div>
+                          <div>
+                            <strong>Display Pilot Stats:</strong>{' '}
+                            <span
+                              className={
+                                selectedUser.settings.displayPilotStatsOnProfile
+                                  ? 'text-green-400'
+                                  : 'text-red-400'
+                              }
+                            >
+                              {selectedUser.settings.displayPilotStatsOnProfile
+                                ? 'Yes'
+                                : 'No'}
+                            </span>
+                          </div>
+                          <div>
+                            <strong>Display Linked Accounts:</strong>{' '}
+                            <span
+                              className={
+                                selectedUser.settings
+                                  .displayLinkedAccountsOnProfile
+                                  ? 'text-green-400'
+                                  : 'text-red-400'
+                              }
+                            >
+                              {selectedUser.settings
+                                .displayLinkedAccountsOnProfile
+                                ? 'Yes'
+                                : 'No'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4 p-4 bg-zinc-900 rounded-lg border-2 border-zinc-700">
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                          Raw Settings Data
+                        </h3>
+                        <pre className="bg-zinc-800 rounded p-3 text-xs text-zinc-300 overflow-x-auto">
+                          {JSON.stringify(selectedUser.settings, null, 2)}
+                        </pre>
+                      </div>
                     </>
                   ) : (
                     <p className="text-zinc-400 text-center">
