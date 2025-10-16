@@ -16,6 +16,8 @@ import requireAuth from '../middleware/auth.js';
 import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
 import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 import { getUserById } from '../db/users.js';
+import { getUserRoles } from '../db/roles.js';
+import { isAdmin } from '../middleware/admin.js';
 
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
@@ -46,34 +48,35 @@ router.post('/create', sessionCreationLimiter, requireAuth, async (req: Request,
 
         const userSessions = await getSessionsByUser(createdBy);
 
-        // Clean up user's sessions array
-        const userRecord = await getUserById(createdBy);
-        if (userRecord && Array.isArray(userRecord.sessions)) {
-            const validSessionIds = new Set(userSessions.map(s => s.session_id));
-            for (const sid of userRecord.sessions) {
-                if (!validSessionIds.has(sid)) {
-                    await removeSessionFromUser(createdBy, sid);
-                }
-            }
-        }
+        const userRoles = await getUserRoles(createdBy);
+        const hasSpecialRole = isAdmin(createdBy) || userRoles.some(role => role.name === 'Tester' || role.name === 'Event Controller');
+        const maxSessions = hasSpecialRole ? 50 : 10;
 
-        if (userSessions.length >= 10) {
+        if (userSessions.length >= maxSessions) {
             return res.status(400).json({
                 error: 'Session limit reached',
-                message: 'You can only have 10 active sessions. Please delete an old session first.',
+                message: `You can only have ${maxSessions} active sessions. Please delete an old session first.`,
                 sessionCount: userSessions.length,
-                maxSessions: 10
+                maxSessions
             });
         }
 
-
-        const sessionId = generateSessionId();
+        let sessionId = generateSessionId();
         const accessId = generateAccessId();
 
         const existing = await getSessionById(sessionId);
-        if (existing) {
-            // If collision, try again recursively (should be extremely rare)
-            return res.status(500).json({ error: 'Session ID collision, please try again.' });
+        const MAX_TRIES = 3;
+        let attempt = 0;
+        let existingSession = await getSessionById(sessionId);
+
+        while (existingSession && attempt < MAX_TRIES - 1) {
+          attempt++;
+          sessionId = generateSessionId();
+          existingSession = await getSessionById(sessionId);
+        }
+
+        if (existingSession) {
+          return res.status(500).json({ error: 'Session ID collision, please try again.' });
         }
 
         await createSession({ sessionId, accessId, activeRunway, airportIcao, createdBy, isPFATC, isTutorial });

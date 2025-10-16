@@ -34,8 +34,9 @@ export default function Create() {
     if (user) {
       fetchMySessions()
         .then((sessions) => {
+          const maxSessions = user.isAdmin || user.isTester ? 50 : 10;
           setSessionCount(sessions.length);
-          setSessionLimitReached(sessions.length >= 10);
+          setSessionLimitReached(sessions.length >= maxSessions);
         })
         .catch(console.error);
     }
@@ -70,7 +71,10 @@ export default function Create() {
     }
 
     if (sessionLimitReached) {
-      setError('Session limit reached. Please delete an old session first.');
+      const maxSessions = user?.isAdmin || user?.isTester ? 50 : 10;
+      setError(
+        `Session limit reached. You can create up to ${maxSessions} sessions.`
+      );
       return;
     }
 
@@ -147,7 +151,7 @@ export default function Create() {
               className={`p-3 backdrop-blur-sm border-2 rounded-full flex items-center justify-between text-sm ${
                 sessionLimitReached
                   ? 'bg-red-900/40 border-red-700'
-                  : sessionCount >= 8
+                  : sessionCount >= (user?.isAdmin || user?.isTester ? 48 : 8) // Yellow at maxSessions - 2
                     ? 'bg-yellow-900/40 border-yellow-700'
                     : 'bg-blue-900/40 border-blue-500/50'
               }`}
@@ -157,13 +161,15 @@ export default function Create() {
                   className={`h-4 w-4 mr-2 ${
                     sessionLimitReached
                       ? 'text-red-400'
-                      : sessionCount >= 8
+                      : sessionCount >=
+                          (user?.isAdmin || user?.isTester ? 48 : 8)
                         ? 'text-yellow-400'
                         : 'text-blue-400'
                   }`}
                 />
                 <span>
-                  Sessions: {sessionCount}/10
+                  Sessions: {sessionCount}/
+                  {user?.isAdmin || user?.isTester ? 50 : 10}
                   {sessionLimitReached && ' (Limit reached)'}
                 </span>
               </div>
