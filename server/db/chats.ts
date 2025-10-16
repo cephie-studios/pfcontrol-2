@@ -2,6 +2,7 @@ import { chatsDb } from "./connection.js";
 import { encrypt, decrypt } from "../utils/encryption.js";
 import { validateSessionId } from "../utils/validation.js";
 import { sql } from "kysely";
+import { incrementStat } from "../utils/statisticsCache.js";
 
 export async function ensureChatTable(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
@@ -15,7 +16,7 @@ export async function ensureChatTable(sessionId: string) {
     .addColumn("avatar", "varchar(128)")
     .addColumn("message", "text", col => col.notNull())
     .addColumn("mentions", "jsonb")
-    .addColumn("sent_at", "timestamp", col => col.defaultTo('CURRENT_TIMESTAMP'))
+    .addColumn("sent_at", "timestamp", col => col.defaultTo('now()'))
     .execute();
 }
 
@@ -41,6 +42,7 @@ export async function addChatMessage(sessionId: string, { userId, username, avat
     .returningAll()
     .executeTakeFirst();
 
+  incrementStat(userId, 'total_chat_messages_sent');
   return { ...result, message, mentions };
 }
 

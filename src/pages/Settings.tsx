@@ -265,7 +265,10 @@ export default function Settings() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="space-y-8">
           <div id="account-settings">
-            <AccountSettings />
+            <AccountSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
           </div>
 
           <div id="table-column-settings">
@@ -464,8 +467,8 @@ export default function Settings() {
           </div>
           <div>
             <p className="text-gray-300">
-              You've successfully completed the settings tutorial. Explore your
-              new settings and enjoy using PFControl!
+              You've successfully completed the tutorial for PFControl. Explore
+              your new settings and enjoy using PFControl!
             </p>
           </div>
         </div>

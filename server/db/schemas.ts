@@ -19,6 +19,7 @@ export async function createMainTables() {
     .addColumn('password_hash', 'varchar(255)', (col) => col.notNull())
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('statistics', 'jsonb', (col) => col.defaultTo('{}'))
     .execute();
 
   // sessions

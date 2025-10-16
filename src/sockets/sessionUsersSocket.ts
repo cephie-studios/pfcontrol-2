@@ -89,5 +89,16 @@ export function createSessionUsersSocket(
         socket.emit('positionChange', { position });
     };
 
+    let activityTimer: NodeJS.Timeout;
+    const sendActivityPing = () => socket.emit('activityPing');
+    document.addEventListener('mousemove', () => {
+      clearTimeout(activityTimer);
+      activityTimer = setTimeout(sendActivityPing, 1000);
+    });
+    document.addEventListener('keydown', () => {
+      clearTimeout(activityTimer);
+      activityTimer = setTimeout(sendActivityPing, 1000);
+    });
+
     return socket;
 }

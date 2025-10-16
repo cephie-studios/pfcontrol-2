@@ -5,11 +5,13 @@ import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
+import { incrementStat } from '../utils/statisticsCache.js';
 
 const activeUsers = new Map();
 const sessionATISConfigs = new Map();
 const atisTimers = new Map();
 const fieldEditingStates = new Map();
+const userActivity = new Map<string, { lastActive: number; sessionStart: number; totalActive: number }>();
 
 interface Mention {
     [key: string]: unknown;
@@ -356,7 +358,25 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
             }
         });
 
+        const userKey = `${user.userId}-${sessionId}`;
+        userActivity.set(userKey, { lastActive: Date.now(), sessionStart: Date.now(), totalActive: 0 });
+
+        socket.on('activityPing', () => {
+            const entry = userActivity.get(userKey);
+            if (entry) entry.lastActive = Date.now();
+        });
+
+        // On disconnect, flush active time to cache
         socket.on('disconnect', () => {
+            const entry = userActivity.get(userKey);
+            if (entry) {
+                const now = Date.now();
+                const activeTime = Math.max(0, now - entry.sessionStart - (5 * 60 * 1000));
+                entry.totalActive += activeTime / 60000;
+                incrementStat(user.userId, 'total_time_controlling_minutes', entry.totalActive);
+                userActivity.delete(userKey);
+            }
+
             const users = activeUsers.get(sessionId);
             if (users) {
                 const index = users.findIndex((u: { id: string }) => u.id === user.userId);
@@ -398,6 +418,19 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
 
     return io;
 }
+
+// Periodic check (e.g., every minute) to update active time
+setInterval(() => {
+    for (const [userKey, entry] of userActivity.entries()) {
+        const now = Date.now();
+        if (now - entry.lastActive > 5 * 60 * 1000) continue;  // Idle, skip
+        const activeTime = (now - entry.lastActive) / 60000;
+        entry.totalActive += activeTime;
+        entry.lastActive = now;
+        // Increment stat in cache
+        incrementStat(userKey, 'total_time_controlling_minutes', activeTime);
+    }
+}, 60 * 1000);
 
 export function getActiveUsers(): typeof activeUsers {
     return activeUsers;

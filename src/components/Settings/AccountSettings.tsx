@@ -1,11 +1,27 @@
 import { useAuth } from '../../hooks/auth/useAuth';
-import { Link2, ExternalLink, UserX, RotateCcw } from 'lucide-react';
+import {
+  Link2,
+  ExternalLink,
+  UserX,
+  RotateCcw,
+  User,
+  TowerControl,
+} from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
 import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
+import type { Settings } from '../../types/settings';
 
-export default function AccountSettings() {
+interface AccountSettingsProps {
+  settings: Settings | null;
+  onChange: (updatedSettings: Settings) => void;
+}
+
+export default function AccountSettings({
+  settings,
+  onChange,
+}: AccountSettingsProps) {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const isVatsimLinked = !!(
@@ -82,6 +98,33 @@ export default function AccountSettings() {
     }
   };
 
+  const handleDisplayControllerStatsToggle = (enabled: boolean) => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      displayControllerStatsOnProfile: enabled,
+    };
+    onChange(updatedSettings);
+  };
+
+  const handleDisplayPilotStatsToggle = (enabled: boolean) => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      displayPilotStatsOnProfile: enabled,
+    };
+    onChange(updatedSettings);
+  };
+
+  const handleDisplayLinkedAccountsToggle = (enabled: boolean) => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      displayLinkedAccountsOnProfile: enabled,
+    };
+    onChange(updatedSettings);
+  };
+
   return (
     <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6">
       <div className="flex items-center mb-6">
@@ -89,7 +132,9 @@ export default function AccountSettings() {
           <Link2 className="h-5 w-5 text-blue-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">Account Settings</h2>
+          <h3 className="text-lg sm:text-xl font-semibold text-white">
+            Account Settings
+          </h3>
           <p className="text-sm text-zinc-400">
             Manage your account preferences and connections
           </p>
@@ -102,6 +147,91 @@ export default function AccountSettings() {
           <div className="flex items-center">
             <h3 className="text-lg font-semibold text-white">Settings</h3>
           </div>
+          {/* Controller Stats */}
+          <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <TowerControl className="w-7 h-7 text-white" />{' '}
+              </div>
+              <div>
+                <h4 className="text-white font-semibold text-base">
+                  Display Controller Statistics on Profile
+                </h4>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Show your controller statistics (e.g., sessions created, time
+                  controlling) on your profile page.
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings?.displayControllerStatsOnProfile ?? true}
+                onChange={(e) =>
+                  handleDisplayControllerStatsToggle(e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          {/* Pilot Stats */}
+          <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                <User className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h4 className="text-white font-semibold text-base">
+                  Display Pilot Statistics on Profile
+                </h4>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Show your pilot statistics (e.g., total flights, flight time,
+                  distance) on your profile page.
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings?.displayPilotStatsOnProfile ?? true}
+                onChange={(e) =>
+                  handleDisplayPilotStatsToggle(e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+            </label>
+          </div>
+          {/* Linked Accounts */}
+          <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center">
+                <Link2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h4 className="text-white font-semibold text-base">
+                  Display Linked Accounts on Profile
+                </h4>
+                <p className="text-zinc-400 text-sm mt-1">
+                  Show your linked accounts (e.g., Roblox, VATSIM) on your
+                  profile page.
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings?.displayLinkedAccountsOnProfile ?? true}
+                onChange={(e) =>
+                  handleDisplayLinkedAccountsToggle(e.target.checked)
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+            </label>
+          </div>
+          {/* Restart Tutorial */}
           <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
@@ -128,6 +258,7 @@ export default function AccountSettings() {
           </div>
         </div>
 
+        {/* Account Connections Section */}
         <div className="space-y-4">
           <div className="flex items-center">
             <h3 className="text-lg font-semibold text-white">
