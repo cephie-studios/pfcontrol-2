@@ -221,11 +221,11 @@ router.post('/update-name', requireAuth, requireSessionOwnership, async (req, re
             return res.status(400).json({ error: 'Invalid sessionId or name' });
         }
         const sanitizedName = sanitizeAlphanumeric(name, 50);
-        const customName = await updateSessionName(sessionId, sanitizedName);
-        if (!customName) {
+        const updatedSession = await updateSessionName(sessionId, sanitizedName);
+        if (!updatedSession) {
             return res.status(404).json({ error: 'Session not found' });
         }
-        res.json({ customName });
+        res.json({ customName: updatedSession.custom_name });
     } catch (error) {
         console.error('Error updating session name:', error);
         res.status(500).json({ error: 'Internal server error', message: 'Failed to update session name' });

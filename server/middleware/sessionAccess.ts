@@ -67,7 +67,7 @@ export function requireSessionAccess(req: Request, res: Response, next: NextFunc
 }
 
 export function requireSessionOwnership(req: Request, res: Response, next: NextFunction) {
-    const { sessionId } = req.params || req.body;
+    const sessionId = req.params.sessionId || req.body.sessionId;
     const userId = req.user?.userId;
 
     if (!sessionId || !userId) {
