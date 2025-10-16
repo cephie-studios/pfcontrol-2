@@ -373,6 +373,19 @@ export default function PilotProfile() {
                   </div>
                 )}
                 <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start mt-2">
+                  <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
+                    <Calendar className="h-5 w-5" />
+                    <span className="text-base md:text-lg">
+                      Member since{' '}
+                      {new Date(profile.user.member_since).toLocaleDateString(
+                        'en-US',
+                        {
+                          month: 'long',
+                          year: 'numeric',
+                        }
+                      )}
+                    </span>
+                  </div>
                   {/* Roblox */}
                   {(isCurrentUser ||
                     profile.privacySettings.displayLinkedAccountsOnProfile) && (
