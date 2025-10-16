@@ -353,11 +353,16 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
   return await getUserById(id);
 }
 
-export async function updateUserStatistics(userId: string, stats: Record<string, any>) {
+export async function updateUserStatistics(userId: string, stats: Record<string, unknown>) {
   const existingUser = await getUserById(userId);
   if (!existingUser) throw new Error('User not found');
 
-  const mergedStats = { ...existingUser.statistics, ...stats, last_updated: new Date().toISOString() };
+  const existingStats = (existingUser.statistics ?? {}) as Record<string, unknown>;
+  const mergedStats: Record<string, unknown> = {
+    ...existingStats,
+    ...stats,
+    last_updated: new Date().toISOString()
+  };
   
   await mainDb
     .updateTable('users')
