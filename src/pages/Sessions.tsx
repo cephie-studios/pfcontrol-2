@@ -35,6 +35,8 @@ export default function Sessions() {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
 
+  const maxSessions = user?.isAdmin || user?.isTester ? 50 : 10;
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -168,15 +170,16 @@ export default function Sessions() {
               </div>
             </div>
             <p className="text-zinc-400 mt-2 sm:mt-0 w-full sm:w-auto text-base sm:text-lg text-left sm:text-right">
-              {sessions.length}/10 sessions created
+              {sessions.length}/{maxSessions} session
+              {sessions.length === 1 ? '' : 's'} created
             </p>
             <Button
               onClick={() => (window.location.href = '/create')}
               size="md"
-              disabled={sessions.length >= 10}
+              disabled={sessions.length >= maxSessions}
               className={`
 					mt-2 sm:mt-0 w-full sm:w-auto
-					${sessions.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}
+					${sessions.length >= maxSessions ? 'opacity-50 cursor-not-allowed' : ''}
 				`}
             >
               Create New Session
@@ -205,7 +208,7 @@ export default function Sessions() {
           </div>
         ) : (
           <>
-            {sessions.length >= 10 && (
+            {sessions.length >= maxSessions && (
               <div className="mb-6 p-4 bg-yellow-900/20 border-2 border-red-600/30 rounded-xl">
                 <div className="flex items-center">
                   <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
@@ -214,7 +217,7 @@ export default function Sessions() {
                   </span>
                 </div>
                 <p className="text-red-200 mt-1">
-                  You have reached the maximum of 10 sessions.{' '}
+                  You have reached the maximum of {maxSessions} sessions.{' '}
                   <span className="italic">
                     Delete an old session to create a new one.
                   </span>
@@ -225,7 +228,7 @@ export default function Sessions() {
               {sessions.map((session) => (
                 <div
                   key={session.sessionId}
-                  className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-lg p-5 transition-all hover:bg-gray-800/70 block relative"
+                  className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-2xl p-5 transition-all hover:bg-gray-800/70 block relative"
                 >
                   <Link
                     to={`/view/${session.sessionId}/?accessId=${session.accessId}`}
@@ -233,7 +236,7 @@ export default function Sessions() {
                   >
                     <div className="flex items-center mb-3">
                       <Workflow className="h-5 w-5 text-blue-500 mr-2" />
-                      <span className="font-medium truncate text-sm">
+                      <span className="font-medium truncate text-md">
                         {session.customName
                           ? session.customName
                           : `${session.airportIcao || 'Unknown'} Session`}
