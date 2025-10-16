@@ -79,6 +79,22 @@ export default function PilotProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
+
+  type Ranks = {
+    total_sessions_created?: number | string | null;
+    total_flights_submitted?: { total?: number | string | null } | null;
+    total_chat_messages_sent?: number | string | null;
+    total_time_controlling_minutes?: number | string | null;
+    total_flight_edits?: { total_edit_actions?: number | string | null } | null;
+    [key: string]:
+      | number
+      | string
+      | null
+      | { [key: string]: number | string | null }
+      | undefined;
+  };
+
+  const [ranks, setRanks] = useState<Ranks>({});
   const navigate = useNavigate();
 
   const isCurrentUser = user && profile && profile.user.id === user.userId;
@@ -131,8 +147,9 @@ export default function PilotProfile() {
     try {
       const userData = await getCurrentUser();
       setUserStats(userData.statistics || {});
+      setRanks(userData.ranks || {});
     } catch {
-      // Optional: handle error silently or set a flag
+      // Ignore errors for stats
     }
   };
 
@@ -498,6 +515,9 @@ export default function PilotProfile() {
                   <p className="text-zinc-400 text-sm">
                     Total Sessions Created
                   </p>
+                  <p className="text-xs text-gray-500">
+                    Rank: {ranks.total_sessions_created || 'N/A'}
+                  </p>
                 </div>
 
                 <div
@@ -522,6 +542,9 @@ export default function PilotProfile() {
                       0}{' '}
                     logged)
                   </p>
+                  <p className="text-xs text-gray-500">
+                    Rank: {ranks.total_flights_submitted?.total || 'N/A'}
+                  </p>
                 </div>
 
                 <div
@@ -541,6 +564,9 @@ export default function PilotProfile() {
                     {userStats.total_chat_messages_sent || 0}
                   </h3>
                   <p className="text-zinc-400 text-sm">Chat Messages Sent</p>
+                  <p className="text-xs text-gray-500">
+                    Rank: {ranks.total_chat_messages_sent || 'N/A'}
+                  </p>
                 </div>
 
                 <div
@@ -561,6 +587,9 @@ export default function PilotProfile() {
                     min
                   </h3>
                   <p className="text-zinc-400 text-sm">Time Controlling</p>
+                  <p className="text-xs text-gray-500">
+                    Rank: {ranks.total_time_controlling_minutes || 'N/A'}
+                  </p>
                 </div>
 
                 <div
@@ -580,6 +609,10 @@ export default function PilotProfile() {
                     {userStats.total_flight_edits?.total_edit_actions || 0}
                   </h3>
                   <p className="text-zinc-400 text-sm">Flight Edit Actions</p>
+                  <p className="text-xs text-gray-500">
+                    Rank:{' '}
+                    {ranks.total_flight_edits?.total_edit_actions || 'N/A'}
+                  </p>
                 </div>
 
                 <div

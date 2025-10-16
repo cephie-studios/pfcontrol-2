@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
 import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, flightsDb, redisConnection } from '../db/connection.js';
+import { getTopUsers, STATS_KEYS } from '../db/leaderboard.js';
 import { sql } from 'kysely';
 
 import dotenv from 'dotenv';
@@ -411,6 +412,27 @@ router.get('/notifications/active', async (req, res) => {
         console.error('Error fetching active notifications:', error);
         res.status(500).json({ error: 'Failed to fetch active notifications' });
     }
+});
+
+// GET: /api/data/leaderboard - Fetch top users for each stat (public)
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const leaderboard: Record<string, Array<{ userId: string; username: string; avatar: string | null; score: number; }>> = {};
+    interface TopUser { userId: string; username: string; avatar?: string | null; score: number; }
+    for (const key of STATS_KEYS) {
+      const users = await getTopUsers(key, 3) as TopUser[];
+      leaderboard[key] = users.map(u => ({
+        userId: u.userId,
+        username: u.username,
+        avatar: u.avatar ?? null,
+        score: u.score
+      }));
+    }
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
 });
 
 export default router;

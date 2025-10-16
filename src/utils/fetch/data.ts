@@ -61,6 +61,12 @@ export function fetchStatistics(): Promise<string[]> {
     return fetchData<string>('statistics');
 }
 
+export async function fetchLeaderboard(): Promise<Record<string, Array<{ userId: string; username: string; score: number; avatar: string | null }>>> {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/data/leaderboard`);
+  if (!response.ok) throw new Error('Failed to fetch leaderboard');
+  return response.json();
+}
+
 export async function getTesterSettings(): Promise<TesterSettings> {
     try {
         const response = await fetch(

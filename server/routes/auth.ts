@@ -9,6 +9,7 @@ import { recordLogin, recordNewUser } from '../db/statistics.js';
 import { isUserBanned } from '../db/ban.js';
 import { isTester } from '../db/testers.js';
 import { getClientIp } from '../utils/getIpAddress.js';
+import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
 import requireAuth from '../middleware/auth.js';
 
 const router = express.Router();
@@ -485,6 +486,11 @@ router.get('/me', requireAuth, async (req, res) => {
 
         const banRecord = await isUserBanned(req.user.userId);
 
+        const ranks: Record<string, number | null> = {};
+        for (const key of STATS_KEYS) {
+          ranks[key] = await getUserRank(req.user.userId, key);
+        }
+
         res.json({
             userId: req.user.userId,
             username: req.user.username,
@@ -506,6 +512,7 @@ router.get('/me', requireAuth, async (req, res) => {
             vatsimRatingShort: user.vatsim_rating_short,
             vatsimRatingLong: user.vatsim_rating_long,
             statistics: user.statistics || {},
+            ranks,
         });
     } catch (error) {
         console.error('Error fetching user:', error);
