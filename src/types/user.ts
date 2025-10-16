@@ -22,4 +22,5 @@ export interface User {
     vatsimRatingLong?: string | null;
     tutorialCompleted: boolean;
     statistics: Record<string, number | Record<string, number>>;
+    ranks: Record<string, number | null>;
 }

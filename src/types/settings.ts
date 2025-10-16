@@ -77,4 +77,5 @@ export interface Settings {
     displayControllerStatsOnProfile: boolean;
     displayPilotStatsOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
+    hideFromLeaderboard: boolean;
 }

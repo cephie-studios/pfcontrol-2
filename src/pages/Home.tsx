@@ -1,6 +1,13 @@
-import { ArrowRight, Plane, Shield, TowerControl, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Plane,
+  Shield,
+  TowerControl,
+  Users,
+  Crown,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { fetchStatistics } from '../utils/fetch/data';
+import { fetchStatistics, fetchLeaderboard } from '../utils/fetch/data';
 import { useSearchParams } from 'react-router-dom';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
@@ -18,11 +25,29 @@ export default function Home() {
     registeredUsers: 0,
     flightsLogged: 0,
   });
+  const [leaderboard, setLeaderboard] = useState<
+    Record<
+      string,
+      Array<{
+        userId: string;
+        username: string;
+        score: number;
+        avatar: string | null;
+      }>
+    >
+  >({});
 
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
+
+  const statTitles: Record<string, string> = {
+    total_sessions_created: 'Sessions Created',
+    'total_flights_submitted.total': 'Flights Submitted',
+    total_time_controlling_minutes: 'Time Controlling',
+    'total_flight_edits.total_edit_actions': 'Flight Edits',
+  };
 
   useEffect(() => {
     if (user && !user.settings?.tutorialCompleted && !startTutorial) {
@@ -56,7 +81,18 @@ export default function Home() {
         setStats(data);
       }
     });
+
+    fetchLeaderboard().then(setLeaderboard).catch(console.error);
   }, []);
+
+  const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
+    if (!avatarHash) {
+      return `https://cdn.discordapp.com/embed/avatars/${
+        parseInt(userId) % 5
+      }.png`;
+    }
+    return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
+  };
 
   return (
     <div>
@@ -210,6 +246,83 @@ export default function Home() {
               {stats.flightsLogged.toLocaleString('de-DE')}
             </div>
             <p className="text-gray-400">Last 30 days</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative bg-black py-36 px-2 sm:px-6">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6">
+          <h2 className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center">
+            Leaderboard
+          </h2>
+          <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 mt-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-28 pt-24">
+            {' '}
+            {Object.entries(leaderboard).map(([key, users]) => (
+              <div key={key} className="text-center">
+                <h3
+                  className="text-3xl font-medium bg-gradient-to-r from-blue-200 to-blue-700 bg-clip-text text-transparent mb-12 capitalize"
+                  style={{ lineHeight: 1.4 }}
+                >
+                  {statTitles[key] ||
+                    key
+                      .replace(/total_|_/g, ' ')
+                      .replace('submitted total', 'Flights Submitted')
+                      .trim()}
+                </h3>
+                <div className="flex justify-center gap-12">
+                  {users.slice(0, 3).map((user, idx) => (
+                    <div
+                      key={user.userId}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="relative">
+                        <img
+                          src={getDiscordAvatar(user.userId, user.avatar)}
+                          alt={user.username}
+                          className="w-28 h-28 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-300 transition-colors"
+                          onClick={() =>
+                            (window.location.href = `/pilots/${user.username}`)
+                          }
+                        />
+                        {idx <= 2 && (
+                          <Crown
+                            className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
+                            style={{
+                              color:
+                                idx === 0
+                                  ? '#fbbf24'
+                                  : idx === 1
+                                    ? '#c0c0c0'
+                                    : '#ad6823',
+                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <span className="text-gray-300 mt-4 mb-1 text-lg font-medium">
+                        {user.username}
+                      </span>
+                      <span className="text-blue-400 font-mono font-bold text-lg">
+                        {key === 'total_time_controlling_minutes'
+                          ? (() => {
+                              const mins = Math.floor(user.score);
+                              if (mins >= 60) {
+                                const h = Math.floor(mins / 60);
+                                const rem = mins % 60;
+                                return rem === 0
+                                  ? `${h}h.`
+                                  : `${h}h.${rem}min.`;
+                              }
+                              return `${mins} min.`;
+                            })()
+                          : user.score}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

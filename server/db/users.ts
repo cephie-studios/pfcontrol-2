@@ -154,6 +154,7 @@ export async function createOrUpdateUser(userData: {
     displayControllerStatsOnProfile: true,
     displayPilotStatsOnProfile: true,
     displayLinkedAccountsOnProfile: true,
+    hideFromLeaderboard: false,
   };
 
   const encryptedAccessToken = encrypt(accessToken);
