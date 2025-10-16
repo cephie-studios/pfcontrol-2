@@ -390,7 +390,9 @@ export default function PilotProfile() {
                   {(isCurrentUser ||
                     profile.privacySettings.displayLinkedAccountsOnProfile) && (
                     <div className="flex items-center gap-2">
-                      <SiRoblox className="h-5 w-5 text-blue-300" />
+                      {profile.user.roblox_username && (
+                        <SiRoblox className="h-5 w-5 text-blue-300" />
+                      )}
                       {profile.user.roblox_username ? (
                         profile.user.roblox_user_id ? (
                           <a
@@ -422,11 +424,13 @@ export default function PilotProfile() {
                   {(isCurrentUser ||
                     profile.privacySettings.displayLinkedAccountsOnProfile) && (
                     <div className="flex items-center gap-2">
-                      <img
-                        src="/assets/images/vatsim.webp"
-                        alt="VATSIM"
-                        className="h-6 w-6 p-1 bg-white rounded-full"
-                      />
+                      {isVatsimLinked && (
+                        <img
+                          src="/assets/images/vatsim.webp"
+                          alt="VATSIM"
+                          className="h-6 w-6 p-1 bg-white rounded-full"
+                        />
+                      )}
                       {isVatsimLinked ? (
                         <a
                           href={`https://stats.vatsim.net/stats/${profile.user.vatsim_cid}`}
