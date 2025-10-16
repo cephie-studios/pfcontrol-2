@@ -467,8 +467,8 @@ export default function Settings() {
           </div>
           <div>
             <p className="text-gray-300">
-              You've successfully completed the settings tutorial. Explore your
-              new settings and enjoy using PFControl!
+              You've successfully completed the tutorial for PFControl. Explore
+              your new settings and enjoy using PFControl!
             </p>
           </div>
         </div>
