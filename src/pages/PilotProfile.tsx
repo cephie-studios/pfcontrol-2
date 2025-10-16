@@ -318,7 +318,7 @@ export default function PilotProfile() {
                   (profile.user.roles && profile.user.roles.length > 0) ||
                   isVatsimLinked) && (
                   <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
-                    {profile.user.is_admin && (
+                    {isCurrentUser && user?.isAdmin && (
                       <div
                         className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
                         style={{
