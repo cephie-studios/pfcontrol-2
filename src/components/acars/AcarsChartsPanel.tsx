@@ -19,6 +19,8 @@ interface ChartsPanelProps {
   getChartsForAirport: (
     icao: string
   ) => { name: string; path: string; type: string }[];
+  containerRef: React.RefObject<HTMLDivElement>;
+  setImageSize: (size: { width: number; height: number }) => void;
 }
 
 export default function ChartsPanel({
@@ -37,6 +39,8 @@ export default function ChartsPanel({
   handleZoomOut,
   handleResetZoom,
   getChartsForAirport,
+  containerRef,
+  setImageSize,
 }: ChartsPanelProps) {
   if (!flight) return null;
   const charts = getChartsForAirport(flight.departure || '');
@@ -94,6 +98,7 @@ export default function ChartsPanel({
                 </div>
               ) : (
                 <div
+                  ref={containerRef}
                   className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden"
                   onMouseDown={handleChartMouseDown}
                   onMouseMove={
@@ -131,7 +136,13 @@ export default function ChartsPanel({
                     }}
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
-                    onLoad={() => setChartLoadError(false)}
+                    onLoad={(e) => {
+                      setChartLoadError(false);
+                      setImageSize({
+                        width: (e.target as HTMLImageElement).naturalWidth,
+                        height: (e.target as HTMLImageElement).naturalHeight,
+                      });
+                    }}
                     onError={() => setChartLoadError(true)}
                   />
                 </div>

@@ -89,7 +89,7 @@ export default function Sidebar({ activeSessions, onAtisClick }: SidebarProps) {
                 <div className="font-semibold text-blue-400 text-base">
                   {session.airportIcao} ATIS {session.atis?.letter}
                 </div>
-                <div className="text-zinc-300 text-sm whitespace-pre-wrap mt-1">
+                <div className="text-zinc-300 text-sm whitespace-pre-wrap mt-1 line-clamp-2 overflow-hidden">
                   {session.atis?.text}
                 </div>
               </div>

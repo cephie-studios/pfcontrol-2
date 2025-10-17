@@ -51,6 +51,7 @@ export default function ACARS() {
   const [chartPan, setChartPan] = useState({ x: 0, y: 0 });
   const [isChartDragging, setIsChartDragging] = useState(false);
   const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [showSidebar, setShowSidebar] = useState(() => {
     const saved = localStorage.getItem('acars-sidebar-visible');
     return saved !== null ? saved === 'true' : true;
@@ -63,6 +64,7 @@ export default function ACARS() {
   const initializedRef = useRef(false);
   const notesInitializedRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (settings?.acars) {
@@ -202,10 +204,26 @@ NOTES:
   };
 
   const handleChartMouseMove = (e: React.MouseEvent) => {
-    if (!isChartDragging) return;
+    if (
+      !isChartDragging ||
+      !containerRef.current ||
+      imageSize.width === 0 ||
+      imageSize.height === 0
+    )
+      return;
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+    const scaledWidth = imageSize.width * chartZoom;
+    const scaledHeight = imageSize.height * chartZoom;
+    const maxPanX = Math.max(0, (scaledWidth - containerWidth) / 2);
+    const maxPanY = Math.max(0, (scaledHeight - containerHeight) / 2);
+    const newX = e.clientX - chartDragStart.x;
+    const newY = e.clientY - chartDragStart.y;
     setChartPan({
-      x: e.clientX - chartDragStart.x,
-      y: e.clientY - chartDragStart.y,
+      x: Math.max(-maxPanX, Math.min(maxPanX, newX)),
+      y: Math.max(-maxPanY, Math.min(maxPanY, newY)),
     });
   };
 
@@ -671,6 +689,8 @@ NOTES:
               handleZoomOut={handleZoomOut}
               handleResetZoom={handleResetZoom}
               getChartsForAirport={getChartsForAirport}
+              containerRef={containerRef}
+              setImageSize={setImageSize}
             />
           </div>
         )}
