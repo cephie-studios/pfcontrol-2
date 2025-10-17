@@ -495,7 +495,7 @@ export default function PilotProfile() {
                 <TowerControl className="h-6 w-6 text-blue-400" />
                 Controller Statistics
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
                 <div
                   className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
                   style={{
@@ -517,33 +517,6 @@ export default function PilotProfile() {
                   </p>
                   <p className="text-xs text-gray-500">
                     Rank: {ranks.total_sessions_created || 'N/A'}
-                  </p>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))',
-                    animationDelay: '900ms',
-                  }}
-                >
-                  <div className="flex items-center justify-end -mb-8">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <Plane className="h-5 w-5 text-green-400" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {userStats.total_flights_submitted?.total || 0}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">
-                    Flights Submitted (
-                    {userStats.total_flights_submitted?.logged_with_logbook ||
-                      0}{' '}
-                    logged)
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Rank: {ranks.total_flights_submitted?.total || 'N/A'}
                   </p>
                 </div>
 
@@ -614,27 +587,6 @@ export default function PilotProfile() {
                     {ranks.total_flight_edits?.total_edit_actions || 'N/A'}
                   </p>
                 </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                    animationDelay: '1300ms',
-                  }}
-                >
-                  <div className="flex items-center justify-end -mb-8">
-                    <div className="p-2 bg-gray-500/20 rounded-lg">
-                      <Clock className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-1">
-                    {userStats.last_updated
-                      ? new Date(userStats.last_updated).toLocaleDateString()
-                      : 'N/A'}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">Last Updated</p>
-                </div>
               </div>
             </>
           )}
@@ -659,7 +611,9 @@ export default function PilotProfile() {
                 <p className="text-sm text-gray-400">Total Flights</p>
               </div>
               <p className="text-3xl font-bold text-white">
-                {profile.stats.total_flights || 0}
+                {(isCurrentUser && userStats?.total_flights_submitted?.total) ||
+                  profile.stats.total_flights ||
+                  0}
               </p>
             </div>
 
