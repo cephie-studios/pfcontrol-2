@@ -340,7 +340,7 @@ export default function Submit() {
       <div className="relative w-full h-56 md:h-72 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent">
           <img
-            src="/assets/app/backgrounds/mdpc_01.png"
+            src="/assets/app/backgrounds/mdpc_01.webp"
             alt="Banner"
             className="object-cover w-full h-full blur-xs scale-110 opacity-60"
           />

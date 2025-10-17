@@ -563,7 +563,7 @@ export default function FlightDetail() {
 
 			{/* Modern Hero Header */}
 			<div className="relative w-full bg-gradient-to-br from-blue-900/40 via-purple-900/30 to-gray-900/40 border-b-2 border-blue-800/30 py-8">
-				<div className="absolute inset-0 bg-[url('/assets/app/backgrounds/mdpc_01.png')] bg-cover bg-center opacity-10"></div>
+				<div className="absolute inset-0 bg-[url('/assets/app/backgrounds/mdpc_01.webp')] bg-cover bg-center opacity-10"></div>
 				<div className="relative container mx-auto max-w-6xl px-4 py-8">
 					{/* Navigation Bar */}
 					<div className="flex items-center justify-between mb-6">

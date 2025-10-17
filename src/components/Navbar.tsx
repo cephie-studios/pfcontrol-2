@@ -450,6 +450,12 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                     Create Session
                   </a>
                   <a
+                    href="/sessions"
+                    className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
+                  >
+                    My Sessions
+                  </a>
+                  <a
                     href="/pfatc"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
@@ -501,6 +507,13 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Create Session
+                </a>
+                <a
+                  href="/sessions"
+                  className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Sessions
                 </a>
                 <a
                   href="/pfatc"

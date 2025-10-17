@@ -719,7 +719,7 @@ export default function Flights() {
 
   const backgroundImage = useMemo(() => {
     const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/app/backgrounds/mdpc_01.png")';
+    let bgImage = 'url("/assets/app/backgrounds/mdpc_01.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
       if (!filename || filename === 'random' || filename === 'favorites') {

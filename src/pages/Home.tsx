@@ -6,11 +6,16 @@ import {
   Users,
   Crown,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { fetchStatistics, fetchLeaderboard } from '../utils/fetch/data';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  fetchStatistics,
+  fetchLeaderboard,
+  fetchBackgrounds,
+} from '../utils/fetch/data';
 import { useSearchParams } from 'react-router-dom';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsHome';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import Modal from '../components/common/Modal';
@@ -18,6 +23,14 @@ import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
+
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+
+interface AvailableImage {
+  filename: string;
+  path: string;
+  extension: string;
+}
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -36,11 +49,14 @@ export default function Home() {
       }>
     >
   >({});
+  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
+  const [customLoaded, setCustomLoaded] = useState(false);
 
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
+  const { settings } = useSettings();
 
   const statTitles: Record<string, string> = {
     total_sessions_created: 'Sessions Created',
@@ -85,6 +101,71 @@ export default function Home() {
     fetchLeaderboard().then(setLeaderboard).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const data = await fetchBackgrounds();
+        setAvailableImages(data);
+      } catch (error) {
+        console.error('Error loading available images:', error);
+      }
+    };
+    loadImages();
+  }, []);
+
+  const backgroundImage = useMemo(() => {
+    const selectedImage = settings?.backgroundImage?.selectedImage;
+    let bgImage = 'url("/assets/images/hero.webp")';
+
+    const getImageUrl = (filename: string | null): string | null => {
+      if (!filename || filename === 'random' || filename === 'favorites') {
+        return filename;
+      }
+      if (filename.startsWith('https://api.cephie.app/')) {
+        return filename;
+      }
+      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
+    };
+
+    if (selectedImage === 'random') {
+      if (availableImages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableImages.length);
+        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
+      }
+    } else if (selectedImage === 'favorites') {
+      const favorites = settings?.backgroundImage?.favorites || [];
+      if (favorites.length > 0) {
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
+        const favImageUrl = getImageUrl(randomFav);
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
+          bgImage = `url(${favImageUrl})`;
+        }
+      }
+    } else if (selectedImage) {
+      const imageUrl = getImageUrl(selectedImage);
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+        bgImage = `url(${imageUrl})`;
+      }
+    }
+
+    return bgImage;
+  }, [
+    settings?.backgroundImage?.selectedImage,
+    settings?.backgroundImage?.favorites,
+    availableImages,
+  ]);
+
+  useEffect(() => {
+    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
+      setCustomLoaded(true);
+    }
+  }, [backgroundImage]);
+
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
       return `https://cdn.discordapp.com/embed/avatars/${
@@ -99,6 +180,17 @@ export default function Home() {
       <Navbar />
       {/* Hero Section */}
       <section className="relative bg-[url('/assets/images/hero.webp')] bg-cover bg-center text-white min-h-[90vh] flex items-center px-4">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: customLoaded ? 1 : 0,
+            transition: 'opacity 0.5s ease-in-out',
+          }}
+        />
         <div className="absolute inset-0 backdrop-blur-[5px]"></div>
         <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
@@ -270,7 +362,7 @@ export default function Home() {
                       .replace('submitted total', 'Flights Submitted')
                       .trim()}
                 </h3>
-                <div className="flex justify-center gap-12">
+                <div className="flex flex-col md:flex-row justify-center gap-12">
                   {users.slice(0, 3).map((user, idx) => (
                     <div
                       key={user.userId}
