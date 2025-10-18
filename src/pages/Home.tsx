@@ -168,9 +168,7 @@ export default function Home() {
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
-      return `https://cdn.discordapp.com/embed/avatars/${
-        parseInt(userId) % 5
-      }.png`;
+      return '/assets/app/default/avatar.webp';
     }
     return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
   };
@@ -350,71 +348,74 @@ export default function Home() {
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 mt-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-28 pt-24">
             {' '}
-            {Object.entries(leaderboard).map(([key, users]) => (
-              <div key={key} className="text-center">
-                <h3
-                  className="text-3xl font-medium bg-gradient-to-r from-blue-200 to-blue-700 bg-clip-text text-transparent mb-12 capitalize"
-                  style={{ lineHeight: 1.4 }}
-                >
-                  {statTitles[key] ||
-                    key
-                      .replace(/total_|_/g, ' ')
-                      .replace('submitted total', 'Flights Submitted')
-                      .trim()}
-                </h3>
-                <div className="flex flex-col md:flex-row justify-center gap-12">
-                  {users.slice(0, 3).map((user, idx) => (
-                    <div
-                      key={user.userId}
-                      className="flex flex-col items-center"
-                    >
-                      <div className="relative">
-                        <img
-                          src={getDiscordAvatar(user.userId, user.avatar)}
-                          alt={user.username}
-                          className="w-28 h-28 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-300 transition-colors"
-                          onClick={() =>
-                            (window.location.href = `/pilots/${user.username}`)
-                          }
-                        />
-                        {idx <= 2 && (
-                          <Crown
-                            className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
-                            style={{
-                              color:
-                                idx === 0
-                                  ? '#fbbf24'
-                                  : idx === 1
-                                    ? '#c0c0c0'
-                                    : '#ad6823',
-                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
-                            }}
+            {Object.entries(leaderboard)
+              .filter(([key]) => !/chat|message/i.test(key))
+              .map(([key, users]) => (
+                <div key={key} className="text-center">
+                  <h3
+                    className="text-3xl font-medium bg-gradient-to-r from-blue-200 to-blue-700 bg-clip-text text-transparent mb-12 capitalize"
+                    style={{ lineHeight: 1.4 }}
+                  >
+                    {statTitles[key] ||
+                      key
+                        .replace(/total_|_/g, ' ')
+                        .replace('submitted total', 'Flights Submitted')
+                        .trim()}
+                  </h3>
+                  <div className="flex flex-col md:flex-row justify-center gap-12">
+                    {users.slice(0, 3).map((user, idx) => (
+                      <div
+                        key={user.userId}
+                        className="flex flex-col items-center"
+                      >
+                        <div className="relative">
+                          <img
+                            src={getDiscordAvatar(user.userId, user.avatar)}
+                            alt={user.username}
+                            className="w-28 h-28 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() =>
+                              (window.location.href = `/pilots/${user.username}`)
+                            }
                           />
-                        )}
+                          {idx <= 2 && (
+                            <Crown
+                              className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
+                              style={{
+                                color:
+                                  idx === 0
+                                    ? '#fbbf24'
+                                    : idx === 1
+                                      ? '#c0c0c0'
+                                      : '#ad6823',
+                                filter:
+                                  'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                              }}
+                            />
+                          )}
+                        </div>
+                        <span className="text-gray-300 mt-4 mb-1 text-lg font-medium">
+                          {user.username}
+                        </span>
+                        <span className="text-blue-400 font-mono font-bold text-lg">
+                          {key === 'total_time_controlling_minutes'
+                            ? (() => {
+                                const mins = Math.floor(user.score);
+                                if (mins >= 60) {
+                                  const h = Math.floor(mins / 60);
+                                  const rem = mins % 60;
+                                  return rem === 0
+                                    ? `${h}h.`
+                                    : `${h}h.${rem}min.`;
+                                }
+                                return `${mins} min.`;
+                              })()
+                            : user.score}
+                        </span>
                       </div>
-                      <span className="text-gray-300 mt-4 mb-1 text-lg font-medium">
-                        {user.username}
-                      </span>
-                      <span className="text-blue-400 font-mono font-bold text-lg">
-                        {key === 'total_time_controlling_minutes'
-                          ? (() => {
-                              const mins = Math.floor(user.score);
-                              if (mins >= 60) {
-                                const h = Math.floor(mins / 60);
-                                const rem = mins % 60;
-                                return rem === 0
-                                  ? `${h}h.`
-                                  : `${h}h.${rem}min.`;
-                              }
-                              return `${mins} min.`;
-                            })()
-                          : user.score}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </section>
@@ -429,7 +430,7 @@ export default function Home() {
           </h2>
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
           <p className="text-xl text-center text-gray-300 max-w-3xl mx-auto">
-            What technologies we use to develope PFControl.
+            What technologies we use to develop PFControl.
           </p>
         </div>
 
@@ -513,7 +514,7 @@ export default function Home() {
                 devbanane
               </span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent text-md font-medium">
-                Lead Developer
+                {'<h1> Developer </h1>'}
               </span>
             </div>
             <div className="flex flex-col items-center">
@@ -524,7 +525,7 @@ export default function Home() {
               />
               <span className="text-white text-lg font-semibold">iceit</span>
               <span className="bg-gradient-to-r from-yellow-400 to-green-600 bg-clip-text text-transparent text-md font-medium">
-                Logbook
+                Ice Wizard
               </span>
             </div>
             <div className="flex flex-col items-center">
@@ -537,7 +538,7 @@ export default function Home() {
                 frenchfries
               </span>
               <span className="bg-gradient-to-r from-purple-400 to-red-400 bg-clip-text text-transparent text-md font-medium">
-                Acars
+                {'<h3> Developer </h3>'}
               </span>
             </div>
             <div className="flex flex-col items-center">

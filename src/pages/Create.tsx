@@ -255,17 +255,9 @@ export default function Create() {
               <Button
                 id="create-session-btn"
                 onClick={handleCreateSession}
-                disabled={
-                  !selectedAirport ||
-                  !selectedRunway ||
-                  isCreating ||
-                  sessionLimitReached
-                }
+                disabled={isCreating || sessionLimitReached}
                 className={`w-full ${
-                  !selectedAirport ||
-                  !selectedRunway ||
-                  isCreating ||
-                  sessionLimitReached
+                  isCreating || sessionLimitReached
                     ? 'opacity-50 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
                 }`}
