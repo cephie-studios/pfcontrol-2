@@ -6,6 +6,33 @@ import { redisConnection } from './connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { getAdminIds, isAdmin } from '../middleware/admin.js';
 import { getActiveUsers } from "../websockets/sessionUsersWebsocket.js";
+import { getUserRoles } from "./roles.js";
+
+type RawUser = {
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar: string | null;
+  last_login: Date | null;
+  ip_address: string | null;
+  is_vpn: boolean;
+  total_sessions_created: number;
+  total_minutes: number;
+  created_at: Date | undefined;
+  settings: string | null;
+  roblox_username: string | null;
+  role_id: number | null;
+  role_name: string | null;
+  role_permissions: unknown;
+};
+
+type ProcessedUser = RawUser & {
+  is_admin: boolean;
+  settings: unknown;
+  roles: unknown[];
+  current_sessions_count: number;
+  cached?: boolean;
+};
 
 async function calculateDirectStatistics() {
   try {
@@ -193,14 +220,14 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
     const offset = (page - 1) * limit;
     const cacheKey = `allUsers:${page}:${limit}:${search}:${filterAdmin}`;
 
-    // Check Redis cache first
     const cached = await redisConnection.get(cacheKey);
-    let rawUsers = null;
+    let filteredUsers: ProcessedUser[] = [];
     let totalUsers = 0;
 
     if (cached) {
+      // Use cached data directly (already processed)
       const parsed = JSON.parse(cached);
-      rawUsers = parsed.users;
+      filteredUsers = parsed.users;
       totalUsers = parsed.total;
     } else {
       // Build query with Kysely
@@ -257,114 +284,102 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
       const countResult = await countQuery.executeTakeFirst();
       totalUsers = Number(countResult?.count) || 0;
 
-      rawUsers = await query.limit(limit).offset(offset).execute();
+      const rows = await query.limit(limit).offset(offset).execute();
+      const rawUsers: RawUser[] = rows.map((r) => ({
+        id: r.id,
+        username: r.username,
+        discriminator: r.discriminator,
+        avatar: r.avatar ?? null,
+        last_login: r.last_login ?? null,
+        ip_address: r.ip_address ?? null,
+        is_vpn: Boolean(r.is_vpn),
+        total_sessions_created: Number(r.total_sessions_created ?? 0),
+        total_minutes: Number(r.total_minutes ?? 0),
+        created_at: r.created_at,
+        settings: r.settings ?? null,
+        roblox_username: r.roblox_username ?? null,
+        role_id: r.role_id ?? null,
+        role_name: r.role_name ?? null,
+        role_permissions: r.role_permissions ?? null,
+      }));
 
-      await redisConnection.set(cacheKey, JSON.stringify({ users: rawUsers, total: totalUsers }), 'EX', 300);  // 5 minutes
-    }
+      // Fetch roles for multi-role support
+      const userIds = rawUsers.map(u => u.id);
+      const allUserRoles = await Promise.all(
+        userIds.map(userId => getUserRoles(userId))
+      );
 
-    interface RawUser {
-      id: string;
-      username: string;
-      discriminator: string;
-      avatar: string | null;
-      last_login: Date | null;
-      ip_address: string | object | null;
-      is_vpn: boolean;
-      total_sessions_created: number;
-      total_minutes: number;
-      created_at: Date;
-      settings: string | null;
-      roblox_username: string | null;
-      role_id: string | null;
-      role_name?: string | null;
-      role_permissions?: string | object | null;
-      [key: string]: unknown;
-    }
-
-    const userIds = (rawUsers as RawUser[]).map(u => u.id);
-    type SessionCountRow = { created_by: string; count: string | number };
-    let sessionCounts: SessionCountRow[] = [];
-    if (userIds.length > 0) {
-      sessionCounts = await mainDb
-        .selectFrom('sessions')
-        .select(['created_by', mainDb.fn.countAll().as('count')])
-        .where('created_by', 'in', userIds)
-        .groupBy('created_by')
-        .execute() as SessionCountRow[];
-    }
-    const sessionCountMap = Object.fromEntries(sessionCounts.map(row => [row.created_by, Number(row.count)]));
-
-    const usersWithAdminStatus = (rawUsers as RawUser[]).map((user: RawUser) => {
-      let decryptedSettings = null;
-      try {
-        if (user.settings) {
-          decryptedSettings = decrypt(JSON.parse(user.settings));
-        }
-      } catch {
-        console.warn(`Failed to decrypt settings for user ${user.id}`);
-      }
-
-      let rolePermissions = null;
-      try {
-        if (user.role_permissions) {
-          if (typeof user.role_permissions === 'string') {
-            rolePermissions = JSON.parse(user.role_permissions);
-          } else if (typeof user.role_permissions === 'object') {
-            rolePermissions = user.role_permissions;
-          }
-        }
-      } catch (error) {
-        console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
-        rolePermissions = null;
-      }
-
-      let decryptedIP = null;
-      if (user.ip_address) {
+      // Process users with admin status, settings decryption, etc.
+      const usersWithAdminStatus = rawUsers.map((user, index) => {
+        let decryptedSettings = null;
         try {
-          if (typeof user.ip_address === 'string' && user.ip_address.trim().startsWith('{')) {
-            const parsed = JSON.parse(user.ip_address);
-            decryptedIP = decrypt(parsed);
-          } else if (
-            typeof user.ip_address === 'object' &&
-            (user.ip_address as { iv?: string; data?: string; authTag?: string }).iv &&
-            (user.ip_address as { iv?: string; data?: string; authTag?: string }).data &&
-            (user.ip_address as { iv?: string; data?: string; authTag?: string }).authTag
-          ) {
-            decryptedIP = decrypt(user.ip_address as { iv: string; data: string; authTag: string });
-          } else {
-            decryptedIP = user.ip_address;
+          if (user.settings) {
+            decryptedSettings = decrypt(JSON.parse(user.settings));
           }
         } catch {
-          console.warn(`Failed to parse/decrypt ip_address for user ${user.id}`);
-          decryptedIP = user.ip_address;
+          console.warn(`Failed to decrypt settings for user ${user.id}`);
         }
+
+        let rolePermissions = null;
+        try {
+          if (user.role_permissions) {
+            rolePermissions = typeof user.role_permissions === 'string'
+              ? JSON.parse(user.role_permissions)
+              : user.role_permissions;
+          }
+        } catch (error) {
+          console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
+        }
+
+        let decryptedIP = user.ip_address;
+        if (user.ip_address) {
+          try {
+            if (typeof user.ip_address === 'string' && user.ip_address.trim().startsWith('{')) {
+              decryptedIP = decrypt(JSON.parse(user.ip_address));
+            } else {
+              const isEncryptedObject = (val: unknown): val is { iv: string; data: string; authTag: string } => {
+                if (typeof val !== 'object' || val === null) return false;
+                const obj = val as Record<string, unknown>;
+                return typeof obj.iv === 'string' && typeof obj.data === 'string' && typeof obj.authTag === 'string';
+              };
+
+              if (isEncryptedObject(user.ip_address)) {
+                decryptedIP = decrypt(user.ip_address);
+              }
+            }
+          } catch {
+            console.warn(`Failed to decrypt IP for user ${user.id}`);
+          }
+        }
+
+        return {
+          ...user,
+          ip_address: decryptedIP,
+          is_admin: isAdmin(user.id),
+          settings: decryptedSettings,
+          roles: allUserRoles[index],
+          current_sessions_count: 0
+        };
+      });
+
+      // Add cache status
+      const usersWithCacheStatus = await Promise.all(
+        usersWithAdminStatus.map(async (user) => {
+          const isCached = await redisConnection.exists(`user:${user.id}`);
+          return { ...user, cached: isCached === 1 };
+        })
+      );
+
+      // Apply cached filter if needed
+      filteredUsers = usersWithCacheStatus;
+      if (filterAdmin === 'cached') {
+        filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
+        totalUsers = filteredUsers.length;
+        filteredUsers = filteredUsers.slice(0, limit);
       }
-      user.ip_address = decryptedIP;
 
-      return {
-        ...user,
-        is_admin: isAdmin(user.id),
-        settings: decryptedSettings,
-        roleId: user.role_id,
-        roleName: user.role_name,
-        rolePermissions: rolePermissions,
-        current_sessions_count: sessionCountMap[user.id] || 0 // <-- Add this line
-      };
-    });
-
-    const usersWithCacheStatus = await Promise.all(
-      usersWithAdminStatus.map(async (user) => {
-        const cached = await redisConnection.exists(`user:${user.id}`);
-        return { ...user, cached: cached === 1 };
-      })
-    );
-
-    let filteredUsers = usersWithCacheStatus;
-    if (filterAdmin === 'cached') {
-      filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
-      totalUsers = filteredUsers.length;
-      const offset = (page - 1) * limit;
-      filteredUsers = filteredUsers.slice(offset, offset + limit);
+      // Cache the result
+      await redisConnection.set(cacheKey, JSON.stringify({ users: filteredUsers, total: totalUsers }), 'EX', 300);
     }
 
     return {
@@ -465,5 +480,23 @@ export async function syncUserSessionCounts() {
   } catch (error) {
     console.error('Error syncing user session counts:', error);
     throw error;
+  }
+}
+
+export async function invalidateAllUsersCache() {
+  try {
+    let cursor = '0';
+    const keysToDelete: string[] = [];
+    do {
+      const [newCursor, keys] = await redisConnection.scan(cursor, 'MATCH', 'allUsers:*', 'COUNT', 100);
+      cursor = newCursor;
+      keysToDelete.push(...keys);
+    } while (cursor !== '0');
+
+    if (keysToDelete.length > 0) {
+      await redisConnection.del(...keysToDelete);
+    }
+  } catch (error) {
+    console.warn('[Redis] Failed to invalidate allUsers cache:', error);
   }
 }

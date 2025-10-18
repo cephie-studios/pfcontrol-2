@@ -1,6 +1,7 @@
 import { mainDb } from "./connection.js";
 import { sql } from "kysely";
 import { isAdmin } from "../middleware/admin.js";
+import { invalidateAllUsersCache } from './admin.js';
 
 export async function getAllRoles() {
   try {
@@ -157,6 +158,8 @@ export async function assignRoleToUser(userId: string, roleId: number) {
         .execute();
     }
 
+    await invalidateAllUsersCache();
+
     return { userId, roleId };
   } catch (error) {
     console.error('Error assigning role to user:', error);
@@ -184,6 +187,8 @@ export async function removeRoleFromUser(userId: string, roleId: number) {
         .where('id', '=', userId)
         .execute();
     }
+
+    await invalidateAllUsersCache();
 
     return { userId, roleId };
   } catch (error) {

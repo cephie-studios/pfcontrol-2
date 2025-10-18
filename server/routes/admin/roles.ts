@@ -12,6 +12,9 @@ import {
     getUsersWithRoles,
     updateRolePriorities
 } from '../../db/roles.js';
+import { mainDb } from '../../db/connection.js';
+import { getClientIp } from '../../utils/getIpAddress.js';
+import { logAdminAction } from '../../db/audit.js';
 
 const router = express.Router();
 
@@ -131,7 +134,7 @@ router.delete('/:id', requirePermission('roles'), createAuditLogger('ROLE_DELETE
 });
 
 // POST: /api/admin/roles/assign - Assign role to user (requires roles permission)
-router.post('/assign', requirePermission('roles'), createAuditLogger('ROLE_ASSIGNED'), async (req, res) => {
+router.post('/assign', requirePermission('roles'), async (req, res) => {
     try {
         const { userId, roleId } = req.body;
 
@@ -140,6 +143,37 @@ router.post('/assign', requirePermission('roles'), createAuditLogger('ROLE_ASSIG
         }
 
         const result = await assignRoleToUser(userId, roleId);
+
+        if (req.user?.userId) {
+            try {
+                const targetUser = await mainDb
+                    .selectFrom('users')
+                    .select(['username'])
+                    .where('id', '=', userId)
+                    .executeTakeFirst();
+
+                let ip = getClientIp(req);
+                if (Array.isArray(ip)) ip = ip[0] || '';
+                await logAdminAction({
+                    adminId: req.user.userId,
+                    adminUsername: req.user.username || 'Unknown',
+                    actionType: 'ROLE_ASSIGNED',
+                    targetUserId: userId,
+                    targetUsername: targetUser?.username || 'Unknown',
+                    ipAddress: ip,
+                    userAgent: req.get('User-Agent'),
+                    details: {
+                        method: req.method,
+                        url: req.originalUrl,
+                        roleId,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+            } catch (auditError) {
+                console.error('Failed to log role assignment:', auditError);
+            }
+        }
+
         res.json(result);
     } catch (error) {
         console.error('Error assigning role:', error);

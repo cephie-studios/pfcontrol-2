@@ -34,6 +34,8 @@ import Button from '../../components/common/Button';
 import Toast from '../../components/common/Toast';
 import ErrorScreen from '../../components/common/ErrorScreen';
 import { useAuth } from '../../hooks/auth/useAuth';
+import { removeRoleFromUser } from '../../utils/fetch/admin';
+import { getIconComponent } from '../../utils/roles';
 
 export default function AdminUsers() {
   const { user } = useAuth();
@@ -100,6 +102,8 @@ export default function AdminUsers() {
       setUsers(sortedUsers);
       setRoles(rolesData);
       setTotalPages(usersData.pagination.pages);
+
+      return sortedUsers;
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch data';
@@ -108,12 +112,12 @@ export default function AdminUsers() {
         message: errorMessage,
         type: 'error',
       });
+      throw err;
     } finally {
       setLoading(false);
     }
   }, [page, limit, debouncedSearch, filterAdmin]);
 
-  // Fetch users and roles when debounced search, page, or filter changes
   useEffect(() => {
     fetchData();
   }, [page, debouncedSearch, filterAdmin, fetchData]);
@@ -143,6 +147,24 @@ export default function AdminUsers() {
     setShowRoleModal(true);
   };
 
+  const handleRemoveRole = async (userId: string, roleId: number) => {
+    try {
+      await removeRoleFromUser(userId, roleId);
+      setToast({ message: 'Role removed successfully', type: 'success' });
+      const updatedUsers = await fetchData();
+      const updatedUser = updatedUsers.find((u) => u.id === userId);
+      if (updatedUser) {
+        setSelectedUserForRole(updatedUser);
+      }
+    } catch (error) {
+      setToast({
+        message:
+          error instanceof Error ? error.message : 'Failed to remove role',
+        type: 'error',
+      });
+    }
+  };
+
   const handleAssignRole = async (roleId: number | null) => {
     if (!selectedUserForRole) return;
 
@@ -156,16 +178,19 @@ export default function AdminUsers() {
           type: 'success',
         });
       } else {
-        // Note: With multiple roles, use AdminRoles page to manage role removal
         setToast({
           message: 'Please use the Admin Roles page to remove roles',
           type: 'info',
         });
       }
 
-      setShowRoleModal(false);
-      setSelectedUserForRole(null);
-      fetchData();
+      const updatedUsers = await fetchData(); // Get fresh users data
+      const updatedUser = updatedUsers.find(
+        (u) => u.id === selectedUserForRole.id
+      );
+      if (updatedUser) {
+        setSelectedUserForRole(updatedUser); // Update modal with fresh data
+      }
     } catch (error) {
       setToast({
         message:
@@ -719,16 +744,58 @@ export default function AdminUsers() {
                                   Developer
                                 </span>
                               )}
-                              {!tableUser.is_admin && tableUser.roleName && (
-                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 w-fit">
-                                  {tableUser.roleName}
-                                </span>
-                              )}
-                              {!tableUser.is_admin && !tableUser.roleName && (
-                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-zinc-600/20 text-zinc-400 border border-zinc-600/30 w-fit">
-                                  No Role
-                                </span>
-                              )}
+                              {!tableUser.is_admin &&
+                              tableUser.roles &&
+                              tableUser.roles.length > 0
+                                ? tableUser.roles.length === 1
+                                  ? // Single role: Show icon and name
+                                    (() => {
+                                      const role = tableUser.roles[0];
+                                      const RoleIcon = getIconComponent(
+                                        role.icon
+                                      );
+                                      return (
+                                        <span
+                                          key={role.id}
+                                          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border w-fit"
+                                          style={{
+                                            backgroundColor: `${role.color}20`,
+                                            color: role.color,
+                                            borderColor: `${role.color}40`,
+                                          }}
+                                        >
+                                          <RoleIcon className="w-3 h-3" />
+                                          {role.name}
+                                        </span>
+                                      );
+                                    })()
+                                  : // Multiple roles: Show only icons
+                                    tableUser.roles.map((role) => {
+                                      const RoleIcon = getIconComponent(
+                                        role.icon
+                                      );
+                                      return (
+                                        <span
+                                          key={role.id}
+                                          className="inline-flex items-center justify-center w-6 h-6 rounded-full border"
+                                          style={{
+                                            backgroundColor: `${role.color}20`,
+                                            borderColor: `${role.color}40`,
+                                          }}
+                                          title={role.name}
+                                        >
+                                          <RoleIcon
+                                            className="w-3 h-3"
+                                            style={{ color: role.color }}
+                                          />
+                                        </span>
+                                      );
+                                    })
+                                : !tableUser.is_admin && (
+                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-zinc-600/20 text-zinc-400 border border-zinc-600/30 w-fit">
+                                      No Role
+                                    </span>
+                                  )}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -828,7 +895,7 @@ export default function AdminUsers() {
                   <div className="flex items-center space-x-3">
                     <ShieldUser className="w-6 h-6 text-rose-400" />
                     <h2 className="text-xl font-bold text-white">
-                      Manage Role
+                      Manage Roles
                     </h2>
                   </div>
                   <Button
@@ -864,85 +931,101 @@ export default function AdminUsers() {
                       </div>
                     </div>
                     <div className="text-sm text-zinc-300">
-                      Current Role:{' '}
-                      <span
-                        className={`font-medium ${
-                          selectedUserForRole.roleName
-                            ? 'text-rose-400'
-                            : 'text-zinc-400'
-                        }`}
-                      >
-                        {selectedUserForRole.roleName || 'No Role'}
-                      </span>
+                      Current Roles:{' '}
+                      {selectedUserForRole.roles &&
+                      selectedUserForRole.roles.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedUserForRole.roles.map((role) => {
+                            const RoleIcon = getIconComponent(role.icon);
+                            return (
+                              <span
+                                key={role.id}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border"
+                                style={{
+                                  backgroundColor: `${role.color}20`,
+                                  color: role.color,
+                                  borderColor: `${role.color}40`,
+                                }}
+                              >
+                                <RoleIcon className="w-3 h-3" />
+                                {role.name}
+                                <button
+                                  onClick={() =>
+                                    handleRemoveRole(
+                                      selectedUserForRole.id,
+                                      role.id
+                                    )
+                                  }
+                                  className="ml-1 text-zinc-400 hover:text-white"
+                                  title="Remove role"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        'No Roles'
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-zinc-300 mb-2 font-medium">
-                      Assign Role
+                      Add Role
                     </label>
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleAssignRole(null)}
-                        disabled={assigningRole}
-                        className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                          !selectedUserForRole.roleId
-                            ? 'bg-zinc-700 border-zinc-600 text-white'
-                            : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-                        }`}
-                      >
-                        <div className="font-medium">No Role</div>
-                        <div className="text-sm text-zinc-400">
-                          Remove all role permissions
-                        </div>
-                      </button>
-                      {roles.map((role) => (
-                        <button
-                          key={role.id}
-                          onClick={() => handleAssignRole(role.id)}
-                          disabled={assigningRole}
-                          className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                            selectedUserForRole.roleId === role.id
-                              ? 'bg-rose-500/20 border-rose-500 text-white'
-                              : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-                          }`}
-                        >
-                          <div className="font-medium">{role.name}</div>
-                          <div className="text-sm text-zinc-400">
-                            {role.description || 'No description'}
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {Object.entries(role.permissions)
-                              .filter(([, enabled]) => enabled)
-                              .slice(0, 3)
-                              .map(([permission]) => (
-                                <span
-                                  key={permission}
-                                  className="px-2 py-1 bg-zinc-600/50 text-zinc-300 text-xs rounded"
-                                >
-                                  {permission}
-                                </span>
-                              ))}
-                            {Object.values(role.permissions).filter(Boolean)
-                              .length > 3 && (
-                              <span className="px-2 py-1 bg-zinc-600/50 text-zinc-300 text-xs rounded">
-                                +
-                                {Object.values(role.permissions).filter(Boolean)
-                                  .length - 3}{' '}
-                                more
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                    <Dropdown
+                      options={[
+                        { value: '', label: '+ Add Role' },
+                        ...roles
+                          .filter(
+                            (role) =>
+                              !selectedUserForRole.roles?.some(
+                                (ur) => ur.id === role.id
+                              )
+                          )
+                          .map((role) => ({
+                            value: role.id.toString(),
+                            label: role.name,
+                          })),
+                      ]}
+                      value=""
+                      onChange={(val) => {
+                        if (val !== '') {
+                          handleAssignRole(parseInt(val));
+                        }
+                      }}
+                      size="sm"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <button
+                      onClick={() => {
+                        // Remove all roles
+                        selectedUserForRole.roles?.forEach((role) =>
+                          handleRemoveRole(selectedUserForRole.id, role.id)
+                        );
+                      }}
+                      disabled={
+                        assigningRole || !selectedUserForRole.roles?.length
+                      }
+                      className="w-full p-3 rounded-lg border bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                    >
+                      <div className="font-medium">Remove All Roles</div>
+                      <div className="text-sm text-zinc-400">
+                        Remove all role permissions
+                      </div>
+                    </button>
                   </div>
 
                   {assigningRole && (
                     <div className="flex items-center justify-center py-4">
                       <div className="flex items-center space-x-3 text-zinc-400">
                         <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                        <span>Updating role...</span>
+                        <span>Updating roles...</span>
                       </div>
                     </div>
                   )}

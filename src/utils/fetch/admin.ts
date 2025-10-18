@@ -48,9 +48,7 @@ export interface AdminUser {
     is_admin: boolean;
     settings?: Settings;
     roblox_username?: string;
-    roleId?: number;
-    roleName?: string;
-    rolePermissions?: Record<string, boolean>;
+    roles?: Role[];
     cached?: boolean;
 }
 
