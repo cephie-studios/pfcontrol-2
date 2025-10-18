@@ -12,7 +12,7 @@ interface TerminalProps {
   pdcRequested: boolean;
 }
 
-export default function Terminal({
+export default function AcarsTerminal({
   flightCallsign,
   messages,
   getMessageColor,
@@ -22,8 +22,14 @@ export default function Terminal({
   pdcRequested,
 }: TerminalProps) {
   return (
-    <div className="flex-1 flex flex-col bg-black">
-      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5">
+    <div className="flex flex-col h-full">
+      <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700 flex items-center gap-2">
+        <TerminalIcon className="w-5 h-5 text-green-500" />
+        <span className="text-sm font-mono text-zinc-300">
+          {flightCallsign ? `${flightCallsign} Terminal` : 'ACARS Terminal'}
+        </span>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5 bg-black">
         {messages.map((msg) => (
           <div key={msg.id} className={getMessageColor(msg.type)}>
             {renderMessageText(msg)}

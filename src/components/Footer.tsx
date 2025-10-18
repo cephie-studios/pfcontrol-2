@@ -227,6 +227,18 @@ export default function Footer() {
                 <ExternalLink className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
             </p>
+            <p className="text-gray-500 text-sm">
+              Charts by{' '}
+              <a
+                href="https://discord.gg/pfatc"
+                className="text-blue-400 hover:text-blue-300 transition-all duration-200 underline inline-flex items-center group"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                PFATC
+                <ExternalLink className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            </p>
           </div>
           <div className="flex items-center space-x-2 text-gray-500 text-sm">
             <span>Version {version}</span>

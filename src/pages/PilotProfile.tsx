@@ -57,6 +57,22 @@ ChartJS.register(
   Legend
 );
 
+type Ranks = Record<string, number | string | null>;
+
+const isRankOne = (ranks: Ranks): boolean => {
+  const statKeys = [
+    'total_sessions_created',
+    'total_flights_submitted.total',
+    'total_time_controlling_minutes',
+    'total_chat_messages_sent',
+    'total_flight_edits.total_edit_actions',
+  ];
+  return statKeys.some((key) => {
+    const rank = ranks[key];
+    return typeof rank === 'number' && rank === 1;
+  });
+};
+
 interface UserStatistics {
   total_sessions_created?: number;
   total_flights_submitted?: {
@@ -79,20 +95,6 @@ export default function PilotProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
-
-  type Ranks = {
-    total_sessions_created?: number | string | null;
-    total_flights_submitted?: { total?: number | string | null } | null;
-    total_chat_messages_sent?: number | string | null;
-    total_time_controlling_minutes?: number | string | null;
-    total_flight_edits?: { total_edit_actions?: number | string | null } | null;
-    [key: string]:
-      | number
-      | string
-      | null
-      | { [key: string]: number | string | null }
-      | undefined;
-  };
 
   const [ranks, setRanks] = useState<Ranks>({});
   const navigate = useNavigate();
@@ -307,6 +309,8 @@ export default function PilotProfile() {
     ],
   };
 
+  const hasCrown = isCurrentUser && isRankOne(ranks);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
@@ -323,6 +327,15 @@ export default function PilotProfile() {
                     alt={profile.user.username}
                     className="w-full h-full object-cover"
                   />
+                  {hasCrown && (
+                    <Crown
+                      className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
+                      style={{
+                        color: '#fbbf24',
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                      }}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -495,145 +508,122 @@ export default function PilotProfile() {
                 <TowerControl className="h-6 w-6 text-blue-400" />
                 Controller Statistics
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
                 <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
+                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                   style={{
                     background:
                       'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15))',
                     animationDelay: '800ms',
                   }}
                 >
-                  <div className="flex items-center justify-end -mb-8">
+                  <div className="flex items-center gap-4">
                     <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Users className="h-5 w-5 text-blue-400" />
+                      <Users className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {userStats.total_sessions_created || 0}
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        Total Sessions Created
+                      </p>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {userStats.total_sessions_created || 0}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">
-                    Total Sessions Created
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Rank: {ranks.total_sessions_created || 'N/A'}
-                  </p>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
+                    <p className="text-lg font-bold text-blue-400">
+                      #{ranks.total_sessions_created || 'N/A'}
+                    </p>
+                  </div>
                 </div>
 
                 <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))',
-                    animationDelay: '900ms',
-                  }}
-                >
-                  <div className="flex items-center justify-end -mb-8">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <Plane className="h-5 w-5 text-green-400" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {userStats.total_flights_submitted?.total || 0}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">
-                    Flights Submitted (
-                    {userStats.total_flights_submitted?.logged_with_logbook ||
-                      0}{' '}
-                    logged)
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Rank: {ranks.total_flights_submitted?.total || 'N/A'}
-                  </p>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
+                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                   style={{
                     background:
                       'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(147, 51, 234, 0.15))',
                     animationDelay: '1000ms',
                   }}
                 >
-                  <div className="flex items-center justify-end -mb-8">
+                  <div className="flex items-center gap-4">
                     <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <MessageCircle className="h-5 w-5 text-purple-400" />
+                      <MessageCircle className="h-6 w-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {userStats.total_chat_messages_sent || 0}
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        Chat Messages Sent
+                      </p>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {userStats.total_chat_messages_sent || 0}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">Chat Messages Sent</p>
-                  <p className="text-xs text-gray-500">
-                    Rank: {ranks.total_chat_messages_sent || 'N/A'}
-                  </p>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
+                    <p className="text-lg font-bold text-purple-400">
+                      #{ranks.total_chat_messages_sent || 'N/A'}
+                    </p>
+                  </div>
                 </div>
 
                 <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
+                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                   style={{
                     background:
                       'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))',
                     animationDelay: '1100ms',
                   }}
                 >
-                  <div className="flex items-center justify-end -mb-8">
+                  <div className="flex items-center gap-4">
                     <div className="p-2 bg-orange-500/20 rounded-lg">
-                      <Clock className="h-5 w-5 text-orange-400" />
+                      <Clock className="h-6 w-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {(
+                          userStats.total_time_controlling_minutes || 0
+                        ).toFixed(2)}{' '}
+                        min
+                      </h3>
+                      <p className="text-zinc-400 text-sm">Time Controlling</p>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {(userStats.total_time_controlling_minutes || 0).toFixed(2)}{' '}
-                    min
-                  </h3>
-                  <p className="text-zinc-400 text-sm">Time Controlling</p>
-                  <p className="text-xs text-gray-500">
-                    Rank: {ranks.total_time_controlling_minutes || 'N/A'}
-                  </p>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
+                    <p className="text-lg font-bold text-orange-400">
+                      #{ranks.total_time_controlling_minutes || 'N/A'}
+                    </p>
+                  </div>
                 </div>
 
                 <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
+                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                   style={{
                     background:
                       'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))',
                     animationDelay: '1200ms',
                   }}
                 >
-                  <div className="flex items-center justify-end -mb-8">
+                  <div className="flex items-center gap-4">
                     <div className="p-2 bg-cyan-500/20 rounded-lg">
-                      <Edit className="h-5 w-5 text-cyan-400" />
+                      <Edit className="h-6 w-6 text-cyan-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {userStats.total_flight_edits?.total_edit_actions || 0}
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        Flight Edit Actions
+                      </p>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    {userStats.total_flight_edits?.total_edit_actions || 0}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">Flight Edit Actions</p>
-                  <p className="text-xs text-gray-500">
-                    Rank:{' '}
-                    {ranks.total_flight_edits?.total_edit_actions || 'N/A'}
-                  </p>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                    animationDelay: '1300ms',
-                  }}
-                >
-                  <div className="flex items-center justify-end -mb-8">
-                    <div className="p-2 bg-gray-500/20 rounded-lg">
-                      <Clock className="h-5 w-5 text-gray-400" />
-                    </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
+                    <p className="text-lg font-bold text-cyan-400">
+                      #{ranks['total_flight_edits.total_edit_actions'] || 'N/A'}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-1">
-                    {userStats.last_updated
-                      ? new Date(userStats.last_updated).toLocaleDateString()
-                      : 'N/A'}
-                  </h3>
-                  <p className="text-zinc-400 text-sm">Last Updated</p>
                 </div>
               </div>
             </>
@@ -659,7 +649,9 @@ export default function PilotProfile() {
                 <p className="text-sm text-gray-400">Total Flights</p>
               </div>
               <p className="text-3xl font-bold text-white">
-                {profile.stats.total_flights || 0}
+                {(isCurrentUser && userStats?.total_flights_submitted?.total) ||
+                  profile.stats.total_flights ||
+                  0}
               </p>
             </div>
 

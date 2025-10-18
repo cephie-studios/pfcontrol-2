@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';
-import { PanelsTopLeft, Terminal } from 'lucide-react';
+import { PanelsTopLeft, Terminal, Map, PlaneTakeoff } from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { createFlightsSocket } from '../sockets/flightsSocket';
@@ -18,8 +18,8 @@ import type { Flight } from '../types/flight';
 
 import AcarsSidebar from '../components/acars/AcarsSidebar';
 import AcarsTerminal from '../components/acars/AcarsTerminal';
-import AcarsNotesPanel from '../components/acars/AcarsNotesPanel';
-import AcarsChartsPanel from '../components/acars/AcarsChartsPanel';
+import AcarsNotePanel from '../components/acars/AcarsNotePanel';
+import AcarsChartDrawer from '../components/acars/AcarsChartDrawer';
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -40,36 +40,24 @@ export default function ACARS() {
   const [pdcRequested, setPdcRequested] = useState(false);
   const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
-  const [terminalWidth, setTerminalWidth] = useState(50);
-  const [notesWidth, setNotesWidth] = useState(20);
   const [selectedChart, setSelectedChart] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState<'terminal' | 'notes' | null>(
-    null
-  );
   const [chartLoadError, setChartLoadError] = useState(false);
   const [chartZoom, setChartZoom] = useState(1);
   const [chartPan, setChartPan] = useState({ x: 0, y: 0 });
   const [isChartDragging, setIsChartDragging] = useState(false);
   const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
-  const [showSidebar, setShowSidebar] = useState(() => {
-    const saved = localStorage.getItem('acars-sidebar-visible');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [showSidebar, setShowSidebar] = useState(true);
   const [mobileTab, setMobileTab] = useState<'terminal' | 'notes' | 'charts'>(
     'terminal'
   );
+  const [showChartsDrawer, setShowChartsDrawer] = useState(false);
 
   const socketRef = useRef<ReturnType<typeof createFlightsSocket> | null>(null);
   const initializedRef = useRef(false);
   const notesInitializedRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (settings?.acars) {
-      setTerminalWidth(settings.acars.terminalWidth);
-      setNotesWidth(settings.acars.notesWidth);
-    }
-  }, [settings]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (
@@ -96,7 +84,7 @@ export default function ACARS() {
         );
 
         const initialNotes = `FLIGHT PLAN DETAILS
-═══════════════════════════════════════
+════════════════════════════════════════
 
 Callsign: ${flight.callsign} (${formattedCallsign})
 Aircraft: ${flight.aircraft || 'N/A'}
@@ -114,7 +102,7 @@ Cruising FL: ${flight.cruisingFL || 'N/A'}
 
 Route: ${flight.route || 'N/A'}
 
-═══════════════════════════════════════
+════════════════════════════════════════
 NOTES:
 
 
@@ -140,58 +128,6 @@ NOTES:
     }
   };
 
-  const handleMouseDown = (divider: 'terminal' | 'notes') => {
-    setIsDragging(divider);
-  };
-
-  const MIN_TERMINAL_WIDTH = 25;
-  const MIN_NOTES_WIDTH = 15;
-  const MIN_CHARTS_WIDTH = 15;
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const container = e.currentTarget as HTMLElement;
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = (x / rect.width) * 100;
-
-    if (isDragging === 'terminal') {
-      const minChartsWidth = settings?.acars?.notesEnabled
-        ? MIN_CHARTS_WIDTH
-        : 10;
-      const maxTerminalWidth = 100 - notesWidth - minChartsWidth;
-      const newTerminalWidth = Math.max(
-        MIN_TERMINAL_WIDTH,
-        Math.min(percentage, maxTerminalWidth)
-      );
-      setTerminalWidth(newTerminalWidth);
-      if (notesWidth > 100 - newTerminalWidth - minChartsWidth) {
-        setNotesWidth(100 - newTerminalWidth - minChartsWidth);
-      }
-    } else if (isDragging === 'notes') {
-      const maxNotesWidth = 100 - terminalWidth - MIN_CHARTS_WIDTH;
-      const newNotesWidth = Math.max(
-        MIN_NOTES_WIDTH,
-        Math.min(percentage - terminalWidth, maxNotesWidth)
-      );
-      setNotesWidth(newNotesWidth);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(null);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    } else {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-  }, [isDragging]);
-
   const handleChartMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsChartDragging(true);
@@ -202,10 +138,26 @@ NOTES:
   };
 
   const handleChartMouseMove = (e: React.MouseEvent) => {
-    if (!isChartDragging) return;
+    if (
+      !isChartDragging ||
+      !containerRef.current ||
+      imageSize.width === 0 ||
+      imageSize.height === 0
+    )
+      return;
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+    const scaledWidth = imageSize.width * chartZoom;
+    const scaledHeight = imageSize.height * chartZoom;
+    const maxPanX = Math.max(0, (scaledWidth - containerWidth) / 2);
+    const maxPanY = Math.max(0, (scaledHeight - containerHeight) / 2);
+    const newX = e.clientX - chartDragStart.x;
+    const newY = e.clientY - chartDragStart.y;
     setChartPan({
-      x: e.clientX - chartDragStart.x,
-      y: e.clientY - chartDragStart.y,
+      x: Math.max(-maxPanX, Math.min(maxPanX, newX)),
+      y: Math.max(-maxPanY, Math.min(maxPanY, newY)),
     });
   };
 
@@ -227,6 +179,10 @@ NOTES:
       localStorage.setItem('acars-sidebar-visible', String(newValue));
       return newValue;
     });
+  };
+
+  const handleToggleChartsDrawer = () => {
+    setShowChartsDrawer((prev) => !prev);
   };
 
   useEffect(() => {
@@ -366,7 +322,6 @@ NOTES:
       () => {},
       () => {}
     );
-    socketRef.current = socket;
     socket.socket.on(
       'pdcIssued',
       (payload: {
@@ -490,6 +445,43 @@ NOTES:
     </span>
   );
 
+  const acarsSettings = settings?.acars;
+
+  const minSidebar = 10,
+    maxSidebar = 40;
+  const minTerminal = 20,
+    maxTerminal = 80;
+  const minNotes = 10,
+    maxNotes = 40;
+
+  let sidebarWidth = acarsSettings?.sidebarWidth ?? 15;
+  let terminalWidth = acarsSettings?.terminalWidth ?? 65;
+  let notesWidth = acarsSettings?.notesWidth ?? 20;
+  const notesEnabled = acarsSettings?.notesEnabled ?? true;
+
+  sidebarWidth = Math.max(minSidebar, Math.min(maxSidebar, sidebarWidth));
+  notesWidth = notesEnabled
+    ? Math.max(minNotes, Math.min(maxNotes, notesWidth))
+    : 0;
+
+  if (!showSidebar) sidebarWidth = 0;
+
+  if (notesEnabled) {
+    const total = sidebarWidth + terminalWidth + notesWidth;
+    if (total !== 100) {
+      terminalWidth = 100 - sidebarWidth - notesWidth;
+      if (terminalWidth < minTerminal) {
+        terminalWidth = minTerminal;
+        notesWidth = 100 - sidebarWidth - terminalWidth;
+        if (notesWidth < minNotes) notesWidth = minNotes;
+      }
+    }
+  } else {
+    notesWidth = 0;
+    terminalWidth = 100 - sidebarWidth;
+    if (terminalWidth < minTerminal) terminalWidth = minTerminal;
+  }
+
   if (loading || dataLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-zinc-950">
@@ -552,133 +544,101 @@ NOTES:
     <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
 
-      {/* Desktop Layout */}
-      <div
-        className="hidden md:flex pt-20 px-6 pb-6"
-        style={{ height: 'calc(105vh - 80px)' }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <div
-          style={{ width: `${terminalWidth}%`, height: '100%' }}
-          className="flex-shrink-0 flex flex-col"
-        >
-          {/* Terminal panel content */}
-          <div className="bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-zinc-800 flex flex-col h-full">
-            <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleToggleSidebar}
-                  className="p-1 hover:bg-zinc-700 rounded transition-colors"
-                  title={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
-                >
-                  <PanelsTopLeft className="w-4 h-4 text-zinc-400" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-mono text-zinc-300">
-                    {flight?.callsign
-                      ? `${flight.callsign} - ACARS Terminal`
-                      : 'ACARS Terminal'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-1 min-h-0 h-full">
-              {showSidebar && (
-                <AcarsSidebar
-                  activeSessions={activeSessions}
-                  onAtisClick={handleAtisClick}
-                />
-              )}
-              <AcarsTerminal
-                flightCallsign={flight?.callsign}
-                messages={messages}
-                getMessageColor={getMessageColor}
-                renderMessageText={renderMessageText}
-                messagesEndRef={messagesEndRef}
-                handleRequestPDC={handleRequestPDC}
-                pdcRequested={pdcRequested}
-              />
+      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 py-8 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 pt-12">
+          <div className="flex items-center gap-3">
+            <PlaneTakeoff className="h-8 w-8 text-blue-500" />
+            <div>
+              <h1 className="text-2xl font-bold text-white">
+                {flight?.callsign
+                  ? `${flight.callsign} - ACARS Terminal`
+                  : 'ACARS Terminal'}
+              </h1>
             </div>
           </div>
+          <div className="flex items-center gap-4">
+            <Button
+              size="sm"
+              onClick={handleToggleSidebar}
+              className="flex items-center gap-2 px-4 py-2"
+              variant="outline"
+            >
+              <PanelsTopLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Toggle Sidebar</span>
+            </Button>
+            <Button
+              size="sm"
+              className="flex items-center gap-2 px-4 py-2"
+              variant="outline"
+              onClick={handleToggleChartsDrawer}
+            >
+              <Map className="w-5 h-5" />
+              <span className="hidden sm:inline">Toggle Charts</span>
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {/* Divider between terminal and notes (only if notes enabled) */}
-        {settings?.acars?.notesEnabled && (
+      {/* Desktop Layout */}
+      <div
+        className="hidden md:flex gap-4 pt-4 px-6 pb-6"
+        style={{ height: 'calc(100vh - 200px)' }}
+      >
+        {/* Sidebar */}
+        {showSidebar && (
           <div
-            className="w-1 bg-zinc-800 hover:bg-blue-500 cursor-col-resize transition-colors mx-2"
-            onMouseDown={() => handleMouseDown('terminal')}
-            style={{ height: '100%' }}
-          />
-        )}
-
-        {/* Notes panel (only if notes enabled) */}
-        {settings?.acars?.notesEnabled && (
-          <div
-            style={
-              settings?.acars?.chartsEnabled
-                ? { width: `${notesWidth}%`, height: '100%' }
-                : { height: '100%' }
-            }
-            className={`flex flex-col ${settings?.acars?.chartsEnabled ? 'flex-shrink-0' : 'flex-1'}`}
+            style={{
+              width: `${sidebarWidth}%`,
+              minWidth: sidebarWidth === 0 ? 0 : 120,
+              maxWidth: 400,
+            }}
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
           >
-            <AcarsNotesPanel
-              notes={notes}
-              handleNotesChange={handleNotesChange}
+            <AcarsSidebar
+              activeSessions={activeSessions}
+              onAtisClick={handleAtisClick}
             />
           </div>
         )}
 
-        {/* Divider between notes and charts (only if notes and charts enabled) */}
-        {settings?.acars?.notesEnabled && settings?.acars?.chartsEnabled && (
-          <div
-            className="w-1 bg-zinc-800 hover:bg-purple-500 cursor-col-resize transition-colors mx-2"
-            onMouseDown={() => handleMouseDown('notes')}
-            style={{ height: '100%' }}
+        {/* Terminal */}
+        <div
+          style={{
+            width: `${terminalWidth}%`,
+            minWidth: 200,
+            transition: 'width 0.3s',
+            flex: 'none',
+          }}
+          className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+        >
+          <AcarsTerminal
+            flightCallsign={flight?.callsign}
+            messages={messages}
+            getMessageColor={getMessageColor}
+            renderMessageText={renderMessageText}
+            messagesEndRef={messagesEndRef}
+            handleRequestPDC={handleRequestPDC}
+            pdcRequested={pdcRequested}
           />
-        )}
+        </div>
 
-        {/* Divider between terminal and charts (only if notes disabled and charts enabled) */}
-        {!settings?.acars?.notesEnabled && settings?.acars?.chartsEnabled && (
+        {/* Notes */}
+        {notesEnabled && (
           <div
-            className="w-1 bg-zinc-800 hover:bg-purple-500 cursor-col-resize transition-colors mx-2"
-            onMouseDown={() => handleMouseDown('terminal')}
-            style={{ height: '100%' }}
-          />
-        )}
-
-        {/* Charts panel (only if charts enabled) */}
-        {settings?.acars?.chartsEnabled && (
-          <div
-            className="flex-1 min-w-0 flex flex-col"
-            style={{ height: '100%' }}
+            style={{ width: `${notesWidth}%`, minWidth: 120, maxWidth: 400 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
           >
-            <AcarsChartsPanel
-              flight={flight!}
-              selectedChart={selectedChart}
-              setSelectedChart={setSelectedChart}
-              chartLoadError={chartLoadError}
-              setChartLoadError={setChartLoadError}
-              chartZoom={chartZoom}
-              chartPan={chartPan}
-              isChartDragging={isChartDragging}
-              handleChartMouseDown={handleChartMouseDown}
-              handleChartMouseMove={handleChartMouseMove}
-              handleChartMouseUp={handleChartMouseUp}
-              handleZoomIn={handleZoomIn}
-              handleZoomOut={handleZoomOut}
-              handleResetZoom={handleResetZoom}
-              getChartsForAirport={getChartsForAirport}
+            <AcarsNotePanel
+              notes={notes}
+              handleNotesChange={handleNotesChange}
             />
           </div>
         )}
       </div>
 
       {/* Mobile Layout */}
-      <div className="md:hidden pt-20 px-2 pb-4">
-        <div className="flex gap-2 mb-2">
+      <div className="md:hidden pt-4 px-2 pb-4">
+        <div className="flex gap-2 mb-4">
           <button
             className={`flex-1 py-2 rounded-lg font-mono text-xs ${
               mobileTab === 'terminal'
@@ -689,30 +649,16 @@ NOTES:
           >
             Terminal
           </button>
-          {settings?.acars?.notesEnabled && (
-            <button
-              className={`flex-1 py-2 rounded-lg font-mono text-xs ${
-                mobileTab === 'notes'
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-zinc-800 text-zinc-400'
-              }`}
-              onClick={() => setMobileTab('notes')}
-            >
-              Notes
-            </button>
-          )}
-          {settings?.acars?.chartsEnabled && (
-            <button
-              className={`flex-1 py-2 rounded-lg font-mono text-xs ${
-                mobileTab === 'charts'
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-zinc-800 text-zinc-400'
-              }`}
-              onClick={() => setMobileTab('charts')}
-            >
-              Charts
-            </button>
-          )}
+          <button
+            className={`flex-1 py-2 rounded-lg font-mono text-xs ${
+              mobileTab === 'notes'
+                ? 'bg-blue-700 text-white'
+                : 'bg-zinc-800 text-zinc-400'
+            }`}
+            onClick={() => setMobileTab('notes')}
+          >
+            Notes
+          </button>
         </div>
         <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-800 overflow-hidden">
           {mobileTab === 'terminal' && (
@@ -726,15 +672,16 @@ NOTES:
               pdcRequested={pdcRequested}
             />
           )}
-          {mobileTab === 'notes' && settings?.acars?.notesEnabled && (
-            <AcarsNotesPanel
+          {mobileTab === 'notes' && (
+            <AcarsNotePanel
               notes={notes}
               handleNotesChange={handleNotesChange}
             />
           )}
-          {mobileTab === 'charts' && settings?.acars?.chartsEnabled && (
-            <AcarsChartsPanel
-              flight={flight!}
+          {mobileTab === 'charts' && (
+            <AcarsChartDrawer
+              isOpen={true}
+              onClose={() => {}}
               selectedChart={selectedChart}
               setSelectedChart={setSelectedChart}
               chartLoadError={chartLoadError}
@@ -749,10 +696,35 @@ NOTES:
               handleZoomOut={handleZoomOut}
               handleResetZoom={handleResetZoom}
               getChartsForAirport={getChartsForAirport}
+              containerRef={containerRef as React.RefObject<HTMLDivElement>}
+              setImageSize={setImageSize}
+              airports={airports}
             />
           )}
         </div>
       </div>
+
+      <AcarsChartDrawer
+        isOpen={showChartsDrawer}
+        onClose={() => setShowChartsDrawer(false)}
+        selectedChart={selectedChart}
+        setSelectedChart={setSelectedChart}
+        chartLoadError={chartLoadError}
+        setChartLoadError={setChartLoadError}
+        chartZoom={chartZoom}
+        chartPan={chartPan}
+        isChartDragging={isChartDragging}
+        handleChartMouseDown={handleChartMouseDown}
+        handleChartMouseMove={handleChartMouseMove}
+        handleChartMouseUp={handleChartMouseUp}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleResetZoom={handleResetZoom}
+        getChartsForAirport={getChartsForAirport}
+        containerRef={containerRef as React.RefObject<HTMLDivElement>}
+        setImageSize={setImageSize}
+        airports={airports}
+      />
     </div>
   );
 }

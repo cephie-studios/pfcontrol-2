@@ -6,6 +6,7 @@ export const STATS_KEYS = [
   'total_sessions_created',
   'total_flights_submitted.total',
   'total_time_controlling_minutes',
+  'total_chat_messages_sent',
   'total_flight_edits.total_edit_actions'
 ];
 

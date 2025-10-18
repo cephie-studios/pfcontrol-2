@@ -245,7 +245,7 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
           } else {
             query = query.where('u.id', 'not in', adminIds);
           }
-        } else if (filterAdmin === 'admin') {
+        } else {
           return {
             users: [],
             pagination: { page, limit, total: 0, pages: 0 }
@@ -282,12 +282,16 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
     }
 
     const userIds = (rawUsers as RawUser[]).map(u => u.id);
-    const sessionCounts = await mainDb
-      .selectFrom('sessions')
-      .select(['created_by', mainDb.fn.countAll().as('count')])
-      .where('created_by', 'in', userIds)
-      .groupBy('created_by')
-      .execute();
+    type SessionCountRow = { created_by: string; count: string | number };
+    let sessionCounts: SessionCountRow[] = [];
+    if (userIds.length > 0) {
+      sessionCounts = await mainDb
+        .selectFrom('sessions')
+        .select(['created_by', mainDb.fn.countAll().as('count')])
+        .where('created_by', 'in', userIds)
+        .groupBy('created_by')
+        .execute() as SessionCountRow[];
+    }
     const sessionCountMap = Object.fromEntries(sessionCounts.map(row => [row.created_by, Number(row.count)]));
 
     const usersWithAdminStatus = (rawUsers as RawUser[]).map((user: RawUser) => {

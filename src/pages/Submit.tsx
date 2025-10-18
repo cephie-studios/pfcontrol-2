@@ -414,15 +414,6 @@ export default function Submit() {
                     clearance.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setSuccess(false);
-                    setSubmittedFlight(null);
-                  }}
-                  className="text-green-300 hover:text-green-100 ml-4"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-4">
@@ -538,7 +529,7 @@ export default function Submit() {
                         )
                       }
                     >
-                      <Plane className="h-5 w-5 mr-2" />
+                      <Plane className="h-5 w-5 mr-2 rotate-45" />
                       Go to ACARS
                     </Button>
                   )}

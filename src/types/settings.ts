@@ -55,7 +55,7 @@ export interface ArrivalsTableColumnSettings {
 
 export interface AcarsSettings {
     notesEnabled: boolean;
-    chartsEnabled: boolean;
+    sidebarWidth: number;
     terminalWidth: number;
     notesWidth: number;
 }
