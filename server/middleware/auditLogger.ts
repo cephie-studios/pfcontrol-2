@@ -17,6 +17,7 @@ export function createAuditLogger(actionType: string) {
                     adminId: req.user.userId,
                     adminUsername: req.user.username || 'Unknown',
                     actionType,
+                    targetUserId: req.body?.userId ?? null,
                     ipAddress: JSON.stringify(encryptedIP),
                     userAgent: req.get('User-Agent'),
                     details: {
