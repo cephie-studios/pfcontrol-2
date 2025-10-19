@@ -101,6 +101,9 @@ router.post('/generate', requireAuth, async (req, res) => {
             text: generatedAtis,
             letter: ident,
             timestamp: atisTimestamp,
+            // Backwards compatibility: include old field names
+            atisText: generatedAtis,
+            ident: ident,
         });
     } catch (error) {
         console.error('Error generating ATIS:', error);
