@@ -32,7 +32,18 @@ export default function AcarsTerminal({
       <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5 bg-black">
         {messages.map((msg) => (
           <div key={msg.id} className={getMessageColor(msg.type)}>
-            {renderMessageText(msg)}
+            <div className="flex gap-2 mb-0.5">
+              <span className="text-zinc-500">
+                {new Date(msg.timestamp).toLocaleTimeString('en-US', {
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'UTC'
+                })}Z
+              </span>
+              <span className="text-zinc-400">[{msg.station}]:</span>
+              <div>{renderMessageText(msg)}</div>
+            </div>
           </div>
         ))}
         <div ref={messagesEndRef} />

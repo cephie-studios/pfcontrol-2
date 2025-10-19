@@ -32,7 +32,7 @@ export default function AtisReminderModal({ onContinue, atisText, sessionId, use
 
 	return (
 		<div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-			<div className="bg-slate-900 border-2 border-blue-500/50 rounded-2xl p-8 max-w-2xl w-full">
+			<div className="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-zinc-500/50 rounded-2xl p-8 max-w-2xl w-full">
 				<h2 className="text-3xl font-bold text-blue-400 mb-4">
 					PFATC Network ATIS Format Reminder
 				</h2>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Map, ZoomIn, ZoomOut, X, ArrowLeft, Plane, PlaneLanding, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import type { Airport } from '../../types/airports';
 import type { Settings } from '../../types/settings';
@@ -78,6 +78,12 @@ export default function AcarsChartDrawer({
   ];
 
   const chartsToUse = isLegacyMode ? allChartsForLegacy : charts;
+
+  useEffect(() => {
+    if (selectedChart) {
+      setImageLoading(true);
+    }
+  }, [selectedChart]);
 
   return (
     <div
@@ -334,7 +340,6 @@ export default function AcarsChartDrawer({
                       }}
                       draggable={false}
                       onDragStart={(e) => e.preventDefault()}
-                      onLoadStart={() => setImageLoading(true)}
                       onLoad={(e) => {
                         setChartLoadError(false);
                         setImageLoading(false);
@@ -434,7 +439,6 @@ export default function AcarsChartDrawer({
                         }}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
-                        onLoadStart={() => setImageLoading(true)}
                         onLoad={(e) => {
                           setChartLoadError(false);
                           setImageLoading(false);

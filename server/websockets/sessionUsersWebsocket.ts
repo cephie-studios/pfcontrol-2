@@ -7,6 +7,7 @@ import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { getOverviewIO } from './overviewWebsocket.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
 
 const activeUsers = new Map();
 const sessionATISConfigs = new Map();
@@ -37,7 +38,8 @@ async function generateAutoATIS(sessionId: string, config: ATISConfig, io: Socke
         const session = await getSessionById(sessionId);
         if (!session?.atis) return;
 
-        const currentAtis = JSON.parse(session.atis);
+        const storedAtis = JSON.parse(session.atis);
+        const currentAtis = decrypt(storedAtis);
         const currentLetter = currentAtis.letter || 'A';
         const identOptions = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
         const currentIndex = identOptions.indexOf(currentLetter);
@@ -117,7 +119,8 @@ async function generateAutoATIS(sessionId: string, config: ATISConfig, io: Socke
             timestamp: new Date().toISOString(),
         };
 
-        await updateSession(sessionId, { atis: JSON.stringify(atisData) });
+        const encryptedAtis = encrypt(atisData);
+        await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
 
         io.to(sessionId).emit('atisUpdate', {
             atis: atisData,
@@ -309,7 +312,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         try {
             const session = await getSessionById(sessionId);
             if (session?.atis) {
-                socket.emit('atisUpdate', JSON.parse(session.atis));
+                const encryptedAtis = JSON.parse(session.atis);
+                const decryptedAtis = decrypt(encryptedAtis);
+                socket.emit('atisUpdate', decryptedAtis);
             }
         } catch (error) {
             console.error('Error sending ATIS data:', error);
@@ -317,7 +322,8 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
 
         socket.on('atisGenerated', async (atisData) => {
             try {
-                await updateSession(sessionId, { atis: atisData.atis });
+                const encryptedAtis = encrypt(atisData.atis);
+                await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
 
                 sessionATISConfigs.set(sessionId, {
                     icao: atisData.icao,

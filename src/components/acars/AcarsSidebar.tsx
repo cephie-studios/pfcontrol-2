@@ -46,7 +46,9 @@ export default function AcarsSidebar({
                             )
                           }
                           src={
-                            controller.username === user?.username
+                            controller.avatar
+                              ? getAvatarUrl(controller.avatar)
+                              : controller.username === user?.username
                               ? getAvatarUrl(user.avatar)
                               : getAvatarUrl(null)
                           }
