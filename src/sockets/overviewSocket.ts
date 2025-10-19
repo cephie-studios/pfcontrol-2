@@ -14,6 +14,7 @@ export interface OverviewSession {
     controllers?: Array<{
         username: string;
         role: string;
+        avatar?: string | null;
         hasVatsimRating?: boolean;
         isEventController?: boolean;
     }>;

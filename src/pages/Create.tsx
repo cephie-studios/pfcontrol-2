@@ -10,10 +10,12 @@ import RunwayDropdown from '../components/dropdowns/RunwayDropdown';
 import Checkbox from '../components/common/Checkbox';
 import Button from '../components/common/Button';
 import WindDisplay from '../components/tools/WindDisplay';
+import AtisReminderModal from '../components/modals/AtisReminderModal';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { steps } from '../components/tutorial/TutorialStepsCreate';
+import { useData } from '../hooks/data/useData';
 
 export default function Create() {
   const navigate = useNavigate();
@@ -26,7 +28,10 @@ export default function Create() {
   const [sessionLimitReached, setSessionLimitReached] =
     useState<boolean>(false);
   const [isDeletingOldest, setIsDeletingOldest] = useState<boolean>(false);
+  const [showAtisReminderModal, setShowAtisReminderModal] = useState(false);
+  const [createdSession, setCreatedSession] = useState<{ sessionId: string; accessId: string; atisText: string } | null>(null);
   const { user } = useAuth();
+  const { airports, frequencies } = useData();
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
 
@@ -92,7 +97,7 @@ export default function Create() {
 
       setSessionCount((prev) => prev + 1);
 
-      await generateATIS({
+      const atisResponse = await generateATIS({
         sessionId: newSession.sessionId,
         ident: 'A',
         icao: selectedAirport,
@@ -100,7 +105,16 @@ export default function Create() {
         departing_runways: [selectedRunway],
       });
 
-      handleContinueToSession(newSession.sessionId, newSession.accessId);
+      if (isPFATCNetwork && atisResponse?.atisText) {
+        setCreatedSession({
+          sessionId: newSession.sessionId,
+          accessId: newSession.accessId,
+          atisText: atisResponse.atisText
+        });
+        setShowAtisReminderModal(true);
+      } else {
+        handleContinueToSession(newSession.sessionId, newSession.accessId);
+      }
     } catch (err) {
       console.error('Error creating session:', err);
       const errorMessage =
@@ -319,6 +333,34 @@ export default function Create() {
           },
         }}
       />
+
+      {/* ATIS Reminder Modal */}
+      {showAtisReminderModal && createdSession && user && (
+        <AtisReminderModal
+          onContinue={() => {
+            setShowAtisReminderModal(false);
+            handleContinueToSession(createdSession.sessionId, createdSession.accessId);
+          }}
+          atisText={createdSession.atisText}
+          accessId={createdSession.accessId}
+          userId={user.userId}
+          sessionId={createdSession.sessionId}
+          airportIcao={selectedAirport}
+          airportName={
+            airports.find((a) => a.icao === selectedAirport)?.name ||
+            selectedAirport
+          }
+          airportControlName={
+            airports.find((a) => a.icao === selectedAirport)?.controlName ||
+            selectedAirport
+          }
+          airportAppFrequency={
+            airports.find((a) => a.icao === selectedAirport)?.allFrequencies?.APP ||
+            frequencies.find((f) => f.icao === selectedAirport)?.APP ||
+            '---'
+          }
+        />
+      )}
     </div>
   );
 }

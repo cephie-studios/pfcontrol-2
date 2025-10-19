@@ -101,11 +101,16 @@ export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string,
                     const controllers = await Promise.all(sessionUsers.map(async (user) => {
                         let hasVatsimRating = false;
                         let isEventController = false;
+                        let avatar = null;
 
                         if (user.id) {
                             try {
                                 const userData = await getUserById(user.id);
                                 hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
+                                
+                                if (userData?.avatar) {
+                                    avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
+                                }
 
                                 if (user.roles) {
                                     isEventController = user.roles.some(role => role.name === 'Event Controller');
@@ -118,6 +123,7 @@ export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string,
                         return {
                             username: user.username || 'Unknown',
                             role: user.position || 'APP',
+                            avatar,
                             hasVatsimRating,
                             isEventController
                         };
@@ -139,11 +145,27 @@ export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string,
                 } catch (error) {
                     console.error(`Error fetching flights for session ${session.session_id}:`, error);
 
-                    const controllers = sessionUsers.map(user => ({
-                        username: user.username || 'Unknown',
-                        role: user.position || 'APP',
-                        hasVatsimRating: false,
-                        isEventController: false
+                    const controllers = await Promise.all(sessionUsers.map(async (user) => {
+                        let avatar = null;
+
+                        if (user.id) {
+                            try {
+                                const userData = await getUserById(user.id);
+                                if (userData?.avatar) {
+                                    avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
+                                }
+                            } catch (err) {
+                                // Ignore avatar fetch errors in fallback
+                            }
+                        }
+
+                        return {
+                            username: user.username || 'Unknown',
+                            role: user.position || 'APP',
+                            avatar,
+                            hasVatsimRating: false,
+                            isEventController: false
+                        };
                     }));
 
                     activeSessions.push({

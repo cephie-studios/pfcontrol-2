@@ -18,6 +18,7 @@ import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 import { getUserById } from '../db/users.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
 
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
@@ -157,9 +158,10 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
         let atis = { letter: 'A', text: '', timestamp: new Date().toISOString() };
         if (session.atis) {
             try {
-                atis = JSON.parse(session.atis);
-            } catch (e) {
-                console.log('parse error:', e);
+                const parsed = JSON.parse(session.atis);
+                atis = decrypt(parsed);
+            } catch (err) {
+                console.error('Error decrypting ATIS:', err);
                 // fallback to default atis
             }
         }
@@ -184,16 +186,27 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
     try {
         const { sessionId } = req.params;
         const { activeRunway, atis } = req.body;
+        let encryptedAtis = undefined;
+        if (atis) {
+            const encrypted = encrypt(atis);
+            encryptedAtis = JSON.stringify(encrypted);
+        }
+
         // updateSession expects snake_case keys
-        const session = await updateSession(sessionId, { active_runway: activeRunway, atis });
+        const session = await updateSession(sessionId, {
+            active_runway: activeRunway,
+            atis: encryptedAtis
+        });
         if (!session) {
             return res.status(404).json({ error: 'Session not found' });
         }
         let decryptedAtis = { letter: 'A', text: '', timestamp: new Date().toISOString() };
         if (session.atis) {
             try {
-                decryptedAtis = JSON.parse(session.atis);
-            } catch {
+                const parsed = JSON.parse(session.atis);
+                decryptedAtis = decrypt(parsed);
+            } catch (err) {
+                console.error('Error decrypting ATIS:', err);
                 // fallback to default atis
             }
         }

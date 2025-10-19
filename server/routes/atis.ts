@@ -1,6 +1,7 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
 import { updateSession } from '../db/sessions.js';
+import { encrypt } from '../utils/encryption.js';
 
 const router = express.Router();
 
@@ -85,19 +86,24 @@ router.post('/generate', requireAuth, async (req, res) => {
         const atisTimestamp = new Date().toISOString();
 
         const atisData = {
-          letter: ident,
-          text: generatedAtis,
-          timestamp: atisTimestamp,
+        letter: ident,
+        text: generatedAtis,
+        timestamp: atisTimestamp,
         };
-        const updatedSession = await updateSession(sessionId, { atis: JSON.stringify(atisData) });
+        
+        const encryptedAtis = encrypt(atisData);
+        const updatedSession = await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
         if (!updatedSession) {
             throw new Error('Failed to update session with ATIS data');
         }
 
         res.json({
-            atisText: generatedAtis,
-            ident,
+            text: generatedAtis,
+            letter: ident,
             timestamp: atisTimestamp,
+            // Backwards compatibility: include old field names
+            atisText: generatedAtis,
+            ident: ident,
         });
     } catch (error) {
         console.error('Error generating ATIS:', error);
