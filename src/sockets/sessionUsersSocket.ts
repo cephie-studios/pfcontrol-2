@@ -40,7 +40,7 @@ export function createSessionUsersSocket(
             sessionId,
             accessId,
             user: JSON.stringify(user),
-            position: position || 'ALL'
+            position: position || 'APP'
         },
         transports: ['websocket', 'polling'],
         upgrade: true,

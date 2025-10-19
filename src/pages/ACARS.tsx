@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';
-import { PanelsTopLeft, Terminal, Map, PlaneTakeoff } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Map, PlaneTakeoff, MapPinned, PlusCircle } from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { createFlightsSocket } from '../sockets/flightsSocket';
@@ -68,11 +68,21 @@ export default function ACARS() {
       !notesInitializedRef.current
     ) {
       const storageKey = `acars-notes-${sessionId}-${flightId}`;
+      const timestampKey = `acars-notes-timestamp-${sessionId}-${flightId}`;
       const savedNotes = localStorage.getItem(storageKey);
+      const savedTimestamp = localStorage.getItem(timestampKey);
+      const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+      const parsedTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
+      const isExpired = parsedTimestamp && !isNaN(parsedTimestamp) && (Date.now() - parsedTimestamp) > TWELVE_HOURS;
 
-      if (savedNotes) {
+      if (savedNotes && !isExpired) {
         setNotes(savedNotes);
       } else {
+        if (isExpired) {
+          localStorage.removeItem(storageKey);
+          localStorage.removeItem(timestampKey);
+        }
+
         const departureAirport = getAirportName(
           flight.departure || '',
           airports
@@ -109,13 +119,10 @@ NOTES:
 `;
         setNotes(initialNotes);
         localStorage.setItem(storageKey, initialNotes);
+        localStorage.setItem(timestampKey, Date.now().toString());
       }
 
       notesInitializedRef.current = true;
-
-      return () => {
-        localStorage.removeItem(storageKey);
-      };
     }
   }, [sessionId, flightId, flight, dataLoading, airports, airlines]);
 
@@ -124,7 +131,9 @@ NOTES:
     setNotes(newNotes);
     if (sessionId && flightId) {
       const storageKey = `acars-notes-${sessionId}-${flightId}`;
+      const timestampKey = `acars-notes-timestamp-${sessionId}-${flightId}`;
       localStorage.setItem(storageKey, newNotes);
+      localStorage.setItem(timestampKey, Date.now().toString());
     }
   };
 
@@ -317,11 +326,12 @@ NOTES:
     const socket = createFlightsSocket(
       sessionId,
       sessionAccessId,
-      () => {},
+      '',
       () => {},
       () => {},
       () => {}
     );
+    socketRef.current = socket;
     socket.socket.on(
       'pdcIssued',
       (payload: {
@@ -513,9 +523,9 @@ NOTES:
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Button
-                    onClick={() =>
-                      (window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/discord`)
-                    }
+                    onClick={() => {
+                      window.location.href = `/login?callback=${encodeURIComponent(`/acars/${sessionId}/${flightId}?acars_token=${accessId}`)}`;
+                    }}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     Sign In with Discord
@@ -556,25 +566,50 @@ NOTES:
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button
-              size="sm"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/submit/${sessionId}`)}
+              className="group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 bg-gradient-to-r from-zinc-500/20 to-black-500/20 border-zinc-500/40 hover:border-purple-400/60 shadow-lg shadow-purple-950/10"
+            >
+              <PlusCircle className="w-5 h-5 text-purple-400" />
+              <span className="hidden sm:inline text-sm font-medium">
+                New Flight
+              </span>
+            </button>
+            <button
               onClick={handleToggleSidebar}
-              className="flex items-center gap-2 px-4 py-2"
-              variant="outline"
+              className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 ${
+                showSidebar
+                  ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/40 hover:border-blue-400/60 shadow-lg shadow-blue-500/10'
+                  : 'bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+              }`}
             >
-              <PanelsTopLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Toggle Sidebar</span>
-            </Button>
-            <Button
-              size="sm"
-              className="flex items-center gap-2 px-4 py-2"
-              variant="outline"
+              {showSidebar ? (
+                <PanelLeftOpen className="w-5 h-5 text-blue-400" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-zinc-400 group-hover:text-zinc-300" />
+              )}
+              <span className="hidden sm:inline text-sm font-medium">
+                {showSidebar ? 'Hide Sidebar' : 'Show Sidebar'}
+              </span>
+            </button>
+            <button
               onClick={handleToggleChartsDrawer}
+              className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 ${
+                showChartsDrawer
+                  ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/40 hover:border-green-400/60 shadow-lg shadow-green-500/10'
+                  : 'bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70'
+              }`}
             >
-              <Map className="w-5 h-5" />
-              <span className="hidden sm:inline">Toggle Charts</span>
-            </Button>
+              {showChartsDrawer ? (
+                <MapPinned className="w-5 h-5 text-green-400" />
+              ) : (
+                <Map className="w-5 h-5 text-zinc-400 group-hover:text-zinc-300" />
+              )}
+              <span className="hidden sm:inline text-sm font-medium">
+                {showChartsDrawer ? 'Hide Charts' : 'Show Charts'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -625,7 +660,7 @@ NOTES:
         {/* Notes */}
         {notesEnabled && (
           <div
-            style={{ width: `${notesWidth}%`, minWidth: 120, maxWidth: 400 }}
+            style={{ minWidth: 120, flex: 1 }}
             className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
           >
             <AcarsNotePanel
@@ -699,6 +734,9 @@ NOTES:
               containerRef={containerRef as React.RefObject<HTMLDivElement>}
               setImageSize={setImageSize}
               airports={airports}
+              settings={settings}
+              departureAirport={flight?.departure}
+              arrivalAirport={flight?.arrival}
             />
           )}
         </div>
@@ -724,6 +762,9 @@ NOTES:
         containerRef={containerRef as React.RefObject<HTMLDivElement>}
         setImageSize={setImageSize}
         airports={airports}
+        settings={settings}
+        departureAirport={flight?.departure}
+        arrivalAirport={flight?.arrival}
       />
     </div>
   );

@@ -50,6 +50,7 @@ export default function App() {
                   <Route path="view/:sessionId" element={<Flights />} />
                   <Route path="logbook" element={<Logbook />} />
                   <Route path="logbook/:flightId" element={<FlightDetail />} />
+                  <Route path="settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ProtectedRoute>
@@ -62,7 +63,6 @@ export default function App() {
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
           <Route path="/flight/:shareToken" element={<PublicFlightView />} />
           <Route path="/pilots/:username" element={<PilotProfile />} />
-          <Route path="settings" element={<Settings />} />
 
           <Route
             path="/admin/*"

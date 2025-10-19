@@ -1,4 +1,4 @@
-import { User, Radio } from 'lucide-react';
+import { User, Radio, TowerControl, ExternalLink } from 'lucide-react';
 import type { OverviewSession } from '../../sockets/overviewSocket';
 import { useAuth } from '../../hooks/auth/useAuth';
 
@@ -37,18 +37,80 @@ export default function AcarsSidebar({
                       key={idx}
                       className="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"
                     >
-                      <img
-                        src={
-                          controller.username === user?.username
-                            ? getAvatarUrl(user.avatar)
-                            : getAvatarUrl(null)
-                        }
-                        alt={controller.username}
-                        className="w-6 h-6 rounded-full border border-zinc-600"
-                      />
+                      <div className="relative group">
+                        <img
+                          onClick={() =>
+                            window.open(
+                              `/pilots/${controller.username}`,
+                              '_blank'
+                            )
+                          }
+                          src={
+                            controller.username === user?.username
+                              ? getAvatarUrl(user.avatar)
+                              : getAvatarUrl(null)
+                          }
+                          alt={controller.username}
+                          className="w-8 h-8 rounded-full border border-zinc-600 cursor-pointer"
+                        />
+                        <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
+                          <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-zinc-500 to-zinc-700">
+                            <div className="px-3 pb-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
+                              <span className="text-xs font-medium text-white">
+                                {controller.username}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
+                              <span className="text-xs font-medium text-white rounded-full bg-zinc-900/90 backdrop-blur-md flex items-center">
+                              <ExternalLink className="inline-block w-5 h-5 px-1 py-1" />
+                              </span>
+                        </div>
+                      </div>
                       <span className="text-xs text-zinc-300">
-                        {controller.role}
+                        {controller.role === 'ALL'
+                          ? 'APP'
+                          : controller.role || 'APP'}
                       </span>
+                      <div className="flex items-center gap-1 ml-auto">
+                        {controller.hasVatsimRating && (
+                          <div className="relative group">
+                            <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center cursor-pointer">
+                              <img
+                                src="/assets/images/vatsim.webp"
+                                alt="VATSIM"
+                                className="w-6 h-6"
+                              />
+                            </div>
+                            <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
+                              <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600">
+                                <div className="px-3 pb-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
+                                  <span className="text-xs font-medium text-white">
+                                    VATSIM Controller Rating
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {controller.isEventController && (
+                          <div className="relative group">
+                            <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center cursor-pointer">
+                              <TowerControl className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
+                              <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-green-400 to-green-700">
+                                <div className="px-3 pb-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
+                                  <span className="text-xs font-medium text-white">
+                                    PFATC Event Controller
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

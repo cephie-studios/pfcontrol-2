@@ -5,7 +5,10 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
+  Map,
 } from 'lucide-react';
+import { BiSidebar } from "react-icons/bi";
+import { HiOutlineQueueList } from "react-icons/hi2";
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Settings } from '../../types/settings';
 import Button from '../common/Button';
@@ -31,12 +34,12 @@ export default function AcarsSettings({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const minSidebar = 10,
+  const minSidebar = 10, //side bar size bar is diasbled
     maxSidebar = 40;
   const minTerminal = 20,
     maxTerminal = 80;
   const minNotes = 10,
-    maxNotes = 40;
+    maxNotes = 60;
 
   const calculatedWidths = useMemo(() => {
     if (!settings) return { sidebar: 15, terminal: 70, notes: 15 };
@@ -79,6 +82,30 @@ export default function AcarsSettings({
       acars: {
         ...settings.acars,
         notesEnabled: !settings.acars.notesEnabled,
+      },
+    };
+    onChange(updatedSettings);
+  };
+
+  const handleChartViewModeChange = (mode: 'list' | 'legacy') => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      acars: {
+        ...settings.acars,
+        chartDrawerViewMode: mode,
+      },
+    };
+    onChange(updatedSettings);
+  };
+
+  const handleAutoRedirectToggle = () => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      acars: {
+        ...settings.acars,
+        autoRedirectToAcars: !settings.acars.autoRedirectToAcars,
       },
     };
     onChange(updatedSettings);
@@ -306,6 +333,75 @@ export default function AcarsSettings({
                     />
                   </button>
                 </div>
+
+                {/* Auto Redirect to ACARS Toggle */}
+                <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
+                  <div className="flex items-center">
+                    <Terminal className="h-5 w-5 text-green-400 mr-3" />
+                    <div>
+                      <p className="text-white font-medium text-sm">
+                        Auto Redirect to ACARS
+                      </p>
+                      <p className="text-zinc-500 text-xs">
+                        Automatically open ACARS after submitting flight plan (PFATC sessions only)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleAutoRedirectToggle}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      settings.acars.autoRedirectToAcars ?? true
+                        ? 'bg-green-600'
+                        : 'bg-zinc-700'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        settings.acars.autoRedirectToAcars ?? true
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Chart Drawer View Mode */}
+                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
+                  <div className="flex items-center mb-3">
+                    <Map className="h-5 w-5 text-cyan-400 mr-3" />
+                    <div>
+                      <p className="text-white font-medium text-sm">
+                        Chart Drawer View Mode
+                      </p>
+                      <p className="text-zinc-500 text-xs">
+                        Choose how charts are displayed
+                      </p>
+                    </div>
+                  </div>
+                    <div className="flex gap-2">
+                    <button
+                      onClick={() => handleChartViewModeChange('legacy')}
+                      className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      (settings.acars.chartDrawerViewMode || 'legacy') === 'legacy'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      }`}
+                    >
+                      <BiSidebar className="text-base" />
+                      Legacy View
+                    </button>
+                    <button
+                      onClick={() => handleChartViewModeChange('list')}
+                      className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                        settings.acars.chartDrawerViewMode === 'list'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      }`}
+                    ><HiOutlineQueueList className="text-base"/>
+                      List View
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -318,7 +414,7 @@ export default function AcarsSettings({
                 <div>
                   <h4 className="text-white font-medium mb-1">Preview</h4>
                   <p className="text-zinc-400 text-sm">
-                    Drag the dividers to adjust panel widths
+                    Drag the divider to adjust default panel widths
                   </p>
                 </div>
               </div>
@@ -345,13 +441,6 @@ export default function AcarsSettings({
                       <div className="h-1 bg-cyan-500/20 rounded w-full"></div>
                     </div>
                   </div>
-                  {/* Sidebar Divider */}
-                  <div
-                    className="w-1 bg-blue-500 hover:bg-blue-400 cursor-col-resize flex-shrink-0 relative group"
-                    onMouseDown={() => handleMouseDown('sidebar')}
-                  >
-                    <div className="absolute inset-y-0 -left-1 -right-1" />
-                  </div>
                   {/* Terminal */}
                   <div
                     style={{ width: `${previewWidths.terminal}%` }}
@@ -360,7 +449,7 @@ export default function AcarsSettings({
                     <div className="bg-gray-800/50 px-3 py-2 border-b border-gray-700 flex items-center gap-2">
                       <Terminal className="w-3 h-3 text-green-400" />
                       <span className="text-[10px] text-gray-300 font-mono">
-                        Terminal Terminal
+                        Terminal
                       </span>
                     </div>
                     <div className="flex-1 p-2 space-y-1">

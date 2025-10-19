@@ -31,20 +31,46 @@ const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI ?? '';
 const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE ?? '';
 
 // GET: /api/auth/discord - redirect to Discord for authentication
-router.get('/discord', (_req, res) => {
+router.get('/discord', (req, res) => {
     if (!CLIENT_ID || !REDIRECT_URI) {
         return res.status(500).json({ error: 'Discord OAuth not configured' });
     }
-    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify`;
+    const callback = typeof req.query.callback === 'string' ? req.query.callback : undefined;
+    const state = callback ? Buffer.from(JSON.stringify({ callback })).toString('base64') : undefined;
+
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        response_type: 'code',
+        scope: 'identify'
+    });
+
+    if (state) {
+        params.set('state', state);
+    }
+
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
     res.redirect(discordAuthUrl);
 });
 
 // GET: /api/auth/discord/callback - handle Discord OAuth2 callback
 router.get('/discord/callback', authLimiter, async (req, res) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
 
     if (!code) {
         return res.status(400).json({ error: 'Authorization code missing' });
+    }
+
+    let callback: string | undefined;
+    if (state && typeof state === 'string') {
+        try {
+            const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+            if (decoded && typeof decoded === 'object' && typeof decoded.callback === 'string') {
+                callback = decoded.callback;
+            }
+        } catch (err) {
+            console.error('Error decoding state:', err);
+        }
     }
 
     try {
@@ -73,8 +99,8 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
 
         const discordUser = userResponse.data;
 
-    let ipAddress = getClientIp(req);
-    if (Array.isArray(ipAddress)) ipAddress = ipAddress[0] || '';
+        let ipAddress = getClientIp(req);
+        if (Array.isArray(ipAddress)) ipAddress = ipAddress[0] || '';
         const isVpn = await detectVPN(req);
 
         const existingUser = await getUserById(discordUser.id);
@@ -118,7 +144,10 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
             path: '/'
         });
 
-        res.redirect(FRONTEND_URL + '/');
+        const redirectUrl = callback && callback.startsWith('/')
+            ? FRONTEND_URL + callback
+            : FRONTEND_URL + '/';
+        res.redirect(redirectUrl);
 
     } catch (error) {
         console.error('Discord auth error:', error);
@@ -153,8 +182,8 @@ router.get('/roblox/callback', authLimiter, async (req, res) => {
     }
 
     try {
-    const decoded = jwt.verify(state, JWT_SECRET as string) as { userId: string };
-    const userId = (decoded).userId;
+        const decoded = jwt.verify(state, JWT_SECRET as string) as { userId: string };
+        const userId = (decoded).userId;
 
         const tokenResponse = await axios.post('https://apis.roblox.com/oauth/v1/token',
             new URLSearchParams({
@@ -248,13 +277,13 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
         } catch (err) {
             return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
         }
-    let userId: string | undefined;
-    if (typeof decoded === 'object' && decoded !== null && 'userId' in decoded) {
-        userId = (decoded as { userId: string }).userId;
-    }
-    if (!userId) {
-        return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
-    }
+        let userId: string | undefined;
+        if (typeof decoded === 'object' && decoded !== null && 'userId' in decoded) {
+            userId = (decoded as { userId: string }).userId;
+        }
+        if (!userId) {
+            return res.redirect(FRONTEND_URL + '/settings?error=vatsim_auth_failed');
+        }
 
         if (!VATSIM_CLIENT_ID || !VATSIM_CLIENT_SECRET || !VATSIM_REDIRECT_URI) {
             return res.redirect(FRONTEND_URL + '/settings?error=vatsim_not_configured');
@@ -319,8 +348,8 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
             }
         }
         // parsed for VATSIM callback handled
-    const fallbackMap: Record<number, string> = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
-    const fallbackShort = ratingShort || (numeric != null && Number.isFinite(numeric) ? fallbackMap[numeric as number] || null : null);
+        const fallbackMap: Record<number, string> = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
+        const fallbackShort = ratingShort || (numeric != null && Number.isFinite(numeric) ? fallbackMap[numeric as number] || null : null);
 
         const { updateVatsimAccount } = await import('../db/users.js');
         await updateVatsimAccount(userId, {
@@ -420,8 +449,8 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
             }
         }
         // parsed for VATSIM exchange handled
-    const fallbackMap2: Record<number, string> = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
-    const fallbackShort = ratingShort2 || (numeric2 != null && Number.isFinite(numeric2) ? fallbackMap2[numeric2 as number] || null : null);
+        const fallbackMap2: Record<number, string> = { 0: 'OBS', 1: 'S1', 2: 'S2', 3: 'S3', 4: 'C1', 5: 'C2', 6: 'C3', 7: 'I1', 8: 'I2', 9: 'I3', 10: 'SUP', 11: 'ADM' };
+        const fallbackShort = ratingShort2 || (numeric2 != null && Number.isFinite(numeric2) ? fallbackMap2[numeric2 as number] || null : null);
 
         const { updateVatsimAccount } = await import('../db/users.js');
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -447,8 +476,8 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
 router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     try {
         const { unlinkVatsimAccount } = await import('../db/users.js');
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    await unlinkVatsimAccount(req.user.userId);
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        await unlinkVatsimAccount(req.user.userId);
         res.cookie('vatsim_force', '1', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -488,7 +517,7 @@ router.get('/me', requireAuth, async (req, res) => {
 
         const ranks: Record<string, number | null> = {};
         for (const key of STATS_KEYS) {
-          ranks[key] = await getUserRank(req.user.userId, key);
+            ranks[key] = await getUserRank(req.user.userId, key);
         }
 
         res.json({

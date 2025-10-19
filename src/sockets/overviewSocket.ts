@@ -14,6 +14,8 @@ export interface OverviewSession {
     controllers?: Array<{
         username: string;
         role: string;
+        hasVatsimRating?: boolean;
+        isEventController?: boolean;
     }>;
     atis?: {
         letter: string;

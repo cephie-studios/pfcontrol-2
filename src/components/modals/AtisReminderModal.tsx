@@ -15,15 +15,14 @@ interface AtisReminderModalProps {
 }
 
 export default function AtisReminderModal({ onContinue, atisText, sessionId, userId, airportIcao, airportName, airportControlName, airportAppFrequency}: AtisReminderModalProps) {
-	const submitLink = `https://control.pfcontrol.online/submit/${sessionId}`;
+	const submitLink = `https://control.pfconnect.online/submit/${sessionId}`;
 	const [copied, setCopied] = useState(false);
 
-	// Format the ATIS with Discord ping and submit link
 	const formattedAtis = `${airportIcao}_APP "${airportControlName} Approach" (${airportAppFrequency}): <@${userId}>\n\n${atisText}\n\n${submitLink}`;
 
 	const handleCopy = async () => {
 		try {
-			await navigator.clipboard.writeText(formattedAtis);
+			await navigator.clipboard.writeText(`${airportName}\n\n${formattedAtis}`);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch (err) {

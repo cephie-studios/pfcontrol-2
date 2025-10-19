@@ -31,6 +31,7 @@ import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useSettings } from '../hooks/settings/useSettings';
 import Checkbox from '../components/common/Checkbox';
 
 interface SessionData {
@@ -46,6 +47,7 @@ export default function Submit() {
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
   const { user } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   const [session, setSession] = useState<SessionData | null>(null);
@@ -71,113 +73,19 @@ export default function Submit() {
     typeof createFlightsSocket
   > | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [pdcReceived, setPdcReceived] = useState(false);
-  const [pdcContent, setPdcContent] = useState<string | null>(null);
-  const submittedFlightRef = React.useRef<Flight | null>(null);
-  useEffect(() => {
-    submittedFlightRef.current = submittedFlight;
-  }, [submittedFlight]);
 
   useEffect(() => {
-    if (!sessionId || !initialLoadComplete) return;
-
-    let listenerWrapper: ReturnType<typeof createFlightsSocket> | null = null;
-    try {
-      listenerWrapper = createFlightsSocket(
-        sessionId,
-        '',
-        () => {},
-        () => {},
-        () => {},
-        () => {}
+    if (
+      success &&
+      submittedFlight &&
+      session?.isPFATC &&
+      (settings?.acars?.autoRedirectToAcars ?? true)
+    ) {
+      navigate(
+        `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
       );
-    } catch (err) {
-      console.debug('PDC listener creation failed', err);
-      return;
     }
-
-    type PdcIssuedPayload = {
-      pdcText?: string;
-      flightId?: string | number;
-      updatedFlight?: {
-        pdc_remarks?: string;
-        pdc_text?: string;
-        callsign?: string;
-        departure?: string;
-        arrival?: string;
-      };
-    };
-
-    const handlePdcIssued = (payload: PdcIssuedPayload) => {
-      try {
-        const pdcText =
-          payload?.pdcText ??
-          payload?.updatedFlight?.pdc_remarks ??
-          payload?.updatedFlight?.pdc_text ??
-          null;
-        if (!pdcText) return;
-
-        const sf = submittedFlightRef.current;
-        let matches = false;
-
-        if (
-          sf &&
-          payload?.flightId !== undefined &&
-          payload?.flightId !== null
-        ) {
-          matches = String(payload.flightId) === String(sf.id);
-        }
-
-        if (!matches && sf && payload?.updatedFlight) {
-          const uf = payload.updatedFlight;
-          if (
-            uf.callsign === sf.callsign &&
-            uf.departure === sf.departure &&
-            uf.arrival === sf.arrival
-          ) {
-            matches = true;
-          }
-        }
-
-        if (!matches && payload?.updatedFlight) {
-          const uf = payload.updatedFlight;
-          if (
-            uf.callsign === form.callsign &&
-            uf.departure === form.departure &&
-            uf.arrival === form.arrival
-          ) {
-            matches = true;
-          }
-        }
-
-        if (matches) {
-          setPdcContent(String(pdcText));
-          setPdcReceived(true);
-        }
-      } catch (err) {
-        console.error('Error handling pdcIssued in Submit listener', err);
-      }
-    };
-
-    try {
-      if (listenerWrapper && listenerWrapper.socket) {
-        listenerWrapper.socket.on('pdcIssued', handlePdcIssued);
-      }
-    } catch (err) {
-      console.debug('Could not attach pdcIssued handler', err);
-    }
-
-    return () => {
-      try {
-        if (listenerWrapper && listenerWrapper.socket) {
-          listenerWrapper.socket.off('pdcIssued', handlePdcIssued);
-          listenerWrapper.socket.disconnect();
-        }
-      } catch (e) {
-        console.error('Error cleaning up pdcIssued listener', e);
-      }
-    };
-  }, [sessionId, initialLoadComplete, form]);
+  }, [success, submittedFlight, session?.isPFATC, settings?.acars?.autoRedirectToAcars, sessionId, navigate]);
 
   const isLogbookDisabled =
     testerGateEnabled && !user?.isTester && !user?.isAdmin;
@@ -215,12 +123,13 @@ export default function Submit() {
     const socket = createFlightsSocket(
       sessionId,
       accessId,
-      () => {},
+      user?.userId || '',
       (flight: Flight) => {
         setSubmittedFlight(flight);
         setSuccess(true);
         setIsSubmitting(false);
       },
+      () => {},
       () => {},
       (error) => {
         console.error('Flight error:', error);
@@ -486,38 +395,6 @@ export default function Submit() {
                       Remarks:
                     </span>
                     <p className="text-white mt-1">{submittedFlight.remark}</p>
-                  </div>
-                )}
-
-                {/* NEW: lightweight PDC display for pilots (non-intrusive) */}
-                {pdcReceived && pdcContent && (
-                  <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700 rounded-md">
-                    <h4 className="text-sm font-semibold text-blue-200 mb-2">
-                      Pre-Departure Clearance (PDC) received
-                    </h4>
-                    <pre className="bg-transparent text-xs text-white font-mono whitespace-pre-wrap">
-                      {pdcContent}
-                    </pre>
-                    <div className="mt-3 flex gap-2">
-                      <Button
-                        onClick={() =>
-                          navigator.clipboard?.writeText(pdcContent || '')
-                        }
-                        variant="outline"
-                        size="sm"
-                      >
-                        Copy PDC
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setPdcReceived(false);
-                          setPdcContent(null);
-                        }}
-                        size="sm"
-                      >
-                        Dismiss
-                      </Button>
-                    </div>
                   </div>
                 )}
                 <div className="mt-6 pt-4 border-t border-green-800 space-x-2">

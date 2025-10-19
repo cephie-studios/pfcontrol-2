@@ -514,7 +514,7 @@ export default function Home() {
                 devbanane
               </span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent text-md font-medium">
-                {'<h1> Developer </h1>'}
+                Lead Developer
               </span>
             </div>
             <div className="flex flex-col items-center">
@@ -524,7 +524,7 @@ export default function Home() {
                 className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600"
               />
               <span className="text-white text-lg font-semibold">iceit</span>
-              <span className="bg-gradient-to-r from-yellow-400 to-green-600 bg-clip-text text-transparent text-md font-medium">
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-200 bg-clip-text text-transparent text-md font-medium">
                 Ice Wizard
               </span>
             </div>
@@ -538,7 +538,7 @@ export default function Home() {
                 frenchfries
               </span>
               <span className="bg-gradient-to-r from-purple-400 to-red-400 bg-clip-text text-transparent text-md font-medium">
-                {'<h3> Developer </h3>'}
+                Developer
               </span>
             </div>
             <div className="flex flex-col items-center">

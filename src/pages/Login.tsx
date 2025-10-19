@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa';
 import { useAuth } from '../hooks/auth/useAuth';
@@ -8,12 +8,14 @@ import Checkbox from '../components/common/Checkbox';
 
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const user = useAuth();
+  const callback = searchParams.get('callback');
 
   const handleLogin = () => {
     if (agreed) {
-      window.location.href = getDiscordLoginUrl();
+      window.location.href = getDiscordLoginUrl(callback || undefined);
     }
   };
 

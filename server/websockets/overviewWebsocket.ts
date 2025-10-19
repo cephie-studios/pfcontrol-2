@@ -2,14 +2,23 @@ import { Server as SocketServer } from 'socket.io';
 import { getAllSessions } from '../db/sessions.js';
 import { getFlightsBySessionWithTime } from '../db/flights.js';
 import { decrypt } from '../utils/encryption.js';
+import { getUserById } from '../db/users.js';
 import type { Server as HTTPServer } from 'http';
 
 let io: SocketServer;
 const activeOverviewClients = new Set<string>();
 
 interface SessionUser {
+    id?: string;
     username?: string;
-    role?: string;
+    position?: string;
+    roles?: Array<{
+        id: number;
+        name: string;
+        color: string;
+        icon: string;
+        priority: number;
+    }>;
 }
 
 export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: { activeUsers: Map<string, SessionUser[]> }) {
@@ -64,7 +73,7 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: {
     return io;
 }
 
-async function getOverviewData(sessionUsersIO: { activeUsers: Map<string, SessionUser[]> }) {
+export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string, SessionUser[]> }) {
     try {
         const allSessions = await getAllSessions();
         const pfatcSessions = allSessions.filter(session => session.is_pfatc);
@@ -89,9 +98,29 @@ async function getOverviewData(sessionUsersIO: { activeUsers: Map<string, Sessio
                         }
                     }
 
-                    const controllers = sessionUsers.map(user => ({
-                        username: user.username || 'Unknown',
-                        role: user.role || 'APP'
+                    const controllers = await Promise.all(sessionUsers.map(async (user) => {
+                        let hasVatsimRating = false;
+                        let isEventController = false;
+
+                        if (user.id) {
+                            try {
+                                const userData = await getUserById(user.id);
+                                hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
+
+                                if (user.roles) {
+                                    isEventController = user.roles.some(role => role.name === 'Event Controller');
+                                }
+                            } catch (err) {
+                                console.error('Error fetching user data for controller badges:', err);
+                            }
+                        }
+
+                        return {
+                            username: user.username || 'Unknown',
+                            role: user.position || 'APP',
+                            hasVatsimRating,
+                            isEventController
+                        };
                     }));
 
                     activeSessions.push({
@@ -112,7 +141,9 @@ async function getOverviewData(sessionUsersIO: { activeUsers: Map<string, Sessio
 
                     const controllers = sessionUsers.map(user => ({
                         username: user.username || 'Unknown',
-                        role: user.role || 'APP'
+                        role: user.position || 'APP',
+                        hasVatsimRating: false,
+                        isEventController: false
                     }));
 
                     activeSessions.push({

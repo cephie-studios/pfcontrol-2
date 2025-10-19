@@ -58,6 +58,8 @@ export interface AcarsSettings {
     sidebarWidth: number;
     terminalWidth: number;
     notesWidth: number;
+    chartDrawerViewMode: 'list' | 'legacy';
+    autoRedirectToAcars: boolean;
 }
 
 export interface Settings {

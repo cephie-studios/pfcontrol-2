@@ -6,6 +6,7 @@ import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
 import { incrementStat } from '../utils/statisticsCache.js';
+import { getOverviewIO } from './overviewWebsocket.js';
 
 const activeUsers = new Map();
 const sessionATISConfigs = new Map();
@@ -354,6 +355,19 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
                 if (userIndex !== -1) {
                     users[userIndex].position = position;
                     io.to(sessionId).emit('sessionUsersUpdate', users);
+                    const overviewIO = getOverviewIO();
+                    if (overviewIO) {
+                        // Force immediate overview data update
+                        setTimeout(async () => {
+                            try {
+                                const { getOverviewData } = await import('./overviewWebsocket.js');
+                                const overviewData = await getOverviewData({ activeUsers });
+                                overviewIO.emit('overviewData', overviewData);
+                            } catch (error) {
+                                console.error('Error broadcasting overview update:', error);
+                            }
+                        }, 100);
+                    }
                 }
             }
         });

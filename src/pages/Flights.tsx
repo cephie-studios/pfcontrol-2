@@ -26,11 +26,13 @@ import ArrivalsTable from '../components/tables/ArrivalsTable';
 import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
+import AtisReminderModal from '../components/modals/AtisReminderModal';
 import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
+import { useData } from '../hooks/data/useData';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -38,7 +40,11 @@ interface SessionData {
   sessionId: string;
   airportIcao: string;
   activeRunway?: string;
-  atis?: unknown;
+  atis?: {
+    letter?: string;
+    text?: string;
+    timestamp?: string;
+  };
   isPFATC: boolean;
 }
 
@@ -96,12 +102,15 @@ export default function Flights() {
   const [showAddDepartureModal, setShowAddDepartureModal] = useState(false);
   const [showAddArrivalModal, setShowAddArrivalModal] = useState(false);
   const [showContactAcarsModal, setShowContactAcarsModal] = useState(false);
+  const [showAtisReminderModal, setShowAtisReminderModal] = useState(false);
   const [activeAcarsFlights, setActiveAcarsFlights] = useState<
     Set<string | number>
   >(new Set());
   const [activeAcarsFlightData, setActiveAcarsFlightData] = useState<Flight[]>(
     []
   );
+
+  const { airports, frequencies } = useData();
 
   const userRef = useRef(user);
   const settingsRef = useRef(settings);
@@ -172,6 +181,13 @@ export default function Flights() {
     setAccessError(null);
   }, [sessionId, accessId]);
 
+  useEffect(() => {
+    if (session?.isPFATC && session.atis?.text && initialLoadComplete) {
+      const timerId = setTimeout(() => setShowAtisReminderModal(true), 500);
+      return () => clearTimeout(timerId);
+    }
+  }, [session?.isPFATC, session?.atis?.text, initialLoadComplete]);
+  
   useEffect(() => {
     if (
       !sessionId ||
@@ -1099,6 +1115,32 @@ export default function Flights() {
           },
         }}
       />
+
+      {/* ATIS Reminder Modal */}
+      {showAtisReminderModal && session && user && (
+        <AtisReminderModal
+          onContinue={() => setShowAtisReminderModal(false)}
+          atisText={session.atis?.text || ''}
+          accessId={accessId || ''}
+          userId={user.userId}
+          sessionId={sessionId || ''}
+          airportIcao={session.airportIcao}
+          airportName={
+            airports.find((a) => a.icao === session.airportIcao)?.name ||
+            session.airportIcao
+          }
+          airportControlName={
+            airports.find((a) => a.icao === session.airportIcao)?.controlName ||
+            session.airportIcao
+          }
+          airportAppFrequency={
+            airports.find((a) => a.icao === session.airportIcao)?.allFrequencies
+              ?.APP ||
+            frequencies.find((f) => f.icao === session.airportIcao)?.APP ||
+            '---'
+          }
+        />
+      )}
     </div>
   );
 }

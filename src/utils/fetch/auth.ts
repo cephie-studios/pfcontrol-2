@@ -41,6 +41,10 @@ export async function logout(): Promise<boolean> {
     }
 }
 
-export function getDiscordLoginUrl(): string {
-    return `${API_BASE_URL}/api/auth/discord`;
+export function getDiscordLoginUrl(callback?: string): string {
+    const url = new URL(`${API_BASE_URL}/api/auth/discord`);
+    if (callback) {
+        url.searchParams.set('callback', callback);
+    }
+    return url.toString();
 }
