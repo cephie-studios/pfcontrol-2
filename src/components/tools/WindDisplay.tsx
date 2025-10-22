@@ -103,6 +103,14 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
   };
 
   const formatPressure = (altimeterHpa: number) => {
+    if (!altimeterHpa) {
+      return {
+        value: 'N/A',
+        unit: '',
+        label: '',
+      };
+    }
+
     if (showAltimeter) {
       const inHgValue = altimeterHpa / 33.8639;
       return {
@@ -120,6 +128,8 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
   };
 
   const formatReportTime = (reportTime: string) => {
+    if (!reportTime) return 'Unknown time';
+
     const date = new Date(reportTime);
     const now = new Date();
     const diffMinutes = Math.floor(

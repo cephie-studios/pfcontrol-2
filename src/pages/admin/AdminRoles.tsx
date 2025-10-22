@@ -7,41 +7,10 @@ import {
   Check,
   X,
   ShieldUser,
-  Star,
-  Shield,
-  Wrench,
-  Award,
-  TrendingUp,
-  Crown,
-  Zap,
-  Target,
-  Heart,
-  Sparkles,
-  Flame,
-  Trophy,
   GripVertical,
-  FlaskConical,
   Search,
   Filter,
-  TowerControl,
 } from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import Loader from '../../components/common/Loader';
@@ -69,48 +38,37 @@ import {
   PRESET_COLORS,
 } from '../../utils/roles';
 
-function SortableRoleItem({
+function RoleItem({
   role,
+  index,
   onEdit,
   onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: {
   role: Role;
+  index: number;
   onEdit: (role: Role) => void;
   onDelete: (role: Role) => void;
+  onDragStart: (e: React.DragEvent, roleId: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (e: React.DragEvent, roleId: number) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: role.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   const RoleIcon = getIconComponent(role.icon);
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-zinc-800 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-all ${
-        isDragging ? 'z-50' : ''
-      }`}
+      draggable
+      onDragStart={(e) => onDragStart(e, role.id)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDrop={(e) => onDrop(e, role.id)}
+      className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-all cursor-move"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 flex-1">
           {/* Drag Handle */}
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing touch-none"
-          >
+          <div className="cursor-grab active:cursor-grabbing touch-none">
             <GripVertical className="w-5 h-5 text-zinc-500 hover:text-zinc-300" />
           </div>
 
@@ -205,6 +163,7 @@ export default function AdminRoles() {
   const [submitting, setSubmitting] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [draggedId, setDraggedId] = useState<number | null>(null);
 
   const [toast, setToast] = useState<{
     message: string;
@@ -390,34 +349,29 @@ export default function AdminRoles() {
     setShowCreateModal(true);
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const handleDragStart = (e: React.DragEvent, draggedId: number) => {
+    setDraggedId(draggedId);
+  };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (!draggedId) return;
+    const draggedIndex = roles.findIndex((role) => role.id === draggedId);
+    if (draggedIndex === -1 || draggedIndex === index) return;
+    const newRoles = [...roles];
+    const [removed] = newRoles.splice(draggedIndex, 1);
+    newRoles.splice(index, 0, removed);
+    setRoles(newRoles);
+  };
 
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const oldIndex = roles.findIndex((role) => role.id === active.id);
-    const newIndex = roles.findIndex((role) => role.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
-
-    const newRoles = arrayMove(roles, oldIndex, newIndex);
-
-    const rolePriorities = newRoles
+  const handleDrop = async (e: React.DragEvent, droppedId: number) => {
+    e.preventDefault();
+    setDraggedId(null);
+    const rolePriorities = roles
       .filter((role) => role.id && !isNaN(role.id))
       .map((role, index) => ({
         id: role.id,
-        priority: newRoles.length - index,
+        priority: roles.length - index,
       }));
 
     if (rolePriorities.length === 0) {
@@ -427,8 +381,6 @@ export default function AdminRoles() {
       });
       return;
     }
-
-    setRoles(newRoles);
 
     try {
       await updateRolePriorities(rolePriorities);
@@ -515,31 +467,22 @@ export default function AdminRoles() {
               {/* Roles Section */}
               <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Roles</h2>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={roles
-                      .filter((role) => role.id && !isNaN(role.id))
-                      .map((role) => role.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-4">
-                      {roles
-                        .filter((role) => role.id && !isNaN(role.id))
-                        .map((role) => (
-                          <SortableRoleItem
-                            key={role.id}
-                            role={role}
-                            onEdit={openEditModal}
-                            onDelete={handleDeleteRole}
-                          />
-                        ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                <div className="space-y-4">
+                  {roles
+                    .filter((role) => role.id && !isNaN(role.id))
+                    .map((role, index) => (
+                      <RoleItem
+                        key={role.id}
+                        role={role}
+                        index={index}
+                        onEdit={openEditModal}
+                        onDelete={handleDeleteRole}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                      />
+                    ))}
+                </div>
               </div>
 
               {/* Users with Roles Section */}

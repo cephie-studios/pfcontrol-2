@@ -29,7 +29,11 @@ export default function Create() {
     useState<boolean>(false);
   const [isDeletingOldest, setIsDeletingOldest] = useState<boolean>(false);
   const [showAtisReminderModal, setShowAtisReminderModal] = useState(false);
-  const [createdSession, setCreatedSession] = useState<{ sessionId: string; accessId: string; atisText: string } | null>(null);
+  const [createdSession, setCreatedSession] = useState<{
+    sessionId: string;
+    accessId: string;
+    atisText: string;
+  } | null>(null);
   const { user } = useAuth();
   const { airports, frequencies } = useData();
   const [searchParams] = useSearchParams();
@@ -109,7 +113,7 @@ export default function Create() {
         setCreatedSession({
           sessionId: newSession.sessionId,
           accessId: newSession.accessId,
-          atisText: atisResponse.atisText
+          atisText: atisResponse.atisText,
         });
         setShowAtisReminderModal(true);
       } else {
@@ -165,7 +169,7 @@ export default function Create() {
               className={`p-3 backdrop-blur-sm border-2 rounded-full flex items-center justify-between text-sm ${
                 sessionLimitReached
                   ? 'bg-red-900/40 border-red-700'
-                  : sessionCount >= (user?.isAdmin || user?.isTester ? 48 : 8) // Yellow at maxSessions - 2
+                  : sessionCount >= (user?.isAdmin || user?.isTester ? 48 : 8)
                     ? 'bg-yellow-900/40 border-yellow-700'
                     : 'bg-blue-900/40 border-blue-500/50'
               }`}
@@ -339,7 +343,10 @@ export default function Create() {
         <AtisReminderModal
           onContinue={() => {
             setShowAtisReminderModal(false);
-            handleContinueToSession(createdSession.sessionId, createdSession.accessId);
+            handleContinueToSession(
+              createdSession.sessionId,
+              createdSession.accessId
+            );
           }}
           atisText={createdSession.atisText}
           accessId={createdSession.accessId}
@@ -354,11 +361,33 @@ export default function Create() {
             airports.find((a) => a.icao === selectedAirport)?.controlName ||
             selectedAirport
           }
-          airportAppFrequency={
-            airports.find((a) => a.icao === selectedAirport)?.allFrequencies?.APP ||
-            frequencies.find((f) => f.icao === selectedAirport)?.APP ||
-            '---'
-          }
+          airportAppFrequency={(() => {
+            const airportObj = airports.find((a) => a.icao === selectedAirport);
+            const freqObj = frequencies.find((f) => f.icao === selectedAirport);
+            const order = ['APP', 'TWR', 'GND', 'DEL'];
+            for (const key of order) {
+              const fromAirport = airportObj?.allFrequencies?.[key];
+              const fromFreqs = freqObj?.[key];
+              if (fromAirport && fromAirport !== 'n/a') return fromAirport;
+              if (fromFreqs && fromFreqs !== 'n/a') return fromFreqs;
+            }
+            return '---';
+          })()}
+          airportFrequencyType={(() => {
+            const airportObj = airports.find((a) => a.icao === selectedAirport);
+            const freqObj = frequencies.find((f) => f.icao === selectedAirport);
+            const order = ['APP', 'TWR', 'GND', 'DEL'];
+            for (const key of order) {
+              const fromAirport = airportObj?.allFrequencies?.[key];
+              const fromFreqs = freqObj?.[key];
+              if (
+                (fromAirport && fromAirport !== 'n/a') ||
+                (fromFreqs && fromFreqs !== 'n/a')
+              )
+                return key;
+            }
+            return 'APP';
+          })()}
         />
       )}
     </div>
