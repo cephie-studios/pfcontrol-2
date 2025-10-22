@@ -12,16 +12,14 @@ import { generateSessionId, generateAccessId } from '../utils/ids.js';
 import { recordNewSession } from '../db/statistics.js';
 import { requireSessionAccess, requireSessionOwnership } from '../middleware/sessionAccess.js';
 import { getSessionsByUser } from '../db/sessions.js';
-import requireAuth from '../middleware/auth.js';
 import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
 import { sanitizeAlphanumeric } from '../utils/sanitization.js';
-import { getUserById } from '../db/users.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
-
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
+import requireAuth from '../middleware/auth.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
     return (
