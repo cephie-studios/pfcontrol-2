@@ -49,8 +49,8 @@ export default function AcarsSidebar({
                             controller.avatar
                               ? getAvatarUrl(controller.avatar)
                               : controller.username === user?.username
-                              ? getAvatarUrl(user.avatar)
-                              : getAvatarUrl(null)
+                                ? getAvatarUrl(user.avatar)
+                                : getAvatarUrl(null)
                           }
                           alt={controller.username}
                           className="w-8 h-8 rounded-full border border-zinc-600 cursor-pointer"
@@ -65,9 +65,9 @@ export default function AcarsSidebar({
                           </div>
                         </div>
                         <div className="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
-                              <span className="text-xs font-medium text-white rounded-full bg-zinc-900/90 backdrop-blur-md flex items-center">
-                              <ExternalLink className="inline-block w-5 h-5 px-1 py-1" />
-                              </span>
+                          <span className="text-xs font-medium text-white rounded-full bg-zinc-900/90 backdrop-blur-md flex items-center">
+                            <ExternalLink className="inline-block w-5 h-5 px-1 py-1" />
+                          </span>
                         </div>
                       </div>
                       <span className="text-xs text-zinc-300">
@@ -82,7 +82,7 @@ export default function AcarsSidebar({
                               <img
                                 src="/assets/images/vatsim.webp"
                                 alt="VATSIM"
-                                className="w-6 h-6"
+                                className="w-6 h-6 rounded-full border border-blue-500"
                               />
                             </div>
                             <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
@@ -98,8 +98,12 @@ export default function AcarsSidebar({
                         )}
                         {controller.isEventController && (
                           <div className="relative group">
-                            <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center cursor-pointer">
-                              <TowerControl className="w-4 h-4 text-white" />
+                            <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center cursor-pointer">
+                              <img
+                                src="/assets/images/pfatc.webp"
+                                alt="PFATC"
+                                className="w-6 h-6 rounded-full border border-green-500"
+                              />
                             </div>
                             <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
                               <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-green-400 to-green-700">
