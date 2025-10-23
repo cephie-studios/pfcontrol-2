@@ -4,11 +4,9 @@ import {
   User,
   Plane,
   Clock,
-  MapPin,
   Award,
   Calendar,
   TrendingUp,
-  AlertCircle,
   Shield,
   Star,
   Wrench,
@@ -27,7 +25,6 @@ import {
   Edit,
   Users,
 } from 'lucide-react';
-import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -37,8 +34,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { useNavigate } from 'react-router-dom';
-import { fetchPilotProfile, shareFlight } from '../utils/fetch/pilot';
+import { fetchPilotProfile } from '../utils/fetch/pilot';
 import { getCurrentUser } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import type { PilotProfile, Role } from '../types/pilot';
@@ -95,9 +91,7 @@ export default function PilotProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
-
   const [ranks, setRanks] = useState<Ranks>({});
-  const navigate = useNavigate();
 
   const isCurrentUser = user && profile && profile.user.id === user.userId;
 
@@ -124,10 +118,6 @@ export default function PilotProfile() {
     navigator.clipboard.writeText(profileUrl);
     setShareClicked(true);
     setTimeout(() => setShareClicked(false), 2000);
-  };
-
-  const handleShareFlight = async (flightid: string): Promise<string> => {
-    return await shareFlight(flightid);
   };
 
   const fetchProfile = async () => {
@@ -162,23 +152,6 @@ export default function PilotProfile() {
       }.png`;
     }
     return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
-  };
-
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return 'N/A';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const getLandingGrade = (fpm: number | null) => {
-    if (!fpm) return { text: 'N/A', color: 'text-gray-400' };
-    const rate = Math.abs(fpm);
-    if (rate < 100) return { text: 'Butter', color: 'text-yellow-400' };
-    if (rate < 300) return { text: 'Smooth', color: 'text-green-400' };
-    if (rate < 600) return { text: 'Firm', color: 'text-blue-400' };
-    if (rate < 1000) return { text: 'Hard', color: 'text-orange-400' };
-    return { text: 'Crash', color: 'text-red-400' };
   };
 
   const getIconComponent = (iconName: string) => {
@@ -276,38 +249,6 @@ export default function PilotProfile() {
     profile.user.vatsim_rating_short ||
     profile.user.vatsim_rating_long
   );
-
-  const activityChartData = {
-    labels: profile.activityData
-      .map((d) => {
-        const date = new Date(d.month);
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric',
-        });
-      })
-      .reverse(),
-    datasets: [
-      {
-        label: 'Flights',
-        data: profile.activityData
-          .map((d) => parseInt(d.flight_count.toString()))
-          .reverse(),
-        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-        borderColor: 'rgba(59, 130, 246, 1)',
-        borderWidth: 2,
-      },
-      {
-        label: 'Flight Hours',
-        data: profile.activityData
-          .map((d) => Math.round(parseInt(d.total_minutes.toString()) / 60))
-          .reverse(),
-        backgroundColor: 'rgba(168, 85, 247, 0.5)',
-        borderColor: 'rgba(168, 85, 247, 1)',
-        borderWidth: 2,
-      },
-    ],
-  };
 
   const hasCrown = isCurrentUser && isRankOne(ranks);
 
@@ -499,432 +440,221 @@ export default function PilotProfile() {
 
       {/* Stats Grid */}
       <div className="max-w-7xl mx-auto px-4 mt-8">
-        {isCurrentUser &&
-          userStats &&
-          Object.keys(userStats).length > 0 &&
-          (user.settings?.displayControllerStatsOnProfile ?? true) && (
-            <>
-              <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                <TowerControl className="h-6 w-6 text-blue-400" />
-                Controller Statistics
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15))',
-                    animationDelay: '800ms',
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Users className="h-6 w-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">
-                        {userStats.total_sessions_created || 0}
-                      </h3>
-                      <p className="text-zinc-400 text-sm">
-                        Total Sessions Created
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
-                    <p className="text-lg font-bold text-blue-400">
-                      #{ranks.total_sessions_created || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(147, 51, 234, 0.15))',
-                    animationDelay: '1000ms',
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <MessageCircle className="h-6 w-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">
-                        {userStats.total_chat_messages_sent || 0}
-                      </h3>
-                      <p className="text-zinc-400 text-sm">
-                        Chat Messages Sent
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
-                    <p className="text-lg font-bold text-purple-400">
-                      #{ranks.total_chat_messages_sent || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))',
-                    animationDelay: '1100ms',
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-orange-500/20 rounded-lg">
-                      <Clock className="h-6 w-6 text-orange-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">
-                        {(
-                          userStats.total_time_controlling_minutes || 0
-                        ).toFixed(2)}{' '}
-                        min
-                      </h3>
-                      <p className="text-zinc-400 text-sm">Time Controlling</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
-                    <p className="text-lg font-bold text-orange-400">
-                      #{ranks.total_time_controlling_minutes || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.15))',
-                    animationDelay: '1200ms',
-                  }}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-cyan-500/20 rounded-lg">
-                      <Edit className="h-6 w-6 text-cyan-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">
-                        {userStats.total_flight_edits?.total_edit_actions || 0}
-                      </h3>
-                      <p className="text-zinc-400 text-sm">
-                        Flight Edit Actions
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-300 font-semibold">Rank</p>
-                    <p className="text-lg font-bold text-cyan-400">
-                      #{ranks['total_flight_edits.total_edit_actions'] || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-          <User className="h-6 w-6 text-blue-400" />
-          Pilot Statistics
-        </h2>
-        {(isCurrentUser ||
-          profile.privacySettings.displayPilotStatsOnProfile) && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15))',
-                animationDelay: '100ms',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Plane className="h-5 w-5 text-blue-400" />
-                <p className="text-sm text-gray-400">Total Flights</p>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {(isCurrentUser && userStats?.total_flights_submitted?.total) ||
-                  profile.stats.total_flights ||
-                  0}
-              </p>
-            </div>
-
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(147, 51, 234, 0.15))',
-                animationDelay: '200ms',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-5 w-5 text-purple-400" />
-                <p className="text-sm text-gray-400">Flight Time</p>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {profile.stats.total_hours
-                  ? `${Math.round(profile.stats.total_hours)}h`
-                  : '0h'}
-              </p>
-            </div>
-
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))',
-                animationDelay: '300ms',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-5 w-5 text-green-400" />
-                <p className="text-sm text-gray-400">Distance</p>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {profile.stats.total_distance_nm
-                  ? `${Math.round(profile.stats.total_distance_nm)}`
-                  : '0'}
-              </p>
-              <p className="text-xs text-gray-500">nm</p>
-            </div>
-
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))',
-                animationDelay: '400ms',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="h-5 w-5 text-yellow-400" />
-                <p className="text-sm text-gray-400">Best Landing</p>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {profile.stats.best_landing_rate
-                  ? `${Math.abs(profile.stats.best_landing_rate)}`
-                  : '---'}
-              </p>
-              <p className="text-xs text-gray-500">fpm</p>
-            </div>
-          </div>
-        )}
-
-        {/* Additional Stats */}
-        {(isCurrentUser ||
-          profile.privacySettings.displayPilotStatsOnProfile) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                animationDelay: '500ms',
-              }}
-            >
-              <p className="text-xs text-gray-400 mb-1">Favorite Aircraft</p>
-              <p className="text-xl font-bold text-white">
-                {profile.stats.favorite_aircraft || 'N/A'}
-              </p>
-            </div>
-
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                animationDelay: '600ms',
-              }}
-            >
-              <p className="text-xs text-gray-400 mb-1">Favorite Departure</p>
-              <p className="text-xl font-bold text-white">
-                {profile.stats.favorite_departure || 'N/A'}
-              </p>
-            </div>
-
-            <div
-              className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                animationDelay: '700ms',
-              }}
-            >
-              <p className="text-xs text-gray-400 mb-1">Highest Altitude</p>
-              <p className="text-xl font-bold text-white">
-                {profile.stats.highest_altitude
-                  ? `${profile.stats.highest_altitude.toLocaleString()} ft`
-                  : 'N/A'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Activity Chart */}
-        {(isCurrentUser ||
-          profile.privacySettings.displayPilotStatsOnProfile) &&
-          profile.activityData.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Flight Activity
-              </h2>
-              <div
-                className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                  animationDelay: '1400ms',
-                }}
-              >
-                <Bar
-                  data={activityChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        position: 'bottom' as const,
-                        labels: {
-                          color: '#F9FAFB',
-                          font: { size: 12 },
-                          padding: 15,
-                        },
-                      },
-                      tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                        titleColor: '#F9FAFB',
-                        bodyColor: '#D1D5DB',
-                        borderColor: '#374151',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        padding: 12,
-                      },
-                    },
-                    scales: {
-                      x: {
-                        grid: {
-                          color: 'rgba(55, 65, 81, 0.3)',
-                        },
-                        ticks: {
-                          color: '#9CA3AF',
-                          font: { size: 11 },
-                        },
-                      },
-                      y: {
-                        grid: {
-                          color: 'rgba(55, 65, 81, 0.3)',
-                        },
-                        ticks: {
-                          color: '#9CA3AF',
-                          font: { size: 11 },
-                        },
-                      },
-                    },
-                  }}
-                  height={300}
-                />
-              </div>
-            </div>
-          )}
-
-        {/* Recent Flights */}
-        {profile.recentFlights.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Recent Flights
-            </h2>
-            <div className="space-y-3">
-              {profile.recentFlights.map((flight, index) => {
-                const landingGrade = getLandingGrade(flight.landing_rate_fpm);
-                return (
+        {isCurrentUser && (
+          <>
+            {(user.settings?.displayStatsOnProfile ?? true) ? (
+              userStats && Object.keys(userStats).length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {/* Sessions Created */}
                   <div
-                    key={flight.id}
-                    onClick={async () => {
-                      const url = await handleShareFlight(String(flight.id));
-                      if (url) navigate(url);
-                    }}
-                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border border-white/10 transition-all duration-500 animate-fade-in-up hover:border-blue-700/50"
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(75, 85, 99, 0.15), rgba(55, 65, 81, 0.15))',
-                      animationDelay: `${1500 + index * 100}ms`,
+                        'linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.10))',
+                      animationDelay: '800ms',
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-lg font-bold text-blue-300 font-mono">
-                            {flight.callsign}
-                          </span>
-                          <span className="text-gray-500">•</span>
-                          <span className="text-sm text-gray-400">
-                            {flight.aircraft_model ||
-                              flight.aircraft_icao ||
-                              'Unknown'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span className="font-mono">
-                            {flight.departure_icao} → {flight.arrival_icao}
-                          </span>
-                          <span>•</span>
-                          <span>{formatDuration(flight.duration_minutes)}</span>
-                          {flight.total_distance_nm && (
-                            <>
-                              <span>•</span>
-                              <span>
-                                {Math.round(flight.total_distance_nm)} nm
-                              </span>
-                            </>
-                          )}
-                        </div>
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-emerald-400/20 rounded-lg">
+                        <Users className="h-6 w-6 text-emerald-300" />
                       </div>
-                      <div className="flex items-center gap-4">
-                        {flight.landing_rate_fpm && (
-                          <div className="text-right">
-                            <p className="text-xs text-gray-500">Landing</p>
-                            <p
-                              className={`text-sm font-semibold ${landingGrade.color}`}
-                            >
-                              {Math.abs(flight.landing_rate_fpm)} fpm
-                            </p>
-                            <p className={`text-xs ${landingGrade.color}`}>
-                              {landingGrade.text}
-                            </p>
-                          </div>
-                        )}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">
-                            {new Date(flight.flight_end).toLocaleDateString(
-                              'en-US',
-                              {
-                                month: 'short',
-                                day: 'numeric',
-                              }
-                            )}
-                          </p>
-                        </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {userStats.total_sessions_created || 0}
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Total Sessions Created
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-300 font-semibold">
+                        Rank
+                      </p>
+                      <p className="text-lg font-bold text-emerald-300">
+                        #{ranks.total_sessions_created || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Total Flights */}
+                  <div
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(239, 68, 68, 0.08))',
+                      animationDelay: '1300ms',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-amber-500/20 rounded-lg">
+                        <Plane className="h-6 w-6 text-amber-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {userStats?.total_flights_submitted?.total || 0}
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Flights Submitted
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-300 font-semibold">
+                        Rank
+                      </p>
+                      <p className="text-lg font-bold text-amber-300">
+                        #{ranks['total_flights_submitted.total'] || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Time Controlling */}
+                  <div
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(124, 58, 237, 0.10))',
+                      animationDelay: '1100ms',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-indigo-500/20 rounded-lg">
+                        <Clock className="h-6 w-6 text-indigo-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {(
+                            userStats.total_time_controlling_minutes || 0
+                          ).toFixed(2)}{' '}
+                          min
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Time Controlling
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-300 font-semibold">
+                        Rank
+                      </p>
+                      <p className="text-lg font-bold text-indigo-300">
+                        #{ranks.total_time_controlling_minutes || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Flight Edit Actions */}
+                  <div
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(96, 165, 250, 0.08))',
+                      animationDelay: '1200ms',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-sky-500/20 rounded-lg">
+                        <Edit className="h-6 w-6 text-sky-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {userStats.total_flight_edits?.total_edit_actions ||
+                            0}
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Flight Edit Actions
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-300 font-semibold">
+                        Rank
+                      </p>
+                      <p className="text-lg font-bold text-sky-300">
+                        #
+                        {ranks['total_flight_edits.total_edit_actions'] ||
+                          'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Chat Messages */}
+                  <div
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(234, 88, 126, 0.10))',
+                      animationDelay: '1000ms',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-pink-500/20 rounded-lg">
+                        <MessageCircle className="h-6 w-6 text-pink-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white">
+                          {userStats.total_chat_messages_sent || 0}
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Chat Messages Sent
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-300 font-semibold">
+                        Rank
+                      </p>
+                      <p className="text-lg font-bold text-pink-300">
+                        #{ranks.total_chat_messages_sent || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Last Updated - New */}
+                  <div
+                    className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(168, 85, 247, 0.10), rgba(236, 72, 153, 0.06))',
+                      animationDelay: '1400ms',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-violet-500/20 rounded-lg">
+                        <Clock className="h-6 w-6 text-violet-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">
+                          {userStats.last_updated
+                            ? new Date(userStats.last_updated).toLocaleString(
+                                'en-US',
+                                {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )
+                            : 'Never'}
+                        </h3>
+                        <p className="text-zinc-400 text-sm">Last Updated</p>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {profile.recentFlights.length === 0 && (
-          <div className="text-center py-12">
-            <Plane className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No flights logged yet</p>
-          </div>
+                </div>
+              ) : (
+                <p className="text-zinc-400 text-center mb-8">
+                  No statistics available yet.
+                </p>
+              )
+            ) : (
+              <p className="text-zinc-400 text-center">
+                Statistics are hidden for privacy reasons.
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -24,35 +24,6 @@ export interface PilotProfile {
         role_name: string | null;
         role_description: string | null;
     };
-    stats: {
-        total_flights: number;
-        total_hours: number;
-        total_flight_time_minutes: number;
-        total_distance_nm: number;
-        favorite_aircraft: string | null;
-        favorite_departure: string | null;
-        best_landing_rate: number | null;
-        average_landing_score: number | null;
-        highest_altitude: number | null;
-        longest_flight_distance: number | null;
-    };
-    recentFlights: Array<{
-        id: number;
-        callsign: string;
-        aircraft_model: string | null;
-        aircraft_icao: string | null;
-        departure_icao: string;
-        arrival_icao: string;
-        duration_minutes: number | null;
-        total_distance_nm: number | null;
-        landing_rate_fpm: number | null;
-        flight_end: string;
-    }>;
-    activityData: Array<{
-        month: string;
-        flight_count: number;
-        total_minutes: number;
-    }>;
     privacySettings: {
         displayControllerStatsOnProfile: boolean;
         displayPilotStatsOnProfile: boolean;

@@ -76,8 +76,7 @@ export interface Settings {
     arrivalsTableColumns: ArrivalsTableColumnSettings;
     acars: AcarsSettings;
     tutorialCompleted: boolean;
-    displayControllerStatsOnProfile: boolean;
-    displayPilotStatsOnProfile: boolean;
+    displayStatsOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
     hideFromLeaderboard: boolean;
 }
