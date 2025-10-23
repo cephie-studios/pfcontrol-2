@@ -21,29 +21,33 @@ export async function ensureChatTable(sessionId: string) {
 }
 
 export async function addChatMessage(sessionId: string, { userId, username, avatar, message, mentions = [] }: { userId: string, username: string, avatar: string, message: string, mentions?: string[] }) {
-  const validSessionId = validateSessionId(sessionId);
-  await ensureChatTable(validSessionId);
-  const encryptedMsg = encrypt(message);
-  if (!encryptedMsg) {
-    throw new Error("Encryption failed for chat message.");
-  }
+    const validSessionId = validateSessionId(sessionId);
+    await ensureChatTable(validSessionId);
+    const encryptedMsg = encrypt(message);
+    if (!encryptedMsg) {
+        throw new Error("Encryption failed for chat message.");
+    }
 
-  const tableName = `chat_${validSessionId}`;
-  const result = await chatsDb
-    .insertInto(tableName)
-    .values({
-      id: sql`DEFAULT`,
-      user_id: String(userId),
-      username,
-      avatar,
-      message: JSON.stringify(encryptedMsg),
-      mentions
-    })
-    .returningAll()
-    .executeTakeFirst();
+    if (!Array.isArray(mentions) || !mentions.every(m => typeof m === 'string')) {
+        throw new Error('Invalid mentions format: must be an array of strings');
+    }
 
-  incrementStat(userId, 'total_chat_messages_sent');
-  return { ...result, message, mentions };
+    const tableName = `chat_${validSessionId}`;
+    const result = await chatsDb
+        .insertInto(tableName)
+        .values({
+            id: sql`DEFAULT`,
+            user_id: String(userId),
+            username,
+            avatar,
+            message: JSON.stringify(encryptedMsg),
+            mentions: JSON.stringify(mentions)
+        })
+        .returningAll()
+        .executeTakeFirst();
+
+    incrementStat(userId, 'total_chat_messages_sent');
+    return { ...result, message, mentions };
 }
 
 export async function getChatMessages(sessionId: string, limit = 50) {
@@ -77,8 +81,8 @@ export async function getChatMessages(sessionId: string, limit = 50) {
         sent_at: row.sent_at
       };
     })
-    .reverse();
 }
+
 export async function deleteChatMessage(sessionId: string, messageId: number, userId: string) {
   const validSessionId = validateSessionId(sessionId);
   await ensureChatTable(validSessionId);

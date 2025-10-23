@@ -77,45 +77,50 @@ export function setupChatWebsocket(httpServer: Server, sessionUsersWebsocketIO: 
 
             const mentions = parseMentions(sanitizedMessage);
 
-            const chatMsg = await addChatMessage(sessionId, {
-                userId: user.userId,
-                username: user.username,
-                avatar: user.avatar,
-                message: sanitizedMessage,
-                mentions
-            });
-
-            const formattedMsg = {
-                id: chatMsg.id,
-                userId: chatMsg.user_id,
-                username: chatMsg.username,
-                avatar: chatMsg.avatar,
-                message: chatMsg.message,
-                mentions: chatMsg.mentions,
-                sent_at: chatMsg.sent_at
-            };
-
-            io.to(sessionId).emit('chatMessage', formattedMsg);
-
-            if (mentions && mentions.length > 0 && sessionUsersIO) {
-                const sessionUsers = sessionUsersIO.activeUsers?.get(sessionId) || [];
-
-                mentions.forEach(mentionedUsername => {
-                    const mentionedUser = sessionUsers.find((u: { id: string; username: string }) => u.username === mentionedUsername);
-
-                    if (mentionedUser) {
-                        const mentionData = {
-                            messageId: String(chatMsg.id ?? ''),
-                            mentionedUserId: mentionedUser.id,
-                            mentionerUsername: user.username,
-                            message: sanitizedMessage,
-                            sessionId,
-                            timestamp: chatMsg.sent_at ? String(chatMsg.sent_at) : ''
-                        };
-
-                        (sessionUsersIO as SessionUsersWebsocketIO).sendMentionToUser(mentionedUser.id, mentionData);
-                    }
+            try {
+                const chatMsg = await addChatMessage(sessionId, {
+                    userId: user.userId,
+                    username: user.username,
+                    avatar: user.avatar,
+                    message: sanitizedMessage,
+                    mentions,
                 });
+
+                const formattedMsg = {
+                    id: chatMsg.id,
+                    userId: chatMsg.user_id,
+                    username: chatMsg.username,
+                    avatar: chatMsg.avatar,
+                    message: chatMsg.message,
+                    mentions: chatMsg.mentions,
+                    sent_at: chatMsg.sent_at,
+                };
+
+                io.to(sessionId).emit('chatMessage', formattedMsg);
+
+                if (sessionUsersIO?.activeUsers && mentions.length > 0) {
+                    const users = sessionUsersIO.activeUsers.get(sessionId);
+                    if (users) {
+                        const messageIdStr = chatMsg.id?.toString() ?? '';
+                        const timestampStr = chatMsg.sent_at ? chatMsg.sent_at.toISOString() : new Date().toISOString();
+                        for (const username of mentions) {
+                            const mentionedUser = users.find(u => u.username === username);
+                            if (mentionedUser) {
+                                sessionUsersIO.sendMentionToUser(mentionedUser.id, {
+                                    messageId: messageIdStr,
+                                    mentionedUserId: mentionedUser.id,
+                                    mentionerUsername: user.username,
+                                    message: sanitizedMessage,
+                                    sessionId,
+                                    timestamp: timestampStr,
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding chat message:', error);
+                socket.emit('chatError', { message: 'Failed to send message' });
             }
         });
 
@@ -151,9 +156,9 @@ export function setupChatWebsocket(httpServer: Server, sessionUsersWebsocketIO: 
     return io;
 }
 
-function parseMentions(message: string) {
+function parseMentions(message: string): string[] {
     const mentionRegex = /@(\w+)/g;
-    const mentions = [];
+    const mentions: string[] = [];
     let match;
     while ((match = mentionRegex.exec(message)) !== null) {
         mentions.push(match[1]);

@@ -35,6 +35,7 @@ export default function ChatSidebar({
   const [mentionSuggestions, setMentionSuggestions] = useState<SessionUser[]>(
     []
   );
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pendingDeleteRef = useRef<ChatMessage | null>(null);
@@ -117,9 +118,11 @@ export default function ChatSidebar({
           u.username.toLowerCase().includes(searchTerm) && u.id !== user?.userId
       );
       setMentionSuggestions(suggestions);
-      setShowMentionSuggestions(true);
+      setShowMentionSuggestions(suggestions.length > 0);
+      setSelectedSuggestionIndex(suggestions.length > 0 ? 0 : -1);
     } else {
       setShowMentionSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     }
   };
 
@@ -143,6 +146,7 @@ export default function ChatSidebar({
         }
       }, 0);
     }
+    setSelectedSuggestionIndex(-1);
   };
 
   const sendMessage = () => {
@@ -320,10 +324,12 @@ export default function ChatSidebar({
         <div className="relative">
           {showMentionSuggestions && mentionSuggestions.length > 0 && (
             <div className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-32 overflow-y-auto">
-              {mentionSuggestions.map((suggestedUser) => (
+              {mentionSuggestions.map((suggestedUser, index) => (
                 <button
                   key={suggestedUser.id}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left"
+                  className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
+                    index === selectedSuggestionIndex ? 'bg-blue-600/40' : ''
+                  }`}
                   onClick={() => insertMention(suggestedUser.username)}
                 >
                   <img
@@ -351,11 +357,35 @@ export default function ChatSidebar({
             value={input}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              } else if (e.key === 'Escape') {
-                setShowMentionSuggestions(false);
+              if (showMentionSuggestions) {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSelectedSuggestionIndex(
+                    (prev) => (prev + 1) % mentionSuggestions.length
+                  );
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSelectedSuggestionIndex((prev) =>
+                    prev === 0 ? mentionSuggestions.length - 1 : prev - 1
+                  );
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (selectedSuggestionIndex >= 0) {
+                    insertMention(
+                      mentionSuggestions[selectedSuggestionIndex].username
+                    );
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowMentionSuggestions(false);
+                  setSelectedSuggestionIndex(-1);
+                }
+              } else {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                } else if (e.key === 'Escape') {
+                  setShowMentionSuggestions(false);
+                }
               }
             }}
             maxLength={500}
@@ -363,6 +393,7 @@ export default function ChatSidebar({
             placeholder="Type a message... Use @ to mention users"
             aria-label="Type a message"
           />
+
           <Button
             variant="outline"
             size="sm"

@@ -6,7 +6,7 @@ export interface ChatsDatabase {
     username?: string;
     avatar?: string;
     message: string;
-    mentions?: string[];
+    mentions?: string;
     sent_at?: Date;
   };
 }
