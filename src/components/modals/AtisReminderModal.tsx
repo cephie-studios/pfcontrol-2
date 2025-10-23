@@ -28,7 +28,7 @@ export default function AtisReminderModal({
   const submitLink = `${window.location?.origin}/submit/${sessionId}`;
   const [copied, setCopied] = useState(false);
 
-  const formattedAtis = `${airportIcao}_${airportFrequencyType} [${airportAppFrequency}]: <@${userId}>\n\n${atisText}\n\n${submitLink}`;
+  const formattedAtis = `${airportIcao}_${airportFrequencyType} (${airportAppFrequency}): <@${userId}>\n\n${atisText}\n\n${submitLink}`;
 
   const handleCopy = async () => {
     try {
