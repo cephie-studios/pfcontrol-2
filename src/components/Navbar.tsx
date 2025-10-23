@@ -313,7 +313,6 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                         <p className="text-sm font-medium text-white leading-tight flex-1">
                           {notification.text}
                         </p>
-                        {/* New: Hide button */}
                         <button
                           onClick={() => hideNotification(notification.id)}
                           className="flex-shrink-0 ml-2 text-white hover:text-gray-300 transition-colors"
@@ -500,30 +499,6 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                             }
                         `}
             >
-              <div className="py-2">
-                <a
-                  href="/create"
-                  className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Create Session
-                </a>
-                <a
-                  href="/sessions"
-                  className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Sessions
-                </a>
-                <a
-                  href="/pfatc"
-                  className="block px-6 py-3 text-gray-300 hover:text-white hover:bg-blue-600/20 transition-all duration-200 font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  PFATC Flights
-                </a>
-              </div>
-
               <div className="border-t border-zinc-700/50 p-4">
                 <CustomUserButton
                   isMobile={true}
