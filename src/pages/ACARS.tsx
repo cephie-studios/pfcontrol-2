@@ -3,7 +3,14 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';
-import { PanelLeftClose, PanelLeftOpen, Map, PlaneTakeoff, MapPinned, PlusCircle } from 'lucide-react';
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  Map,
+  PlaneTakeoff,
+  MapPinned,
+  PlusCircle,
+} from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { createFlightsSocket } from '../sockets/flightsSocket';
@@ -72,8 +79,13 @@ export default function ACARS() {
       const savedNotes = localStorage.getItem(storageKey);
       const savedTimestamp = localStorage.getItem(timestampKey);
       const TWELVE_HOURS = 12 * 60 * 60 * 1000;
-      const parsedTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
-      const isExpired = parsedTimestamp && !isNaN(parsedTimestamp) && (Date.now() - parsedTimestamp) > TWELVE_HOURS;
+      const parsedTimestamp = savedTimestamp
+        ? parseInt(savedTimestamp, 10)
+        : null;
+      const isExpired =
+        parsedTimestamp &&
+        !isNaN(parsedTimestamp) &&
+        Date.now() - parsedTimestamp > TWELVE_HOURS;
 
       if (savedNotes && !isExpired) {
         setNotes(savedNotes);
@@ -560,9 +572,7 @@ NOTES:
             <PlaneTakeoff className="h-8 w-8 text-blue-500" />
             <div>
               <h1 className="text-2xl font-bold text-white">
-                {flight?.callsign
-                  ? `${flight.callsign} - ACARS Terminal`
-                  : 'ACARS Terminal'}
+                {flight?.callsign ? `${flight.callsign}` : 'ACARS Terminal'}
               </h1>
             </div>
           </div>
