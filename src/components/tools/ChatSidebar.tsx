@@ -162,7 +162,7 @@ export default function ChatSidebar({
 
   const renderMessage = (message: string) => {
     return message.replace(
-      /@(\w+)/g,
+      /@([^\s]+)/g,
       '<span class="text-blue-400 font-semibold">@$1</span>'
     );
   };
