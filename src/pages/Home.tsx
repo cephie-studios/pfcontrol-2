@@ -610,63 +610,58 @@ export default function Home() {
       </section>
 
       {/* CTA Section - PFControl v2 */}
-      <section className="bg-gradient-to-b from-black via-zinc-900 to-blue-950 text-white py-24 pt-24 sm:pt-36 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-8 lg:gap-16">
-            <div className="w-full md:w-1/2 space-y-6 text-center md:text-left">
-              <h2
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6"
-                style={{ lineHeight: 1.4 }}
+      <section className="relative bg-[url('/assets/images/hero.webp')] bg-cover bg-center text-white min-h-[90vh] flex items-center px-4 sm:px-6">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: customLoaded ? 1 : 0,
+            transition: 'opacity 0.5s ease-in-out',
+          }}
+        />
+        <div className="absolute inset-0 backdrop-blur-[5px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-black/70 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black to-transparent"></div>
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-7xl mx-auto mt-16 md:mt-24 gap-10 md:gap-0 relative z-10">
+          <div className="flex-1 text-left">
+            <h2 className="text-5xl sm:text-6xl md:text-[5rem] lg:text-[7rem] font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent leading-tight mb-4">
+              PFControl
+            </h2>
+            <p className="text-base sm:text-xl text-gray-300 max-w-2xl">
+              The next-generation flight strip platform built for real-time
+              coordination between air traffic controllers.
+            </p>
+            <ul className="space-y-4 text-gray-300 mt-6 text-left max-w-lg text-lg">
+              <li className="flex items-start">
+                <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
+                <span>
+                  Enhanced real-time collaboration between controllers
+                </span>
+              </li>
+              <li className="flex items-start">
+                <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
+                <span>Redesigned interface for improved usability</span>
+              </li>
+              <li className="flex items-start">
+                <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
+                <span>Advanced flight strip management system</span>
+              </li>
+            </ul>
+            <div className="pt-8">
+              <Button
+                onClick={() => {
+                  window.location.href = startTutorial
+                    ? '/create?tutorial=true'
+                    : '/create';
+                }}
+                variant="outline"
+                className="px-8 py-4 text-base sm:text-lg font-semibold"
               >
-                PFControl v2
-              </h2>
-              <div className="w-16 h-1 bg-blue-500 mx-auto md:mx-0 mb-6"></div>
-              <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-lg mx-auto md:mx-0">
-                The next-generation flight strip platform built for real-time
-                coordination between air traffic controllers.
-              </p>
-              <ul className="space-y-4 text-gray-300 mt-6 text-left max-w-lg mx-auto md:mx-0">
-                <li className="flex items-start">
-                  <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
-                  <span>
-                    Enhanced real-time collaboration between controllers
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
-                  <span>Redesigned interface for improved usability</span>
-                </li>
-                <li className="flex items-start">
-                  <ArrowRight className="mr-3 h-5 w-5 text-blue-400 flex-shrink-0 mt-1" />
-                  <span>Advanced flight strip management system</span>
-                </li>
-              </ul>
-              <div className="pt-6">
-                <button
-                  onClick={() =>
-                    (window.location.href = startTutorial
-                      ? '/create?tutorial=true'
-                      : '/create')
-                  }
-                  className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-full text-base sm:text-lg font-medium transition-all"
-                >
-                  Try the Latest Version Now
-                </button>
-              </div>
-            </div>
-
-            <div className="w-full md:w-1/2 mt-10 md:mt-0 justify-center hidden md:flex">
-              <div className="w-full md:w-[520px] lg:w-[620px]">
-                <div className="relative pb-[56.25%] h-0 overflow-hidden shadow-2xl rounded-xl border-2 border-blue-600">
-                  <iframe
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
-                    src="https://www.youtube.com/embed/N5eaO49CuuI?rel=0"
-                    title="PFControl 3.0 Stable Release Trailer"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </div>
+                Try the Latest Version Now
+              </Button>
             </div>
           </div>
         </div>

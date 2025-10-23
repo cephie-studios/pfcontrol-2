@@ -230,6 +230,11 @@ export default function ContactAcarsSidebar({
                   type="text"
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && selectedFlight && !sending) {
+                      handleSend();
+                    }
+                  }}
                   placeholder={getDefaultMessage()}
                   className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                   maxLength={100}

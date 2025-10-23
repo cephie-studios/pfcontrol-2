@@ -77,6 +77,15 @@ export default function DepartureTable({
   const [remarkValues, setRemarkValues] = useState<
     Record<string | number, string>
   >({});
+  const [callsignValues, setCallsignValues] = useState<
+    Record<string | number, string>
+  >({});
+  const [standValues, setStandValues] = useState<
+    Record<string | number, string>
+  >({});
+  const [squawkValues, setSquawkValues] = useState<
+    Record<string | number, string>
+  >({});
   const debounceTimeouts = useRef<Record<string | number, NodeJS.Timeout>>({});
 
   const debouncedHandleRemarkChange = useCallback(
@@ -90,6 +99,60 @@ export default function DepartureTable({
       debounceTimeouts.current[flightId] = setTimeout(() => {
         if (onFlightChange) {
           onFlightChange(flightId, { remark });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
+  const debouncedHandleCallsignChange = useCallback(
+    (flightId: string | number, callsign: string) => {
+      setCallsignValues((prev) => ({ ...prev, [flightId]: callsign }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { callsign });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
+  const debouncedHandleStandChange = useCallback(
+    (flightId: string | number, stand: string) => {
+      setStandValues((prev) => ({ ...prev, [flightId]: stand }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { stand });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
+  const debouncedHandleSquawkChange = useCallback(
+    (flightId: string | number, squawk: string) => {
+      setSquawkValues((prev) => ({ ...prev, [flightId]: squawk }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { squawk });
         }
         delete debounceTimeouts.current[flightId];
       }, 500);
@@ -122,27 +185,6 @@ export default function DepartureTable({
 
   const handleRemarkChange = (flightId: string | number, remark: string) => {
     debouncedHandleRemarkChange(flightId, remark);
-  };
-
-  const handleCallsignChange = (
-    flightId: string | number,
-    callsign: string
-  ) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { callsign });
-    }
-  };
-
-  const handleStandChange = (flightId: string | number, stand: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { stand });
-    }
-  };
-
-  const handleSquawkChange = (flightId: string | number, squawk: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { squawk });
-    }
   };
 
   const handleArrivalChange = (flightId: string | number, arrival: string) => {
@@ -242,12 +284,12 @@ export default function DepartureTable({
 
   const handleRegenerateSquawk = (flightId: string | number) => {
     const newSquawk = generateRandomSquawk();
+    setSquawkValues((prev) => ({ ...prev, [flightId]: newSquawk }));
     if (onFlightChange) {
       onFlightChange(flightId, { squawk: newSquawk });
     }
   };
 
-  // when rendering mobile variant
   if (isMobile) {
     return (
       <>
@@ -402,9 +444,11 @@ export default function DepartureTable({
                     {departureColumns.callsign !== false && (
                       <td className="py-2 px-4">
                         <TextInput
-                          value={flight.callsign || ''}
+                          value={
+                            callsignValues[flight.id] ?? (flight.callsign || '')
+                          }
                           onChange={(value) =>
-                            handleCallsignChange(flight.id, value)
+                            debouncedHandleCallsignChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
@@ -426,9 +470,9 @@ export default function DepartureTable({
                     {departureColumns.stand !== false && (
                       <td className="py-2 px-4 column-stand">
                         <TextInput
-                          value={flight.stand || ''}
+                          value={standValues[flight.id] ?? (flight.stand || '')}
                           onChange={(value) =>
-                            handleStandChange(flight.id, value)
+                            debouncedHandleStandChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
@@ -531,9 +575,11 @@ export default function DepartureTable({
                       <td className="py-2 px-4">
                         <div className="flex items-center gap-0.5 w-full">
                           <TextInput
-                            value={flight.squawk || ''}
+                            value={
+                              squawkValues[flight.id] ?? (flight.squawk || '')
+                            }
                             onChange={(value) =>
-                              handleSquawkChange(flight.id, value)
+                              debouncedHandleSquawkChange(flight.id, value)
                             }
                             className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white w-full min-w-0"
                             placeholder="-"
@@ -571,7 +617,7 @@ export default function DepartureTable({
                               flight.id,
                               !isClearanceChecked(flight.clearance)
                             )
-                          } // or: onToggleClearance(flight.id)
+                          }
                           label=""
                           checkedClass="bg-green-600 border-green-600"
                           flashing={isFlashing}

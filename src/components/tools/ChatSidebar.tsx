@@ -190,12 +190,6 @@ export default function ChatSidebar({
           <span className="font-extrabold text-xl text-blue-300">
             Session Chat
           </span>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-xs text-gray-400">
-              {activeChatUsers.length} online
-            </span>
-          </div>
         </div>
         <button
           onClick={() => onClose()}
@@ -274,8 +268,8 @@ export default function ChatSidebar({
                   <div
                     className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow relative ${
                       isOwn
-                        ? 'bg-blue-800 text-white ml-auto max-w-xs'
-                        : 'bg-zinc-800 text-white max-w-xs'
+                        ? 'bg-blue-800 text-white ml-auto max-w-[19rem]'
+                        : 'bg-zinc-800 text-white max-w-[19rem]'
                     } break-words overflow-wrap-anywhere`}
                     style={
                       isOwn

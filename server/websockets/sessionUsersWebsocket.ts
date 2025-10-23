@@ -363,7 +363,6 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
                     io.to(sessionId).emit('sessionUsersUpdate', users);
                     const overviewIO = getOverviewIO();
                     if (overviewIO) {
-                        // Force immediate overview data update
                         setTimeout(async () => {
                             try {
                                 const { getOverviewData } = await import('./overviewWebsocket.js');
@@ -386,13 +385,12 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
             if (entry) entry.lastActive = Date.now();
         });
 
-        // On disconnect, flush active time to cache
         socket.on('disconnect', () => {
             const entry = userActivity.get(userKey);
             if (entry) {
                 const now = Date.now();
-                const activeTime = Math.max(0, now - entry.sessionStart - (5 * 60 * 1000));
-                entry.totalActive += activeTime / 60000;
+                const remainingActiveTime = Math.max(0, (now - entry.lastActive) / 60000 - 0.1);
+                entry.totalActive += remainingActiveTime;
                 incrementStat(user.userId, 'total_time_controlling_minutes', entry.totalActive);
                 userActivity.delete(userKey);
             }
@@ -439,17 +437,15 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
     return io;
 }
 
-// Periodic check (e.g., every minute) to update active time
+// Removed incrementStat call to prevent double-counting. Time is now only incremented on disconnect.
 setInterval(() => {
-    for (const [userKey, entry] of userActivity.entries()) {
-        const now = Date.now();
-        if (now - entry.lastActive > 5 * 60 * 1000) continue;  // Idle, skip
-        const activeTime = (now - entry.lastActive) / 60000;
-        entry.totalActive += activeTime;
-        entry.lastActive = now;
-        // Increment stat in cache
-        incrementStat(userKey, 'total_time_controlling_minutes', activeTime);
-    }
+  for (const [userKey, entry] of userActivity.entries()) {
+    const now = Date.now();
+    if (now - entry.lastActive > 5 * 60 * 1000) continue;
+    const activeTime = (now - entry.lastActive) / 60000;
+    entry.totalActive += activeTime;
+    entry.lastActive = now;
+  }
 }, 60 * 1000);
 
 export function getActiveUsers(): typeof activeUsers {

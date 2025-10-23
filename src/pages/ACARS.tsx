@@ -3,7 +3,14 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';
-import { PanelLeftClose, PanelLeftOpen, Map, PlaneTakeoff, MapPinned, PlusCircle } from 'lucide-react';
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  Map,
+  PlaneTakeoff,
+  MapPinned,
+  PlusCircle,
+} from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { createFlightsSocket } from '../sockets/flightsSocket';
@@ -72,8 +79,13 @@ export default function ACARS() {
       const savedNotes = localStorage.getItem(storageKey);
       const savedTimestamp = localStorage.getItem(timestampKey);
       const TWELVE_HOURS = 12 * 60 * 60 * 1000;
-      const parsedTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
-      const isExpired = parsedTimestamp && !isNaN(parsedTimestamp) && (Date.now() - parsedTimestamp) > TWELVE_HOURS;
+      const parsedTimestamp = savedTimestamp
+        ? parseInt(savedTimestamp, 10)
+        : null;
+      const isExpired =
+        parsedTimestamp &&
+        !isNaN(parsedTimestamp) &&
+        Date.now() - parsedTimestamp > TWELVE_HOURS;
 
       if (savedNotes && !isExpired) {
         setNotes(savedNotes);
@@ -555,61 +567,49 @@ NOTES:
       <Navbar />
 
       <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 py-8 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 pt-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 pt-12">
           <div className="flex items-center gap-3">
             <PlaneTakeoff className="h-8 w-8 text-blue-500" />
             <div>
               <h1 className="text-2xl font-bold text-white">
-                {flight?.callsign
-                  ? `${flight.callsign} - ACARS Terminal`
-                  : 'ACARS Terminal'}
+                {flight?.callsign ? `${flight.callsign}` : 'ACARS Terminal'}
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
+          <div className="flex items-center gap-3 mt-4 md:mt-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
               onClick={() => navigate(`/submit/${sessionId}`)}
-              className="group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 bg-gradient-to-r from-zinc-500/20 to-black-500/20 border-zinc-500/40 hover:border-purple-400/60 shadow-lg shadow-purple-950/10"
             >
-              <PlusCircle className="w-5 h-5 text-purple-400" />
-              <span className="hidden sm:inline text-sm font-medium">
-                New Flight
-              </span>
-            </button>
-            <button
-              onClick={handleToggleSidebar}
-              className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 ${
-                showSidebar
-                  ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/40 hover:border-blue-400/60 shadow-lg shadow-blue-500/10'
-                  : 'bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-              }`}
-            >
+              <PlusCircle className="w-5 h-5" />
+              <span className="hidden sm:inline">New Flight</span>
+            </Button>
+            <Button size="sm" className="gap-2" onClick={handleToggleSidebar}>
               {showSidebar ? (
-                <PanelLeftOpen className="w-5 h-5 text-blue-400" />
+                <PanelLeftOpen className="w-5 h-5" />
               ) : (
-                <PanelLeftClose className="w-5 h-5 text-zinc-400 group-hover:text-zinc-300" />
+                <PanelLeftClose className="w-5 h-5" />
               )}
-              <span className="hidden sm:inline text-sm font-medium">
+              <span className="hidden sm:inline">
                 {showSidebar ? 'Hide Sidebar' : 'Show Sidebar'}
               </span>
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
+              className="gap-2"
               onClick={handleToggleChartsDrawer}
-              className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200 ${
-                showChartsDrawer
-                  ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/40 hover:border-green-400/60 shadow-lg shadow-green-500/10'
-                  : 'bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70'
-              }`}
             >
               {showChartsDrawer ? (
-                <MapPinned className="w-5 h-5 text-green-400" />
+                <MapPinned className="w-5 h-5" />
               ) : (
-                <Map className="w-5 h-5 text-zinc-400 group-hover:text-zinc-300" />
+                <Map className="w-5 h-5" />
               )}
-              <span className="hidden sm:inline text-sm font-medium">
+              <span className="hidden sm:inline">
                 {showChartsDrawer ? 'Hide Charts' : 'Show Charts'}
               </span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
