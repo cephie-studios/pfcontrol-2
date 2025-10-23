@@ -446,20 +446,11 @@ export default function Toolbar({
         </div>
         <div className="flex items-center gap-2">
           {icao && (
-            <span
-              id="icao-display"
-              className="text-md text-gray-300 mr-2 font-bold"
-            >
+            <span id="icao-display" className="text-md text-gray-300 font-bold">
               {icao}
             </span>
           )}
           {getStatusIcon()}
-          <span
-            id="connection-status"
-            className={`text-xs ${getStatusColor()}`}
-          >
-            {connectionStatus}
-          </span>
         </div>
       </div>
 
