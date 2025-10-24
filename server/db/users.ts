@@ -69,6 +69,58 @@ export async function getUserById(userId: string) {
   return result;
 }
 
+export async function getUserByUsername(username: string) {
+  const cacheKey = `user:username:${username}`;
+  
+  let cached = null;
+  try {
+    cached = await redisConnection.get(cacheKey);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to read cache for username ${username}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to read cache for username ${username}:`, error);
+    }
+  }
+  
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
+  const user = await mainDb
+    .selectFrom("users")
+    .leftJoin("roles", "users.role_id", "roles.id")
+    .selectAll("users")
+    .select("roles.permissions as role_permissions")
+    .where("users.username", "=", username)
+    .executeTakeFirst();
+
+  if (!user) return null;
+
+  const result = {
+    ...user,
+    access_token: user.access_token ? decrypt(JSON.parse(user.access_token)) : null,
+    refresh_token: user.refresh_token ? decrypt(JSON.parse(user.refresh_token)) : null,
+    sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
+    settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
+    ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
+    role_permissions: user.role_permissions || null,
+    statistics: user.statistics || {},
+  };
+
+  try {
+    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30); // cache for 30 minutes
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to set cache for username ${username}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to set cache for username ${username}:`, error);
+    }
+  }
+  
+  return result;
+}
+
 export async function createOrUpdateUser(userData: {
   id: string;
   username: string;

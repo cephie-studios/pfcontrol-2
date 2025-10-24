@@ -3,7 +3,6 @@ import { addFlight, updateFlight, deleteFlight, type AddFlightData, type ClientF
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { updateSession, getAllSessions, getSessionById } from '../db/sessions.js';
 import { getArrivalsIO } from './arrivalsWebsocket.js';
-import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
 import { flightsDb } from '../db/connection.js';
 import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
 import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway } from '../utils/sanitization.js';
@@ -116,12 +115,6 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     io.to(sessionId).emit('flightUpdated', updatedFlight);
 
                     await broadcastToArrivalSessions(updatedFlight);
-
-                    if (updates.status && typeof updates.status === 'string' && updatedFlight.callsign) {
-                        const session = await getSessionById(sessionId);
-                        const controllerAirport = session?.airport_icao || null;
-                        await handleFlightStatusChange(updatedFlight.callsign, updates.status, controllerAirport);
-                    }
                 } else {
                     socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
                 }

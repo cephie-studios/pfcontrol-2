@@ -23,6 +23,7 @@ import {
   FlaskConical,
   Braces,
   Radio,
+  Map,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
@@ -56,6 +57,7 @@ interface ToolbarProps {
   position: Position;
   onPositionChange: (position: Position) => void;
   onContactAcarsClick?: () => void;
+  onChartClick?: () => void;
 }
 
 const getIconComponent = (iconName: string) => {
@@ -109,6 +111,7 @@ export default function Toolbar({
   position,
   onPositionChange,
   onContactAcarsClick,
+  onChartClick,
 }: ToolbarProps) {
   const [runway, setRunway] = useState(activeRunway || '');
   const [chatOpen, setChatOpen] = useState(false);
@@ -551,12 +554,31 @@ export default function Toolbar({
           )}
         </Button>
 
+        <Button
+          className="flex items-center gap-2 px-4 py-2"
+          aria-label="Charts"
+          size="sm"
+          onClick={() => {
+            setChatOpen(false);
+            setAtisOpen(false);
+            onChartClick?.();
+          }}
+          id="chart-button"
+        >
+          <Map className="w-5 h-5" />
+          <span className="hidden sm:inline font-medium">Charts</span>
+        </Button>
+
         {isPFATC && (
           <Button
             className="flex items-center gap-2 px-4 py-2"
             aria-label="Contact"
             size="sm"
-            onClick={onContactAcarsClick}
+            onClick={() => {
+              setChatOpen(false);
+              setAtisOpen(false);
+              onContactAcarsClick?.();
+            }}
             id="contact-button"
           >
             <Radio className="w-5 h-5" />

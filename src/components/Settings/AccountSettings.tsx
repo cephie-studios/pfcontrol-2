@@ -230,7 +230,7 @@ export default function AccountSettings({
                     </div>
                   ) : (
                     <p className="text-zinc-400 text-sm mt-1">
-                      Link your Roblox account to track flights in your logbook
+                      Link your Roblox account
                     </p>
                   )}
                 </div>

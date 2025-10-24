@@ -4,7 +4,6 @@ import { updateFlight, getFlightsBySessionWithTime, type ClientFlight } from '..
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, getAllSessions } from '../db/sessions.js';
 import { getFlightsIO } from './flightsWebsocket.js';
-import { handleFlightStatusChange } from '../services/logbookStatusHandler.js';
 import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
 import { sanitizeString, sanitizeSquawk, sanitizeFlightLevel } from '../utils/sanitization.js';
 import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
@@ -94,14 +93,6 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
                     const updatedFlight = await updateFlight(sourceSessionId, flightId as string, filteredUpdates);
 
                     if (updatedFlight) {
-                        // Handle logbook status changes
-                        if (filteredUpdates.status && typeof filteredUpdates.status === 'string' && updatedFlight.callsign) {
-                            console.log(`[ArrivalWS] Detected status change: ${updatedFlight.callsign} -> ${filteredUpdates.status}`);
-                            // Get session's airport to determine origin vs destination
-                            const controllerAirport = session?.airport_icao || null;
-                            await handleFlightStatusChange(updatedFlight.callsign, filteredUpdates.status, controllerAirport);
-                        }
-
                         const flightsIO = getFlightsIO();
                         if (flightsIO) {
                             flightsIO.to(sourceSessionId).emit('flightUpdated', updatedFlight);

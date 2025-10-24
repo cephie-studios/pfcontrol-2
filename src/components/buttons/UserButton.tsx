@@ -126,16 +126,6 @@ export default function CustomUserButton({
           </button>
 
           <button
-            onClick={() =>
-              handleAction(() => (window.location.href = '/logbook'))
-            }
-            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
-          >
-            <Notebook className="w-4 h-4" />
-            <span>Logbook</span>
-          </button>
-
-          <button
             onClick={() => {
               window.open('/settings', '_blank', 'noopener,noreferrer');
             }}
@@ -246,17 +236,6 @@ export default function CustomUserButton({
             >
               <List className="w-4 h-4" />
               <span className="font-medium">My Sessions</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setIsDropdownOpen(false);
-                window.location.href = '/logbook';
-              }}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
-            >
-              <Notebook className="w-4 h-4" />
-              <span className="font-medium">Logbook</span>
             </button>
 
             <button

@@ -20,13 +20,14 @@ import {
 } from '../sockets/overviewSocket';
 import { getAirportName, parseCallsign } from '../utils/callsignParser';
 import { getChartsForAirport, playNotificationSound } from '../utils/acars';
+import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
 
 import AcarsSidebar from '../components/acars/AcarsSidebar';
 import AcarsTerminal from '../components/acars/AcarsTerminal';
 import AcarsNotePanel from '../components/acars/AcarsNotePanel';
-import AcarsChartDrawer from '../components/acars/AcarsChartDrawer';
+import ChartDrawer from '../components/tools/ChartDrawer';
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -65,6 +66,28 @@ export default function ACARS() {
   const notesInitializedRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const chartHandlers = createChartHandlers(
+    chartZoom,
+    setChartZoom,
+    chartPan,
+    setChartPan,
+    isChartDragging,
+    setIsChartDragging,
+    chartDragStart,
+    setChartDragStart,
+    containerRef as React.RefObject<HTMLDivElement>,
+    imageSize
+  );
+
+  const {
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    handleChartMouseDown,
+    handleChartMouseMove,
+    handleChartMouseUp,
+  } = chartHandlers;
 
   useEffect(() => {
     if (
@@ -147,51 +170,6 @@ NOTES:
       localStorage.setItem(storageKey, newNotes);
       localStorage.setItem(timestampKey, Date.now().toString());
     }
-  };
-
-  const handleChartMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setIsChartDragging(true);
-    setChartDragStart({
-      x: e.clientX - chartPan.x,
-      y: e.clientY - chartPan.y,
-    });
-  };
-
-  const handleChartMouseMove = (e: React.MouseEvent) => {
-    if (
-      !isChartDragging ||
-      !containerRef.current ||
-      imageSize.width === 0 ||
-      imageSize.height === 0
-    )
-      return;
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-    const scaledWidth = imageSize.width * chartZoom;
-    const scaledHeight = imageSize.height * chartZoom;
-    const maxPanX = Math.max(0, (scaledWidth - containerWidth) / 2);
-    const maxPanY = Math.max(0, (scaledHeight - containerHeight) / 2);
-    const newX = e.clientX - chartDragStart.x;
-    const newY = e.clientY - chartDragStart.y;
-    setChartPan({
-      x: Math.max(-maxPanX, Math.min(maxPanX, newX)),
-      y: Math.max(-maxPanY, Math.min(maxPanY, newY)),
-    });
-  };
-
-  const handleChartMouseUp = () => {
-    setIsChartDragging(false);
-  };
-
-  const handleZoomIn = () => setChartZoom((prev) => Math.min(5, prev + 0.25));
-  const handleZoomOut = () =>
-    setChartZoom((prev) => Math.max(0.5, prev - 0.25));
-  const handleResetZoom = () => {
-    setChartZoom(1);
-    setChartPan({ x: 0, y: 0 });
   };
 
   const handleToggleSidebar = () => {
@@ -714,7 +692,7 @@ NOTES:
             />
           )}
           {mobileTab === 'charts' && (
-            <AcarsChartDrawer
+            <ChartDrawer
               isOpen={true}
               onClose={() => {}}
               selectedChart={selectedChart}
@@ -742,7 +720,7 @@ NOTES:
         </div>
       </div>
 
-      <AcarsChartDrawer
+      <ChartDrawer
         isOpen={showChartsDrawer}
         onClose={() => setShowChartsDrawer(false)}
         selectedChart={selectedChart}

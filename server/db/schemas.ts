@@ -118,52 +118,6 @@ export async function createMainTables() {
     .addColumn('flights_count', 'integer', (col) => col.defaultTo(0))
     .addColumn('users_count', 'integer', (col) => col.defaultTo(0))
     .execute();
-
-  // logbook_flights
-  await mainDb.schema
-    .createTable('logbook_flights')
-    .ifNotExists()
-    .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade'))
-    .addColumn('callsign', 'varchar(255)')
-    .addColumn('departure', 'varchar(10)')
-    .addColumn('arrival', 'varchar(10)')
-    .addColumn('aircraft', 'varchar(255)')
-    .addColumn('duration', 'varchar(32)')
-    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
-    .execute();
-
-  // logbook_telemetry
-  await mainDb.schema
-    .createTable('logbook_telemetry')
-    .ifNotExists()
-    .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('flight_id', 'varchar(255)', (col) => col.references('logbook_flights.id').onDelete('cascade'))
-    .addColumn('timestamp', 'timestamp', (col) => col.notNull())
-    .addColumn('position', 'jsonb')
-    .addColumn('altitude', 'integer')
-    .addColumn('speed', 'integer')
-    .execute();
-
-  // logbook_active_flights
-  await mainDb.schema
-    .createTable('logbook_active_flights')
-    .ifNotExists()
-    .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade'))
-    .addColumn('callsign', 'varchar(255)')
-    .addColumn('started_at', 'timestamp', (col) => col.defaultTo('now()'))
-    .execute();
-
-  // logbook_stats_cache
-  await mainDb.schema
-    .createTable('logbook_stats_cache')
-    .ifNotExists()
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade').primaryKey())
-    .addColumn('total_flights', 'integer', (col) => col.defaultTo(0))
-    .addColumn('total_hours', 'varchar(32)', (col) => col.defaultTo('0'))
-    .addColumn('last_updated', 'timestamp', (col) => col.defaultTo('now()'))
-    .execute();
 }
 
 // Helper to create a dynamic flights table for a session

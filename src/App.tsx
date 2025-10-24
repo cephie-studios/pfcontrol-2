@@ -8,9 +8,7 @@ import Submit from './pages/Submit';
 import Flights from './pages/Flights';
 import Settings from './pages/Settings';
 import PFATCFlights from './pages/PFATCFlights';
-import Logbook from './pages/Logbook';
-import FlightDetail from './pages/FlightDetail';
-import PublicFlightView from './pages/PublicFlightView';
+import ACARS from './pages/ACARS';
 import PilotProfile from './pages/PilotProfile';
 
 import Login from './pages/Login';
@@ -19,7 +17,7 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
-import ACARS from './pages/ACARS';
+
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAudit from './pages/admin/AdminAudit';
@@ -48,8 +46,6 @@ export default function App() {
                   <Route path="create" element={<Create />} />
                   <Route path="sessions" element={<Sessions />} />
                   <Route path="view/:sessionId" element={<Flights />} />
-                  <Route path="logbook" element={<Logbook />} />
-                  <Route path="logbook/:flightId" element={<FlightDetail />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
@@ -61,7 +57,6 @@ export default function App() {
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
           <Route path="/submit/:sessionId" element={<Submit />} />
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
-          <Route path="/flight/:shareToken" element={<PublicFlightView />} />
           <Route path="/pilots/:username" element={<PilotProfile />} />
 
           <Route

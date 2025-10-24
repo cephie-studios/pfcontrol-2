@@ -371,7 +371,7 @@ export default function Create() {
               if (fromAirport && fromAirport !== 'n/a') return fromAirport;
               if (fromFreqs && fromFreqs !== 'n/a') return fromFreqs;
             }
-            return '---';
+            return 'n/a';
           })()}
           airportFrequencyType={(() => {
             const airportObj = airports.find((a) => a.icao === selectedAirport);

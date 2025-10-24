@@ -45,7 +45,7 @@ interface ChartDrawerProps {
   arrivalAirport?: string;
 }
 
-export default function AcarsChartDrawer({
+export default function ChartDrawer({
   isOpen,
   onClose,
   selectedChart,
@@ -306,7 +306,8 @@ export default function AcarsChartDrawer({
                         <div className="flex items-center gap-2 mb-2 px-1">
                           <PlaneTakeoff className="w-3.5 h-3.5 text-green-500" />
                           <h3 className="text-xs font-semibold text-green-500 uppercase">
-                            Departure - {departureAirport}
+                            {arrivalAirport ? 'Departure' : 'Airport Charts'} -{' '}
+                            {departureAirport}
                           </h3>
                         </div>
                         <div className="space-y-1.5">
@@ -561,7 +562,8 @@ export default function AcarsChartDrawer({
                       <div className="flex items-center gap-2 mb-2 px-1">
                         <PlaneTakeoff className="w-3.5 h-3.5 text-green-500" />
                         <h3 className="text-xs font-semibold text-green-500 uppercase">
-                          Departure - {departureAirport}
+                          {arrivalAirport ? 'Departure' : 'Airport Charts'} -{' '}
+                          {departureAirport}
                         </h3>
                       </div>
                       <div className="space-y-1.5">

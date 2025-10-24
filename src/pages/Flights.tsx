@@ -12,6 +12,9 @@ import { playSoundWithSettings } from '../utils/playSound';
 import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsFlights';
 import { updateTutorialStatus } from '../utils/fetch/auth';
+import { getChartsForAirport } from '../utils/acars';
+import { createChartHandlers } from '../utils/charts';
+import { useData } from '../hooks/data/useData';
 import type { Flight } from '../types/flight';
 import type { Position } from '../types/session';
 import type {
@@ -31,6 +34,7 @@ import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
+import ChartDrawer from '../components/tools/ChartDrawer';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -77,6 +81,7 @@ export default function Flights() {
   const [startupSoundPlayed, setStartupSoundPlayed] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { airports } = useData();
   const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
     'departures'
   );
@@ -106,7 +111,18 @@ export default function Flights() {
   const [activeAcarsFlightData, setActiveAcarsFlightData] = useState<Flight[]>(
     []
   );
-
+  const [showChartsDrawer, setShowChartsDrawer] = useState(false);
+  const [selectedChart, setSelectedChart] = useState<string | null>(null);
+  const [chartLoadError, setChartLoadError] = useState<boolean>(false);
+  const [chartZoom, setChartZoom] = useState<number>(1);
+  const [chartPan, setChartPan] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const [isChartDragging, setIsChartDragging] = useState(false);
+  const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const userRef = useRef(user);
   const settingsRef = useRef(settings);
   const flightsSocketConnectedRef = useRef(false);
@@ -866,6 +882,28 @@ export default function Flights() {
     }
   };
 
+  const chartHandlers = createChartHandlers(
+    chartZoom,
+    setChartZoom,
+    chartPan,
+    setChartPan,
+    isChartDragging,
+    setIsChartDragging,
+    chartDragStart,
+    setChartDragStart,
+    containerRef as React.RefObject<HTMLDivElement>,
+    imageSize
+  );
+
+  const {
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    handleChartMouseDown,
+    handleChartMouseMove,
+    handleChartMouseUp,
+  } = chartHandlers;
+
   // Early return for validation states
   if (validatingAccess) {
     return (
@@ -919,6 +957,7 @@ export default function Flights() {
             position={position}
             onPositionChange={setPosition}
             onContactAcarsClick={() => setShowContactAcarsModal(true)}
+            onChartClick={() => setShowChartsDrawer((prev) => !prev)}
           />
           <div className="-mt-4">
             {loading ? (
@@ -1089,6 +1128,30 @@ export default function Flights() {
         onSendContact={handleSendContact}
         activeAcarsFlights={activeAcarsFlights}
         airportIcao={session?.airportIcao || ''}
+      />
+      <ChartDrawer
+        isOpen={showChartsDrawer}
+        onClose={() => setShowChartsDrawer(false)}
+        selectedChart={selectedChart}
+        setSelectedChart={setSelectedChart}
+        chartLoadError={chartLoadError}
+        setChartLoadError={setChartLoadError}
+        chartZoom={chartZoom}
+        chartPan={chartPan}
+        isChartDragging={isChartDragging}
+        handleChartMouseDown={handleChartMouseDown}
+        handleChartMouseMove={handleChartMouseMove}
+        handleChartMouseUp={handleChartMouseUp}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleResetZoom={handleResetZoom}
+        getChartsForAirport={getChartsForAirport}
+        containerRef={containerRef as React.RefObject<HTMLDivElement>}
+        setImageSize={setImageSize}
+        airports={airports}
+        settings={settings}
+        departureAirport={session?.airportIcao}
+        arrivalAirport={undefined}
       />
       <Joyride
         steps={steps}

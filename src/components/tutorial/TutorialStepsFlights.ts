@@ -86,6 +86,13 @@ export const steps: {
     disableNext: true,
   },
   {
+    target: '#chart-button',
+    title: 'Charts',
+    content: 'Open the charts drawer to view airport charts for navigation.',
+    placement: 'left' as Placement,
+    disableNext: true,
+  },
+  {
     target: '#contact-button',
     title: 'Contact ACARS',
     content: 'Send messages directly to pilots via ACARS (available in PFATC sessions).',

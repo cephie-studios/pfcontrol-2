@@ -75,6 +75,8 @@ export default function Home() {
     setShowTutorialPrompt(false);
     if (start) {
       window.location.href = '/?tutorial=true';
+    } else {
+      updateTutorialStatus(true);
     }
   };
 
@@ -699,10 +701,11 @@ export default function Home() {
           variant="primary"
           footer={
             <div className="flex justify-start space-x-3">
-              <Button onClick={() => handleTutorialChoice(true)}>
+              <Button size="sm" onClick={() => handleTutorialChoice(true)}>
                 Yes, start tutorial
               </Button>
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => handleTutorialChoice(false)}
               >
