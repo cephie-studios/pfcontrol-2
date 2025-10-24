@@ -1092,7 +1092,7 @@ export default function AdminUsers() {
                       </span>
                     </div>
                     <Link
-                      to={`/pilots/${selectedUser.username}`}
+                      to={`/user/${selectedUser.username}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-blue-400 hover:text-blue-300 text-sm font-medium transition-all"
@@ -1154,36 +1154,6 @@ export default function AdminUsers() {
                               }
                             >
                               {selectedUser.settings.tutorialCompleted
-                                ? 'Yes'
-                                : 'No'}
-                            </span>
-                          </div>
-                          <div>
-                            <strong>Display Controller Stats:</strong>{' '}
-                            <span
-                              className={
-                                selectedUser.settings
-                                  .displayControllerStatsOnProfile
-                                  ? 'text-green-400'
-                                  : 'text-red-400'
-                              }
-                            >
-                              {selectedUser.settings
-                                .displayControllerStatsOnProfile
-                                ? 'Yes'
-                                : 'No'}
-                            </span>
-                          </div>
-                          <div>
-                            <strong>Display Pilot Stats:</strong>{' '}
-                            <span
-                              className={
-                                selectedUser.settings.displayPilotStatsOnProfile
-                                  ? 'text-green-400'
-                                  : 'text-red-400'
-                              }
-                            >
-                              {selectedUser.settings.displayPilotStatsOnProfile
                                 ? 'Yes'
                                 : 'No'}
                             </span>

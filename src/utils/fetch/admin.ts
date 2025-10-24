@@ -198,6 +198,32 @@ export interface AppVersion {
     updated_by: string;
 }
 
+export interface ChatReport {
+    id: number;
+    session_id: string;
+    message_id: number;
+    reporter_user_id: string;
+    reported_user_id: string;
+    message: string;
+    reason: string;
+    timestamp: string;
+    status?: 'pending' | 'resolved';
+    avatar?: string;
+    reported_username?: string;
+    reporter_username?: string;
+    reported_avatar?: string;
+}
+
+export interface ChatReportsResponse {
+    reports: ChatReport[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+}
+
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
         credentials: 'include',
@@ -415,4 +441,36 @@ export async function updateAppVersion(version: string): Promise<AppVersion> {
         method: 'PUT',
         body: JSON.stringify({ version }),
     });
+}
+
+export async function fetchChatReports(page = 1, limit = 50, filterReporter?: string): Promise<ChatReportsResponse> {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+    });
+    if (filterReporter) params.append('reporter', filterReporter);
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/chat-reports?${params}`, {
+        credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to fetch chat reports');
+    return res.json();
+}
+
+export async function updateChatReportStatus(reportId: number, status: 'pending' | 'resolved'): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update report status');
+}
+
+export async function deleteChatReport(reportId: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to delete report');
 }

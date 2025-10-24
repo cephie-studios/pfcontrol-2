@@ -1,8 +1,12 @@
 import { chatsDb } from "./connection.js";
 import { encrypt, decrypt } from "../utils/encryption.js";
 import { validateSessionId } from "../utils/validation.js";
-import { sql } from "kysely";
 import { incrementStat } from "../utils/statisticsCache.js";
+import { mainDb } from './connection.js';
+import { Filter } from 'bad-words';
+import { sql } from "kysely";
+
+const filter = new Filter();
 
 export async function ensureChatTable(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
@@ -41,12 +45,32 @@ export async function addChatMessage(sessionId: string, { userId, username, avat
             username,
             avatar,
             message: JSON.stringify(encryptedMsg),
-            mentions: JSON.stringify(mentions)
+            mentions: mentions.length > 0 ? JSON.stringify(mentions) : undefined
         })
         .returningAll()
         .executeTakeFirst();
 
     incrementStat(userId, 'total_chat_messages_sent');
+
+    if (filter.isProfane(message)) {
+        await mainDb
+            .insertInto('chat_report')
+            .values({
+                id: sql`DEFAULT`,
+                session_id: validSessionId,
+                message_id: result!.id,
+                reporter_user_id: 'automod',
+                reporter_username: 'Automod',
+                reported_user_id: userId,
+                reported_username: username,
+                reported_avatar: avatar || '/assets/app/default/avatar.webp',
+                message,
+                reason: 'Inappropriate language (automod)',
+                avatar: '/assets/images/automod.webp',
+            })
+            .execute();
+    }
+
     return { ...result, message, mentions };
 }
 
@@ -93,4 +117,70 @@ export async function deleteChatMessage(sessionId: string, messageId: number, us
     .where('user_id', '=', userId)
     .executeTakeFirst();
   return (result?.numDeletedRows ?? 0) > 0;
+}
+
+export async function reportChatMessage(sessionId: string, messageId: number, reporterUserId: string, reason: string) {
+    const validSessionId = validateSessionId(sessionId);
+    await ensureChatTable(validSessionId);
+    const tableName = `chat_${validSessionId}`;
+
+    const messageRow = await chatsDb
+        .selectFrom(tableName)
+        .select(['user_id', 'message'])
+        .where('id', '=', messageId)
+        .executeTakeFirst();
+
+    if (!messageRow) {
+        throw new Error('Message not found');
+    }
+
+    let plainMessage = '';
+    try {
+        plainMessage = decrypt(JSON.parse(messageRow.message));
+    } catch {
+        plainMessage = '';
+    }
+
+    let reporterUsername = '';
+    let reporterAvatar = '/assets/images/automod.webp';
+    if (reporterUserId !== 'automod') {
+        const reporter = await mainDb
+            .selectFrom('users')
+            .select(['username', 'avatar'])
+            .where('id', '=', reporterUserId)
+            .executeTakeFirst();
+        reporterUsername = reporter?.username || '';
+        reporterAvatar = reporter?.avatar
+            ? (reporter.avatar.startsWith('http') ? reporter.avatar : `https://cdn.discordapp.com/avatars/${reporterUserId}/${reporter.avatar}.png`) 
+            : '/assets/app/default/avatar.webp';
+    }
+
+    let reportedUsername = '';
+    let reportedAvatar = '/assets/app/default/avatar.webp';
+    const reportedUser = await mainDb
+        .selectFrom('users')
+        .select(['username', 'avatar'])
+        .where('id', '=', messageRow.user_id)
+        .executeTakeFirst();
+    reportedUsername = reportedUser?.username || '';
+    reportedAvatar = reportedUser?.avatar
+        ? (reportedUser.avatar.startsWith('http') ? reportedUser.avatar : `https://cdn.discordapp.com/avatars/${messageRow.user_id}/${reportedUser.avatar}.png`)
+        : '/assets/app/default/avatar.webp';
+
+    await mainDb
+        .insertInto('chat_report')
+        .values({
+            id: sql`DEFAULT`,
+            session_id: validSessionId,
+            message_id: messageId,
+            reporter_user_id: reporterUserId,
+            reporter_username: reporterUsername,
+            reported_user_id: messageRow.user_id,
+            reported_username: reportedUsername,
+            reported_avatar: reportedAvatar,
+            message: plainMessage,
+            reason,
+            avatar: reporterAvatar,
+        })
+        .execute();
 }

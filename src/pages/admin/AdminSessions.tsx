@@ -85,26 +85,26 @@ const getHighestRole = (roles?: Array<{ id: number; name: string; color: string;
 };
 
 export default function AdminSessions() {
-	const [searchParams] = useSearchParams();
-	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-	const [sessions, setSessions] = useState<AdminSession[]>([]);
-	const [filteredSessions, setFilteredSessions] = useState<AdminSession[]>(
-		[]
-	);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [viewMode, setViewMode] = useState<ViewMode>('grid');
-	const [search, setSearch] = useState(searchParams.get('userId') || '');
-	const [sortBy, setSortBy] = useState<SortBy>('date');
-	const [selectedSession, setSelectedSession] = useState<AdminSession | null>(
-		null
-	);
-	const [showModal, setShowModal] = useState(false);
-	const [toast, setToast] = useState<{
-		message: string;
-		type: 'success' | 'error' | 'info';
-	} | null>(null);
+    const [searchParams] = useSearchParams();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [sessions, setSessions] = useState<AdminSession[]>([]);
+    const [filteredSessions, setFilteredSessions] = useState<AdminSession[]>(
+        []
+    );
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [search, setSearch] = useState(searchParams.get('search') || '');
+    const [sortBy, setSortBy] = useState<SortBy>('date');
+    const [selectedSession, setSelectedSession] = useState<AdminSession | null>(
+        null
+    );
+    const [showModal, setShowModal] = useState(false);
+    const [toast, setToast] = useState<{
+        message: string;
+        type: 'success' | 'error' | 'info';
+    } | null>(null);
 
 	useEffect(() => {
 		fetchSessions();

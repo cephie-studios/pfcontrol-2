@@ -34,7 +34,15 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
     setError(null);
 
     try {
-      const data = await fetchMetar(icao);
+      let data: MetarData | null = null;
+      if (icao.toLowerCase() === 'mdcr') {
+        data = await fetchMetar('MDBH');
+      } else if (icao.toLowerCase() === 'mtca') {
+        data = await fetchMetar('MTPP');
+      } else {
+        data = await fetchMetar(icao);
+      }
+
       if (data) {
         setMetarData(data);
       } else {
@@ -166,6 +174,9 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
     }
   };
 
+  const isSpecial =
+    icao && (icao.toLowerCase() === 'mdcr' || icao.toLowerCase() === 'mtca');
+
   if (forceHide) {
     return null;
   }
@@ -264,8 +275,28 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
           </button>
         </div>
         <div className="flex items-center gap-2 mt-1 text-gray-400 text-sm">
-          <Clock className="h-4 w-4" />
-          <span>{formatReportTime(metarData.reportTime)}</span>
+          <Clock className={`h-4 w-4 ${isSpecial ? 'text-orange-400' : ''}`} />
+          <div className="relative group">
+            <span
+              className={isSpecial ? 'text-orange-400 hover:cursor-help' : ''}
+              aria-describedby={
+                isSpecial ? `${icao}-special-tooltip-small` : undefined
+              }
+            >
+              {formatReportTime(metarData.reportTime)}
+            </span>
+            {isSpecial && (
+              <div
+                id={`${icao}-special-tooltip-small`}
+                role="tooltip"
+                className="absolute top-8 left-0 z-10 w-max px-2 py-1 text-xs bg-yellow-800 text-white rounded shadow pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-0 whitespace-nowrap"
+              >
+                There is no data for {icao}. This data is from{' '}
+                {icao.toLowerCase() === 'mdcr' ? 'MDBH' : 'MTPP'} which is{' '}
+                {icao.toLowerCase() === 'mdcr' ? '65km' : '166km'} away.
+              </div>
+            )}
+          </div>
           <button
             onClick={handleManualRefresh}
             className="text-blue-400 hover:text-blue-300 transition-colors ml-2"
@@ -336,7 +367,29 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
 
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700">
         <div className="flex items-center gap-4 text-xs text-gray-400">
-          <span>{metarData.name}</span>
+          <div className="relative group">
+            <span
+              className={isSpecial ? 'text-orange-400 hover:cursor-help' : ''}
+              aria-describedby={
+                isSpecial ? `${icao}-special-tooltip` : undefined
+              }
+            >
+              {metarData.name}
+            </span>
+
+            {isSpecial && (
+              <div
+                id={`${icao}-special-tooltip`}
+                role="tooltip"
+                className="absolute top-8 left-0 z-10 w-max px-2 py-1 text-xs bg-yellow-800 text-white rounded shadow pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-0 whitespace-nowrap"
+              >
+                There is no data for {icao}. This data is from{' '}
+                {icao.toLowerCase() === 'mdcr' ? 'MDBH' : 'MTPP'} which is{' '}
+                {icao.toLowerCase() === 'mdcr' ? '65km' : '166km'} away.
+              </div>
+            )}
+          </div>
+
           <span>Updated: {formatReportTime(metarData.reportTime)}</span>
         </div>
 

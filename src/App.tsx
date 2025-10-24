@@ -26,6 +26,7 @@ import AdminSessions from './pages/admin/AdminSessions';
 import AdminTesters from './pages/admin/AdminTesters';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminRoles from './pages/admin/AdminRoles';
+import AdminChatReports from './pages/admin/AdminChatReports';
 
 export default function App() {
   const { user } = useAuth();
@@ -57,7 +58,7 @@ export default function App() {
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
           <Route path="/submit/:sessionId" element={<Submit />} />
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
-          <Route path="/pilots/:username" element={<PilotProfile />} />
+          <Route path="/user/:username" element={<PilotProfile />} />
 
           <Route
             path="/admin/*"
@@ -125,6 +126,14 @@ export default function App() {
                     element={
                       <ProtectedRoute requirePermission="roles">
                         <AdminRoles />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="chat-reports"
+                    element={
+                      <ProtectedRoute requirePermission="chat_reports">
+                        <AdminChatReports />
                       </ProtectedRoute>
                     }
                   />

@@ -114,7 +114,7 @@ export default function PilotProfile() {
   }, [isCurrentUser]);
 
   const handleShareProfile = () => {
-    const profileUrl = `${window.location.origin}/pilots/${username}`;
+    const profileUrl = `${window.location.origin}/user/${username}`;
     navigator.clipboard.writeText(profileUrl);
     setShareClicked(true);
     setTimeout(() => setShareClicked(false), 2000);
@@ -600,14 +600,6 @@ export default function PilotProfile() {
                           Chat Messages Sent
                         </p>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-300 font-semibold">
-                        Rank
-                      </p>
-                      <p className="text-lg font-bold text-pink-300">
-                        #{ranks.total_chat_messages_sent || 'N/A'}
-                      </p>
                     </div>
                   </div>
 

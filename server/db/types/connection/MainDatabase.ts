@@ -10,6 +10,7 @@ import { UserNotificationsTable } from "./main/UserNotificationsTable";
 import { TestersTable } from "./main/TestersTable";
 import { TesterSettingsTable } from "./main/TesterSettingsTable";
 import { DailyStatisticsTable } from "./main/DailyStatisticsTable";
+import { ChatReportsTable } from "./main/ChatReportsTable";
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -24,4 +25,5 @@ export interface MainDatabase {
   testers: TestersTable;
   tester_settings: TesterSettingsTable;
   daily_statistics: DailyStatisticsTable;
+  chat_report: ChatReportsTable;
 }

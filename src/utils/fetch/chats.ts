@@ -27,3 +27,14 @@ export async function deleteChatMessage(sessionId: string, messageId: number) {
     if (!res.ok) throw new Error('Failed to delete message');
     return res.json();
 }
+
+export async function reportChatMessage(sessionId: string, messageId: number, reason: string) {
+    const res = await fetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+    });
+    if (!res.ok) throw new Error('Failed to report message');
+    return res.json();
+}

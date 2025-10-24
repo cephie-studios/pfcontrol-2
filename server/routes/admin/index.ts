@@ -12,6 +12,7 @@ import bansRouter from './ban.js';
 import testersRouter from './testers.js';
 import notificationRouter from './notifications.js';
 import rolesRouter from './roles.js';
+import chatReportsRouter from './chat-reports.js';
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use('/bans', bansRouter);
 router.use('/testers', testersRouter);
 router.use('/notifications', notificationRouter);
 router.use('/roles', rolesRouter);
+router.use('/chat-reports', chatReportsRouter);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get('/statistics', requirePermission('admin'), async (req, res) => {

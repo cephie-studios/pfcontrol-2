@@ -1,5 +1,5 @@
 import express from 'express';
-import { addChatMessage, getChatMessages, deleteChatMessage } from '../db/chats.js';
+import { addChatMessage, getChatMessages, deleteChatMessage, reportChatMessage } from '../db/chats.js';
 import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 import requireAuth from '../middleware/auth.js';
 
@@ -61,6 +61,29 @@ router.delete('/:sessionId/:messageId', requireAuth, async (req, res) => {
         }
     } catch {
         res.status(500).json({ error: 'Failed to delete message' });
+    }
+});
+
+// POST: /api/chats/:sessionId/:messageId/report
+router.post('/:sessionId/:messageId/report', requireAuth, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        if (typeof reason !== 'string' || reason.length > 500) {
+            return res.status(400).json({ error: 'Invalid or too long reason' });
+        }
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const messageId = Number(req.params.messageId);
+        if (isNaN(messageId)) {
+            return res.status(400).json({ error: 'Invalid message ID' });
+        }
+        await reportChatMessage(req.params.sessionId, messageId, user.userId, reason);
+        res.status(201).json({ success: true });
+    } catch (error) {
+        console.error('Report error:', error);
+        res.status(500).json({ error: 'Failed to report message' });
     }
 });
 

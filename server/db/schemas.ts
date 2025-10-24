@@ -118,6 +118,25 @@ export async function createMainTables() {
     .addColumn('flights_count', 'integer', (col) => col.defaultTo(0))
     .addColumn('users_count', 'integer', (col) => col.defaultTo(0))
     .execute();
+
+  // chat_report
+  await mainDb.schema
+    .createTable('chat_report')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('message_id', 'integer', (col) => col.notNull())
+    .addColumn('reporter_user_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('reporter_username', 'varchar(255)')
+    .addColumn('reported_user_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('reported_username', 'varchar(255)')
+    .addColumn('reported_avatar', 'varchar(255)')
+    .addColumn('message', 'text', (col) => col.notNull())
+    .addColumn('reason', 'text', (col) => col.notNull())
+    .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('status', 'varchar(50)', (col) => col.defaultTo('pending'))
+    .addColumn('avatar', 'varchar(255)')
+    .execute();
 }
 
 // Helper to create a dynamic flights table for a session

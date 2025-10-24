@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchChatMessages } from '../../utils/fetch/chats';
+import { fetchChatMessages, reportChatMessage } from '../../utils/fetch/chats';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { createChatSocket } from '../../sockets/chatSocket';
+import { Send, Trash, X, Flag } from 'lucide-react';
 import type { ChatMessage, ChatMention } from '../../types/chats';
 import type { SessionUser } from '../../types/session';
-import { Send, Trash, X } from 'lucide-react';
+import type { ToastType } from '../common/Toast';
 import Button from '../common/Button';
 import Loader from '../common/Loader';
+import Modal from '../common/Modal';
+import Toast from '../common/Toast';
 
 interface ChatSidebarProps {
   sessionId: string;
@@ -36,6 +39,15 @@ export default function ChatSidebar({
     []
   );
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportingMessageId, setReportingMessageId] = useState<number | null>(
+    null
+  );
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+  } | null>(null);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pendingDeleteRef = useRef<ChatMessage | null>(null);
@@ -182,6 +194,29 @@ export default function ChatSidebar({
     socketRef.current.deleteMessage(msgId, user.userId);
   }
 
+  async function handleReport(msgId: number) {
+    setReportingMessageId(msgId);
+    setShowReportModal(true);
+  }
+
+  async function handleSubmitReport() {
+    if (!reportingMessageId || !reportReason.trim()) return;
+
+    try {
+      await reportChatMessage(
+        sessionId,
+        reportingMessageId,
+        reportReason.trim()
+      );
+      setToast({ message: 'Message reported successfully.', type: 'success' }); // Update to use state
+      setShowReportModal(false);
+      setReportReason('');
+      setReportingMessageId(null);
+    } catch {
+      setToast({ message: 'Failed to report message.', type: 'error' }); // Update to use state
+    }
+  }
+
   return (
     <div
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
@@ -295,14 +330,27 @@ export default function ChatSidebar({
                       }}
                     />
 
-                    {isOwn && hoveredMessage === msg.id && (
-                      <button
-                        className="absolute -top-2 -right-2 bg-zinc-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
-                        onClick={() => handleDelete(msg.id)}
-                        title="Delete message"
-                      >
-                        <Trash className="h-3 w-3" />
-                      </button>
+                    {hoveredMessage === msg.id && (
+                      <div className="absolute -top-2 -right-2 flex space-x-1">
+                        {!isOwn && (
+                          <button
+                            className="bg-zinc-700 hover:bg-yellow-600 text-gray-300 hover:text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+                            onClick={() => handleReport(msg.id)}
+                            title="Report message"
+                          >
+                            <Flag className="h-3 w-3" />
+                          </button>
+                        )}
+                        {isOwn && (
+                          <button
+                            className="bg-zinc-700 hover:bg-red-600 text-gray-300 hover:text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+                            onClick={() => handleDelete(msg.id)}
+                            title="Delete message"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -405,6 +453,38 @@ export default function ChatSidebar({
           </Button>
         </div>
       </div>
+
+      {/* Report Modal */}
+      <Modal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="Report Message"
+        variant="danger"
+        icon={<Flag />}
+        footer={
+          <Button onClick={handleSubmitReport} variant="danger">
+            Report
+          </Button>
+        }
+      >
+        <textarea
+          value={reportReason}
+          onChange={(e) => setReportReason(e.target.value)}
+          placeholder="Enter reason for reporting..."
+          className="w-full p-2 bg-zinc-800 text-white rounded border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-800"
+          maxLength={200}
+          rows={4}
+        />
+      </Modal>
+
+      {/* Add this at the end of the return statement, before the closing </div> */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

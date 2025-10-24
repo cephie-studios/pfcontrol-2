@@ -376,7 +376,7 @@ export default function Home() {
                             alt={user.username}
                             className="w-28 h-28 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-300 transition-colors"
                             onClick={() =>
-                              (window.location.href = `/pilots/${user.username}`)
+                              (window.location.href = `/user/${user.username}`)
                             }
                           />
                           {idx <= 2 && (

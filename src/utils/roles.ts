@@ -41,6 +41,11 @@ export const AVAILABLE_PERMISSIONS = [
         label: 'Role Management',
         description: 'Create and manage roles (admin only)',
     },
+    {
+        key: 'chat_reports',
+        label: 'Chat Reports',
+        description: 'View and manage chat reports',
+    },
 ];
 
 export const AVAILABLE_ICONS = [

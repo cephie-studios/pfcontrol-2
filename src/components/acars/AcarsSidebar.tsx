@@ -41,7 +41,7 @@ export default function AcarsSidebar({
                         <img
                           onClick={() =>
                             window.open(
-                              `/pilots/${controller.username}`,
+                              `/user/${controller.username}`,
                               '_blank'
                             )
                           }
