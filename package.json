@@ -16,7 +16,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@socket.io/redis-adapter": "^8.3.0",
     "@tailwindcss/vite": "^4.1.13",
     "@uiw/react-md-editor": "^4.0.8",
     "axios": "^1.12.2",
