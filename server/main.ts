@@ -7,6 +7,8 @@ import apiRoutes from './routes/index.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import chalk from 'chalk';
+import Redis from 'ioredis';
+import { createAdapter } from '@socket.io/redis-adapter';
 
 import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket.js';
 import { setupChatWebsocket } from './websockets/chatWebsocket.js';
@@ -80,11 +82,25 @@ app.get('/{*any}', (req, res) => {
 });
 
 const server = http.createServer(app);
+
+// Redis pub/sub adapter to join sessions locally that are connected to different server instances e.g. production
+const pubClient = new Redis(process.env.REDIS_URL!);
+const subClient = pubClient.duplicate();
+
 const sessionUsersIO = setupSessionUsersWebsocket(server);
-setupChatWebsocket(server, sessionUsersIO);
-setupFlightsWebsocket(server);
-setupOverviewWebsocket(server, sessionUsersIO);
-setupArrivalsWebsocket(server);
+sessionUsersIO.adapter(createAdapter(pubClient, subClient));
+
+const chatIO = setupChatWebsocket(server, sessionUsersIO);
+chatIO.adapter(createAdapter(pubClient, subClient));
+
+const flightsIO = setupFlightsWebsocket(server);
+flightsIO.adapter(createAdapter(pubClient, subClient));
+
+const overviewIO = setupOverviewWebsocket(server, sessionUsersIO);
+overviewIO.adapter(createAdapter(pubClient, subClient));
+
+const arrivalsIO = setupArrivalsWebsocket(server);
+arrivalsIO.adapter(createAdapter(pubClient, subClient));
 
 startStatsFlushing();
 updateLeaderboard();

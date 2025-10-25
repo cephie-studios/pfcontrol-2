@@ -4,9 +4,10 @@ import { getFlightsBySessionWithTime } from '../db/flights.js';
 import { decrypt } from '../utils/encryption.js';
 import { getUserById } from '../db/users.js';
 import type { Server as HTTPServer } from 'http';
+import type { SessionUsersServer } from './sessionUsersWebsocket.js';
 
 let io: SocketServer;
-const activeOverviewClients = new Set<string>();
+const activeOverviewClients = new Set<string>()
 
 interface SessionUser {
     id?: string;
@@ -21,7 +22,7 @@ interface SessionUser {
     }>;
 }
 
-export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: { activeUsers: Map<string, SessionUser[]> }) {
+export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: SessionUsersServer) {
     io = new SocketServer(httpServer, {
         path: '/sockets/overview',
         cors: {
@@ -37,20 +38,17 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: {
     });
 
     io.on('connection', async (socket) => {
-        console.log('[Overview Socket] Client connected:', socket.id);
         activeOverviewClients.add(socket.id);
 
         try {
             const overviewData = await getOverviewData(sessionUsersIO);
             socket.emit('overviewData', overviewData);
-            console.log('[Overview Socket] Sent initial data to:', socket.id);
         } catch (error) {
             console.error('[Overview Socket] Error sending initial data:', error);
             socket.emit('overviewError', { error: 'Failed to fetch overview data' });
         }
 
-        socket.on('disconnect', (reason) => {
-            console.log('[Overview Socket] Client disconnected:', socket.id, 'Reason:', reason);
+        socket.on('disconnect', () => {
             activeOverviewClients.delete(socket.id);
         });
 
@@ -73,15 +71,14 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: {
     return io;
 }
 
-export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string, SessionUser[]> }) {
+export async function getOverviewData(sessionUsersIO: SessionUsersServer) { // Update parameter type
     try {
         const allSessions = await getAllSessions();
         const pfatcSessions = allSessions.filter(session => session.is_pfatc);
         const activeSessions = [];
-        const activeUsers = sessionUsersIO?.activeUsers || new Map();
 
         for (const session of pfatcSessions) {
-            const sessionUsers = activeUsers.get(session.session_id);
+            const sessionUsers = await sessionUsersIO.getActiveUsersForSession(session.session_id); // Use directly
             const isActive = sessionUsers && sessionUsers.length > 0;
 
             if (isActive) {
@@ -154,7 +151,7 @@ export async function getOverviewData(sessionUsersIO: { activeUsers: Map<string,
                                 if (userData?.avatar) {
                                     avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
                                 }
-                            } catch (err) {
+                            } catch {
                                 // Ignore avatar fetch errors in fallback
                             }
                         }

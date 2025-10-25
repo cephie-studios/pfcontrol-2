@@ -5,7 +5,7 @@ import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { getAdminIds, isAdmin } from '../middleware/admin.js';
-import { getActiveUsers } from "../websockets/sessionUsersWebsocket.js";
+import { getActiveUsersForSession } from "../websockets/sessionUsersWebsocket.js"; // Update import
 import { getUserRoles } from "./roles.js";
 
 type RawUser = {
@@ -104,8 +104,6 @@ async function backfillStatistics() {
         })
       )
       .execute();
-
-    console.log('Statistics backfilled successfully');
   } catch (error) {
     console.error('Error backfilling statistics:', error);
   }
@@ -418,8 +416,6 @@ export async function getAdminSessions() {
       .orderBy('s.created_at', 'desc')
       .execute();
 
-    const activeUsers = getActiveUsers();
-
     const sessionsWithFlights = await Promise.all(
       sessions.map(async (session) => {
         let flight_count = 0;
@@ -433,7 +429,7 @@ export async function getAdminSessions() {
         } catch {
           // Table may not exist, keep flight_count as 0
         }
-        const activeSessionUsers = activeUsers.get(session.session_id) || [];
+        const activeSessionUsers = await getActiveUsersForSession(session.session_id);
         return {
           ...session,
           flight_count,

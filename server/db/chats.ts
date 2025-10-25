@@ -45,14 +45,16 @@ export async function addChatMessage(sessionId: string, { userId, username, avat
             username,
             avatar,
             message: JSON.stringify(encryptedMsg),
-            mentions: mentions.length > 0 ? JSON.stringify(mentions) : undefined
+            mentions: mentions.length > 0 ? sql`ARRAY[${mentions.map(m => sql`${m}`).join(', ')}]` : sql`'{}'::text[]`,
         })
         .returningAll()
         .executeTakeFirst();
 
     incrementStat(userId, 'total_chat_messages_sent');
 
+    let automodded = false;
     if (filter.isProfane(message)) {
+        automodded = true;
         await mainDb
             .insertInto('chat_report')
             .values({
@@ -71,7 +73,7 @@ export async function addChatMessage(sessionId: string, { userId, username, avat
             .execute();
     }
 
-    return { ...result, message, mentions };
+    return { ...result, message, mentions, automodded };
 }
 
 export async function getChatMessages(sessionId: string, limit = 50) {
@@ -81,7 +83,7 @@ export async function getChatMessages(sessionId: string, limit = 50) {
   const rows = await chatsDb
     .selectFrom(tableName)
     .selectAll()
-    .orderBy('sent_at', 'desc')
+    .orderBy('sent_at', 'asc')
     .limit(limit)
     .execute();
 

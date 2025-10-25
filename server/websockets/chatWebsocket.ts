@@ -98,6 +98,10 @@ export function setupChatWebsocket(httpServer: Server, sessionUsersWebsocketIO: 
 
                 io.to(sessionId).emit('chatMessage', formattedMsg);
 
+                if (chatMsg.automodded) {
+                    socket.emit('messageAutomodded', { messageId: chatMsg.id });
+                }
+
                 if (sessionUsersIO?.activeUsers && mentions.length > 0) {
                     const users = sessionUsersIO.activeUsers.get(sessionId);
                     if (users) {

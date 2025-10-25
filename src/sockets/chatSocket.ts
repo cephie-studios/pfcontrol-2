@@ -11,7 +11,8 @@ export function createChatSocket(
     onMessageDeleted?: (data: { messageId: number }) => void,
     onDeleteError?: (data: { messageId: number; error: string }) => void,
     onActiveChatUsers?: (users: string[]) => void,
-    onMention?: (mention: ChatMention) => void
+    onMention?: (mention: ChatMention) => void,
+    onMessageAutomodded?: (data: { messageId: number }) => void
 ) {
     const socket = io(SOCKET_URL, {
         withCredentials: true,
@@ -41,7 +42,11 @@ export function createChatSocket(
     }
 
     if (onMention) {
-        socket.on('chatMention', onMention);
+        socket.on('mention', onMention);
+    }
+
+    if (onMessageAutomodded) {
+        socket.on('messageAutomodded', onMessageAutomodded);
     }
 
     return {

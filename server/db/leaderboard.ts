@@ -72,8 +72,6 @@ export async function updateLeaderboard() {
         await redisConnection.zadd(zsetKey, ...zaddArgs);
       }
     }
-
-    console.log('[Leaderboard] Updated successfully');
   } catch (error) {
     console.error('[Leaderboard] Update failed:', error);
   }

@@ -48,6 +48,9 @@ export default function ChatSidebar({
     message: string;
     type: ToastType;
   } | null>(null);
+  const [automoddedMessages, setAutomoddedMessages] = useState<Set<number>>(
+    new Set()
+  );
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pendingDeleteRef = useRef<ChatMessage | null>(null);
@@ -99,6 +102,9 @@ export default function ChatSidebar({
         if (mention.mentionedUserId === user.userId && onMentionReceived) {
           onMentionReceived(mention);
         }
+      },
+      (data: { messageId: number }) => {
+        setAutomoddedMessages((prev) => new Set(prev).add(data.messageId));
       }
     );
 
@@ -270,7 +276,14 @@ export default function ChatSidebar({
             No messages yet.
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, index) => {
+            const prevMsg = index > 0 ? messages[index - 1] : null;
+            const showHeader =
+              !prevMsg ||
+              prevMsg.userId !== msg.userId ||
+              new Date(msg.sent_at).getTime() -
+                new Date(prevMsg.sent_at).getTime() >=
+                60000;
             const isOwn = String(msg.userId) === String(user?.userId);
             const isMentioned =
               msg.mentions &&
@@ -286,24 +299,27 @@ export default function ChatSidebar({
                 onMouseEnter={() => setHoveredMessage(msg.id)}
                 onMouseLeave={() => setHoveredMessage(null)}
               >
-                {!isOwn && (
+                {showHeader && !isOwn && (
                   <img
                     src={msg.avatar || '/assets/app/default/avatar.webp'}
                     alt={msg.username}
                     className="w-9 h-9 rounded-full border-2 border-blue-700 shadow"
                   />
                 )}
+                {!showHeader && !isOwn && <div className="w-9 h-9" />}
                 <div className={`${isOwn ? 'text-right' : ''} relative group`}>
-                  <div className="text-xs text-gray-400 mb-1">
-                    <span className="font-semibold text-blue-300">
-                      {msg.username}
-                    </span>
-                    {' • '}
-                    {new Date(msg.sent_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
+                  {showHeader && (
+                    <div className="text-xs text-gray-400 mb-1">
+                      <span className="font-semibold text-blue-300">
+                        {msg.username}
+                      </span>
+                      {' • '}
+                      {new Date(msg.sent_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  )}
                   <div
                     className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow relative ${
                       isOwn
@@ -318,8 +334,8 @@ export default function ChatSidebar({
                           }
                         : {
                             borderTopLeftRadius: '1rem',
-                            borderBottomRightRadius: '1rem',
                             borderBottomLeftRadius: '0rem',
+                            borderBottomRightRadius: '1rem',
                           }
                     }
                   >
@@ -353,8 +369,17 @@ export default function ChatSidebar({
                       </div>
                     )}
                   </div>
+                  {showHeader && isOwn && automoddedMessages.has(msg.id) && (
+                    <img
+                      src="/assets/images/automod.webp"
+                      alt="Flagged by automod"
+                      title="Your message was flagged by automod for inappropriate language."
+                      className="w-4 h-4 ml-2 hover:cursor-help"
+                    />
+                  )}
                 </div>
-                {isOwn && (
+                {!showHeader && isOwn && <div className="w-9 h-9" />}
+                {showHeader && isOwn && (
                   <img
                     src={msg.avatar || '/assets/app/default/avatar.webp'}
                     alt={msg.username}

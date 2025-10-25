@@ -8,8 +8,48 @@ import type { Server as HttpServer } from 'http';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { getOverviewIO } from './overviewWebsocket.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
+import { redisConnection } from '../db/connection.js';
 
-const activeUsers = new Map();
+interface SessionUser {
+  id: string;
+  username: string;
+  avatar: string | null;
+  joinedAt: number;
+  position: string;
+  roles: Array<{ id: number; name: string; color: string; icon: string; priority: number }>;
+}
+
+export const getActiveUsersForSession = async (sessionId: string): Promise<SessionUser[]> => {
+  const users = await redisConnection.hgetall(`activeUsers:${sessionId}`);
+  return Object.values(users).map((userData) => JSON.parse(userData as string) as SessionUser);
+};
+
+const addUserToSession = async (sessionId: string, userId: string, userData: SessionUser): Promise<void> => {
+  await redisConnection.hset(`activeUsers:${sessionId}`, userId, JSON.stringify(userData));
+};
+
+const updateUserInSession = async (sessionId: string, userId: string, updates: Partial<SessionUser>): Promise<void> => {
+  const users = await getActiveUsersForSession(sessionId);
+  const userIndex = users.findIndex((u) => u.id === userId);
+  if (userIndex !== -1) {
+    users[userIndex] = { ...users[userIndex], ...updates };
+    await addUserToSession(sessionId, userId, users[userIndex]);
+  }
+};
+
+const removeUserFromSession = async (sessionId: string, userId: string): Promise<void> => {
+  await redisConnection.hdel(`activeUsers:${sessionId}`, userId);
+  const remainingUsers = await redisConnection.hlen(`activeUsers:${sessionId}`);
+  if (remainingUsers === 0) {
+    await redisConnection.del(`activeUsers:${sessionId}`);
+  }
+};
+
+export interface SessionUsersServer extends Server {
+  sendMentionToUser: (userId: string, mention: Mention) => void;
+  getActiveUsersForSession: (sessionId: string) => Promise<Array<{ id: string; username: string; avatar: string | null; joinedAt: number; position: string; roles: Array<{ id: number; name: string; color: string; icon: string; priority: number }> }>>;
+}
+
 const sessionATISConfigs = new Map();
 const atisTimers = new Map();
 const fieldEditingStates = new Map();
@@ -26,11 +66,6 @@ interface ATISConfig {
     selectedApproaches: string[];
     remarks?: string;
     userId?: string;
-}
-
-interface SessionUsersServer extends Server {
-    sendMentionToUser: (userId: string, mention: Mention) => void;
-    activeUsers: typeof activeUsers;
 }
 
 async function generateAutoATIS(sessionId: string, config: ATISConfig, io: SocketServer): Promise<void> {
@@ -259,170 +294,147 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
                 return;
             }
 
-        if (!activeUsers.has(sessionId)) {
-            activeUsers.set(sessionId, []);
-        }
-        const users: Array<{ id: string }> = activeUsers.get(sessionId);
+            let users = await getActiveUsersForSession(sessionId);
 
-        // Fetch user roles
-        let userRoles: Array<{ id: number; name: string; color: string; icon: string; priority: number }> = [];
-        try {
-            userRoles = (await getUserRoles(user.userId)).map(role => ({
-                id: role.id,
-                name: role.name,
-                color: role.color ?? '#000000',
-                icon: role.icon ?? '',
-                priority: role.priority ?? 0
-            }));
-        } catch (error) {
-            console.error('Error fetching user roles:', error);
-        }
-
-        // Add Developer pseudo-role for admins (highest priority)
-        if (isAdmin(user.userId)) {
-            userRoles.unshift({
-                id: -1,
-                name: 'Developer',
-                color: '#3B82F6',
-                icon: 'Braces',
-                priority: 999999
-            });
-        }
-
-        const sessionUser = {
-            id: user.userId,
-            username: user.username,
-            avatar: user.avatar || null,
-            joinedAt: Date.now(),
-            position: socket.handshake.query.position || 'POSITION',
-            roles: userRoles
-        };
-        const existingUserIndex = users.findIndex((u: { id: string }) => u.id === sessionUser.id);
-        if (existingUserIndex === -1) {
-            users.push(sessionUser);
-        } else {
-            users[existingUserIndex] = sessionUser;
-        }
-
-        socket.join(sessionId);
-        socket.join(`user-${user.userId}`);
-
-        io.to(sessionId).emit('sessionUsersUpdate', users);
-
-        try {
-            const session = await getSessionById(sessionId);
-            if (session?.atis) {
-                const encryptedAtis = JSON.parse(session.atis);
-                const decryptedAtis = decrypt(encryptedAtis);
-                socket.emit('atisUpdate', decryptedAtis);
-            }
-        } catch (error) {
-            console.error('Error sending ATIS data:', error);
-        }
-
-        socket.on('atisGenerated', async (atisData) => {
+            let userRoles: Array<{ id: number; name: string; color: string; icon: string; priority: number }> = [];
             try {
-                const encryptedAtis = encrypt(atisData.atis);
-                await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
-
-                sessionATISConfigs.set(sessionId, {
-                    icao: atisData.icao,
-                    landingRunways: atisData.landingRunways,
-                    departingRunways: atisData.departingRunways,
-                    selectedApproaches: atisData.selectedApproaches,
-                    remarks: atisData.remarks,
-                    userId: user.userId
-                });
-
-                scheduleATISGeneration(sessionId, sessionATISConfigs.get(sessionId));
-
-                io.to(sessionId).emit('atisUpdate', {
-                    atis: atisData.atis,
-                    updatedBy: user.username,
-                    isAutoGenerated: false
-                });
+                userRoles = (await getUserRoles(user.userId)).map(role => ({
+                    id: role.id,
+                    name: role.name,
+                    color: role.color ?? '#000000',
+                    icon: role.icon ?? '',
+                    priority: role.priority ?? 0
+                }));
             } catch (error) {
-                console.error('Error handling ATIS update:', error);
+                console.error('Error fetching user roles:', error);
             }
-        });
 
-        socket.on('fieldEditingStart', ({ flightId, fieldName }) => {
-            addFieldEditingState(sessionId, user, flightId, fieldName);
-        });
+            if (isAdmin(user.userId)) {
+                userRoles.unshift({
+                    id: -1,
+                    name: 'Developer',
+                    color: '#3B82F6',
+                    icon: 'Braces',
+                    priority: 999999
+                });
+            }
 
-        socket.on('fieldEditingStop', ({ flightId, fieldName }) => {
-            removeFieldEditingState(sessionId, user.userId, flightId, fieldName);
-        });
+            const rawPosition = Array.isArray(socket.handshake.query.position)
+                ? socket.handshake.query.position[0]
+                : socket.handshake.query.position;
+            const position = typeof rawPosition === 'string' && rawPosition.length > 0 ? rawPosition : 'POSITION';
 
-        socket.on('positionChange', ({ position }) => {
-            const users = activeUsers.get(sessionId);
-            if (users) {
-                const userIndex = users.findIndex((u: { id: string }) => u.id === user.userId);
-                if (userIndex !== -1) {
-                    users[userIndex].position = position;
-                    io.to(sessionId).emit('sessionUsersUpdate', users);
-                    const overviewIO = getOverviewIO();
-                    if (overviewIO) {
-                        setTimeout(async () => {
-                            try {
-                                const { getOverviewData } = await import('./overviewWebsocket.js');
-                                const overviewData = await getOverviewData({ activeUsers });
-                                overviewIO.emit('overviewData', overviewData);
-                            } catch (error) {
-                                console.error('Error broadcasting overview update:', error);
-                            }
-                        }, 100);
+            const sessionUser = {
+                id: user.userId,
+                username: user.username,
+                avatar: user.avatar || null,
+                joinedAt: Date.now(),
+                position,
+                roles: userRoles
+            };
+
+            await addUserToSession(sessionId, user.userId, sessionUser);
+
+            users = await getActiveUsersForSession(sessionId);
+            socket.join(sessionId);
+            socket.join(`user-${user.userId}`);
+            io.to(sessionId).emit('sessionUsersUpdate', users);
+
+            try {
+                const session = await getSessionById(sessionId);
+                if (session?.atis) {
+                    const encryptedAtis = JSON.parse(session.atis);
+                    const decryptedAtis = decrypt(encryptedAtis);
+                    socket.emit('atisUpdate', decryptedAtis);
+                }
+            } catch (error) {
+                console.error('Error sending ATIS data:', error);
+            }
+
+            socket.on('atisGenerated', async (atisData) => {
+                try {
+                    const encryptedAtis = encrypt(atisData.atis);
+                    await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
+
+                    sessionATISConfigs.set(sessionId, {
+                        icao: atisData.icao,
+                        landingRunways: atisData.landingRunways,
+                        departingRunways: atisData.departingRunways,
+                        selectedApproaches: atisData.selectedApproaches,
+                        remarks: atisData.remarks,
+                        userId: user.userId
+                    });
+
+                    scheduleATISGeneration(sessionId, sessionATISConfigs.get(sessionId));
+
+                    io.to(sessionId).emit('atisUpdate', {
+                        atis: atisData.atis,
+                        updatedBy: user.username,
+                        isAutoGenerated: false
+                    });
+                } catch (error) {
+                    console.error('Error handling ATIS update:', error);
+                }
+            });
+
+            socket.on('fieldEditingStart', ({ flightId, fieldName }) => {
+                addFieldEditingState(sessionId, user, flightId, fieldName);
+            });
+
+            socket.on('fieldEditingStop', ({ flightId, fieldName }) => {
+                removeFieldEditingState(sessionId, user.userId, flightId, fieldName);
+            });
+
+            socket.on('positionChange', async ({ position }) => {
+                await updateUserInSession(sessionId, user.userId, { position });
+                const updatedUsers = await getActiveUsersForSession(sessionId);
+                io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
+                const overviewIO = getOverviewIO();
+                if (overviewIO) {
+                    setTimeout(async () => {
+                        try {
+                            const { getOverviewData } = await import('./overviewWebsocket.js');
+                            const overviewData = await getOverviewData({ activeUsers: new Map([[sessionId, updatedUsers]]) } as unknown as SessionUsersServer);
+                            overviewIO.emit('overviewData', overviewData);
+                        } catch (error) {
+                            console.error('Error broadcasting overview update:', error);
+                        }
+                    }, 100);
+                }
+            });
+
+            const userKey = `${user.userId}-${sessionId}`;
+            userActivity.set(userKey, { lastActive: Date.now(), sessionStart: Date.now(), totalActive: 0 });
+
+            socket.on('activityPing', () => {
+                const entry = userActivity.get(userKey);
+                if (entry) entry.lastActive = Date.now();
+            });
+
+            socket.on('disconnect', async () => {
+                const entry = userActivity.get(userKey);
+                if (entry) {
+                    const now = Date.now();
+                    const remainingActiveTime = Math.max(0, (now - entry.lastActive) / 60000 - 0.1);
+                    entry.totalActive += remainingActiveTime;
+                    incrementStat(user.userId, 'total_time_controlling_minutes', entry.totalActive);
+                    userActivity.delete(userKey);
+                }
+
+                await removeUserFromSession(sessionId, user.userId);
+                const updatedUsers = await getActiveUsersForSession(sessionId);
+                io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
+
+                const sessionStates = fieldEditingStates.get(sessionId);
+                if (sessionStates) {
+                    for (const [fieldKey, state] of sessionStates.entries()) {
+                        if (state.userId === user.userId) {
+                            sessionStates.delete(fieldKey);
+                        }
                     }
+                    broadcastFieldEditingStates(sessionId);
                 }
-            }
-        });
-
-        const userKey = `${user.userId}-${sessionId}`;
-        userActivity.set(userKey, { lastActive: Date.now(), sessionStart: Date.now(), totalActive: 0 });
-
-        socket.on('activityPing', () => {
-            const entry = userActivity.get(userKey);
-            if (entry) entry.lastActive = Date.now();
-        });
-
-        socket.on('disconnect', () => {
-            const entry = userActivity.get(userKey);
-            if (entry) {
-                const now = Date.now();
-                const remainingActiveTime = Math.max(0, (now - entry.lastActive) / 60000 - 0.1);
-                entry.totalActive += remainingActiveTime;
-                incrementStat(user.userId, 'total_time_controlling_minutes', entry.totalActive);
-                userActivity.delete(userKey);
-            }
-
-            const users = activeUsers.get(sessionId);
-            if (users) {
-                const index = users.findIndex((u: { id: string }) => u.id === user.userId);
-                if (index !== -1) {
-                    users.splice(index, 1);
-                }
-                if (users.length === 0) {
-                    activeUsers.delete(sessionId);
-                    if (atisTimers.has(sessionId)) {
-                        clearInterval(atisTimers.get(sessionId));
-                        atisTimers.delete(sessionId);
-                    }
-                    sessionATISConfigs.delete(sessionId);
-                } else {
-                    io.to(sessionId).emit('sessionUsersUpdate', users);
-                }
-            }
-
-            const sessionStates = fieldEditingStates.get(sessionId);
-            if (sessionStates) {
-                for (const [fieldKey, state] of sessionStates.entries()) {
-                    if (state.userId === user.userId) {
-                        sessionStates.delete(fieldKey);
-                    }
-                }
-                broadcastFieldEditingStates(sessionId);
-            }
-        });
+            });
         } catch (error) {
             console.error('Error in websocket connection:', error);
         }
@@ -432,22 +444,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         io.to(`user-${userId}`).emit('chatMention', mention);
     };
 
-    io.activeUsers = activeUsers;
+    io.getActiveUsersForSession = getActiveUsersForSession;
 
     return io;
-}
-
-// Removed incrementStat call to prevent double-counting. Time is now only incremented on disconnect.
-setInterval(() => {
-  for (const [userKey, entry] of userActivity.entries()) {
-    const now = Date.now();
-    if (now - entry.lastActive > 5 * 60 * 1000) continue;
-    const activeTime = (now - entry.lastActive) / 60000;
-    entry.totalActive += activeTime;
-    entry.lastActive = now;
-  }
-}, 60 * 1000);
-
-export function getActiveUsers(): typeof activeUsers {
-    return activeUsers;
 }
