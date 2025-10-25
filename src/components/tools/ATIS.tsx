@@ -103,7 +103,6 @@ export default function ATIS({
 
           if (atisData) {
             const atisText = atisData.text.toUpperCase();
-            console.log('Parsing previous ATIS:', atisText);
 
             const extractedLandingRunways: string[] = [];
             const extractedDepartingRunways: string[] = [];

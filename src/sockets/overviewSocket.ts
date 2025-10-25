@@ -52,16 +52,12 @@ export function createOverviewSocket(
         autoConnect: true
     });
 
-    socket.on('connect', () => {
-        console.log('[Overview Socket] Connected successfully');
-    });
 
     socket.on('connect_error', (error) => {
         console.error('[Overview Socket] Connection error:', error.message);
 
         // If error is about session ID, force reconnect with new session
         if (error.message.includes('Session ID') || error.message.includes('session')) {
-            console.log('[Overview Socket] Forcing reconnect with new session...');
             socket.disconnect();
             setTimeout(() => {
                 socket.connect();
@@ -74,9 +70,7 @@ export function createOverviewSocket(
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('[Overview Socket] Disconnected:', reason);
-
-        // If disconnected due to server, try to reconnect with fresh session
+      // If disconnected due to server, try to reconnect with fresh session
         if (reason === 'io server disconnect' || reason === 'transport close') {
             socket.connect();
         }

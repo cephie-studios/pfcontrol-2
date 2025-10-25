@@ -4,7 +4,7 @@ import { getFlightsBySessionWithTime } from '../db/flights.js';
 import { decrypt } from '../utils/encryption.js';
 import { getUserById } from '../db/users.js';
 import type { Server as HTTPServer } from 'http';
-import type { SessionUsersServer } from './sessionUsersWebsocket.js'; // Add this import
+import type { SessionUsersServer } from './sessionUsersWebsocket.js';
 
 let io: SocketServer;
 const activeOverviewClients = new Set<string>()
@@ -22,7 +22,7 @@ interface SessionUser {
     }>;
 }
 
-export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: SessionUsersServer) { // Update parameter type
+export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: SessionUsersServer) {
     io = new SocketServer(httpServer, {
         path: '/sockets/overview',
         cors: {
@@ -38,20 +38,17 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
     });
 
     io.on('connection', async (socket) => {
-        console.log('[Overview Socket] Client connected:', socket.id);
         activeOverviewClients.add(socket.id);
 
         try {
             const overviewData = await getOverviewData(sessionUsersIO);
             socket.emit('overviewData', overviewData);
-            console.log('[Overview Socket] Sent initial data to:', socket.id);
         } catch (error) {
             console.error('[Overview Socket] Error sending initial data:', error);
             socket.emit('overviewError', { error: 'Failed to fetch overview data' });
         }
 
-        socket.on('disconnect', (reason) => {
-            console.log('[Overview Socket] Client disconnected:', socket.id, 'Reason:', reason);
+        socket.on('disconnect', () => {
             activeOverviewClients.delete(socket.id);
         });
 

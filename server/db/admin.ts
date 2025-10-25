@@ -104,8 +104,6 @@ async function backfillStatistics() {
         })
       )
       .execute();
-
-    console.log('Statistics backfilled successfully');
   } catch (error) {
     console.error('Error backfilling statistics:', error);
   }

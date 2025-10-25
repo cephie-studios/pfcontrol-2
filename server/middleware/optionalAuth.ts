@@ -14,7 +14,7 @@ export default async function optionalAuth(
     const token = req.cookies.auth_token;
     try {
         if (!JWT_SECRET) {
-            console.log('JWT_SECRET is not defined');
+            console.warn('JWT_SECRET is not defined');
             return next();
         }
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayloadClient;

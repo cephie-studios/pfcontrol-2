@@ -47,7 +47,6 @@ async function flushStats() {
 
         await updateUserStatistics(userId, stats);
         await redisConnection.del(key);
-        console.log(`[Stats] Flushed stats for user ${userId}`);
       }
     }
   } catch (error) {
