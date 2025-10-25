@@ -50,8 +50,16 @@ export async function getUserById(userId: string) {
   const userRoles = await getUserRoles(userId);
   const mergedPermissions: Record<string, boolean> = {};
   for (const role of userRoles) {
-    if (role.permissions && typeof role.permissions === 'object') {
-      Object.assign(mergedPermissions, role.permissions as Record<string, boolean>);
+    let perms = role.permissions;
+    if (typeof perms === 'string') {
+      try {
+        perms = JSON.parse(perms);
+      } catch {
+        perms = {};
+      }
+    }
+    if (perms && typeof perms === 'object') {
+      Object.assign(mergedPermissions, perms as Record<string, boolean>);
     }
   }
 

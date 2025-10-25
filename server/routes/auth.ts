@@ -533,7 +533,7 @@ router.get('/me', requireAuth, async (req, res) => {
             isTester: await isTester(req.user.userId),
             roleId: user.roleId,
             roleName: user.roleName,
-            rolePermissions: user.rolePermissions || {},
+            rolePermissions: user.role_permissions || {},
             robloxUserId: user.roblox_user_id,
             robloxUsername: user.roblox_username,
             vatsimCid: user.vatsim_cid,
