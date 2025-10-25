@@ -9,6 +9,7 @@ import ErrorScreen from '../../components/common/ErrorScreen';
 import Dropdown from '../../components/common/Dropdown';
 import TextInput from '../../components/common/TextInput';
 import Checkbox from '../../components/common/Checkbox';
+import UpdateModalsSection from '../../components/admin/UpdateModalsSection';
 import {
 	fetchNotifications,
 	addNotification,
@@ -292,6 +293,11 @@ export default function AdminNotifications() {
 							</div>
 						</div>
 					)}
+
+					{/* Update Modals Section */}
+					<div className="mt-8">
+						<UpdateModalsSection />
+					</div>
 
 					{/* Add/Edit Modal */}
 					{(showAddModal || editingNotification) && (

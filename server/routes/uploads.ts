@@ -2,6 +2,7 @@ import { getUserById, updateUserSettings } from '../db/users.js';
 import express from 'express';
 import multer from 'multer';
 import requireAuth from '../middleware/auth.js';
+import { requirePermission } from '../middleware/rolePermissions.js';
 import FormData from 'form-data';
 import axios from 'axios';
 
@@ -173,6 +174,58 @@ router.get('/background-url/:filename', requireAuth, async (req: express.Request
     } catch (error) {
         console.error('Error getting background URL:', error);
         res.status(500).json({ error: 'Failed to get background URL' });
+    }
+});
+
+// POST: /api/uploads/upload-modal-banner - Upload a banner image for update modals (admin only)
+router.post('/upload-modal-banner', requireAuth, requirePermission('notifications'), upload.single('image'), async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+        if (!isJwtPayloadClient(user)) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const file = req.file;
+        if (!file || !file.mimetype.startsWith('image/')) {
+            console.error('Invalid file:', file);
+            return res.status(400).json({ error: 'Invalid or missing image file' });
+        }
+
+        // Generate sequential filename: updateModalBanner1, updateModalBanner2, etc.
+        const timestamp = Date.now();
+        const filename = `updateModalBanner${timestamp}`;
+
+        const formData = new FormData();
+        formData.append('image', file.buffer, filename);
+
+        const uploadResponse = await axios.post(
+            CEPHIE_UPLOAD_URL,
+            formData,
+            {
+                headers: {
+                    'cephie-pfcontrol-key': CEPHIE_API_KEY,
+                    'cephie-api-key': CEPHIE_API_KEY,
+                    ...formData.getHeaders(),
+                },
+                maxBodyLength: Infinity,
+            }
+        );
+
+        const uploadData = uploadResponse.data;
+        const newImageUrl = uploadData.url;
+        if (!newImageUrl) {
+            return res.status(500).json({ error: 'No URL returned from Cephie upload' });
+        }
+
+        res.json({ message: 'Modal banner uploaded successfully', url: newImageUrl });
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error('Error uploading modal banner:', error.response?.data || error.message);
+            res.status(500).json({ error: 'Failed to upload modal banner', details: error.response?.data });
+        } else {
+            console.error('Error uploading modal banner:', error);
+            res.status(500).json({ error: 'Failed to upload modal banner' });
+        }
     }
 });
 

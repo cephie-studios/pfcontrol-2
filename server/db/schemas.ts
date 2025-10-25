@@ -137,6 +137,20 @@ export async function createMainTables() {
     .addColumn('status', 'varchar(50)', (col) => col.defaultTo('pending'))
     .addColumn('avatar', 'varchar(255)')
     .execute();
+
+  // update_modals
+  await mainDb.schema
+    .createTable('update_modals')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('title', 'varchar(255)', (col) => col.notNull())
+    .addColumn('content', 'text', (col) => col.notNull())
+    .addColumn('banner_url', 'text')
+    .addColumn('is_active', 'boolean', (col) => col.defaultTo(false).notNull())
+    .addColumn('published_at', 'timestamp')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .execute();
 }
 
 // Helper to create a dynamic flights table for a session

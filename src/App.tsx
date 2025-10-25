@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
@@ -17,6 +18,7 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
+import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
 
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -28,11 +30,72 @@ import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminRoles from './pages/admin/AdminRoles';
 import AdminChatReports from './pages/admin/AdminChatReports';
 
+import { fetchActiveUpdateModal, type UpdateModal } from './utils/fetch/updateModal';
+
 export default function App() {
   const { user } = useAuth();
+  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    if (user) {
+      fetchActiveUpdateModal()
+        .then((modal) => {
+          if (modal) {
+            try {
+              // Check localStorage to see if user has seen this specific modal
+              const seenModals = JSON.parse(localStorage.getItem('seenUpdateModals') || '[]');
+              const hasSeenThisModal = seenModals.includes(modal.id);
+
+              if (!hasSeenThisModal) {
+                setActiveModal(modal);
+                setShowUpdateModal(true);
+              }
+            } catch (error) {
+              // If localStorage is disabled/blocked, show modal anyway
+              console.warn('localStorage not available, showing modal:', error);
+              setActiveModal(modal);
+              setShowUpdateModal(true);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching active update modal:', error);
+        });
+    }
+  }, [user]);
+
+  const handleCloseModal = () => {
+    setShowUpdateModal(false);
+
+    // Mark this modal as seen in localStorage
+    if (activeModal) {
+      try {
+        const seenModals = JSON.parse(localStorage.getItem('seenUpdateModals') || '[]');
+        if (!seenModals.includes(activeModal.id)) {
+          seenModals.push(activeModal.id);
+          localStorage.setItem('seenUpdateModals', JSON.stringify(seenModals));
+        }
+      } catch (error) {
+        console.warn('Could not save to localStorage:', error);
+      }
+    }
+  };
 
   return (
     <Router>
+      {/* Update Overview Modal */}
+      {activeModal && (
+        <UpdateOverviewModal
+          isOpen={showUpdateModal}
+          onClose={handleCloseModal}
+          title={activeModal.title}
+          content={activeModal.content}
+          bannerUrl={activeModal.banner_url}
+        />
+      )}
+
       {user && user.isBanned ? (
         <AccessDenied errorType="banned" />
       ) : (

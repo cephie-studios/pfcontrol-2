@@ -416,7 +416,7 @@ export async function updateUserStatistics(userId: string, stats: Record<string,
     ...stats,
     last_updated: new Date().toISOString()
   };
-  
+
   await mainDb
     .updateTable('users')
     .set({
@@ -428,3 +428,4 @@ export async function updateUserStatistics(userId: string, stats: Record<string,
 
   await invalidateUserCache(userId);
 }
+

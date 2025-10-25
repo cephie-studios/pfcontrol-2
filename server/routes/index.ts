@@ -12,6 +12,7 @@ import atisRouter from './atis.js';
 import uploadsRouter from './uploads.js';
 import pilotRouter from './pilot.js';
 import adminRouter from './admin/index.js';
+import updateModalRouter from './updateModal.js';
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use('/atis', atisRouter);
 router.use('/uploads', uploadsRouter);
 router.use('/pilot', pilotRouter);
 router.use('/admin', adminRouter);
+router.use('/update-modal', updateModalRouter);
 
 router.get('/version', async (_req, res) => {
   try {

@@ -13,6 +13,7 @@ import testersRouter from './testers.js';
 import notificationRouter from './notifications.js';
 import rolesRouter from './roles.js';
 import chatReportsRouter from './chat-reports.js';
+import updateModalsRouter from './updateModals.js';
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.use('/testers', testersRouter);
 router.use('/notifications', notificationRouter);
 router.use('/roles', rolesRouter);
 router.use('/chat-reports', chatReportsRouter);
+router.use('/update-modals', updateModalsRouter);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get('/statistics', requirePermission('admin'), async (req, res) => {
