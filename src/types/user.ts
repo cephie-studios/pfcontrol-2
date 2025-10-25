@@ -13,7 +13,7 @@ export interface User {
     isTester: boolean;
     roleId?: number;
     roleName?: string;
-    rolePermissions?: Record<string, boolean>;
+    rolePermissions: Record<string, boolean>;
     robloxUserId?: string | null;
     robloxUsername?: string | null;
     vatsimCid?: string | null;

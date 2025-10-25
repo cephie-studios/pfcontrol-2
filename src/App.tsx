@@ -29,8 +29,12 @@ import AdminTesters from './pages/admin/AdminTesters';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminRoles from './pages/admin/AdminRoles';
 import AdminChatReports from './pages/admin/AdminChatReports';
+import AdminFlightLogs from './pages/admin/AdminFlightLogs';
 
-import { fetchActiveUpdateModal, type UpdateModal } from './utils/fetch/updateModal';
+import {
+  fetchActiveUpdateModal,
+  type UpdateModal,
+} from './utils/fetch/updateModal';
 
 export default function App() {
   const { user } = useAuth();
@@ -38,14 +42,14 @@ export default function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
     if (user) {
       fetchActiveUpdateModal()
         .then((modal) => {
           if (modal) {
             try {
-              // Check localStorage to see if user has seen this specific modal
-              const seenModals = JSON.parse(localStorage.getItem('seenUpdateModals') || '[]');
+              const seenModals = JSON.parse(
+                localStorage.getItem('seenUpdateModals') || '[]'
+              );
               const hasSeenThisModal = seenModals.includes(modal.id);
 
               if (!hasSeenThisModal) {
@@ -53,7 +57,6 @@ export default function App() {
                 setShowUpdateModal(true);
               }
             } catch (error) {
-              // If localStorage is disabled/blocked, show modal anyway
               console.warn('localStorage not available, showing modal:', error);
               setActiveModal(modal);
               setShowUpdateModal(true);
@@ -69,10 +72,11 @@ export default function App() {
   const handleCloseModal = () => {
     setShowUpdateModal(false);
 
-    // Mark this modal as seen in localStorage
     if (activeModal) {
       try {
-        const seenModals = JSON.parse(localStorage.getItem('seenUpdateModals') || '[]');
+        const seenModals = JSON.parse(
+          localStorage.getItem('seenUpdateModals') || '[]'
+        );
         if (!seenModals.includes(activeModal.id)) {
           seenModals.push(activeModal.id);
           localStorage.setItem('seenUpdateModals', JSON.stringify(seenModals));
@@ -85,7 +89,6 @@ export default function App() {
 
   return (
     <Router>
-      {/* Update Overview Modal */}
       {activeModal && (
         <UpdateOverviewModal
           isOpen={showUpdateModal}
@@ -197,6 +200,14 @@ export default function App() {
                     element={
                       <ProtectedRoute requirePermission="chat_reports">
                         <AdminChatReports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="flight-logs"
+                    element={
+                      <ProtectedRoute requirePermission="audit">
+                        <AdminFlightLogs />
                       </ProtectedRoute>
                     }
                   />

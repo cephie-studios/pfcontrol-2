@@ -4,8 +4,9 @@ import { mainDb } from "./connection.js";
 import { sql } from "kysely";
 import { redisConnection } from "./connection.js";
 import { incrementStat } from '../utils/statisticsCache.js';
+import { getUserRoles } from './roles.js';
 
-async function invalidateUserCache(userId: string) {
+export async function invalidateUserCache(userId: string) {
   try {
     await redisConnection.del(`user:${userId}`);
   } catch (error) {
@@ -40,10 +41,23 @@ export async function getUserById(userId: string) {
     .leftJoin("roles", "users.role_id", "roles.id")
     .selectAll("users")
     .select("roles.permissions as role_permissions")
+    .select("roles.name as role_name")
     .where("users.id", "=", userId)
     .executeTakeFirst();
 
   if (!user) return null;
+
+  const userRoles = await getUserRoles(userId);
+  const mergedPermissions: Record<string, boolean> = {};
+  for (const role of userRoles) {
+    if (role.permissions && typeof role.permissions === 'object') {
+      Object.assign(mergedPermissions, role.permissions as Record<string, boolean>);
+    }
+  }
+
+  if (Object.keys(mergedPermissions).length === 0 && user.role_permissions) {
+    Object.assign(mergedPermissions, user.role_permissions as Record<string, boolean>);
+  }
 
   const result = {
     ...user,
@@ -52,7 +66,7 @@ export async function getUserById(userId: string) {
     sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
     settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
     ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
-    role_permissions: user.role_permissions || null,
+    role_permissions: mergedPermissions,
     statistics: user.statistics || {},
   };
 

@@ -14,6 +14,7 @@ import notificationRouter from './notifications.js';
 import rolesRouter from './roles.js';
 import chatReportsRouter from './chat-reports.js';
 import updateModalsRouter from './updateModals.js';
+import flightLogsRouter from './flight-logs.js';
 
 const router = express.Router();
 
@@ -29,6 +30,7 @@ router.use('/notifications', notificationRouter);
 router.use('/roles', rolesRouter);
 router.use('/chat-reports', chatReportsRouter);
 router.use('/update-modals', updateModalsRouter);
+router.use('/flight-logs', flightLogsRouter);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get('/statistics', requirePermission('admin'), async (req, res) => {

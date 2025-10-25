@@ -13,6 +13,9 @@ import {
   ShieldAlert,
   Bell,
   MessageCircleWarning,
+  NotebookPen,
+  ShieldCheck,
+  LockKeyhole,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auth/useAuth';
@@ -30,6 +33,7 @@ export default function AdminSidebar({
   const { user } = useAuth();
 
   const [generalCollapsed, setGeneralCollapsed] = useState(false);
+  const [moderationCollapsed, setModerationCollapsed] = useState(false);
   const [usersCollapsed, setUsersCollapsed] = useState(false);
   const [showText, setShowText] = useState(!collapsed);
 
@@ -86,13 +90,42 @@ export default function AdminSidebar({
       ].filter((item) => hasPermission(item.permission)),
     },
     {
+      title: 'Moderation',
+      icon: LockKeyhole,
+      collapsed: moderationCollapsed,
+      setCollapsed: setModerationCollapsed,
+      items: [
+        {
+          icon: MessageCircleWarning,
+          label: 'Chat Reports',
+          path: '/admin/chat-reports',
+          textColor: 'red-400',
+          permission: 'chat_reports',
+        },
+        {
+          icon: NotebookPen,
+          label: 'Flight Archive',
+          path: '/admin/flight-logs',
+          textColor: 'rose-400',
+          permission: 'audit',
+        },
+        {
+          icon: Ban,
+          label: 'Bans',
+          path: '/admin/bans',
+          textColor: 'red-400',
+          permission: 'bans',
+        },
+      ],
+    },
+    {
       title: 'Security',
       icon: Shield,
       collapsed: usersCollapsed,
       setCollapsed: setUsersCollapsed,
       items: [
         {
-          icon: Shield,
+          icon: ShieldCheck,
           label: 'Testers',
           path: '/admin/testers',
           textColor: 'purple-400',
@@ -104,20 +137,6 @@ export default function AdminSidebar({
           path: '/admin/roles',
           textColor: 'rose-400',
           permission: 'roles',
-        },
-        {
-          icon: Ban,
-          label: 'Bans',
-          path: '/admin/bans',
-          textColor: 'red-400',
-          permission: 'bans',
-        },
-        {
-          icon: MessageCircleWarning,
-          label: 'Chat Reports',
-          path: '/admin/chat-reports',
-          textColor: 'red-400',
-          permission: 'chat_reports',
         },
         {
           icon: ShieldAlert,

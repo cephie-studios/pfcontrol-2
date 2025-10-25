@@ -2,6 +2,7 @@ import { mainDb } from "./connection.js";
 import { sql } from "kysely";
 import { isAdmin } from "../middleware/admin.js";
 import { invalidateAllUsersCache } from './admin.js';
+import { invalidateUserCache } from './users.js'
 
 export async function getAllRoles() {
   try {
@@ -159,6 +160,7 @@ export async function assignRoleToUser(userId: string, roleId: number) {
     }
 
     await invalidateAllUsersCache();
+    await invalidateUserCache(userId);
 
     return { userId, roleId };
   } catch (error) {
@@ -189,6 +191,7 @@ export async function removeRoleFromUser(userId: string, roleId: number) {
     }
 
     await invalidateAllUsersCache();
+    await invalidateUserCache(userId);
 
     return { userId, roleId };
   } catch (error) {

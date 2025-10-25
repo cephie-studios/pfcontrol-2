@@ -18,6 +18,7 @@ import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
+import { startFlightLogsCleanup } from './db/flightLogs.js';
 
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
@@ -103,6 +104,7 @@ const arrivalsIO = setupArrivalsWebsocket(server);
 arrivalsIO.adapter(createAdapter(pubClient, subClient));
 
 startStatsFlushing();
+startFlightLogsCleanup();
 updateLeaderboard();
 setInterval(updateLeaderboard, 12 * 60 * 60 * 1000); // 12h
 

@@ -151,6 +151,22 @@ export async function createMainTables() {
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
+
+  // flight_logs
+  await mainDb.schema
+    .createTable('flight_logs')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('user_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('action', 'varchar(50)', (col) => col.notNull())
+    .addColumn('flight_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('old_data', 'jsonb')
+    .addColumn('new_data', 'jsonb')
+    .addColumn('ip_address', 'varchar(255)')
+    .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .execute();
 }
 
 // Helper to create a dynamic flights table for a session

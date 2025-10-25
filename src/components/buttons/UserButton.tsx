@@ -249,7 +249,10 @@ export default function CustomUserButton({
             </button>
           </div>
           {(user.isAdmin ||
-            (user.rolePermissions && user.rolePermissions.admin)) && (
+            (user.rolePermissions &&
+              (user.rolePermissions.admin ||
+                user.rolePermissions.support ||
+                user.rolePermissions.moderation))) && (
             <ProtectedRoute requirePermission="admin" requireTester={false}>
               <div className="border-t border-gray-700/50 py-1">
                 <button

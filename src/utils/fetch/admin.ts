@@ -224,6 +224,29 @@ export interface ChatReportsResponse {
     };
 }
 
+export interface FlightLog {
+  id: number;
+  user_id: string;
+  username: string;
+  session_id: string;
+  action: 'add' | 'update' | 'delete';
+  flight_id: string;
+  old_data: object | null;
+  new_data: object | null;
+  ip_address: string | null;
+  timestamp: string;
+}
+
+export interface FlightLogsResponse {
+  logs: FlightLog[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
         credentials: 'include',
@@ -473,4 +496,48 @@ export async function deleteChatReport(reportId: number): Promise<void> {
         credentials: 'include',
     });
     if (!res.ok) throw new Error('Failed to delete report');
+}
+
+export async function fetchFlightLogs(
+  page: number = 1,
+  limit: number = 50,
+  filters: {
+    user?: string;
+    action?: string;
+    session?: string;
+    flightId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}
+): Promise<FlightLogsResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...Object.fromEntries(
+      Object.entries(filters).filter(([, value]) => value != null && value !== '')
+    ),
+  });
+
+  const response = await fetch(`${API_BASE_URL}/api/admin/flight-logs?${params}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch flight logs');
+  }
+
+  return response.json();
+}
+
+export async function revealFlightLogIP(logId: number): Promise<{ ip_address: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to reveal IP address');
+  }
+
+  return response.json();
 }
