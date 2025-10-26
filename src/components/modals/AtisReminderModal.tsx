@@ -22,13 +22,35 @@ export default function AtisReminderModal({
   userId,
   airportIcao,
   airportName,
+  airportControlName,
   airportAppFrequency,
   airportFrequencyType,
 }: AtisReminderModalProps) {
   const submitLink = `${window.location?.origin}/submit/${sessionId}`;
   const [copied, setCopied] = useState(false);
 
-  const formattedAtis = `${airportIcao}_${airportFrequencyType} (${airportAppFrequency}): <@${userId}>\n\n${atisText}\n\n${submitLink}`;
+  const getFormattedControlName = () => {
+    if (!airportControlName) return null;
+    if (airportFrequencyType === 'APP') {
+      if (airportIcao === 'EGKK') {
+        return `${airportControlName} Director`;
+      }
+      return `${airportControlName} Approach`;
+    } else if (airportFrequencyType === 'TWR') {
+      return `${airportControlName} Tower`;
+    } else if (airportFrequencyType === 'GND') {
+      return `${airportControlName} Ground`;
+    } else if (airportFrequencyType === 'DEL') {
+      return `${airportControlName} Delivery`;
+    }
+    return null;
+  };
+
+  const formattedControlName = getFormattedControlName();
+
+  const formattedAtis = formattedControlName
+    ? `${airportIcao}_${airportFrequencyType} "${formattedControlName}" (${airportAppFrequency}): <@${userId}>\n\n${atisText}\n\n${submitLink}`
+    : `${airportIcao}_${airportFrequencyType} (${airportAppFrequency}): <@${userId}>\n\n${atisText}\n\n${submitLink}`;
 
   const handleCopy = async () => {
     try {
