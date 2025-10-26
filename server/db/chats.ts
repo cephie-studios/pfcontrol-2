@@ -97,13 +97,33 @@ export async function getChatMessages(sessionId: string, limit = 50) {
       } catch {
         decryptedMsg = '';
       }
+      let parsedMentions: string[] = [];
+      if (row.mentions) {
+        if (typeof row.mentions === 'string') {
+          try {
+            const parsed = JSON.parse(row.mentions);
+            if (Array.isArray(parsed)) {
+              parsedMentions = parsed;
+            } else {
+              parsedMentions = [];
+            }
+          } catch {
+            const trimmed = row.mentions.trim();
+            if (trimmed) {
+              parsedMentions = trimmed.split(',').map(s => s.trim()).filter(s => s);
+            }
+          }
+        } else if (Array.isArray(row.mentions)) {
+          parsedMentions = row.mentions;
+        }
+      }
       return {
         id: row.id,
         userId: row.user_id,
         username: row.username,
         avatar: row.avatar,
         message: decryptedMsg || '',
-        mentions: row.mentions ? JSON.parse(row.mentions) : [],  // Changed: Parse JSON string back to array
+        mentions: parsedMentions,
         sent_at: row.sent_at
       };
     })

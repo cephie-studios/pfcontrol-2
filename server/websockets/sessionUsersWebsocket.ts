@@ -394,7 +394,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
                     setTimeout(async () => {
                         try {
                             const { getOverviewData } = await import('./overviewWebsocket.js');
-                            const overviewData = await getOverviewData({ activeUsers: new Map([[sessionId, updatedUsers]]) } as unknown as SessionUsersServer);
+                            const overviewData = await getOverviewData(io);
                             overviewIO.emit('overviewData', overviewData);
                         } catch (error) {
                             console.error('Error broadcasting overview update:', error);
