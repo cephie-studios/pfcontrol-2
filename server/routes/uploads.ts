@@ -13,7 +13,7 @@ const CEPHIE_API_KEY = process.env.CEPHIE_API_KEY;
 const CEPHIE_UPLOAD_URL = 'https://api.cephie.app/api/v1/pfcontrol/upload';
 const CEPHIE_DELETE_URL = 'https://api.cephie.app/api/v1/pfcontrol/delete';
 
-async function deleteOldImage(url: string | undefined) {
+export async function deleteOldImage(url: string | undefined) {
     if (!url) return;
     try {
         const response = await axios.delete(CEPHIE_DELETE_URL, {

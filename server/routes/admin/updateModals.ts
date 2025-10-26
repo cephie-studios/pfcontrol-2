@@ -12,6 +12,7 @@ import {
     unpublishUpdateModal
 } from '../../db/updateModals.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
+import { deleteOldImage } from '../uploads.js';
 
 const router = express.Router();
 
@@ -91,7 +92,20 @@ router.put('/:id', async (req, res) => {
             return res.status(400).json({ error: 'Invalid modal ID' });
         }
 
+        const currentModal = await getUpdateModalById(numericId);
+        if (!currentModal) {
+            return res.status(404).json({ error: 'Modal not found' });
+        }
+
         const modal = await updateUpdateModal(numericId, { title, content, banner_url });
+
+        if (currentModal.banner_url && currentModal.banner_url !== modal?.banner_url) {
+            try {
+                await deleteOldImage(currentModal.banner_url);
+            } catch (deleteError) {
+                console.error('Error deleting old modal banner:', deleteError);
+            }
+        }
 
         if (req.user?.userId) {
             const ip = getClientIp(req);
@@ -121,7 +135,20 @@ router.delete('/:id', async (req, res) => {
             return res.status(400).json({ error: 'Invalid modal ID' });
         }
 
+        const modal = await getUpdateModalById(numericId);
+        if (!modal) {
+            return res.status(404).json({ error: 'Modal not found' });
+        }
+
         await deleteUpdateModal(numericId);
+
+        if (modal.banner_url) {
+            try {
+                await deleteOldImage(modal.banner_url);
+            } catch (deleteError) {
+                console.error('Error deleting modal banner during deletion:', deleteError);
+            }
+        }
 
         if (req.user?.userId) {
             const ip = getClientIp(req);
