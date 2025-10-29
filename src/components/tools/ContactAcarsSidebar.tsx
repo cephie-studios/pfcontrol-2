@@ -1,4 +1,4 @@
-import react, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Radio, Plane, MapPin } from 'lucide-react';
 import { fetchFrequencies } from '../../utils/fetch/data';
 import type { AirportFrequency } from '../../types/airports';
