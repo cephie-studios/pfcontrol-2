@@ -5,7 +5,7 @@ import type { AirportFrequency } from '../../types/airports';
 import type { Flight } from '../../types/flight';
 import Button from '../common/Button';
 import Dropdown from '../common/Dropdown';
-import { containsHateSpeech, containsProfanity} from '../../utils/hateSpeechFilter';
+import { containsHateSpeech, containsProfanity } from '../../utils/hateSpeechFilter';
 
 interface ContactAcarsSidebarProps {
   open: boolean;
