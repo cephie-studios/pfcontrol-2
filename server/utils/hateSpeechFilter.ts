@@ -23,7 +23,7 @@ const racialSlurs = [
     /ky+k+[e3]+/i,
 ];
 
-// Nazi shit
+// Nazi/extremist content
 const naziContent = [
     /n+[a4]+z+[i1!]/i,
     /h+[i1!]+tl+[e3]+r/i,
