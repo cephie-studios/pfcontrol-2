@@ -167,7 +167,7 @@ export interface Notification {
     type: 'info' | 'warning' | 'success' | 'error';
     text: string;
     show: boolean;
-    custom_color?: string;
+    custom_color?: string | null;
     created_at: string;
     updated_at: string;
 }

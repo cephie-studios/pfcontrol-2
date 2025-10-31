@@ -24,6 +24,7 @@ export interface Settings {
     terminalWidth?: number;
     notesWidth?: number;
   };
+  notificationViewMode?: 'legacy' | 'list';
   [key: string]: unknown;
   }
 }

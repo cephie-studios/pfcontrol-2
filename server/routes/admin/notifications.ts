@@ -25,12 +25,16 @@ router.get('/', createAuditLogger('ADMIN_NOTIFICATIONS_ACCESSED'), async (req, r
 // POST: /api/admin/notifications - Add a new notification
 router.post('/', async (req, res) => {
     try {
-        const { type, text, show, customColor } = req.body;
+        const { type, text, show, customColor, custom_color } = req.body;
         if (!type || !text) {
             return res.status(400).json({ error: 'Type and text are required' });
         }
 
-        const notification = await addNotification({ type, text, show, customColor });
+        // Handle both camelCase and snake_case, clean up empty strings
+        const colorValue = custom_color !== undefined ? custom_color : customColor;
+        const cleanColor = colorValue?.trim() || null;
+
+        const notification = await addNotification({ type, text, show, customColor: cleanColor });
 
         // Log the action
         if (req.user?.userId) {
@@ -41,7 +45,7 @@ router.post('/', async (req, res) => {
                 actionType: 'NOTIFICATION_ADDED',
                 ipAddress: Array.isArray(ip) ? ip.join(', ') : ip,
                 userAgent: req.get('User-Agent'),
-                details: { type, text, show, customColor, notificationId: notification.id }
+                details: { type, text, show, customColor: cleanColor, notificationId: notification.id }
             });
         }
 
@@ -56,10 +60,14 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, text, show, customColor } = req.body;
+        const { type, text, show, customColor, custom_color } = req.body;
         const numericId = Number(id);
 
-        const notification = await updateNotification(numericId, { type, text, show, customColor });
+        // Handle both camelCase and snake_case, clean up empty strings
+        const colorValue = custom_color !== undefined ? custom_color : customColor;
+        const cleanColor = colorValue?.trim() || null; // null instead of undefined to explicitly clear
+
+        const notification = await updateNotification(numericId, { type, text, show, customColor: cleanColor });
 
         if (req.user?.userId) {
             const ip = getClientIp(req);
@@ -69,7 +77,7 @@ router.put('/:id', async (req, res) => {
                 actionType: 'NOTIFICATION_UPDATED',
                 ipAddress: Array.isArray(ip) ? ip.join(', ') : ip,
                 userAgent: req.get('User-Agent'),
-                details: { notificationId: id, type, text, show, customColor }
+                details: { notificationId: id, type, text, show, customColor: cleanColor }
             });
         }
 

@@ -316,8 +316,9 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
         });
 
         const payload = userResponse.data || {};
-        const root = payload.data || payload.user || payload;
-        const cid = String(root?.cid ?? root?.id ?? '');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const root: Record<string, any> = (payload as any).data || (payload as any).user || payload;
+        const cid = String((root?.cid ?? root?.id) ?? '');
         const candidates = [
             root?.rating?.controller,
             root?.ratings?.controller,
@@ -328,22 +329,24 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
             root?.vatsim?.rating,
             root?.vatsim?.ratings?.controller,
         ].filter(Boolean);
-        let ratingShort = null;
-        let ratingLong = null;
-        let numeric = null;
+        let ratingShort: string | null = null;
+        let ratingLong: string | null = null;
+        let numeric: number | null = null;
         for (const r of candidates) {
             if (r == null) continue;
             if (typeof r === 'number' || typeof r === 'string') {
                 const n = typeof r === 'number' ? r : parseInt(String(r), 10);
                 if (Number.isFinite(n)) { numeric = n; break; }
             } else if (typeof r === 'object') {
-                const id = r.id ?? r.rating ?? r.controller;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rObj = r as Record<string, any>;
+                const id = rObj.id ?? rObj.rating ?? rObj.controller;
                 if (id != null) {
                     const n = typeof id === 'number' ? id : parseInt(String(id), 10);
                     if (Number.isFinite(n)) numeric = n;
                 }
-                ratingShort = r.short || r.short_name || ratingShort;
-                ratingLong = r.long || r.long_name || ratingLong;
+                ratingShort = (rObj.short || rObj.short_name || ratingShort) as string | null;
+                ratingLong = (rObj.long || rObj.long_name || ratingLong) as string | null;
                 if (numeric != null || ratingShort || ratingLong) break;
             }
         }
@@ -355,8 +358,8 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
         await updateVatsimAccount(userId, {
             vatsimCid: cid || '',
             ratingId: Number.isFinite(numeric) ? numeric as number : 0,
-            ratingShort: fallbackShort ?? undefined,
-            ratingLong: ratingLong ?? undefined,
+            ratingShort: fallbackShort || undefined,
+            ratingLong: ratingLong || undefined,
         });
 
         res.redirect(FRONTEND_URL + '/settings?vatsim_linked=true');
@@ -417,7 +420,8 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
             headers: { Authorization: `Bearer ${access_token}` },
         });
         const payload = userResponse.data || {};
-        const root = payload.data || payload.user || payload;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const root: Record<string, any> = (payload as any).data || (payload as any).user || payload;
         const cid = String(root?.cid ?? root?.id ?? '');
         const candidates2 = [
             root?.rating?.controller,
@@ -429,22 +433,24 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
             root?.vatsim?.rating,
             root?.vatsim?.ratings?.controller,
         ].filter(Boolean);
-        let ratingShort2 = null;
-        let ratingLong2 = null;
-        let numeric2 = null;
+        let ratingShort2: string | null = null;
+        let ratingLong2: string | null = null;
+        let numeric2: number | null = null;
         for (const r of candidates2) {
             if (r == null) continue;
             if (typeof r === 'number' || typeof r === 'string') {
                 const n = typeof r === 'number' ? r : parseInt(String(r), 10);
                 if (Number.isFinite(n)) { numeric2 = n; break; }
             } else if (typeof r === 'object') {
-                const id = r.id ?? r.rating ?? r.controller;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rObj = r as Record<string, any>;
+                const id = rObj.id ?? rObj.rating ?? rObj.controller;
                 if (id != null) {
                     const n = typeof id === 'number' ? id : parseInt(String(id), 10);
                     if (Number.isFinite(n)) numeric2 = n;
                 }
-                ratingShort2 = r.short || r.short_name || ratingShort2;
-                ratingLong2 = r.long || r.long_name || ratingLong2;
+                ratingShort2 = (rObj.short || rObj.short_name || ratingShort2) as string | null;
+                ratingLong2 = (rObj.long || rObj.long_name || ratingLong2) as string | null;
                 if (numeric2 != null || ratingShort2 || ratingLong2) break;
             }
         }
@@ -457,8 +463,8 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
         await updateVatsimAccount(req.user.userId, {
             vatsimCid: cid || '',
             ratingId: Number.isFinite(numeric2) ? numeric2 as number : 0,
-            ratingShort: fallbackShort ?? undefined,
-            ratingLong: ratingLong2 ?? undefined,
+            ratingShort: fallbackShort || undefined,
+            ratingLong: ratingLong2 || undefined,
         });
         res.json({ success: true, vatsimCid: cid, ratingShort: fallbackShort, ratingLong: ratingLong2 });
     } catch (error) {

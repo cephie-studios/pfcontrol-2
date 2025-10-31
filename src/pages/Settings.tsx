@@ -27,6 +27,7 @@ import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
+import NotificationSettings from '../components/Settings/NotificationSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
@@ -329,6 +330,13 @@ export default function Settings() {
 
           <div id="acars-settings">
             <AcarsSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </div>
+
+          <div id="notification-settings">
+            <NotificationSettings
               settings={localSettings}
               onChange={handleLocalSettingsChange}
             />

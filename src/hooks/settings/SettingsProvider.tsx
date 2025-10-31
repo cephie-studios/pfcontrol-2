@@ -63,10 +63,17 @@ const defaultSettings: Settings = {
 	},
 	acars: {
 		notesEnabled: true,
-		chartsEnabled: true,
-		terminalWidth: 50,
-		notesWidth: 20
-	}
+		sidebarWidth: 15,
+		terminalWidth: 70,
+		notesWidth: 15,
+		chartDrawerViewMode: 'list',
+		autoRedirectToAcars: true
+	},
+	notificationViewMode: 'list',
+	tutorialCompleted: false,
+	displayStatsOnProfile: true,
+	displayLinkedAccountsOnProfile: true,
+	hideFromLeaderboard: false
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
