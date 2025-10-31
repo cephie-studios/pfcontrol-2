@@ -6,7 +6,7 @@ export function linkify(text: string): React.ReactNode {
   const parts = text.split(urlRegex);
 
   return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
+    if (index % 2 === 1) {
       return (
         <a
           key={index}
