@@ -8,9 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 .env*
-!.env.example
-!.env.vite.production
-!.env.vite.development
+.env.example
+.env.vite.production
+.env.vite.development
 scripts
 node_modules
 dist
