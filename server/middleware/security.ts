@@ -3,7 +3,7 @@ import helmet from 'helmet';
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15min
-    max: 5, // max 5 login attempts per IP
+    max: 15,
     message: 'Too many login attempts, try again later',
     standardHeaders: true,
     legacyHeaders: false,

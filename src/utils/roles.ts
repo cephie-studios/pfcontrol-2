@@ -46,6 +46,11 @@ export const AVAILABLE_PERMISSIONS = [
         label: 'Chat Reports',
         description: 'View and manage chat reports',
     },
+    {
+        key: 'event_controller',
+        label: 'Event Controller',
+        description: 'Edit flights across all PFATC sessions during events',
+    },
 ];
 
 export const AVAILABLE_ICONS = [
