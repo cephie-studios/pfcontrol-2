@@ -11,11 +11,13 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchActiveNotifications } from '../utils/fetch/data';
+import { useState, useEffect } from 'react';
+import { useSettings } from '../hooks/settings/useSettings';
+import { useNotifications } from '../hooks/useNotifications';
 import type { Notification as AdminNotification } from '../utils/fetch/admin';
 import CustomUserButton from './buttons/UserButton';
 import Button from './common/Button';
+import { linkify } from '../utils/linkify';
 
 type NavbarProps = {
   sessionId?: string;
@@ -23,10 +25,17 @@ type NavbarProps = {
 };
 
 type NotificationType = 'info' | 'warning' | 'success' | 'error';
-
 type AppNotification = AdminNotification & { custom_icon?: React.ReactNode };
 
 export default function Navbar({ sessionId, accessId }: NavbarProps) {
+  const { settings } = useSettings();
+  const {
+    notifications: filteredNotifications,
+    currentNotification,
+    currentNotificationIndex,
+    hideNotification,
+  } = useNotifications();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [atTop, setAtTop] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
@@ -35,14 +44,18 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
   );
   const [isCompact, setIsCompact] = useState<boolean>(window.innerWidth < 950);
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
-  const [hiddenNotifications, setHiddenNotifications] = useState<string[]>([]);
+
+  const notificationMode = isMobile ? 'list' : (settings?.notificationViewMode || 'list');
+  const hasLegacyBanner = notificationMode === 'legacy' && filteredNotifications.length > 0;
 
   useEffect(() => {
     const handleScroll = () => {
-      setAtTop(window.scrollY === 0);
+      if (hasLegacyBanner) {
+        setAtTop(window.scrollY >= 10);
+      } else {
+        setAtTop(window.scrollY === 0);
+      }
     };
     window.addEventListener('scroll', handleScroll);
     handleScroll();
@@ -99,76 +112,10 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
     }
   }, [sessionId, accessId]);
 
-  useEffect(() => {
-    const storedHidden = localStorage.getItem('hiddenNotifications');
-    if (storedHidden) {
-      try {
-        setHiddenNotifications(JSON.parse(storedHidden));
-      } catch (error) {
-        console.error(
-          'Error parsing hidden notifications from localStorage:',
-          error
-        );
-      }
-    }
-
-    const storedNotifications = localStorage.getItem('cachedNotifications');
-    if (storedNotifications) {
-      try {
-        setNotifications(JSON.parse(storedNotifications));
-      } catch (error) {
-        console.error(
-          'Error parsing cached notifications from localStorage:',
-          error
-        );
-      }
-    }
-  }, []);
-
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter(
-      (n) => !hiddenNotifications.includes(n.id.toString())
-    );
-  }, [notifications, hiddenNotifications]);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const activeNotifications = await fetchActiveNotifications();
-      const mapped = activeNotifications.map(
-        (n) => ({ ...n }) as AppNotification
-      );
-      setNotifications(mapped);
-      localStorage.setItem('cachedNotifications', JSON.stringify(mapped));
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  useEffect(() => {
-    if (filteredNotifications.length > 1 && !showAllNotifications) {
-      const interval = setInterval(() => {
-        setCurrentNotificationIndex(
-          (prev) => (prev + 1) % filteredNotifications.length
-        );
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [filteredNotifications, showAllNotifications]);
-
-  const hideNotification = (id: number) => {
-    const idStr = id.toString();
-    const updatedHidden = [...hiddenNotifications, idStr];
-    setHiddenNotifications(updatedHidden);
-    localStorage.setItem('hiddenNotifications', JSON.stringify(updatedHidden));
-    setNotifications((prev) => prev.filter((n) => n.id.toString() !== idStr));
-  };
+  const navTopPosition = hasLegacyBanner && atTop ? 'top-[42px]' : 'top-0';
 
   const navClass = [
-    'fixed top-0 w-full z-50 transition-all duration-300',
+    `fixed ${navTopPosition} w-full z-50 transition-all duration-150 ease-in-out`,
     atTop
       ? 'bg-transparent border-none'
       : 'bg-black/30 backdrop-blur-md border-white/10',
@@ -239,12 +186,10 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
     }
   };
 
-  const currentNotification = filteredNotifications[currentNotificationIndex];
-
   return (
     <>
-      {/* Mobile Notification Banner */}
-      {filteredNotifications.length > 0 && isMobile && (
+      {/* Mobile Notification Banner (Bottom - List Mode) */}
+      {filteredNotifications.length > 0 && isMobile && notificationMode === 'list' && (
         <div className="fixed bottom-4 left-4 right-4 z-40">
           <div className="flex items-start space-x-2">
             {/* Control Circle */}
@@ -311,7 +256,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                             getNotificationIcon(notification.type)}
                         </div>
                         <p className="text-sm font-medium text-white leading-tight flex-1">
-                          {notification.text}
+                          {linkify(notification.text)}
                         </p>
                         <button
                           onClick={() => hideNotification(notification.id)}
@@ -518,7 +463,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
         </div>
       </nav>
 
-      {currentNotification && !isMobile && (
+      {currentNotification && !isMobile && notificationMode === 'list' && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
           <div className="relative">
             <div
@@ -544,7 +489,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                           getNotificationIcon(notification.type)}
                       </div>
                       <p className="text-sm font-medium text-white leading-tight flex-1">
-                        {notification.text}
+                        {linkify(notification.text)}
                       </p>
                       <button
                         onClick={() => hideNotification(notification.id)}

@@ -62,16 +62,12 @@ export async function addNotification({
 
 export async function updateNotification(id: number, { type, text, show, customColor }: { type?: string, text?: string, show?: boolean, customColor?: string | null }) {
   try {
-    const updateData: { type?: string; text?: string; show?: boolean; custom_color?: string; updated_at?: Date } = {};
+    const updateData: Record<string, string | boolean | Date | null | undefined> = {};
     if (type !== undefined) updateData.type = type;
     if (text !== undefined) updateData.text = text;
     if (show !== undefined) updateData.show = show;
     if (customColor !== undefined) {
-      if (customColor === null) {
-        updateData.custom_color = undefined;
-      } else {
-        updateData.custom_color = customColor;
-      }
+      updateData.custom_color = customColor === null ? undefined : customColor;
     }
     updateData.updated_at = new Date();
 

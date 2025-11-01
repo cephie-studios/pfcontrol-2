@@ -373,14 +373,14 @@ export async function unlinkRobloxAccount(userId: string) {
   return await getUserById(userId);
 }
 
-export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId, ratingShort, ratingLong }: { vatsimCid: string; ratingId: number; ratingShort: string; ratingLong: string }) {
+export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId, ratingShort, ratingLong }: { vatsimCid: string; ratingId: number; ratingShort?: string; ratingLong?: string }) {
   await mainDb
     .updateTable('users')
     .set({
       vatsim_cid: vatsimCid,
       vatsim_rating_id: ratingId,
-      vatsim_rating_short: ratingShort,
-      vatsim_rating_long: ratingLong,
+      vatsim_rating_short: ratingShort ?? undefined,
+      vatsim_rating_long: ratingLong ?? undefined,
       updated_at: sql`NOW()`
     })
     .where('id', '=', userId)
