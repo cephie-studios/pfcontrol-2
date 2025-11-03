@@ -283,7 +283,7 @@ export default function ChartDrawer({
       className={`fixed bottom-0 left-0 right-0 bg-zinc-900 text-white transition-transform duration-300 ${
         isOpen ? 'translate-y-0' : 'translate-y-full'
       } rounded-t-3xl border-t-2 border-blue-800 flex flex-col`}
-      style={{ height: '85vh', zIndex: 100 }}
+      style={{ height: '85vh', zIndex: 48 }}
     >
       <div className="relative flex items-center py-4 px-6 border-b border-blue-800/50 rounded-t-3xl gap-4 bg-zinc-900/80 backdrop-blur-sm shadow-lg">
         <div className="flex items-center gap-2">
@@ -294,7 +294,7 @@ export default function ChartDrawer({
         </div>
         <div
           className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4"
-          style={{ zIndex: 101 }}
+          style={{ zIndex: 49 }}
         >
           {!isLegacyMode && (
             <AirportDropdown
