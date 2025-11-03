@@ -14,6 +14,7 @@ interface ContactAcarsSidebarProps {
   onSendContact: (flightId: string | number, message: string, station: string, position: string) => void;
   activeAcarsFlights: Set<string | number>;
   airportIcao: string;
+  fallbackFrequency?: string; // Optional fallback frequency for center stations
 }
 
 export default function ContactAcarsSidebar({
@@ -23,6 +24,7 @@ export default function ContactAcarsSidebar({
   onSendContact,
   activeAcarsFlights,
   airportIcao,
+  fallbackFrequency,
 }: ContactAcarsSidebarProps) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [customMessage, setCustomMessage] = useState('');
@@ -34,10 +36,29 @@ export default function ContactAcarsSidebar({
 
   const flightsWithAcars = flights.filter((f) => activeAcarsFlights.has(f.id));
 
+  // Check if this is a center station (contains _CTR)
+  const isCenterStation = airportIcao.includes('_CTR');
+
   const getDefaultMessage = () => {
-    const freq = frequencies.find((f) => f.type === selectedPosition);
-    if (freq) {
-      return `CONTACT ME ON ${airportIcao}_${selectedPosition} ${freq.freq}`;
+    // If frequencies are loaded, use them
+    if (frequencies.length > 0) {
+      const freq = frequencies.find((f) => f.type === selectedPosition);
+      if (freq) {
+        // For center stations, use simplified format without position suffix
+        if (isCenterStation) {
+          return `CONTACT ME ON ${airportIcao} ${freq.freq}`;
+        }
+        return `CONTACT ME ON ${airportIcao}_${selectedPosition} ${freq.freq}`;
+      }
+    }
+
+    // Fallback if frequencies haven't loaded yet
+    if (isCenterStation) {
+      // Use fallback frequency if provided
+      if (fallbackFrequency) {
+        return `CONTACT ME ON ${airportIcao} ${fallbackFrequency}`;
+      }
+      return `CONTACT ME ON ${airportIcao}`;
     }
     return 'CONTACT ME ON FREQUENCY';
   };
@@ -210,8 +231,8 @@ export default function ContactAcarsSidebar({
               </div>
             </div>
 
-            {/* Position Selector */}
-            {selectedFlight && frequencies.length > 0 && (
+            {/* Position Selector - Hidden for Center Stations */}
+            {selectedFlight && frequencies.length > 0 && !isCenterStation && (
               <div className="mb-6">
                 <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
                   Contact Position
@@ -226,6 +247,20 @@ export default function ContactAcarsSidebar({
                   size="sm"
                 />
                 <div className="mt-3 bg-gray-950 border border-gray-800 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-mono">
+                    Default:{' '}
+                    <span className="text-blue-400">
+                      "{getDefaultMessage()}"
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Default Message Display for Center Stations */}
+            {selectedFlight && isCenterStation && (
+              <div className="mb-6">
+                <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
                   <p className="text-xs text-gray-500 font-mono">
                     Default:{' '}
                     <span className="text-blue-400">

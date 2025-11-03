@@ -86,6 +86,8 @@ export async function getWakeTurbulence(aircraftType: string) {
         return "N/A";
     }
 
-    const aircraft = aircraftArray.find((ac) => ac.type === aircraftType);
-    return aircraft ? aircraft.wtc : "N/A";
+    const normalizedAircraftType = aircraftType.toUpperCase();
+    const aircraft = aircraftArray.find((ac) => ac.type.toUpperCase() === normalizedAircraftType);
+
+    return aircraft?.wtc || "N/A";
 }

@@ -331,8 +331,8 @@
         "controlName": "Paphos",
         "elevation": 98,
         "allFrequencies": {
-            "APP": "119.900",
-            "TWR": "130.625",
+            "APP": "130.625",
+            "TWR": "119.900",
             "GND": "120.800",
             "DEL": "n/a"
         },
@@ -1109,5 +1109,89 @@
                 "MDAB": "RADAR VECTORS"
             }
         }
+    },
+    {
+        "icao": "LECB",
+        "name": "Barcelona Control",
+        "controlName": "Barcelona Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "132.355"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
+    },
+    {
+        "icao": "GCCC_R6",
+        "name": "Canarias Control R6",
+        "controlName": "Canarias Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "123.650"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
+    },
+    {
+        "icao": "EGTT",
+        "name": "London Control",
+        "controlName": "London Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "127.830"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
+    },
+    {
+        "icao": "EFIN",
+        "name": "Finland Control D",
+        "controlName": "Finland Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "121.300"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
+    },
+    {
+        "icao": "LCCC",
+        "name": "Nicosia Control",
+        "controlName": "Nicosia Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "128.600"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
+    },
+    {
+        "icao": "MDCS",
+        "name": "Santo Domingo Control",
+        "controlName": "Santo Domingo Center",
+        "picture": "",
+        "allFrequencies": {
+            "CTR": "124.300"
+        },
+        "sids": [],
+        "runways": [],
+        "departures": {},
+        "stars": [],
+        "arrivals": {}
     }
 ]

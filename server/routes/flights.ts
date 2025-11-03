@@ -1,6 +1,7 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
 import optionalAuth from '../middleware/optionalAuth.js';
+import { requireFlightAccess } from '../middleware/flightAccess.js';
 import { getFlightsBySession, addFlight, updateFlight, deleteFlight, validateAcarsAccess } from '../db/flights.js';
 import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
 import { recordNewFlight } from '../db/statistics.js';
@@ -45,7 +46,7 @@ router.post('/:sessionId', optionalAuth, flightCreationLimiter, async (req, res)
 });
 
 // PUT: /api/flights/:sessionId/:flightId - update a flight (for external access/fallback)
-router.put('/:sessionId/:flightId', requireAuth, async (req, res) => {
+router.put('/:sessionId/:flightId', requireAuth, requireFlightAccess, async (req, res) => {
     try {
         if (req.body.callsign && req.body.callsign.length > 16) {
             return res.status(400).json({ error: 'Callsign too long' });
@@ -67,7 +68,7 @@ router.put('/:sessionId/:flightId', requireAuth, async (req, res) => {
 });
 
 // DELETE: /api/flights/:sessionId/:flightId - delete a flight (for external access/fallback)
-router.delete('/:sessionId/:flightId', requireAuth, async (req, res) => {
+router.delete('/:sessionId/:flightId', requireAuth, requireFlightAccess, async (req, res) => {
     try {
         await deleteFlight(req.params.sessionId, req.params.flightId);
 

@@ -19,7 +19,7 @@ export default function AcarsSidebar({
   const { user } = useAuth();
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-700">
+      <div className="p-4 border-b h-1/2 overflow-y-auto border-zinc-700 ">
         <h3 className="text-sm font-mono text-zinc-300 mb-4 flex items-center gap-2">
           <User className="w-5 h-5 text-blue-500" />
           Controllers

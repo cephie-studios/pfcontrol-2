@@ -9,19 +9,6 @@ import type { SessionUsersServer } from './sessionUsersWebsocket.js';
 let io: SocketServer;
 const activeOverviewClients = new Set<string>()
 
-interface SessionUser {
-    id?: string;
-    username?: string;
-    position?: string;
-    roles?: Array<{
-        id: number;
-        name: string;
-        color: string;
-        icon: string;
-        priority: number;
-    }>;
-}
-
 export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: SessionUsersServer) {
     io = new SocketServer(httpServer, {
         path: '/sockets/overview',
@@ -73,6 +60,10 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
 
 export async function getOverviewData(sessionUsersIO: SessionUsersServer) { // Update parameter type
     try {
+        // Import sector controller function
+        const { getActiveSectorControllers } = await import('./sectorControllerWebsocket.js');
+        const sectorControllers = await getActiveSectorControllers();
+
         const allSessions = await getAllSessions();
         const pfatcSessions = allSessions.filter(session => session.is_pfatc);
         const activeSessions = [];
@@ -104,7 +95,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) { // U
                             try {
                                 const userData = await getUserById(user.id);
                                 hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
-                                
+
                                 if (userData?.avatar) {
                                     avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
                                 }
@@ -180,6 +171,50 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) { // U
                     });
                 }
             }
+        }
+
+        // Add sector controllers as separate "sessions"
+        for (const sectorController of sectorControllers) {
+            let hasVatsimRating = false;
+            let isEventController = false;
+            let avatar = sectorController.avatar;
+
+            try {
+                const userData = await getUserById(sectorController.id);
+                hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
+
+                if (userData?.avatar && !avatar) {
+                    avatar = `https://cdn.discordapp.com/avatars/${sectorController.id}/${userData.avatar}.png`;
+                }
+
+                if (sectorController.roles) {
+                    isEventController = sectorController.roles.some(role => role.name === 'Event Controller');
+                }
+            } catch (err) {
+                console.error('Error fetching user data for sector controller:', err);
+            }
+
+            const controllerData = {
+                username: sectorController.username || 'Unknown',
+                role: 'CTR',
+                avatar,
+                hasVatsimRating,
+                isEventController
+            };
+
+            activeSessions.push({
+                sessionId: `sector-${sectorController.id}`,
+                airportIcao: sectorController.station,
+                activeRunway: null,
+                createdAt: new Date(sectorController.joinedAt).toISOString(),
+                createdBy: sectorController.id,
+                isPFATC: true,
+                activeUsers: 1,
+                controllers: [controllerData],
+                atis: null,
+                flights: [],
+                flightCount: 0
+            });
         }
 
         type ArrivalFlight = typeof activeSessions[number]['flights'][number] & {

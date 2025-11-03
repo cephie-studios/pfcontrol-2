@@ -174,7 +174,7 @@ const profanityPatterns = [
 ];
 // backup
 const simpleProfanityWords = [
-    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'hell', 'crap', 'cunt', 
+    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'cunt', 
     'piss', 'whore', 'slut', 'bastard', 'dick', 'cock', 'prick',
     'fck', 'sht', 'btch', 'dmn', 'fuk', 'shyt', 'dck', 'fack', 'killyourself',
 

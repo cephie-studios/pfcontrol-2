@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   MapPin,
   Plane,
@@ -12,14 +12,22 @@ import {
   ExternalLink,
   Check,
   X,
+  MessageSquare,
+  Map as MapIcon,
+  Radio,
 } from 'lucide-react';
 import { createOverviewSocket } from '../sockets/overviewSocket';
 import { createFlightsSocket } from '../sockets/flightsSocket';
+import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
+import { updateFlight as updateFlightAPI } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
 import type { OverviewData, OverviewSession } from '../types/overview';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
+import FrequencyDisplay from '../components/tools/FrequencyDisplay';
+import ChartDrawer from '../components/tools/ChartDrawer';
+import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import Button from '../components/common/Button';
 import Dropdown from '../components/common/Dropdown';
 import TextInput from '../components/common/TextInput';
@@ -27,8 +35,12 @@ import StatusDropdown from '../components/dropdowns/StatusDropdown';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import AltitudeDropdown from '../components/dropdowns/AltitudeDropdown';
+import SidDropdown from '../components/dropdowns/SidDropdown';
+import StarDropdown from '../components/dropdowns/StarDropdown';
 import Loader from '../components/common/Loader';
 import ErrorScreen from '../components/common/ErrorScreen';
+import { getChartsForAirport } from '../utils/acars';
+import { createChartHandlers } from '../utils/charts';
 
 interface FlightWithDetails extends Flight {
   sessionId: string;
@@ -62,13 +74,41 @@ export default function PFATCFlights() {
   const [updatingFlights, setUpdatingFlights] = useState<Set<string>>(
     new Set()
   );
+  const [selectedStation, setSelectedStation] = useState<string>('');
+
+  const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false);
+  const [selectedChart, setSelectedChart] = useState<string | null>(null);
+  const [chartLoadError, setChartLoadError] = useState(false);
+  const [chartZoom, setChartZoom] = useState(1);
+  const [chartPan, setChartPan] = useState({ x: 0, y: 0 });
+  const [isChartDragging, setIsChartDragging] = useState(false);
+  const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null!);
+
+  const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
+  const [activeAcarsFlights, setActiveAcarsFlights] = useState<Set<string | number>>(new Set());
+  const [eventControllerViewEnabled, setEventControllerViewEnabled] = useState(false);
 
   const isEventController =
     user?.rolePermissions?.['event_controller'] ||
-    (user as any)?.roles?.some(
-      (role: any) => role.name === 'Event Controller'
+    (user as { roles?: { name: string }[] })?.roles?.some(
+      (role) => role.name === 'Event Controller'
     ) ||
     user?.isAdmin;
+
+  const chartHandlers = createChartHandlers(
+    chartZoom,
+    setChartZoom,
+    chartPan,
+    setChartPan,
+    isChartDragging,
+    setIsChartDragging,
+    chartDragStart,
+    setChartDragStart,
+    containerRef,
+    imageSize
+  );
 
   useEffect(() => {
     const socket = createOverviewSocket(
@@ -117,74 +157,194 @@ export default function PFATCFlights() {
   useEffect(() => {
     if (!isEventController || !overviewData?.activeSessions) return;
 
-    const currentSockets = new Map(flightSockets);
-    const activeSessions = new Set(
-      overviewData.activeSessions.map((s) => s.sessionId)
+    // Filter out sector sessions - they don't have flights
+    const realSessions = overviewData.activeSessions.filter(
+      (s) => !s.sessionId.startsWith('sector-')
     );
 
-    for (const [sessionId, socket] of currentSockets) {
-      if (!activeSessions.has(sessionId)) {
-        socket.socket.disconnect();
-        currentSockets.delete(sessionId);
-      }
-    }
+    const activeSessions = new Set(
+      realSessions.map((s) => s.sessionId)
+    );
 
-    for (const session of overviewData.activeSessions) {
-      if (!currentSockets.has(session.sessionId)) {
-        try {
-          const socket = createFlightsSocket(
-            session.sessionId,
-            '',
-            user?.userId || '',
-            (flight: Flight) => {
-              setOverviewData((prev) => {
-                if (!prev) return prev;
+    setFlightSockets((prevSockets) => {
+      const currentSockets = new Map(prevSockets);
 
-                const updatedSessions = prev.activeSessions.map((s) => {
-                  if (s.sessionId === session.sessionId) {
-                    return {
-                      ...s,
-                      flights: s.flights.map((f) =>
-                        f.id === flight.id ? flight : f
-                      ),
-                    };
-                  }
-                  return s;
-                });
-
-                return {
-                  ...prev,
-                  activeSessions: updatedSessions,
-                };
-              });
-            },
-            () => {},
-            () => {},
-            (error) => {
-              console.error(
-                `Flight socket error for session ${session.sessionId}:`,
-                error
-              );
-            }
-          );
-          currentSockets.set(session.sessionId, socket);
-        } catch (error) {
-          console.error(
-            `Failed to create socket for session ${session.sessionId}:`,
-            error
-          );
+      for (const [sessionId, socket] of currentSockets) {
+        if (!activeSessions.has(sessionId)) {
+          socket.socket.disconnect();
+          currentSockets.delete(sessionId);
         }
       }
-    }
 
-    setFlightSockets(currentSockets);
+      for (const session of realSessions) {
+        if (!currentSockets.has(session.sessionId)) {
+          try {
+            console.log(`Creating socket for session: ${session.sessionId}`);
+            const socket = createFlightsSocket(
+              session.sessionId,
+              '',
+              user?.userId || '',
+              (flight: Flight) => {
+                setOverviewData((prev) => {
+                  if (!prev) return prev;
+
+                  const updatedSessions = prev.activeSessions.map((s) => {
+                    if (s.sessionId === session.sessionId) {
+                      return {
+                        ...s,
+                        flights: s.flights.map((f) =>
+                          f.id === flight.id ? flight : f
+                        ),
+                      };
+                    }
+                    return s;
+                  });
+
+                  return {
+                    ...prev,
+                    activeSessions: updatedSessions,
+                  };
+                });
+              },
+              () => {
+                console.log(`Socket connected for session: ${session.sessionId}`);
+              },
+              () => {
+                console.log(`Socket disconnected for session: ${session.sessionId}`);
+              },
+              (error) => {
+                console.error(
+                  `Flight socket error for session ${session.sessionId}:`,
+                  error
+                );
+              },
+              true
+            );
+            currentSockets.set(session.sessionId, socket);
+          } catch (error) {
+            console.error(
+              `Failed to create socket for session ${session.sessionId}:`,
+              error
+            );
+          }
+        }
+      }
+
+      return currentSockets;
+    });
 
     return () => {
-      for (const socket of currentSockets.values()) {
-        socket.socket.disconnect();
+      // Cleanup on unmount
+      setFlightSockets((sockets) => {
+        for (const socket of sockets.values()) {
+          socket.socket.disconnect();
+        }
+        return new Map();
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEventController, overviewData?.activeSessions, user?.userId]);
+
+  useEffect(() => {
+    if (!isContactSidebarOpen) return;
+
+    const fetchActiveAcars = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`,
+          {
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const flights: Flight[] = await response.json();
+          setActiveAcarsFlights(new Set(flights.map((f) => f.id)));
+        }
+      } catch {
+        // Ignore errors
       }
     };
-  }, [isEventController, overviewData?.activeSessions, user?.userId]);
+
+    fetchActiveAcars();
+  }, [isContactSidebarOpen]);
+
+  // Sector controller socket connection
+  const sectorSocketRef = useRef<ReturnType<typeof createSectorControllerSocket> | null>(null);
+
+  useEffect(() => {
+    if (!isEventController || !eventControllerViewEnabled || !user?.userId) {
+      // Clean up socket if view is disabled
+      if (sectorSocketRef.current) {
+        sectorSocketRef.current.socket.disconnect();
+        sectorSocketRef.current = null;
+      }
+      return;
+    }
+
+    // Create socket if it doesn't exist
+    if (!sectorSocketRef.current) {
+      sectorSocketRef.current = createSectorControllerSocket({
+        userId: user.userId,
+        username: user.username || 'Unknown',
+        avatar: user.avatar || null
+      });
+    }
+
+    return () => {
+      // Clean up on unmount
+      if (sectorSocketRef.current) {
+        sectorSocketRef.current.socket.disconnect();
+        sectorSocketRef.current = null;
+      }
+    };
+  }, [isEventController, eventControllerViewEnabled, user?.userId, user?.username, user?.avatar]);
+
+  // Handle station selection changes
+  useEffect(() => {
+    if (!sectorSocketRef.current) return;
+
+    if (selectedStation) {
+      sectorSocketRef.current.selectStation(selectedStation);
+    } else {
+      sectorSocketRef.current.deselectStation();
+    }
+  }, [selectedStation]);
+
+  const handleSendContact = async (
+    flightId: string | number,
+    message: string,
+    station: string,
+    position: string
+  ) => {
+    const session = overviewData?.activeSessions.find((s) =>
+      s.flights.some((f) => f.id === flightId)
+    );
+
+    if (!session) {
+      throw new Error('Flight session not found');
+    }
+
+    const socketData = flightSockets.get(session.sessionId);
+    if (!socketData?.socket) {
+      throw new Error('No flights socket for this session');
+    }
+
+    let finalStation = station;
+    let finalPosition = position;
+
+    if (station.endsWith('_CTR')) {
+      finalStation = station.replace('_CTR', '');
+      finalPosition = 'CTR';
+    }
+
+    socketData.socket.emit('contactMe', {
+      flightId,
+      message,
+      station: finalStation,
+      position: finalPosition
+    });
+  };
 
   const activeAirports =
     overviewData?.activeSessions.map((session) => session.airportIcao) || [];
@@ -238,25 +398,32 @@ export default function PFATCFlights() {
   });
 
   const airportSessions =
-    overviewData?.activeSessions.reduce(
-      (acc, session) => {
-        if (!acc[session.airportIcao]) {
-          acc[session.airportIcao] = [];
-        }
-        acc[session.airportIcao].push(session);
-        return acc;
-      },
-      {} as Record<string, OverviewSession[]>
-    ) || {};
+    overviewData?.activeSessions
+      .filter((session) => !session.sessionId.startsWith('sector-')) // Filter out sector controllers
+      .reduce(
+        (acc, session) => {
+          if (!acc[session.airportIcao]) {
+            acc[session.airportIcao] = [];
+          }
+          acc[session.airportIcao].push(session);
+          return acc;
+        },
+        {} as Record<string, OverviewSession[]>
+      ) || {};
 
   const statusOptions = [
     { label: 'All Statuses', value: '' },
     { label: 'PENDING', value: 'PENDING' },
     { label: 'STUP', value: 'STUP' },
     { label: 'PUSH', value: 'PUSH' },
-    { label: 'TAXI', value: 'TAXI' },
-    { label: 'RWY', value: 'RWY' },
+    { label: 'TAXI (Departure)', value: 'TAXI_ORIG' },
+    { label: 'RWY (Departure)', value: 'RWY_ORIG' },
     { label: 'DEPA', value: 'DEPA' },
+    { label: 'ENROUTE', value: 'ENROUTE' },
+    { label: 'APP', value: 'APP' },
+    { label: 'RWY (Arrival)', value: 'RWY_ARRV' },
+    { label: 'TAXI (Arrival)', value: 'TAXI_ARRV' },
+    { label: 'GATE', value: 'GATE' },
   ];
 
   const flightTypeOptions = [
@@ -269,6 +436,16 @@ export default function PFATCFlights() {
     { label: 'Sort by Time', value: 'time' },
     { label: 'Sort by Callsign', value: 'callsign' },
     { label: 'Sort by Airport', value: 'airport' },
+  ];
+
+  const sectorStations = [
+    { label: 'Select Station', value: '', frequency: '' },
+    { label: 'LECB CTR', value: 'LECB_CTR', frequency: '132.355' },
+    { label: 'GCCC R6 CTR', value: 'GCCC_R6_CTR', frequency: '123.650' },
+    { label: 'EGTT CTR', value: 'EGTT_CTR', frequency: '127.830' },
+    { label: 'EFIN D CTR', value: 'EFIN_D_CTR', frequency: '121.300' },
+    { label: 'LCCC CTR', value: 'LCCC_CTR', frequency: '128.600' },
+    { label: 'MDCS CTR', value: 'MDCS_CTR', frequency: '124.300' },
   ];
 
   const getStatusClass = (status: string) => {
@@ -316,7 +493,7 @@ export default function PFATCFlights() {
     field: string,
     currentValue: string
   ) => {
-    if (!isEventController) return;
+    if (!isEventController || !eventControllerViewEnabled) return;
 
     setEditingState({
       flightId,
@@ -331,7 +508,7 @@ export default function PFATCFlights() {
   };
 
   const saveEdit = async () => {
-    if (!editingState || !isEventController) return;
+    if (!editingState || !isEventController || !eventControllerViewEnabled) return;
 
     const { flightId, field, value, originalValue } = editingState;
 
@@ -347,19 +524,19 @@ export default function PFATCFlights() {
       return;
     }
 
-    const socket = flightSockets.get(flight.sessionId);
-    if (!socket?.socket?.connected) {
-      console.error('No socket connection for session:', flight.sessionId);
-      setEditingState(null);
-      return;
-    }
-
-    setUpdatingFlights((prev) => new Set(prev).add(flightId));
+    setUpdatingFlights((prev) => new Set(prev).add(String(flightId)));
 
     try {
-      // Update the flight via the socket
       const updates: Partial<Flight> = { [field]: value };
-      socket.updateFlight(flightId, updates);
+
+      if (field === 'departure' && flight.departure !== value) {
+        updates.sid = '';
+      }
+      if (field === 'arrival' && flight.arrival !== value) {
+        updates.star = '';
+      }
+
+      await updateFlightAPI(flight.sessionId, flightId, updates);
 
       // Optimistically update the local state
       setOverviewData((prev) => {
@@ -370,7 +547,7 @@ export default function PFATCFlights() {
             return {
               ...session,
               flights: session.flights.map((f) =>
-                f.id === flightId ? { ...f, [field]: value } : f
+                f.id === flightId ? { ...f, ...updates } : f
               ),
             };
           }
@@ -386,10 +563,11 @@ export default function PFATCFlights() {
       setEditingState(null);
     } catch (error) {
       console.error('Failed to update flight:', error);
+      alert('Failed to update flight. Please try again.');
     } finally {
       setUpdatingFlights((prev) => {
         const next = new Set(prev);
-        next.delete(flightId);
+        next.delete(String(flightId));
         return next;
       });
     }
@@ -404,13 +582,13 @@ export default function PFATCFlights() {
     flight: FlightWithDetails,
     field: string,
     currentValue: string,
-    cellType: 'text' | 'status' | 'airport' | 'aircraft' | 'altitude' = 'text'
+    cellType: 'text' | 'status' | 'airport' | 'aircraft' | 'altitude' | 'sid' | 'star' = 'text'
   ) => {
     const isEditing =
       editingState?.flightId === flight.id && editingState?.field === field;
-    const isUpdating = updatingFlights.has(flight.id);
+    const isUpdating = updatingFlights.has(String(flight.id));
 
-    if (!isEventController) {
+    if (!isEventController || !eventControllerViewEnabled) {
       return (
         <span className="font-mono text-zinc-300">{currentValue || 'N/A'}</span>
       );
@@ -426,6 +604,7 @@ export default function PFATCFlights() {
                 onChange={handleEditInputChange}
                 size="xs"
                 placeholder="-"
+                controllerType="event"
               />
             ) : cellType === 'airport' ? (
               <AirportDropdown
@@ -443,6 +622,22 @@ export default function PFATCFlights() {
               />
             ) : cellType === 'altitude' ? (
               <AltitudeDropdown
+                value={editingState.value}
+                onChange={handleEditInputChange}
+                size="xs"
+                placeholder="-"
+              />
+            ) : cellType === 'sid' ? (
+              <SidDropdown
+                airportIcao={flight.departure || ''}
+                value={editingState.value}
+                onChange={handleEditInputChange}
+                size="xs"
+                placeholder="-"
+              />
+            ) : cellType === 'star' ? (
+              <StarDropdown
+                airportIcao={flight.arrival || ''}
                 value={editingState.value}
                 onChange={handleEditInputChange}
                 size="xs"
@@ -555,12 +750,22 @@ export default function PFATCFlights() {
                 >
                   PFATC Network Overview
                 </h1>
-                <p className="text-gray-400">
-                  Live view of all PFATC flights and active airports
+                <p className="text-gray-400 flex items-center gap-3">
+                  <span>Live view of all PFATC flights and active airports</span>
                   {isEventController && (
-                    <span className="ml-2 px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
-                      Event Controller - Click any field to edit
-                    </span>
+                    <button
+                      onClick={() => {
+                        setEventControllerViewEnabled(!eventControllerViewEnabled);
+                        setSelectedStation('');
+                      }}
+                      className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                        eventControllerViewEnabled
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
+                          : 'bg-zinc-700/20 text-zinc-400 border-zinc-600/30 hover:bg-zinc-700/30'
+                      }`}
+                    >
+                      {eventControllerViewEnabled ? '✓ ' : ''}Event Controller View
+                    </button>
                   )}
                 </p>
               </div>
@@ -610,6 +815,67 @@ export default function PFATCFlights() {
       </div>
 
       <div className="max-w-[80%] mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Event Controller Panel */}
+        {isEventController && eventControllerViewEnabled && (
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-wrap items-center gap-3 bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4">
+              {/* Station Selector */}
+              <Dropdown
+                options={sectorStations.map(s => ({ label: s.label, value: s.value }))}
+                value={selectedStation}
+                onChange={setSelectedStation}
+                placeholder="Select Station"
+                size="md"
+                className="min-w-[200px]"
+              />
+
+              {/* Frequency Display */}
+              {selectedStation && (
+                <FrequencyDisplay
+                  airportIcao={selectedStation}
+                  showExpandedTable={false}
+                />
+              )}
+
+              {/* Spacer */}
+              <div className="flex-1" />
+
+              {/* Action Buttons - matching Toolbar style */}
+              <Button
+                className="flex items-center gap-2 px-4 py-2"
+                aria-label="Contact"
+                size="sm"
+                onClick={() => setIsContactSidebarOpen(true)}
+                disabled={!selectedStation}
+              >
+                <Radio className="w-5 h-5" />
+                <span className="hidden sm:inline font-medium">Contact</span>
+              </Button>
+
+              <Button
+                className="flex items-center gap-2 px-4 py-2"
+                aria-label="Chat"
+                size="sm"
+                onClick={() => alert('Global Chat - Coming soon!')}
+                disabled={!selectedStation}
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span className="hidden sm:inline font-medium">Chat</span>
+              </Button>
+
+              <Button
+                className="flex items-center gap-2 px-4 py-2"
+                aria-label="Charts"
+                size="sm"
+                onClick={() => setIsChartDrawerOpen(true)}
+              >
+                <MapIcon className="w-5 h-5" />
+                <span className="hidden sm:inline font-medium">Charts</span>
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             <div className="flex-1 relative group">
@@ -741,7 +1007,7 @@ export default function PFATCFlights() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          {isEventController ? (
+                          {isEventController && eventControllerViewEnabled ? (
                             renderEditableCell(
                               flight,
                               'status',
@@ -760,19 +1026,20 @@ export default function PFATCFlights() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
-                            {renderEditableCell(
-                              flight,
-                              'departure',
-                              flight.departure || '',
-                              'airport'
-                            )}
+                            <div className="min-w-[80px]">
+                              <span className="font-mono text-zinc-300">
+                                {flight.departure || 'N/A'}
+                              </span>
+                            </div>
                             <span className="text-zinc-500">→</span>
-                            {renderEditableCell(
-                              flight,
-                              'arrival',
-                              flight.arrival || '',
-                              'airport'
-                            )}
+                            <div className="min-w-[80px]">
+                              {renderEditableCell(
+                                flight,
+                                'arrival',
+                                flight.arrival || '',
+                                'airport'
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -804,7 +1071,7 @@ export default function PFATCFlights() {
                             flight,
                             'sid',
                             flight.sid || '',
-                            'text'
+                            'sid'
                           )}
                         </td>
                         <td className="px-6 py-4">
@@ -812,7 +1079,7 @@ export default function PFATCFlights() {
                             flight,
                             'star',
                             flight.star || '',
-                            'text'
+                            'star'
                           )}
                         </td>
                       </tr>
@@ -876,8 +1143,12 @@ export default function PFATCFlights() {
                         )}
                       </Button>
                     </div>
-
+                  <div className="space-y-4">
                     <WindDisplay icao={icao} size="small" />
+                  {eventControllerViewEnabled && (
+                    <FrequencyDisplay airportIcao={icao ?? ''} />
+                  )}
+                    </div>
 
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div className="text-center">
@@ -957,6 +1228,41 @@ export default function PFATCFlights() {
           </div>
         </div>
       </div>
+
+      {/* Chart Drawer */}
+      <ChartDrawer
+        isOpen={isChartDrawerOpen}
+        onClose={() => setIsChartDrawerOpen(false)}
+        selectedChart={selectedChart}
+        setSelectedChart={setSelectedChart}
+        chartLoadError={chartLoadError}
+        setChartLoadError={setChartLoadError}
+        chartZoom={chartZoom}
+        chartPan={chartPan}
+        isChartDragging={isChartDragging}
+        handleChartMouseDown={chartHandlers.handleChartMouseDown}
+        handleChartMouseMove={chartHandlers.handleChartMouseMove}
+        handleChartMouseUp={chartHandlers.handleChartMouseUp}
+        handleZoomIn={chartHandlers.handleZoomIn}
+        handleZoomOut={chartHandlers.handleZoomOut}
+        handleResetZoom={chartHandlers.handleResetZoom}
+        getChartsForAirport={getChartsForAirport}
+        containerRef={containerRef}
+        setImageSize={setImageSize}
+        airports={[]}
+        settings={user?.settings || null}
+      />
+
+      {/* Contact ACARS Sidebar */}
+      <ContactAcarsSidebar
+        open={isContactSidebarOpen}
+        onClose={() => setIsContactSidebarOpen(false)}
+        flights={allFlights}
+        onSendContact={handleSendContact}
+        activeAcarsFlights={activeAcarsFlights}
+        airportIcao={selectedStation}
+        fallbackFrequency={sectorStations.find(s => s.value === selectedStation)?.frequency}
+      />
     </div>
   );
 }

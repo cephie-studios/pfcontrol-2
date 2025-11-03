@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
@@ -15,6 +16,7 @@ import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
 import type { Settings } from '../../types/settings';
 import PrivacySettings from './PrivacySettings';
+import ConfirmationDialog from '../common/ConfirmationDialog';
 
 interface AccountSettingsProps {
   settings: Settings | null;
@@ -28,6 +30,8 @@ export default function AccountSettings({
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
+  const [showVatsimConfirm, setShowVatsimConfirm] = useState(false);
+  const [showRobloxConfirm, setShowRobloxConfirm] = useState(false);
   const isVatsimLinked = !!(
     user?.vatsimCid ||
     user?.vatsimRatingShort ||
@@ -43,7 +47,7 @@ export default function AccountSettings({
   };
 
   const handleUnlinkVatsim = async () => {
-    if (!confirm('Unlink your VATSIM account?')) return;
+    setShowVatsimConfirm(false);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/unlink`,
@@ -64,10 +68,7 @@ export default function AccountSettings({
   };
 
   const handleUnlinkRoblox = async () => {
-    if (!confirm('Are you sure you want to unlink your Roblox account?')) {
-      return;
-    }
-
+    setShowRobloxConfirm(false);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox/unlink`,
@@ -239,7 +240,7 @@ export default function AccountSettings({
               <div>
                 {user?.robloxUsername ? (
                   <Button
-                    onClick={handleUnlinkRoblox}
+                    onClick={() => setShowRobloxConfirm(true)}
                     variant="outline"
                     size="sm"
                     className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600"
@@ -296,7 +297,7 @@ export default function AccountSettings({
               <div>
                 {isVatsimLinked ? (
                   <Button
-                    onClick={handleUnlinkVatsim}
+                    onClick={() => setShowVatsimConfirm(true)}
                     variant="outline"
                     size="sm"
                     className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600"
@@ -320,6 +321,31 @@ export default function AccountSettings({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        isOpen={showVatsimConfirm}
+        onConfirm={handleUnlinkVatsim}
+        onCancel={() => setShowVatsimConfirm(false)}
+        title="Unlink VATSIM Account"
+        description="Are you sure you want to unlink your VATSIM account? Your controller rating will no longer be displayed on your profile."
+        confirmText="Unlink"
+        cancelText="Cancel"
+        variant="danger"
+        icon={<AlertTriangle size={24} />}
+      />
+
+      <ConfirmationDialog
+        isOpen={showRobloxConfirm}
+        onConfirm={handleUnlinkRoblox}
+        onCancel={() => setShowRobloxConfirm(false)}
+        title="Unlink Roblox Account"
+        description="Are you sure you want to unlink your Roblox account? You will need to link it again to use Roblox-related features."
+        confirmText="Unlink"
+        cancelText="Cancel"
+        variant="danger"
+        icon={<AlertTriangle size={24} />}
+      />
     </div>
   );
 }

@@ -633,6 +633,7 @@ export default function DepartureTable({
                           }
                           size="xs"
                           placeholder="-"
+                          controllerType="departure"
                         />
                       </td>
                     )}

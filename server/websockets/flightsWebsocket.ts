@@ -3,13 +3,14 @@ import { addFlight, updateFlight, deleteFlight, type AddFlightData, type ClientF
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { updateSession, getAllSessions } from '../db/sessions.js';
 import { getArrivalsIO } from './arrivalsWebsocket.js';
-import { flightsDb } from '../db/connection.js';
+import { flightsDb, mainDb } from '../db/connection.js';
 import { validateSessionId, validateAccessId, validateFlightId } from '../utils/validation.js';
 import { sanitizeCallsign, sanitizeString, sanitizeSquawk, sanitizeFlightLevel, sanitizeRunway } from '../utils/sanitization.js';
 import type { Server as HTTPServer } from 'http';
 import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
+import { isEventController } from '../middleware/flightAccess.js';
 
 interface FlightUpdateData {
     flightId: string | number;
@@ -54,13 +55,38 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         const sessionId = socket.handshake.query.sessionId as string;
         const accessId = socket.handshake.query.accessId as string;
         const userId = socket.handshake.query.userId as string;
+        const isEventControllerFlag = socket.handshake.query.isEventController === 'true';
 
         try {
             const validSessionId = validateSessionId(sessionId);
             socket.data.sessionId = validSessionId;
 
             let role: 'pilot' | 'controller' = 'pilot';
-            if (accessId) {
+
+            if (isEventControllerFlag && userId) {
+                const hasEventControllerRole = await isEventController(userId);
+                if (hasEventControllerRole) {
+                    const session = await mainDb
+                        .selectFrom('sessions')
+                        .select(['is_pfatc'])
+                        .where('session_id', '=', validSessionId)
+                        .executeTakeFirst();
+
+                    if (session?.is_pfatc) {
+                        role = 'controller';
+                        socket.data.isEventController = true;
+                    } else {
+                        console.error('Event controller attempted to connect to non-PFATC session:', validSessionId);
+                        socket.disconnect(true);
+                        return;
+                    }
+                } else {
+                    console.error('User claimed to be event controller but lacks role:', userId);
+                    socket.disconnect(true);
+                    return;
+                }
+            }
+            else if (accessId) {
                 const validAccessId = validateAccessId(accessId);
                 const valid = await validateSessionAccess(validSessionId, validAccessId);
                 if (!valid) {
@@ -68,9 +94,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     return;
                 }
                 role = 'controller';
+                socket.data.isEventController = false;
             }
-            socket.data.role = role;
 
+            socket.data.role = role;
             socket.join(validSessionId);
         } catch (error) {
             console.error('Invalid session or access ID:', (error as Error).message);
@@ -158,7 +185,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                         .where('id', '=', flightId as string)
                         .executeTakeFirst();
                     const { acars_token: _, user_id: __, ip_address: ___, ...oldSanitized } = oldFlight || {};
-                    const { acars_token: ____, user_id: _____, ip_address: ______, ...newSanitized } = updatedFlight;
+                    const {user_id: _____, ip_address: ______, ...newSanitized } = updatedFlight;
 
                     // Log the update action
                     await logFlightAction({

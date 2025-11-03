@@ -375,7 +375,7 @@ export default function ArrivalsTable({
 												}
 												size="xs"
 												placeholder="-"
-												isArrival={true}
+												controllerType="arrival"
 											/>
 										</td>
 									)}

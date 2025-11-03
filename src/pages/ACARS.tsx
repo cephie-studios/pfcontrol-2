@@ -342,10 +342,14 @@ NOTES:
       if (String(payload.flightId) === String(flightId)) {
         const station = payload.station || flight?.departure || 'UNKNOWN';
         const position = payload.position || 'TWR';
+        const displayStation = station.includes('_CTR')
+          ? station
+          : `${station}_${position}`;
+
         const contactMsg: AcarsMessage = {
         id: `${Date.now()}-contact`,
         timestamp: new Date().toISOString(),
-        station: `${station}_${position}`,
+        station: displayStation,
         text: payload.message || 'CONTACT CONTROLLER ON FREQUENCY',
         type: 'contact',
         };

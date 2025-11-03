@@ -406,6 +406,7 @@ export default function DepartureTableMobile({
                     onChange={(status) => handleStatusChange(flight.id, status)}
                     size="xs"
                     placeholder="-"
+                    controllerType="departure"
                   />
                 </div>
               )}

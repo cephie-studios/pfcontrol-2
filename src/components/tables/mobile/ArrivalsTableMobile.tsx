@@ -240,7 +240,7 @@ export default function ArrivalsTableMobile({
                       }
                       size="sm"
                       placeholder="-"
-                      isArrival={true}
+                      controllerType="arrival"
                     />
                   </div>
                 )}
