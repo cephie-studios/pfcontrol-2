@@ -81,15 +81,17 @@ export default function ChartDrawer({
   const viewMode = settings?.acars?.chartDrawerViewMode || 'legacy';
 
   const sectorAirportMap: Record<string, string[]> = {
-    'LECB_CTR': ['LEMH'],
-    'EGTT_CTR': ['EGKK', 'EGHI'],
-    'GCCC_R6_CTR': ['GCLP'],
-    'LCCC_CTR': ['LCLK', 'LCPH', 'LCRA'],
-    'MDCS_CTR': ['MDPC', 'MDST', 'MDAB', 'MDCR', 'MTCA'],
-    'EFIN_CTR': ['EFKT'],
+    LECB_CTR: ['LEMH'],
+    EGTT_CTR: ['EGKK', 'EGHI'],
+    GCCC_R6_CTR: ['GCLP'],
+    LCCC_CTR: ['LCLK', 'LCPH', 'LCRA'],
+    MDCS_CTR: ['MDPC', 'MDST', 'MDAB', 'MDCR', 'MTCA'],
+    EFIN_CTR: ['EFKT'],
   };
 
-  const sectorAirports = sectorStation ? sectorAirportMap[sectorStation] || [] : [];
+  const sectorAirports = sectorStation
+    ? sectorAirportMap[sectorStation] || []
+    : [];
 
   const isLegacyMode = viewMode === 'legacy';
   const hasSectorAirports = sectorAirports.length > 0;
@@ -167,7 +169,9 @@ export default function ChartDrawer({
               chart.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
               chart.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
               (chart.credits &&
-                chart.credits.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                chart.credits
+                  .toLowerCase()
+                  .includes(searchQuery.toLowerCase())) ||
               icao.toLowerCase().includes(searchQuery.toLowerCase())
           );
           return { icao, charts: filteredCharts };
@@ -304,6 +308,7 @@ export default function ChartDrawer({
                 setSelectedChart(null);
               }}
               size="sm"
+              className="min-w-48"
             />
           )}
           {selectedChart && (!isMobile || mobileView === 'chart') && (

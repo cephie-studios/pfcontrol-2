@@ -58,6 +58,9 @@ interface ToolbarProps {
   onPositionChange: (position: Position) => void;
   onContactAcarsClick?: () => void;
   onChartClick?: () => void;
+  showChartsDrawer?: boolean;
+  showContactAcarsModal?: boolean;
+  onCloseAllSidebars?: () => void;
 }
 
 const getIconComponent = (iconName: string) => {
@@ -112,14 +115,21 @@ export default function Toolbar({
   onPositionChange,
   onContactAcarsClick,
   onChartClick,
+  showChartsDrawer = false,
+  showContactAcarsModal = false,
+  onCloseAllSidebars,
 }: ToolbarProps) {
   const [runway, setRunway] = useState(activeRunway || '');
   const [chatOpen, setChatOpen] = useState(false);
   const [atisOpen, setAtisOpen] = useState(false);
   const [activeUsers, setActiveUsers] = useState<SessionUser[]>([]);
   const [unreadMentions, setUnreadMentions] = useState<ChatMention[]>([]);
-  const [unreadSessionMentions, setUnreadSessionMentions] = useState<ChatMention[]>([]);
-  const [unreadGlobalMentions, setUnreadGlobalMentions] = useState<ChatMention[]>([]);
+  const [unreadSessionMentions, setUnreadSessionMentions] = useState<
+    ChatMention[]
+  >([]);
+  const [unreadGlobalMentions, setUnreadGlobalMentions] = useState<
+    ChatMention[]
+  >([]);
   const [connectionStatus, setConnectionStatus] = useState<
     'Connected' | 'Reconnecting' | 'Disconnected'
   >('Disconnected');
@@ -246,9 +256,15 @@ export default function Toolbar({
     }
   };
 
-  const handleAtisOpen = () => {
-    setAtisOpen(true);
+  const closeAllSidebars = () => {
     setChatOpen(false);
+    setAtisOpen(false);
+    onCloseAllSidebars?.();
+  };
+
+  const handleAtisOpen = () => {
+    closeAllSidebars();
+    setAtisOpen(true);
     setAtisFlash(false);
   };
 
@@ -257,13 +273,30 @@ export default function Toolbar({
   };
 
   const handleChatOpen = () => {
+    closeAllSidebars();
     setChatOpen(true);
-    setAtisOpen(false);
   };
 
   const handleChatClose = () => {
     setChatOpen(false);
   };
+
+  const handleChartsClick = () => {
+    closeAllSidebars();
+    onChartClick?.();
+  };
+
+  const handleContactClick = () => {
+    closeAllSidebars();
+    onContactAcarsClick?.();
+  };
+
+  useEffect(() => {
+    if (showChartsDrawer || showContactAcarsModal) {
+      setChatOpen(false);
+      setAtisOpen(false);
+    }
+  }, [showChartsDrawer, showContactAcarsModal]);
 
   useEffect(() => {
     if (!sessionId || !accessId || !user) return;
@@ -336,17 +369,6 @@ export default function Toolbar({
 
     loadInitialAtisData();
   }, [sessionId, accessId]);
-
-  const getStatusColor = () => {
-    switch (connectionStatus) {
-      case 'Connected':
-        return 'text-green-500';
-      case 'Reconnecting':
-        return 'text-yellow-500';
-      case 'Disconnected':
-        return 'text-red-500';
-    }
-  };
 
   const getStatusIcon = () => {
     switch (connectionStatus) {
@@ -571,11 +593,7 @@ export default function Toolbar({
           className="flex items-center gap-2 px-4 py-2"
           aria-label="Charts"
           size="sm"
-          onClick={() => {
-            setChatOpen(false);
-            setAtisOpen(false);
-            onChartClick?.();
-          }}
+          onClick={handleChartsClick}
           id="chart-button"
         >
           <Map className="w-5 h-5" />
@@ -587,31 +605,13 @@ export default function Toolbar({
             className="flex items-center gap-2 px-4 py-2"
             aria-label="Contact"
             size="sm"
-            onClick={() => {
-              setChatOpen(false);
-              setAtisOpen(false);
-              onContactAcarsClick?.();
-            }}
+            onClick={handleContactClick}
             id="contact-button"
           >
             <Radio className="w-5 h-5" />
             <span className="hidden sm:inline font-medium">Contact</span>
           </Button>
         )}
-
-        <ChatSidebar
-          sessionId={sessionId ?? ''}
-          accessId={accessId ?? ''}
-          open={chatOpen}
-          onClose={handleChatClose}
-          sessionUsers={activeUsers}
-          onMentionReceived={handleChatSidebarMention}
-          station={icao ?? undefined}
-          position={position as string}
-          isPFATC={isPFATC}
-          unreadSessionCount={unreadSessionMentions.length}
-          unreadGlobalCount={unreadGlobalMentions.length}
-        />
 
         <Button
           className="flex items-center gap-2 px-4 py-2"
@@ -629,6 +629,20 @@ export default function Toolbar({
           <Settings className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Settings</span>
         </Button>
+
+        <ChatSidebar
+          sessionId={sessionId ?? ''}
+          accessId={accessId ?? ''}
+          open={chatOpen}
+          onClose={handleChatClose}
+          sessionUsers={activeUsers}
+          onMentionReceived={handleChatSidebarMention}
+          station={icao ?? undefined}
+          position={position as string}
+          isPFATC={isPFATC}
+          unreadSessionCount={unreadSessionMentions.length}
+          unreadGlobalCount={unreadGlobalMentions.length}
+        />
 
         <ATIS
           icao={icao ?? ''}

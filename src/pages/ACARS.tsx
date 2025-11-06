@@ -173,15 +173,21 @@ NOTES:
   };
 
   const handleToggleSidebar = () => {
-    setShowSidebar((prev) => {
-      const newValue = !prev;
-      localStorage.setItem('acars-sidebar-visible', String(newValue));
-      return newValue;
-    });
+    if (showSidebar) {
+      setShowSidebar(false);
+    } else {
+      setShowChartsDrawer(false);
+      setShowSidebar(true);
+    }
   };
 
   const handleToggleChartsDrawer = () => {
-    setShowChartsDrawer((prev) => !prev);
+    if (showChartsDrawer) {
+      setShowChartsDrawer(false);
+    } else {
+      setShowSidebar(false);
+      setShowChartsDrawer(true);
+    }
   };
 
   useEffect(() => {
@@ -339,24 +345,29 @@ NOTES:
     );
     socket.socket.on(
       'contactMe',
-      (payload: { flightId: string | number; message?: string; station?: string; position?: string }) => {
-      if (String(payload.flightId) === String(flightId)) {
-        const station = payload.station || flight?.departure || 'UNKNOWN';
-        const position = payload.position || 'TWR';
-        const displayStation = station.includes('_CTR')
-          ? station
-          : `${station}_${position}`;
+      (payload: {
+        flightId: string | number;
+        message?: string;
+        station?: string;
+        position?: string;
+      }) => {
+        if (String(payload.flightId) === String(flightId)) {
+          const station = payload.station || flight?.departure || 'UNKNOWN';
+          const position = payload.position || 'TWR';
+          const displayStation = station.includes('_CTR')
+            ? station
+            : `${station}_${position}`;
 
-        const contactMsg: AcarsMessage = {
-        id: `${Date.now()}-contact`,
-        timestamp: new Date().toISOString(),
-        station: displayStation,
-        text: payload.message || 'CONTACT CONTROLLER ON FREQUENCY',
-        type: 'contact',
-        };
-        setMessages((prev) => [...prev, contactMsg]);
-        if (settings) playNotificationSound('contact', settings);
-      }
+          const contactMsg: AcarsMessage = {
+            id: `${Date.now()}-contact`,
+            timestamp: new Date().toISOString(),
+            station: displayStation,
+            text: payload.message || 'CONTACT CONTROLLER ON FREQUENCY',
+            type: 'contact',
+          };
+          setMessages((prev) => [...prev, contactMsg]);
+          if (settings) playNotificationSound('contact', settings);
+        }
       }
     );
     return () => {
@@ -587,7 +598,7 @@ NOTES:
               onClick={handleToggleChartsDrawer}
             >
               {showChartsDrawer ? (
-                <MapPinned className="w-5 h-5" />
+                <PanelLeftClose className="w-5 h-5" />
               ) : (
                 <Map className="w-5 h-5" />
               )}

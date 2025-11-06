@@ -270,10 +270,6 @@ export default function Create() {
                 disabled={isCreating || !selectedAirport}
                 placeholder="Same as departure"
               />
-              <p className="text-xs text-gray-400 mt-1">
-                If not selected, departure runway will be used for arrivals in
-                the initial ATIS
-              </p>
             </div>
 
             {selectedAirport && <WindDisplay icao={selectedAirport} />}

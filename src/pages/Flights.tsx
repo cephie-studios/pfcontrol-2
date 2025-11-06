@@ -22,6 +22,7 @@ import type {
   DepartureTableColumnSettings,
 } from '../types/settings';
 import type { FieldEditingState } from '../sockets/sessionUsersSocket';
+import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import Navbar from '../components/Navbar';
 import Toolbar from '../components/tools/Toolbar';
 import DepartureTable from '../components/tables/DepartureTable';
@@ -30,11 +31,10 @@ import CombinedFlightsTable from '../components/tables/CombinedFlightsTable';
 import AccessDenied from '../components/AccessDenied';
 import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
 import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
-import Button from '../components/common/Button';
-import Loader from '../components/common/Loader';
-import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import ChartDrawer from '../components/tools/ChartDrawer';
+import Button from '../components/common/Button';
+import Loader from '../components/common/Loader';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -345,7 +345,12 @@ export default function Flights() {
     if (!flightsSocket?.socket) {
       throw new Error('No flights socket');
     }
-    flightsSocket.socket.emit('contactMe', { flightId, message, station, position});
+    flightsSocket.socket.emit('contactMe', {
+      flightId,
+      message,
+      station,
+      position,
+    });
   };
 
   useEffect(() => {
@@ -928,6 +933,11 @@ export default function Flights() {
     );
   }
 
+  const handleCloseAllSidebars = () => {
+    setShowChartsDrawer(false);
+    setShowContactAcarsModal(false);
+  };
+
   return (
     <div className="min-h-screen text-white relative">
       <div
@@ -960,6 +970,9 @@ export default function Flights() {
             onPositionChange={setPosition}
             onContactAcarsClick={() => setShowContactAcarsModal(true)}
             onChartClick={() => setShowChartsDrawer((prev) => !prev)}
+            showChartsDrawer={showChartsDrawer}
+            showContactAcarsModal={showContactAcarsModal}
+            onCloseAllSidebars={handleCloseAllSidebars}
           />
           <div className="-mt-4">
             {loading ? (
