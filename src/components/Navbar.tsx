@@ -63,7 +63,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
     window.addEventListener('scroll', handleScroll);
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  },[]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -118,7 +118,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
   const navTopPosition = hasLegacyBanner && atTop ? 'top-[42px]' : 'top-0';
 
   const navClass = [
-    `fixed ${navTopPosition} w-full z-50 transition-all duration-150 ease-in-out`,
+    `fixed ${navTopPosition} w-full z-[9999] transition-all duration-150 ease-in-out`,
     atTop
       ? 'bg-transparent border-none'
       : 'bg-black/30 backdrop-blur-md border-white/10',
@@ -129,11 +129,33 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
 
   const handleCopy = async (text: string) => {
     try {
+      // Try modern clipboard API first
       await navigator.clipboard.writeText(text);
       setCopied(text);
       setTimeout(() => setCopied(null), 2000);
-    } catch {
-      console.error('Failed to copy text to clipboard');
+    } catch (error) {
+      // Fallback to older method
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (successful) {
+          setCopied(text);
+          setTimeout(() => setCopied(null), 2000);
+        } else {
+          console.error('Fallback copy method failed');
+        }
+      } catch (fallbackError) {
+        console.error('Failed to copy text to clipboard', fallbackError);
+      }
     }
   };
 
@@ -339,7 +361,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                       )}
                     </div>
                     {copied === submitLink && (
-                      <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg"></div>
+                      <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg pointer-events-none"></div>
                     )}
                   </Button>
                 </div>
@@ -381,7 +403,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
                       )}
                     </div>
                     {copied === viewLink && (
-                      <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg"></div>
+                      <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg pointer-events-none"></div>
                     )}
                   </Button>
                 </div>

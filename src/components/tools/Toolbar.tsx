@@ -256,25 +256,26 @@ export default function Toolbar({
     }
   };
 
-  const closeAllSidebars = () => {
-    setChatOpen(false);
-    setAtisOpen(false);
-    onCloseAllSidebars?.();
-  };
-
-  const handleAtisOpen = () => {
-    closeAllSidebars();
-    setAtisOpen(true);
+  const handleAtisToggle = () => {
+    setAtisOpen((prev) => !prev);
     setAtisFlash(false);
+    if (!atisOpen) {
+      setChatOpen(false);
+      onCloseAllSidebars?.();
+    }
   };
 
   const handleAtisClose = () => {
     setAtisOpen(false);
   };
 
-  const handleChatOpen = () => {
-    closeAllSidebars();
-    setChatOpen(true);
+  const handleChatToggle = () => {
+    setChatOpen((prev) => !prev);
+    if (!chatOpen) {
+      // Only close others when opening
+      setAtisOpen(false);
+      onCloseAllSidebars?.();
+    }
   };
 
   const handleChatClose = () => {
@@ -282,12 +283,14 @@ export default function Toolbar({
   };
 
   const handleChartsClick = () => {
-    closeAllSidebars();
+    setChatOpen(false);
+    setAtisOpen(false);
     onChartClick?.();
   };
 
   const handleContactClick = () => {
-    closeAllSidebars();
+    setChatOpen(false);
+    setAtisOpen(false);
     onContactAcarsClick?.();
   };
 
@@ -559,7 +562,7 @@ export default function Toolbar({
           aria-label="ATIS"
           size="sm"
           variant="outline"
-          onClick={handleAtisOpen}
+          onClick={handleAtisToggle}
           id="atis-button"
         >
           <Info className="w-5 h-5" />
@@ -572,7 +575,7 @@ export default function Toolbar({
           className="flex items-center gap-2 px-4 py-2 relative"
           aria-label="Chat"
           size="sm"
-          onClick={handleChatOpen}
+          onClick={handleChatToggle}
           id="chat-button"
         >
           <MessageCircle className="w-5 h-5" />

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
@@ -8,7 +8,6 @@ import {
   PanelLeftOpen,
   Map,
   PlaneTakeoff,
-  MapPinned,
   PlusCircle,
 } from 'lucide-react';
 import { useData } from '../hooks/data/useData';
@@ -67,7 +66,7 @@ export default function ACARS() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const chartHandlers = createChartHandlers(
+  const chartHandlers = useMemo(() => createChartHandlers(
     chartZoom,
     setChartZoom,
     chartPan,
@@ -78,7 +77,7 @@ export default function ACARS() {
     setChartDragStart,
     containerRef as React.RefObject<HTMLDivElement>,
     imageSize
-  );
+  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
 
   const {
     handleZoomIn,
@@ -87,6 +86,9 @@ export default function ACARS() {
     handleChartMouseDown,
     handleChartMouseMove,
     handleChartMouseUp,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
   } = chartHandlers;
 
   useEffect(() => {
@@ -723,6 +725,9 @@ NOTES:
               handleChartMouseDown={handleChartMouseDown}
               handleChartMouseMove={handleChartMouseMove}
               handleChartMouseUp={handleChartMouseUp}
+              handleTouchStart={handleTouchStart}
+              handleTouchMove={handleTouchMove}
+              handleTouchEnd={handleTouchEnd}
               handleZoomIn={handleZoomIn}
               handleZoomOut={handleZoomOut}
               handleResetZoom={handleResetZoom}
@@ -751,6 +756,9 @@ NOTES:
         handleChartMouseDown={handleChartMouseDown}
         handleChartMouseMove={handleChartMouseMove}
         handleChartMouseUp={handleChartMouseUp}
+        handleTouchStart={handleTouchStart}
+        handleTouchMove={handleTouchMove}
+        handleTouchEnd={handleTouchEnd}
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleResetZoom={handleResetZoom}

@@ -889,7 +889,7 @@ export default function AdminUsers() {
 
           {/* Role Assignment Modal */}
           {showRoleModal && selectedUserForRole && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
               <div className="bg-zinc-900 border-2 border-zinc-700 rounded-2xl p-6 max-w-md w-full mx-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">

@@ -406,7 +406,7 @@ export async function updateFlight(
   const allowedColumns = [
     'callsign', 'aircraft', 'departure', 'arrival', 'flight_type',
     'stand', 'gate', 'runway', 'sid', 'star', 'cruisingFL', 'clearedFL',
-    'squawk', 'wtc', 'status', 'remark', 'clearance', 'pdc_remarks', 'hidden'
+    'squawk', 'wtc', 'status', 'remark', 'clearance', 'pdc_remarks', 'hidden', 'route'
   ];
 
   const dbUpdates: Record<string, unknown> = {};

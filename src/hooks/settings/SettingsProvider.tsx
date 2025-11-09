@@ -66,7 +66,7 @@ const defaultSettings: Settings = {
 		sidebarWidth: 15,
 		terminalWidth: 70,
 		notesWidth: 15,
-		chartDrawerViewMode: 'list',
+		chartDrawerViewMode: 'legacy',
 		autoRedirectToAcars: true
 	},
 	notificationViewMode: 'list',

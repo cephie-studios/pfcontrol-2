@@ -224,7 +224,7 @@ export default function ChatSidebar({
         socketRef.current = null;
       }
     };
-  }, [sessionId, accessId, user, onMentionReceived, open, activeTab]);
+  }, [sessionId, accessId, user, open, activeTab]);
 
   useEffect(() => {
     if (!socketRef.current) return;
@@ -581,7 +581,7 @@ export default function ChatSidebar({
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
         open ? 'translate-x-[] shadow-2xl shadow-black/90' : 'translate-x-full'
       } rounded-l-3xl border-l-2 border-blue-800 flex flex-col`}
-      style={{ zIndex: 100 }}
+      style={{ zIndex: 10000 }}
     >
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
         <div className="flex items-center gap-3">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   MapPin,
   Plane,
@@ -115,7 +115,7 @@ export default function PFATCFlights() {
     ) ||
     user?.isAdmin;
 
-  const chartHandlers = createChartHandlers(
+  const chartHandlers = useMemo(() => createChartHandlers(
     chartZoom,
     setChartZoom,
     chartPan,
@@ -126,7 +126,11 @@ export default function PFATCFlights() {
     setChartDragStart,
     containerRef,
     imageSize
-  );
+  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
+
+  const handleMentionReceived = useCallback(() => {
+    setUnreadMentions((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     const socket = createOverviewSocket(
@@ -865,7 +869,11 @@ export default function PFATCFlights() {
                 className="flex items-center gap-2 px-4 py-2"
                 aria-label="Contact"
                 size="sm"
-                onClick={() => setIsContactSidebarOpen(true)}
+                onClick={() => {
+                  setChatOpen(false);
+                  setIsChartDrawerOpen(false);
+                  setIsContactSidebarOpen((prev) => !prev);
+                }}
                 disabled={!selectedStation}
               >
                 <Radio className="w-5 h-5" />
@@ -876,7 +884,11 @@ export default function PFATCFlights() {
                 className="flex items-center gap-2 px-4 py-2 relative"
                 aria-label="Chat"
                 size="sm"
-                onClick={() => setChatOpen(true)}
+                onClick={() => {
+                  setIsContactSidebarOpen(false);
+                  setIsChartDrawerOpen(false);
+                  setChatOpen((prev) => !prev);
+                }}
                 disabled={!selectedStation}
               >
                 <MessageSquare className="w-5 h-5" />
@@ -892,7 +904,11 @@ export default function PFATCFlights() {
                 className="flex items-center gap-2 px-4 py-2"
                 aria-label="Charts"
                 size="sm"
-                onClick={() => setIsChartDrawerOpen(true)}
+                onClick={() => {
+                  setIsContactSidebarOpen(false);
+                  setChatOpen(false);
+                  setIsChartDrawerOpen((prev) => !prev);
+                }}
               >
                 <MapIcon className="w-5 h-5" />
                 <span className="hidden sm:inline font-medium">Charts</span>
@@ -1268,6 +1284,9 @@ export default function PFATCFlights() {
         handleChartMouseDown={chartHandlers.handleChartMouseDown}
         handleChartMouseMove={chartHandlers.handleChartMouseMove}
         handleChartMouseUp={chartHandlers.handleChartMouseUp}
+        handleTouchStart={chartHandlers.handleTouchStart}
+        handleTouchMove={chartHandlers.handleTouchMove}
+        handleTouchEnd={chartHandlers.handleTouchEnd}
         handleZoomIn={chartHandlers.handleZoomIn}
         handleZoomOut={chartHandlers.handleZoomOut}
         handleResetZoom={chartHandlers.handleResetZoom}
@@ -1296,9 +1315,7 @@ export default function PFATCFlights() {
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         sessionUsers={[]} // No session users on PFATC page
-        onMentionReceived={() => {
-          setUnreadMentions((prev) => prev + 1);
-        }}
+        onMentionReceived={handleMentionReceived}
         station={selectedStation}
         position={selectedStation ? selectedStation.split('_').slice(1).join('_') : ''} // Extract position from station (e.g., "LECB_CTR" -> "CTR")
         isPFATC={true} // Need this true to connect to global chat socket

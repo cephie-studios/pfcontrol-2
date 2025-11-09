@@ -128,7 +128,7 @@ export default function ContactAcarsSidebar({
       } rounded-l-3xl border-l-2 border-blue-800 flex flex-col ${
         open ? '' : 'pointer-events-none'
       }`}
-      style={{ zIndex: 100 }}
+      style={{ zIndex: 10000 }}
     >
       {/* Header */}
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">

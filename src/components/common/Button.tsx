@@ -7,12 +7,14 @@ interface ButtonProps {
     | 'outline'
     | 'danger'
     | 'success'
-    | 'ghost';
+    | 'ghost'
+    | 'card';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit' | 'reset';
   id?: string;
+  accentColor?: 'green' | 'blue' | 'purple' | 'gray';
 }
 
 export default function Button({
@@ -24,23 +26,29 @@ export default function Button({
   className = '',
   type = 'button',
   id,
+  accentColor = 'blue',
 }: ButtonProps) {
-  const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+  const cardAccents = {
+    green: 'hover:border-green-500/50 group-hover:text-green-400',
+    blue: 'hover:border-blue-500/50 group-hover:text-blue-400',
+    purple: 'hover:border-purple-500/50 group-hover:text-purple-400',
+    gray: 'hover:border-zinc-500 group-hover:text-zinc-300',
+  };
 
   const variants = {
     primary:
-      'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-2 border-blue-600',
+      'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl border-2 border-blue-600 rounded-full',
     secondary:
-      'bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl border-2 border-gray-600',
+      'bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl border-2 border-gray-600 rounded-full',
     outline:
-      'text-blue-600 hover:bg-blue-600 hover:text-white border-2 border-blue-600',
+      'text-blue-600 hover:bg-blue-600 hover:text-white border-2 border-blue-600 rounded-full',
     success:
-      'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl border-2 border-green-600',
+      'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl border-2 border-green-600 rounded-full',
     danger:
-      'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl border-2 border-red-600',
+      'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl border-2 border-red-600 rounded-full',
     ghost:
-      'bg-transparent hover:text-white hover:border-white border-2 border-transparent text-gray-300',
+      'bg-transparent hover:text-white hover:border-white border-2 border-transparent text-gray-300 rounded-full',
+    card: `group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 ${cardAccents[accentColor]} rounded-lg text-left`,
   };
 
   const sizes = {
@@ -49,6 +57,9 @@ export default function Button({
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg',
   };
+
+  const baseStyles =
+    'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <button

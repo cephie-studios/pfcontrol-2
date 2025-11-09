@@ -408,7 +408,7 @@ export default function ATIS({
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
         open ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
       } rounded-l-3xl border-l-2 border-blue-800 flex flex-col`}
-      style={{ zIndex: 100 }}
+      style={{ zIndex: 10000 }}
     >
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
         <span className="font-extrabold text-xl text-blue-300">

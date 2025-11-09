@@ -31,6 +31,7 @@ import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminRoles from './pages/admin/AdminRoles';
 import AdminChatReports from './pages/admin/AdminChatReports';
 import AdminFlightLogs from './pages/admin/AdminFlightLogs';
+import { getTesterSettings } from './utils/fetch/data';
 
 import {
   fetchActiveUpdateModal,
@@ -41,6 +42,9 @@ export default function App() {
   const { user } = useAuth();
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
+    null
+);
 
   useEffect(() => {
     if (user) {
@@ -67,6 +71,7 @@ export default function App() {
         .catch((error) => {
           console.error('Error fetching active update modal:', error);
         });
+
     }
   }, [user]);
 
@@ -88,11 +93,36 @@ export default function App() {
     }
   };
 
+  const checkGateStatus = async () => {
+              try {
+                  const settings = await getTesterSettings();
+  
+                  if (
+                      settings &&
+                      typeof settings.tester_gate_enabled === 'boolean'
+                  ) {
+                      setTesterGateEnabled(settings.tester_gate_enabled);
+                  } else {
+                      console.error(
+                          'Failed to fetch tester settings or invalid response:',
+                          settings
+                      );
+                      setTesterGateEnabled(true);
+                  }
+              } catch (error) {
+                  console.error('Error fetching tester settings:', error);
+                  setTesterGateEnabled(true);
+              }
+          };
+  
+          checkGateStatus();
+
   return (
     <Router>
       <NotificationBanner />
       
-      {activeModal && (
+      {activeModal && ( 
+        (!testerGateEnabled || (testerGateEnabled && user?.isTester))) && (
         <UpdateOverviewModal
           isOpen={showUpdateModal}
           onClose={handleCloseModal}

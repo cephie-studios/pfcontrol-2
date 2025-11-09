@@ -460,6 +460,7 @@ export default function ArrivalsTableMobile({
         isOpen={routeModalOpen}
         onClose={handleRouteClose}
         flight={selectedFlight}
+        onFlightChange={onFlightChange}
       />
     </div>
   );

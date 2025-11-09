@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   RefreshCw,
   Route,
+  GripVertical,
 } from 'lucide-react';
 import type { Flight } from '../../types/flight';
 import type { DepartureTableColumnSettings } from '../../types/settings';
@@ -23,6 +24,7 @@ import Button from '../common/Button';
 import DepartureTableMobile from './mobile/DepartureTableMobile';
 import PDCModal from '../tools/PDCModal';
 import RouteModal from '../tools/RouteModal';
+import ConfirmationDialog from '../common/ConfirmationDialog';
 
 interface DepartureTableProps {
   flights: Flight[];
@@ -83,6 +85,8 @@ export default function DepartureTable({
   const [pdcModalOpen, setPdcModalOpen] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [flightToDelete, setFlightToDelete] = useState<string | number | null>(null);
   const isMobile = useMediaQuery({ maxWidth: 1000 });
 
   const [remarkValues, setRemarkValues] = useState<
@@ -282,8 +286,22 @@ export default function DepartureTable({
     }
   };
 
-  const handleDeleteFlight = async (flightId: string | number) => {
-    onFlightDelete(flightId);
+  const handleDeleteClick = (flightId: string | number) => {
+    setFlightToDelete(flightId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (flightToDelete !== null) {
+      onFlightDelete(flightToDelete);
+      setFlightToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setFlightToDelete(null);
+    setDeleteConfirmOpen(false);
   };
 
   const isClearanceChecked = (v: boolean | string | undefined) => {
@@ -448,6 +466,7 @@ export default function DepartureTable({
           isOpen={routeModalOpen}
           onClose={handleRouteClose}
           flight={selectedFlight}
+          onFlightChange={onFlightChange}
         />
       </>
     );
@@ -571,31 +590,40 @@ export default function DepartureTable({
                 return (
                   <tr
                     key={flight.id}
-                    draggable={true}
-                    onDragStart={(e) => handleDragStart(e, flight.id)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flight-row cursor-move select-none ${
+                    className={`flight-row select-none ${
                       flight.hidden ? 'opacity-60 text-gray-400' : ''
                     } ${isDragging ? 'opacity-50' : ''} ${
                       isDragOver ? 'border-t-2 border-blue-400' : ''
                     }`}
                     style={backgroundStyle}
                   >
-                    {/* Time column is always visible */}
+                    {/* Time column */}
                     <td className="py-2 px-4 column-time">
-                      {flight.timestamp
-                        ? new Date(flight.timestamp).toLocaleTimeString(
-                            'en-GB',
-                            {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            }
-                          )
-                        : '-'}
+                      <div className="flex items-center gap-2">
+                        <div
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, flight.id)}
+                          className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <span>
+                          {flight.timestamp
+                            ? new Date(flight.timestamp).toLocaleTimeString(
+                                'en-GB',
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  timeZone: 'UTC',
+                                }
+                              )
+                            : '-'}
+                        </span>
+                      </div>
                     </td>
                     {departureColumns.callsign !== false && (
                       <td className="py-2 px-4">
@@ -871,7 +899,7 @@ export default function DepartureTable({
                         <button
                           title="Delete"
                           className="text-gray-400 hover:text-red-500 edit-del"
-                          onClick={() => handleDeleteFlight(flight.id)}
+                          onClick={() => handleDeleteClick(flight.id)}
                         >
                           <Trash2 />
                         </button>
@@ -896,6 +924,18 @@ export default function DepartureTable({
         isOpen={routeModalOpen}
         onClose={handleRouteClose}
         flight={selectedFlight}
+        onFlightChange={onFlightChange}
+      />
+
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        title="Delete Flight Plan"
+        description="This will delete the flight plan for all controllers and is not recommended if you are handing the strip off. It's recommended to hide it instead."
+        confirmText="Delete Anyway"
+        cancelText="Cancel"
+        variant="danger"
       />
     </div>
   );

@@ -244,7 +244,7 @@ IDENTIFIER: ${identifier}`;
 	if (!isOpen || !flight) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+		<div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-10000 p-4">
 			<div className="bg-zinc-900 text-white w-full max-w-2xl max-h-[90vh] rounded-3xl border-2 border-blue-800 flex flex-col shadow-2xl">
 				{/* Header */}
 				<div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-t-3xl">

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useMediaQuery } from 'react-responsive';
-import { EyeOff, Eye, Route } from 'lucide-react';
+import { EyeOff, Eye, Route, GripVertical } from 'lucide-react';
 import type { Flight } from '../../types/flight';
 import type { ArrivalsTableColumnSettings } from '../../types/settings';
 import TextInput from '../common/TextInput';
@@ -230,6 +230,7 @@ export default function ArrivalsTable({
           isOpen={routeModalOpen}
           onClose={handleRouteClose}
           flight={selectedFlight}
+          onFlightChange={onFlightChange}
         />
       </>
     );
@@ -323,31 +324,40 @@ export default function ArrivalsTable({
                 return (
                   <tr
                     key={flight.id}
-                    draggable={true}
-                    onDragStart={(e) => handleDragStart(e, flight.id)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`cursor-move select-none ${
+                    className={`select-none ${
                       flight.hidden ? 'opacity-60 text-gray-400' : ''
                     } ${isDragging ? 'opacity-50' : ''} ${
                       isDragOver ? 'border-t-2 border-green-400' : ''
                     }`}
                     style={backgroundStyle}
                   >
-                    {/* Time column is always visible */}
+                    {/* Time column */}
                     <td className="py-2 px-4 column-time">
-                      {flight.timestamp
-                        ? new Date(flight.timestamp).toLocaleTimeString(
-                            'en-GB',
-                            {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            }
-                          )
-                        : '-'}
+                      <div className="flex items-center gap-2">
+                        <div
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, flight.id)}
+                          className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <span>
+                          {flight.timestamp
+                            ? new Date(flight.timestamp).toLocaleTimeString(
+                                'en-GB',
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  timeZone: 'UTC',
+                                }
+                              )
+                            : '-'}
+                        </span>
+                      </div>
                     </td>
                     {arrivalsColumns.callsign !== false && (
                       <td className="py-2 px-4">
@@ -530,6 +540,7 @@ export default function ArrivalsTable({
         isOpen={routeModalOpen}
         onClose={handleRouteClose}
         flight={selectedFlight}
+        onFlightChange={onFlightChange}
       />
     </div>
   );

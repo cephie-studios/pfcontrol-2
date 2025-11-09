@@ -7,7 +7,11 @@ export async function fetchMetar(icao: string): Promise<MetarData | null> {
         const response = await fetch(`${API_BASE_URL}/api/metar/${icao}`, {
             credentials: 'include'
         });
-        
+
+        if (response.status === 404) {
+            return null;
+        }
+
         if (!response.ok) {
             console.error('Network response was not ok:', response.statusText);
             return null;

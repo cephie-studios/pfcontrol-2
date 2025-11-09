@@ -173,7 +173,7 @@ const FrequencyDisplay: React.FC<FrequencyDisplayProps> = ({
       </div>
 
       {isTableOpen && hasMoreFrequencies && (
-        <div className="absolute top-full left-0 mt-2 w-full min-w-80 bg-gray-900 border border-gray-700 rounded shadow-lg z-40">
+        <div className="absolute top-full left-0 mt-2 w-full min-w-80 bg-gray-900 border border-gray-700 rounded shadow-lg z-50">
           <div className="max-h-96 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-800 sticky top-0">

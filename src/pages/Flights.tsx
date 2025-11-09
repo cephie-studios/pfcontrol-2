@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
-import { fetchFlights } from '../utils/fetch/flights';
+import { fetchFlights, addFlight } from '../utils/fetch/flights';
 import { fetchSession, updateSession } from '../utils/fetch/sessions';
 import { fetchBackgrounds } from '../utils/fetch/data';
 import { createFlightsSocket } from '../sockets/flightsSocket';
@@ -275,7 +275,14 @@ export default function Flights() {
       },
       // onFlightAdded
       (flight: Flight) => {
-        setFlights((prev) => [...prev, flight]);
+        setFlights((prev) => {
+          const exists = prev.some((f) => f.id === flight.id);
+          if (exists) {
+            return prev;
+          }
+          return [...prev, flight];
+        });
+
         const currentSettings = settingsRef.current;
         if (currentSettings) {
           playSoundWithSettings('newStripSound', currentSettings, 0.7).catch(
@@ -567,10 +574,10 @@ export default function Flights() {
     }
   };
 
-  const handleAddCustomDeparture = (flightData: Partial<Flight>) => {
-    const newFlight: Flight = {
-      id: `custom-dep-${Date.now()}`,
-      session_id: sessionId || '',
+  const handleAddCustomDeparture = async (flightData: Partial<Flight>) => {
+    if (!sessionId) return;
+
+    const newFlightData: Partial<Flight> = {
       callsign: flightData.callsign || '',
       aircraft: flightData.aircraft || '',
       departure: session?.airportIcao || '',
@@ -587,13 +594,23 @@ export default function Flights() {
       remark: flightData.remark,
       hidden: false,
     };
-    setCustomDepartureFlights((prev) => [...prev, newFlight]);
+
+    try {
+      // Save to database via API
+      await addFlight(sessionId, newFlightData);
+
+      // Flight will be broadcast via WebSocket and added automatically
+      // No need to add to local state here - prevents duplicates
+    } catch (error) {
+      console.error('Failed to add custom departure:', error);
+      // Optionally show an error toast to the user
+    }
   };
 
-  const handleAddCustomArrival = (flightData: Partial<Flight>) => {
-    const newFlight: Flight = {
-      id: `custom-arr-${Date.now()}`,
-      session_id: sessionId || '',
+  const handleAddCustomArrival = async (flightData: Partial<Flight>) => {
+    if (!sessionId) return;
+
+    const newFlightData: Partial<Flight> = {
       callsign: flightData.callsign || '',
       aircraft: flightData.aircraft || '',
       departure: flightData.departure || '',
@@ -610,7 +627,13 @@ export default function Flights() {
       remark: flightData.remark,
       hidden: false,
     };
-    setCustomArrivalFlights((prev) => [...prev, newFlight]);
+
+    try {
+      await addFlight(sessionId, newFlightData);
+
+    } catch (error) {
+      console.error('Failed to add custom arrival:', error);
+    }
   };
 
   const handleRunwayChange = async (selectedRunway: string) => {
@@ -895,7 +918,7 @@ export default function Flights() {
     }
   };
 
-  const chartHandlers = createChartHandlers(
+  const chartHandlers = useMemo(() => createChartHandlers(
     chartZoom,
     setChartZoom,
     chartPan,
@@ -906,7 +929,7 @@ export default function Flights() {
     setChartDragStart,
     containerRef as React.RefObject<HTMLDivElement>,
     imageSize
-  );
+  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
 
   const {
     handleZoomIn,
@@ -915,6 +938,9 @@ export default function Flights() {
     handleChartMouseDown,
     handleChartMouseMove,
     handleChartMouseUp,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
   } = chartHandlers;
 
   // Early return for validation states
@@ -974,8 +1000,14 @@ export default function Flights() {
             showViewTabs={!showCombinedView}
             position={position}
             onPositionChange={setPosition}
-            onContactAcarsClick={() => setShowContactAcarsModal(true)}
-            onChartClick={() => setShowChartsDrawer((prev) => !prev)}
+            onContactAcarsClick={() => {
+              setShowChartsDrawer(false);
+              setShowContactAcarsModal((prev) => !prev);
+            }}
+            onChartClick={() => {
+              setShowContactAcarsModal(false);
+              setShowChartsDrawer((prev) => !prev);
+            }}
             showChartsDrawer={showChartsDrawer}
             showContactAcarsModal={showContactAcarsModal}
             onCloseAllSidebars={handleCloseAllSidebars}
@@ -1165,6 +1197,9 @@ export default function Flights() {
         handleChartMouseDown={handleChartMouseDown}
         handleChartMouseMove={handleChartMouseMove}
         handleChartMouseUp={handleChartMouseUp}
+        handleTouchStart={handleTouchStart}
+        handleTouchMove={handleTouchMove}
+        handleTouchEnd={handleTouchEnd}
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleResetZoom={handleResetZoom}
