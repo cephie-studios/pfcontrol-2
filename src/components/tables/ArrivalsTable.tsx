@@ -379,7 +379,7 @@ export default function ArrivalsTable({
                 {arrivalsColumns.remark !== false && (
                   <th className="py-2.5 px-4 text-left w-64 column-rmk">RMK</th>
                 )}
-                <th className="py-2.5 px-4 text-left w-16">MORE</th>
+                <th className="py-2.5 px-4 text-center w-16">MORE</th>
               </tr>
             </thead>
             <tbody>

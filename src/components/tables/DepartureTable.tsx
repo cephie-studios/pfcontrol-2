@@ -9,7 +9,7 @@ import {
   RefreshCw,
   Route,
   GripVertical,
-  MoreVertical,
+  List,
 } from 'lucide-react';
 import type { Flight } from '../../types/flight';
 import type { DepartureTableColumnSettings } from '../../types/settings';
@@ -549,7 +549,7 @@ export default function DepartureTable({
                   <th className="py-2.5 px-4 text-left column-route">RTE</th>
                 )}
                 {departureColumns.squawk !== false && (
-                  <th className="py-2.5 px-4 text-left w-28">ASSR</th>
+                  <th className="py-2.5 px-4 text-center w-28">ASSR</th>
                 )}
                 {departureColumns.clearance !== false && (
                   <th className="py-2.5 px-4 text-left column-clearance">C</th>
@@ -561,9 +561,11 @@ export default function DepartureTable({
                   <th className="py-2.5 px-4 text-left w-64 column-rmk">RMK</th>
                 )}
                 {departureColumns.pdc !== false && (
-                  <th className="py-2.5 px-4 text-left column-pdc">PDC</th>
+                  <th className="py-2.5 px-2 text-center column-pdc">PDC</th>
                 )}
-                <th className="py-2.5 px-4 text-left w-16">MORE</th>
+                <th className="py-2.5 pr-4 pl-2 text-center column-more">
+                  MORE
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -677,7 +679,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.aircraft !== false && (
-                      <td className="py-2 px-4 column-atyp">
+                      <td className="py-2 px-3 column-atyp">
                         <AircraftDropdown
                           value={flight.aircraft}
                           onChange={(type) =>
@@ -699,7 +701,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.arrival !== false && (
-                      <td className="py-2 px-4 column-ades">
+                      <td className="py-2 px-3 column-ades">
                         <AirportDropdown
                           value={flight.arrival}
                           onChange={(icao) =>
@@ -711,7 +713,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.runway !== false && (
-                      <td className="py-2 px-4 column-rwy">
+                      <td className="py-2 px-3 column-rwy">
                         <RunwayDropdown
                           airportIcao={flight.departure || ''}
                           value={flight.runway}
@@ -724,7 +726,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.sid !== false && (
-                      <td className="py-2 px-4 column-sid">
+                      <td className="py-2 px-3 column-sid">
                         <SidDropdown
                           airportIcao={flight.departure || ''}
                           value={flight.sid}
@@ -735,7 +737,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.rfl !== false && (
-                      <td className="py-2 px-4 column-rfl">
+                      <td className="py-2 px-3 column-rfl">
                         <AltitudeDropdown
                           value={flight.cruisingFL}
                           onChange={(alt) =>
@@ -747,7 +749,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.cfl !== false && (
-                      <td className="py-2 px-4 column-cfl">
+                      <td className="py-2 px-3 column-cfl">
                         <AltitudeDropdown
                           value={flight.clearedFL}
                           onChange={(alt) =>
@@ -759,7 +761,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.route !== false && (
-                      <td className="py-2 px-4 column-route">
+                      <td className="py-2 px-3 column-route">
                         <button
                           className={`px-2 py-1 rounded transition-colors ${
                             flight.route && flight.route.trim()
@@ -867,7 +869,7 @@ export default function DepartureTable({
                       </td>
                     )}
                     {departureColumns.pdc !== false && (
-                      <td className="py-2 px-4 column-pdc">
+                      <td className="py-2 px-2 column-pdc">
                         <button
                           className={`text-gray-400 hover:text-blue-500 px-2 py-1 rounded transition-colors ${
                             isFlashing ? 'animate-pulse' : ''
@@ -881,7 +883,7 @@ export default function DepartureTable({
                         </button>
                       </td>
                     )}
-                    <td className="py-2 px-4 relative">
+                    <td className="py-2 px-2 relative">
                       <button
                         type="button"
                         ref={(el) => {
@@ -897,7 +899,7 @@ export default function DepartureTable({
                         }}
                         title="Actions"
                       >
-                        <MoreVertical className="h-5 w-5" strokeWidth={2.5} />
+                        <List className="h-5 w-5" strokeWidth={2.5} />
                       </button>
                       {openDropdownId === flight.id &&
                         createPortal(
@@ -908,7 +910,7 @@ export default function DepartureTable({
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div
-                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1"
+                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
                               style={{
                                 zIndex: 9998,
                                 top: (() => {

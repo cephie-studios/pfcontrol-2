@@ -11,7 +11,7 @@ export const steps: {
   {
     target: '#session-count-info',
     title: 'Session Limit',
-    content: 'You can create up to 10 sessions. If you reach the limit, delete an old one to make room.',
+    content: 'You can only create a limited amount of sessions. If you reach the limit, delete an old one to make room.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
