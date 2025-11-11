@@ -31,6 +31,7 @@ router.get('/:username', async (req, res) => {
             displayControllerStatsOnProfile: userResult.settings?.displayControllerStatsOnProfile ?? true,
             displayPilotStatsOnProfile: userResult.settings?.displayPilotStatsOnProfile ?? true,
             displayLinkedAccountsOnProfile: userResult.settings?.displayLinkedAccountsOnProfile ?? true,
+            displayBackgroundOnProfile: userResult.settings?.displayBackgroundOnProfile ?? true,
         };
 
         const profile = {
@@ -48,6 +49,7 @@ router.get('/:username', async (req, res) => {
                 roles: rolesResult,
                 role_name: rolesResult[0]?.name || null,
                 role_description: rolesResult[0]?.description || null,
+                bio: userResult.settings?.bio ?? '',
             },
             privacySettings,
         };

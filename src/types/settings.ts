@@ -82,4 +82,6 @@ export interface Settings {
     displayStatsOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
     hideFromLeaderboard: boolean;
+    displayBackgroundOnProfile: boolean;
+    bio: string;
 }

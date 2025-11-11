@@ -1,4 +1,11 @@
-import { User, TowerControl, Link2, Shield } from 'lucide-react';
+import {
+  User,
+  TowerControl,
+  Link2,
+  Shield,
+  Image,
+  FileText,
+} from 'lucide-react';
 import type { Settings } from '../../types/settings';
 
 interface PrivacySettingsProps {
@@ -33,6 +40,15 @@ export default function PrivacySettings({
     const updatedSettings = {
       ...settings,
       hideFromLeaderboard: enabled,
+    };
+    onChange(updatedSettings);
+  };
+
+  const handleDisplayBackgroundToggle = (enabled: boolean) => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      displayBackgroundOnProfile: enabled,
     };
     onChange(updatedSettings);
   };
@@ -102,6 +118,37 @@ export default function PrivacySettings({
           <div className="w-11 h-6 bg-red-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
         </label>
       </div>
+
+      {/* Background Image */}
+      <div
+        className={`bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between ${settings?.displayBackgroundOnProfile ? 'bg-gradient-to-r from-yellow-500/5 to-transparent' : 'bg-gradient-to-r from-green-600/5 to-transparent'}`}
+      >
+        <div className="flex items-center space-x-4">
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center ${settings?.displayBackgroundOnProfile ? 'bg-gradient-to-br from-yellow-500 to-yellow-500' : 'bg-gradient-to-br from-green-600 to-green-600'}`}
+          >
+            <Image className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h4 className="text-white font-semibold text-base">
+              Display Background Image on Profile
+            </h4>
+            <p className="text-zinc-400 text-sm mt-1">
+              Show your selected background image in your profile header.
+            </p>
+          </div>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={settings?.displayBackgroundOnProfile ?? true}
+            onChange={(e) => handleDisplayBackgroundToggle(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-red-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+        </label>
+      </div>
+
       {/* Hide from Leaderboard */}
       <div
         className={`bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5 flex items-center justify-between ${settings?.hideFromLeaderboard ? 'bg-gradient-to-r from-green-600/5 to-transparent' : 'bg-gradient-to-r from-yellow-500/5 to-transparent'}`}

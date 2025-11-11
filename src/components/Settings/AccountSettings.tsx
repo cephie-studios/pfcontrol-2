@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Shield,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
@@ -103,6 +104,15 @@ export default function AccountSettings({
     }
   };
 
+  const handleBioChange = (bio: string) => {
+    if (!settings) return;
+    const updatedSettings = {
+      ...settings,
+      bio,
+    };
+    onChange(updatedSettings);
+  };
+
   return (
     <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6">
       <div className="flex items-center mb-6">
@@ -149,6 +159,37 @@ export default function AccountSettings({
               <RotateCcw className="w-4 h-4 mr-2" />
               Restart
             </Button>
+          </div>
+        </div>
+
+        {/* Bio Section */}
+        <div className="bg-zinc-800/50 rounded-xl border-2 border-zinc-700/50 p-5">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+              <FileText className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h4 className="text-white font-semibold text-base">Biography</h4>
+              <p className="text-zinc-400 text-sm mt-1">
+                Add a personal description to your profile (max 500 characters).
+              </p>
+            </div>
+          </div>
+          <textarea
+            value={settings?.bio ?? ''}
+            onChange={(e) => handleBioChange(e.target.value)}
+            placeholder="Tell others about yourself, your aviation interests, or anything you'd like to share..."
+            maxLength={500}
+            rows={5}
+            className="w-full px-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="flex justify-between items-center mt-2">
+            <p className="text-xs text-zinc-500">
+              Your biography is always visible to others on your profile
+            </p>
+            <p className="text-xs text-zinc-400">
+              {(settings?.bio ?? '').length}/500
+            </p>
           </div>
         </div>
 

@@ -26,6 +26,8 @@ export interface Settings {
     notesWidth?: number;
   };
   notificationViewMode?: 'legacy' | 'list';
+  displayBackgroundOnProfile?: boolean;
+  bio?: string;
   [key: string]: unknown;
   }
 }

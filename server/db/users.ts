@@ -232,6 +232,8 @@ export async function createOrUpdateUser(userData: {
     displayPilotStatsOnProfile: true,
     displayLinkedAccountsOnProfile: true,
     hideFromLeaderboard: false,
+    displayBackgroundOnProfile: true,
+    bio: '',
   };
 
   const encryptedAccessToken = encrypt(accessToken);
