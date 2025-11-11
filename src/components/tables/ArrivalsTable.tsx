@@ -1,7 +1,15 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useMediaQuery } from 'react-responsive';
-import { EyeOff, Eye, Route, GripVertical, MoreVertical, Trash2, RefreshCw } from 'lucide-react';
+import {
+  EyeOff,
+  Eye,
+  Route,
+  GripVertical,
+  MoreVertical,
+  Trash2,
+  RefreshCw,
+} from 'lucide-react';
 import type { Flight } from '../../types/flight';
 import type { ArrivalsTableColumnSettings } from '../../types/settings';
 import TextInput from '../common/TextInput';
@@ -50,9 +58,15 @@ export default function ArrivalsTable({
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [flightToDelete, setFlightToDelete] = useState<string | number | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<string | number | null>(null);
-  const buttonRefs = useRef<Record<string | number, HTMLButtonElement | null>>({});
+  const [flightToDelete, setFlightToDelete] = useState<string | number | null>(
+    null
+  );
+  const [openDropdownId, setOpenDropdownId] = useState<string | number | null>(
+    null
+  );
+  const buttonRefs = useRef<Record<string | number, HTMLButtonElement | null>>(
+    {}
+  );
   const [squawkValues, setSquawkValues] = useState<
     Record<string | number, string>
   >({});
@@ -159,10 +173,8 @@ export default function ArrivalsTable({
   }, []);
 
   const handleRouteOpen = (flight: Flight) => {
-    if (flight.route && flight.route.trim()) {
-      setSelectedFlight(flight);
-      setRouteModalOpen(true);
-    }
+    setSelectedFlight(flight);
+    setRouteModalOpen(true);
   };
 
   const handleRouteClose = () => {
@@ -503,7 +515,7 @@ export default function ArrivalsTable({
                           className={`px-2 py-1 rounded transition-colors ${
                             flight.route && flight.route.trim()
                               ? 'text-gray-400 hover:text-blue-500'
-                              : 'text-red-500 cursor-not-allowed'
+                              : 'text-red-500'
                           }`}
                           onClick={() => handleRouteOpen(flight)}
                           title={
@@ -511,7 +523,6 @@ export default function ArrivalsTable({
                               ? 'View Route'
                               : 'No route specified'
                           }
-                          disabled={!flight.route || !flight.route.trim()}
                         >
                           <Route />
                         </button>
@@ -588,70 +599,79 @@ export default function ArrivalsTable({
                           }
                         }}
                         className="flex items-center justify-center w-full text-gray-400 hover:text-white transition-colors"
-                        onClick={() => setOpenDropdownId(openDropdownId === flight.id ? null : flight.id)}
+                        onClick={() =>
+                          setOpenDropdownId(
+                            openDropdownId === flight.id ? null : flight.id
+                          )
+                        }
                         title="Actions"
                       >
                         <MoreVertical className="h-5 w-5" strokeWidth={2.5} />
                       </button>
-                      {openDropdownId === flight.id && createPortal(
-                        <>
-                          <div
-                            className="fixed inset-0"
-                            style={{ zIndex: 9997 }}
-                            onClick={() => setOpenDropdownId(null)}
-                          />
-                          <div
-                            className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1"
-                            style={{
-                              zIndex: 9998,
-                              top: (() => {
-                                const btn = buttonRefs.current[flight.id];
-                                if (btn) {
-                                  const rect = btn.getBoundingClientRect();
-                                  return `${rect.bottom + 4}px`;
-                                }
-                                return '0px';
-                              })(),
-                              left: (() => {
-                                const btn = buttonRefs.current[flight.id];
-                                if (btn) {
-                                  const rect = btn.getBoundingClientRect();
-                                  return `${rect.right - 160}px`;
-                                }
-                                return '0px';
-                              })(),
-                            }}
-                          >
-                            <button
-                              type="button"
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                              onClick={() => {
-                                if (flight.hidden) {
-                                  handleUnhideFlight(flight.id);
-                                } else {
-                                  handleHideFlight(flight.id);
-                                }
-                                setOpenDropdownId(null);
+                      {openDropdownId === flight.id &&
+                        createPortal(
+                          <>
+                            <div
+                              className="fixed inset-0"
+                              style={{ zIndex: 9997 }}
+                              onClick={() => setOpenDropdownId(null)}
+                            />
+                            <div
+                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1"
+                              style={{
+                                zIndex: 9998,
+                                top: (() => {
+                                  const btn = buttonRefs.current[flight.id];
+                                  if (btn) {
+                                    const rect = btn.getBoundingClientRect();
+                                    return `${rect.bottom + 4}px`;
+                                  }
+                                  return '0px';
+                                })(),
+                                left: (() => {
+                                  const btn = buttonRefs.current[flight.id];
+                                  if (btn) {
+                                    const rect = btn.getBoundingClientRect();
+                                    return `${rect.right - 160}px`;
+                                  }
+                                  return '0px';
+                                })(),
                               }}
                             >
-                              {flight.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                              {flight.hidden ? 'Unhide' : 'Hide'}
-                            </button>
-                            <button
-                              type="button"
-                              className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                              onClick={() => {
-                                handleDeleteClick(flight.id);
-                                setOpenDropdownId(null);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
-                        </>,
-                        document.body
-                      )}
+                              <button
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
+                                onClick={() => {
+                                  if (flight.hidden) {
+                                    handleUnhideFlight(flight.id);
+                                  } else {
+                                    handleHideFlight(flight.id);
+                                  }
+                                  setOpenDropdownId(null);
+                                }}
+                              >
+                                {flight.hidden ? (
+                                  <Eye className="w-4 h-4" />
+                                ) : (
+                                  <EyeOff className="w-4 h-4" />
+                                )}
+                                {flight.hidden ? 'Unhide' : 'Hide'}
+                              </button>
+                              <button
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-blue-600 hover:text-white flex items-center gap-2"
+                                onClick={() => {
+                                  handleDeleteClick(flight.id);
+                                  setOpenDropdownId(null);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                              </button>
+                            </div>
+                          </>,
+                          document.body
+                        )}
                     </td>
                   </tr>
                 );

@@ -152,10 +152,8 @@ export default function ArrivalsTableMobile({
   }, []);
 
   const handleRouteClick = (flight: Flight) => {
-    if (flight.route && flight.route.trim()) {
-      setSelectedFlight(flight);
-      setRouteModalOpen(true);
-    }
+    setSelectedFlight(flight);
+    setRouteModalOpen(true);
   };
 
   const handleRouteClose = () => {
@@ -249,18 +247,17 @@ export default function ArrivalsTableMobile({
                   <div className="flex gap-2">
                     {arrivalsColumns.route !== false && (
                       <button
-                        onClick={() => handleRouteClick(flight)}
-                        className={`transition-colors ${
+                        className={`px-2 py-1 rounded transition-colors ${
                           flight.route && flight.route.trim()
                             ? 'text-gray-400 hover:text-blue-500'
-                            : 'text-red-500 cursor-not-allowed'
+                            : 'text-red-500'
                         }`}
+                        onClick={() => handleRouteClick(flight)}
                         title={
                           flight.route && flight.route.trim()
                             ? 'View Route'
                             : 'No route specified'
                         }
-                        disabled={!flight.route || !flight.route.trim()}
                       >
                         <Route className="w-5 h-5" />
                       </button>
