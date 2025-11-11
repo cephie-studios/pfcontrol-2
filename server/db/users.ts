@@ -179,7 +179,8 @@ export async function createOrUpdateUser(userData: {
     },
     layout: {
       showCombinedView: false,
-      flightRowOpacity: 100
+      flightRowOpacity: 100,
+      chartDrawerViewMode: 'legacy'
     },
     departureTableColumns: {
       time: true,

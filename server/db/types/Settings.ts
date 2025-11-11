@@ -15,6 +15,7 @@ export interface Settings {
   layout?: {
     showCombinedView?: boolean;
     flightRowOpacity?: number;
+    chartDrawerViewMode?: 'list' | 'legacy';
   };
   departureTableColumns?: Record<string, boolean>;
   arrivalsTableColumns?: Record<string, boolean>;

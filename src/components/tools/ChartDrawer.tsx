@@ -35,9 +35,13 @@ interface ChartDrawerProps {
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleResetZoom: () => void;
-  getChartsForAirport: (
-    icao: string
-  ) => { name: string; path: string; type: string; credits?: string; procedures?: string[] }[];
+  getChartsForAirport: (icao: string) => {
+    name: string;
+    path: string;
+    type: string;
+    credits?: string;
+    procedures?: string[];
+  }[];
   containerRef: React.RefObject<HTMLDivElement>;
   setImageSize: (size: { width: number; height: number }) => void;
   airports: Airport[];
@@ -80,7 +84,7 @@ export default function ChartDrawer({
   const [isMobile, setIsMobile] = useState(false);
   const [mobileView, setMobileView] = useState<'chart' | 'sidebar'>('sidebar');
 
-  const viewMode = settings?.acars?.chartDrawerViewMode || 'legacy';
+  const viewMode = settings?.layout?.chartDrawerViewMode || 'legacy';
 
   const sectorAirportMap: Record<string, string[]> = {
     LECB_CTR: ['LEMH'],
@@ -361,46 +365,47 @@ export default function ChartDrawer({
           className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4"
           style={{ zIndex: 49 }}
         >
-          {selectedChart && (!isLegacyMode || !isMobile || mobileView === 'chart') && (
-            <>
-              {!isLegacyMode && (
-                <Button
-                  onClick={() => setSelectedChart(null)}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleZoomOut}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <ZoomOut className="w-4 h-4 text-zinc-400" />
-                </Button>
-                <Button
-                  onClick={handleResetZoom}
-                  variant="outline"
-                  size="sm"
-                  className="px-3 py-2"
-                >
-                  {Math.round(chartZoom * 100)}%
-                </Button>
-                <Button
-                  onClick={handleZoomIn}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <ZoomIn className="w-4 h-4 text-zinc-400" />
-                </Button>
-              </div>
-            </>
-          )}
+          {selectedChart &&
+            (!isLegacyMode || !isMobile || mobileView === 'chart') && (
+              <>
+                {!isLegacyMode && (
+                  <Button
+                    onClick={() => setSelectedChart(null)}
+                    variant="outline"
+                    size="sm"
+                    className="p-2"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleZoomOut}
+                    variant="outline"
+                    size="sm"
+                    className="p-2"
+                  >
+                    <ZoomOut className="w-4 h-4 text-zinc-400" />
+                  </Button>
+                  <Button
+                    onClick={handleResetZoom}
+                    variant="outline"
+                    size="sm"
+                    className="px-3 py-2"
+                  >
+                    {Math.round(chartZoom * 100)}%
+                  </Button>
+                  <Button
+                    onClick={handleZoomIn}
+                    variant="outline"
+                    size="sm"
+                    className="p-2"
+                  >
+                    <ZoomIn className="w-4 h-4 text-zinc-400" />
+                  </Button>
+                </div>
+              </>
+            )}
         </div>
         <button
           onClick={onClose}
@@ -645,7 +650,10 @@ export default function ChartDrawer({
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      style={{ cursor: isChartDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+                      style={{
+                        cursor: isChartDragging ? 'grabbing' : 'grab',
+                        touchAction: 'none',
+                      }}
                     >
                       {imageLoading && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -741,11 +749,13 @@ export default function ChartDrawer({
                                 : ''
                             }`}
                           >
-                            <div className={`text-sm font-medium transition-colors line-clamp-1 ${
-                              selectedChart === chart.path
-                                ? 'text-green-400'
-                                : 'text-white group-hover:text-green-400'
-                            }`}>
+                            <div
+                              className={`text-sm font-medium transition-colors line-clamp-1 ${
+                                selectedChart === chart.path
+                                  ? 'text-green-400'
+                                  : 'text-white group-hover:text-green-400'
+                              }`}
+                            >
                               {chart.name}
                             </div>
                             <div className="text-xs text-zinc-400 mt-0.5">
@@ -780,11 +790,13 @@ export default function ChartDrawer({
                                 : ''
                             }`}
                           >
-                            <div className={`text-sm font-medium transition-colors line-clamp-1 ${
-                              selectedChart === chart.path
-                                ? 'text-blue-400'
-                                : 'text-white group-hover:text-blue-400'
-                            }`}>
+                            <div
+                              className={`text-sm font-medium transition-colors line-clamp-1 ${
+                                selectedChart === chart.path
+                                  ? 'text-blue-400'
+                                  : 'text-white group-hover:text-blue-400'
+                              }`}
+                            >
                               {chart.name}
                             </div>
                             <div className="text-xs text-zinc-400 mt-0.5">
@@ -824,11 +836,13 @@ export default function ChartDrawer({
                                     : ''
                                 }`}
                               >
-                                <div className={`text-sm font-medium transition-colors line-clamp-1 ${
-                                  selectedChart === chart.path
-                                    ? 'text-purple-400'
-                                    : 'text-white group-hover:text-purple-400'
-                                }`}>
+                                <div
+                                  className={`text-sm font-medium transition-colors line-clamp-1 ${
+                                    selectedChart === chart.path
+                                      ? 'text-purple-400'
+                                      : 'text-white group-hover:text-purple-400'
+                                  }`}
+                                >
                                   {chart.name}
                                 </div>
                                 <div className="text-xs text-zinc-400 mt-0.5">
@@ -881,11 +895,13 @@ export default function ChartDrawer({
                                       : ''
                                   }`}
                                 >
-                                  <div className={`text-sm font-medium transition-colors line-clamp-1 ${
-                                    selectedChart === chart.path
-                                      ? 'text-zinc-300'
-                                      : 'text-white group-hover:text-zinc-300'
-                                  }`}>
+                                  <div
+                                    className={`text-sm font-medium transition-colors line-clamp-1 ${
+                                      selectedChart === chart.path
+                                        ? 'text-zinc-300'
+                                        : 'text-white group-hover:text-zinc-300'
+                                    }`}
+                                  >
                                     {chart.name}
                                   </div>
                                   <div className="text-xs text-zinc-400 mt-0.5">
@@ -941,7 +957,10 @@ export default function ChartDrawer({
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      style={{ cursor: isChartDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+                      style={{
+                        cursor: isChartDragging ? 'grabbing' : 'grab',
+                        touchAction: 'none',
+                      }}
                     >
                       {imageLoading && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -1021,7 +1040,10 @@ export default function ChartDrawer({
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      style={{ cursor: isChartDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+                      style={{
+                        cursor: isChartDragging ? 'grabbing' : 'grab',
+                        touchAction: 'none',
+                      }}
                     >
                       {imageLoading && (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -1097,35 +1119,37 @@ export default function ChartDrawer({
                   {chartsToUse.length > 0 ? (
                     <div className="space-y-2">
                       {/* Departure Charts */}
-                      {departureAirport && filteredDepartureCharts.length > 0 && (
-                        <div>
-                          <div className="flex items-center gap-2 px-2 py-2 mb-1.5 bg-green-500/10 border-l-4 border-green-500 rounded">
-                            <PlaneTakeoff className="w-4 h-4 text-green-400" />
-                            <h3 className="text-xs font-bold text-green-400 uppercase tracking-wide">
-                              {arrivalAirport ? 'Departure' : 'Airport'} - {departureAirport}
-                            </h3>
-                            <span className="ml-auto text-xs text-green-400/70 font-medium">
-                              {filteredDepartureCharts.length}
-                            </span>
+                      {departureAirport &&
+                        filteredDepartureCharts.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 px-2 py-2 mb-1.5 bg-green-500/10 border-l-4 border-green-500 rounded">
+                              <PlaneTakeoff className="w-4 h-4 text-green-400" />
+                              <h3 className="text-xs font-bold text-green-400 uppercase tracking-wide">
+                                {arrivalAirport ? 'Departure' : 'Airport'} -{' '}
+                                {departureAirport}
+                              </h3>
+                              <span className="ml-auto text-xs text-green-400/70 font-medium">
+                                {filteredDepartureCharts.length}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1.5">
+                              {filteredDepartureCharts.map((chart) => (
+                                <button
+                                  key={chart.path}
+                                  onClick={() => setSelectedChart(chart.path)}
+                                  className="group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-green-500/50 rounded-lg p-2.5 transition-all text-left"
+                                >
+                                  <div className="text-sm font-medium text-white group-hover:text-green-400 transition-colors line-clamp-1">
+                                    {chart.name}
+                                  </div>
+                                  <div className="text-xs text-zinc-400 mt-0.5">
+                                    {chart.type}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1.5">
-                            {filteredDepartureCharts.map((chart) => (
-                              <button
-                                key={chart.path}
-                                onClick={() => setSelectedChart(chart.path)}
-                                className="group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-green-500/50 rounded-lg p-2.5 transition-all text-left"
-                              >
-                                <div className="text-sm font-medium text-white group-hover:text-green-400 transition-colors line-clamp-1">
-                                  {chart.name}
-                                </div>
-                                <div className="text-xs text-zinc-400 mt-0.5">
-                                  {chart.type}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Arrival Charts */}
                       {arrivalAirport && filteredArrivalCharts.length > 0 && (
@@ -1177,7 +1201,9 @@ export default function ChartDrawer({
                                   {charts.map((chart) => (
                                     <button
                                       key={chart.path}
-                                      onClick={() => setSelectedChart(chart.path)}
+                                      onClick={() =>
+                                        setSelectedChart(chart.path)
+                                      }
                                       className="group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-purple-500/50 rounded-lg p-2.5 transition-all text-left"
                                     >
                                       <div className="text-sm font-medium text-white group-hover:text-purple-400 transition-colors line-clamp-1">
@@ -1223,7 +1249,9 @@ export default function ChartDrawer({
                                     {charts.map((chart) => (
                                       <button
                                         key={chart.path}
-                                        onClick={() => setSelectedChart(chart.path)}
+                                        onClick={() =>
+                                          setSelectedChart(chart.path)
+                                        }
                                         className="group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-500 rounded-lg p-2.5 transition-all text-left"
                                       >
                                         <div className="text-sm font-medium text-white group-hover:text-zinc-300 transition-colors line-clamp-1">
@@ -1243,12 +1271,14 @@ export default function ChartDrawer({
                       )}
 
                       {/* No charts message */}
-                      {!departureAirport && !arrivalAirport && filteredOtherAirports.length === 0 && (
-                        <div className="text-center text-zinc-500 py-12">
-                          <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                          <p>No flight information available</p>
-                        </div>
-                      )}
+                      {!departureAirport &&
+                        !arrivalAirport &&
+                        filteredOtherAirports.length === 0 && (
+                          <div className="text-center text-zinc-500 py-12">
+                            <Map className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                            <p>No flight information available</p>
+                          </div>
+                        )}
                       {searchQuery &&
                         filteredDepartureCharts.length === 0 &&
                         filteredArrivalCharts.length === 0 &&

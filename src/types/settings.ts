@@ -12,6 +12,7 @@ export interface SoundSettings {
 export interface LayoutSettings {
     showCombinedView: boolean;
     flightRowOpacity: number; // 0 to 100%
+    chartDrawerViewMode: 'list' | 'legacy';
 }
 
 export interface DepartureTableColumnSettings {
@@ -60,7 +61,6 @@ export interface AcarsSettings {
     sidebarWidth: number;
     terminalWidth: number;
     notesWidth: number;
-    chartDrawerViewMode: 'list' | 'legacy';
     autoRedirectToAcars: boolean;
 }
 
