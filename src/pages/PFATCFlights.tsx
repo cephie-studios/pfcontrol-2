@@ -9,18 +9,19 @@ import {
   TowerControl,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
-  Check,
-  X,
   MessageSquare,
   Map as MapIcon,
   Radio,
+  PlaneLanding,
+  PlaneTakeoff,
 } from 'lucide-react';
 import { createOverviewSocket } from '../sockets/overviewSocket';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
 import { updateFlight as updateFlightAPI } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
+import { getChartsForAirport } from '../utils/acars';
+import { createChartHandlers } from '../utils/charts';
 import type { OverviewData, OverviewSession } from '../types/overview';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
@@ -40,8 +41,6 @@ import SidDropdown from '../components/dropdowns/SidDropdown';
 import StarDropdown from '../components/dropdowns/StarDropdown';
 import Loader from '../components/common/Loader';
 import ErrorScreen from '../components/common/ErrorScreen';
-import { getChartsForAirport } from '../utils/acars';
-import { createChartHandlers } from '../utils/charts';
 
 interface FlightWithDetails extends Flight {
   sessionId: string;
@@ -69,6 +68,12 @@ export default function PFATCFlights() {
     new Set()
   );
   const [editingState, setEditingState] = useState<EditingState | null>(null);
+  const [debounceTimers, setDebounceTimers] = useState<
+    Map<string, NodeJS.Timeout>
+  >(new Map());
+  const [optimisticUpdates, setOptimisticUpdates] = useState<
+    Map<string, Partial<Flight>>
+  >(new Map());
   const [flightSockets, setFlightSockets] = useState<
     Map<string, ReturnType<typeof createFlightsSocket>>
   >(new Map());
@@ -88,20 +93,21 @@ export default function PFATCFlights() {
   const containerRef = useRef<HTMLDivElement>(null!);
 
   const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
-  const [activeAcarsFlights, setActiveAcarsFlights] = useState<Set<string | number>>(new Set());
-  const [eventControllerViewEnabled, setEventControllerViewEnabled] = useState(false);
+  const [activeAcarsFlights, setActiveAcarsFlights] = useState<
+    Set<string | number>
+  >(new Set());
+  const [eventControllerViewEnabled, setEventControllerViewEnabled] =
+    useState(false);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMentions, setUnreadMentions] = useState(0);
 
-  // Clear unread mentions when chat opens
   useEffect(() => {
     if (chatOpen) {
       setUnreadMentions(0);
     }
   }, [chatOpen]);
 
-  // Close chat when station is deselected
   useEffect(() => {
     if (!selectedStation && chatOpen) {
       setChatOpen(false);
@@ -115,18 +121,29 @@ export default function PFATCFlights() {
     ) ||
     user?.isAdmin;
 
-  const chartHandlers = useMemo(() => createChartHandlers(
-    chartZoom,
-    setChartZoom,
-    chartPan,
-    setChartPan,
-    isChartDragging,
-    setIsChartDragging,
-    chartDragStart,
-    setChartDragStart,
-    containerRef,
-    imageSize
-  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
+  const chartHandlers = useMemo(
+    () =>
+      createChartHandlers(
+        chartZoom,
+        setChartZoom,
+        chartPan,
+        setChartPan,
+        isChartDragging,
+        setIsChartDragging,
+        chartDragStart,
+        setChartDragStart,
+        containerRef,
+        imageSize
+      ),
+    [
+      chartZoom,
+      chartPan,
+      isChartDragging,
+      chartDragStart,
+      imageSize.width,
+      imageSize.height,
+    ]
+  );
 
   const handleMentionReceived = useCallback(() => {
     setUnreadMentions((prev) => prev + 1);
@@ -179,14 +196,11 @@ export default function PFATCFlights() {
   useEffect(() => {
     if (!isEventController || !overviewData?.activeSessions) return;
 
-    // Filter out sector sessions - they don't have flights
     const realSessions = overviewData.activeSessions.filter(
       (s) => !s.sessionId.startsWith('sector-')
     );
 
-    const activeSessions = new Set(
-      realSessions.map((s) => s.sessionId)
-    );
+    const activeSessions = new Set(realSessions.map((s) => s.sessionId));
 
     setFlightSockets((prevSockets) => {
       const currentSockets = new Map(prevSockets);
@@ -229,10 +243,14 @@ export default function PFATCFlights() {
                 });
               },
               () => {
-                console.log(`Socket connected for session: ${session.sessionId}`);
+                console.log(
+                  `Socket connected for session: ${session.sessionId}`
+                );
               },
               () => {
-                console.log(`Socket disconnected for session: ${session.sessionId}`);
+                console.log(
+                  `Socket disconnected for session: ${session.sessionId}`
+                );
               },
               (error) => {
                 console.error(
@@ -256,7 +274,6 @@ export default function PFATCFlights() {
     });
 
     return () => {
-      // Cleanup on unmount
       setFlightSockets((sockets) => {
         for (const socket of sockets.values()) {
           socket.socket.disconnect();
@@ -291,12 +308,12 @@ export default function PFATCFlights() {
     fetchActiveAcars();
   }, [isContactSidebarOpen]);
 
-  // Sector controller socket connection
-  const sectorSocketRef = useRef<ReturnType<typeof createSectorControllerSocket> | null>(null);
+  const sectorSocketRef = useRef<ReturnType<
+    typeof createSectorControllerSocket
+  > | null>(null);
 
   useEffect(() => {
     if (!isEventController || !eventControllerViewEnabled || !user?.userId) {
-      // Clean up socket if view is disabled
       if (sectorSocketRef.current) {
         sectorSocketRef.current.socket.disconnect();
         sectorSocketRef.current = null;
@@ -304,25 +321,28 @@ export default function PFATCFlights() {
       return;
     }
 
-    // Create socket if it doesn't exist
     if (!sectorSocketRef.current) {
       sectorSocketRef.current = createSectorControllerSocket({
         userId: user.userId,
         username: user.username || 'Unknown',
-        avatar: user.avatar || null
+        avatar: user.avatar || null,
       });
     }
 
     return () => {
-      // Clean up on unmount
       if (sectorSocketRef.current) {
         sectorSocketRef.current.socket.disconnect();
         sectorSocketRef.current = null;
       }
     };
-  }, [isEventController, eventControllerViewEnabled, user?.userId, user?.username, user?.avatar]);
+  }, [
+    isEventController,
+    eventControllerViewEnabled,
+    user?.userId,
+    user?.username,
+    user?.avatar,
+  ]);
 
-  // Handle station selection changes
   useEffect(() => {
     if (!sectorSocketRef.current) return;
 
@@ -364,7 +384,7 @@ export default function PFATCFlights() {
       flightId,
       message,
       station: finalStation,
-      position: finalPosition
+      position: finalPosition,
     });
   };
 
@@ -404,24 +424,9 @@ export default function PFATCFlights() {
     );
   });
 
-  const sortedFlights = [...filteredFlights].sort((a, b) => {
-    switch (sortBy) {
-      case 'callsign':
-        return (a.callsign || '').localeCompare(b.callsign || '');
-      case 'airport':
-        return (a.departure || '').localeCompare(b.departure || '');
-      case 'time':
-      default:
-        return (
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
-        );
-    }
-  });
-
   const airportSessions =
     overviewData?.activeSessions
-      .filter((session) => !session.sessionId.startsWith('sector-')) // Filter out sector controllers
+      .filter((session) => !session.sessionId.startsWith('sector-'))
       .reduce(
         (acc, session) => {
           if (!acc[session.airportIcao]) {
@@ -512,220 +517,298 @@ export default function PFATCFlights() {
     setError(null);
   };
 
-  const startEdit = (
-    flightId: string | number,
-    field: string,
-    currentValue: string
-  ) => {
-    if (!isEventController || !eventControllerViewEnabled) return;
+  const handleAutoSave = useCallback(
+    async (
+      flightId: string | number,
+      field: string,
+      value: string,
+      originalValue: string
+    ) => {
+      if (value === originalValue) return;
 
-    setEditingState({
-      flightId,
-      field,
-      value: currentValue,
-      originalValue: currentValue,
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingState(null);
-  };
-
-  const saveEdit = async () => {
-    if (!editingState || !isEventController || !eventControllerViewEnabled) return;
-
-    const { flightId, field, value, originalValue } = editingState;
-
-    if (value === originalValue) {
-      setEditingState(null);
-      return;
-    }
-
-    const flight = allFlights.find((f) => f.id === flightId);
-    if (!flight) {
-      console.error('Flight not found for editing');
-      setEditingState(null);
-      return;
-    }
-
-    setUpdatingFlights((prev) => new Set(prev).add(String(flightId)));
-
-    try {
-      const updates: Partial<Flight> = { [field]: value };
-
-      if (field === 'departure' && flight.departure !== value) {
-        updates.sid = '';
-      }
-      if (field === 'arrival' && flight.arrival !== value) {
-        updates.star = '';
+      const flight = allFlights.find((f) => f.id === flightId);
+      if (!flight) {
+        console.error('Flight not found for editing');
+        return;
       }
 
-      await updateFlightAPI(flight.sessionId, flightId, updates);
+      setUpdatingFlights((prev) => new Set(prev).add(String(flightId)));
 
-      // Optimistically update the local state
-      setOverviewData((prev) => {
-        if (!prev) return prev;
+      try {
+        const updates: Partial<Flight> = { [field]: value };
 
-        const updatedSessions = prev.activeSessions.map((session) => {
-          if (session.sessionId === flight.sessionId) {
-            return {
-              ...session,
-              flights: session.flights.map((f) =>
-                f.id === flightId ? { ...f, ...updates } : f
-              ),
-            };
-          }
-          return session;
+        if (field === 'departure' && flight.departure !== value) {
+          updates.sid = '';
+        }
+        if (field === 'arrival' && flight.arrival !== value) {
+          updates.star = '';
+        }
+
+        // Use websocket for real-time updates
+        const socketData = flightSockets.get(flight.sessionId);
+        if (socketData?.socket?.connected) {
+          socketData.updateFlight(flightId, updates);
+
+          // Remove optimistic update once we get confirmation
+          setOptimisticUpdates((prev) => {
+            const next = new Map(prev);
+            const key = `${flightId}-${field}`;
+            next.delete(key);
+            return next;
+          });
+        } else {
+          console.warn('Websocket not connected');
+          // Remove optimistic update and revert to original
+          setOptimisticUpdates((prev) => {
+            const next = new Map(prev);
+            const key = `${flightId}-${field}`;
+            next.delete(key);
+            return next;
+          });
+        }
+      } catch (error) {
+        console.error('Failed to update flight:', error);
+        // Remove optimistic update on error
+        setOptimisticUpdates((prev) => {
+          const next = new Map(prev);
+          const key = `${flightId}-${field}`;
+          next.delete(key);
+          return next;
         });
+      } finally {
+        setUpdatingFlights((prev) => {
+          const next = new Set(prev);
+          next.delete(String(flightId));
+          return next;
+        });
+      }
+    },
+    [allFlights, flightSockets]
+  );
 
-        return {
-          ...prev,
-          activeSessions: updatedSessions,
-        };
-      });
-
-      setEditingState(null);
-    } catch (error) {
-      console.error('Failed to update flight:', error);
-      alert('Failed to update flight. Please try again.');
-    } finally {
-      setUpdatingFlights((prev) => {
-        const next = new Set(prev);
-        next.delete(String(flightId));
+  const handleFieldChange = useCallback(
+    (
+      flightId: string | number,
+      field: string,
+      value: string,
+      originalValue: string
+    ) => {
+      // Optimistically update the UI immediately
+      const key = `${flightId}-${field}`;
+      setOptimisticUpdates((prev) => {
+        const next = new Map(prev);
+        next.set(key, { [field]: value });
         return next;
       });
-    }
-  };
 
-  const handleEditInputChange = (value: string) => {
-    if (!editingState) return;
-    setEditingState({ ...editingState, value });
-  };
+      const timerKey = `${flightId}-${field}`;
+
+      // Clear existing timer
+      const existingTimer = debounceTimers.get(timerKey);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      // Set new timer
+      const newTimer = setTimeout(() => {
+        handleAutoSave(flightId, field, value, originalValue);
+        setDebounceTimers((prev) => {
+          const next = new Map(prev);
+          next.delete(timerKey);
+          return next;
+        });
+      }, 500);
+
+      setDebounceTimers((prev) => {
+        const next = new Map(prev);
+        next.set(timerKey, newTimer);
+        return next;
+      });
+    },
+    [debounceTimers, handleAutoSave]
+  );
+
+  // Helper function to get current value with optimistic updates
+  const getCurrentValue = useCallback(
+    (flight: FlightWithDetails, field: string) => {
+      const key = `${flight.id}-${field}`;
+      const optimisticUpdate = optimisticUpdates.get(key);
+      if (optimisticUpdate && field in optimisticUpdate) {
+        return String(optimisticUpdate[field] || '');
+      }
+      return String((flight as any)[field] || '');
+    },
+    [optimisticUpdates]
+  );
 
   const renderEditableCell = (
     flight: FlightWithDetails,
     field: string,
-    currentValue: string,
-    cellType: 'text' | 'status' | 'airport' | 'aircraft' | 'altitude' | 'sid' | 'star' = 'text'
+    cellType:
+      | 'text'
+      | 'status'
+      | 'airport'
+      | 'aircraft'
+      | 'altitude'
+      | 'sid'
+      | 'star' = 'text'
   ) => {
-    const isEditing =
-      editingState?.flightId === flight.id && editingState?.field === field;
     const isUpdating = updatingFlights.has(String(flight.id));
+    const currentValue = getCurrentValue(flight, field);
+    const originalValue = String((flight as any)[field] || '');
+    const isDisabled = !isEventController || !selectedStation;
 
-    if (!isEventController || !eventControllerViewEnabled) {
+    if (!isEventController) {
       return (
         <span className="font-mono text-zinc-300">{currentValue || 'N/A'}</span>
       );
     }
 
-    if (isEditing) {
+    if (isUpdating) {
       return (
-        <div className="flex items-center space-x-2">
-          <div className="flex-1">
-            {cellType === 'status' ? (
-              <StatusDropdown
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                placeholder="-"
-                controllerType="event"
-              />
-            ) : cellType === 'airport' ? (
-              <AirportDropdown
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                showFullName={false}
-              />
-            ) : cellType === 'aircraft' ? (
-              <AircraftDropdown
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                showFullName={false}
-              />
-            ) : cellType === 'altitude' ? (
-              <AltitudeDropdown
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                placeholder="-"
-              />
-            ) : cellType === 'sid' ? (
-              <SidDropdown
-                airportIcao={flight.departure || ''}
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                placeholder="-"
-              />
-            ) : cellType === 'star' ? (
-              <StarDropdown
-                airportIcao={flight.arrival || ''}
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                size="xs"
-                placeholder="-"
-              />
-            ) : (
-              <TextInput
-                value={editingState.value}
-                onChange={handleEditInputChange}
-                className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white text-xs w-20"
-                maxLength={
-                  field === 'callsign' ? 16 : field === 'squawk' ? 4 : 50
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    saveEdit();
-                  } else if (e.key === 'Escape') {
-                    cancelEdit();
-                  }
-                }}
-                autoFocus
-              />
-            )}
-          </div>
-          <div className="flex space-x-1">
-            <button
-              onClick={saveEdit}
-              disabled={isUpdating}
-              className="text-green-400 hover:text-green-300 disabled:opacity-50"
-              title="Save"
-            >
-              <Check className="w-3 h-3" />
-            </button>
-            <button
-              onClick={cancelEdit}
-              disabled={isUpdating}
-              className="text-red-400 hover:text-red-300 disabled:opacity-50"
-              title="Cancel"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
+        <div className="flex items-center space-x-1">
+          <RefreshCw className="w-3 h-3 animate-spin" />
+          <span className="font-mono text-zinc-300">
+            {currentValue || 'N/A'}
+          </span>
         </div>
       );
     }
 
+    if (cellType === 'status') {
+      return (
+        <StatusDropdown
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          placeholder="-"
+          controllerType="event"
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    if (cellType === 'airport') {
+      return (
+        <AirportDropdown
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          showFullName={false}
+          className="w-full"
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    if (cellType === 'aircraft') {
+      return (
+        <AircraftDropdown
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          showFullName={false}
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    if (cellType === 'altitude') {
+      return (
+        <AltitudeDropdown
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          placeholder="-"
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    if (cellType === 'sid') {
+      return (
+        <SidDropdown
+          airportIcao={flight.departure || ''}
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          placeholder="-"
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    if (cellType === 'star') {
+      return (
+        <StarDropdown
+          airportIcao={flight.arrival || ''}
+          value={currentValue}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
+          size="xs"
+          placeholder="-"
+          disabled={isDisabled}
+        />
+      );
+    }
+
+    // Text input for callsign, squawk, etc.
     return (
-      <button
-        onClick={() => startEdit(flight.id, field, currentValue)}
-        className="font-mono text-zinc-300 hover:text-blue-400 hover:bg-zinc-800/50 px-1 py-0.5 rounded transition-colors text-left w-full"
-        title={`Click to edit ${field}`}
-        disabled={isUpdating}
-      >
-        {isUpdating ? (
-          <div className="flex items-center space-x-1">
-            <RefreshCw className="w-3 h-3 animate-spin" />
-            <span>{currentValue || 'N/A'}</span>
-          </div>
-        ) : (
-          currentValue || 'N/A'
-        )}
-      </button>
+      <TextInput
+        value={currentValue}
+        onChange={(value) =>
+          handleFieldChange(flight.id, field, value, originalValue)
+        }
+        className={`bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white text-xs w-full ${
+          isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+        maxLength={field === 'callsign' ? 16 : field === 'squawk' ? 4 : 50}
+        placeholder={currentValue ? '' : 'N/A'}
+        disabled={isDisabled}
+      />
     );
   };
+
+  // Clean up timers and optimistic updates on unmount
+  useEffect(() => {
+    return () => {
+      debounceTimers.forEach((timer) => clearTimeout(timer));
+      setOptimisticUpdates(new Map());
+    };
+  }, [debounceTimers]);
+
+  // Clean up optimistic updates when flights change from server
+  useEffect(() => {
+    setOptimisticUpdates((prev) => {
+      const next = new Map();
+      // Keep only updates for flights that still exist
+      for (const [key, value] of prev.entries()) {
+        const [flightId] = key.split('-');
+        if (allFlights.some((f) => String(f.id) === flightId)) {
+          next.set(key, value);
+        }
+      }
+      return next;
+    });
+  }, [allFlights]);
+
+  // Always sort by time (latest on top)
+  const sortedFlights = [...filteredFlights].sort(
+    (a, b) =>
+      new Date(b.created_at || 0).getTime() -
+      new Date(a.created_at || 0).getTime()
+  );
 
   if (loading) {
     return (
@@ -775,21 +858,21 @@ export default function PFATCFlights() {
                   PFATC Network Overview
                 </h1>
                 <p className="text-gray-400 flex items-center gap-3">
-                  <span>Live view of all PFATC flights and active airports</span>
+                  <span>
+                    Live view of all PFATC flights and active airports
+                  </span>
                   {isEventController && (
-                    <button
-                      onClick={() => {
-                        setEventControllerViewEnabled(!eventControllerViewEnabled);
-                        setSelectedStation('');
-                      }}
-                      className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                        eventControllerViewEnabled
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
-                          : 'bg-zinc-700/20 text-zinc-400 border-zinc-600/30 hover:bg-zinc-700/30'
+                    <span
+                      className={`text-sm px-3 py-1 rounded-full border ${
+                        selectedStation
+                          ? 'text-green-400 bg-green-900/30 border-green-700/50'
+                          : 'text-orange-400 bg-orange-900/30 border-orange-700/50'
                       }`}
                     >
-                      {eventControllerViewEnabled ? '✓ ' : ''}Event Controller View
-                    </button>
+                      {selectedStation
+                        ? `Event Controller - ${selectedStation}`
+                        : 'Event Controller - Select Station'}
+                    </span>
                   )}
                 </p>
               </div>
@@ -801,7 +884,7 @@ export default function PFATCFlights() {
                   <MapPin className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-white">
+                  <div className="text-lg font-bold text-white">
                     {overviewData?.totalActiveSessions || 0}
                   </div>
                   <div className="text-zinc-400 text-sm">Active Airports</div>
@@ -813,7 +896,7 @@ export default function PFATCFlights() {
                   <Plane className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold text-white">
+                  <div className="text-lg font-bold text-white">
                     {overviewData?.totalFlights || 0}
                   </div>
                   <div className="text-zinc-400 text-sm">Total Flights</div>
@@ -825,7 +908,7 @@ export default function PFATCFlights() {
                   <Clock className="w-5 h-5 text-orange-400" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-lg font-medium text-white">
                     {overviewData?.lastUpdated
                       ? new Date(overviewData.lastUpdated).toLocaleTimeString()
                       : 'Never'}
@@ -839,21 +922,22 @@ export default function PFATCFlights() {
       </div>
 
       <div className="max-w-[80%] mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Event Controller Panel */}
-        {isEventController && eventControllerViewEnabled && (
+        {/* Event Controller Panel - Always shown for event controllers */}
+        {isEventController && (
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-wrap items-center gap-3 bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4">
-              {/* Station Selector */}
               <Dropdown
-                options={sectorStations.map(s => ({ label: s.label, value: s.value }))}
+                options={sectorStations.map((s) => ({
+                  label: s.label,
+                  value: s.value,
+                }))}
                 value={selectedStation}
                 onChange={setSelectedStation}
-                placeholder="Select Station"
-                size="md"
+                placeholder="Select Station to Enable Controls"
                 className="min-w-[200px]"
+                size="sm"
               />
 
-              {/* Frequency Display */}
               {selectedStation && (
                 <FrequencyDisplay
                   airportIcao={selectedStation}
@@ -861,10 +945,8 @@ export default function PFATCFlights() {
                 />
               )}
 
-              {/* Spacer */}
               <div className="flex-1" />
 
-              {/* Action Buttons - matching Toolbar style */}
               <Button
                 className="flex items-center gap-2 px-4 py-2"
                 aria-label="Contact"
@@ -909,6 +991,7 @@ export default function PFATCFlights() {
                   setChatOpen(false);
                   setIsChartDrawerOpen((prev) => !prev);
                 }}
+                disabled={!selectedStation}
               >
                 <MapIcon className="w-5 h-5" />
                 <span className="hidden sm:inline font-medium">Charts</span>
@@ -920,13 +1003,13 @@ export default function PFATCFlights() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             <div className="flex-1 relative group">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-purple-400 transition-colors" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
                 placeholder="Search by callsign, aircraft, departure, or arrival..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-200 hover:border-zinc-600"
+                className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 hover:border-zinc-600"
               />
             </div>
 
@@ -963,16 +1046,6 @@ export default function PFATCFlights() {
                 placeholder="All Types"
                 size="md"
               />
-
-              <Dropdown
-                options={sortOptions}
-                value={sortBy}
-                onChange={(value) =>
-                  setSortBy(value as 'time' | 'callsign' | 'airport')
-                }
-                placeholder="Sort by..."
-                size="md"
-              />
             </div>
           </div>
 
@@ -992,7 +1065,10 @@ export default function PFATCFlights() {
                       Status
                     </th>
                     <th className="px-6 py-4 text-left text-zinc-400 font-medium">
-                      Route
+                      Departure
+                    </th>
+                    <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                      Arrival
                     </th>
                     <th className="px-6 py-4 text-left text-zinc-400 font-medium">
                       Aircraft
@@ -1040,88 +1116,33 @@ export default function PFATCFlights() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'callsign',
-                            flight.callsign || '',
-                            'text'
-                          )}
+                          {renderEditableCell(flight, 'callsign', 'text')}
                         </td>
                         <td className="px-6 py-4">
-                          {isEventController && eventControllerViewEnabled ? (
-                            renderEditableCell(
-                              flight,
-                              'status',
-                              flight.status || '',
-                              'status'
-                            )
-                          ) : (
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
-                                flight.status || ''
-                              )}`}
-                            >
-                              {flight.status || 'UNKNOWN'}
-                            </span>
-                          )}
+                          {renderEditableCell(flight, 'status', 'status')}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
-                            <div className="min-w-[80px]">
-                              <span className="font-mono text-zinc-300">
-                                {flight.departure || 'N/A'}
-                              </span>
-                            </div>
-                            <span className="text-zinc-500">→</span>
-                            <div className="min-w-[80px]">
-                              {renderEditableCell(
-                                flight,
-                                'arrival',
-                                flight.arrival || '',
-                                'airport'
-                              )}
-                            </div>
-                          </div>
+                          <span className="font-mono text-zinc-300">
+                            {flight.departure || 'N/A'}
+                          </span>
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'aircraft',
-                            flight.aircraft || '',
-                            'aircraft'
-                          )}
+                          {renderEditableCell(flight, 'arrival', 'airport')}
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'cruisingFL',
-                            flight.cruisingFL || '',
-                            'altitude'
-                          )}
+                          {renderEditableCell(flight, 'aircraft', 'aircraft')}
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'clearedFL',
-                            flight.clearedFL || '',
-                            'altitude'
-                          )}
+                          {renderEditableCell(flight, 'cruisingFL', 'altitude')}
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'sid',
-                            flight.sid || '',
-                            'sid'
-                          )}
+                          {renderEditableCell(flight, 'clearedFL', 'altitude')}
                         </td>
                         <td className="px-6 py-4">
-                          {renderEditableCell(
-                            flight,
-                            'star',
-                            flight.star || '',
-                            'star'
-                          )}
+                          {renderEditableCell(flight, 'sid', 'sid')}
+                        </td>
+                        <td className="px-6 py-4">
+                          {renderEditableCell(flight, 'star', 'star')}
                         </td>
                       </tr>
                     ))
@@ -1133,7 +1154,7 @@ export default function PFATCFlights() {
         </div>
 
         <div className="mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">
             Active Airports
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -1171,24 +1192,26 @@ export default function PFATCFlights() {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => toggleAirportExpansion(icao)}
-                        variant="ghost"
-                        size="sm"
-                        className="p-2"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </Button>
+                      {arrivals.length > 0 && (
+                        <Button
+                          onClick={() => toggleAirportExpansion(icao)}
+                          variant="ghost"
+                          size="sm"
+                          className="p-2"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  <div className="space-y-4">
-                    <WindDisplay icao={icao} size="small" />
-                  {eventControllerViewEnabled && (
-                    <FrequencyDisplay airportIcao={icao ?? ''} />
-                  )}
+                    <div className="space-y-4">
+                      <WindDisplay icao={icao} size="small" />
+                      {isEventController && selectedStation && (
+                        <FrequencyDisplay airportIcao={icao ?? ''} />
+                      )}
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 mt-4">
@@ -1215,54 +1238,104 @@ export default function PFATCFlights() {
                     </div>
                   </div>
 
-                  {/* Arrivals List (Collapsible) */}
-                  {isExpanded && arrivals.length > 0 && (
-                    <div className="border-t border-zinc-700/50">
-                      <div className="p-4 bg-zinc-800/30">
-                        <h4 className="text-sm font-medium text-zinc-300 mb-3">
-                          Arrivals ({arrivals.length})
-                        </h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {arrivals.map((flight) => (
-                            <div
-                              key={`${flight.sessionId}-${flight.id}`}
-                              className="flex items-center justify-between bg-zinc-700/50 rounded-lg p-2 text-sm"
-                            >
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <span className="font-mono text-blue-400 font-medium">
-                                  {flight.callsign || 'N/A'}
-                                </span>
-                                <span className="text-zinc-500">from</span>
-                                <span className="font-mono text-green-400">
-                                  {flight.departureAirport}
-                                </span>
-                                <span className="text-zinc-400">
-                                  {flight.aircraft || 'N/A'}
-                                </span>
-                              </div>
+                  {/* Arrivals List */}
+                  {isExpanded && (
+                    <div className="border-t border-zinc-700/50 bg-zinc-800/50">
+                      <div className="p-4 sm:p-6 space-y-4">
+                        {/* Departures Section */}
+                        {sessions.some(
+                          (session) => session.flights.length > 0
+                        ) && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                              <PlaneTakeoff className="w-4 h-4 text-blue-400" />
+                              Departures ( )
+                            </h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {sessions.map((session) =>
+                                session.flights.map((flight) => (
+                                  <div
+                                    key={`${session.sessionId}-${flight.id}`}
+                                    className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
+                                  >
+                                    <div className="flex items-center space-x-3">
+                                      <div className="text-white font-mono text-sm">
+                                        {flight.callsign || 'N/A'}
+                                      </div>
+                                      <div className="text-zinc-400 text-xs">
+                                        {flight.aircraft || 'N/A'}
+                                      </div>
+                                      <div className="text-zinc-500 text-xs">
+                                        → {flight.arrival || 'N/A'}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <span
+                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
+                                          flight.status || 'PENDING'
+                                        )}`}
+                                      >
+                                        {flight.status || 'PENDING'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
+
+                        {/* Arrivals Section */}
+                        {arrivals.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                              <PlaneLanding className="w-4 h-4 text-green-400" />
+                              Arrivals ({arrivals.length})
+                            </h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {arrivals.map((flight) => (
+                                <div
+                                  key={`arrival-${flight.id}`}
+                                  className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="text-white font-mono text-sm">
+                                      {flight.callsign || 'N/A'}
+                                    </div>
+                                    <div className="text-zinc-400 text-xs">
+                                      {flight.aircraft || 'N/A'}
+                                    </div>
+                                    <div className="text-zinc-500 text-xs">
+                                      {flight.departureAirport} →
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span
+                                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
+                                        flight.status || 'ENROUTE'
+                                      )}`}
+                                    >
+                                      {flight.status || 'ENROUTE'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Show message if no flights */}
+                        {sessions.every(
+                          (session) => session.flights.length === 0
+                        ) &&
+                          arrivals.length === 0 && (
+                            <div className="text-center text-zinc-400 py-4">
+                              No active flights at this airport
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
-
-                  <div className="p-4">
-                    <Button
-                      onClick={() => {
-                        const session = sessions[0];
-                        if (session?.sessionId) {
-                          window.open(`/submit/${session.sessionId}`, '_blank');
-                        }
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full flex items-center justify-center space-x-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span>Submit Flight</span>
-                    </Button>
-                  </div>
                 </div>
               );
             })}
@@ -1306,19 +1379,23 @@ export default function PFATCFlights() {
         onSendContact={handleSendContact}
         activeAcarsFlights={activeAcarsFlights}
         airportIcao={selectedStation}
-        fallbackFrequency={sectorStations.find(s => s.value === selectedStation)?.frequency}
+        fallbackFrequency={
+          sectorStations.find((s) => s.value === selectedStation)?.frequency
+        }
       />
 
       <ChatSidebar
-        sessionId="" // No session ID for PFATC page
-        accessId="" // No access ID for PFATC page
+        sessionId=""
+        accessId=""
         open={chatOpen}
         onClose={() => setChatOpen(false)}
-        sessionUsers={[]} // No session users on PFATC page
+        sessionUsers={[]}
         onMentionReceived={handleMentionReceived}
         station={selectedStation}
-        position={selectedStation ? selectedStation.split('_').slice(1).join('_') : ''} // Extract position from station (e.g., "LECB_CTR" -> "CTR")
-        isPFATC={true} // Need this true to connect to global chat socket
+        position={
+          selectedStation ? selectedStation.split('_').slice(1).join('_') : ''
+        }
+        isPFATC={true}
         unreadSessionCount={0}
         unreadGlobalCount={0}
       />
