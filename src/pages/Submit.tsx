@@ -30,6 +30,7 @@ import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
+import CallsignInput from '../components/common/CallsignInput';
 
 interface SessionData {
   sessionId: string;
@@ -385,14 +386,11 @@ export default function Submit() {
                       <BadgeCheck className="h-4 w-4 mr-2 text-gray-400" />
                       Callsign <span className="text-red-400 ml-1">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="callsign"
+                    <CallsignInput
                       value={form.callsign}
-                      onChange={(e) => handleChange('callsign')(e.target.value)}
+                      onChange={handleChange('callsign')}
                       required
                       placeholder="e.g. DLH123"
-                      className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                       maxLength={16}
                     />
                   </div>

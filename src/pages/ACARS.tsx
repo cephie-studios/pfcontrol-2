@@ -17,6 +17,7 @@ import {
   createOverviewSocket,
   type OverviewSession,
 } from '../sockets/overviewSocket';
+import { getAirportName, parseCallsign } from '../utils/callsignParser';
 import { getChartsForAirport, playNotificationSound } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
@@ -35,7 +36,7 @@ export default function ACARS() {
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('acars_token');
   const navigate = useNavigate();
-  const { airports, loading: dataLoading } = useData();
+  const { airports, airlines, loading: dataLoading } = useData();
   const { settings, loading: settingsLoading } = useSettings();
   const [loading, setLoading] = useState(true);
   const [flight, setFlight] = useState<Flight | null>(null);
@@ -65,29 +66,18 @@ export default function ACARS() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const chartHandlers = useMemo(
-    () =>
-      createChartHandlers(
-        chartZoom,
-        setChartZoom,
-        chartPan,
-        setChartPan,
-        isChartDragging,
-        setIsChartDragging,
-        chartDragStart,
-        setChartDragStart,
-        containerRef as React.RefObject<HTMLDivElement>,
-        imageSize
-      ),
-    [
-      chartZoom,
-      chartPan,
-      isChartDragging,
-      chartDragStart,
-      imageSize.width,
-      imageSize.height,
-    ]
-  );
+  const chartHandlers = useMemo(() => createChartHandlers(
+    chartZoom,
+    setChartZoom,
+    chartPan,
+    setChartPan,
+    isChartDragging,
+    setIsChartDragging,
+    chartDragStart,
+    setChartDragStart,
+    containerRef as React.RefObject<HTMLDivElement>,
+    imageSize
+  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
 
   const {
     handleZoomIn,
@@ -100,6 +90,12 @@ export default function ACARS() {
     handleTouchMove,
     handleTouchEnd,
   } = chartHandlers;
+
+  // Format callsign for display
+  const formattedCallsign = useMemo(() => {
+    if (!flight?.callsign) return null;
+    return parseCallsign(flight.callsign, airlines);
+  }, [flight?.callsign, airlines]);
 
   useEffect(() => {
     if (
@@ -135,11 +131,15 @@ export default function ACARS() {
           airports
         );
         const arrivalAirport = getAirportName(flight.arrival || '', airports);
+        const formattedCallsign = parseCallsign(
+          flight.callsign || '',
+          airlines
+        );
 
         const initialNotes = `FLIGHT PLAN DETAILS
 ════════════════════════════════════════
 
-Callsign: ${flight.callsign}
+Callsign: ${flight.callsign} (${formattedCallsign})
 Aircraft: ${flight.aircraft || 'N/A'}
 Flight Type: ${flight.flight_type || 'N/A'}
 
@@ -167,7 +167,7 @@ NOTES:
 
       notesInitializedRef.current = true;
     }
-  }, [sessionId, flightId, flight, dataLoading, airports]);
+  }, [sessionId, flightId, flight, dataLoading, airports, airlines]);
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newNotes = e.target.value;
@@ -295,13 +295,14 @@ NOTES:
       text: `FLIGHT PLAN: ${flight.callsign} SUBMITTED SUCCESSFULLY`,
       type: 'Success',
     };
+    const formattedCallsign = parseCallsign(flight.callsign || '', airlines);
     const departureAirport = getAirportName(flight.departure || '', airports);
     const arrivalAirport = getAirportName(flight.arrival || '', airports);
     const detailsMsg: AcarsMessage = {
       id: `${Date.now()}-details`,
       timestamp: new Date().toISOString(),
       station: 'SYSTEM',
-      text: `FLIGHT PLAN DETAILS,\nCALLSIGN: ${flight.callsign}, \nTYPE: ${flight.aircraft},\nRULES: ${flight.flight_type},\nSTAND: ${flight.stand || 'N/A'},\nDEPARTING: ${departureAirport},\nARRIVING: ${arrivalAirport}`,
+      text: `FLIGHT PLAN DETAILS,\nCALLSIGN: ${flight.callsign} (${formattedCallsign}), \nTYPE: ${flight.aircraft},\nRULES: ${flight.flight_type},\nSTAND: ${flight.stand || 'N/A'},\nDEPARTING: ${departureAirport},\nARRIVING: ${arrivalAirport}`,
       type: 'system',
     };
     const initialMessages = [warningMsg, detailsMsg, successMsg];
@@ -318,7 +319,7 @@ NOTES:
     setMessages(initialMessages);
     if (settings) playNotificationSound('warning', settings);
     initializedRef.current = true;
-  }, [flight, dataLoading, airports, settings]);
+  }, [flight, dataLoading, airlines, airports, settings]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -470,16 +471,6 @@ NOTES:
     </span>
   );
 
-  function getAirportName(
-    icao: string | undefined,
-    airports: { icao: string; name: string }[]
-  ): string {
-    if (!icao) return '';
-
-    const airport = airports.find((a) => a.icao === icao);
-    return airport ? `${icao} ${airport.name}` : icao;
-  }
-
   const acarsSettings = settings?.acars;
 
   const minSidebar = 10,
@@ -585,7 +576,11 @@ NOTES:
             <PlaneTakeoff className="h-8 w-8 text-blue-500" />
             <div>
               <h1 className="text-2xl font-bold text-white">
-                {flight?.callsign ? `${flight.callsign}` : 'ACARS Terminal'}
+                {flight?.callsign ? (
+                  formattedCallsign || flight.callsign
+                ) : (
+                  'ACARS Terminal'
+                )}
               </h1>
             </div>
           </div>

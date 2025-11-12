@@ -1,0 +1,862 @@
+[
+    {
+        "icao": "MAU",
+        "callsign": "AIR MAURITIUS"
+    },
+    {
+        "icao": "SEN",
+        "callsign": "SENEGAL"
+    },
+    {
+        "icao": "TCX",
+        "callsign": "TANZAN"
+    },
+    {
+        "icao": "ARA",
+        "callsign": "ARIK"
+    },
+    {
+        "icao": "MSR",
+        "callsign": "EGYPTAIR"
+    },
+    {
+        "icao": "ETH",
+        "callsign": "ETHIOPIAN"
+    },
+    {
+        "icao": "JAM",
+        "callsign": "JAMBORAF"
+    },
+    {
+        "icao": "KUP",
+        "callsign": "KULULA"
+    },
+    {
+        "icao": "MNO",
+        "callsign": "MANGO"
+    },
+    {
+        "icao": "RAM",
+        "callsign": "ROYAL"
+    },
+    {
+        "icao": "SAA",
+        "callsign": "SPRINGBOK"
+    },
+    {
+        "icao": "DTA",
+        "callsign": "DTA"
+    },
+    {
+        "icao": "TSL",
+        "callsign": "TASSILI"
+    },
+    {
+        "icao": "HGM",
+        "callsign": "MONGOL AIR"
+    },
+    {
+        "icao": "AXM",
+        "callsign": "AIRASIA"
+    },
+    {
+        "icao": "KZR",
+        "callsign": "ASTANA"
+    },
+    {
+        "icao": "CAO",
+        "callsign": "AIR CHINA"
+    },
+    {
+        "icao": "AHK",
+        "callsign": "AIR HONG KONG"
+    },
+    {
+        "icao": "AIC",
+        "callsign": "AIR INDIA"
+    },
+    {
+        "icao": "MNS",
+        "callsign": "MANAS"
+    },
+    {
+        "icao": "ANA",
+        "callsign": "ALL NIPPON"
+    },
+    {
+        "icao": "AAR",
+        "callsign": "ASIANA"
+    },
+    {
+        "icao": "BGD",
+        "callsign": "BINNIG"
+    },
+    {
+        "icao": "CPA",
+        "callsign": "CATHAY"
+    },
+    {
+        "icao": "CEB",
+        "callsign": "CEBU"
+    },
+    {
+        "icao": "CES",
+        "callsign": "CHINA EASTERN"
+    },
+    {
+        "icao": "CSN",
+        "callsign": "CHINA SOUTHERN"
+    },
+    {
+        "icao": "CAI",
+        "callsign": "CORENDON"
+    },
+    {
+        "icao": "ELY",
+        "callsign": "EL AL"
+    },
+    {
+        "icao": "UAE",
+        "callsign": "EMIRATES"
+    },
+    {
+        "icao": "EYA",
+        "callsign": "ETIHAD"
+    },
+    {
+        "icao": "EVA",
+        "callsign": "EVA AIR"
+    },
+    {
+        "icao": "EBL",
+        "callsign": "FLYERBIL"
+    },
+    {
+        "icao": "GIA",
+        "callsign": "GARUDA"
+    },
+    {
+        "icao": "GFA",
+        "callsign": "GULF AIR"
+    },
+    {
+        "icao": "CHH",
+        "callsign": "HAINANAIR"
+    },
+    {
+        "icao": "IRN",
+        "callsign": "IRANAIR"
+    },
+    {
+        "icao": "IAW",
+        "callsign": "IRAQI"
+    },
+    {
+        "icao": "ELY",
+        "callsign": "EL AL"
+    },
+    {
+        "icao": "JAC",
+        "callsign": "JAPAN COMMUTER"
+    },
+    {
+        "icao": "JAL",
+        "callsign": "JAPAN AIR"
+    },
+    {
+        "icao": "JJA",
+        "callsign": "JEJU AIR"
+    },
+    {
+        "icao": "JAY",
+        "callsign": "JUNEYAO"
+    },
+    {
+        "icao": "KAL",
+        "callsign": "KOREAN AIR"
+    },
+    {
+        "icao": "KAC",
+        "callsign": "KUWAIT"
+    },
+    {
+        "icao": "MAS",
+        "callsign": "MALAYSIA"
+    },
+    {
+        "icao": "OMN",
+        "callsign": "OMAN"
+    },
+    {
+        "icao": "PIA",
+        "callsign": "PAKISTAN"
+    },
+    {
+        "icao": "PAL",
+        "callsign": "PHILIPPINE"
+    },
+    {
+        "icao": "PGS",
+        "callsign": "PEGASUS"
+    },
+    {
+        "icao": "PRF",
+        "callsign": "PAL EXPRESS"
+    },
+    {
+        "icao": "PNB",
+        "callsign": "PHILIPPINE"
+    },
+    {
+        "icao": "QTR",
+        "callsign": "QATAR"
+    },
+    {
+        "icao": "QAZ",
+        "callsign": "KAZAKHSTAN"
+    },
+    {
+        "icao": "RWC",
+        "callsign": "RIYADH AIR"
+    },
+    {
+        "icao": "RJA",
+        "callsign": "ROYAL JORDANIAN"
+    },
+    {
+        "icao": "SVA",
+        "callsign": "SAUDIA"
+    },
+    {
+        "icao": "SVR",
+        "callsign": "SAUDIA"
+    },
+    {
+        "icao": "TGV",
+        "callsign": "SCOOT"
+    },
+    {
+        "icao": "SIA",
+        "callsign": "SINGAPORE"
+    },
+    {
+        "icao": "SEJ",
+        "callsign": "SPICEEJET"
+    },
+    {
+        "icao": "TJX",
+        "callsign": "STARLUX"
+    },
+    {
+        "icao": "THA",
+        "callsign": "THAI"
+    },
+    {
+        "icao": "TLM",
+        "callsign": "LION AIR"
+    },
+    {
+        "icao": "THY",
+        "callsign": "TURKISH"
+    },
+    {
+        "icao": "TKM",
+        "callsign": "TURKMENISTAN"
+    },
+    {
+        "icao": "UBG",
+        "callsign": "US BANGLA"
+    },
+    {
+        "icao": "VIE",
+        "callsign": "VIETNAM AIRLINES"
+    },
+    {
+        "icao": "VTA",
+        "callsign": "VISTARA"
+    },
+    {
+        "icao": "CXA",
+        "callsign": "XIAMEN AIR"
+    },
+    {
+        "icao": "AEE",
+        "callsign": "AEGEAN"
+    },
+    {
+        "icao": "AFL",
+        "callsign": "AEROFLOT"
+    },
+    {
+        "icao": "EIN",
+        "callsign": "SHAMROCK"
+    },
+    {
+        "icao": "AAB",
+        "callsign": "ALBANIA"
+    },
+    {
+        "icao": "AUA",
+        "callsign": "AUSTRA"
+    },
+    {
+        "icao": "BER",
+        "callsign": "AIR BERLIN"
+    },
+    {
+        "icao": "AEA",
+        "callsign": "AIR EUROPA"
+    },
+    {
+        "icao": "AFR",
+        "callsign": "AIRFRANS"
+    },
+    {
+        "icao": "A3",
+        "callsign": "SERBIA"
+    },
+    {
+        "icao": "AUK",
+        "callsign": "BRISTOL"
+    },
+    {
+        "icao": "AZA",
+        "callsign": "ALITALIA"
+    },
+    {
+        "icao": "AUA",
+        "callsign": "AUSTRIAN"
+    },
+    {
+        "icao": "AZQ",
+        "callsign": "AZERBAIJAN"
+    },
+    {
+        "icao": "AZU",
+        "callsign": "AZUR AIR"
+    },
+    {
+        "icao": "BLX",
+        "callsign": "BLUE 1"
+    },
+    {
+        "icao": "BAW",
+        "callsign": "SPEEDBIRD"
+    },
+    {
+        "icao": "BMI",
+        "callsign": "BRITISH MIDLAND"
+    },
+    {
+        "icao": "CBI",
+        "callsign": "CITY BIRD"
+    },
+    {
+        "icao": "CFG",
+        "callsign": "CONDOR"
+    },
+    {
+        "icao": "OU",
+        "callsign": "CROATIA"
+    },
+    {
+        "icao": "U2",
+        "callsign": "EASY"
+    },
+    {
+        "icao": "EDW",
+        "callsign": "EDELWEISS"
+    },
+    {
+        "icao": "EFT",
+        "callsign": "ETF"
+    },
+    {
+        "icao": "EWG",
+        "callsign": "EUROWINGS"
+    },
+    {
+        "icao": "AY",
+        "callsign": "FINNAIR"
+    },
+    {
+        "icao": "FBZ",
+        "callsign": "FLYBOSNIA"
+    },
+    {
+        "icao": "FBU",
+        "callsign": "FRENCH BEE"
+    },
+    {
+        "icao": "GEX",
+        "callsign": "GERMANIA"
+    },
+    {
+        "icao": "OAW",
+        "callsign": "HELvetic"
+    },
+    {
+        "icao": "IBE",
+        "callsign": "IBERIA"
+    },
+    {
+        "icao": "FIA",
+        "callsign": "ICEAIR"
+    },
+    {
+        "icao": "AZA",
+        "callsign": "ALITALIA"
+    },
+    {
+        "icao": "IDE",
+        "callsign": "IDEAL TOURS"
+    },
+    {
+        "icao": "LS",
+        "callsign": "JET2"
+    },
+    {
+        "icao": "JAF",
+        "callsign": "JETAIRFLY"
+    },
+    {
+        "icao": "KLM",
+        "callsign": "KLM"
+    },
+    {
+        "icao": "CDG",
+        "callsign": "COMPAGNIE"
+    },
+    {
+        "icao": "LOT",
+        "callsign": "LOT"
+    },
+    {
+        "icao": "LTU",
+        "callsign": "LTU"
+    },
+    {
+        "icao": "DLH",
+        "callsign": "LUFTHANSA"
+    },
+    {
+        "icao": "LUX",
+        "callsign": "LUXAIR"
+    },
+    {
+        "icao": "MAH",
+        "callsign": "MALÉV"
+    },
+    {
+        "icao": "NOS",
+        "callsign": "NEOS"
+    },
+    {
+        "icao": "NWC",
+        "callsign": "NORSE"
+    },
+    {
+        "icao": "NAX",
+        "callsign": "NORWEGIAN"
+    },
+    {
+        "icao": "OAL",
+        "callsign": "OLYMPIC"
+    },
+    {
+        "icao": "PGA",
+        "callsign": "PORTUGALIA"
+    },
+    {
+        "icao": "QAF",
+        "callsign": "QUANTUM"
+    },
+    {
+        "icao": "FR",
+        "callsign": "RYANAIR"
+    },
+    {
+        "icao": "SBI",
+        "callsign": "GLOBUS"
+    },
+    {
+        "icao": "SAB",
+        "callsign": "SABENA"
+    },
+    {
+        "icao": "SPC",
+        "callsign": "SATA"
+    },
+    {
+        "icao": "SAS",
+        "callsign": "SCANDINAVIAN"
+    },
+    {
+        "icao": "JKK",
+        "callsign": "SPANAIR"
+    },
+    {
+        "icao": "SWR",
+        "callsign": "SWISS"
+    },
+    {
+        "icao": "TAP",
+        "callsign": "AIR PORTUGAL"
+    },
+    {
+        "icao": "ROT",
+        "callsign": "TAROM"
+    },
+    {
+        "icao": "BY",
+        "callsign": "TUI"
+    },
+    {
+        "icao": "UCR",
+        "callsign": "UKRINE"
+    },
+    {
+        "icao": "VIR",
+        "callsign": "VIRGIN"
+    },
+    {
+        "icao": "VOE",
+        "callsign": "VOLOTEA"
+    },
+    {
+        "icao": "VUE",
+        "callsign": "VUELING"
+    },
+    {
+        "icao": "WAT",
+        "callsign": "WEST ATLANTIC"
+    },
+    {
+        "icao": "WIF",
+        "callsign": "WIDEROE"
+    },
+    {
+        "icao": "WZZ",
+        "callsign": "WIZZAIR"
+    },
+    {
+        "icao": "WKF",
+        "callsign": "WORLD2FLY"
+    },
+    {
+        "icao": "WOW",
+        "callsign": "WOW AIR"
+    },
+    {
+        "icao": "AMX",
+        "callsign": "AERO MEXICO"
+    },
+    {
+        "icao": "ACA",
+        "callsign": "AIR CANADA"
+    },
+    {
+        "icao": "FWI",
+        "callsign": "FRENCH CARAIBES"
+    },
+    {
+        "icao": "GLR",
+        "callsign": "GREENLAND"
+    },
+    {
+        "icao": "ACM",
+        "callsign": "MONTREAL"
+    },
+    {
+        "icao": "PLM",
+        "callsign": "AIR PANAMA"
+    },
+    {
+        "icao": "ASD",
+        "callsign": "AIR SANTO DOMINGO"
+    },
+    {
+        "icao": "TRP",
+        "callsign": "AIR TRAN"
+    },
+    {
+        "icao": "TSC",
+        "callsign": "AIR TRANSAT"
+    },
+    {
+        "icao": "ATI",
+        "callsign": "AIR TRANSPORT"
+    },
+    {
+        "icao": "ASA",
+        "callsign": "ALASKA"
+    },
+    {
+        "icao": "AAY",
+        "callsign": "ALLEGIAN"
+    },
+    {
+        "icao": "AAL",
+        "callsign": "AMERICAN"
+    },
+    {
+        "icao": "MX",
+        "callsign": "BREEZE"
+    },
+    {
+        "icao": "MPE",
+        "callsign": "CANADIAN NORTH"
+    },
+    {
+        "icao": "CJA",
+        "callsign": "JAZZ"
+    },
+    {
+        "icao": "CMP",
+        "callsign": "COPA"
+    },
+    {
+        "icao": "DAL",
+        "callsign": "DELTA"
+    },
+    {
+        "icao": "EAL",
+        "callsign": "EASTERN"
+    },
+    {
+        "icao": "F8",
+        "callsign": "FLAIR"
+    },
+    {
+        "icao": "FFT",
+        "callsign": "FRONTIER"
+    },
+    {
+        "icao": "HAL",
+        "callsign": "HAWAIIAN"
+    },
+    {
+        "icao": "ICI",
+        "callsign": "INTER CANADIAN"
+    },
+    {
+        "icao": "B6",
+        "callsign": "JETBLUE"
+    },
+    {
+        "icao": "KEY",
+        "callsign": "KEY LIME"
+    },
+    {
+        "icao": "MXA",
+        "callsign": "MEXICANA"
+    },
+    {
+        "icao": "NAL",
+        "callsign": "NATIONAL"
+    },
+    {
+        "icao": "NWA",
+        "callsign": "NORTHWEST"
+    },
+    {
+        "icao": "OWG",
+        "callsign": "OWG"
+    },
+    {
+        "icao": "PSA",
+        "callsign": "PACIFIC SOUTHWEST"
+    },
+    {
+        "icao": "POE",
+        "callsign": "PORTER"
+    },
+    {
+        "icao": "PPA",
+        "callsign": "PROPAIR"
+    },
+    {
+        "icao": "SKY",
+        "callsign": "SKY CANA"
+    },
+    {
+        "icao": "SKC",
+        "callsign": "SKYCARE"
+    },
+    {
+        "icao": "SWA",
+        "callsign": "SOUTHWEST"
+    },
+    {
+        "icao": "NKS",
+        "callsign": "SPIRIT WINGS"
+    },
+    {
+        "icao": "SWG",
+        "callsign": "SUNWING"
+    },
+    {
+        "icao": "TWA",
+        "callsign": "TWA"
+    },
+    {
+        "icao": "UAL",
+        "callsign": "UNITED"
+    },
+    {
+        "icao": "AWE",
+        "callsign": "C ACTUS"
+    },
+    {
+        "icao": "WS",
+        "callsign": "WESTJET"
+    },
+    {
+        "icao": "ANZ",
+        "callsign": "AIR NEW ZEALAND"
+    },
+    {
+        "icao": "ANG",
+        "callsign": "AIR NIUGINI"
+    },
+    {
+        "icao": "THT",
+        "callsign": "TAHITI"
+    },
+    {
+        "icao": "VUU",
+        "callsign": "AIR VANUATU"
+    },
+    {
+        "icao": "QNE",
+        "callsign": "ALLIANCE"
+    },
+    {
+        "icao": "FJI",
+        "callsign": "FIJI"
+    },
+    {
+        "icao": "JST",
+        "callsign": "JETSTAR"
+    },
+    {
+        "icao": "LHX",
+        "callsign": "LINK"
+    },
+    {
+        "icao": "QFA",
+        "callsign": "QANTAS"
+    },
+    {
+        "icao": "SHK",
+        "callsign": "SHARP"
+    },
+    {
+        "icao": "VOZ",
+        "callsign": "VIRGIN AUSTRALIA"
+    },
+    {
+        "icao": "RXA",
+        "callsign": "REX"
+    },
+    {
+        "icao": "QLK",
+        "callsign": "QANTAS LINK"
+    },
+    {
+        "icao": "APU",
+        "callsign": "AERO PERU"
+    },
+    {
+        "icao": "AVN",
+        "callsign": "AVIANCAR"
+    },
+    {
+        "icao": "AZU",
+        "callsign": "AZUL"
+    },
+    {
+        "icao": "ITA",
+        "callsign": "ITAPEMIRIM"
+    },
+    {
+        "icao": "LAN",
+        "callsign": "LAN CHILE"
+    },
+    {
+        "icao": "LAT",
+        "callsign": "LAN CHILE"
+    },
+    {
+        "icao": "SPR",
+        "callsign": "STAR PERU"
+    },
+    {
+        "icao": "TAM",
+        "callsign": "TAM"
+    },
+    {
+        "icao": "VRG",
+        "callsign": "VARIG"
+    },
+    {
+        "icao": "WCA",
+        "callsign": "WORLD CARGO"
+    },
+    {
+        "icao": "DHL",
+        "callsign": "DHL"
+    },
+    {
+        "icao": "MAA",
+        "callsign": "MARTINAIR"
+    },
+    {
+        "icao": "MON",
+        "callsign": "MONARCH"
+    },
+    {
+        "icao": "ZXT",
+        "callsign": "ZOREX"
+    },
+    {
+        "icao": "AMF",
+        "callsign": "AMERIFLIGHT"
+    },
+    {
+        "icao": "AJT",
+        "callsign": "AMERIJET"
+    },
+    {
+        "icao": "CJT",
+        "callsign": "CARGOJET"
+    },
+    {
+        "icao": "FDX",
+        "callsign": "FEDEX"
+    },
+    {
+        "icao": "PAV",
+        "callsign": "PERIMETER"
+    },
+    {
+        "icao": "SKL",
+        "callsign": "SKY LEASE"
+    },
+    {
+        "icao": "UPS",
+        "callsign": "UPS"
+    },
+    {
+        "icao": "WGN",
+        "callsign": "WESTERN GLOBAL"
+    },
+    {
+        "icao": "SUC",
+        "callsign": "AEROSUCRE"
+    },
+    {
+        "icao": "TOL",
+        "callsign": "TOLL"
+    }
+]
