@@ -125,6 +125,9 @@ export default function PilotProfile() {
       const data = await fetchPilotProfile(username!);
       if (data) {
         setProfile(data);
+        if (!isCurrentUser) {
+          setUserStats(data.user.statistics || {});
+        }
       } else {
         setError('Pilot not found');
       }
@@ -440,9 +443,14 @@ export default function PilotProfile() {
 
       {/* Stats Grid */}
       <div className="max-w-7xl mx-auto px-4 mt-8">
-        {isCurrentUser && (
+        {(isCurrentUser ||
+          profile.privacySettings.displayPilotStatsOnProfile) && (
           <>
-            {(user.settings?.displayStatsOnProfile ?? true) ? (
+            {(
+              isCurrentUser
+                ? (user.settings?.displayStatsOnProfile ?? true)
+                : true
+            ) ? (
               userStats && Object.keys(userStats).length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {/* Sessions Created */}
@@ -467,14 +475,17 @@ export default function PilotProfile() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-300 font-semibold">
-                        Rank
-                      </p>
-                      <p className="text-lg font-bold text-emerald-300">
-                        #{ranks.total_sessions_created || 'N/A'}
-                      </p>
-                    </div>
+                    {/* Only show ranks for current user */}
+                    {isCurrentUser && (
+                      <div className="text-right">
+                        <p className="text-sm text-gray-300 font-semibold">
+                          Rank
+                        </p>
+                        <p className="text-lg font-bold text-emerald-300">
+                          #{ranks.total_sessions_created || 'N/A'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Total Flights */}
@@ -499,14 +510,16 @@ export default function PilotProfile() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-300 font-semibold">
-                        Rank
-                      </p>
-                      <p className="text-lg font-bold text-amber-300">
-                        #{ranks['total_flights_submitted.total'] || 'N/A'}
-                      </p>
-                    </div>
+                    {isCurrentUser && (
+                      <div className="text-right">
+                        <p className="text-sm text-gray-300 font-semibold">
+                          Rank
+                        </p>
+                        <p className="text-lg font-bold text-amber-300">
+                          #{ranks['total_flights_submitted.total'] || 'N/A'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Time Controlling */}

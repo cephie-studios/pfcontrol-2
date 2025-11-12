@@ -5,10 +5,7 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
-  Map,
 } from 'lucide-react';
-import { BiSidebar } from "react-icons/bi";
-import { HiOutlineQueueList } from "react-icons/hi2";
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Settings } from '../../types/settings';
 import Button from '../common/Button';
@@ -82,18 +79,6 @@ export default function AcarsSettings({
       acars: {
         ...settings.acars,
         notesEnabled: !settings.acars.notesEnabled,
-      },
-    };
-    onChange(updatedSettings);
-  };
-
-  const handleChartViewModeChange = (mode: 'list' | 'legacy') => {
-    if (!settings) return;
-    const updatedSettings = {
-      ...settings,
-      acars: {
-        ...settings.acars,
-        chartDrawerViewMode: mode,
       },
     };
     onChange(updatedSettings);
@@ -343,64 +328,27 @@ export default function AcarsSettings({
                         Auto Redirect to ACARS
                       </p>
                       <p className="text-zinc-500 text-xs">
-                        Automatically open ACARS after submitting flight plan (PFATC sessions only)
+                        Automatically open ACARS after submitting flight plan
+                        (PFATC sessions only)
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleAutoRedirectToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.acars.autoRedirectToAcars ?? true
+                      (settings.acars.autoRedirectToAcars ?? true)
                         ? 'bg-green-600'
                         : 'bg-zinc-700'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        settings.acars.autoRedirectToAcars ?? true
+                        (settings.acars.autoRedirectToAcars ?? true)
                           ? 'translate-x-6'
                           : 'translate-x-1'
                       }`}
                     />
                   </button>
-                </div>
-
-                {/* Chart Drawer View Mode */}
-                <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
-                  <div className="flex items-center mb-3">
-                    <Map className="h-5 w-5 text-cyan-400 mr-3" />
-                    <div>
-                      <p className="text-white font-medium text-sm">
-                        Chart Drawer View Mode
-                      </p>
-                      <p className="text-zinc-500 text-xs">
-                        Choose how charts are displayed
-                      </p>
-                    </div>
-                  </div>
-                    <div className="flex gap-2">
-                    <button
-                      onClick={() => handleChartViewModeChange('legacy')}
-                      className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                      (settings.acars.chartDrawerViewMode || 'legacy') === 'legacy'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                      }`}
-                    >
-                      <BiSidebar className="text-base" />
-                      Legacy View
-                    </button>
-                    <button
-                      onClick={() => handleChartViewModeChange('list')}
-                      className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                        settings.acars.chartDrawerViewMode === 'list'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                      }`}
-                    ><HiOutlineQueueList className="text-base"/>
-                      List View
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

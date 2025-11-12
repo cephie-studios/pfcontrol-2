@@ -176,10 +176,8 @@ export default function DepartureTableMobile({
   }, []);
 
   const handleRouteClick = (flight: Flight) => {
-    if (flight.route && flight.route.trim()) {
-      setSelectedFlight(flight);
-      setRouteModalOpen(true);
-    }
+    setSelectedFlight(flight);
+    setRouteModalOpen(true);
   };
 
   const handleRouteClose = () => {
@@ -605,7 +603,7 @@ export default function DepartureTableMobile({
                     className={`px-2 py-1 rounded transition-colors ${
                       flight.route && flight.route.trim()
                         ? 'text-gray-400 hover:text-blue-500'
-                        : 'text-red-500 cursor-not-allowed'
+                        : 'text-red-500'
                     }`}
                     onClick={() => handleRouteClick(flight)}
                     title={
@@ -613,7 +611,6 @@ export default function DepartureTableMobile({
                         ? 'View Route'
                         : 'No route specified'
                     }
-                    disabled={!flight.route || !flight.route.trim()}
                   >
                     <Route className="w-4 h-4" />
                   </button>

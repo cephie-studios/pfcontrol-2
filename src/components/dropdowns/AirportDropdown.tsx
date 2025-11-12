@@ -9,6 +9,7 @@ interface AirportDropdownProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showFullName?: boolean;
   className?: string;
+  excludeCenterPositions?: boolean;
 }
 
 export default function AirportDropdown({
@@ -18,6 +19,7 @@ export default function AirportDropdown({
   size = 'md',
   showFullName = true,
   className,
+  excludeCenterPositions = true,
 }: AirportDropdownProps) {
   const { airports, loading } = useData();
 
@@ -26,11 +28,19 @@ export default function AirportDropdown({
       return [];
     }
 
-    return airports.map((airport) => ({
+    let filteredAirports = airports;
+
+    if (excludeCenterPositions) {
+      filteredAirports = airports.filter(
+        (airport) => !airport.controlName?.includes('Center')
+      );
+    }
+
+    return filteredAirports.map((airport) => ({
       value: airport.icao,
       label: showFullName ? `${airport.icao} - ${airport.name}` : airport.icao,
     }));
-  }, [airports, showFullName]);
+  }, [airports, showFullName, excludeCenterPositions]);
 
   const getDisplayValue = (selectedValue: string) => {
     if (!selectedValue) return loading ? 'Loading...' : 'Select Airport';

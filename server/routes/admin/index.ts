@@ -4,6 +4,7 @@ import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { getDailyStatistics, getTotalStatistics } from '../../db/admin.js';
 import { getAppVersion, updateAppVersion } from '../../db/version.js';
+import { redisConnection } from '../../db/connection.js';
 
 import usersRouter from './users.js';
 import sessionsRouter from './sessions.js';
@@ -81,10 +82,18 @@ router.put('/version', requirePermission('admin'), createAuditLogger('ADMIN_VERS
             return res.status(400).json({ error: 'Invalid version format. Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.BUILD' });
         }
 
-        if (!req.user || !req.user.userId) {
-            return res.status(401).json({ error: 'Unauthorized: user not found' });
+        const updatedVersion = await updateAppVersion(version.trim(), req.user?.username || 'Unknown Admin');
+        
+        const cacheKey = 'app:version';
+        try {
+            await redisConnection.del(cacheKey);
+            await redisConnection.set(cacheKey, JSON.stringify(updatedVersion), 'EX', 86400);
+        } catch (error) {
+            if (error instanceof Error) {
+                console.warn('[Redis] Failed to update cache for app version:', error.message);
+            }
         }
-        const updatedVersion = await updateAppVersion(version.trim(), req.user.userId);
+
         res.json(updatedVersion);
     } catch (error) {
         console.error('Error updating app version:', error);

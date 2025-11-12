@@ -630,7 +630,6 @@ export default function Flights() {
 
     try {
       await addFlight(sessionId, newFlightData);
-
     } catch (error) {
       console.error('Failed to add custom arrival:', error);
     }
@@ -918,18 +917,29 @@ export default function Flights() {
     }
   };
 
-  const chartHandlers = useMemo(() => createChartHandlers(
-    chartZoom,
-    setChartZoom,
-    chartPan,
-    setChartPan,
-    isChartDragging,
-    setIsChartDragging,
-    chartDragStart,
-    setChartDragStart,
-    containerRef as React.RefObject<HTMLDivElement>,
-    imageSize
-  ), [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height]);
+  const chartHandlers = useMemo(
+    () =>
+      createChartHandlers(
+        chartZoom,
+        setChartZoom,
+        chartPan,
+        setChartPan,
+        isChartDragging,
+        setIsChartDragging,
+        chartDragStart,
+        setChartDragStart,
+        containerRef as React.RefObject<HTMLDivElement>,
+        imageSize
+      ),
+    [
+      chartZoom,
+      chartPan,
+      isChartDragging,
+      chartDragStart,
+      imageSize.width,
+      imageSize.height,
+    ]
+  );
 
   const {
     handleZoomIn,
@@ -1129,6 +1139,7 @@ export default function Flights() {
                       onFlightChange={handleFlightUpdate}
                       backgroundStyle={backgroundStyle}
                       arrivalsColumns={arrivalsColumns}
+                      onFlightDelete={handleFlightDelete}
                     />
                     <div className="flex justify-center mt-4 mb-6">
                       <Button

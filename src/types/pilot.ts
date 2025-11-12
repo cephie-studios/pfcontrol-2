@@ -23,10 +23,13 @@ export interface PilotProfile {
         roles: Role[];
         role_name: string | null;
         role_description: string | null;
+        bio: string;
+        statistics: Record<string, unknown>;
     };
     privacySettings: {
         displayControllerStatsOnProfile: boolean;
         displayPilotStatsOnProfile: boolean;
         displayLinkedAccountsOnProfile: boolean;
+        displayBackgroundOnProfile: boolean;
     };
 }

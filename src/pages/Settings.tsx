@@ -495,7 +495,7 @@ export default function Settings() {
             primaryColor: '#3b82f6',
             textColor: '#ffffff',
             backgroundColor: '#1f2937',
-            zIndex: 1000,
+            zIndex: 10000,
           },
           spotlight: {
             border: '2px solid #fbbf24',

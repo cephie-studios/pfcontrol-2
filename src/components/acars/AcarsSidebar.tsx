@@ -1,6 +1,6 @@
-import { User, Radio, TowerControl, ExternalLink } from 'lucide-react';
-import type { OverviewSession } from '../../sockets/overviewSocket';
+import { User, Radio, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
+import type { OverviewSession } from '../../sockets/overviewSocket';
 
 interface SidebarProps {
   activeSessions: OverviewSession[];

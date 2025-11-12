@@ -44,7 +44,7 @@ export default function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
     null
-);
+  );
 
   useEffect(() => {
     if (user) {
@@ -71,7 +71,6 @@ export default function App() {
         .catch((error) => {
           console.error('Error fetching active update modal:', error);
         });
-
     }
   }, [user]);
 
@@ -94,43 +93,42 @@ export default function App() {
   };
 
   const checkGateStatus = async () => {
-              try {
-                  const settings = await getTesterSettings();
-  
-                  if (
-                      settings &&
-                      typeof settings.tester_gate_enabled === 'boolean'
-                  ) {
-                      setTesterGateEnabled(settings.tester_gate_enabled);
-                  } else {
-                      console.error(
-                          'Failed to fetch tester settings or invalid response:',
-                          settings
-                      );
-                      setTesterGateEnabled(true);
-                  }
-              } catch (error) {
-                  console.error('Error fetching tester settings:', error);
-                  setTesterGateEnabled(true);
-              }
-          };
-  
-          checkGateStatus();
+    try {
+      const settings = await getTesterSettings();
+
+      if (settings && typeof settings.tester_gate_enabled === 'boolean') {
+        setTesterGateEnabled(settings.tester_gate_enabled);
+      } else {
+        console.error(
+          'Failed to fetch tester settings or invalid response:',
+          settings
+        );
+        setTesterGateEnabled(true);
+      }
+    } catch (error) {
+      console.error('Error fetching tester settings:', error);
+      setTesterGateEnabled(true);
+    }
+  };
+
+  checkGateStatus();
 
   return (
     <Router>
       <NotificationBanner />
-      
-      {activeModal && ( 
-        (!testerGateEnabled || (testerGateEnabled && user?.isTester))) && (
-        <UpdateOverviewModal
-          isOpen={showUpdateModal}
-          onClose={handleCloseModal}
-          title={activeModal.title}
-          content={activeModal.content}
-          bannerUrl={activeModal.banner_url}
-        />
-      )}
+
+      {activeModal &&
+        (!testerGateEnabled ||
+          (testerGateEnabled && user?.isTester) ||
+          user?.isAdmin) && (
+          <UpdateOverviewModal
+            isOpen={showUpdateModal}
+            onClose={handleCloseModal}
+            title={activeModal.title}
+            content={activeModal.content}
+            bannerUrl={activeModal.banner_url}
+          />
+        )}
 
       {user && user.isBanned ? (
         <AccessDenied errorType="banned" />
