@@ -41,14 +41,18 @@ export default function Dropdown({
   id,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const selectedOption = options.find((option) => option.value === value);
 
   const displayValue = getDisplayValue
-    ? getDisplayValue(value || '') // Changed: removed options parameter
+    ? getDisplayValue(value || '')
     : selectedOption?.label || placeholder;
 
   const handleOptionClick = (optionValue: string) => {
@@ -183,9 +187,7 @@ export default function Dropdown({
           disabled={disabled}
           className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
             ${
-              disabled
-                ? 'opacity-70 cursor-not-allowed'
-                : 'hover:bg-gray-650'
+              disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-650'
             } ${sizeClasses[size]} ${className}`}
         >
           <span className="truncate ml-2 font-semibold">{displayValue}</span>
