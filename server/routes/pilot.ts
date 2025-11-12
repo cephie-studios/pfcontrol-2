@@ -50,6 +50,7 @@ router.get('/:username', async (req, res) => {
                 role_name: rolesResult[0]?.name || null,
                 role_description: rolesResult[0]?.description || null,
                 bio: userResult.settings?.bio ?? '',
+                statistics: userResult.statistics || {},
             },
             privacySettings,
         };

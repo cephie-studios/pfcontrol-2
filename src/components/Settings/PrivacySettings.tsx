@@ -1,11 +1,4 @@
-import {
-  User,
-  TowerControl,
-  Link2,
-  Shield,
-  Image,
-  FileText,
-} from 'lucide-react';
+import { User, Link2, Shield, Image } from 'lucide-react';
 import type { Settings } from '../../types/settings';
 
 interface PrivacySettingsProps {

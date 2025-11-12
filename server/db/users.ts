@@ -18,6 +18,18 @@ export async function invalidateUserCache(userId: string) {
   }
 }
 
+async function invalidateUsernameCache(username: string) {
+  try {
+    await redisConnection.del(`user:username:${username}`);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn(`[Redis] Failed to invalidate username cache for ${username}:`, error.message);
+    } else {
+      console.warn(`[Redis] Failed to invalidate username cache for ${username}:`, error);
+    }
+  }
+}
+
 export async function getUserById(userId: string) {
   const cacheKey = `user:${userId}`;
   
@@ -345,6 +357,9 @@ export async function removeSessionFromUser(userId: string, sessionId: string) {
 }
 
 export async function updateRobloxAccount(userId: string, { robloxUserId, robloxUsername, accessToken, refreshToken }: { robloxUserId: string; robloxUsername: string; accessToken: string; refreshToken: string }) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error('User not found');
+
   await mainDb
     .updateTable('users')
     .set({
@@ -358,10 +373,14 @@ export async function updateRobloxAccount(userId: string, { robloxUserId, roblox
     .execute();
 
   await invalidateUserCache(userId);
+  await invalidateUsernameCache(user.username);
   return await getUserById(userId);
 }
 
 export async function unlinkRobloxAccount(userId: string) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error('User not found');
+
   await mainDb
     .updateTable('users')
     .set({
@@ -375,10 +394,14 @@ export async function unlinkRobloxAccount(userId: string) {
     .execute();
 
   await invalidateUserCache(userId);
+  await invalidateUsernameCache(user.username);
   return await getUserById(userId);
 }
 
 export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId, ratingShort, ratingLong }: { vatsimCid: string; ratingId: number; ratingShort?: string; ratingLong?: string }) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error('User not found');
+
   await mainDb
     .updateTable('users')
     .set({
@@ -392,10 +415,14 @@ export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId,
     .execute();
 
   await invalidateUserCache(userId);
+  await invalidateUsernameCache(user.username);
   return await getUserById(userId);
 }
 
 export async function unlinkVatsimAccount(userId: string) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error('User not found');
+
   await mainDb
     .updateTable('users')
     .set({
@@ -409,6 +436,7 @@ export async function unlinkVatsimAccount(userId: string) {
     .execute();
 
   await invalidateUserCache(userId);
+  await invalidateUsernameCache(user.username);
   return await getUserById(userId);
 }
 

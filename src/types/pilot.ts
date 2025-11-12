@@ -24,6 +24,7 @@ export interface PilotProfile {
         role_name: string | null;
         role_description: string | null;
         bio: string;
+        statistics: Record<string, unknown>;
     };
     privacySettings: {
         displayControllerStatsOnProfile: boolean;
