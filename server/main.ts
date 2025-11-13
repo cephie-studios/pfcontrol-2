@@ -46,13 +46,12 @@ if (missingEnv.length > 0) {
     process.exit(1);
 }
 
-// Initialize global holiday settings table
 (async () => {
   try {
     await initializeGlobalHolidaySettings();
-    console.log('✅ Global holiday settings initialized');
+    console.log('Global holiday settings initialized');
   } catch (error) {
-    console.error('❌ Failed to initialize global holiday settings:', error);
+    console.error('Failed to initialize global holiday settings:', error);
   }
 })();
 

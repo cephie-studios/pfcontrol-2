@@ -239,7 +239,7 @@ export async function createOrUpdateUser(userData: {
       terminalWidth: 50,
       notesWidth: 20
     },
-    notificationViewMode: 'legacy' as const,
+    notificationViewMode: 'list' as const,
     tutorialCompleted: false,
     displayStatsOnProfile: true,
     displayLinkedAccountsOnProfile: true,
