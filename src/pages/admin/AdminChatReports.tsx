@@ -160,13 +160,13 @@ export default function AdminChatReports() {
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex-1 relative group">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Search by message or user..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
                   />
                 </div>
                 <Dropdown

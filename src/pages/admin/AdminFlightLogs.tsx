@@ -34,12 +34,12 @@ export default function AdminFlightLogs() {
   const [logs, setLogs] = useState<FlightLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generalSearch, setGeneralSearch] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [sessionFilter, setSessionFilter] = useState('');
   const [flightIdFilter, setFlightIdFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [textFilter, setTextFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<FlightLog | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -60,24 +60,24 @@ export default function AdminFlightLogs() {
   useEffect(() => {
     setClientPage(1);
   }, [
+    generalSearch,
     userFilter,
     actionFilter,
     sessionFilter,
     flightIdFilter,
-    dateFromFilter,
-    dateToFilter,
+    dateFilter,
     textFilter,
   ]);
 
   useEffect(() => {
     fetchLogs();
   }, [
+    generalSearch,
     userFilter,
     actionFilter,
     sessionFilter,
     flightIdFilter,
-    dateFromFilter,
-    dateToFilter,
+    dateFilter,
     textFilter,
   ]);
 
@@ -87,12 +87,12 @@ export default function AdminFlightLogs() {
       setError(null);
 
       const filters = {
+        general: generalSearch || undefined,
         user: userFilter || undefined,
         action: actionFilter || undefined,
         session: sessionFilter || undefined,
         flightId: flightIdFilter || undefined,
-        dateFrom: dateFromFilter || undefined,
-        dateTo: dateToFilter || undefined,
+        date: dateFilter || undefined,
         text: textFilter || undefined,
       };
 
@@ -125,32 +125,8 @@ export default function AdminFlightLogs() {
     }
   };
 
-  const handleUserFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserFilter(e.target.value);
-  };
-
-  const handleSessionFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setSessionFilter(e.target.value);
-  };
-
-  const handleFlightIdFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFlightIdFilter(e.target.value);
-  };
-
-  const handleActionTypeChange = (value: string) => {
-    setActionFilter(value);
-  };
-
-  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateFromFilter(e.target.value);
-  };
-
-  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateToFilter(e.target.value);
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateFilter(e.target.value);
   };
 
   const handleViewDetails = (log: FlightLog) => {
@@ -164,12 +140,12 @@ export default function AdminFlightLogs() {
   };
 
   const clearFilters = () => {
+    setGeneralSearch('');
     setUserFilter('');
     setActionFilter('');
     setSessionFilter('');
     setFlightIdFilter('');
-    setDateFromFilter('');
-    setDateToFilter('');
+    setDateFilter('');
     setTextFilter('');
   };
 
@@ -315,79 +291,70 @@ export default function AdminFlightLogs() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* General Search */}
+                <div className="relative md:col-span-2 lg:col-span-3">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Search users, sessions, flight IDs, or any data..."
+                    value={generalSearch}
+                    onChange={(e) => setGeneralSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
                 {/* User Filter */}
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Filter by username..."
                     value={userFilter}
-                    onChange={handleUserFilterChange}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => setUserFilter(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 {/* Session Filter */}
                 <div className="relative">
-                  <Database className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Database className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Filter by session ID..."
                     value={sessionFilter}
-                    onChange={handleSessionFilterChange}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => setSessionFilter(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 {/* Flight ID Filter */}
                 <div className="relative">
-                  <Plane className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Plane className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Filter by flight ID..."
                     value={flightIdFilter}
-                    onChange={handleFlightIdFilterChange}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => setFlightIdFilter(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 {/* Text Search Filter */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <NotebookPen className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Search in flight data..."
                     value={textFilter}
                     onChange={(e) => setTextFilter(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
-                {/* From Date Filter */}
+                {/* Single Date Filter */}
                 <div>
-                  <label className="block text-zinc-500 text-xs -mt-2 mb-2">
-                    From Date
-                  </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
-                      type="datetime-local"
-                      placeholder="From date..."
-                      value={dateFromFilter}
-                      onChange={handleDateFromChange}
-                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
-                {/* To Date Filter */}
-                <div>
-                  <label className="block text-zinc-500 text-xs -mt-2 mb-2">
-                    To Date
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <input
-                      type="datetime-local"
-                      placeholder="To date..."
-                      value={dateToFilter}
-                      onChange={handleDateToChange}
-                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      type="date"
+                      value={dateFilter}
+                      onChange={handleDateChange}
+                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
                 </div>
@@ -398,7 +365,7 @@ export default function AdminFlightLogs() {
                     <Dropdown
                       options={actionTypeOptions}
                       value={actionFilter}
-                      onChange={handleActionTypeChange}
+                      onChange={(value) => setActionFilter(value)}
                       placeholder="Filter by action..."
                       className="pl-10 h-11"
                     />

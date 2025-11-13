@@ -584,7 +584,7 @@ export default function AdminUsers() {
             {/* Search and Filter */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1 relative group">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-green-400 transition-colors" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-green-400 transition-colors" />
                 {loading && search !== debouncedSearch && (
                   <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-400 animate-spin" />
                 )}
@@ -593,7 +593,7 @@ export default function AdminUsers() {
                   placeholder="Search by username or user ID..."
                   value={search}
                   onChange={handleSearchChange}
-                  className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 hover:border-zinc-600"
+                  className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 hover:border-zinc-600"
                 />
               </div>
               <div className="relative w-full sm:w-52">

@@ -249,7 +249,7 @@ export default function AdminTesters() {
                     value={newTesterUserId}
                     onChange={(e) => setNewTesterUserId(e.target.value)}
                     placeholder="Enter Discord User ID"
-                    className="w-full px-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -261,7 +261,7 @@ export default function AdminTesters() {
                     value={newTesterNotes}
                     onChange={(e) => setNewTesterNotes(e.target.value)}
                     placeholder="Any notes about this tester"
-                    className="w-full px-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
               </div>
@@ -301,7 +301,7 @@ export default function AdminTesters() {
 
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 h-5 w-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Search testers by username or ID..."
@@ -310,7 +310,7 @@ export default function AdminTesters() {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-800 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
           </div>

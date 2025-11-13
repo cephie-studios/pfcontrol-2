@@ -43,6 +43,28 @@ interface SessionUpdateData {
 
 let io: SocketIOServer;
 
+function getSocketClientIp(socket: Socket): string {
+    if (socket.handshake.headers['cf-connecting-ip']) {
+        const cfIp = socket.handshake.headers['cf-connecting-ip'];
+        return Array.isArray(cfIp) ? cfIp[0] : cfIp;
+    }
+
+    if (socket.handshake.headers['x-forwarded-for']) {
+        const forwarded = socket.handshake.headers['x-forwarded-for'];
+        if (Array.isArray(forwarded)) {
+            return forwarded[0].split(',')[0].trim();
+        }
+        return (forwarded as string).split(',')[0].trim();
+    }
+
+    if (socket.handshake.headers['x-real-ip']) {
+        const realIp = socket.handshake.headers['x-real-ip'];
+        return Array.isArray(realIp) ? realIp[0] : realIp;
+    }
+
+    return socket.handshake.address || 'unknown';
+}
+
 export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     io = new SocketIOServer(httpServer, {
         path: '/sockets/flights',
@@ -128,7 +150,6 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
                 await broadcastToArrivalSessions(sanitizedFlight);
 
-                // Log the add action
                 await logFlightAction({
                     userId: userId || 'unknown',
                     username: socket.handshake.query.username as string || 'unknown',
@@ -136,7 +157,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     action: 'add',
                     flightId: flight.id,
                     newData: sanitizedFlight,
-                    ipAddress: socket.handshake.address
+                    ipAddress: getSocketClientIp(socket)
                 });
             } catch {
                 socket.emit('flightError', { action: 'add', error: 'Failed to add flight' });
@@ -194,6 +215,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                         .selectAll()
                         .where('id', '=', flightId as string)
                         .executeTakeFirst();
+
                     const { acars_token: _, user_id: __, ip_address: ___, ...oldSanitized } = oldFlight || {};
                     const {user_id: _____, ip_address: ______, ...newSanitized } = updatedFlight;
 
@@ -205,7 +227,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                         flightId: flightId as string,
                         oldData: oldSanitized,
                         newData: newSanitized,
-                        ipAddress: socket.handshake.address
+                        ipAddress: getSocketClientIp(socket)
                     });
                 } else {
                     socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
@@ -243,7 +265,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     action: 'delete',
                     flightId: flightId as string,
                     oldData: sanitizedOldData,
-                    ipAddress: socket.handshake.address
+                    ipAddress: getSocketClientIp(socket)
                 });
             } catch {
                 socket.emit('flightError', { action: 'delete', flightId, error: 'Failed to delete flight' });

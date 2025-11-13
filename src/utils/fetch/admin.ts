@@ -510,12 +510,13 @@ export async function fetchFlightLogs(
   page: number = 1,
   limit: number = 50,
   filters: {
+    general?: string;
     user?: string;
     action?: string;
     session?: string;
     flightId?: string;
-    dateFrom?: string;
-    dateTo?: string;
+    date?: string;
+    text?: string;
   } = {}
 ): Promise<FlightLogsResponse> {
   const params = new URLSearchParams({
@@ -537,22 +538,19 @@ export async function fetchFlightLogs(
   return response.json();
 }
 
-export async function revealFlightLogIP(logId: number): Promise<{ ip_address: string }> {
+export async function revealFlightLogIP(logId: number): Promise<{ logId: number; ip_address: string }> {
   const response = await fetch(`${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`, {
     method: 'POST',
     credentials: 'include',
   });
 
   if (!response.ok) {
-    throw new Error('Failed to reveal IP address');
+    throw new Error('Failed to reveal flight log IP');
   }
 
   return response.json();
 }
 
-/**
- * Fetch global holiday settings (admin only)
- */
 export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySettings> {
   const response = await fetch(
     `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
@@ -568,10 +566,6 @@ export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySetting
   return response.json();
 }
 
-/**
- * Update global holiday settings (admin only)
- * @param enabled Whether to enable holiday effects globally
- */
 export async function updateGlobalHolidaySettings(
   enabled: boolean
 ): Promise<GlobalHolidaySettings> {

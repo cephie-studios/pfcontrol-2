@@ -494,13 +494,13 @@ export default function AdminRoles() {
                 {/* Search and Filter */}
                 <div className="flex space-x-4 mb-6">
                   <div className="flex-1 relative group">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-rose-400 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-rose-400 transition-colors" />
                     <input
                       type="text"
                       placeholder="Search by username..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
+                      className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
                     />
                   </div>
                   <div className="relative w-52">
