@@ -177,6 +177,12 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     return;
                 }
 
+                const oldFlight = await flightsDb
+                  .selectFrom(`flights_${sessionId}`)
+                  .selectAll()
+                  .where('id', '=', flightId as string)
+                  .executeTakeFirst();
+
                 socket.emit('flightUpdateAck', { flightId, updates });
 
                 if (updates.callsign && typeof updates.callsign === 'string') updates.callsign = sanitizeCallsign(updates.callsign);
@@ -197,40 +203,38 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 }
 
                 if (socket.data.role === 'controller' && updates && Object.keys(updates).length > 0) {
-                    if (userId) {
-                        incrementStat(userId, 'total_flight_edits', 1, 'total_edit_actions');
-                    }
+                  if (userId) {
+                    incrementStat(userId, 'total_flight_edits', 1, 'total_edit_actions');
+                  }
                 }
 
                 const updatedFlight = await updateFlight(sessionId, flightId as string, updates);
                 if (updatedFlight) {
-                    io.to(sessionId).emit('flightUpdated', updatedFlight);
-                    
-                    broadcastFlightUpdate(sessionId, updatedFlight);
-                    
-                    await broadcastToArrivalSessions(updatedFlight);
+                  io.to(sessionId).emit('flightUpdated', updatedFlight);
+                  
+                  broadcastFlightUpdate(sessionId, updatedFlight);
+                  
+                  await broadcastToArrivalSessions(updatedFlight);
 
-                    const oldFlight = await flightsDb
-                        .selectFrom(`flights_${sessionId}`)
-                        .selectAll()
-                        .where('id', '=', flightId as string)
-                        .executeTakeFirst();
+                  const { acars_token: _, user_id: __, ip_address: ___, ...oldSanitized } = oldFlight || {};
+                  
+                  const changedData: Record<string, unknown> = {};
+                  for (const [key, value] of Object.entries(updates)) {
+                    changedData[key] = value;
+                  }
 
-                    const { acars_token: _, user_id: __, ip_address: ___, ...oldSanitized } = oldFlight || {};
-                    const {user_id: _____, ip_address: ______, ...newSanitized } = updatedFlight;
-
-                    await logFlightAction({
-                        userId: userId || 'unknown',
-                        username: socket.handshake.query.username as string || 'unknown',
-                        sessionId,
-                        action: 'update',
-                        flightId: flightId as string,
-                        oldData: oldSanitized,
-                        newData: newSanitized,
-                        ipAddress: getSocketClientIp(socket)
-                    });
+                  await logFlightAction({
+                    userId: userId || 'unknown',
+                    username: socket.handshake.query.username as string || 'unknown',
+                    sessionId,
+                    action: 'update',
+                    flightId: flightId as string,
+                    oldData: oldSanitized,
+                    newData: changedData,
+                    ipAddress: getSocketClientIp(socket)
+                  });
                 } else {
-                    socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
+                  socket.emit('flightError', { action: 'update', flightId, error: 'Flight not found' });
                 }
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
@@ -246,7 +250,6 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 return;
             }
             try {
-                // Fetch flight data before deletion for logging
                 const flightToDelete = await flightsDb
                     .selectFrom(`flights_${sessionId}`)
                     .selectAll()

@@ -227,15 +227,20 @@ export default function AdminFlightLogs() {
   };
 
   const getUpdatedField = (log: FlightLog): string => {
-    if (log.action !== 'update' || !log.old_data || !log.new_data) return 'N/A';
-    const oldData = log.old_data as Record<string, unknown>;
+    if (log.action !== 'update' || !log.new_data) return 'N/A';
+
     const newData = log.new_data as Record<string, unknown>;
-    const changedFields = Object.keys(newData).filter(
-      (key) => oldData[key] !== newData[key]
-    );
-    if (changedFields.length === 0) return 'N/A';
-    const primaryField = changedFields[0];
-    return `${primaryField}: ${String(newData[primaryField])}`;
+    const fields = Object.keys(newData);
+
+    if (fields.length === 0) return 'N/A';
+
+    if (fields.length > 1) {
+      const firstField = fields[0];
+      return `${firstField}: ${String(newData[firstField])} (+${fields.length - 1} more)`;
+    }
+
+    const field = fields[0];
+    return `${field}: ${String(newData[field])}`;
   };
 
   const filteredLogs = logs.filter(() => true);
