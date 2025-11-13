@@ -36,6 +36,7 @@ router.get('/:username', async (req, res) => {
 
         const shouldIncludeStats = privacySettings.displayPilotStatsOnProfile;
         const shouldIncludeLinkedAccounts = privacySettings.displayLinkedAccountsOnProfile;
+        const shouldIncludeBackground = privacySettings.displayBackgroundOnProfile;
 
         const profile = {
             user: {
@@ -54,6 +55,7 @@ router.get('/:username', async (req, res) => {
                 role_description: rolesResult[0]?.description || null,
                 bio: userResult.settings?.bio ?? '',
                 statistics: shouldIncludeStats ? (userResult.statistics || {}) : {},
+                background_image: shouldIncludeBackground ? userResult.settings?.backgroundImage : null,
             },
             privacySettings,
         };

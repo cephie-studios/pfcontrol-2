@@ -38,6 +38,7 @@ import { SiRoblox } from 'react-icons/si';
 import { fetchPilotProfile } from '../utils/fetch/pilot';
 import { getCurrentUser } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
+import { fetchBackgrounds } from '../utils/fetch/data';
 import type { PilotProfile, Role } from '../types/pilot';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
@@ -83,6 +84,12 @@ interface UserStatistics {
   last_updated?: string;
 }
 
+interface AvailableImage {
+  filename: string;
+  path: string;
+  extension: string;
+}
+
 export default function PilotProfile() {
   const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
@@ -92,8 +99,10 @@ export default function PilotProfile() {
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
   const [ranks, setRanks] = useState<Ranks>({});
+  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
 
   const isCurrentUser = user && profile && profile.user.id === user.userId;
+  const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
   const handleLinkRoblox = () => {
     window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
@@ -112,6 +121,18 @@ export default function PilotProfile() {
       fetchUserStats();
     }
   }, [isCurrentUser]);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const data = await fetchBackgrounds();
+        setAvailableImages(data);
+      } catch (error) {
+        console.error('Error loading available images:', error);
+      }
+    };
+    loadImages();
+  }, []);
 
   const handleShareProfile = () => {
     const profileUrl = `${window.location.origin}/user/${username}`;
@@ -147,6 +168,55 @@ export default function PilotProfile() {
       // Ignore errors for stats
     }
   };
+
+  const getBackgroundImage = () => {
+    if (
+      !profile?.user.background_image ||
+      !profile.privacySettings.displayBackgroundOnProfile
+    ) {
+      return null;
+    }
+
+    const selectedImage = profile.user.background_image.selectedImage;
+
+    const getImageUrl = (filename: string | null): string | null => {
+      if (!filename || filename === 'random' || filename === 'favorites') {
+        return filename;
+      }
+      if (filename.startsWith('https://api.cephie.app/')) {
+        return filename;
+      }
+      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
+    };
+
+    if (selectedImage === 'random' && availableImages.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availableImages.length);
+      return `${API_BASE_URL}${availableImages[randomIndex].path}`;
+    } else if (selectedImage === 'favorites') {
+      const favorites = profile.user.background_image.favorites || [];
+      if (favorites.length > 0) {
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
+        const favImageUrl = getImageUrl(randomFav);
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
+          return favImageUrl;
+        }
+      }
+    } else if (selectedImage) {
+      const imageUrl = getImageUrl(selectedImage);
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+        return imageUrl;
+      }
+    }
+
+    return null;
+  };
+
+  const backgroundImage = getBackgroundImage();
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
@@ -259,183 +329,209 @@ export default function PilotProfile() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
 
-      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 py-8 md:py-12">
-        <div className="pt-20 pb-4">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              {/* Avatar */}
-              <div className="relative self-center md:self-auto">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-blue-600 overflow-hidden bg-gray-800 shadow-xl">
-                  <img
-                    src={getDiscordAvatar(profile.user.id, profile.user.avatar)}
-                    alt={profile.user.username}
-                    className="w-full h-full object-cover"
-                  />
-                  {hasCrown && (
-                    <Crown
-                      className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
-                      style={{
-                        color: '#fbbf24',
-                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
-                      }}
+      <div
+        className={`relative ${!backgroundImage ? 'bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50' : ''}`}
+        style={
+          backgroundImage
+            ? {
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }
+            : {}
+        }
+      >
+        {backgroundImage && (
+          <>
+            <div className="absolute inset-0 backdrop-blur-[2px]"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+          </>
+        )}
+        <div className="py-8 md:py-12 relative z-10">
+          <div className="pt-20 pb-4">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                {/* Avatar */}
+                <div className="relative self-center md:self-auto">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-blue-600 overflow-hidden bg-gray-800 shadow-xl">
+                    <img
+                      src={getDiscordAvatar(
+                        profile.user.id,
+                        profile.user.avatar
+                      )}
+                      alt={profile.user.username}
+                      className="w-full h-full object-cover"
                     />
-                  )}
-                </div>
-              </div>
-
-              {/* User Info */}
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                  {profile.user.username}
-                </h1>
-                {(profile.user.is_admin ||
-                  (profile.user.roles && profile.user.roles.length > 0) ||
-                  isVatsimLinked) && (
-                  <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
-                    {isCurrentUser && user?.isAdmin && (
-                      <div
-                        className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
+                    {hasCrown && (
+                      <Crown
+                        className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
                         style={{
-                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                          borderColor: 'rgba(59, 130, 246, 0.5)',
-                          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
+                          color: '#fbbf24',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
                         }}
-                      >
-                        <Braces
-                          className="h-4 w-4"
-                          style={{ color: '#3B82F6' }}
-                        />
-                        <span
-                          className="text-sm font-semibold"
-                          style={{ color: '#3B82F6' }}
-                        >
-                          Developer
-                        </span>
-                      </div>
+                      />
                     )}
-                    {profile.user.roles &&
-                      profile.user.roles.map((role) => {
-                        const badge = getRoleBadge(role);
-                        const BadgeIcon = badge.icon;
-                        return (
-                          <div
-                            key={role.id}
-                            className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
-                            style={{
-                              backgroundColor: `rgba(${badge.rgb}, 0.2)`,
-                              borderColor: `rgba(${badge.rgb}, 0.5)`,
-                              boxShadow: `0 4px 6px -1px rgba(${badge.rgb}, 0.2)`,
-                            }}
+                  </div>
+                </div>
+
+                {/* User Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                    {profile.user.username}
+                  </h1>
+                  {(profile.user.is_admin ||
+                    (profile.user.roles && profile.user.roles.length > 0) ||
+                    isVatsimLinked) && (
+                    <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
+                      {isCurrentUser && user?.isAdmin && (
+                        <div
+                          className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
+                          style={{
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 0.5)',
+                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
+                          }}
+                        >
+                          <Braces
+                            className="h-4 w-4"
+                            style={{ color: '#3B82F6' }}
+                          />
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: '#3B82F6' }}
                           >
-                            <BadgeIcon
-                              className="h-4 w-4"
+                            Developer
+                          </span>
+                        </div>
+                      )}
+                      {profile.user.roles &&
+                        profile.user.roles.map((role) => {
+                          const badge = getRoleBadge(role);
+                          const BadgeIcon = badge.icon;
+                          return (
+                            <div
+                              key={role.id}
+                              className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
                               style={{
-                                color: badge.color,
-                              }}
-                            />
-                            <span
-                              className="text-sm font-semibold"
-                              style={{
-                                color: badge.color,
+                                backgroundColor: `rgba(${badge.rgb}, 0.2)`,
+                                borderColor: `rgba(${badge.rgb}, 0.5)`,
+                                boxShadow: `0 4px 6px -1px rgba(${badge.rgb}, 0.2)`,
                               }}
                             >
-                              {badge.text}
+                              <BadgeIcon
+                                className="h-4 w-4"
+                                style={{
+                                  color: badge.color,
+                                }}
+                              />
+                              <span
+                                className="text-sm font-semibold"
+                                style={{
+                                  color: badge.color,
+                                }}
+                              >
+                                {badge.text}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                  <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start mt-2">
+                    <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
+                      <Calendar className="h-5 w-5" />
+                      <span className="text-base md:text-lg">
+                        Member since{' '}
+                        {new Date(profile.user.member_since).toLocaleDateString(
+                          'en-US',
+                          {
+                            month: 'long',
+                            year: 'numeric',
+                          }
+                        )}
+                      </span>
+                    </div>
+                    {/* Roblox */}
+                    {(isCurrentUser ||
+                      profile.privacySettings
+                        .displayLinkedAccountsOnProfile) && (
+                      <div className="flex items-center gap-2 justify-center md:justify-start">
+                        {profile.user.roblox_username && (
+                          <SiRoblox className="h-5 w-5 text-blue-300" />
+                        )}
+                        {profile.user.roblox_username ? (
+                          profile.user.roblox_user_id ? (
+                            <a
+                              href={`https://www.roblox.com/users/${profile.user.roblox_user_id}/profile`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-200"
+                            >
+                              {profile.user.roblox_username}
+                            </a>
+                          ) : (
+                            <span className="text-base md:text-lg text-blue-300">
+                              {profile.user.roblox_username}
                             </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
-                <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start mt-2">
-                  <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
-                    <Calendar className="h-5 w-5" />
-                    <span className="text-base md:text-lg">
-                      Member since{' '}
-                      {new Date(profile.user.member_since).toLocaleDateString(
-                        'en-US',
-                        {
-                          month: 'long',
-                          year: 'numeric',
-                        }
-                      )}
-                    </span>
-                  </div>
-                  {/* Roblox */}
-                  {(isCurrentUser ||
-                    profile.privacySettings.displayLinkedAccountsOnProfile) && (
-                    <div className="flex items-center gap-2">
-                      {profile.user.roblox_username && (
-                        <SiRoblox className="h-5 w-5 text-blue-300" />
-                      )}
-                      {profile.user.roblox_username ? (
-                        profile.user.roblox_user_id ? (
+                          )
+                        ) : (
+                          isCurrentUser && (
+                            <button
+                              onClick={handleLinkRoblox}
+                              className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-200"
+                            >
+                              Connect Roblox
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
+                    {/* VATSIM */}
+                    {(isCurrentUser ||
+                      profile.privacySettings
+                        .displayLinkedAccountsOnProfile) && (
+                      <div className="flex items-center gap-2 justify-center md:justify-start">
+                        {isVatsimLinked && (
+                          <img
+                            src="/assets/images/vatsim.webp"
+                            alt="VATSIM"
+                            className="h-6 w-6 p-1 bg-white rounded-full"
+                          />
+                        )}
+                        {isVatsimLinked ? (
                           <a
-                            href={`https://www.roblox.com/users/${profile.user.roblox_user_id}/profile`}
+                            href={`https://stats.vatsim.net/stats/${profile.user.vatsim_cid}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-200"
+                            className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-300"
                           >
-                            {profile.user.roblox_username}
+                            {displayVatsimRating}
                           </a>
                         ) : (
-                          <span className="text-base md:text-lg text-blue-300">
-                            {profile.user.roblox_username}
-                          </span>
-                        )
-                      ) : (
-                        isCurrentUser && (
-                          <button
-                            onClick={handleLinkRoblox}
-                            className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-200"
-                          >
-                            Connect Roblox
-                          </button>
-                        )
-                      )}
-                    </div>
-                  )}
-                  {/* VATSIM */}
-                  {(isCurrentUser ||
-                    profile.privacySettings.displayLinkedAccountsOnProfile) && (
-                    <div className="flex items-center gap-2">
-                      {isVatsimLinked && (
-                        <img
-                          src="/assets/images/vatsim.webp"
-                          alt="VATSIM"
-                          className="h-6 w-6 p-1 bg-white rounded-full"
-                        />
-                      )}
-                      {isVatsimLinked ? (
-                        <a
-                          href={`https://stats.vatsim.net/stats/${profile.user.vatsim_cid}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-base md:text-lg text-blue-300 hover:underline hover:text-blue-300"
-                        >
-                          {displayVatsimRating}
-                        </a>
-                      ) : (
-                        isCurrentUser && (
-                          <button
-                            onClick={handleLinkVatsim}
-                            className="text-base md:text-lg text-blue-400 hover:underline hover:text-blue-300"
-                          >
-                            Connect VATSIM
-                          </button>
-                        )
-                      )}
-                    </div>
-                  )}
+                          isCurrentUser && (
+                            <button
+                              onClick={handleLinkVatsim}
+                              className="text-base md:text-lg text-blue-400 hover:underline hover:text-blue-300"
+                            >
+                              Connect VATSIM
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  onClick={handleShareProfile}
+                  className="flex items-center gap-2 self-center md:self-auto"
+                  variant={shareClicked ? 'success' : 'outline'}
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>{shareClicked ? 'Copied!' : 'Share'}</span>
+                </Button>
               </div>
-              <Button
-                onClick={handleShareProfile}
-                className="flex items-center gap-2 self-center md:self-auto"
-                variant={shareClicked ? 'success' : 'outline'}
-              >
-                <Share2 className="w-4 h-4" />
-                <span>{shareClicked ? 'Copied!' : 'Share'}</span>
-              </Button>
             </div>
           </div>
         </div>
@@ -443,6 +539,13 @@ export default function PilotProfile() {
 
       {/* Stats Grid */}
       <div className="max-w-7xl mx-auto px-4 mt-8">
+        {profile.user.bio && profile.user.bio.trim() !== '' && (
+          <div className="mb-8 p-5 bg-zinc-800/50 rounded-3xl border-2 border-zinc-700/50">
+            <p className="text-zinc-300 text-md font-medium leading-relaxed whitespace-pre-wrap">
+              {profile.user.bio}
+            </p>
+          </div>
+        )}
         {(isCurrentUser ||
           profile.privacySettings.displayPilotStatsOnProfile) && (
           <>
