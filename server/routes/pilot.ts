@@ -1,6 +1,7 @@
 import express from 'express';
 import { getUserByUsername } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
+import { isAdmin } from '../middleware/admin.js';
 
 const router = express.Router();
 
@@ -50,6 +51,7 @@ router.get('/:username', async (req, res) => {
                 vatsim_rating_short: shouldIncludeLinkedAccounts ? userResult.vatsim_rating_short : null,
                 vatsim_rating_long: shouldIncludeLinkedAccounts ? userResult.vatsim_rating_long : null,
                 member_since: userResult.created_at,
+                is_admin: isAdmin(userResult.id),
                 roles: rolesResult,
                 role_name: rolesResult[0]?.name || null,
                 role_description: rolesResult[0]?.description || null,
