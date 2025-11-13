@@ -54,6 +54,7 @@ router.put('/', requireAuth, async (req, res) => {
     
     const cacheKey = 'app:version';
     try {
+      await redisConnection.del(cacheKey);
       await redisConnection.set(cacheKey, JSON.stringify(updatedVersion), 'EX', 86400);
     } catch (error) {
       if (error instanceof Error) {

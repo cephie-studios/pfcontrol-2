@@ -91,6 +91,12 @@ export default function ACARS() {
     handleTouchEnd,
   } = chartHandlers;
 
+  // Format callsign for display
+  const formattedCallsign = useMemo(() => {
+    if (!flight?.callsign) return null;
+    return parseCallsign(flight.callsign, airlines);
+  }, [flight?.callsign, airlines]);
+
   useEffect(() => {
     if (
       sessionId &&
@@ -570,7 +576,11 @@ NOTES:
             <PlaneTakeoff className="h-8 w-8 text-blue-500" />
             <div>
               <h1 className="text-2xl font-bold text-white">
-                {flight?.callsign ? `${flight.callsign}` : 'ACARS Terminal'}
+                {flight?.callsign ? (
+                  formattedCallsign || flight.callsign
+                ) : (
+                  'ACARS Terminal'
+                )}
               </h1>
             </div>
           </div>

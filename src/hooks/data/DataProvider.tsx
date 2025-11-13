@@ -91,7 +91,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 							console.error('Failed to fetch aircrafts:', err);
 							return [];
 						}),
-						fetchAirlines().catch((err) => {
+						fetchAirlines().catch((err: any) => {
 							console.error('Failed to fetch airlines:', err);
 							return [];
 						}),

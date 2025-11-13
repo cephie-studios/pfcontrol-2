@@ -110,7 +110,7 @@ router.get('/aircrafts', async (req, res) => {
     const data = JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); // Cache for 12 hours
+      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200);
     } catch (error) {
       if (error instanceof Error) {
         console.warn('[Redis] Failed to set cache for aircrafts:', error.message);
@@ -147,7 +147,7 @@ router.get('/airlines', async (req, res) => {
     const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); // Cache for 12 hours
+      await redisConnection.set(cacheKey, JSON.stringify(data), 'EX', 43200); 
     } catch (error) {
       if (error instanceof Error) {
         console.warn('[Redis] Failed to set cache for airlines:', error.message);

@@ -51,6 +51,13 @@ export async function updateAppVersion(version: string, updatedBy: string) {
     .returning(['version', 'updated_at', 'updated_by'])
     .executeTakeFirst();
 
+  try {
+    const { redisConnection } = await import('./connection.js');
+    await redisConnection.del('app:version');
+  } catch (error) {
+    console.warn('[Redis] Failed to invalidate version cache:', error);
+  }
+
   return {
     ...result,
     updated_at: result?.updated_at?.toISOString() ?? null

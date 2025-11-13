@@ -31,7 +31,11 @@ router.get('/:username', async (req, res) => {
             displayControllerStatsOnProfile: userResult.settings?.displayControllerStatsOnProfile ?? true,
             displayPilotStatsOnProfile: userResult.settings?.displayPilotStatsOnProfile ?? true,
             displayLinkedAccountsOnProfile: userResult.settings?.displayLinkedAccountsOnProfile ?? true,
+            displayBackgroundOnProfile: userResult.settings?.displayBackgroundOnProfile ?? true,
         };
+
+        const shouldIncludeStats = privacySettings.displayPilotStatsOnProfile;
+        const shouldIncludeLinkedAccounts = privacySettings.displayLinkedAccountsOnProfile;
 
         const profile = {
             user: {
@@ -39,15 +43,17 @@ router.get('/:username', async (req, res) => {
                 username: userResult.username,
                 discriminator: userResult.discriminator,
                 avatar: userResult.avatar,
-                roblox_username: userResult.roblox_username,
-                roblox_user_id: userResult.roblox_user_id,
-                vatsim_cid: userResult.vatsim_cid,
-                vatsim_rating_short: userResult.vatsim_rating_short,
-                vatsim_rating_long: userResult.vatsim_rating_long,
+                roblox_username: shouldIncludeLinkedAccounts ? userResult.roblox_username : null,
+                roblox_user_id: shouldIncludeLinkedAccounts ? userResult.roblox_user_id : null,
+                vatsim_cid: shouldIncludeLinkedAccounts ? userResult.vatsim_cid : null,
+                vatsim_rating_short: shouldIncludeLinkedAccounts ? userResult.vatsim_rating_short : null,
+                vatsim_rating_long: shouldIncludeLinkedAccounts ? userResult.vatsim_rating_long : null,
                 member_since: userResult.created_at,
                 roles: rolesResult,
                 role_name: rolesResult[0]?.name || null,
                 role_description: rolesResult[0]?.description || null,
+                bio: userResult.settings?.bio ?? '',
+                statistics: shouldIncludeStats ? (userResult.statistics || {}) : {},
             },
             privacySettings,
         };

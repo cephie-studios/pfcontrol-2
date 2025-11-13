@@ -57,7 +57,6 @@ router.get('/:icao', async (req, res) => {
 
         const text = await response.text();
         if (!text || text.trim() === '') {
-            console.warn(`Empty response for ${icao} - Status: ${response.status}, Headers:`, Object.fromEntries(response.headers.entries()));
             return res.status(404).json({ error: 'No METAR data found' });
         }
 

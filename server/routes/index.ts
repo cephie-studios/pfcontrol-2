@@ -1,7 +1,5 @@
 import express from 'express';
 
-import { getAppVersion } from '../db/version.js';
-
 import dataRouter from "./data.js";
 import sessionRouter from "./sessions.js";
 import flightsRouter from "./flights.js";

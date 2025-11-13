@@ -27,9 +27,10 @@ export function createFlightsSocket(
         transports: ['websocket', 'polling'],
         upgrade: true,
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        timeout: 10000
+        reconnectionDelay: 500,
+        reconnectionAttempts: 10,
+        timeout: 5000,
+        forceNew: false
     });
 
     socket.on('disconnect', (reason) => {

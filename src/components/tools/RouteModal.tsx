@@ -1,13 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, GripHorizontal } from 'lucide-react';
 import type { Flight } from '../../types/flight';
-import Button from '../common/Button';
 
 interface RouteModalProps {
   isOpen: boolean;
   onClose: () => void;
   flight: Flight | null;
-  onFlightChange?: (flightId: string | number, updates: Partial<Flight>) => void;
+  onFlightChange?: (
+    flightId: string | number,
+    updates: Partial<Flight>
+  ) => void;
 }
 
 export default function RouteModal({
@@ -21,7 +23,6 @@ export default function RouteModal({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const modalRef = useRef<HTMLDivElement>(null);
   const [editedRoute, setEditedRoute] = useState(flight?.route || '');
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!modalRef.current) return;
@@ -38,9 +39,12 @@ export default function RouteModal({
     (e: MouseEvent) => {
       if (!isDragging) return;
 
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+
       setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
+        x: newX,
+        y: Math.max(70, newY),
       });
     },
     [isDragging, dragOffset]
@@ -50,38 +54,36 @@ export default function RouteModal({
     setIsDragging(false);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isDragging) {
+      document.body.style.userSelect = 'none';
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
 
       return () => {
+        document.body.style.userSelect = 'auto';
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Update edited route when flight changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (flight?.route !== undefined) {
       setEditedRoute(flight.route || '');
     }
   }, [flight?.route]);
 
-  const handleSave = async () => {
-    if (!flight || !onFlightChange) return;
+  // Autosave with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (flight && onFlightChange) {
+        onFlightChange(flight.id, { route: editedRoute });
+      }
+    }, 500);
 
-    setIsSaving(true);
-    try {
-      await onFlightChange(flight.id, { route: editedRoute });
-      onClose();
-    } catch (error) {
-      console.error('Failed to save route:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    return () => clearTimeout(timer);
+  }, [editedRoute, flight, onFlightChange]);
 
   if (!isOpen || !flight) return null;
 
@@ -90,16 +92,16 @@ export default function RouteModal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="fixed z-60 bg-zinc-900 border-2 border-zinc-700 rounded-xl min-w-96 w-md"
+        className="fixed z-60 bg-zinc-900 border-2 border-blue-600 rounded-xl min-w-96 w-md"
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
-          cursor: 'default'
+          cursor: 'default',
         }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between p-4 border-b border-zinc-700 bg-zinc-800 rounded-t-lg cursor-pointer"
+          className="flex items-center justify-between p-4 py-3 border-b border-zinc-700 bg-zinc-800 rounded-t-lg cursor-pointer"
           onMouseDown={handleMouseDown}
         >
           <div className="flex items-center gap-2">
@@ -117,11 +119,11 @@ export default function RouteModal({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-5">
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-green-500">
                   Departure
                 </label>
                 <div className="text-white font-mono text-lg">
@@ -129,7 +131,7 @@ export default function RouteModal({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-red-500">
                   Arrival
                 </label>
                 <div className="text-white font-mono text-lg">
@@ -137,7 +139,7 @@ export default function RouteModal({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
+                <label className="block text-sm font-medium text-blue-500">
                   SID
                 </label>
                 <div className="text-white font-mono text-lg">
@@ -153,7 +155,7 @@ export default function RouteModal({
               <textarea
                 value={editedRoute}
                 onChange={(e) => setEditedRoute(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-4 min-h-32 text-white font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-4 text-white font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                 placeholder="Enter route..."
                 rows={4}
               />
@@ -167,26 +169,6 @@ export default function RouteModal({
                 <div className="text-white font-mono">{flight.alternate}</div>
               </div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-700">
-              <Button
-                onClick={onClose}
-                variant="outline"
-                size="sm"
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                variant="primary"
-                size="sm"
-                disabled={isSaving || !onFlightChange}
-              >
-                {isSaving ? 'Saving...' : 'Save Route'}
-              </Button>
-            </div>
           </div>
         </div>
       </div>

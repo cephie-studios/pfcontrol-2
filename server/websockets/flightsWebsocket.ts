@@ -11,6 +11,7 @@ import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js'
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
 import { isEventController } from '../middleware/flightAccess.js';
+import { broadcastFlightUpdate } from './overviewWebsocket.js';
 
 interface FlightUpdateData {
     flightId: string | number;
@@ -48,7 +49,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         cors: {
             origin: ['http://localhost:5173', 'http://localhost:9901', 'https://control.pfconnect.online', 'https://test.pfconnect.online'],
             credentials: true
-        }
+        },
+        pingTimeout: 10000,
+        pingInterval: 5000,
+        upgradeTimeout: 3000,
+        allowUpgrades: true
     });
 
     io.on('connection', async (socket: Socket) => {
@@ -130,7 +135,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     sessionId,
                     action: 'add',
                     flightId: flight.id,
-                    newData: sanitizedFlight,  // Full new data
+                    newData: sanitizedFlight,
                     ipAddress: socket.handshake.address
                 });
             } catch {
@@ -144,11 +149,14 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 socket.emit('flightError', { action: 'update', flightId, error: 'Not authorized' });
                 return;
             }
+
             try {
                 validateFlightId(flightId);
                 if (Object.prototype.hasOwnProperty.call(updates, 'hidden')) {
                     return;
                 }
+
+                socket.emit('flightUpdateAck', { flightId, updates });
 
                 if (updates.callsign && typeof updates.callsign === 'string') updates.callsign = sanitizeCallsign(updates.callsign);
                 if (updates.remark && typeof updates.remark === 'string') updates.remark = sanitizeString(updates.remark, 500);
@@ -176,9 +184,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                 const updatedFlight = await updateFlight(sessionId, flightId as string, updates);
                 if (updatedFlight) {
                     io.to(sessionId).emit('flightUpdated', updatedFlight);
+                    
+                    broadcastFlightUpdate(sessionId, updatedFlight);
+                    
                     await broadcastToArrivalSessions(updatedFlight);
 
-                    // Fetch old data for logging (simplified; adjust if needed)
                     const oldFlight = await flightsDb
                         .selectFrom(`flights_${sessionId}`)
                         .selectAll()
@@ -187,7 +197,6 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     const { acars_token: _, user_id: __, ip_address: ___, ...oldSanitized } = oldFlight || {};
                     const {user_id: _____, ip_address: ______, ...newSanitized } = updatedFlight;
 
-                    // Log the update action
                     await logFlightAction({
                         userId: userId || 'unknown',
                         username: socket.handshake.query.username as string || 'unknown',
@@ -233,7 +242,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
                     sessionId,
                     action: 'delete',
                     flightId: flightId as string,
-                    oldData: sanitizedOldData,  // Full old data
+                    oldData: sanitizedOldData,
                     ipAddress: socket.handshake.address
                 });
             } catch {

@@ -34,7 +34,7 @@ export default function ContactAcarsSidebar({
     { type: string; freq: string }[]
   >([]);
 
-  const flightsWithAcars = flights.filter((f) => activeAcarsFlights.has(f.id));
+  const flightsWithAcars = flights;
 
   // Check if this is a center station (contains _CTR)
   const isCenterStation = airportIcao.includes('_CTR');

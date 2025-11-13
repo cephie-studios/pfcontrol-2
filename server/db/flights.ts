@@ -8,6 +8,19 @@ import crypto from "crypto";
 import { sql } from "kysely";
 import { incrementStat } from '../utils/statisticsCache.js';
 
+function createUTCDate(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds(),
+    now.getUTCMilliseconds()
+  ));
+}
+
 export interface ClientFlight {
   id: string;
   session_id: string;
@@ -227,12 +240,20 @@ export async function getFlightsBySessionWithTime(sessionId: string, hoursBack =
       return [];
     }
 
-    const sinceDate = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+    const sinceDateUTC = createUTCDate();
+    sinceDateUTC.setUTCHours(sinceDateUTC.getUTCHours() - hoursBack);
+
+    const sinceDateISOString = sinceDateUTC.toISOString();
 
     const flights = await flightsDb
       .selectFrom(tableName)
       .selectAll()
-      .where('timestamp', '>=', sinceDate.toISOString())
+      .where((eb) =>
+        eb.or([
+          eb('timestamp', '>=', sinceDateISOString),
+          eb('updated_at', '>=', sinceDateUTC),
+        ])
+      )
       .orderBy('timestamp', 'asc')
       .execute();
 
@@ -329,6 +350,7 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     flightData.timestamp = new Date().toISOString();
   }
   flightData.acars_token = crypto.randomBytes(4).toString('hex');
+  flightData.updated_at = createUTCDate();
 
   if (flightData.aircraft_type) {
     flightData.aircraft = flightData.aircraft_type;
@@ -395,6 +417,24 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
   return sanitizeFlightForOwner(result);
 }
 
+export async function getFlightById(sessionId: string, flightId: string) {
+  const validSessionId = validateSessionId(sessionId);
+  const validFlightId = validateFlightId(flightId);
+  const tableName = `flights_${validSessionId}`;
+
+  const result = await flightsDb
+    .selectFrom(tableName)
+    .selectAll()
+    .where('id', '=', validFlightId)
+    .executeTakeFirst();
+
+  if (!result) {
+    return null;
+  }
+
+  return result;
+}
+
 export async function updateFlight(
   sessionId: string,
   flightId: string,
@@ -438,7 +478,7 @@ export async function updateFlight(
     throw new Error('No valid fields to update');
   }
 
-  dbUpdates.updated_at = new Date();
+  dbUpdates.updated_at = createUTCDate();
 
   try {
     await sql`ALTER TABLE ${sql.table(tableName)} ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP;`.execute(flightsDb);

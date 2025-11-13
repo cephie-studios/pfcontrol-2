@@ -37,11 +37,24 @@ export interface OverviewData {
 
 export function createOverviewSocket(
     onOverviewData: (data: OverviewData) => void,
-    onOverviewError?: (error: { error: string }) => void
+    onOverviewError?: (error: { error: string }) => void,
+    isEventController?: boolean,
+    userId?: string,
+    username?: string,
+    onFlightUpdated?: (data: { sessionId: string; flight: Flight }) => void,
+    onFlightUpdateAck?: (_data: { flightId: string | number; updates: Partial<Flight> }) => void,
+    onFlightError?: (error: { action: string; flightId?: string | number; error: string }) => void
 ) {
     const socket = io(SOCKET_URL, {
         withCredentials: true,
         path: '/sockets/overview',
+        query: {
+            ...(isEventController && {
+                isEventController: 'true',
+                userId,
+                username
+            })
+        },
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
@@ -52,11 +65,9 @@ export function createOverviewSocket(
         autoConnect: true
     });
 
-
     socket.on('connect_error', (error) => {
         console.error('[Overview Socket] Connection error:', error.message);
 
-        // If error is about session ID, force reconnect with new session
         if (error.message.includes('Session ID') || error.message.includes('session')) {
             socket.disconnect();
             setTimeout(() => {
@@ -70,7 +81,6 @@ export function createOverviewSocket(
     });
 
     socket.on('disconnect', (reason) => {
-      // If disconnected due to server, try to reconnect with fresh session
         if (reason === 'io server disconnect' || reason === 'transport close') {
             socket.connect();
         }
@@ -89,10 +99,28 @@ export function createOverviewSocket(
         socket.on('overviewError', onOverviewError);
     }
 
+    if (isEventController && onFlightUpdated) {
+        socket.on('flightUpdated', onFlightUpdated);
+    }
+
+    if (onFlightUpdateAck) {
+        socket.on('flightUpdateAck', onFlightUpdateAck);
+    }
+
+    if (onFlightError) {
+        socket.on('flightError', onFlightError);
+    }
+
     return {
         socket,
         disconnect: () => {
             socket.disconnect();
+        },
+        updateFlight: (sessionId: string, flightId: string | number, updates: Partial<Flight>) => {
+            socket.emit('updateFlight', { sessionId, flightId, updates });
+        },
+        sendContact: (sessionId: string, flightId: string | number, message: string, station: string, position: string) => {
+            socket.emit('contactMe', { sessionId, flightId, message, station, position });
         }
     };
 }

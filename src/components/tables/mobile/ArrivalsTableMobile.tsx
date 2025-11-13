@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { EyeOff, Eye, Route } from 'lucide-react';
+import { EyeOff, Eye, Route, Trash2 } from 'lucide-react';
 import type { Flight } from '../../../types/flight';
 import type { ArrivalsTableColumnSettings } from '../../../types/settings';
 import TextInput from '../../common/TextInput';
@@ -15,6 +15,7 @@ interface ArrivalsTableMobileProps {
     flightId: string | number,
     updates: Partial<Flight>
   ) => void;
+  onFlightDelete: (flightId: string | number) => void;
   backgroundStyle?: React.CSSProperties;
   arrivalsColumns?: ArrivalsTableColumnSettings;
 }
@@ -22,6 +23,7 @@ interface ArrivalsTableMobileProps {
 export default function ArrivalsTableMobile({
   flights,
   onFlightChange,
+  onFlightDelete,
   backgroundStyle,
   arrivalsColumns = {
     time: true,
@@ -152,10 +154,8 @@ export default function ArrivalsTableMobile({
   }, []);
 
   const handleRouteClick = (flight: Flight) => {
-    if (flight.route && flight.route.trim()) {
-      setSelectedFlight(flight);
-      setRouteModalOpen(true);
-    }
+    setSelectedFlight(flight);
+    setRouteModalOpen(true);
   };
 
   const handleRouteClose = () => {
@@ -173,6 +173,10 @@ export default function ArrivalsTableMobile({
     if (onFlightChange) {
       onFlightChange(flightId, { hidden: false });
     }
+  };
+
+  const handleDeleteFlight = async (flightId: string | number) => {
+    onFlightDelete(flightId);
   };
 
   const visibleFlights = showHidden
@@ -249,18 +253,17 @@ export default function ArrivalsTableMobile({
                   <div className="flex gap-2">
                     {arrivalsColumns.route !== false && (
                       <button
-                        onClick={() => handleRouteClick(flight)}
-                        className={`transition-colors ${
+                        className={`px-2 py-1 rounded transition-colors ${
                           flight.route && flight.route.trim()
                             ? 'text-gray-400 hover:text-blue-500'
-                            : 'text-red-500 cursor-not-allowed'
+                            : 'text-red-500'
                         }`}
+                        onClick={() => handleRouteClick(flight)}
                         title={
                           flight.route && flight.route.trim()
                             ? 'View Route'
                             : 'No route specified'
                         }
-                        disabled={!flight.route || !flight.route.trim()}
                       >
                         <Route className="w-5 h-5" />
                       </button>
@@ -281,6 +284,12 @@ export default function ArrivalsTableMobile({
                         )}
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDeleteFlight(flight.id)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 

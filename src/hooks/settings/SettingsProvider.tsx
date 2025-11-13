@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
-	fetchUserSettings,
-	updateUserSettings
+  fetchUserSettings,
+  updateUserSettings,
 } from '../../utils/fetch/settings';
 import type { Settings } from '../../types/settings';
 import { SettingsContext } from './useSettings';
@@ -86,16 +86,16 @@ const defaultSettings: Settings = {
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-	const [settings, setSettings] = useState<Settings | null>(null);
-	const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		loadSettings();
-	}, []);
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
-	const loadSettings = async () => {
-		try {
-			const userSettings = await fetchUserSettings();
+  const loadSettings = async () => {
+    try {
+      const userSettings = await fetchUserSettings();
 
 			const mergedSettings: Settings = {
 				...defaultSettings,
@@ -130,28 +130,28 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 				}
 			};
 
-			setSettings(mergedSettings);
-		} catch (error) {
-			console.error('Failed to load settings:', error);
-			setSettings(defaultSettings);
-		} finally {
-			setLoading(false);
-		}
-	};
+      setSettings(mergedSettings);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      setSettings(defaultSettings);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	const updateSettings = async (newSettings: Settings) => {
-		try {
-			await updateUserSettings(newSettings);
-			setSettings(newSettings);
-		} catch (error) {
-			console.error('Failed to update settings:', error);
-			throw error;
-		}
-	};
+  const updateSettings = async (newSettings: Settings) => {
+    try {
+      await updateUserSettings(newSettings);
+      setSettings(newSettings);
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      throw error;
+    }
+  };
 
-	return (
-		<SettingsContext.Provider value={{ settings, updateSettings, loading }}>
-			{children}
-		</SettingsContext.Provider>
-	);
+  return (
+    <SettingsContext.Provider value={{ settings, updateSettings, loading }}>
+      {children}
+    </SettingsContext.Provider>
+  );
 }
