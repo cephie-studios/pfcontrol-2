@@ -220,10 +220,19 @@ export default function AdminTesters() {
                 >
                   {updatingGate ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : gateEnabled ? (
-                    'Disable Gate'
                   ) : (
-                    'Enable Gate'
+                    <>
+                      <span className="hidden lg:inline">
+                        {gateEnabled ? 'Disable Gate' : 'Enable Gate'}
+                      </span>
+                      <span className="lg:hidden">
+                        {gateEnabled ? (
+                          <ShieldX className="w-4 h-4" />
+                        ) : (
+                          <ShieldCheck className="w-4 h-4" />
+                        )}
+                      </span>
+                    </>
                   )}
                 </Button>
               </div>
@@ -328,8 +337,8 @@ export default function AdminTesters() {
             />
           ) : (
             <>
-              {/* Testers Table */}
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[800px]">
                     <thead className="bg-zinc-800">
@@ -431,6 +440,82 @@ export default function AdminTesters() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {testers.length === 0 ? (
+                  <div className="text-center py-12 text-zinc-500">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg">No testers found</p>
+                    <p className="text-sm">Add some testers to get started</p>
+                  </div>
+                ) : (
+                  testers.map((tester) => (
+                    <div
+                      key={tester.id}
+                      className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4"
+                    >
+                      <div className="space-y-3">
+                        {/* Tester Info */}
+                        <div className="flex items-center space-x-3">
+                          {tester.avatar ? (
+                            <img
+                              src={`https://cdn.discordapp.com/avatars/${tester.user_id}/${tester.avatar}.png`}
+                              alt={tester.username}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-zinc-700 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5 text-zinc-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white font-medium">
+                              {tester.username}
+                            </p>
+                            <p className="text-xs text-zinc-500 font-mono">
+                              {tester.user_id}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Added By */}
+                        <p className="text-zinc-300">
+                          <strong>Added By:</strong> {tester.added_by_username}
+                        </p>
+
+                        {/* Date Added */}
+                        <p className="text-zinc-300">
+                          <strong>Date Added:</strong>{' '}
+                          {new Date(tester.created_at).toLocaleDateString()}
+                        </p>
+
+                        {/* Notes */}
+                        <p className="text-zinc-300">
+                          <strong>Notes:</strong> {tester.notes || '-'}
+                        </p>
+
+                        {/* Actions */}
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => handleRemoveTester(tester.user_id)}
+                            disabled={removingTester === tester.user_id}
+                            variant="danger"
+                            size="sm"
+                            className="flex items-center"
+                          >
+                            {removingTester === tester.user_id ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Pagination */}

@@ -621,8 +621,8 @@ export default function AdminUsers() {
             />
           ) : (
             <>
-              {/* Users Table */}
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
+              {/* Desktop Table */}
+              <div className="hidden md:block bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[800px]">
                     <thead className="bg-zinc-800">
@@ -630,26 +630,26 @@ export default function AdminUsers() {
                         <th className="px-6 py-4 text-left text-zinc-400 font-medium">
                           User
                         </th>
-                        <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                        <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden sm:table-cell">
                           Last Login
                         </th>
                         {user?.isAdmin && (
-                          <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                          <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden md:table-cell">
                             IP Address
                           </th>
                         )}
-                        <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                        <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden lg:table-cell">
                           VPN
                         </th>
-                        <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                        <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden xl:table-cell">
                           Sessions
                         </th>
-                        <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                        <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden lg:table-cell">
                           Role
                         </th>
-                        <th className="px-6 py-4 text-left text-zinc-400 font-medium">
+                        <th className="px-6 py-4 text-left text-zinc-400 font-medium hidden xl:table-cell">
                           Cached
-                        </th>{' '}
+                        </th>
                         <th className="px-6 py-4 text-left text-zinc-400 font-medium">
                           Actions
                         </th>
@@ -681,16 +681,22 @@ export default function AdminUsers() {
                                 <span className="text-zinc-400 text-xs">
                                   {tableUser.id}
                                 </span>
+                                <span className="text-zinc-400 text-xs sm:hidden">
+                                  Last:{' '}
+                                  {new Date(
+                                    tableUser.last_login
+                                  ).toLocaleDateString()}
+                                </span>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-zinc-300">
+                          <td className="px-6 py-4 text-zinc-300 hidden sm:table-cell">
                             {new Date(
                               tableUser.last_login
                             ).toLocaleDateString()}
                           </td>
                           {user?.isAdmin && (
-                            <td className="px-6 py-4 text-zinc-300">
+                            <td className="px-6 py-4 text-zinc-300 hidden md:table-cell">
                               <div className="flex items-center space-x-2">
                                 <span
                                   className={
@@ -722,7 +728,7 @@ export default function AdminUsers() {
                               </div>
                             </td>
                           )}
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 hidden lg:table-cell">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 tableUser.is_vpn
@@ -733,10 +739,10 @@ export default function AdminUsers() {
                               {tableUser.is_vpn ? 'Yes' : 'No'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-zinc-300">
+                          <td className="px-6 py-4 text-zinc-300 hidden xl:table-cell">
                             {tableUser.current_sessions_count ?? 0}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 hidden lg:table-cell">
                             <div className="flex flex-wrap gap-2">
                               {tableUser.is_admin && (
                                 <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 w-fit">
@@ -798,7 +804,7 @@ export default function AdminUsers() {
                                   )}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 hidden xl:table-cell">
                             <img
                               src={`${API_BASE_URL}/assets/app/icons/redis${tableUser.cached ? '-green' : ''}.svg`}
                               alt="Redis cache status"
@@ -806,12 +812,12 @@ export default function AdminUsers() {
                             />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleViewSettings(tableUser)}
-                                className="p-2"
+                                className="p-2 w-full sm:w-auto"
                               >
                                 <Settings className="w-4 h-4" />
                               </Button>
@@ -820,7 +826,7 @@ export default function AdminUsers() {
                                   size="sm"
                                   variant="secondary"
                                   onClick={() => handleManageRole(tableUser)}
-                                  className="p-2 bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
+                                  className="p-2 w-full sm:w-auto bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
                                 >
                                   <ShieldUser className="w-4 h-4" />
                                 </Button>
@@ -832,7 +838,7 @@ export default function AdminUsers() {
                                   onClick={() =>
                                     (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
                                   }
-                                  className="p-2 bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
+                                  className="p-2 w-full sm:w-auto bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
                                 >
                                   <Database className="w-4 h-4" />
                                 </Button>
@@ -848,7 +854,7 @@ export default function AdminUsers() {
                                       tableUser.username
                                     )}`)
                                   }
-                                  className="flex items-center space-x-2"
+                                  className="flex items-center space-x-2 w-full sm:w-auto"
                                 >
                                   <Ban className="w-4 h-4" />
                                 </Button>
@@ -860,6 +866,167 @@ export default function AdminUsers() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="block md:hidden space-y-4">
+                {users.map((tableUser) => (
+                  <div
+                    key={tableUser.id}
+                    className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4"
+                  >
+                    <div className="flex items-center space-x-3 mb-4">
+                      {tableUser.avatar ? (
+                        <img
+                          src={`https://cdn.discordapp.com/avatars/${tableUser.id}/${tableUser.avatar}.png`}
+                          alt={tableUser.username}
+                          className="w-12 h-12 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-zinc-600 rounded-full flex items-center justify-center">
+                          <Users className="w-6 h-6 text-zinc-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="text-white font-medium text-lg">
+                          {tableUser.username}
+                        </div>
+                        <div className="text-zinc-400 text-sm">
+                          {tableUser.id}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-zinc-300">
+                      <div>
+                        Last Login:{' '}
+                        {new Date(tableUser.last_login).toLocaleDateString()}
+                      </div>
+                      {user?.isAdmin && (
+                        <div className="flex items-center space-x-2">
+                          <span>
+                            IP:{' '}
+                            {formatIPAddress(
+                              tableUser.ip_address,
+                              tableUser.id
+                            )}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRevealIP(tableUser.id)}
+                            disabled={revealingIP === tableUser.id}
+                            className="p-1"
+                          >
+                            {revealingIP === tableUser.id ? (
+                              <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                            ) : revealedIPs.has(tableUser.id) ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <div>VPN: {tableUser.is_vpn ? 'Yes' : 'No'}</div>
+                      <div>
+                        Sessions: {tableUser.current_sessions_count ?? 0}
+                      </div>
+                      <div>
+                        Role:
+                        {tableUser.is_admin ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-2">
+                            <Braces className="w-3 h-3" />
+                            Developer
+                          </span>
+                        ) : tableUser.roles && tableUser.roles.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {tableUser.roles.map((role) => {
+                              const RoleIcon = getIconComponent(role.icon);
+                              return (
+                                <span
+                                  key={role.id}
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border"
+                                  style={{
+                                    backgroundColor: `${role.color}20`,
+                                    color: role.color,
+                                    borderColor: `${role.color}40`,
+                                  }}
+                                >
+                                  <RoleIcon className="w-3 h-3" />
+                                  {role.name}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-zinc-400 ml-2">No Role</span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span>Cached:</span>
+                        <img
+                          src={`${API_BASE_URL}/assets/app/icons/redis${
+                            tableUser.cached ? '-green' : ''
+                          }.svg`}
+                          alt="Redis cache status"
+                          className="w-6 h-6"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewSettings(tableUser)}
+                        className="flex-1"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </Button>
+                      {!tableUser.is_admin && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleManageRole(tableUser)}
+                          className="flex-1 bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
+                        >
+                          <ShieldUser className="w-4 h-4 mr-2" />
+                          Role
+                        </Button>
+                      )}
+                      {(tableUser.current_sessions_count || 0) >= 1 && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
+                          }
+                          className="flex-1 bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
+                        >
+                          <Database className="w-4 h-4 mr-2" />
+                          Sessions
+                        </Button>
+                      )}
+                      {!tableUser.is_admin && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() =>
+                            (window.location.href = `/admin/bans?userId=${
+                              tableUser.id
+                            }&username=${encodeURIComponent(tableUser.username)}`)
+                          }
+                          className="flex-1"
+                        >
+                          <Ban className="w-4 h-4 mr-2" />
+                          Ban
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Pagination */}
@@ -1198,14 +1365,14 @@ export default function AdminUsers() {
           {/* Fullscreen Image Modal */}
           {showFullscreenImage && fullscreenImageUrl && (
             <div
-              className="fixed inset-24 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
               onClick={() => setShowFullscreenImage(false)}
             >
               <div className="relative w-full h-full p-4 flex items-center justify-center">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="absolute -top-6 right-12 z-10"
+                  className="absolute top-4 right-4 z-10"
                   onClick={() => {
                     setShowFullscreenImage(false);
                   }}

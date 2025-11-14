@@ -56,7 +56,6 @@ ChartJS.register(
 
 export default function Admin() {
   const { user } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -380,10 +379,7 @@ export default function Admin() {
 
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">
-          <AdminSidebar
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
+          <AdminSidebar />
         </div>
 
         {/* Mobile Sidebar */}
@@ -392,10 +388,7 @@ export default function Admin() {
             mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <AdminSidebar
-            collapsed={false}
-            onToggle={() => setMobileSidebarOpen(false)}
-          />
+          <AdminSidebar onToggle={() => setMobileSidebarOpen(false)} />
         </div>
 
         <div className="flex-1 p-4 sm:p-6 lg:p-8">

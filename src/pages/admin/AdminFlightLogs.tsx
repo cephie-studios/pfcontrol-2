@@ -400,7 +400,8 @@ export default function AdminFlightLogs() {
             />
           ) : (
             <>
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[1000px]">
                     <thead className="bg-zinc-800">
@@ -524,6 +525,106 @@ export default function AdminFlightLogs() {
                   </table>
                 </div>
               </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {paginatedLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Action */}
+                      <div className="flex items-center space-x-2">
+                        {getActionIcon(log.action)}
+                        <div>
+                          <p className="text-white font-medium">
+                            {formatActionType(log.action)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* User */}
+                      <div>
+                        <p className="text-zinc-300">
+                          <strong>User:</strong>{' '}
+                          {log.username || `Unknown (${log.user_id})`}
+                        </p>
+                        <p className="text-zinc-400 text-xs">{log.user_id}</p>
+                      </div>
+
+                      {/* Session */}
+                      <p className="text-zinc-300">
+                        <strong>Session:</strong>{' '}
+                        <Link
+                          to={`/admin/sessions?search=${log.session_id}`}
+                          className="text-purple-400 hover:text-purple-300 underline"
+                        >
+                          {log.session_id}
+                        </Link>
+                      </p>
+
+                      {/* Flight ID */}
+                      <p className="text-zinc-300">
+                        <strong>Flight ID:</strong> {log.flight_id}
+                      </p>
+
+                      {/* Timestamp */}
+                      <p className="text-zinc-300">
+                        <strong>Timestamp:</strong> {formatDate(log.timestamp)}
+                      </p>
+
+                      {/* IP Address */}
+                      <div className="flex items-center space-x-2">
+                        <p className="text-zinc-300">
+                          <strong>IP:</strong>{' '}
+                          <span
+                            className={`font-mono text-sm ${
+                              revealedIPs.has(log.id) ? '' : 'filter blur-sm'
+                            }`}
+                          >
+                            {formatIPAddress(log.ip_address, log.id)}
+                          </span>
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRevealIP(log.id)}
+                          disabled={revealingIP === log.id}
+                          className="p-1"
+                        >
+                          {revealingIP === log.id ? (
+                            <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                          ) : revealedIPs.has(log.id) ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Updated Field */}
+                      <p className="text-zinc-300">
+                        <strong>Updated Field:</strong> {getUpdatedField(log)}
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewDetails(log)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* No Results Message */}
               {filteredLogs.length === 0 && (
                 <div className="text-center py-12 text-zinc-400">
                   {logs.length > 0
@@ -531,6 +632,8 @@ export default function AdminFlightLogs() {
                     : 'No flight logs found with the current filters.'}
                 </div>
               )}
+
+              {/* Pagination */}
               <div className="flex justify-center mt-8 space-x-2">
                 <Button
                   onClick={() => setClientPage(Math.max(1, clientPage - 1))}

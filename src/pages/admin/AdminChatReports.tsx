@@ -198,8 +198,8 @@ export default function AdminChatReports() {
               />
             ) : (
               <>
-                {/* Reports Table */}
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
+                {/* Desktop Table View */}
+                <div className="hidden lg:block bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[800px]">
                       <thead className="bg-zinc-800">
@@ -346,7 +346,131 @@ export default function AdminChatReports() {
                   </div>
                 </div>
 
-                {/* Pagination */}
+                {/* Mobile Card View */}
+                <div className="lg:hidden space-y-4">
+                  {reports
+                    .filter(
+                      (r) =>
+                        !search ||
+                        r.message
+                          .toLowerCase()
+                          .includes(search.toLowerCase()) ||
+                        r.reported_user_id.includes(search)
+                    )
+                    .map((report) => (
+                      <div
+                        key={report.id}
+                        className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4"
+                      >
+                        <div className="space-y-3">
+                          {/* Reporter */}
+                          <div className="flex items-center space-x-2">
+                            <img
+                              src={
+                                report.avatar ||
+                                '/assets/app/default/avatar.webp'
+                              }
+                              alt={
+                                report.reporter_user_id === 'automod'
+                                  ? 'Automod'
+                                  : report.reporter_username ||
+                                    report.reporter_user_id
+                              }
+                              className="w-8 h-8 rounded-full"
+                            />
+                            <div>
+                              <p className="text-white font-medium">
+                                {report.reporter_user_id === 'automod'
+                                  ? 'Automod'
+                                  : report.reporter_username || 'Unknown'}
+                              </p>
+                              {report.reporter_user_id !== 'automod' && (
+                                <p className="text-zinc-400 text-xs">
+                                  {report.reporter_user_id}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Reported User */}
+                          <div className="flex items-center space-x-2">
+                            <img
+                              src={
+                                report.reported_avatar ||
+                                '/assets/app/default/avatar.webp'
+                              }
+                              alt={
+                                report.reported_username ||
+                                report.reported_user_id
+                              }
+                              className="w-8 h-8 rounded-full"
+                            />
+                            <div>
+                              <p className="text-white font-medium">
+                                {report.reported_username || 'Unknown'}
+                              </p>
+                              <p className="text-zinc-400 text-xs">
+                                {report.reported_user_id}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Message */}
+                          <p className="text-zinc-300">
+                            <strong>Message:</strong> {report.message}
+                          </p>
+
+                          {/* Reason */}
+                          <p className="text-zinc-300">
+                            <strong>Reason:</strong> {report.reason}
+                          </p>
+
+                          {/* Status and Timestamp */}
+                          <div className="flex justify-between items-center">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                report.status === 'resolved'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-yellow-500/20 text-yellow-400'
+                              }`}
+                            >
+                              {report.status || 'pending'}
+                            </span>
+                            <p className="text-zinc-400 text-xs">
+                              {formatTimestamp(report.timestamp)}
+                            </p>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewReport(report)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="success"
+                              onClick={() => handleMarkResolved(report.id)}
+                            >
+                              <TicketCheck className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDismissReport(report.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {/* Pagination - Keep this for both views */}
                 <div className="flex justify-center mt-8 space-x-2">
                   <Button
                     onClick={() => setPage(Math.max(1, page - 1))}
