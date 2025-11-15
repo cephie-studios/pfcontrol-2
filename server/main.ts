@@ -49,7 +49,6 @@ if (missingEnv.length > 0) {
 (async () => {
   try {
     await initializeGlobalHolidaySettings();
-    console.log('Global holiday settings initialized');
   } catch (error) {
     console.error('Failed to initialize global holiday settings:', error);
   }

@@ -37,14 +37,12 @@ export default function MusicPlayerControl({
   const { artist, trackName } = parseTrackInfo(currentTrack);
 
   return (
-    // Z-Index: 100 - Floating UI elements (see Z_INDEX_GUIDE.md)
     <div
       className="fixed right-4 bottom-5 transition-all duration-500 ease-in-out select-none"
       style={{
         zIndex: 100,
       }}
     >
-      {/* Snow drift effect - positioned behind the radio */}
       <svg
         className="absolute pointer-events-none transition-all duration-500"
         style={{
@@ -60,17 +58,45 @@ export default function MusicPlayerControl({
       >
         <defs>
           <radialGradient id="snowDriftGradient" cx="50%" cy="40%">
-            <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.98 }} />
-            <stop offset="60%" style={{ stopColor: '#f0f9ff', stopOpacity: 0.85 }} />
-            <stop offset="100%" style={{ stopColor: '#ffffff', stopOpacity: 0 }} />
+            <stop
+              offset="0%"
+              style={{ stopColor: '#ffffff', stopOpacity: 0.98 }}
+            />
+            <stop
+              offset="60%"
+              style={{ stopColor: '#f0f9ff', stopOpacity: 0.85 }}
+            />
+            <stop
+              offset="100%"
+              style={{ stopColor: '#ffffff', stopOpacity: 0 }}
+            />
           </radialGradient>
         </defs>
-        <ellipse cx="140" cy="70" rx="130" ry="45" fill="url(#snowDriftGradient)" />
-        <ellipse cx="85" cy="73" rx="60" ry="23" fill="rgba(255, 255, 255, 0.6)" opacity="0.5" />
-        <ellipse cx="195" cy="74" rx="58" ry="21" fill="rgba(255, 255, 255, 0.6)" opacity="0.5" />
+        <ellipse
+          cx="140"
+          cy="70"
+          rx="130"
+          ry="45"
+          fill="url(#snowDriftGradient)"
+        />
+        <ellipse
+          cx="85"
+          cy="73"
+          rx="60"
+          ry="23"
+          fill="rgba(255, 255, 255, 0.6)"
+          opacity="0.5"
+        />
+        <ellipse
+          cx="195"
+          cy="74"
+          rx="58"
+          ry="21"
+          fill="rgba(255, 255, 255, 0.6)"
+          opacity="0.5"
+        />
       </svg>
 
-      {/* Music note animations when minimized and playing */}
       {!isExpanded && isPlaying && (
         <>
           <div className="absolute -top-8 left-1/2 -translate-x-1/2 animate-float-up-1 text-amber-600 text-xl opacity-80">
@@ -85,142 +111,307 @@ export default function MusicPlayerControl({
         </>
       )}
 
-      {/* Custom SVG Vintage Radio */}
       <svg
         className="transition-all duration-500 ease-in-out cursor-pointer"
-        width={isExpanded ? "230" : "115"}
-        height={isExpanded ? "250" : "125"}
+        width={isExpanded ? '230' : '115'}
+        height={isExpanded ? '250' : '125'}
         viewBox="0 0 230 250"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         onClick={(e) => {
-          // Check if clicking on a control knob or its children
           const target = e.target as SVGElement;
-          if (target.classList.contains('control-knob') || target.closest('.control-knob')) {
+          if (
+            target.classList.contains('control-knob') ||
+            target.closest('.control-knob')
+          ) {
             e.stopPropagation();
             return;
           }
-          isExpanded ? setIsExpanded(false) : setIsExpanded(true);
+          setIsExpanded(!isExpanded);
         }}
       >
         <defs>
-          {/* Wood grain gradient */}
           <linearGradient id="woodGrain" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#78350f" />
             <stop offset="50%" stopColor="#92400e" />
             <stop offset="100%" stopColor="#78350f" />
           </linearGradient>
 
-          {/* Speaker fabric gradient */}
           <radialGradient id="speakerGradient" cx="50%" cy="50%">
             <stop offset="0%" stopColor="#1c1917" />
             <stop offset="100%" stopColor="#0c0a09" />
           </radialGradient>
 
-          {/* Display screen gradient */}
           <linearGradient id="screenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#422006" />
             <stop offset="100%" stopColor="#1c0a00" />
           </linearGradient>
         </defs>
 
-        {/* Radio body */}
-        <rect x="20" y="25" width="190" height="170" rx="12" fill="url(#woodGrain)" stroke="#451a03" strokeWidth="3"/>
+        <rect
+          x="20"
+          y="25"
+          width="190"
+          height="170"
+          rx="12"
+          fill="url(#woodGrain)"
+          stroke="#451a03"
+          strokeWidth="3"
+        />
 
-        {/* Wood grain texture lines */}
-        <path d="M 32 38 Q 50 42 70 38 T 110 38 T 160 38 T 198 38" stroke="#451a03" strokeWidth="0.6" opacity="0.3" fill="none"/>
-        <path d="M 32 70 Q 55 68 80 70 T 135 70 T 198 70" stroke="#451a03" strokeWidth="0.6" opacity="0.3" fill="none"/>
-        <path d="M 32 120 Q 60 123 90 120 T 160 120 T 198 120" stroke="#451a03" strokeWidth="0.6" opacity="0.3" fill="none"/>
-        <path d="M 32 165 Q 50 163 70 165 T 120 165 T 198 165" stroke="#451a03" strokeWidth="0.6" opacity="0.3" fill="none"/>
+        <path
+          d="M 32 38 Q 50 42 70 38 T 110 38 T 160 38 T 198 38"
+          stroke="#451a03"
+          strokeWidth="0.6"
+          opacity="0.3"
+          fill="none"
+        />
+        <path
+          d="M 32 70 Q 55 68 80 70 T 135 70 T 198 70"
+          stroke="#451a03"
+          strokeWidth="0.6"
+          opacity="0.3"
+          fill="none"
+        />
+        <path
+          d="M 32 120 Q 60 123 90 120 T 160 120 T 198 120"
+          stroke="#451a03"
+          strokeWidth="0.6"
+          opacity="0.3"
+          fill="none"
+        />
+        <path
+          d="M 32 165 Q 50 163 70 165 T 120 165 T 198 165"
+          stroke="#451a03"
+          strokeWidth="0.6"
+          opacity="0.3"
+          fill="none"
+        />
 
-        {/* Display screen */}
-        <rect x="35" y="45" width="160" height="45" rx="4" fill="url(#screenGradient)" stroke="#78350f" strokeWidth="2"/>
+        <rect
+          x="35"
+          y="45"
+          width="160"
+          height="45"
+          rx="4"
+          fill="url(#screenGradient)"
+          stroke="#78350f"
+          strokeWidth="2"
+        />
 
-        {/* Display screen inner glow */}
-        <rect x="39" y="49" width="152" height="37" rx="2" fill="#1c0a00" opacity="0.8"/>
+        <rect
+          x="39"
+          y="49"
+          width="152"
+          height="37"
+          rx="2"
+          fill="#1c0a00"
+          opacity="0.8"
+        />
 
         {isExpanded ? (
-          // Expanded view content
           <>
-            {/* Track info text */}
-            <text x="115" y="62" fontSize="9" fill="#fbbf24" textAnchor="middle" fontWeight="600">
-              {trackName.length > 20 ? trackName.substring(0, 20) + '...' : trackName}
+            <text
+              x="115"
+              y="62"
+              fontSize="9"
+              fill="#fbbf24"
+              textAnchor="middle"
+              fontWeight="600"
+            >
+              {trackName.length > 20
+                ? trackName.substring(0, 20) + '...'
+                : trackName}
             </text>
-            <text x="115" y="76" fontSize="7" fill="#f59e0b" textAnchor="middle" opacity="0.8">
+            <text
+              x="115"
+              y="76"
+              fontSize="7"
+              fill="#f59e0b"
+              textAnchor="middle"
+              opacity="0.8"
+            >
               {artist}
             </text>
 
-            {/* Status indicator */}
-            <circle cx="45" cy="66" r="3.5" fill={isPlaying ? '#22c55e' : '#ef4444'}>
-              {isPlaying && <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />}
+            <circle
+              cx="45"
+              cy="66"
+              r="3.5"
+              fill={isPlaying ? '#22c55e' : '#ef4444'}
+            >
+              {isPlaying && (
+                <animate
+                  attributeName="opacity"
+                  values="1;0.3;1"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              )}
             </circle>
           </>
         ) : (
-          // Collapsed view - simple indicator
           <>
-            <circle cx="115" cy="66" r="4.5" fill={isPlaying ? '#22c55e' : '#ef4444'}>
-              {isPlaying && <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />}
+            <circle
+              cx="115"
+              cy="66"
+              r="4.5"
+              fill={isPlaying ? '#22c55e' : '#ef4444'}
+            >
+              {isPlaying && (
+                <animate
+                  attributeName="opacity"
+                  values="1;0.3;1"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              )}
             </circle>
           </>
         )}
 
-        {/* Speaker grille */}
-        <rect x="35" y="105" width="160" height="55" rx="6" fill="url(#speakerGradient)" stroke="#78350f" strokeWidth="2"/>
+        <rect
+          x="35"
+          y="105"
+          width="160"
+          height="55"
+          rx="6"
+          fill="url(#speakerGradient)"
+          stroke="#78350f"
+          strokeWidth="2"
+        />
 
-        {/* Speaker grille holes pattern */}
         {Array.from({ length: isExpanded ? 42 : 20 }).map((_, i) => {
           const row = Math.floor(i / (isExpanded ? 7 : 5));
           const col = i % (isExpanded ? 7 : 5);
           const x = 52 + col * (isExpanded ? 21 : 26);
           const y = 118 + row * 11;
-          return <circle key={i} cx={x} cy={y} r="2.5" fill="#292524" opacity="0.6" />;
+          return (
+            <circle
+              key={i}
+              cx={x}
+              cy={y}
+              r="2.5"
+              fill="#292524"
+              opacity="0.6"
+            />
+          );
         })}
 
         {isExpanded && (
           <>
-            {/* Control knobs */}
-            {/* Play/Pause knob */}
-            <g onClick={(e) => { e.stopPropagation(); onPlayPause(); }} className="cursor-pointer control-knob" style={{ pointerEvents: 'auto' }}>
-              <circle cx="70" cy="175" r="18" fill="#92400e" stroke="#451a03" strokeWidth="2"/>
-              <circle cx="70" cy="175" r="14" fill="url(#woodGrain)" stroke="#451a03" strokeWidth="1"/>
-              {/* Knob ridges */}
-              <line x1="70" y1="160" x2="70" y2="164" stroke="#451a03" strokeWidth="1.5"/>
-              <line x1="70" y1="186" x2="70" y2="190" stroke="#451a03" strokeWidth="1.5"/>
-              <line x1="55" y1="175" x2="59" y2="175" stroke="#451a03" strokeWidth="1.5"/>
-              <line x1="81" y1="175" x2="85" y2="175" stroke="#451a03" strokeWidth="1.5"/>
-              {/* Play/Pause icon */}
+            <g
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlayPause();
+              }}
+              className="cursor-pointer control-knob"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <circle
+                cx="70"
+                cy="175"
+                r="18"
+                fill="#92400e"
+                stroke="#451a03"
+                strokeWidth="2"
+              />
+              <circle
+                cx="70"
+                cy="175"
+                r="14"
+                fill="url(#woodGrain)"
+                stroke="#451a03"
+                strokeWidth="1"
+              />
+              <line
+                x1="70"
+                y1="160"
+                x2="70"
+                y2="164"
+                stroke="#451a03"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="70"
+                y1="186"
+                x2="70"
+                y2="190"
+                stroke="#451a03"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="55"
+                y1="175"
+                x2="59"
+                y2="175"
+                stroke="#451a03"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="81"
+                y1="175"
+                x2="85"
+                y2="175"
+                stroke="#451a03"
+                strokeWidth="1.5"
+              />
               {isPlaying ? (
                 <>
-                  <rect x="65" y="170" width="3" height="10" fill="#fbbf24"/>
-                  <rect x="72" y="170" width="3" height="10" fill="#fbbf24"/>
+                  <rect x="65" y="170" width="3" height="10" fill="#fbbf24" />
+                  <rect x="72" y="170" width="3" height="10" fill="#fbbf24" />
                 </>
               ) : (
-                <path d="M 66 170 L 66 180 L 75 175 Z" fill="#fbbf24"/>
+                <path d="M 66 170 L 66 180 L 75 175 Z" fill="#fbbf24" />
               )}
             </g>
 
-            {/* Skip knob */}
-            <g onClick={(e) => { e.stopPropagation(); onSkip(); }} className="cursor-pointer control-knob" style={{ pointerEvents: 'auto' }}>
-              <circle cx="160" cy="175" r="15" fill="#92400e" stroke="#451a03" strokeWidth="2"/>
-              <circle cx="160" cy="175" r="11" fill="url(#woodGrain)" stroke="#451a03" strokeWidth="1"/>
-              {/* Skip icon */}
-              <path d="M 155 170 L 155 180 L 163 175 Z" fill="#fbbf24"/>
-              <rect x="163" y="170" width="2" height="10" fill="#fbbf24"/>
+            <g
+              onClick={(e) => {
+                e.stopPropagation();
+                onSkip();
+              }}
+              className="cursor-pointer control-knob"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <circle
+                cx="160"
+                cy="175"
+                r="15"
+                fill="#92400e"
+                stroke="#451a03"
+                strokeWidth="2"
+              />
+              <circle
+                cx="160"
+                cy="175"
+                r="11"
+                fill="url(#woodGrain)"
+                stroke="#451a03"
+                strokeWidth="1"
+              />
+              <path d="M 155 170 L 155 180 L 163 175 Z" fill="#fbbf24" />
+              <rect x="163" y="170" width="2" height="10" fill="#fbbf24" />
             </g>
           </>
         )}
 
-        {/* Brand/model label - on radio body */}
-        <text x="115" y="188" fontSize="8" fill="#78350f" textAnchor="middle" fontFamily="serif" fontStyle="italic">
+        <text
+          x="115"
+          y="188"
+          fontSize="8"
+          fill="#78350f"
+          textAnchor="middle"
+          fontFamily="serif"
+          fontStyle="italic"
+        >
           Holiday Radio
         </text>
 
-        {/* Vintage radio feet */}
-        <rect x="35" y="200" width="15" height="8" rx="3" fill="#451a03"/>
-        <rect x="180" y="200" width="15" height="8" rx="3" fill="#451a03"/>
+        <rect x="35" y="200" width="15" height="8" rx="3" fill="#451a03" />
+        <rect x="180" y="200" width="15" height="8" rx="3" fill="#451a03" />
       </svg>
 
-      {/* Animation styles */}
       <style>{`
         @keyframes float-up-1 {
           0% {

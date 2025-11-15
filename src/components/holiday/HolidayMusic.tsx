@@ -6,29 +6,28 @@ interface HolidayMusicProps {
   volume: number;
 }
 
-// All songs in the chunks folder - all have equal chance of playing
 const TRACK_FILES = [
-  "Bobby Helms - Jingle Bell Rock.mp3",
-  "Mariah Carey - All I Want For Christmas Is You.mp3",
-  "Michael Buble - All I Want For Christmas Is You.mp3",
-  "Michael Buble - Ave Maria.mp3",
-  "Michael Buble - Blue Christmas.mp3",
-  "Michael Buble - Christmas (Baby Please Come Home).mp3",
-  "Michael Buble - Cold December Night.mp3",
-  "Michael Buble - Frosty The Snowman.mp3",
-  "Michael Buble - Have Yourself A Merry Little Christmas.mp3",
-  "Michael Buble - Holly Jolly Christmas.mp3",
-  "Michael Buble - Ill Be Home For Christmas.mp3",
-  "Michael Buble - Its Beginning To Look A Lot Like Christmas.mp3",
-  "Michael Buble - Jingle Bells.mp3",
-  "Michael Buble - Mis Deseos Feliz Navidad.mp3",
-  "Michael Buble - Santa Baby.mp3",
-  "Michael Buble - Santa Claus Is Coming To Town.mp3",
-  "Michael Buble - Silent Night.mp3",
-  "Michael Buble - Silver Bells.mp3",
-  "Michael Buble - The Christmas Song.mp3",
-  "Michael Buble - White Christmas.mp3",
-  "Michael Buble - Winter Wonderland.mp3",
+  'Bobby Helms - Jingle Bell Rock.mp3',
+  'Mariah Carey - All I Want For Christmas Is You.mp3',
+  'Michael Buble - All I Want For Christmas Is You.mp3',
+  'Michael Buble - Ave Maria.mp3',
+  'Michael Buble - Blue Christmas.mp3',
+  'Michael Buble - Christmas (Baby Please Come Home).mp3',
+  'Michael Buble - Cold December Night.mp3',
+  'Michael Buble - Frosty The Snowman.mp3',
+  'Michael Buble - Have Yourself A Merry Little Christmas.mp3',
+  'Michael Buble - Holly Jolly Christmas.mp3',
+  'Michael Buble - Ill Be Home For Christmas.mp3',
+  'Michael Buble - Its Beginning To Look A Lot Like Christmas.mp3',
+  'Michael Buble - Jingle Bells.mp3',
+  'Michael Buble - Mis Deseos Feliz Navidad.mp3',
+  'Michael Buble - Santa Baby.mp3',
+  'Michael Buble - Santa Claus Is Coming To Town.mp3',
+  'Michael Buble - Silent Night.mp3',
+  'Michael Buble - Silver Bells.mp3',
+  'Michael Buble - The Christmas Song.mp3',
+  'Michael Buble - White Christmas.mp3',
+  'Michael Buble - Winter Wonderland.mp3',
 ];
 
 const STORAGE_KEY_TRACK = 'holiday-music-track';
@@ -37,7 +36,6 @@ const STORAGE_KEY_PLAYING = 'holiday-music-playing';
 const STORAGE_KEY_TIMESTAMP = 'holiday-music-timestamp';
 const STORAGE_KEY_LAST_UPDATE = 'holiday-music-last-update';
 
-// Generate unique tab ID for this session
 const TAB_ID = `tab-${Date.now()}-${Math.random()}`;
 
 export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
@@ -48,7 +46,6 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
   const [isReady, setIsReady] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  // Initialize audio on mount/enable
   useEffect(() => {
     if (!enabled) {
       if (audioRef.current) {
@@ -60,17 +57,14 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
       return;
     }
 
-    // Only run once when enabled - don't recreate audio element
     if (audioRef.current) return;
 
-    // Claim ownership of playback for this tab
     try {
       localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
-    } catch (e) {
-      // Ignore
+    } catch {
+      // ignore
     }
 
-    // Get starting track from storage or random
     const getStartTrack = () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY_TRACK);
@@ -80,8 +74,8 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
             return track;
           }
         }
-      } catch (e) {
-        // Ignore
+      } catch {
+        // ignore
       }
       return Math.floor(Math.random() * TRACK_FILES.length);
     };
@@ -89,15 +83,15 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
     const startTrack = getStartTrack();
     setCurrentTrack(startTrack);
 
-    // Create audio element
-    const audio = new Audio(`/assets/app/holiday/chunks/${TRACK_FILES[startTrack]}`);
+    const audio = new Audio(
+      `/assets/app/holiday/chunks/${TRACK_FILES[startTrack]}`
+    );
     audio.volume = volume / 100;
     audioRef.current = audio;
 
     const handleCanPlay = () => {
       setIsReady(true);
 
-      // Restore timestamp from storage
       try {
         const storedTimestamp = localStorage.getItem(STORAGE_KEY_TIMESTAMP);
         if (storedTimestamp) {
@@ -106,17 +100,18 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
             audio.currentTime = timestamp;
           }
         }
-      } catch (e) {
-        // Ignore
+      } catch {
+        // ignore
       }
 
-      // Try to autoplay (will be blocked by browser policy until user interaction)
-      audio.play().then(() => {
-        setHasInteracted(true);
-      }).catch(() => {
-        // Browser blocked autoplay, wait for user click
-        console.log('Autoplay blocked - waiting for user interaction');
-      });
+      audio
+        .play()
+        .then(() => {
+          setHasInteracted(true);
+        })
+        .catch(() => {
+          console.log('Autoplay blocked - waiting for user interaction');
+        });
     };
 
     const handlePlay = () => {
@@ -124,8 +119,8 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
       try {
         localStorage.setItem(STORAGE_KEY_PLAYING, 'true');
         localStorage.setItem(STORAGE_KEY_LAST_UPDATE, Date.now().toString());
-      } catch (e) {
-        // Ignore
+      } catch {
+        // ignore
       }
     };
 
@@ -133,53 +128,53 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
       setIsPlaying(false);
       try {
         localStorage.setItem(STORAGE_KEY_PLAYING, 'false');
-        localStorage.setItem(STORAGE_KEY_TIMESTAMP, audio.currentTime.toString());
+        localStorage.setItem(
+          STORAGE_KEY_TIMESTAMP,
+          audio.currentTime.toString()
+        );
         localStorage.setItem(STORAGE_KEY_LAST_UPDATE, Date.now().toString());
-      } catch (e) {
-        // Ignore
+      } catch {
+        // ignore
       }
     };
 
-    // Save timestamp periodically while playing
     const handleTimeUpdate = () => {
       try {
-        localStorage.setItem(STORAGE_KEY_TIMESTAMP, audio.currentTime.toString());
-      } catch (e) {
-        // Ignore
+        localStorage.setItem(
+          STORAGE_KEY_TIMESTAMP,
+          audio.currentTime.toString()
+        );
+      } catch {
+        // ignore
       }
     };
 
     const handleEnded = () => {
-      // Play next track using state updater
-      setCurrentTrack(prev => {
+      setCurrentTrack((prev) => {
         const nextTrack = (prev + 1) % TRACK_FILES.length;
         try {
           localStorage.setItem(STORAGE_KEY_TRACK, nextTrack.toString());
-        } catch (e) {
-          // Ignore
+        } catch {
+          // ignore
         }
         return nextTrack;
       });
     };
 
-    // Listen for other tabs syncing state
     const handleStorageChange = (e: StorageEvent) => {
-      // If another tab claims ownership, pause this one immediately
       if (e.key === STORAGE_KEY_TAB_ID && e.newValue && e.newValue !== TAB_ID) {
         if (audioRef.current && !audioRef.current.paused) {
           audioRef.current.pause();
           setIsPlaying(false);
         }
-        return; // Don't sync anything else if we're not the active tab
+        return;
       }
 
-      // Only sync state if this tab is the active one
       const activeTabId = localStorage.getItem(STORAGE_KEY_TAB_ID);
       if (activeTabId !== TAB_ID) {
-        return; // Not our turn to play
+        return;
       }
 
-      // Sync track changes from other tabs
       if (e.key === STORAGE_KEY_TRACK && e.newValue) {
         const newTrack = parseInt(e.newValue, 10);
         if (!isNaN(newTrack)) {
@@ -207,14 +202,12 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
       setIsPlaying(false);
       setIsReady(false);
     };
-  }, [enabled]); // Removed volume from dependencies - it's handled in separate useEffect
+  }, [enabled]);
 
-  // Update track when currentTrack changes (skip initial mount)
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !enabled) return;
 
-    // Skip on initial mount
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -222,42 +215,38 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
 
     const wasPlaying = isPlaying;
 
-    // Update audio source
     audio.src = `/assets/app/holiday/chunks/${TRACK_FILES[currentTrack]}`;
     audio.load();
 
-    // Reset timestamp for new track
     try {
       localStorage.setItem(STORAGE_KEY_TIMESTAMP, '0');
-    } catch (e) {
-      // Ignore
+    } catch {
+      // ignore
     }
 
-    // Auto-play if was playing before
     if (wasPlaying && hasInteracted) {
       const handleLoadedData = () => {
-        audio.play().catch(e => console.error("Error playing track:", e));
+        audio.play().catch((e) => console.error('Error playing track:', e));
         audio.removeEventListener('loadeddata', handleLoadedData);
       };
       audio.addEventListener('loadeddata', handleLoadedData);
     }
   }, [currentTrack]);
 
-  // Update volume when it changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume / 100;
     }
   }, [volume]);
 
-  // Add click listener to enable autoplay after first interaction
   useEffect(() => {
     if (!hasInteracted && enabled) {
       const handleFirstClick = () => {
         setHasInteracted(true);
-        // Try to play audio after user interaction
         if (audioRef.current && isReady) {
-          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+          audioRef.current
+            .play()
+            .catch((e) => console.error('Error playing audio:', e));
         }
       };
 
@@ -270,44 +259,40 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
     const audio = audioRef.current;
     if (!audio || !isReady) return;
 
-    // Mark as interacted
     if (!hasInteracted) {
       setHasInteracted(true);
     }
 
-    // Claim playback for this tab
     try {
       localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
-    } catch (e) {
-      // Ignore
+    } catch {
+      // ignore
     }
 
     if (isPlaying) {
-      audio.pause(); // This keeps the current time position
+      audio.pause();
     } else {
-      audio.play().catch(e => console.error("Error playing audio:", e));
+      audio.play().catch((e) => console.error('Error playing audio:', e));
     }
   };
 
   const handleSkip = () => {
-    // Mark as interacted
     if (!hasInteracted) {
       setHasInteracted(true);
     }
 
-    // Claim playback for this tab
     try {
       localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
-    } catch (e) {
-      // Ignore
+    } catch {
+      // ignore
     }
 
-    setCurrentTrack(prev => {
+    setCurrentTrack((prev) => {
       const nextTrack = (prev + 1) % TRACK_FILES.length;
       try {
         localStorage.setItem(STORAGE_KEY_TRACK, nextTrack.toString());
-      } catch (e) {
-        // Ignore
+      } catch {
+        // ignore
       }
       return nextTrack;
     });

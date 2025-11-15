@@ -20,7 +20,6 @@ import { steps } from '../components/tutorial/TutorialStepsHome';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import Modal from '../components/common/Modal';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
-import { Asteroids } from 'react-ts-asteroids';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
@@ -58,7 +57,6 @@ export default function Home() {
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
-  const [isGameModalOpen, setIsGameModalOpen] = useState(false);
 
   const statTitles: Record<string, string> = {
     total_sessions_created: 'Sessions Created',
@@ -525,8 +523,7 @@ export default function Home() {
               <img
                 src="/assets/app/team/iceit.webp"
                 alt="iceit"
-                className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600 cursor-pointer hover:border-blue-400 transition-colors"
-                onClick={() => setIsGameModalOpen(true)}
+                className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600"
               />
               <span className="text-white text-lg font-semibold">iceit</span>
               <span className="bg-gradient-to-r from-blue-400 to-cyan-200 bg-clip-text text-transparent text-md font-medium">
@@ -711,22 +708,6 @@ export default function Home() {
       )}
 
       <Footer />
-      {/* Game Modal */}
-      {isGameModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-999999">
-          <div className="bg-black rounded-lg max-w-6xl max-h-6xl w-full h-full m-4 relative border-2 border-blue-600">
-            <button
-              onClick={() => setIsGameModalOpen(false)}
-              className="absolute top-4 right-4 text-white hover:text-blue-400 text-xl font-bold bg-slate-800 bg-opacity-50 rounded-full w-6 h-6 flex items-center justify-center transition-colors z-9999999"
-            >
-              ×
-            </button>
-            <div className="w-full h-full flex items-center justify-center p-4">
-            <Asteroids darkMode={true}/>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
