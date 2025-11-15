@@ -9,10 +9,6 @@ export interface GlobalHolidaySettings {
   updated_by: string;
 }
 
-/**
- * Initialize the global_holiday_settings table if it doesn't exist
- * and insert default settings
- */
 export async function initializeGlobalHolidaySettings(): Promise<void> {
   try {
     // Create table if it doesn't exist
@@ -51,10 +47,6 @@ export async function initializeGlobalHolidaySettings(): Promise<void> {
   }
 }
 
-/**
- * Get current global holiday settings
- * @returns Current global holiday settings
- */
 export async function getGlobalHolidaySettings(): Promise<GlobalHolidaySettings> {
   try {
     const settings = await mainDb
@@ -72,12 +64,6 @@ export async function getGlobalHolidaySettings(): Promise<GlobalHolidaySettings>
   }
 }
 
-/**
- * Update global holiday settings
- * @param enabled Whether holiday effects are enabled globally
- * @param updatedBy User ID making the change
- * @returns Updated settings
- */
 export async function updateGlobalHolidaySettings(
   enabled: boolean,
   updatedBy: string

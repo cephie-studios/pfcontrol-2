@@ -47,7 +47,7 @@ export default function Toast({
 
   return (
     <div
-      className={`fixed top-6 right-6 z-[100000] flex items-center space-x-3 px-4 py-3 rounded-full border-2 ${
+      className={`fixed top-6 right-6 z-[10000] flex items-center space-x-3 px-4 py-3 rounded-full border-2 ${
         styles[type]
       } backdrop-blur-md shadow-2xl ${
         isVisible

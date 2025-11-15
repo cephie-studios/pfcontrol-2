@@ -1,284 +1,312 @@
 import { useEffect, useRef, useState } from 'react';
+import MusicPlayerControl from './MusicPlayerControl';
 
 interface HolidayMusicProps {
   enabled: boolean;
-  volume: number; // 0-100
+  volume: number;
 }
 
-const MUSIC_CHANNEL = 'holiday-music-channel';
+const TRACK_FILES = [
+  'Bobby Helms - Jingle Bell Rock.mp3',
+  'Mariah Carey - All I Want For Christmas Is You.mp3',
+  'Michael Buble - All I Want For Christmas Is You.mp3',
+  'Michael Buble - Ave Maria.mp3',
+  'Michael Buble - Blue Christmas.mp3',
+  'Michael Buble - Christmas (Baby Please Come Home).mp3',
+  'Michael Buble - Cold December Night.mp3',
+  'Michael Buble - Frosty The Snowman.mp3',
+  'Michael Buble - Have Yourself A Merry Little Christmas.mp3',
+  'Michael Buble - Holly Jolly Christmas.mp3',
+  'Michael Buble - Ill Be Home For Christmas.mp3',
+  'Michael Buble - Its Beginning To Look A Lot Like Christmas.mp3',
+  'Michael Buble - Jingle Bells.mp3',
+  'Michael Buble - Mis Deseos Feliz Navidad.mp3',
+  'Michael Buble - Santa Baby.mp3',
+  'Michael Buble - Santa Claus Is Coming To Town.mp3',
+  'Michael Buble - Silent Night.mp3',
+  'Michael Buble - Silver Bells.mp3',
+  'Michael Buble - The Christmas Song.mp3',
+  'Michael Buble - White Christmas.mp3',
+  'Michael Buble - Winter Wonderland.mp3',
+];
+
+const STORAGE_KEY_TRACK = 'holiday-music-track';
+const STORAGE_KEY_TAB_ID = 'holiday-music-tab-id';
+const STORAGE_KEY_PLAYING = 'holiday-music-playing';
+const STORAGE_KEY_TIMESTAMP = 'holiday-music-timestamp';
+const STORAGE_KEY_LAST_UPDATE = 'holiday-music-last-update';
+
 const TAB_ID = `tab-${Date.now()}-${Math.random()}`;
-const HEARTBEAT_INTERVAL = 3000; // Send heartbeat every 3 seconds
-const PLAYBACK_TIMEOUT = 5000; // Consider tab inactive after 5 seconds
-const POSITION_STORAGE_KEY = 'holiday-music-position';
-const POSITION_SYNC_INTERVAL = 500; // Sync position every 500ms
 
 export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const positionSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isActiveTab, setIsActiveTab] = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
+  const isInitialMount = useRef(true);
+  const [currentTrack, setCurrentTrack] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
-  // Initialize audio element
   useEffect(() => {
-    const audio = new Audio('/assets/app/holiday/ChristmasMusic.mp3');
-    audio.loop = true;
-    audio.preload = 'auto'; // HTML5 audio automatically streams/chunks large files
-    audioRef.current = audio;
-
-    // Wait for metadata to load so we can set start position
-    const handleLoadedMetadata = () => {
-      try {
-        // Try to get stored position from localStorage
-        const storedPosition = localStorage.getItem(POSITION_STORAGE_KEY);
-
-        if (storedPosition !== null) {
-          // Resume from stored position
-          const position = parseFloat(storedPosition);
-          if (!isNaN(position) && position >= 0 && position < audio.duration) {
-            audio.currentTime = position;
-          } else {
-            // Invalid stored position, set random start
-            audio.currentTime = Math.random() * audio.duration;
-            localStorage.setItem(POSITION_STORAGE_KEY, audio.currentTime.toString());
-          }
-        } else {
-          // First time - set random start position
-          const randomStart = Math.random() * audio.duration;
-          audio.currentTime = randomStart;
-          localStorage.setItem(POSITION_STORAGE_KEY, randomStart.toString());
-        }
-      } catch (error) {
-        console.warn('localStorage not available, using random start:', error);
-        audio.currentTime = Math.random() * audio.duration;
+    if (!enabled) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-
-      setAudioReady(true);
-    };
-
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.pause();
-      audio.src = '';
-    };
-  }, []);
-
-  // Set up cross-tab coordination using BroadcastChannel
-  useEffect(() => {
-    // Check browser support for BroadcastChannel
-    if (typeof BroadcastChannel === 'undefined') {
-      console.warn('BroadcastChannel not supported, using single-tab fallback');
-      setIsActiveTab(true);
+      setIsPlaying(false);
+      setIsReady(false);
       return;
     }
 
-    const channel = new BroadcastChannel(MUSIC_CHANNEL);
-    channelRef.current = channel;
+    if (audioRef.current) return;
 
-    // Handle messages from other tabs
-    channel.onmessage = (event) => {
-      const { type, tabId, timestamp, position } = event.data;
+    try {
+      localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
+    } catch {
+      // ignore
+    }
 
-      if (type === 'HEARTBEAT' && tabId !== TAB_ID) {
-        // Another tab is playing music
-        const timeSinceHeartbeat = Date.now() - timestamp;
-        if (timeSinceHeartbeat < PLAYBACK_TIMEOUT) {
-          setIsActiveTab(false);
-        }
-      } else if (type === 'CLAIM_PLAYBACK' && tabId !== TAB_ID) {
-        // Another tab is claiming playback
-        setIsActiveTab(false);
-      } else if (type === 'RELEASE_PLAYBACK' && tabId !== TAB_ID) {
-        // Another tab released playback, we might want to claim it
-        // Check if we should become the active tab
-        checkAndClaimPlayback();
-      } else if (type === 'POSITION_UPDATE' && tabId !== TAB_ID && typeof position === 'number') {
-        // Another tab is syncing its position
-        const audio = audioRef.current;
-        if (audio && audioReady) {
-          // Only sync if we're not the active tab and position is significantly different
-          const positionDiff = Math.abs(audio.currentTime - position);
-          if (!isActiveTab && positionDiff > 1) {
-            // More than 1 second difference, sync up
-            audio.currentTime = position;
+    const getStartTrack = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_TRACK);
+        if (stored) {
+          const track = parseInt(stored, 10);
+          if (!isNaN(track) && track >= 0 && track < TRACK_FILES.length) {
+            return track;
           }
         }
+      } catch {
+        // ignore
       }
+      return Math.floor(Math.random() * TRACK_FILES.length);
     };
 
-    // Function to check if we should claim playback
-    const checkAndClaimPlayback = () => {
-      // Try to claim playback after a short delay to avoid race conditions
-      setTimeout(() => {
-        channel.postMessage({
-          type: 'CLAIM_PLAYBACK',
-          tabId: TAB_ID,
-          timestamp: Date.now(),
-        });
-        setIsActiveTab(true);
-      }, Math.random() * 100); // Random delay 0-100ms to prevent simultaneous claims
-    };
+    const startTrack = getStartTrack();
+    setCurrentTrack(startTrack);
 
-    // Initially try to claim playback
-    checkAndClaimPlayback();
+    const audio = new Audio(
+      `/assets/app/holiday/chunks/${TRACK_FILES[startTrack]}`
+    );
+    audio.volume = volume / 100;
+    audioRef.current = audio;
 
-    return () => {
-      // Release playback when tab closes
-      channel.postMessage({
-        type: 'RELEASE_PLAYBACK',
-        tabId: TAB_ID,
-        timestamp: Date.now(),
-      });
-      channel.close();
-    };
-  }, []);
-
-  // Send heartbeat to other tabs when we're the active tab
-  useEffect(() => {
-    if (!isActiveTab || !channelRef.current) return;
-
-    const sendHeartbeat = () => {
-      const audio = audioRef.current;
-      if (audio) {
-        channelRef.current?.postMessage({
-          type: 'HEARTBEAT',
-          tabId: TAB_ID,
-          timestamp: Date.now(),
-          position: audio.currentTime,
-        });
-      }
-    };
-
-    // Send initial heartbeat
-    sendHeartbeat();
-
-    // Set up interval for regular heartbeats
-    heartbeatIntervalRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-
-    return () => {
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-      }
-    };
-  }, [isActiveTab]);
-
-  // Sync position to localStorage and other tabs when active
-  useEffect(() => {
-    if (!isActiveTab || !audioReady) return;
-
-    const syncPosition = () => {
-      const audio = audioRef.current;
-      if (!audio) return;
+    const handleCanPlay = () => {
+      setIsReady(true);
 
       try {
-        // Save to localStorage
-        localStorage.setItem(POSITION_STORAGE_KEY, audio.currentTime.toString());
+        const storedTimestamp = localStorage.getItem(STORAGE_KEY_TIMESTAMP);
+        if (storedTimestamp) {
+          const timestamp = parseFloat(storedTimestamp);
+          if (!isNaN(timestamp) && timestamp > 0) {
+            audio.currentTime = timestamp;
+          }
+        }
+      } catch {
+        // ignore
+      }
 
-        // Broadcast to other tabs
-        channelRef.current?.postMessage({
-          type: 'POSITION_UPDATE',
-          tabId: TAB_ID,
-          timestamp: Date.now(),
-          position: audio.currentTime,
+      audio
+        .play()
+        .then(() => {
+          setHasInteracted(true);
+        })
+        .catch(() => {
+          console.log('Autoplay blocked - waiting for user interaction');
         });
-      } catch (error) {
-        // Ignore localStorage errors
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      try {
+        localStorage.setItem(STORAGE_KEY_PLAYING, 'true');
+        localStorage.setItem(STORAGE_KEY_LAST_UPDATE, Date.now().toString());
+      } catch {
+        // ignore
       }
     };
 
-    // Sync position regularly
-    positionSyncIntervalRef.current = setInterval(syncPosition, POSITION_SYNC_INTERVAL);
+    const handlePause = () => {
+      setIsPlaying(false);
+      try {
+        localStorage.setItem(STORAGE_KEY_PLAYING, 'false');
+        localStorage.setItem(
+          STORAGE_KEY_TIMESTAMP,
+          audio.currentTime.toString()
+        );
+        localStorage.setItem(STORAGE_KEY_LAST_UPDATE, Date.now().toString());
+      } catch {
+        // ignore
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY_TIMESTAMP,
+          audio.currentTime.toString()
+        );
+      } catch {
+        // ignore
+      }
+    };
+
+    const handleEnded = () => {
+      setCurrentTrack((prev) => {
+        const nextTrack = (prev + 1) % TRACK_FILES.length;
+        try {
+          localStorage.setItem(STORAGE_KEY_TRACK, nextTrack.toString());
+        } catch {
+          // ignore
+        }
+        return nextTrack;
+      });
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_TAB_ID && e.newValue && e.newValue !== TAB_ID) {
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+        }
+        return;
+      }
+
+      const activeTabId = localStorage.getItem(STORAGE_KEY_TAB_ID);
+      if (activeTabId !== TAB_ID) {
+        return;
+      }
+
+      if (e.key === STORAGE_KEY_TRACK && e.newValue) {
+        const newTrack = parseInt(e.newValue, 10);
+        if (!isNaN(newTrack)) {
+          setCurrentTrack(newTrack);
+        }
+      }
+    };
+
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      if (positionSyncIntervalRef.current) {
-        clearInterval(positionSyncIntervalRef.current);
-      }
-    };
-  }, [isActiveTab, audioReady]);
-
-  // Control playback based on enabled state and active tab status
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !audioReady) return;
-
-    const shouldPlay = enabled && isActiveTab;
-
-    if (shouldPlay) {
-      audio.play().catch((error) => {
-        console.error('Error playing holiday music:', error);
-        // If autoplay is blocked, we might need user interaction
-        // This is handled by browsers' autoplay policies
-      });
-    } else {
       audio.pause();
-    }
-  }, [enabled, isActiveTab, audioReady]);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+      audioRef.current = null;
+      setIsPlaying(false);
+      setIsReady(false);
+    };
+  }, [enabled]);
 
-  // Update volume
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !enabled) return;
 
-    // Convert 0-100 to 0-1
-    audio.volume = Math.max(0, Math.min(1, volume / 100));
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const wasPlaying = isPlaying;
+
+    audio.src = `/assets/app/holiday/chunks/${TRACK_FILES[currentTrack]}`;
+    audio.load();
+
+    try {
+      localStorage.setItem(STORAGE_KEY_TIMESTAMP, '0');
+    } catch {
+      // ignore
+    }
+
+    if (wasPlaying && hasInteracted) {
+      const handleLoadedData = () => {
+        audio.play().catch((e) => console.error('Error playing track:', e));
+        audio.removeEventListener('loadeddata', handleLoadedData);
+      };
+      audio.addEventListener('loadeddata', handleLoadedData);
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
   }, [volume]);
 
-  // Handle page visibility changes
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      const audio = audioRef.current;
-
-      if (document.hidden && isActiveTab && channelRef.current && audio) {
-        // Tab is hidden, save position and release playback
-        try {
-          localStorage.setItem(POSITION_STORAGE_KEY, audio.currentTime.toString());
-        } catch (error) {
-          // Ignore localStorage errors
+    if (!hasInteracted && enabled) {
+      const handleFirstClick = () => {
+        setHasInteracted(true);
+        if (audioRef.current && isReady) {
+          audioRef.current
+            .play()
+            .catch((e) => console.error('Error playing audio:', e));
         }
+      };
 
-        channelRef.current.postMessage({
-          type: 'RELEASE_PLAYBACK',
-          tabId: TAB_ID,
-          timestamp: Date.now(),
-          position: audio.currentTime,
-        });
-        setIsActiveTab(false);
-      } else if (!document.hidden && enabled && !isActiveTab && audio && audioReady) {
-        // Tab became visible, sync to latest position before claiming
-        try {
-          const storedPosition = localStorage.getItem(POSITION_STORAGE_KEY);
-          if (storedPosition !== null) {
-            const position = parseFloat(storedPosition);
-            if (!isNaN(position) && position >= 0 && position < audio.duration) {
-              audio.currentTime = position;
-            }
-          }
-        } catch (error) {
-          // Ignore localStorage errors
-        }
+      document.addEventListener('click', handleFirstClick, { once: true });
+      return () => document.removeEventListener('click', handleFirstClick);
+    }
+  }, [hasInteracted, enabled, isReady]);
 
-        // Try to claim playback if enabled
-        setTimeout(() => {
-          channelRef.current?.postMessage({
-            type: 'CLAIM_PLAYBACK',
-            tabId: TAB_ID,
-            timestamp: Date.now(),
-          });
-          setIsActiveTab(true);
-        }, Math.random() * 100);
+  const handlePlayPause = () => {
+    const audio = audioRef.current;
+    if (!audio || !isReady) return;
+
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+
+    try {
+      localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
+    } catch {
+      // ignore
+    }
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play().catch((e) => console.error('Error playing audio:', e));
+    }
+  };
+
+  const handleSkip = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+
+    try {
+      localStorage.setItem(STORAGE_KEY_TAB_ID, TAB_ID);
+    } catch {
+      // ignore
+    }
+
+    setCurrentTrack((prev) => {
+      const nextTrack = (prev + 1) % TRACK_FILES.length;
+      try {
+        localStorage.setItem(STORAGE_KEY_TRACK, nextTrack.toString());
+      } catch {
+        // ignore
       }
-    };
+      return nextTrack;
+    });
+  };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+  if (!enabled) return null;
 
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isActiveTab, enabled, audioReady]);
-
-  // This component doesn't render anything visible
-  return null;
+  return (
+    <MusicPlayerControl
+      isPlaying={isPlaying}
+      onPlayPause={handlePlayPause}
+      onSkip={handleSkip}
+      currentTrack={TRACK_FILES[currentTrack]}
+      enabled={isReady}
+    />
+  );
 }

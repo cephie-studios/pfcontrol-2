@@ -13,14 +13,15 @@ This document defines the standardized z-index system for the application to pre
 - **1-9**: Decorative overlays and page-level effects
   - `1`: Holiday effects (snow, animations) - above body background
   - `5`: Slider controls (internal z-index)
-  - `10`: Slider thumbs (internal z-index)
 - **10-99**: Interactive elements within content
+  - `10`: Forms, cards, and content containers (above holiday effects)
+  - `10`: Slider thumbs (internal z-index)
   - `40`: Toolbar positioning helpers
   - `48`: Chart drawer
   - `49`: Chart drawer header
   - `50`: Reserved
 - **100-999**: Floating UI elements
-  - `100`: Toast notifications
+  - `100`: Toast notifications, Music player control
   - `998`: Toolbar dropdowns and tooltips
   - `999`: Reserved
 
@@ -44,6 +45,10 @@ This document defines the standardized z-index system for the application to pre
 - **SnowEffect.tsx**: `z-index: 1` (canvas)
 - **HolidayAnimations.tsx**: `z-index: 1` (snow drift SVG and snowman)
 - **Purpose**: Above body background but behind all interactive UI elements
+
+### Forms & Interactive Content (Content Layer)
+- **Submit.tsx**: `z-10` (form containers, success messages, wind display)
+- **Purpose**: Interactive content that should appear above holiday effects
 
 ### Navigation
 - **Navbar.tsx**: `z-[9999]` (Tailwind class)
@@ -115,7 +120,8 @@ This document defines the standardized z-index system for the application to pre
 [0] Body background (#1a1a1a)
 [0] Page sections with bg-black, bg-zinc-900 (no z-index)
 [1] Holiday effects (snow, snowman, animations)
-[10-99] Interactive content elements
+[10] Forms, cards, and interactive content (above holiday effects)
+[10-99] Other interactive content elements
 [100-999] Tooltips and floating UI
 [1000-9999] Modals, dropdowns, navigation
 [10000+] Sidebars and top-layer modals
@@ -180,5 +186,5 @@ When changing z-index values, test these scenarios:
 
 ---
 
-**Last Updated**: 2025-01-12
+**Last Updated**: 2025-11-14
 **Maintainer**: Development Team

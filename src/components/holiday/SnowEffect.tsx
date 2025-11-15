@@ -21,7 +21,6 @@ export default function SnowEffect() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to window size
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -29,34 +28,30 @@ export default function SnowEffect() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Create snowflakes
     const createSnowflakes = () => {
-      const count = Math.floor((canvas.width * canvas.height) / 10000); // Density based on screen size
+      const count = Math.floor((canvas.width * canvas.height) / 10000);
       snowflakesRef.current = [];
 
       for (let i = 0; i < count; i++) {
         snowflakesRef.current.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          radius: Math.random() * 3 + 1, // 1-4px radius
-          speed: Math.random() * 1 + 0.1, // 0.5-1.5px per frame
-          wind: Math.random() * 0.5 - 0.25, // -0.25 to 0.25 horizontal drift
-          opacity: Math.random() * 0.6 + 0.4, // 0.4-1.0 opacity
+          radius: Math.random() * 3 + 1,
+          speed: Math.random() * 1 + 0.1,
+          wind: Math.random() * 0.5 - 0.25,
+          opacity: Math.random() * 0.6 + 0.4,
         });
       }
     };
     createSnowflakes();
 
-    // Animation loop
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       snowflakesRef.current.forEach((flake) => {
-        // Update position
         flake.y += flake.speed;
         flake.x += flake.wind;
 
-        // Reset snowflake when it goes off screen
         if (flake.y > canvas.height) {
           flake.y = -10;
           flake.x = Math.random() * canvas.width;
@@ -67,7 +62,6 @@ export default function SnowEffect() {
           flake.x = canvas.width;
         }
 
-        // Draw snowflake
         ctx.beginPath();
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${flake.opacity})`;
@@ -79,7 +73,6 @@ export default function SnowEffect() {
 
     animate();
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       if (animationFrameRef.current) {
@@ -89,7 +82,6 @@ export default function SnowEffect() {
   }, []);
 
   return (
-    // Z-Index: 1 - Holiday effects layer, above body background (see Z_INDEX_GUIDE.md)
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"

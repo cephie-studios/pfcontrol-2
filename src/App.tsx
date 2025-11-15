@@ -41,15 +41,29 @@ import {
   fetchActiveUpdateModal,
   type UpdateModal,
 } from './utils/fetch/updateModal';
+import { fetchGlobalHolidayStatus } from './utils/fetch/data';
 
 export default function App() {
-  const { user } = useAuth();
   const { settings } = useSettings();
-  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
+  const { user } = useAuth();
+  const [testerGateEnabled, setTesterGateEnabled] = useState(true);
+  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
-    null
-  );
+  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
+
+  useEffect(() => {
+    const checkGlobalHolidayStatus = async () => {
+      try {
+        const status = await fetchGlobalHolidayStatus();
+        setGlobalHolidayEnabled(status.enabled);
+      } catch (error) {
+        console.error('Error fetching global holiday status:', error);
+        setGlobalHolidayEnabled(true);
+      }
+    };
+
+    checkGlobalHolidayStatus();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -120,8 +134,7 @@ export default function App() {
 
   return (
     <Router>
-      {/* Holiday Theme Effects */}
-      {settings?.holidayTheme.enabled && (
+      {globalHolidayEnabled && settings?.holidayTheme.enabled && (
         <>
           {settings.holidayTheme.snowEffect && <SnowEffect />}
           {settings.holidayTheme.animations && <HolidayAnimations />}
