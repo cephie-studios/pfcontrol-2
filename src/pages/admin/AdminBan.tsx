@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Ban, Users, Globe, X } from 'lucide-react';
+import { Ban, Users, Globe, X, Menu } from 'lucide-react';
 import { banUser, unbanUser, fetchAllBans } from '../../utils/fetch/admin';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -35,6 +35,7 @@ export default function AdminBan() {
   const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [bans, setBans] = useState<BanRecord[]>([]);
   const [bansLoading, setBansLoading] = useState(true);
@@ -121,11 +122,36 @@ export default function AdminBan() {
     <div className="min-h-screen bg-black text-white">
       <Navbar />
       <div className="flex pt-16">
-        <AdminSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        <div className="flex-1 p-8 flex space-x-8">
+        {/* Mobile Overlay */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <AdminSidebar
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </div>
+
+        {/* Mobile Sidebar */}
+        <div
+          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <AdminSidebar
+            collapsed={false}
+            onToggle={() => setMobileSidebarOpen(false)}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0">
           {/* Left: Ban Form */}
           <div className="flex-1">
             <div className="mb-8">
@@ -330,6 +356,14 @@ export default function AdminBan() {
           </div>
         </div>
       </div>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-red-600 hover:bg-red-700 rounded-full shadow-lg transition-colors"
+      >
+        <Menu className="h-6 w-6 text-white" />
+      </button>
+
       {/* Toast Notification */}
       {toast && (
         <Toast

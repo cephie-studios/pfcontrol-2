@@ -41,6 +41,7 @@ export default function Modal({
         : 'text-blue-400';
 
   return (
+    // Z-Index: 50000 (z-50) - Top layer for critical system modals (see Z_INDEX_GUIDE.md)
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
         className={`bg-zinc-900 border-2 ${borderColor} rounded-lg max-w-md w-full p-6 animate-fade-in`}

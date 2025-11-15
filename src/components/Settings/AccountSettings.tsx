@@ -114,7 +114,7 @@ export default function AccountSettings({
   };
 
   return (
-    <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6">
+    <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border-2 border-zinc-800 p-6 z-1">
       <div className="flex items-center mb-6">
         <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
           <Link2 className="h-5 w-5 text-blue-400" />

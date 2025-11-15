@@ -1,6 +1,10 @@
 import { Server as SocketServer } from 'socket.io';
 import { getAllSessions } from '../db/sessions.js';
-import { getFlightsBySessionWithTime, updateFlight } from '../db/flights.js';
+import {
+  getFlightsBySessionWithTime,
+  updateFlight,
+  getFlightById,
+} from '../db/flights.js';
 import { decrypt } from '../utils/encryption.js';
 import { getUserById } from '../db/users.js';
 import { validateFlightId, validateSessionId } from '../utils/validation.js';
@@ -99,8 +103,6 @@ export function setupOverviewWebsocket(
             return;
           }
 
-          socket.emit('flightUpdateAck', { flightId, updates });
-
           if (updates.callsign && typeof updates.callsign === 'string')
             updates.callsign = sanitizeCallsign(updates.callsign);
           if (updates.remark && typeof updates.remark === 'string')
@@ -128,9 +130,13 @@ export function setupOverviewWebsocket(
             }
           }
 
+          const oldFlight = await getFlightById(validSessionId, flightId as string);
+
           const updatedFlight = await updateFlight(validSessionId, flightId as string, updates);
 
           if (updatedFlight) {
+            socket.emit('flightUpdateAck', { flightId, updates });
+
             io.emit('flightUpdated', {
                 sessionId: validSessionId,
                 flight: updatedFlight
@@ -149,6 +155,7 @@ export function setupOverviewWebsocket(
               sessionId: validSessionId,
               action: 'update',
               flightId: flightId as string,
+              oldData: oldFlight,
               newData: updatedFlight,
               ipAddress: socket.handshake.address,
             });
@@ -159,6 +166,16 @@ export function setupOverviewWebsocket(
                 'total_flight_edits',
                 1,
                 'total_edit_actions'
+              );
+            }
+
+            try {
+              const overviewData = await getOverviewData(sessionUsersIO);
+              io.emit('overviewData', overviewData);
+            } catch (error) {
+              console.error(
+                'Error broadcasting overview data after flight update:',
+                error
               );
             }
           } else {
@@ -259,7 +276,7 @@ export function setupOverviewWebsocket(
         console.error('Error broadcasting overview data:', error);
       }
     }
-  }, 10000);
+  }, 5000);
 
   return io;
 }
@@ -308,7 +325,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
         try {
           const flights = await getFlightsBySessionWithTime(
             session.session_id,
-            2
+            1
           );
 
           let atisData = null;

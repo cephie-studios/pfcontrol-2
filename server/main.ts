@@ -21,6 +21,7 @@ import { setupSectorControllerWebsocket } from './websockets/sectorControllerWeb
 import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
+import { initializeGlobalHolidaySettings } from './db/globalHolidaySettings.js';
 
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
@@ -44,6 +45,14 @@ if (missingEnv.length > 0) {
     );
     process.exit(1);
 }
+
+(async () => {
+  try {
+    await initializeGlobalHolidaySettings();
+  } catch (error) {
+    console.error('Failed to initialize global holiday settings:', error);
+  }
+})();
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9901;
 

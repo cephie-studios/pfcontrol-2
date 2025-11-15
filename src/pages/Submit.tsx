@@ -30,6 +30,7 @@ import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
+import CallsignInput from '../components/common/CallsignInput';
 
 interface SessionData {
   sessionId: string;
@@ -219,7 +220,7 @@ export default function Submit() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white relative">
       <Navbar />
       {/* Banner */}
       <div className="relative w-full h-56 md:h-72 overflow-hidden">
@@ -251,13 +252,13 @@ export default function Submit() {
       </div>
 
       <div className="container mx-auto max-w-3xl px-4 pb-8 pt-8">
-        <div className="mb-8">
+        <div className="mb-8 relative z-10">
           <WindDisplay icao={session.airportIcao} />
         </div>
         {/* Success Message */}
         {success && submittedFlight && (
           <>
-            <div className="bg-green-900/30 border border-green-700 rounded-xl mb-8 overflow-hidden">
+            <div className="bg-green-900/30 border border-green-700 rounded-xl mb-8 overflow-hidden relative z-10">
               <div className="bg-green-900/50 p-4 border-b border-green-700 flex items-center">
                 <div className="bg-green-700 rounded-full p-2 mr-3">
                   <Check className="h-6 w-6 text-green-200" />
@@ -370,7 +371,7 @@ export default function Submit() {
 
         {/* Form */}
         {!success && (
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 shadow-xl overflow-hidden">
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 shadow-xl overflow-hidden relative z-10">
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {error && (
                 <div className="p-3 bg-red-900/40 border border-red-700 rounded-md flex items-center text-sm mb-2">
@@ -385,14 +386,11 @@ export default function Submit() {
                       <BadgeCheck className="h-4 w-4 mr-2 text-gray-400" />
                       Callsign <span className="text-red-400 ml-1">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="callsign"
+                    <CallsignInput
                       value={form.callsign}
-                      onChange={(e) => handleChange('callsign')(e.target.value)}
+                      onChange={handleChange('callsign')}
                       required
                       placeholder="e.g. DLH123"
-                      className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                       maxLength={16}
                     />
                   </div>

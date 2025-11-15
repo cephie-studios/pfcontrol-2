@@ -39,9 +39,12 @@ export default function RouteModal({
     (e: MouseEvent) => {
       if (!isDragging) return;
 
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+
       setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
+        x: newX,
+        y: Math.max(70, newY),
       });
     },
     [isDragging, dragOffset]
@@ -53,10 +56,12 @@ export default function RouteModal({
 
   useEffect(() => {
     if (isDragging) {
+      document.body.style.userSelect = 'none';
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
 
       return () => {
+        document.body.style.userSelect = 'auto';
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };

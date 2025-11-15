@@ -247,6 +247,14 @@ export interface FlightLogsResponse {
   };
 }
 
+export interface GlobalHolidaySettings {
+  id: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  updated_by: string;
+}
+
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
         credentials: 'include',
@@ -502,12 +510,13 @@ export async function fetchFlightLogs(
   page: number = 1,
   limit: number = 50,
   filters: {
+    general?: string;
     user?: string;
     action?: string;
     session?: string;
     flightId?: string;
-    dateFrom?: string;
-    dateTo?: string;
+    date?: string;
+    text?: string;
   } = {}
 ): Promise<FlightLogsResponse> {
   const params = new URLSearchParams({
@@ -529,15 +538,53 @@ export async function fetchFlightLogs(
   return response.json();
 }
 
-export async function revealFlightLogIP(logId: number): Promise<{ ip_address: string }> {
+export async function revealFlightLogIP(logId: number): Promise<{ logId: number; ip_address: string }> {
   const response = await fetch(`${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`, {
     method: 'POST',
     credentials: 'include',
   });
 
   if (!response.ok) {
-    throw new Error('Failed to reveal IP address');
+    throw new Error('Failed to reveal flight log IP');
   }
 
   return response.json();
 }
+
+export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySettings> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
+    {
+      credentials: 'include',
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch global holiday settings');
+  }
+
+  return response.json();
+}
+
+export async function updateGlobalHolidaySettings(
+  enabled: boolean
+): Promise<GlobalHolidaySettings> {
+  const response = await fetch(
+    `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ enabled }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to update global holiday settings');
+  }
+
+  return response.json();
+}
+

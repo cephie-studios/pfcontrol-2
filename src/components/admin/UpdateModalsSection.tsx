@@ -255,8 +255,8 @@ export default function UpdateModalsSection() {
           </div>
         </div>
         <Button variant="outline" onClick={() => setShowAddModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Modal
+          <Plus className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:block">Create Modal</span>
         </Button>
       </div>
 

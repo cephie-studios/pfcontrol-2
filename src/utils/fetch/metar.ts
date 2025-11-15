@@ -9,6 +9,7 @@ export async function fetchMetar(icao: string): Promise<MetarData | null> {
         });
 
         if (response.status === 404) {
+            console.warn(`No METAR data available currently for airport: ${icao}. Refresh in a few seconds`);
             return null;
         }
 

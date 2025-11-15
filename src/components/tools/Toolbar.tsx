@@ -617,10 +617,8 @@ export default function Toolbar({
           size="sm"
           onClick={() => {
             const isTutorial = window.location.search.includes('tutorial');
-            window.open(
-              '/settings' + (isTutorial ? '?tutorial=true' : ''),
-              isTutorial ? '_self' : '_blank'
-            );
+            window.location.href =
+              '/settings' + (isTutorial ? '?tutorial=true' : '');
           }}
           id="settings-button"
         >

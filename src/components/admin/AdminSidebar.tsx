@@ -25,13 +25,29 @@ interface AdminSidebarProps {
   onToggle?: () => void;
 }
 
+const SIDEBAR_STORAGE_KEY = 'admin-sidebar-collapsed';
+
 export default function AdminSidebar({
-  collapsed = false,
+  collapsed: initialCollapsed = false,
   onToggle,
 }: AdminSidebarProps) {
   const location = useLocation();
   const { user } = useAuth();
 
+  // Get initial state from localStorage or fallback to prop
+  const getInitialCollapsedState = (): boolean => {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (stored !== null) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.warn('Failed to read sidebar state from localStorage:', error);
+    }
+    return initialCollapsed;
+  };
+
+  const [collapsed, setCollapsed] = useState(getInitialCollapsedState);
   const [generalCollapsed, setGeneralCollapsed] = useState(false);
   const [moderationCollapsed, setModerationCollapsed] = useState(false);
   const [usersCollapsed, setUsersCollapsed] = useState(false);
@@ -45,6 +61,20 @@ export default function AdminSidebar({
       setShowText(false);
     }
   }, [collapsed]);
+
+  const handleToggle = () => {
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+
+    // Persist to localStorage
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(newCollapsed));
+    } catch (error) {
+      console.warn('Failed to save sidebar state to localStorage:', error);
+    }
+
+    onToggle?.();
+  };
 
   const hasPermission = (permission: string) => {
     return (
@@ -175,7 +205,7 @@ export default function AdminSidebar({
             </div>
           )}
           <button
-            onClick={onToggle}
+            onClick={handleToggle}
             className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
           >
             {collapsed ? (
@@ -200,13 +230,13 @@ export default function AdminSidebar({
                   key={item.path}
                   to={item.path}
                   className={`
-                                            flex items-center justify-center px-3 py-3 rounded-xl transition-all duration-200
-                                            ${
-                                              isActive
-                                                ? 'text-blue-400'
-                                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-                                            }
-                                        `}
+                    flex items-center justify-center px-3 py-3 rounded-xl transition-all duration-200
+                    ${
+                      isActive
+                        ? 'text-blue-400'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                    }
+                  `}
                   title={item.label}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -251,16 +281,13 @@ export default function AdminSidebar({
                             key={item.path}
                             to={item.path}
                             className={`
-                                                            flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
-                                                            ${
-                                                              isActive
-                                                                ? `text-${
-                                                                    item.textColor ||
-                                                                    'blue-400'
-                                                                  }`
-                                                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-                                                            }
-                                                        `}
+                              flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
+                              ${
+                                isActive
+                                  ? `text-${item.textColor || 'blue-400'}`
+                                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                              }
+                            `}
                           >
                             <Icon className="w-5 h-5 flex-shrink-0" />
                             <div className="flex-1 min-w-0">

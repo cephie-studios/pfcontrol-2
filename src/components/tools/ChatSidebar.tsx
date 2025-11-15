@@ -577,6 +577,7 @@ export default function ChatSidebar({
   }, [activeTab, open]);
 
   return (
+    // Z-Index: 10000 - Always-on-top sidebars (see Z_INDEX_GUIDE.md)
     <div
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
         open ? 'translate-x-[] shadow-2xl shadow-black/90' : 'translate-x-full'

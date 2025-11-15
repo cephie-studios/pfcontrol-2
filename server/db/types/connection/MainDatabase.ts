@@ -13,6 +13,7 @@ import { DailyStatisticsTable } from "./main/DailyStatisticsTable";
 import { ChatReportsTable } from "./main/ChatReportsTable";
 import { UpdateModalsTable } from "./main/UpdateModalsTable";
 import { FlightLogsTable } from "./main/FlightLogsTable";
+import { GlobalHolidaySettingsTable } from "./main/GlobalHolidaySettingsTable";
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -30,4 +31,5 @@ export interface MainDatabase {
   chat_report: ChatReportsTable;
   update_modals: UpdateModalsTable;
   flight_logs: FlightLogsTable;
+  global_holiday_settings: GlobalHolidaySettingsTable;
 }

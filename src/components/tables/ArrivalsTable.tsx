@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { Flight } from '../../types/flight';
 import type { ArrivalsTableColumnSettings } from '../../types/settings';
+import { useData } from '../../hooks/data/useData';
+import { parseCallsign } from '../../utils/callsignParser';
 import TextInput from '../common/TextInput';
 import StarDropdown from '../dropdowns/StarDropdown';
 import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
@@ -27,7 +29,7 @@ interface ArrivalsTableProps {
     flightId: string | number,
     updates: Partial<Flight>
   ) => void;
-  onFlightDelete?: (flightId: string | number) => void;
+  onFlightDelete: (flightId: string | number) => void;
   backgroundStyle?: React.CSSProperties;
   arrivalsColumns?: ArrivalsTableColumnSettings;
 }
@@ -56,6 +58,7 @@ export default function ArrivalsTable({
     hide: true,
   },
 }: ArrivalsTableProps) {
+  const { airlines, loading: airlinesLoading } = useData();
   const [showHidden, setShowHidden] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -203,11 +206,7 @@ export default function ArrivalsTable({
 
   const handleConfirmDelete = () => {
     if (flightToDelete !== null) {
-      if (onFlightDelete) {
-        onFlightDelete(flightToDelete);
-      } else if (onFlightChange) {
-        onFlightChange(flightToDelete, { deleted: true } as Partial<Flight>);
-      }
+      onFlightDelete(flightToDelete);
       setFlightToDelete(null);
     }
     setDeleteConfirmOpen(false);
@@ -297,6 +296,7 @@ export default function ArrivalsTable({
         <ArrivalsTableMobile
           flights={orderedFlights}
           onFlightChange={onFlightChange}
+          onFlightDelete={onFlightDelete}
           backgroundStyle={backgroundStyle}
           arrivalsColumns={arrivalsColumns}
         />
@@ -339,7 +339,9 @@ export default function ArrivalsTable({
           <table className="min-w-full rounded-lg">
             <thead>
               <tr className="bg-green-950 text-green-200">
-                {/* Time column is always visible */}
+                {/* Drag handle column */}
+                <th className="py-2.5 px-2 text-left w-8"></th>
+                {/* Time column */}
                 <th className="py-2.5 px-4 text-left column-time">TIME</th>
                 {arrivalsColumns.callsign !== false && (
                   <th className="py-2.5 px-4 text-left">CALLSIGN</th>
@@ -407,33 +409,34 @@ export default function ArrivalsTable({
                     }`}
                     style={backgroundStyle}
                   >
+                    {/* Drag handle column */}
+                    <td className="py-2 px-2">
+                      <div
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, flight.id)}
+                        className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    </td>
                     {/* Time column */}
                     <td className="py-2 px-4 column-time">
-                      <div className="flex items-center gap-2">
-                        <div
-                          draggable={true}
-                          onDragStart={(e) => handleDragStart(e, flight.id)}
-                          className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
-                        >
-                          <GripVertical className="w-4 h-4" />
-                        </div>
-                        <span>
-                          {flight.timestamp
-                            ? new Date(flight.timestamp).toLocaleTimeString(
-                                'en-GB',
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  timeZone: 'UTC',
-                                }
-                              )
-                            : '-'}
-                        </span>
-                      </div>
+                      <span>
+                        {flight.timestamp
+                          ? new Date(flight.timestamp).toLocaleTimeString(
+                              'en-GB',
+                              {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                timeZone: 'UTC',
+                              }
+                            )
+                          : '-'}
+                      </span>
                     </td>
                     {arrivalsColumns.callsign !== false && (
                       <td className="py-2 px-4">
-                        <span className="text-white font-mono">
+                        <span className="text-white font-mono" title={!airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ''}>
                           {flight.callsign || '-'}
                         </span>
                       </td>

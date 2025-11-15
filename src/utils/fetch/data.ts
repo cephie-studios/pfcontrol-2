@@ -1,5 +1,6 @@
 import type { Airport, AirportFrequency } from '../../types/airports';
 import type { Aircraft } from '../../types/aircraft';
+import type { Airline } from '../../types/airlines';
 import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 
@@ -30,6 +31,10 @@ export function fetchAirports(): Promise<Airport[]> {
 
 export function fetchAircrafts(): Promise<Aircraft[]> {
     return fetchData<Aircraft>('aircrafts');
+}
+
+export function fetchAirlines(): Promise<Airline[]> {
+    return fetchData<Airline>('airlines');
 }
 
 export function fetchFrequencies(): Promise<AirportFrequency[]> {
@@ -81,6 +86,16 @@ export async function getTesterSettings(): Promise<TesterSettings> {
 export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
     const response = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/data/notifications/active`
+    );
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+}
+
+export async function fetchGlobalHolidayStatus(): Promise<{ enabled: boolean }> {
+    const response = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/api/data/holiday-enabled`
     );
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

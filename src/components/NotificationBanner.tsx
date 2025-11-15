@@ -62,7 +62,7 @@ export default function NotificationBanner() {
 
   return (
     <div
-      className={`border-b px-4 py-2 ${!currentNotification.custom_color ? getLegacyNotificationClass(currentNotification.type) : ''}`}
+      className={`border-b px-4 py-2 relative z-10 ${!currentNotification.custom_color ? getLegacyNotificationClass(currentNotification.type) : ''}`}
       style={currentNotification.custom_color ? getLegacyCustomStyle(currentNotification.custom_color) : {}}
     >
       <div className="container mx-auto max-w-7xl flex justify-between items-center">

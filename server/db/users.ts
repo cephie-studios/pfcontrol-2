@@ -36,16 +36,18 @@ export async function getUserById(userId: string) {
   let cached = null;
   try {
     cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to read cache for user ${userId}:`, error.message);
-    } else {
-      console.warn(`[Redis] Failed to read cache for user ${userId}:`, error);
+      console.warn('[Redis] Failed to read cache for user:', error.message);
     }
   }
   
   if (cached) {
-    return JSON.parse(cached);
+    const user = JSON.parse(cached);
+    return await applyGlobalHolidayOverride(user);
   }
 
   const user = await mainDb
@@ -62,45 +64,71 @@ export async function getUserById(userId: string) {
   const userRoles = await getUserRoles(userId);
   const mergedPermissions: Record<string, boolean> = {};
   for (const role of userRoles) {
-    let perms = role.permissions;
-    if (typeof perms === 'string') {
-      try {
-        perms = JSON.parse(perms);
-      } catch {
-        perms = {};
-      }
-    }
-    if (perms && typeof perms === 'object') {
-      Object.assign(mergedPermissions, perms as Record<string, boolean>);
+    if (role.permissions) {
+      Object.assign(mergedPermissions, role.permissions);
     }
   }
 
   if (Object.keys(mergedPermissions).length === 0 && user.role_permissions) {
-    Object.assign(mergedPermissions, user.role_permissions as Record<string, boolean>);
+    Object.assign(mergedPermissions, user.role_permissions);
   }
+
+  const safeDecrypt = (encryptedData: string | null | undefined, fieldName: string) => {
+    if (!encryptedData) return null;
+    try {
+      return decrypt(JSON.parse(encryptedData));
+    } catch (error) {
+      console.error(`Failed to decrypt ${fieldName} for user ${userId}:`, error);
+      return null;
+    }
+  };
 
   const result = {
     ...user,
-    access_token: user.access_token ? decrypt(JSON.parse(user.access_token)) : null,
-    refresh_token: user.refresh_token ? decrypt(JSON.parse(user.refresh_token)) : null,
-    sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
-    settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
-    ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
+    access_token: safeDecrypt(user.access_token, 'access_token'),
+    refresh_token: safeDecrypt(user.refresh_token, 'refresh_token'),
+    sessions: safeDecrypt(user.sessions, 'sessions') || [],
+    settings: safeDecrypt(user.settings, 'settings'),
+    ip_address: safeDecrypt(user.ip_address, 'ip_address'),
     role_permissions: mergedPermissions,
     statistics: user.statistics || {},
   };
 
   try {
-    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30); // cache for 30 minutes
+    await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 86400);
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to set cache for user ${userId}:`, error.message);
-    } else {
-      console.warn(`[Redis] Failed to set cache for user ${userId}:`, error);
+      console.warn('[Redis] Failed to set cache for user:', error.message);
     }
   }
   
-  return result;
+  return await applyGlobalHolidayOverride(result);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function applyGlobalHolidayOverride(user: any) {
+  try {
+    const { getGlobalHolidaySettings } = await import('./globalHolidaySettings.js');
+    const globalSettings = await getGlobalHolidaySettings();
+    
+    if (!globalSettings.enabled && user.settings?.holidayTheme) {
+      return {
+        ...user,
+        settings: {
+          ...user.settings,
+          holidayTheme: {
+            ...user.settings.holidayTheme,
+            enabled: false
+          }
+        }
+      };
+    }
+    
+    return user;
+  } catch (error) {
+    console.warn('Failed to check global holiday settings, returning user as-is:', error);
+    return user;
+  }
 }
 
 export async function getUserByUsername(username: string) {
@@ -109,6 +137,9 @@ export async function getUserByUsername(username: string) {
   let cached = null;
   try {
     cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
   } catch (error) {
     if (error instanceof Error) {
       console.warn(`[Redis] Failed to read cache for username ${username}:`, error.message);
@@ -118,7 +149,8 @@ export async function getUserByUsername(username: string) {
   }
   
   if (cached) {
-    return JSON.parse(cached);
+    const user = JSON.parse(cached);
+    return await applyGlobalHolidayOverride(user);
   }
 
   const user = await mainDb
@@ -143,7 +175,7 @@ export async function getUserByUsername(username: string) {
   };
 
   try {
-    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30); // cache for 30 minutes
+    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30);
   } catch (error) {
     if (error instanceof Error) {
       console.warn(`[Redis] Failed to set cache for username ${username}:`, error.message);
@@ -152,7 +184,7 @@ export async function getUserByUsername(username: string) {
     }
   }
   
-  return result;
+  return await applyGlobalHolidayOverride(result);
 }
 
 export async function createOrUpdateUser(userData: {
@@ -239,13 +271,21 @@ export async function createOrUpdateUser(userData: {
       terminalWidth: 50,
       notesWidth: 20
     },
-    notificationViewMode: 'legacy' as const,
+    notificationViewMode: 'list' as const,
     tutorialCompleted: false,
     displayStatsOnProfile: true,
     displayLinkedAccountsOnProfile: true,
     hideFromLeaderboard: false,
     displayBackgroundOnProfile: true,
     bio: '',
+    holidayTheme: {
+      enabled: true,
+      snowEffect: true,
+      music: true,
+      musicVolume: 50,
+      animations: true,
+      santa: true,
+    },
   };
 
   const encryptedAccessToken = encrypt(accessToken);

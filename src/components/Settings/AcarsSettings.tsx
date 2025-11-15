@@ -227,7 +227,7 @@ export default function AcarsSettings({
   if (!settings) return null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
+    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden z-1">
       {/* Header */}
       <div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
         <div className="flex items-center justify-between gap-3">

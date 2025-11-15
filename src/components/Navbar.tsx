@@ -117,6 +117,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
 
   const navTopPosition = hasLegacyBanner && atTop ? 'top-[42px]' : 'top-0';
 
+  // Z-Index: 9999 - Navbar always visible (see Z_INDEX_GUIDE.md)
   const navClass = [
     `fixed ${navTopPosition} w-full z-[9999] transition-all duration-150 ease-in-out`,
     atTop

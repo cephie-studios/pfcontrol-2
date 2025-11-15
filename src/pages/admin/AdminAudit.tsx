@@ -100,6 +100,7 @@ export default function AdminAudit() {
     { value: 'UPDATE_MODAL_CREATED', label: 'Update Modal Created' },
     { value: 'UPDATE_MODAL_DELETED', label: 'Update Modal Deleted' },
     { value: 'UPDATE_MODAL_UPDATED', label: 'Update Modal Updated' },
+    { value: 'FLIGHT_LOG_IP_REVEALED', label: 'Flight Log IP Revealed' },
   ];
 
   useEffect(() => {
@@ -278,6 +279,8 @@ export default function AdminAudit() {
         return 'Update Modal Deleted';
       case 'UPDATE_MODAL_UPDATED':
         return 'Update Modal Updated';
+      case 'FLIGHT_LOG_IP_REVEALED':
+        return 'Flight Log IP Revealed';
       default:
         return actionType;
     }
@@ -348,6 +351,8 @@ export default function AdminAudit() {
         return <Trash2 className="w-4 h-4 text-red-400" />;
       case 'UPDATE_MODAL_UPDATED':
         return <Edit className="w-4 h-4 text-blue-400" />;
+      case 'FLIGHT_LOG_IP_REVEALED':
+        return <Eye className="w-4 h-4 text-orange-400" />;
       default:
         return <ShieldAlert className="w-4 h-4 text-zinc-400" />;
     }
@@ -481,25 +486,25 @@ export default function AdminAudit() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Admin Filter */}
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Filter by admin username..."
                     value={adminFilter}
                     onChange={handleAdminFilterChange}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 {/* Target User Filter */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     placeholder="Filter by target user..."
                     value={targetUserFilter}
                     onChange={handleTargetUserFilterChange}
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
@@ -524,13 +529,13 @@ export default function AdminAudit() {
                     From Date
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
                       type="datetime-local"
                       placeholder="From date..."
                       value={dateFromFilter}
                       onChange={handleDateFromChange}
-                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </div>
@@ -541,13 +546,13 @@ export default function AdminAudit() {
                     To Date
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
                       type="datetime-local"
                       placeholder="To date..."
                       value={dateToFilter}
                       onChange={handleDateToChange}
-                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full pl-10 pr-4 py-2 bg-zinc-900 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </div>
@@ -579,8 +584,8 @@ export default function AdminAudit() {
             />
           ) : (
             <>
-              {/* Audit Logs Table */}
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[1000px]">
                     <thead className="bg-zinc-800">
@@ -697,6 +702,93 @@ export default function AdminAudit() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {paginatedLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        {getActionIcon(log.action_type)}
+                        <div>
+                          <p className="text-white font-medium">
+                            {formatActionType(log.action_type)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-zinc-300">
+                          <strong>Admin:</strong> {log.admin_username}
+                        </p>
+                        <p className="text-zinc-400 text-xs">{log.admin_id}</p>
+                      </div>
+
+                      {log.target_username ? (
+                        <div>
+                          <p className="text-zinc-300">
+                            <strong>Target User:</strong> {log.target_username}
+                          </p>
+                          <p className="text-zinc-400 text-xs">
+                            {log.target_user_id}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-zinc-500">
+                          <strong>Target User:</strong> -
+                        </p>
+                      )}
+
+                      <p className="text-zinc-300">
+                        <strong>Timestamp:</strong> {formatDate(log.timestamp)}
+                      </p>
+
+                      <div className="flex items-center space-x-2">
+                        <p className="text-zinc-300">
+                          <strong>IP:</strong>{' '}
+                          <span
+                            className={`font-mono text-sm ${
+                              revealedIPs.has(log.id) ? '' : 'filter blur-sm'
+                            }`}
+                          >
+                            {formatIPAddress(log.ip_address, log.id)}
+                          </span>
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRevealIP(log.id)}
+                          disabled={revealingIP === log.id}
+                          className="p-1"
+                        >
+                          {revealingIP === log.id ? (
+                            <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                          ) : revealedIPs.has(log.id) ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewDetails(log)}
+                          className="flex items-center space-x-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span className="hidden lg:inline">View</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {filteredLogs.length === 0 && (

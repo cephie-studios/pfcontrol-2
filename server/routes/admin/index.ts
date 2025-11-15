@@ -4,6 +4,10 @@ import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { getDailyStatistics, getTotalStatistics } from '../../db/admin.js';
 import { getAppVersion, updateAppVersion } from '../../db/version.js';
+import {
+  getGlobalHolidaySettings,
+  updateGlobalHolidaySettings,
+} from '../../db/globalHolidaySettings.js';
 import { redisConnection } from '../../db/connection.js';
 
 import usersRouter from './users.js';
@@ -100,5 +104,48 @@ router.put('/version', requirePermission('admin'), createAuditLogger('ADMIN_VERS
         res.status(500).json({ error: 'Failed to update app version' });
     }
 });
+
+// GET /api/admin/holiday-settings
+// Get global holiday settings
+router.get('/holiday-settings', requirePermission('admin'), async (req, res) => {
+  try {
+    const settings = await getGlobalHolidaySettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching global holiday settings:', error);
+    res.status(500).json({
+      error: 'Failed to fetch global holiday settings',
+    });
+  }
+});
+
+// PUT /api/admin/holiday-settings
+// Update global holiday settings
+router.put(
+  '/holiday-settings',
+  requirePermission('admin'),
+  createAuditLogger('ADMIN_HOLIDAY_SETTINGS_UPDATED'),
+  async (req, res) => {
+    try {
+      const { enabled } = req.body;
+
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({
+          error: 'Invalid request body. Expected { enabled: boolean }',
+        });
+      }
+
+      const userId = req.user?.userId || 'unknown';
+      const updated = await updateGlobalHolidaySettings(enabled, userId);
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating global holiday settings:', error);
+      res.status(500).json({
+        error: 'Failed to update global holiday settings',
+      });
+    }
+  }
+);
 
 export default router;

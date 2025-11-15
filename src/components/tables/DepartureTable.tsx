@@ -14,6 +14,8 @@ import {
 import type { Flight } from '../../types/flight';
 import type { DepartureTableColumnSettings } from '../../types/settings';
 import type { FieldEditingState } from '../../sockets/sessionUsersSocket';
+import { useData } from '../../hooks/data/useData';
+import { parseCallsign } from '../../utils/callsignParser';
 import Checkbox from '../common/Checkbox';
 import TextInput from '../common/TextInput';
 import AirportDropdown from '../dropdowns/AirportDropdown';
@@ -83,6 +85,7 @@ export default function DepartureTable({
   setFlashingPDCIds,
   id,
 }: DepartureTableProps) {
+  const { airlines, loading: airlinesLoading } = useData();
   const [showHidden, setShowHidden] = useState(false);
   const [pdcModalOpen, setPdcModalOpen] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
@@ -509,7 +512,9 @@ export default function DepartureTable({
           <table className="min-w-full rounded-lg" id={id}>
             <thead>
               <tr className="bg-blue-950 text-blue-200">
-                {/* Time column is always visible */}
+                {/* Drag handle column */}
+                <th className="py-2.5 px-2 text-left w-8"></th>
+                {/* Time column */}
                 <th className="py-2.5 px-4 text-left column-time">TIME</th>
                 {departureColumns.callsign !== false && (
                   <th className="py-2.5 px-4 text-left w">CALLSIGN</th>
@@ -561,7 +566,7 @@ export default function DepartureTable({
                   <th className="py-2.5 px-4 text-left w-64 column-rmk">RMK</th>
                 )}
                 {departureColumns.pdc !== false && (
-                  <th className="py-2.5 px-2 text-center column-pdc">PDC</th>
+                  <th className="py-2.5 px-2 text-left column-pdc">PDC</th>
                 )}
                 <th className="py-2.5 pr-4 pl-2 text-center column-more">
                   MORE
@@ -606,54 +611,57 @@ export default function DepartureTable({
                     }`}
                     style={backgroundStyle}
                   >
+                    {/* Drag handle column */}
+                    <td className="py-2 px-2">
+                      <div
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, flight.id)}
+                        className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    </td>
                     {/* Time column */}
                     <td className="py-2 px-4 column-time">
-                      <div className="flex items-center gap-2">
-                        <div
-                          draggable={true}
-                          onDragStart={(e) => handleDragStart(e, flight.id)}
-                          className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
-                        >
-                          <GripVertical className="w-4 h-4" />
-                        </div>
-                        <span>
-                          {flight.timestamp
-                            ? new Date(flight.timestamp).toLocaleTimeString(
-                                'en-GB',
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  timeZone: 'UTC',
-                                }
-                              )
-                            : '-'}
-                        </span>
-                      </div>
+                      <span>
+                        {flight.timestamp
+                          ? new Date(flight.timestamp).toLocaleTimeString(
+                              'en-GB',
+                              {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                timeZone: 'UTC',
+                              }
+                            )
+                          : '-'}
+                      </span>
                     </td>
                     {departureColumns.callsign !== false && (
                       <td className="py-2 px-4">
-                        <TextInput
-                          value={
-                            callsignValues[flight.id] ?? (flight.callsign || '')
-                          }
-                          onChange={(value) =>
-                            debouncedHandleCallsignChange(flight.id, value)
-                          }
-                          className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
-                          placeholder="-"
-                          maxLength={16}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
+                        <div title={!airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ''}>
+                          <TextInput
+                            value={
+                              callsignValues[flight.id] ?? (flight.callsign || '')
                             }
-                          }}
-                          editingAvatar={callsignEditingState?.avatar || null}
-                          editingUsername={callsignEditingState?.username}
-                          onFocus={() =>
-                            handleFieldFocus(flight.id, 'callsign')
-                          }
-                          onBlur={() => handleFieldBlur(flight.id, 'callsign')}
-                        />
+                            onChange={(value) =>
+                              debouncedHandleCallsignChange(flight.id, value)
+                            }
+                            className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+                            placeholder="-"
+                            maxLength={16}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            editingAvatar={callsignEditingState?.avatar || null}
+                            editingUsername={callsignEditingState?.username}
+                            onFocus={() =>
+                              handleFieldFocus(flight.id, 'callsign')
+                            }
+                            onBlur={() => handleFieldBlur(flight.id, 'callsign')}
+                          />
+                        </div>
                       </td>
                     )}
                     {departureColumns.stand !== false && (
@@ -871,7 +879,7 @@ export default function DepartureTable({
                     {departureColumns.pdc !== false && (
                       <td className="py-2 px-2 column-pdc">
                         <button
-                          className={`text-gray-400 hover:text-blue-500 px-2 py-1 rounded transition-colors ${
+                          className={`text-gray-400 hover:text-blue-500 px-1 py-2 rounded transition-colors ${
                             isFlashing ? 'animate-pulse' : ''
                           }`}
                           onClick={() => handlePDCOpen(flight)}

@@ -1,5 +1,5 @@
 import { mainDb } from "./connection.js";
-import { encrypt, decrypt } from "../utils/encryption.js"; // Assuming decrypt function exists
+import { encrypt, decrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 
 export interface FlightLogData {
@@ -44,7 +44,6 @@ export async function logFlightAction(logData: FlightLogData) {
       .execute();
   } catch (error) {
     console.error('Error logging flight action:', error);
-    // Non-blocking: don't throw, just log
   }
 }
 
@@ -67,7 +66,6 @@ let cleanupInterval: NodeJS.Timeout | null = null;
 export function startFlightLogsCleanup() {
   const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Daily
 
-  // Initial cleanup after 1 minute
   setTimeout(async () => {
     try {
       await cleanupOldFlightLogs(30);
@@ -76,7 +74,6 @@ export function startFlightLogsCleanup() {
     }
   }, 60 * 1000);
 
-  // Recurring cleanup
   cleanupInterval = setInterval(async () => {
     try {
       await cleanupOldFlightLogs(30);
@@ -94,12 +91,12 @@ export function stopFlightLogsCleanup() {
 }
 
 export interface FlightLogFilters {
+  general?: string;
   user?: string;
   action?: 'add' | 'update' | 'delete';
   session?: string;
   flightId?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  date?: string;
   text?: string;
 }
 
@@ -116,6 +113,20 @@ export async function getFlightLogs(
       .limit(limit)
       .offset((page - 1) * limit);
 
+    if (filters.general) {
+      const searchPattern = `%${filters.general}%`;
+      query = query.where((eb) =>
+        eb.or([
+          eb('username', 'ilike', searchPattern),
+          eb('session_id', 'ilike', searchPattern),
+          eb('flight_id', 'ilike', searchPattern),
+          eb('user_id', 'ilike', searchPattern),
+          eb(sql`old_data::text`, 'ilike', searchPattern),
+          eb(sql`new_data::text`, 'ilike', searchPattern),
+        ])
+      );
+    }
+
     if (filters.user) {
       query = query.where('username', 'ilike', `%${filters.user}%`);
     }
@@ -128,11 +139,14 @@ export async function getFlightLogs(
     if (filters.flightId) {
       query = query.where('flight_id', '=', filters.flightId);
     }
-    if (filters.dateFrom) {
-      query = query.where('timestamp', '>=', new Date(filters.dateFrom));
-    }
-    if (filters.dateTo) {
-      query = query.where('timestamp', '<=', new Date(filters.dateTo));
+    if (filters.date) {
+      const startOfDay = new Date(filters.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filters.date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      query = query.where('timestamp', '>=', startOfDay);
+      query = query.where('timestamp', '<=', endOfDay);
     }
     if (filters.text) {
       const searchPattern = `%${filters.text}%`;
@@ -144,11 +158,56 @@ export async function getFlightLogs(
       );
     }
 
-    const logs = await query.execute();
-    const total = await mainDb
+    let countQuery = mainDb
       .selectFrom('flight_logs')
-      .select((eb) => eb.fn.count('id').as('count'))
-      .executeTakeFirst();
+      .select((eb) => eb.fn.count('id').as('count'));
+
+    if (filters.general) {
+      const searchPattern = `%${filters.general}%`;
+      countQuery = countQuery.where((eb) =>
+        eb.or([
+          eb('username', 'ilike', searchPattern),
+          eb('session_id', 'ilike', searchPattern),
+          eb('flight_id', 'ilike', searchPattern),
+          eb('user_id', 'ilike', searchPattern),
+          eb(sql`old_data::text`, 'ilike', searchPattern),
+          eb(sql`new_data::text`, 'ilike', searchPattern),
+        ])
+      );
+    }
+    if (filters.user) {
+      countQuery = countQuery.where('username', 'ilike', `%${filters.user}%`);
+    }
+    if (filters.action) {
+      countQuery = countQuery.where('action', '=', filters.action);
+    }
+    if (filters.session) {
+      countQuery = countQuery.where('session_id', '=', filters.session);
+    }
+    if (filters.flightId) {
+      countQuery = countQuery.where('flight_id', '=', filters.flightId);
+    }
+    if (filters.date) {
+      const startOfDay = new Date(filters.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filters.date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      countQuery = countQuery.where('timestamp', '>=', startOfDay);
+      countQuery = countQuery.where('timestamp', '<=', endOfDay);
+    }
+    if (filters.text) {
+      const searchPattern = `%${filters.text}%`;
+      countQuery = countQuery.where((eb) =>
+        eb.or([
+          eb(sql`old_data::text`, 'ilike', searchPattern),
+          eb(sql`new_data::text`, 'ilike', searchPattern),
+        ])
+      );
+    }
+
+    const logs = await query.execute();
+    const total = await countQuery.executeTakeFirst();
 
     return {
       logs: logs.map(log => ({

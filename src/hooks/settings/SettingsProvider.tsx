@@ -64,16 +64,26 @@ const defaultSettings: Settings = {
   },
   acars: {
     notesEnabled: true,
-    sidebarWidth: 15,
-    terminalWidth: 70,
-    notesWidth: 15,
-    autoRedirectToAcars: true,
+    sidebarWidth: 30,
+    terminalWidth: 50,
+    notesWidth: 20,
+    autoRedirectToAcars: false,
   },
   notificationViewMode: 'list',
   tutorialCompleted: false,
   displayStatsOnProfile: true,
   displayLinkedAccountsOnProfile: true,
   hideFromLeaderboard: false,
+  displayBackgroundOnProfile: true,
+  bio: '',
+  holidayTheme: {
+    enabled: true,
+    snowEffect: true,
+    music: false,
+    musicVolume: 50,
+    animations: true,
+    santa: true,
+  },
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -114,6 +124,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         acars: {
           ...defaultSettings.acars,
           ...userSettings.acars,
+        },
+        holidayTheme: {
+          ...defaultSettings.holidayTheme,
+          ...userSettings.holidayTheme,
         },
       };
 

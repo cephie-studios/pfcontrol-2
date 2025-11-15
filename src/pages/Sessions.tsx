@@ -143,7 +143,7 @@ export default function Sessions() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
       {/* Header */}
-      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50">
+      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-12 pt-28">
           <div
             className="
@@ -188,7 +188,7 @@ export default function Sessions() {
         </div>
       </div>
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {error ? (
           <div className="bg-red-900/30 border border-red-700 rounded-md p-4 text-center">
             {error}

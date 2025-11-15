@@ -32,7 +32,7 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function Home() {
+export default function Home({ globalHolidayEnabled = false }: { globalHolidayEnabled?: boolean } = {}) {
   const [stats, setStats] = useState({
     sessionsCreated: 0,
     registeredUsers: 0,
@@ -116,6 +116,10 @@ export default function Home() {
   }, []);
 
   const backgroundImage = useMemo(() => {
+    if (globalHolidayEnabled && settings?.holidayTheme?.enabled) {
+      return 'url("/assets/app/backgrounds/HolidayBackground.webp")';
+    }
+
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/images/hero.webp")';
 
@@ -160,6 +164,8 @@ export default function Home() {
     settings?.backgroundImage?.selectedImage,
     settings?.backgroundImage?.favorites,
     availableImages,
+    globalHolidayEnabled,
+    settings?.holidayTheme?.enabled,
   ]);
 
   useEffect(() => {
@@ -232,8 +238,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative bg-black py-36 px-2 sm:px-6">
-        <div className="max-w-5xl mx-auto px-2 sm:px-6">
+      <section className="relative py-36 px-2 sm:px-6 bg-black">
+        <div className="max-w-5xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}
@@ -285,8 +291,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative bg-black py-36 px-2 sm:px-6">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6">
+      <section className="relative py-36 px-2 sm:px-6 bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}
@@ -342,8 +348,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative bg-black py-36 px-2 sm:px-6">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6">
+      <section className="relative py-36 px-2 sm:px-6 bg-black">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 relative z-10">
           <h2 className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center">
             Leaderboard
           </h2>
@@ -422,8 +428,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-black text-white py-20 text-center px-2 sm:px-6">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6">
+      <section className="text-white py-20 text-center px-2 sm:px-6 relative bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}
@@ -490,8 +496,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-black text-white py-24 text-center px-2 sm:px-6">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6">
+      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}
@@ -545,8 +551,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-black text-white py-24 text-center px-2 sm:px-6">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6">
+      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}

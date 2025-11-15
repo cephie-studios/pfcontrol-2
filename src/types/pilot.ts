@@ -25,6 +25,11 @@ export interface PilotProfile {
         role_description: string | null;
         bio: string;
         statistics: Record<string, unknown>;
+        background_image?: {
+            selectedImage?: string;
+            useCustomBackground?: boolean;
+            favorites?: string[];
+        } | null;
     };
     privacySettings: {
         displayControllerStatsOnProfile: boolean;

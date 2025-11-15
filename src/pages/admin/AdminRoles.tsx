@@ -63,17 +63,17 @@ function RoleItem({
       onDragStart={(e) => onDragStart(e, role.id)}
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, role.id)}
-      className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-all cursor-move"
+      className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-all cursor-move lg:cursor-move"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 flex-1">
-          {/* Drag Handle */}
-          <div className="cursor-grab active:cursor-grabbing touch-none">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center space-x-3 flex-1 mb-4 lg:mb-0">
+          {/* Drag Handle - Hidden on mobile */}
+          <div className="hidden lg:block cursor-grab active:cursor-grabbing touch-none">
             <GripVertical className="w-5 h-5 text-zinc-500 hover:text-zinc-300" />
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
+            <div className="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-3 mb-2">
               <div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all"
                 style={{
@@ -89,12 +89,14 @@ function RoleItem({
                   {role.name}
                 </span>
               </div>
-              <span className="px-2 py-1 bg-zinc-600/50 text-zinc-300 text-xs rounded-full">
-                {role.user_count || 0} users
-              </span>
-              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                Priority: {role.priority}
-              </span>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-2 py-1 bg-zinc-600/50 text-zinc-300 text-xs rounded-full">
+                  {role.user_count || 0} users
+                </span>
+                <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                  Priority: {role.priority}
+                </span>
+              </div>
             </div>
             {role.description && (
               <p className="text-zinc-400 text-sm mb-3">{role.description}</p>
@@ -118,7 +120,7 @@ function RoleItem({
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2 ml-4">
+        <div className="flex items-center space-x-2 lg:ml-4">
           <Button
             size="sm"
             variant="outline"
@@ -126,7 +128,7 @@ function RoleItem({
             className="flex items-center space-x-2"
           >
             <Edit className="w-4 h-4" />
-            <span>Edit</span>
+            <span className="hidden lg:inline">Edit</span>
           </Button>
           <Button
             size="sm"
@@ -135,7 +137,7 @@ function RoleItem({
             className="flex items-center space-x-2"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
+            <span className="hidden lg:inline">Delete</span>
           </Button>
         </div>
       </div>
@@ -164,11 +166,15 @@ export default function AdminRoles() {
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [draggedId, setDraggedId] = useState<number | null>(null);
-
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchData();
@@ -422,20 +428,44 @@ export default function AdminRoles() {
     <div className="min-h-screen bg-black text-white">
       <Navbar />
       <div className="flex pt-16">
-        <AdminSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        <div className="flex-1 p-8">
+        {/* Mobile Overlay */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <AdminSidebar
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </div>
+
+        {/* Mobile Sidebar */}
+        <div
+          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <AdminSidebar
+            collapsed={false}
+            onToggle={() => setMobileSidebarOpen(false)}
+          />
+        </div>
+
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
+          <div className="mb-6 lg:mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+              <div className="flex items-center mb-4 lg:mb-0">
                 <div className="p-3 bg-rose-500/20 rounded-xl mr-4">
                   <ShieldUser className="h-8 w-8 text-rose-400" />
                 </div>
                 <h1
-                  className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600 font-extrabold mb-2"
+                  className="text-3xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600 font-extrabold mb-2"
                   style={{ lineHeight: 1.4 }}
                 >
                   Role Management
@@ -444,7 +474,7 @@ export default function AdminRoles() {
               <Button
                 onClick={openCreateModal}
                 variant="outline"
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 w-full lg:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create Role</span>
@@ -492,18 +522,18 @@ export default function AdminRoles() {
                 </h2>
 
                 {/* Search and Filter */}
-                <div className="flex space-x-4 mb-6">
+                <div className="flex flex-col lg:flex-row lg:space-x-4 space-y-4 lg:space-y-0 mb-6">
                   <div className="flex-1 relative group">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-rose-400 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-rose-400 transition-colors" />
                     <input
                       type="text"
                       placeholder="Search by username..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
+                      className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
                     />
                   </div>
-                  <div className="relative w-52">
+                  <div className="relative w-full lg:w-52">
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400 z-10 ml-3 pointer-events-none" />
                     <Dropdown
                       value={roleFilter}
@@ -605,31 +635,20 @@ export default function AdminRoles() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Dropdown
-                            options={[
-                              {
-                                value: '',
-                                label: '+ Add Role',
-                              },
-                              ...roles
-                                .filter(
-                                  (role) =>
-                                    !user.roles?.some((ur) => ur.id === role.id)
-                                )
-                                .map((role) => ({
-                                  value: role.id.toString(),
-                                  label: role.name,
-                                })),
-                            ]}
-                            value=""
-                            onChange={(val) => {
-                              if (val !== '') {
-                                handleAssignRole(user.id, parseInt(val));
-                              }
+                          <Button
+                            onClick={() => {
+                              setSelectedUserForRole(user.id);
+                              setShowAddRoleModal(true);
                             }}
                             size="sm"
-                            className="w-40"
-                          />
+                            variant="outline"
+                            className="flex items-center"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden lg:inline ml-1">
+                              Add Role
+                            </span>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1000,8 +1019,62 @@ export default function AdminRoles() {
               </div>
             </div>
           )}
+
+          {/* Add Role Modal */}
+          {showAddRoleModal && selectedUserForRole && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Add Role</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddRoleModal(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {roles
+                    .filter(
+                      (role) =>
+                        !users
+                          .find((u) => u.id === selectedUserForRole)
+                          ?.roles?.some((ur) => ur.id === role.id)
+                    )
+                    .map((role) => {
+                      const RoleIcon = getIconComponent(role.icon);
+                      return (
+                        <button
+                          key={role.id}
+                          onClick={() => {
+                            handleAssignRole(selectedUserForRole, role.id);
+                            setShowAddRoleModal(false);
+                          }}
+                          className="w-full flex items-center space-x-3 p-3 bg-zinc-800 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
+                        >
+                          <RoleIcon
+                            className="w-5 h-5"
+                            style={{ color: role.color }}
+                          />
+                          <span className="text-white">{role.name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-rose-600 hover:bg-rose-700 rounded-full shadow-lg transition-colors"
+      >
+        <ShieldUser className="h-6 w-6 text-white" />
+      </button>
 
       {/* Toast Notification */}
       {toast && (

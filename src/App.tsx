@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
+import { useSettings } from './hooks/settings/useSettings';
 
 import Home from './pages/Home';
 import Create from './pages/Create';
@@ -20,6 +21,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
 import NotificationBanner from './components/NotificationBanner';
+import SnowEffect from './components/holiday/SnowEffect';
+import HolidayMusic from './components/holiday/HolidayMusic';
+import HolidayAnimations from './components/holiday/HolidayAnimations';
 
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -37,14 +41,29 @@ import {
   fetchActiveUpdateModal,
   type UpdateModal,
 } from './utils/fetch/updateModal';
+import { fetchGlobalHolidayStatus } from './utils/fetch/data';
 
 export default function App() {
+  const { settings } = useSettings();
   const { user } = useAuth();
-  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
+  const [testerGateEnabled, setTesterGateEnabled] = useState(true);
+  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [testerGateEnabled, setTesterGateEnabled] = useState<boolean | null>(
-    null
-  );
+  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
+
+  useEffect(() => {
+    const checkGlobalHolidayStatus = async () => {
+      try {
+        const status = await fetchGlobalHolidayStatus();
+        setGlobalHolidayEnabled(status.enabled);
+      } catch (error) {
+        console.error('Error fetching global holiday status:', error);
+        setGlobalHolidayEnabled(true);
+      }
+    };
+
+    checkGlobalHolidayStatus();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -115,6 +134,16 @@ export default function App() {
 
   return (
     <Router>
+      {globalHolidayEnabled && settings?.holidayTheme.enabled && (
+        <>
+          {settings.holidayTheme.snowEffect && <SnowEffect />}
+          {settings.holidayTheme.animations && <HolidayAnimations />}
+          <HolidayMusic
+            enabled={settings.holidayTheme.music ?? false}
+            volume={settings.holidayTheme.musicVolume ?? 50}
+          />
+        </>
+      )}
       <NotificationBanner />
 
       {activeModal &&
@@ -139,11 +168,11 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Routes>
-                  <Route index element={<Home />} />
+                  <Route index element={<Home globalHolidayEnabled={globalHolidayEnabled} />} />
                   <Route path="pfatc" element={<PFATCFlights />} />
                   <Route path="create" element={<Create />} />
                   <Route path="sessions" element={<Sessions />} />
-                  <Route path="view/:sessionId" element={<Flights />} />
+                  <Route path="view/:sessionId" element={<Flights globalHolidayEnabled={globalHolidayEnabled} />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

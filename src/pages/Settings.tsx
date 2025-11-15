@@ -28,12 +28,14 @@ import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
 import NotificationSettings from '../components/Settings/NotificationSettings';
+import HolidayThemeSettings from '../components/Settings/HolidayThemeSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Modal from '../components/common/Modal';
 import { useAuth } from '../hooks/auth/useAuth';
+import { fetchGlobalHolidayStatus } from '../utils/fetch/data';
 
 function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
   const navigator = useContext(UNSAFE_NavigationContext)?.navigator;
@@ -77,6 +79,8 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
   const navigate = useNavigate();
+  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(true);
+  const [loadingGlobalHoliday, setLoadingGlobalHoliday] = useState(true);
 
   useEffect(() => {
     if (settings) {
@@ -92,6 +96,23 @@ export default function Settings() {
       preventNavigation.current = hasChanges;
     }
   }, [settings, localSettings]);
+
+  useEffect(() => {
+    const loadGlobalHolidayStatus = async () => {
+      try {
+        const status = await fetchGlobalHolidayStatus();
+        setGlobalHolidayEnabled(status.enabled);
+      } catch (error) {
+        console.error('Error fetching global holiday status:', error);
+        // Fail open - show holiday settings if fetch fails
+        setGlobalHolidayEnabled(true);
+      } finally {
+        setLoadingGlobalHoliday(false);
+      }
+    };
+
+    loadGlobalHolidayStatus();
+  }, []);
 
   useCustomBlocker(hasChanges, () => setShowDiscardToast(true));
 
@@ -244,7 +265,7 @@ export default function Settings() {
       <Navbar />
 
       {/* Header */}
-      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50">
+      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 relative z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pt-24 sm:pt-28">
           <div className="flex items-center mb-4">
             <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4">
@@ -263,8 +284,16 @@ export default function Settings() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         <div className="space-y-8">
+          <div id="holiday-theme-settings">
+            <HolidayThemeSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+              globalHolidayEnabled={globalHolidayEnabled && !loadingGlobalHoliday}
+            />
+          </div>
+
           <div id="account-settings">
             <AccountSettings
               settings={localSettings}
