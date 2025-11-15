@@ -2,14 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { mainDb } from '../db/connection.js';
 import { getUserRoles } from '../db/roles.js';
 
-/**
- * Middleware to verify if a user has permission to modify flights in a session.
- *
- * Allows access if ANY of the following are true:
- * 1. User has 'event_controller' role (can edit any PFATC session)
- * 2. User provides valid accessId for the session
- * 3. User is the session owner (created_by)
- */
 export async function requireFlightAccess(req: Request, res: Response, next: NextFunction) {
     try {
         const { sessionId } = req.params;
@@ -34,37 +26,29 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
             });
         }
 
-        // Check 1: Is user an event controller?
         const userRoles = await getUserRoles(userId);
         const hasEventControllerRole = userRoles.some(role =>
             role.name === 'event_controller' || role.name === 'Event Controller'
         );
 
         if (hasEventControllerRole) {
-            // Event controllers can only edit PFATC sessions
             if (!session.is_pfatc) {
                 return res.status(403).json({
                     error: 'Event controllers can only modify PFATC sessions'
                 });
             }
-            // Allow access
             return next();
         }
 
-        // Check 2: Does user have valid accessId?
         const accessId = req.query.accessId || req.body.accessId;
         if (accessId && accessId === session.access_id) {
-            // Allow access
             return next();
         }
 
-        // Check 3: Is user the session owner?
         if (userId === session.created_by) {
-            // Allow access
             return next();
         }
 
-        // No valid authorization found
         return res.status(403).json({
             error: 'Not authorized to modify flights in this session'
         });
@@ -77,9 +61,6 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
     }
 }
 
-/**
- * Helper function to check if a user has event controller role
- */
 export async function isEventController(userId: string): Promise<boolean> {
     try {
         const userRoles = await getUserRoles(userId);
@@ -92,9 +73,6 @@ export async function isEventController(userId: string): Promise<boolean> {
     }
 }
 
-/**
- * Helper function to check if a user can modify a specific session
- */
 export async function canModifySession(
     userId: string,
     sessionId: string,

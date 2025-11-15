@@ -550,9 +550,6 @@ export async function revealFlightLogIP(logId: number): Promise<{ ip_address: st
   return response.json();
 }
 
-/**
- * Fetch global holiday settings (admin only)
- */
 export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySettings> {
   const response = await fetch(
     `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
@@ -568,10 +565,6 @@ export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySetting
   return response.json();
 }
 
-/**
- * Update global holiday settings (admin only)
- * @param enabled Whether to enable holiday effects globally
- */
 export async function updateGlobalHolidaySettings(
   enabled: boolean
 ): Promise<GlobalHolidaySettings> {

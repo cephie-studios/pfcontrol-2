@@ -65,13 +65,13 @@ export interface AcarsSettings {
 }
 
 export interface HolidayThemeSettings {
-    enabled: boolean; // Master toggle for all holiday effects
+    enabled: boolean;
     snowEffect: boolean;
     music: boolean;
     musicVolume: number; // 0 to 100
     animations: boolean;
-    santa: boolean; // Santa decoration toggle
-    customMusicUrl?: string; // Optional custom music file path
+    santa: boolean;
+    customMusicUrl?: string;
 }
 
 export interface Settings {
