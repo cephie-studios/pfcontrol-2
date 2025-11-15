@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useMediaQuery } from 'react-responsive';
 import MusicPlayerControl from './MusicPlayerControl';
 
 interface HolidayMusicProps {
@@ -46,6 +47,7 @@ const STORAGE_KEY_LAST_UPDATE = 'holiday-music-last-update';
 const TAB_ID = `tab-${Date.now()}-${Math.random()}`;
 
 export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isInitialMount = useRef(true);
   const [currentTrack, setCurrentTrack] = useState(0);
@@ -306,6 +308,9 @@ export default function HolidayMusic({ enabled, volume }: HolidayMusicProps) {
   };
 
   if (!enabled) return null;
+
+  // On mobile, keep the audio playing but don't render the control UI
+  if (isMobile) return null;
 
   return (
     <MusicPlayerControl
