@@ -270,7 +270,7 @@ export async function createOrUpdateUser(userData: {
       chartsEnabled: true,
       autoRedirectToAcars: true,
       terminalWidth: 50,
-      notesWidth: 20,
+      notesWidth: 20
     },
     notificationViewMode: 'list' as const,
     tutorialCompleted: false,
