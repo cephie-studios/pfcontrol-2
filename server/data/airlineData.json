@@ -890,5 +890,17 @@
     {
         "icao": "CGN",
         "callsign": "CESSNA"
+    }, 
+    {
+        "icao": "EFW",
+        "callsign": "GRIFFIN"
+    },
+    {
+        "icao": "CFE",
+        "callsign": "FLYER"
+    },
+    {
+        "icao": "SHT",
+        "callsign": "SHUTTLE"
     }
 ]

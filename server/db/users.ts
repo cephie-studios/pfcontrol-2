@@ -268,6 +268,7 @@ export async function createOrUpdateUser(userData: {
     acars: {
       notesEnabled: true,
       chartsEnabled: true,
+      autoRedirectToAcars: true,
       terminalWidth: 50,
       notesWidth: 20
     },

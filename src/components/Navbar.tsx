@@ -63,7 +63,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
     window.addEventListener('scroll', handleScroll);
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  },[]);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -130,12 +130,10 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
 
   const handleCopy = async (text: string) => {
     try {
-      // Try modern clipboard API first
       await navigator.clipboard.writeText(text);
       setCopied(text);
       setTimeout(() => setCopied(null), 2000);
-    } catch (error) {
-      // Fallback to older method
+    } catch {
       try {
         const textArea = document.createElement('textarea');
         textArea.value = text;
@@ -214,7 +212,7 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
 
   return (
     <>
-      {/* Mobile Notification Banner (Bottom - List Mode) */}
+      {/* Mobile Notification Banner */}
       {filteredNotifications.length > 0 &&
         isMobile &&
         notificationMode === 'list' && (
@@ -310,8 +308,8 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
               <a href="/" className="flex items-center space-x-2">
                 <TowerControl className="h-8 w-8 text-blue-400" />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                  PFControl{' '}
-                  <span className="text-red-300 font-medium text-md">Beta</span>
+                  PFControl
+                  {/* <span className="text-red-300 font-medium text-md">Beta</span> */}
                 </span>
               </a>
             </div>

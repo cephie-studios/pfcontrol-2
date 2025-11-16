@@ -32,7 +32,9 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function Home({ globalHolidayEnabled = false }: { globalHolidayEnabled?: boolean } = {}) {
+export default function Home({
+  globalHolidayEnabled = false,
+}: { globalHolidayEnabled?: boolean } = {}) {
   const [stats, setStats] = useState({
     sessionsCreated: 0,
     registeredUsers: 0,
@@ -687,30 +689,32 @@ export default function Home({ globalHolidayEnabled = false }: { globalHolidayEn
       />
 
       {showTutorialPrompt && (
-        <Modal
-          isOpen={showTutorialPrompt}
-          onClose={() => handleTutorialChoice(false)}
-          title="Welcome to PFControl!"
-          variant="primary"
-          footer={
-            <div className="flex justify-start space-x-3">
-              <Button size="sm" onClick={() => handleTutorialChoice(true)}>
-                Yes, start tutorial
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleTutorialChoice(false)}
-              >
-                Skip
-              </Button>
-            </div>
-          }
-        >
-          <p className="text-gray-300">
-            Would you like a quick tutorial to get started?
-          </p>
-        </Modal>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          <Modal
+            isOpen={showTutorialPrompt}
+            onClose={() => handleTutorialChoice(false)}
+            title="Welcome to PFControl!"
+            variant="primary"
+            footer={
+              <div className="flex justify-start space-x-3">
+                <Button size="sm" onClick={() => handleTutorialChoice(true)}>
+                  Yes, start tutorial
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTutorialChoice(false)}
+                >
+                  Skip
+                </Button>
+              </div>
+            }
+          >
+            <p className="text-gray-300">
+              Would you like a quick tutorial to get started?
+            </p>
+          </Modal>
+        </div>
       )}
 
       <Footer />
