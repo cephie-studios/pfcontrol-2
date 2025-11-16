@@ -577,29 +577,31 @@ export default function AdminSessions() {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex bg-zinc-900/50 border-2 border-zinc-700 rounded-full overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`px-4 py-3 flex items-center space-x-2 transition-colors ${
-                      viewMode === 'grid'
-                        ? 'bg-yellow-500 text-white'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Grid3x3 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Grid</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`px-4 py-3 flex items-center space-x-2 transition-colors ${
-                      viewMode === 'list'
-                        ? 'bg-yellow-500 text-white'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                    <span className="hidden sm:inline">List</span>
-                  </button>
+                <div className="w-full flex justify-center">
+                  <div className="w-full flex bg-zinc-900/50 border-2 border-zinc-700 rounded-full overflow-hidden mx-auto">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`w-1/2 px-4 py-3 flex items-center justify-center space-x-2 transition-colors ${
+                        viewMode === 'grid'
+                          ? 'bg-yellow-500 text-white'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Grid3x3 className="w-4 h-4" />
+                      <span className="inline">Grid</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`w-1/2 px-4 py-3 flex items-center justify-center space-x-2 transition-colors ${
+                        viewMode === 'list'
+                          ? 'bg-yellow-500 text-white'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                      <span className="inline">List</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Sort */}
