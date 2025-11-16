@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  pfcontrol:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9902:9902"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.preview
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - pfcontrol-network
+
+networks:
+  pfcontrol-network:
+    driver: bridge
