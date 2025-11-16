@@ -22,12 +22,17 @@ import { linkify } from '../utils/linkify';
 type NavbarProps = {
   sessionId?: string;
   accessId?: string;
+  mobileSidebarOpen?: boolean;
 };
 
 type NotificationType = 'info' | 'warning' | 'success' | 'error';
 type AppNotification = AdminNotification & { custom_icon?: React.ReactNode };
 
-export default function Navbar({ sessionId, accessId }: NavbarProps) {
+export default function Navbar({
+  sessionId,
+  accessId,
+  mobileSidebarOpen,
+}: NavbarProps) {
   const { settings } = useSettings();
   const {
     notifications: filteredNotifications,
@@ -117,12 +122,15 @@ export default function Navbar({ sessionId, accessId }: NavbarProps) {
 
   const navTopPosition = hasLegacyBanner && atTop ? 'top-[42px]' : 'top-0';
 
-  // Z-Index: 9999 - Navbar always visible (see Z_INDEX_GUIDE.md)
+  const shouldShowBackdrop = !atTop || (isMobile && mobileSidebarOpen);
+
+  const navZIndex = mobileSidebarOpen && isMobile ? 'z-30' : 'z-[9999]';
+
   const navClass = [
-    `fixed ${navTopPosition} w-full z-[9999] transition-all duration-150 ease-in-out`,
-    atTop
-      ? 'bg-transparent border-none'
-      : 'bg-black/30 backdrop-blur-md border-white/10',
+    `fixed ${navTopPosition} w-full ${navZIndex} transition-all duration-150 ease-in-out`,
+    shouldShowBackdrop
+      ? 'bg-black/30 backdrop-blur-md border-white/10'
+      : 'bg-transparent border-none',
   ].join(' ');
 
   const submitLink = `${window.location.origin}/submit/${sessionId}`;

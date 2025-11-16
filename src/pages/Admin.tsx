@@ -366,7 +366,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar />
+      <Navbar mobileSidebarOpen={mobileSidebarOpen} />
 
       <div className="flex pt-16">
         {/* Mobile Overlay */}
