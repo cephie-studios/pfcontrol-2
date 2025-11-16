@@ -319,7 +319,7 @@ export default function Navbar({
                   PFControl
                   {/* <span className="text-red-300 font-medium text-md">Beta</span> */}
                   {(window.location.hostname === 'test.pfconnect.online' || window.location.hostname === 'localhost') && (
-                      <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
+                      <span className="text-blue-200 font-medium text-[1.3rem]">
                         {' '}
                         Canary
                       </span>
