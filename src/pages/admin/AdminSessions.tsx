@@ -577,7 +577,7 @@ export default function AdminSessions() {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="w-full flex justify-center">
+                <div className="flex justify-center">
                   <div className="w-full flex bg-zinc-900/50 border-2 border-zinc-700 rounded-full overflow-hidden mx-auto">
                     <button
                       onClick={() => setViewMode('grid')}
