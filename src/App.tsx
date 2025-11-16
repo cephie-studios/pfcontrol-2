@@ -46,8 +46,8 @@ import { fetchGlobalHolidayStatus } from './utils/fetch/data';
 export default function App() {
   const { settings } = useSettings();
   const { user } = useAuth();
-  const [testerGateEnabled, setTesterGateEnabled] = useState(true);
-  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(true);
+  const [testerGateEnabled, setTesterGateEnabled] = useState(false);
+  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
 
@@ -58,7 +58,7 @@ export default function App() {
         setGlobalHolidayEnabled(status.enabled);
       } catch (error) {
         console.error('Error fetching global holiday status:', error);
-        setGlobalHolidayEnabled(true);
+        setGlobalHolidayEnabled(false);
       }
     };
 
@@ -93,6 +93,29 @@ export default function App() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const checkGateStatus = async () => {
+      try {
+        const settings = await getTesterSettings();
+
+        if (settings && typeof settings.tester_gate_enabled === 'boolean') {
+          setTesterGateEnabled(settings.tester_gate_enabled);
+        } else {
+          console.error(
+            'Failed to fetch tester settings or invalid response:',
+            settings
+          );
+          setTesterGateEnabled(true);
+        }
+      } catch (error) {
+        console.error('Error fetching tester settings:', error);
+        setTesterGateEnabled(true);
+      }
+    };
+
+    checkGateStatus();
+  }, []);
+
   const handleCloseModal = () => {
     setShowUpdateModal(false);
 
@@ -111,30 +134,9 @@ export default function App() {
     }
   };
 
-  const checkGateStatus = async () => {
-    try {
-      const settings = await getTesterSettings();
-
-      if (settings && typeof settings.tester_gate_enabled === 'boolean') {
-        setTesterGateEnabled(settings.tester_gate_enabled);
-      } else {
-        console.error(
-          'Failed to fetch tester settings or invalid response:',
-          settings
-        );
-        setTesterGateEnabled(true);
-      }
-    } catch (error) {
-      console.error('Error fetching tester settings:', error);
-      setTesterGateEnabled(true);
-    }
-  };
-
-  checkGateStatus();
-
   return (
     <Router>
-      {globalHolidayEnabled && settings?.holidayTheme.enabled && (
+      {globalHolidayEnabled && settings?.holidayTheme?.enabled && (
         <>
           {settings.holidayTheme.snowEffect && <SnowEffect />}
           {settings.holidayTheme.animations && <HolidayAnimations />}
@@ -164,27 +166,48 @@ export default function App() {
       ) : (
         <Routes>
           <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Routes>
-                  <Route index element={<Home globalHolidayEnabled={globalHolidayEnabled} />} />
-                  <Route path="pfatc" element={<PFATCFlights />} />
-                  <Route path="create" element={<Create />} />
-                  <Route path="sessions" element={<Sessions />} />
-                  <Route path="view/:sessionId" element={<Flights globalHolidayEnabled={globalHolidayEnabled} />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </ProtectedRoute>
-            }
+            path="/"
+            element={<Home globalHolidayEnabled={globalHolidayEnabled} />}
           />
-
+          <Route path="/pfatc" element={<PFATCFlights />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
           <Route path="/submit/:sessionId" element={<Submit />} />
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
           <Route path="/user/:username" element={<PilotProfile />} />
+
+          <Route
+            path="/create"
+            element={
+              <ProtectedRoute>
+                <Create />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sessions"
+            element={
+              <ProtectedRoute>
+                <Sessions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/view/:sessionId"
+            element={
+              <ProtectedRoute>
+                <Flights globalHolidayEnabled={globalHolidayEnabled} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/*"
