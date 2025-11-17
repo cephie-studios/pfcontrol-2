@@ -242,7 +242,8 @@ export function setupOverviewWebsocket(
               ts: new Date().toISOString(),
             });
           }
-        } catch {
+        } catch (error) {
+          console.error('Error sending contact message:', error);
           socket.emit('flightError', {
             action: 'contactMe',
             flightId,
@@ -299,8 +300,8 @@ async function broadcastToArrivalSessions(flight: Flight): Promise<void> {
         arrivalsIO.to(session.session_id).emit('arrivalUpdated', flight);
       }
     }
-  } catch {
-    // Silent
+  } catch (error) {
+    console.error('Error broadcasting to arrival sessions:', error);
   }
 }
 
@@ -488,9 +489,10 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
       sessionId: string;
       departureAirport: string;
     };
-    const arrivalsByAirport: { [key: string]: ArrivalFlight[] } = {};
-    activeSessions.forEach((session) => {
-      session.flights.forEach((flight) => {
+
+    const arrivalsByAirport: Record<string, ArrivalFlight[]> = {};
+    for (const session of activeSessions) {
+      for (const flight of session.flights) {
         if (flight.arrival) {
           const arrivalIcao = flight.arrival.toUpperCase();
           if (!arrivalsByAirport[arrivalIcao]) {
@@ -502,8 +504,8 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
             departureAirport: session.airportIcao,
           });
         }
-      });
-    });
+      }
+    }
 
     return {
       activeSessions,
@@ -530,8 +532,12 @@ export function hasOverviewClients() {
 }
 
 export function broadcastFlightUpdate(sessionId: string, flight: Flight) {
+  if (!io) {
+    console.error('Overview IO not initialized');
+    return;
+  }
   io.emit('flightUpdated', {
     sessionId,
-    flight: flight,
+    flight,
   });
 }

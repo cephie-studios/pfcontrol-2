@@ -56,11 +56,10 @@ export function setupGlobalChatWebsocket(httpServer: Server, sessionUsersWebsock
     // Clean up old messages every 5 minutes
     setInterval(async () => {
         try {
-            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
             await chatsDb
                 .updateTable('global_chat')
-                .set({ deleted_at: sql`NOW()` })
-                .where('sent_at', '<', thirtyMinutesAgo)
+                .set({ deleted_at: sql`(NOW() AT TIME ZONE 'UTC')` })
+                .where((eb) => eb(sql`sent_at`, '<', sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`))
                 .where('deleted_at', 'is', null)
                 .execute();
         } catch (error) {

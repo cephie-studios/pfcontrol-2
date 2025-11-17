@@ -4,6 +4,7 @@ import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 import requireAuth from '../middleware/auth.js';
 import { chatsDb } from '../db/connection.js';
 import { decrypt } from '../utils/encryption.js';
+import { sql } from 'kysely';
 
 const router = express.Router();
 
@@ -35,12 +36,10 @@ router.post('/global/:messageId/report', requireAuth, async (req, res) => {
 // GET: /api/chats/global - Get global chat messages (last 30 minutes)
 router.get('/global/messages', requireAuth, async (req, res) => {
     try {
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-
         const messages = await chatsDb
             .selectFrom('global_chat')
             .selectAll()
-            .where('sent_at', '>=', thirtyMinutesAgo)
+            .where((eb) => eb(sql`sent_at`, '>=', sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`))
             .where('deleted_at', 'is', null)
             .orderBy('sent_at', 'asc')
             .execute();

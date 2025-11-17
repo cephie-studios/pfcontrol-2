@@ -23,7 +23,7 @@ export default function AltitudeDropdown({
 	}, [value]);
 
 	const altitudes: string[] = [];
-	for (let i = 10; i <= 200; i += 5) {
+	for (let i = 10; i <= 500; i += 5) {
 		altitudes.push(i.toString().padStart(3, '0'));
 	}
 
