@@ -234,8 +234,8 @@ export default function AdminFeedback() {
               {/* Stats Cards */}
               {feedbackStats && (
                 <div className="space-y-4 mb-6">
-                  {/* Average and Total */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Star Ratings */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 md:grid-cols-5 gap-4">
                     <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
                       <div className="text-2xl font-bold text-yellow-400">
                         {Number(feedbackStats.average_rating)?.toFixed(1) ||
@@ -249,9 +249,6 @@ export default function AdminFeedback() {
                       </div>
                       <div className="text-xs text-zinc-400">Total</div>
                     </div>
-                  </div>
-                  {/* Star Ratings */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
                       <div className="flex flex-col items-center space-y-1">
                         {renderStars(5)}
@@ -297,9 +294,9 @@ export default function AdminFeedback() {
               )}
 
               {/* Feedback List */}
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredFeedback.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-400">
+                  <div className="col-span-full text-center py-8 text-zinc-400">
                     No feedback found matching your criteria.
                   </div>
                 ) : (
