@@ -86,7 +86,6 @@ export interface Settings {
   departureTableColumns: DepartureTableColumnSettings;
   arrivalsTableColumns: ArrivalsTableColumnSettings;
   acars: AcarsSettings;
-  notificationViewMode: 'legacy' | 'list';
   tutorialCompleted: boolean;
   displayStatsOnProfile: boolean;
   displayLinkedAccountsOnProfile: boolean;

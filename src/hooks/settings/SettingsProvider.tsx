@@ -69,7 +69,6 @@ const defaultSettings: Settings = {
     notesWidth: 20,
     autoRedirectToAcars: true,
   },
-  notificationViewMode: 'list',
   tutorialCompleted: false,
   displayStatsOnProfile: true,
   displayLinkedAccountsOnProfile: true,

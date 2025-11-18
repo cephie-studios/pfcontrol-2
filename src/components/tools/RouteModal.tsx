@@ -18,55 +18,11 @@ export default function RouteModal({
   flight,
   onFlightChange,
 }: RouteModalProps) {
-  const [position, setPosition] = useState({ x: 100, y: 100 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const modalRef = useRef<HTMLDivElement>(null);
   const [editedRoute, setEditedRoute] = useState(flight?.route || '');
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!modalRef.current) return;
-
-    const rect = modalRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-    setIsDragging(true);
-  }, []);
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging) return;
-
-      const newX = e.clientX - dragOffset.x;
-      const newY = e.clientY - dragOffset.y;
-
-      setPosition({
-        x: newX,
-        y: Math.max(70, newY),
-      });
-    },
-    [isDragging, dragOffset]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      return () => {
-        document.body.style.userSelect = 'auto';
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (flight?.route !== undefined) {
@@ -74,7 +30,6 @@ export default function RouteModal({
     }
   }, [flight?.route]);
 
-  // Autosave with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       if (flight && onFlightChange) {
@@ -85,93 +40,127 @@ export default function RouteModal({
     return () => clearTimeout(timer);
   }, [editedRoute, flight, onFlightChange]);
 
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!modalRef.current) return;
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - translate.x,
+        y: e.clientY - translate.y,
+      });
+    },
+    [translate]
+  );
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setTranslate({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
   if (!isOpen || !flight) return null;
 
   return (
-    <>
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        className="fixed z-60 bg-zinc-900 border-2 border-blue-600 rounded-xl min-w-96 w-md"
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          cursor: 'default',
-        }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 py-3 border-b border-zinc-700 bg-zinc-800 rounded-t-lg cursor-pointer"
-          onMouseDown={handleMouseDown}
-        >
-          <div className="flex items-center gap-2">
-            <GripHorizontal className="w-5 h-5 text-zinc-400" />
-            <h2 className="text-lg font-bold text-white">
-              {flight.callsign || 'Unknown'} - {flight.aircraft || 'N/A'}
-            </h2>
+    <div
+      ref={modalRef}
+      className="fixed bg-zinc-900 border-2 border-blue-600 rounded-lg min-w-96 w-md p-6 pb-0 z-60 animate-fade-in"
+      style={{
+        left: 100,
+        top: 100,
+        transform: `translate(${translate.x}px, ${translate.y}px)`,
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center">
+          <div className="p-2 bg-blue-900/30 text-blue-400 rounded-full mr-3">
+            <GripHorizontal className="h-5 w-5" />
           </div>
-          <button
-            onClick={onClose}
-            className="text-zinc-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <h3 className="text-xl font-semibold">
+            {flight.callsign || 'Unknown'} - {flight.aircraft || 'N/A'}
+          </h3>
         </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-full hover:bg-gray-700"
+        >
+          <X className="h-5 w-5 text-gray-400" />
+        </button>
+      </div>
 
-        {/* Content */}
-        <div className="p-5">
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-green-500">
-                  Departure
-                </label>
-                <div className="text-white font-mono text-lg">
-                  {flight.departure || '-'}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-red-500">
-                  Arrival
-                </label>
-                <div className="text-white font-mono text-lg">
-                  {flight.arrival || '-'}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-blue-500">
-                  SID
-                </label>
-                <div className="text-white font-mono text-lg">
-                  {flight.sid || '-'}
-                </div>
-              </div>
-            </div>
-
+      {/* Content */}
+      <div className="mb-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Route
+              <label className="block text-sm font-medium text-green-500">
+                Departure
               </label>
-              <textarea
-                value={editedRoute}
-                onChange={(e) => setEditedRoute(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-4 text-white font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                placeholder="Enter route..."
-                rows={4}
-              />
-            </div>
-
-            {flight.alternate && (
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">
-                  Alternate
-                </label>
-                <div className="text-white font-mono">{flight.alternate}</div>
+              <div className="text-white font-mono text-lg">
+                {flight.departure || '-'}
               </div>
-            )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-red-500">
+                Arrival
+              </label>
+              <div className="text-white font-mono text-lg">
+                {flight.arrival || '-'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-blue-500">
+                SID
+              </label>
+              <div className="text-white font-mono text-lg">
+                {flight.sid || '-'}
+              </div>
+            </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              Route
+            </label>
+            <textarea
+              value={editedRoute}
+              onChange={(e) => setEditedRoute(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-4 text-white font-mono text-sm leading-relaxed overflow-y-auto resize-none focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              placeholder="Enter route..."
+              rows={6}
+            />
+          </div>
+
+          {flight.alternate && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
+                Alternate
+              </label>
+              <div className="text-white font-mono">{flight.alternate}</div>
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -20,7 +20,6 @@ import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
-import NotificationBanner from './components/NotificationBanner';
 import SnowEffect from './components/holiday/SnowEffect';
 import HolidayMusic from './components/holiday/HolidayMusic';
 import HolidayAnimations from './components/holiday/HolidayAnimations';
@@ -158,7 +157,6 @@ export default function App() {
           />
         </>
       )}
-      <NotificationBanner />
 
       {activeModal &&
         (!testerGateEnabled ||
