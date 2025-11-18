@@ -4,9 +4,8 @@ import {
   MessageCircle,
   Trash2,
   Search,
-  Filter,
-  Menu,
   RefreshCw,
+  Menu,
 } from 'lucide-react';
 import { Users } from 'lucide-react';
 import Navbar from '../../components/Navbar';
@@ -15,6 +14,7 @@ import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
 import Toast from '../../components/common/Toast';
 import ErrorScreen from '../../components/common/ErrorScreen';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchFeedback,
   fetchFeedbackStats,
@@ -121,6 +121,25 @@ export default function AdminFeedback() {
     );
   };
 
+  const parseCategoryRatings = (comment: string | null | undefined) => {
+    if (!comment) return null;
+    const categoryRegex = /UI:\s*(\d+)\/5,\s*Performance:\s*(\d+)\/5,\s*Features:\s*(\d+)\/5,\s*Ease of Use:\s*(\d+)\/5,\s*Overall:\s*(\d+)\/5/;
+    const match = comment.match(categoryRegex);
+
+    if (match) {
+      return {
+        ui: parseInt(match[1]),
+        performance: parseInt(match[2]),
+        features: parseInt(match[3]),
+        easeOfUse: parseInt(match[4]),
+        overall: parseInt(match[5]),
+        additionalComment: comment.split('\n\n')[1] || null
+      };
+    }
+
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
@@ -190,20 +209,12 @@ export default function AdminFeedback() {
                   className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 transition-all duration-200 hover:border-zinc-600"
                 />
               </div>
-              <div className="relative w-full sm:w-52">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400 z-10 ml-3 pointer-events-none" />
-                <select
-                  value={filterRating}
-                  onChange={(e) => setFilterRating(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 transition-all duration-200 hover:border-zinc-600 appearance-none"
-                >
-                  {filterOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                options={filterOptions}
+                value={filterRating}
+                onChange={setFilterRating}
+                size="md"
+              />
               <Button
                 onClick={fetchData}
                 variant="outline"
@@ -300,62 +311,108 @@ export default function AdminFeedback() {
                     No feedback found matching your criteria.
                   </div>
                 ) : (
-                  filteredFeedback.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-zinc-900 border-2 border-zinc-700/50 rounded-xl p-3"
-                    >
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {item.avatar ? (
-                              <img
-                                src={`https://cdn.discordapp.com/avatars/${item.user_id}/${item.avatar}.png`}
-                                alt={item.username}
-                                className="w-8 h-8 rounded-full"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-                                <Users className="w-4 h-4 text-zinc-400" />
+                  filteredFeedback.map((item) => {
+                    const categoryData = parseCategoryRatings(item.comment);
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-zinc-900 border-2 border-zinc-700/50 rounded-xl p-3"
+                      >
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {item.avatar ? (
+                                <img
+                                  src={`https://cdn.discordapp.com/avatars/${item.user_id}/${item.avatar}.png`}
+                                  alt={item.username}
+                                  className="w-8 h-8 rounded-full"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
+                                  <Users className="w-4 h-4 text-zinc-400" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-medium text-white">
+                                  {item.username}
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                  {item.user_id}
+                                </div>
                               </div>
-                            )}
-                            <div>
-                              <div className="font-medium text-white">
-                                {item.username}
-                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
                               <div className="text-xs text-zinc-500">
-                                {item.user_id}
+                                {new Date(item.created_at).toLocaleDateString()}
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteFeedback(item.id)}
+                                className="p-1 text-red-400 hover:text-red-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-xs text-zinc-500">
-                              {new Date(item.created_at).toLocaleDateString()}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteFeedback(item.id)}
-                              className="p-1 text-red-400 hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+
+                          {categoryData ? (
+                            <>
+                              {/* Category Ratings */}
+                              <div className="bg-zinc-800/50 rounded-lg p-2 space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-400">UI</span>
+                                  {renderStars(categoryData.ui)}
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-400">Performance</span>
+                                  {renderStars(categoryData.performance)}
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-400">Global Chat and ACARS</span>
+                                  {renderStars(categoryData.features)}
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-400">Ease of Use</span>
+                                  {renderStars(categoryData.easeOfUse)}
+                                </div>
+                                <div className="flex items-center justify-between text-xs border-t border-zinc-700 pt-1 mt-1">
+                                  <span className="text-zinc-300 font-semibold">Overall</span>
+                                  {renderStars(categoryData.overall)}
+                                </div>
+                              </div>
+
+                              {/* Additional Comment */}
+                              {categoryData.additionalComment && (
+                                <div className="flex items-start space-x-2">
+                                  <MessageCircle className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
+                                  <p className="text-sm text-zinc-300 break-words">
+                                    {categoryData.additionalComment}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {/* Legacy single rating */}
+                              <div className="flex justify-left">
+                                {renderStars(item.rating)}
+                              </div>
+                              {item.comment && (
+                                <div className="flex items-start space-x-2">
+                                  <MessageCircle className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
+                                  <p className="text-sm text-zinc-300 break-words">
+                                    {item.comment}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
-                        <div className="flex justify-left">
-                          {renderStars(item.rating)}
-                        </div>
-                        {item.comment && (
-                          <div className="flex items-start space-x-2">
-                            <MessageCircle className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-zinc-300 break-words">
-                              {item.comment}
-                            </p>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </>

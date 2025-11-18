@@ -256,6 +256,53 @@ export interface GlobalHolidaySettings {
   updated_by: string;
 }
 
+export interface ApiLog {
+  id: number;
+  user_id: string | null;
+  username: string | null;
+  method: string;
+  path: string;
+  status_code: number;
+  response_time: number;
+  ip_address: string | null;
+  user_agent: string | null;
+  request_body: string | null;
+  response_body: string | null;
+  error_message: string | null;
+  timestamp: string;
+}
+
+export interface ApiLogsResponse {
+  logs: ApiLog[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface ApiLogStats {
+  totalRequests: number;
+  averageResponseTime: number;
+  errorRate: number;
+  topEndpoints: Array<{
+    path: string;
+    count: number;
+    avgResponseTime: number;
+  }>;
+  statusCodeDistribution: Array<{
+    statusCode: number;
+    count: number;
+  }>;
+  dailyStats: Array<{
+    date: string;
+    requestCount: number;
+    errorCount: number;
+    avgResponseTime: number;
+  }>;
+}
+
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
         credentials: 'include',
@@ -616,5 +663,61 @@ export async function deleteFeedback(id: number): Promise<Feedback> {
     return makeAdminRequest(`/feedback/${id}`, {
         method: 'DELETE'
     });
+}
+
+export async function fetchApiLogs(
+  page: number = 1,
+  limit: number = 50,
+  filters: {
+    userId?: string;
+    method?: string;
+    path?: string;
+    statusCode?: number;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  } = {}
+): Promise<ApiLogsResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...Object.fromEntries(
+      Object.entries(filters).filter(([, value]) => value != null && value !== '')
+    ),
+  });
+
+  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs?${params}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch API logs');
+  }
+
+  return response.json();
+}
+
+export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch API log stats');
+  }
+
+  return response.json();
+}
+
+export async function fetchApiLogById(id: number): Promise<ApiLog> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs/${id}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch API log');
+  }
+
+  return response.json();
 }
 

@@ -22,6 +22,7 @@ import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { initializeGlobalHolidaySettings } from './db/globalHolidaySettings.js';
+import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
 
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
@@ -76,6 +77,8 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
+app.use(apiLogger());
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', environment: process.env.NODE_ENV });
 });
@@ -123,7 +126,10 @@ sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();
-setInterval(updateLeaderboard, 12 * 60 * 60 * 1000); // 12h
+setInterval(updateLeaderboard, 12 * 60 * 60 * 1000);
+setInterval(() => {
+  cleanupOldApiLogs(1);
+}, 60 * 60 * 1000);
 
 server.listen(PORT, () => {
   console.log(chalk.green(`Server running on http://localhost:${PORT}`));

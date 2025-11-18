@@ -101,6 +101,7 @@ export default function AdminAudit() {
     { value: 'UPDATE_MODAL_DELETED', label: 'Update Modal Deleted' },
     { value: 'UPDATE_MODAL_UPDATED', label: 'Update Modal Updated' },
     { value: 'FLIGHT_LOG_IP_REVEALED', label: 'Flight Log IP Revealed' },
+    { value: 'FEEDBACK_DELETED', label: 'Feedback Deleted' },
   ];
 
   useEffect(() => {
@@ -281,6 +282,8 @@ export default function AdminAudit() {
         return 'Update Modal Updated';
       case 'FLIGHT_LOG_IP_REVEALED':
         return 'Flight Log IP Revealed';
+      case 'FEEDBACK_DELETED':
+        return 'Feedback Deleted';
       default:
         return actionType;
     }
@@ -353,6 +356,8 @@ export default function AdminAudit() {
         return <Edit className="w-4 h-4 text-blue-400" />;
       case 'FLIGHT_LOG_IP_REVEALED':
         return <Eye className="w-4 h-4 text-orange-400" />;
+      case 'FEEDBACK_DELETED':
+        return <Trash2 className="w-4 h-4 text-red-400" />;
       default:
         return <ShieldAlert className="w-4 h-4 text-zinc-400" />;
     }

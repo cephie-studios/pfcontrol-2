@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Loader2 } from 'lucide-react';
 import Button from '../common/Button';
 
 interface AtisReminderModalProps {
@@ -28,6 +28,7 @@ export default function AtisReminderModal({
 }: AtisReminderModalProps) {
   const submitLink = `${window.location?.origin}/submit/${sessionId}`;
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   //             NO SWITCHES?
   // ⠀⣞⢽⢪⢣⢣⢣⢫⡺⡵⣝⡮⣗⢷⢽⢽⢽⣮⡷⡽⣜⣜⢮⢺⣜⢷⢽⢝⡽⣝
   // ⠸⡸⠜⠕⠕⠁⢁⢇⢏⢽⢺⣪⡳⡝⣎⣏⢯⢞⡿⣟⣷⣳⢯⡷⣽⢽⢯⣳⣫⠇
@@ -76,6 +77,24 @@ export default function AtisReminderModal({
     }
   };
 
+  const handleCopyAndContinue = async () => {
+    if (isLoading || copied) return;
+
+    try {
+      await navigator.clipboard.writeText(`${airportName}\n\n${formattedAtis}`);
+      setCopied(true);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+
+    setTimeout(() => {
+      setIsLoading(true);
+      setTimeout(() => {
+        onContinue();
+      }, 1000);
+    }, 500);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-2 border-zinc-500/50 rounded-2xl p-8 max-w-2xl w-full">
@@ -107,10 +126,26 @@ export default function AtisReminderModal({
         </div>
 
         <Button
-          onClick={onContinue}
-          className="w-full bg-blue-600 hover:bg-blue-700"
+          onClick={handleCopyAndContinue}
+          disabled={isLoading || copied}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Continue to Session
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading session...</span>
+            </>
+          ) : copied ? (
+            <>
+              <Check className="w-4 h-4" />
+              <span>ATIS Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              <span>Copy and Continue to Session</span>
+            </>
+          )}
         </Button>
       </div>
     </div>

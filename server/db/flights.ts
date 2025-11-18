@@ -251,10 +251,12 @@ export async function getFlightsBySessionWithTime(sessionId: string, hoursBack =
       .where((eb) =>
         eb.or([
           eb('timestamp', '>=', sinceDateISOString),
-          eb('updated_at', '>=', sinceDateUTC),
+          eb('updated_at', '>=', sql<Date>`${sinceDateISOString}`),
+          eb('created_at', '>=', sql<Date>`${sinceDateISOString}`),
         ])
       )
-      .orderBy('timestamp', 'asc')
+      .orderBy(sql`COALESCE(timestamp::timestamp, created_at, updated_at)`, 'desc')
+      .orderBy('callsign', 'asc')
       .execute();
 
     // Enrich flights with user data

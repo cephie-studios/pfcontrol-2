@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   LockKeyhole,
   Star,
+  HeartPulse,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auth/useAuth';
@@ -162,6 +163,13 @@ export default function AdminSidebar({
       collapsed: usersCollapsed,
       setCollapsed: setUsersCollapsed,
       items: [
+        {
+          icon: HeartPulse,
+          label: 'API Logs',
+          path: '/admin/api-logs',
+          textColor: 'blue-400',
+          permission: 'audit',
+        },
         {
           icon: ShieldCheck,
           label: 'Testers',

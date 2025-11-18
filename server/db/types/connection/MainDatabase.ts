@@ -15,6 +15,7 @@ import { UpdateModalsTable } from "./main/UpdateModalsTable";
 import { FlightLogsTable } from "./main/FlightLogsTable";
 import { GlobalHolidaySettingsTable } from "./main/GlobalHolidaySettingsTable";
 import { FeedbackTable } from "./main/FeedbackTable";
+import { ApiLogsTable } from "./main/ApiLogsTable";
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -34,4 +35,5 @@ export interface MainDatabase {
   flight_logs: FlightLogsTable;
   global_holiday_settings: GlobalHolidaySettingsTable;
   feedback: FeedbackTable;
+  api_logs: ApiLogsTable;
 }

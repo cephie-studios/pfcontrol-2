@@ -180,6 +180,59 @@ export async function createMainTables() {
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
+
+  // api_logs
+  await mainDb.schema
+    .createTable('api_logs')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('user_id', 'varchar(255)')
+    .addColumn('username', 'varchar(255)')
+    .addColumn('method', 'varchar(10)', (col) => col.notNull())
+    .addColumn('path', 'text', (col) => col.notNull())
+    .addColumn('status_code', 'integer', (col) => col.notNull())
+    .addColumn('response_time', 'integer', (col) => col.notNull())
+    .addColumn('ip_address', 'text')
+    .addColumn('user_agent', 'text')
+    .addColumn('request_body', 'text')
+    .addColumn('response_body', 'text')
+    .addColumn('error_message', 'text')
+    .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .execute();
+
+  try {
+    await mainDb.schema
+      .createIndex('idx_api_logs_timestamp')
+      .on('api_logs')
+      .column('timestamp')
+      .execute();
+  } catch {
+    // Index might already exist
+  }
+
+  try {
+    await mainDb.schema
+      .createIndex('idx_api_logs_user_id')
+      .on('api_logs')
+      .column('user_id')
+      .execute();
+  } catch {
+    // Index might already exist
+  }
+
+  await mainDb.schema
+    .createIndex('api_logs_path_idx')
+    .ifNotExists()
+    .on('api_logs')
+    .column('path')
+    .execute();
+
+  await mainDb.schema
+    .createIndex('api_logs_status_code_idx')
+    .ifNotExists()
+    .on('api_logs')
+    .column('status_code')
+    .execute();
 }
 
 // Helper to create a dynamic flights table for a session

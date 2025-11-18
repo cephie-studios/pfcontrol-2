@@ -19,6 +19,7 @@ import {
   Loader2,
   MapPinCheck,
   Plane,
+  HelpCircle,
 } from 'lucide-react';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { addFlight } from '../utils/fetch/flights';
@@ -31,6 +32,7 @@ import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
 import CallsignInput from '../components/common/CallsignInput';
+import CallsignHelpModal from '../components/modals/CallsignHelpModal';
 
 interface SessionData {
   sessionId: string;
@@ -70,6 +72,7 @@ export default function Submit() {
     typeof createFlightsSocket
   > | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [showCallsignHelp, setShowCallsignHelp] = useState(false);
 
   useEffect(() => {
     if (
@@ -222,6 +225,10 @@ export default function Submit() {
   return (
     <div className="min-h-screen bg-gray-950 text-white relative">
       <Navbar />
+      <CallsignHelpModal
+        isOpen={showCallsignHelp}
+        onClose={() => setShowCallsignHelp(false)}
+      />
       {/* Banner */}
       <div className="relative w-full h-56 md:h-72 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent">
@@ -385,6 +392,15 @@ export default function Submit() {
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
                       <BadgeCheck className="h-4 w-4 mr-2 text-gray-400" />
                       Callsign <span className="text-red-400 ml-1">*</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCallsignHelp(true)}
+                        className="ml-2 text-blue-400 hover:text-blue-300 transition-colors"
+                        aria-label="Callsign formatting help"
+                        title="Callsign formatting help"
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
                     </label>
                     <CallsignInput
                       value={form.callsign}

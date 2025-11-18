@@ -36,12 +36,13 @@ import AdminRoles from './pages/admin/AdminRoles';
 import AdminChatReports from './pages/admin/AdminChatReports';
 import AdminFlightLogs from './pages/admin/AdminFlightLogs';
 import AdminFeedback from './pages/admin/AdminFeedback';
-import { getTesterSettings } from './utils/fetch/data';
+import AdminApiLogs from './pages/admin/AdminApiLogs';
 
 import {
   fetchActiveUpdateModal,
   type UpdateModal,
 } from './utils/fetch/updateModal';
+import { getTesterSettings } from './utils/fetch/data';
 import { fetchGlobalHolidayStatus } from './utils/fetch/data';
 
 export default function App() {
@@ -311,6 +312,14 @@ export default function App() {
                     element={
                       <ProtectedRoute requirePermission="admin">
                         <AdminFeedback />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="api-logs"
+                    element={
+                      <ProtectedRoute requirePermission="admin">
+                        <AdminApiLogs />
                       </ProtectedRoute>
                     }
                   />
