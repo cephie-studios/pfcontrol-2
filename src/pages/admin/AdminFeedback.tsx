@@ -123,7 +123,8 @@ export default function AdminFeedback() {
 
   const parseCategoryRatings = (comment: string | null | undefined) => {
     if (!comment) return null;
-    const categoryRegex = /UI:\s*(\d+)\/5,\s*Performance:\s*(\d+)\/5,\s*Features:\s*(\d+)\/5,\s*Ease of Use:\s*(\d+)\/5,\s*Overall:\s*(\d+)\/5/;
+    const categoryRegex =
+      /UI:\s*(\d+)\/5,\s*Performance:\s*(\d+)\/5,\s*Features:\s*(\d+)\/5,\s*Ease of Use:\s*(\d+)\/5,\s*Overall:\s*(\d+)\/5/;
     const match = comment.match(categoryRegex);
 
     if (match) {
@@ -133,7 +134,7 @@ export default function AdminFeedback() {
         features: parseInt(match[3]),
         easeOfUse: parseInt(match[4]),
         overall: parseInt(match[5]),
-        additionalComment: comment.split('\n\n')[1] || null
+        additionalComment: comment.split('\n\n')[1] || null,
       };
     }
 
@@ -190,7 +191,7 @@ export default function AdminFeedback() {
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 font-extrabold mb-2"
-                  style={{ lineHeight: 1.2 }}
+                  style={{ lineHeight: 1.4 }}
                 >
                   Feedback Management
                 </h1>
@@ -366,19 +367,27 @@ export default function AdminFeedback() {
                                   {renderStars(categoryData.ui)}
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-zinc-400">Performance</span>
+                                  <span className="text-zinc-400">
+                                    Performance
+                                  </span>
                                   {renderStars(categoryData.performance)}
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-zinc-400">Global Chat and ACARS</span>
+                                  <span className="text-zinc-400">
+                                    Global Chat and ACARS
+                                  </span>
                                   {renderStars(categoryData.features)}
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                  <span className="text-zinc-400">Ease of Use</span>
+                                  <span className="text-zinc-400">
+                                    Ease of Use
+                                  </span>
                                   {renderStars(categoryData.easeOfUse)}
                                 </div>
                                 <div className="flex items-center justify-between text-xs border-t border-zinc-700 pt-1 mt-1">
-                                  <span className="text-zinc-300 font-semibold">Overall</span>
+                                  <span className="text-zinc-300 font-semibold">
+                                    Overall
+                                  </span>
                                   {renderStars(categoryData.overall)}
                                 </div>
                               </div>

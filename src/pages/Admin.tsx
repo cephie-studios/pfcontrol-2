@@ -9,7 +9,6 @@ import {
   Save,
   RefreshCw,
   Menu,
-  X,
   Gift,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -25,14 +24,17 @@ import {
   Tooltip,
   Legend,
   Filler,
+  BarElement,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useAuth } from '../hooks/auth/useAuth';
 import {
   fetchAdminStatistics,
   fetchAppVersion,
   updateAppVersion,
   fetchGlobalHolidaySettings,
   updateGlobalHolidaySettings,
+  fetchApiLogStats24h,
   type AdminStats,
   type DailyStats,
   type AppVersion,
@@ -41,7 +43,6 @@ import {
 import Toast from '../components/common/Toast';
 import Button from '../components/common/Button';
 import ErrorScreen from '../components/common/ErrorScreen';
-import { useAuth } from '../hooks/auth/useAuth';
 
 ChartJS.register(
   CategoryScale,
@@ -51,7 +52,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  BarElement
 );
 
 export default function Admin() {
@@ -73,6 +75,15 @@ export default function Admin() {
     useState<GlobalHolidaySettings | null>(null);
   const [isUpdatingHolidaySettings, setIsUpdatingHolidaySettings] =
     useState(false);
+  const [apiLogStats24h, setApiLogStats24h] = useState<
+    Array<{
+      hour: string;
+      successful: number;
+      clientErrors: number;
+      serverErrors: number;
+      other: number;
+    }>
+  >([]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -149,6 +160,19 @@ export default function Admin() {
     }
   }, [user?.isAdmin]);
 
+  const fetchApiLogStats24hData = useCallback(async () => {
+    try {
+      const data = await fetchApiLogStats24h();
+      setApiLogStats24h(data);
+    } catch (error) {
+      console.error('Error fetching API log stats for last 24 hours:', error);
+      setToast({
+        message: 'Failed to fetch API log stats for last 24 hours',
+        type: 'error',
+      });
+    }
+  }, []);
+
   const handleUpdateVersion = async () => {
     if (!newVersion.trim() || !user?.isAdmin) return;
 
@@ -218,8 +242,14 @@ export default function Admin() {
     if (user?.isAdmin) {
       fetchVersion();
       fetchHolidaySettings();
+      fetchApiLogStats24hData();
     }
-  }, [user?.isAdmin, fetchVersion, fetchHolidaySettings]);
+  }, [
+    user?.isAdmin,
+    fetchVersion,
+    fetchHolidaySettings,
+    fetchApiLogStats24hData,
+  ]);
 
   const formatLoginsData = (daily: DailyStats[]) => {
     const labels = daily.map((item) =>
@@ -301,6 +331,85 @@ export default function Admin() {
           pointBorderColor: '#7C3AED',
           pointHoverBackgroundColor: '#A78BFA',
           pointHoverBorderColor: '#7C3AED',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    };
+  };
+
+  const formatApiLogStats24hData = (
+    stats: Array<{
+      hour: string;
+      successful: number;
+      clientErrors: number;
+      serverErrors: number;
+      other: number;
+    }>
+  ) => {
+    const labels = stats.map((item) =>
+      new Date(item.hour).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Successful (2xx)',
+          data: stats.map((item) => item.successful),
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#10B981',
+          pointBorderColor: '#047857',
+          pointHoverBackgroundColor: '#34D399',
+          pointHoverBorderColor: '#047857',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Client Errors (4xx)',
+          data: stats.map((item) => item.clientErrors),
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#F59E0B',
+          pointBorderColor: '#D97706',
+          pointHoverBackgroundColor: '#FCD34D',
+          pointHoverBorderColor: '#D97706',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Server Errors (5xx)',
+          data: stats.map((item) => item.serverErrors),
+          borderColor: '#EF4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#EF4444',
+          pointBorderColor: '#DC2626',
+          pointHoverBackgroundColor: '#F87171',
+          pointHoverBorderColor: '#DC2626',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Other (1xx/3xx)',
+          data: stats.map((item) => item.other),
+          borderColor: '#6B7280',
+          backgroundColor: 'rgba(107, 114, 128, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#6B7280',
+          pointBorderColor: '#4B5563',
+          pointHoverBackgroundColor: '#9CA3AF',
+          pointHoverBorderColor: '#4B5563',
           pointRadius: 4,
           pointHoverRadius: 6,
         },
@@ -549,7 +658,21 @@ export default function Admin() {
                     </div>
                   </div>
                 </div>
+
+                {/* API Calls Chart */}
+                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
+                    API Calls
+                  </h3>
+                  <div className="h-64 sm:h-80">
+                    <Line
+                      data={formatApiLogStats24hData(apiLogStats24h)}
+                      options={chartOptions}
+                    />
+                  </div>
+                </div>
               </div>
+
               {/* Developer Controls */}
               {user?.isAdmin && (
                 <div className="mt-6 sm:mt-8">

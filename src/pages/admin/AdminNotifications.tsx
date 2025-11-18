@@ -184,7 +184,7 @@ export default function AdminNotifications() {
                   <div className="p-2 sm:p-3 bg-cyan-500/20 rounded-xl mr-3 sm:mr-4 flex-shrink-0">
                     <Bell className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
                   </div>
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-600 font-extrabold truncate">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-600 font-extrabold truncate">
                     Notifications
                   </h1>
                 </div>

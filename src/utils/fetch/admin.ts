@@ -721,3 +721,14 @@ export async function fetchApiLogById(id: number): Promise<ApiLog> {
   return response.json();
 }
 
+export async function fetchApiLogStats24h(): Promise<Array<{ hour: string; successful: number; clientErrors: number; serverErrors: number; other: number }>> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs/stats-24h`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch API log stats for last 24 hours');
+  }
+
+  return response.json();
+}

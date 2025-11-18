@@ -1,5 +1,6 @@
 import { mainDb } from "./connection.js";
 import { decrypt } from "../utils/encryption.js";
+import { redisConnection } from "./connection.js";
 import { sql } from "kysely";
 
 export interface ApiLogFilters {
@@ -278,6 +279,57 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
     };
   } catch (error) {
     console.error('Error fetching API log stats:', error);
+    throw error;
+  }
+}
+
+export async function getApiLogStatsLast24Hours(): Promise<Array<{ hour: string; successful: number; clientErrors: number; serverErrors: number; other: number }>> {
+  const cacheKey = 'api_logs:stats_24h_hourly';
+
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (error) {
+    console.warn('[Redis] Failed to read cache for 24h hourly stats:', (error as Error)?.message);
+  }
+
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setHours(cutoffDate.getHours() - 24);
+
+    const hourlyStats = await mainDb
+      .selectFrom('api_logs')
+      .select([
+        sql<string>`date_trunc('hour', timestamp)`.as('hour'),
+        sql<number>`count(case when status_code >= 200 and status_code < 300 then 1 end)`.as('successful'),
+        sql<number>`count(case when status_code >= 400 and status_code < 500 then 1 end)`.as('clientErrors'),
+        sql<number>`count(case when status_code >= 500 then 1 end)`.as('serverErrors'),
+        sql<number>`count(case when (status_code < 200 or (status_code >= 300 and status_code < 400)) then 1 end)`.as('other')
+      ])
+      .where('timestamp', '>=', cutoffDate)
+      .groupBy(sql`date_trunc('hour', timestamp)`)
+      .orderBy('hour', 'asc')
+      .execute();
+
+    const result = hourlyStats.map(stat => ({
+      hour: stat.hour,
+      successful: Number(stat.successful),
+      clientErrors: Number(stat.clientErrors),
+      serverErrors: Number(stat.serverErrors),
+      other: Number(stat.other)
+    }));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 900);
+    } catch (error) {
+      console.warn('[Redis] Failed to set cache for 24h hourly stats:', (error as Error)?.message);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching API log stats for last 24 hours (hourly):', error);
     throw error;
   }
 }

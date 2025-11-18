@@ -151,7 +151,10 @@ export default function AdminChatReports() {
                   <ShieldAlert className="h-6 w-6 sm:h-8 sm:w-8 text-red-400" />
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 font-extrabold mb-2">
+                  <h1
+                    className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 font-extrabold mb-2"
+                    style={{ lineHeight: 1.2 }}
+                  >
                     Chat Reports
                   </h1>
                 </div>

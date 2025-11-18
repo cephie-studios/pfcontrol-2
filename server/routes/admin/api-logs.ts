@@ -1,7 +1,7 @@
 import express from 'express';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
-import { getApiLogs, getApiLogById, getApiLogStats } from '../../db/apiLogs.js';
+import { getApiLogs, getApiLogById, getApiLogStats, getApiLogStatsLast24Hours } from '../../db/apiLogs.js';
 
 const router = express.Router();
 
@@ -58,6 +58,17 @@ router.get('/stats', createAuditLogger('ADMIN_API_LOGS_STATS_ACCESSED'), async (
     } catch (error) {
         console.error('Error fetching API logs stats:', error);
         res.status(500).json({ error: 'Failed to fetch API logs statistics' });
+    }
+});
+
+// GET: /api/admin/api-logs/stats-24h - Get API logs statistics for the last 24 hours
+router.get('/stats-24h', createAuditLogger('ADMIN_API_LOGS_STATS_24H_ACCESSED'), async (req, res) => {
+    try {
+        const stats = await getApiLogStatsLast24Hours();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching API logs stats for last 24 hours:', error);
+        res.status(500).json({ error: 'Failed to fetch API logs statistics for last 24 hours' });
     }
 });
 

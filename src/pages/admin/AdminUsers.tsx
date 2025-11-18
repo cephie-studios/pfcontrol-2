@@ -575,7 +575,7 @@ export default function AdminUsers() {
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"
-                  style={{ lineHeight: 1.2 }}
+                  style={{ lineHeight: 1.4 }}
                 >
                   User Management
                 </h1>
