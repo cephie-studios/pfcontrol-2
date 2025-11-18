@@ -360,7 +360,6 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         };
       });
 
-      // Add cache status
       const usersWithCacheStatus = await Promise.all(
         usersWithAdminStatus.map(async (user) => {
           const isCached = await redisConnection.exists(`user:${user.id}`);
@@ -368,7 +367,6 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         })
       );
 
-      // Apply cached filter if needed
       filteredUsers = usersWithCacheStatus;
       if (filterAdmin === 'cached') {
         filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
@@ -376,7 +374,6 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         filteredUsers = filteredUsers.slice(0, limit);
       }
 
-      // Cache the result
       await redisConnection.set(cacheKey, JSON.stringify({ users: filteredUsers, total: totalUsers }), 'EX', 300);
     }
 
