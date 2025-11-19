@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -41,6 +41,7 @@ export default function Dropdown({
   id,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMeasured, setIsMeasured] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -58,43 +59,112 @@ export default function Dropdown({
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
+    setIsMeasured(false);
   };
 
-  const updatePosition = () => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
+  const updatePositionFromButton = () => {
+    const btn = buttonRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      setDropdownPosition((prev) => ({
+        ...prev,
         left: rect.left,
         width: rect.width,
-      });
+      }));
     }
   };
-  useEffect(() => {
-    if (isOpen) {
-      updatePosition();
+
+  const toggleOpen = () => {
+    if (disabled) return;
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next) {
+      setIsMeasured(false);
+      updatePositionFromButton();
+    } else {
+      setIsMeasured(false);
     }
-  }, [isOpen]);
+  };
+
+  useLayoutEffect(() => {
+    if (!isOpen || isMeasured) return;
+    const btn = buttonRef.current;
+    const dd = dropdownRef.current;
+
+    if (!btn || !dd) {
+      requestAnimationFrame(() => {
+        const btn2 = buttonRef.current;
+        const dd2 = dropdownRef.current;
+        if (!btn2 || !dd2) return;
+        const btnRect = btn2.getBoundingClientRect();
+        const ddRect = dd2.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - btnRect.bottom;
+        const spaceAbove = btnRect.top;
+
+        const top =
+          ddRect.height > spaceBelow && spaceAbove > spaceBelow
+            ? btnRect.top - ddRect.height - 4
+            : btnRect.bottom + 4;
+
+        setDropdownPosition({
+          top,
+          left: btnRect.left,
+          width: btnRect.width,
+        });
+        setIsMeasured(true);
+      });
+      return;
+    }
+
+    const btnRect = btn.getBoundingClientRect();
+    const ddRect = dd.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - btnRect.bottom;
+    const spaceAbove = btnRect.top;
+
+    const top =
+      ddRect.height > spaceBelow && spaceAbove > spaceBelow
+        ? btnRect.top - ddRect.height - 4
+        : btnRect.bottom + 4;
+
+    setDropdownPosition({
+      top,
+      left: btnRect.left,
+      width: btnRect.width,
+    });
+
+    setIsMeasured(true);
+  }, [isOpen, isMeasured, options.length, maxHeight]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     let lastScrollTop = window.scrollY;
     let lastScrollLeft = window.scrollX;
+    let lastBtnRect: DOMRect | null = null;
+    let rafId = 0;
 
-    let rafId: number;
     const handlePositionUpdate = () => {
       const currentScrollTop = window.scrollY;
       const currentScrollLeft = window.scrollX;
+      const btnRect = buttonRef.current?.getBoundingClientRect() ?? null;
+
+      const btnChanged =
+        !lastBtnRect ||
+        (btnRect &&
+          (btnRect.top !== lastBtnRect.top ||
+            btnRect.left !== lastBtnRect.left ||
+            btnRect.width !== lastBtnRect.width ||
+            btnRect.height !== lastBtnRect.height));
 
       if (
         currentScrollTop !== lastScrollTop ||
         currentScrollLeft !== lastScrollLeft ||
-        buttonRef.current
+        btnChanged
       ) {
-        updatePosition();
+        updatePositionFromButton();
         lastScrollTop = currentScrollTop;
         lastScrollLeft = currentScrollLeft;
+        lastBtnRect = btnRect;
       }
 
       rafId = requestAnimationFrame(handlePositionUpdate);
@@ -102,13 +172,44 @@ export default function Dropdown({
 
     rafId = requestAnimationFrame(handlePositionUpdate);
 
-    window.addEventListener('resize', updatePosition);
+    window.addEventListener('resize', updatePositionFromButton);
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('resize', updatePositionFromButton);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isMeasured) return;
+
+    const adjustPosition = () => {
+      const btn = buttonRef.current;
+      const dd = dropdownRef.current;
+      if (!btn || !dd) return;
+
+      const btnRect = btn.getBoundingClientRect();
+      const ddRect = dd.getBoundingClientRect();
+
+      const spaceBelow = window.innerHeight - btnRect.bottom;
+      const spaceAbove = btnRect.top;
+
+      if (ddRect.height > spaceBelow && spaceAbove > spaceBelow) {
+        setDropdownPosition((prev) => ({
+          ...prev,
+          top: btnRect.top - ddRect.height - 4,
+        }));
+      } else {
+        setDropdownPosition((prev) => ({
+          ...prev,
+          top: btnRect.bottom + 4,
+        }));
+      }
+    };
+
+    const raf = requestAnimationFrame(adjustPosition);
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen, isMeasured, options.length, maxHeight]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -119,6 +220,7 @@ export default function Dropdown({
         !buttonRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        setIsMeasured(false);
       }
     };
 
@@ -134,7 +236,7 @@ export default function Dropdown({
   const dropdownContent = isOpen && (
     <div
       ref={dropdownRef}
-      className={`fixed bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-scroll`}
+      className={`fixed bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-auto`}
       style={{
         top: `${dropdownPosition.top}px`,
         left: `${dropdownPosition.left}px`,
@@ -142,6 +244,7 @@ export default function Dropdown({
         zIndex: 10000,
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
+        visibility: isMeasured ? 'visible' : 'hidden',
       }}
     >
       <style>{`
@@ -183,7 +286,7 @@ export default function Dropdown({
           ref={buttonRef}
           id={id}
           type="button"
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={toggleOpen}
           disabled={disabled}
           className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
             ${
