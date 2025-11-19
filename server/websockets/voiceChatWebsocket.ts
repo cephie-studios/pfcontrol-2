@@ -144,8 +144,6 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
 
                     socket.emit('voice-connected');
                     broadcastVoiceUsers(sessionId);
-
-                    console.log(`[Voice Chat] User ${username} joined voice session ${sessionId}`);
                 } catch (error) {
                     console.error('[Voice Chat] Error joining voice session:', error);
                     socket.emit('voice-error', { message: 'Failed to join voice session' });
