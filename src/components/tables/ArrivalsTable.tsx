@@ -75,6 +75,12 @@ export default function ArrivalsTable({
   const [squawkValues, setSquawkValues] = useState<
     Record<string | number, string>
   >({});
+  const [remarkValues, setRemarkValues] = useState<
+    Record<string | number, string>
+  >({});
+  const [gateValues, setGateValues] = useState<Record<string | number, string>>(
+    {}
+  );
   const debounceTimeouts = useRef<Record<string | number, NodeJS.Timeout>>({});
   const isMobile = useMediaQuery({ maxWidth: 1000 });
 
@@ -217,12 +223,6 @@ export default function ArrivalsTable({
     setDeleteConfirmOpen(false);
   };
 
-  const handleRemarkChange = (flightId: string | number, remark: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { remark });
-    }
-  };
-
   const debouncedHandleSquawkChange = useCallback(
     (flightId: string | number, squawk: string) => {
       setSquawkValues((prev) => ({ ...prev, [flightId]: squawk }));
@@ -278,11 +278,41 @@ export default function ArrivalsTable({
     }
   };
 
-  const handleGateChange = (flightId: string | number, gate: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { gate });
-    }
-  };
+  const debouncedHandleRemarkChange = useCallback(
+    (flightId: string | number, remark: string) => {
+      setRemarkValues((prev) => ({ ...prev, [flightId]: remark }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { remark });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
+  const debouncedHandleGateChange = useCallback(
+    (flightId: string | number, gate: string) => {
+      setGateValues((prev) => ({ ...prev, [flightId]: gate }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { gate });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
 
   const visibleFlights = showHidden
     ? orderedFlights
@@ -451,9 +481,9 @@ export default function ArrivalsTable({
                     {arrivalsColumns.gate !== false && (
                       <td className="py-2 px-2 column-gate">
                         <TextInput
-                          value={flight.gate || ''}
+                          value={gateValues[flight.id] ?? (flight.gate || '')}
                           onChange={(value) =>
-                            handleGateChange(flight.id, value)
+                            debouncedHandleGateChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
@@ -591,9 +621,11 @@ export default function ArrivalsTable({
                     {arrivalsColumns.remark !== false && (
                       <td className="py-2 px-4 column-rmk">
                         <TextInput
-                          value={flight.remark || ''}
+                          value={
+                            remarkValues[flight.id] ?? (flight.remark || '')
+                          }
                           onChange={(value) =>
-                            handleRemarkChange(flight.id, value)
+                            debouncedHandleRemarkChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
