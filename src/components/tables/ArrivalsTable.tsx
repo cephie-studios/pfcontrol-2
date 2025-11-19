@@ -436,7 +436,14 @@ export default function ArrivalsTable({
                     </td>
                     {arrivalsColumns.callsign !== false && (
                       <td className="py-2 px-4">
-                        <span className="text-white font-mono" title={!airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ''}>
+                        <span
+                          className="text-white font-mono"
+                          title={
+                            !airlinesLoading
+                              ? parseCallsign(flight.callsign, airlines)
+                              : flight.callsign || ''
+                          }
+                        >
                           {flight.callsign || '-'}
                         </span>
                       </td>
@@ -622,7 +629,6 @@ export default function ArrivalsTable({
                           <>
                             <div
                               className="fixed inset-0"
-                              style={{ zIndex: 9997 }}
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div

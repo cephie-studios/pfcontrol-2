@@ -638,10 +638,17 @@ export default function DepartureTable({
                     </td>
                     {departureColumns.callsign !== false && (
                       <td className="py-2 px-4">
-                        <div title={!airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ''}>
+                        <div
+                          title={
+                            !airlinesLoading
+                              ? parseCallsign(flight.callsign, airlines)
+                              : flight.callsign || ''
+                          }
+                        >
                           <TextInput
                             value={
-                              callsignValues[flight.id] ?? (flight.callsign || '')
+                              callsignValues[flight.id] ??
+                              (flight.callsign || '')
                             }
                             onChange={(value) =>
                               debouncedHandleCallsignChange(flight.id, value)
@@ -659,7 +666,9 @@ export default function DepartureTable({
                             onFocus={() =>
                               handleFieldFocus(flight.id, 'callsign')
                             }
-                            onBlur={() => handleFieldBlur(flight.id, 'callsign')}
+                            onBlur={() =>
+                              handleFieldBlur(flight.id, 'callsign')
+                            }
                           />
                         </div>
                       </td>
@@ -914,7 +923,6 @@ export default function DepartureTable({
                           <>
                             <div
                               className="fixed inset-0"
-                              style={{ zIndex: 9997 }}
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div
