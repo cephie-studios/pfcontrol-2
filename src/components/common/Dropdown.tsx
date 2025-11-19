@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -62,17 +68,39 @@ export default function Dropdown({
     setIsMeasured(false);
   };
 
-  const updatePositionFromButton = () => {
+  const updatePositionFromButton = useCallback(() => {
     const btn = buttonRef.current;
-    if (btn) {
-      const rect = btn.getBoundingClientRect();
-      setDropdownPosition((prev) => ({
-        ...prev,
-        left: rect.left,
-        width: rect.width,
-      }));
-    }
-  };
+    if (!btn) return;
+
+    const btnRect = btn.getBoundingClientRect();
+    const dd = dropdownRef.current;
+    const ddRect = dd ? dd.getBoundingClientRect() : null;
+
+    const spaceBelow = window.innerHeight - btnRect.bottom;
+    const spaceAbove = btnRect.top;
+
+    const ddHeight = ddRect ? ddRect.height : 0;
+    const wantsAbove = ddRect
+      ? ddHeight > spaceBelow && spaceAbove > spaceBelow
+      : false;
+
+    const top = wantsAbove ? btnRect.top - ddHeight - 4 : btnRect.bottom + 4;
+
+    setDropdownPosition((prev) => {
+      if (
+        prev.left === btnRect.left &&
+        prev.width === btnRect.width &&
+        prev.top === top
+      ) {
+        return prev;
+      }
+      return {
+        top,
+        left: btnRect.left,
+        width: btnRect.width,
+      };
+    });
+  }, []);
 
   const toggleOpen = () => {
     if (disabled) return;
@@ -138,14 +166,10 @@ export default function Dropdown({
   useEffect(() => {
     if (!isOpen) return;
 
-    let lastScrollTop = window.scrollY;
-    let lastScrollLeft = window.scrollX;
     let lastBtnRect: DOMRect | null = null;
     let rafId = 0;
 
     const handlePositionUpdate = () => {
-      const currentScrollTop = window.scrollY;
-      const currentScrollLeft = window.scrollX;
       const btnRect = buttonRef.current?.getBoundingClientRect() ?? null;
 
       const btnChanged =
@@ -156,14 +180,8 @@ export default function Dropdown({
             btnRect.width !== lastBtnRect.width ||
             btnRect.height !== lastBtnRect.height));
 
-      if (
-        currentScrollTop !== lastScrollTop ||
-        currentScrollLeft !== lastScrollLeft ||
-        btnChanged
-      ) {
+      if (btnChanged) {
         updatePositionFromButton();
-        lastScrollTop = currentScrollTop;
-        lastScrollLeft = currentScrollLeft;
         lastBtnRect = btnRect;
       }
 
@@ -178,7 +196,7 @@ export default function Dropdown({
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', updatePositionFromButton);
     };
-  }, [isOpen]);
+  }, [isOpen, updatePositionFromButton]);
 
   useEffect(() => {
     if (!isOpen || !isMeasured) return;
