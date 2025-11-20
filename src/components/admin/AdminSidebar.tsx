@@ -79,10 +79,36 @@ export default function AdminSidebar({
   };
 
   const hasPermission = (permission: string) => {
-    return (
-      user?.isAdmin ||
-      (user?.rolePermissions && user.rolePermissions[permission])
-    );
+    if (user?.isAdmin) return true;
+    const perms = (user?.rolePermissions ?? {}) as Record<string, unknown>;
+    const checkVal = (v: unknown) =>
+      v === true || v === 'true' || v === '1' || v === 1;
+
+    if (checkVal(perms[permission])) return true;
+
+    const aliases: Record<string, string[]> = {
+      admin: ['admin', 'overview'],
+      users: ['users', 'user_management'],
+      sessions: ['sessions', 'session_management'],
+      notifications: ['notifications', 'update_notifications', 'update_modals'],
+      update_modals: ['update_modals', 'update_notifications'],
+      feedback: ['feedback', 'user_feedback'],
+      chat_reports: ['chat_reports', 'chatReports', 'reports'],
+      audit: ['audit', 'api_logs', 'flight_logs', 'audit_logs'],
+      api_logs: ['api_logs', 'audit', 'audit_logs'],
+      flight_logs: ['flight_logs', 'audit', 'flightArchive', 'flight_logs'],
+      bans: ['bans', 'ban_management'],
+      testers: ['testers', 'tester_management'],
+      roles: ['roles', 'role_management'],
+      event_controller: ['event_controller', 'events', 'event_manager'],
+    };
+
+    const mapped = aliases[permission] ?? [];
+    for (const p of mapped) {
+      if (checkVal(perms[p])) return true;
+    }
+
+    return false;
   };
 
   const sections = [
