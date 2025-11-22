@@ -12,29 +12,54 @@ interface SectorController {
   avatar: string | null;
   station: string;
   joinedAt: number;
-  roles: Array<{ id: number; name: string; color: string; icon: string; priority: number }>;
+  roles: Array<{
+    id: number;
+    name: string;
+    color: string;
+    icon: string;
+    priority: number;
+  }>;
 }
 
-export const getActiveSectorControllers = async (): Promise<SectorController[]> => {
+export const getActiveSectorControllers = async (): Promise<
+  SectorController[]
+> => {
   const controllers = await redisConnection.hgetall('activeSectorControllers');
-  return Object.values(controllers).map((controllerData) => JSON.parse(controllerData as string) as SectorController);
+  return Object.values(controllers).map(
+    (controllerData) => JSON.parse(controllerData as string) as SectorController
+  );
 };
 
-const addSectorController = async (userId: string, controllerData: SectorController): Promise<void> => {
-  await redisConnection.hset('activeSectorControllers', userId, JSON.stringify(controllerData));
+const addSectorController = async (
+  userId: string,
+  controllerData: SectorController
+): Promise<void> => {
+  await redisConnection.hset(
+    'activeSectorControllers',
+    userId,
+    JSON.stringify(controllerData)
+  );
 };
 
 const removeSectorController = async (userId: string): Promise<void> => {
   await redisConnection.hdel('activeSectorControllers', userId);
 };
 
-export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUsersIO: SessionUsersServer) {
+export function setupSectorControllerWebsocket(
+  httpServer: HttpServer,
+  sessionUsersIO: SessionUsersServer
+) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/sector-controller',
     cors: {
-      origin: ['http://localhost:5173', 'http://localhost:9901', 'https://control.pfconnect.online', 'https://test.pfconnect.online'],
-      credentials: true
-    }
+      origin: [
+        'http://localhost:5173',
+        'http://localhost:9901',
+        'https://control.pfconnect.online',
+        'https://canary.pfconnect.online',
+      ],
+      credentials: true,
+    },
   });
 
   io.on('connection', async (socket) => {
@@ -51,14 +76,20 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
       }
 
       // Get user roles
-      let userRoles: Array<{ id: number; name: string; color: string; icon: string; priority: number }> = [];
+      let userRoles: Array<{
+        id: number;
+        name: string;
+        color: string;
+        icon: string;
+        priority: number;
+      }> = [];
       try {
-        userRoles = (await getUserRoles(user.userId)).map(role => ({
+        userRoles = (await getUserRoles(user.userId)).map((role) => ({
           id: role.id,
           name: role.name,
           color: role.color ?? '#000000',
           icon: role.icon ?? '',
-          priority: role.priority ?? 0
+          priority: role.priority ?? 0,
         }));
       } catch (error) {
         console.error('Error fetching user roles:', error);
@@ -70,7 +101,7 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
           name: 'Developer',
           color: '#3B82F6',
           icon: 'Braces',
-          priority: 999999
+          priority: 999999,
         });
       }
 
@@ -85,7 +116,7 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
             avatar: user.avatar || null,
             station,
             joinedAt: Date.now(),
-            roles: userRoles
+            roles: userRoles,
           };
 
           await addSectorController(user.userId, sectorController);
@@ -95,7 +126,9 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
           if (overviewIO) {
             setTimeout(async () => {
               try {
-                const { getOverviewData } = await import('./overviewWebsocket.js');
+                const { getOverviewData } = await import(
+                  './overviewWebsocket.js'
+                );
                 const overviewData = await getOverviewData(sessionUsersIO);
                 overviewIO.emit('overviewData', overviewData);
               } catch (error) {
@@ -121,7 +154,9 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
           if (overviewIO) {
             setTimeout(async () => {
               try {
-                const { getOverviewData } = await import('./overviewWebsocket.js');
+                const { getOverviewData } = await import(
+                  './overviewWebsocket.js'
+                );
                 const overviewData = await getOverviewData(sessionUsersIO);
                 overviewIO.emit('overviewData', overviewData);
               } catch (error) {
@@ -144,7 +179,9 @@ export function setupSectorControllerWebsocket(httpServer: HttpServer, sessionUs
         if (overviewIO) {
           setTimeout(async () => {
             try {
-              const { getOverviewData } = await import('./overviewWebsocket.js');
+              const { getOverviewData } = await import(
+                './overviewWebsocket.js'
+              );
               const overviewData = await getOverviewData(sessionUsersIO);
               overviewIO.emit('overviewData', overviewData);
             } catch (error) {

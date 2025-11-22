@@ -27,7 +27,9 @@ export async function createMainTables() {
     .createTable('sessions')
     .ifNotExists()
     .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade'))
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade')
+    )
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('expires_at', 'timestamp')
     .execute();
@@ -45,8 +47,12 @@ export async function createMainTables() {
   await mainDb.schema
     .createTable('user_roles')
     .ifNotExists()
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade'))
-    .addColumn('role_id', 'integer', (col) => col.references('roles.id').onDelete('cascade'))
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade')
+    )
+    .addColumn('role_id', 'integer', (col) =>
+      col.references('roles.id').onDelete('cascade')
+    )
     .addPrimaryKeyConstraint('user_roles_pkey', ['user_id', 'role_id'])
     .execute();
 
@@ -55,7 +61,9 @@ export async function createMainTables() {
     .createTable('audit_log')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('set null'))
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('set null')
+    )
     .addColumn('action', 'varchar(255)', (col) => col.notNull())
     .addColumn('details', 'jsonb')
     .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
@@ -66,7 +74,9 @@ export async function createMainTables() {
     .createTable('bans')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade').notNull())
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade').notNull()
+    )
     .addColumn('reason', 'text')
     .addColumn('banned_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('expires_at', 'timestamp')
@@ -87,8 +97,12 @@ export async function createMainTables() {
     .createTable('user_notifications')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade'))
-    .addColumn('notification_id', 'integer', (col) => col.references('notifications.id').onDelete('cascade'))
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade')
+    )
+    .addColumn('notification_id', 'integer', (col) =>
+      col.references('notifications.id').onDelete('cascade')
+    )
     .addColumn('read', 'boolean', (col) => col.defaultTo(false))
     .addColumn('read_at', 'timestamp')
     .execute();
@@ -98,7 +112,9 @@ export async function createMainTables() {
     .createTable('testers')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) => col.references('users.id').onDelete('cascade').unique().notNull())
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade').unique().notNull()
+    )
     .addColumn('approved', 'boolean', (col) => col.defaultTo(false))
     .execute();
 
@@ -106,7 +122,9 @@ export async function createMainTables() {
   await mainDb.schema
     .createTable('tester_settings')
     .ifNotExists()
-    .addColumn('tester_id', 'integer', (col) => col.references('testers.id').onDelete('cascade').primaryKey())
+    .addColumn('tester_id', 'integer', (col) =>
+      col.references('testers.id').onDelete('cascade').primaryKey()
+    )
     .addColumn('settings', 'jsonb')
     .execute();
 
@@ -299,14 +317,14 @@ export async function createGlobalChatTable() {
     .addColumn('avatar', 'varchar(255)')
     .addColumn('station', 'varchar(50)')
     .addColumn('position', 'varchar(50)')
-    .addColumn('message', 'jsonb', (col) => col.notNull()) // Encrypted: {iv, data, authTag}
+    .addColumn('message', 'jsonb', (col) => col.notNull())
     .addColumn('airport_mentions', 'jsonb')
     .addColumn('user_mentions', 'jsonb')
     .addColumn('sent_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('deleted_at', 'timestamp')
     .execute();
 
-  // Create index for efficient deletion of old messages
+  // Index for efficient deletion of old messages
   await chatsDb.schema
     .createIndex('global_chat_sent_at_idx')
     .ifNotExists()

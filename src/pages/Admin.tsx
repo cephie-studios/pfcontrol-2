@@ -32,13 +32,10 @@ import {
   fetchAdminStatistics,
   fetchAppVersion,
   updateAppVersion,
-  fetchGlobalHolidaySettings,
-  updateGlobalHolidaySettings,
   fetchApiLogStats24h,
   type AdminStats,
   type DailyStats,
   type AppVersion,
-  type GlobalHolidaySettings,
 } from '../utils/fetch/admin';
 import Toast from '../components/common/Toast';
 import Button from '../components/common/Button';
@@ -71,10 +68,6 @@ export default function Admin() {
   const [newVersion, setNewVersion] = useState('');
   const [isUpdatingVersion, setIsUpdatingVersion] = useState(false);
   const [versionLoading, setVersionLoading] = useState(false);
-  const [globalHolidaySettings, setGlobalHolidaySettings] =
-    useState<GlobalHolidaySettings | null>(null);
-  const [isUpdatingHolidaySettings, setIsUpdatingHolidaySettings] =
-    useState(false);
   const [apiLogStats24h, setApiLogStats24h] = useState<
     Array<{
       hour: string;
@@ -148,21 +141,6 @@ export default function Admin() {
     }
   }, [user?.isAdmin]);
 
-  const fetchHolidaySettings = useCallback(async () => {
-    if (!user?.isAdmin) return;
-
-    try {
-      const settings = await fetchGlobalHolidaySettings();
-      setGlobalHolidaySettings(settings);
-    } catch (error) {
-      console.error('Error fetching holiday settings:', error);
-      setToast({
-        message: 'Failed to fetch holiday settings',
-        type: 'error',
-      });
-    }
-  }, [user?.isAdmin]);
-
   const fetchApiLogStats24hData = useCallback(async () => {
     try {
       const data = await fetchApiLogStats24h();
@@ -211,51 +189,9 @@ export default function Admin() {
     }
   };
 
-  const handleToggleHolidaySettings = async () => {
-    if (!globalHolidaySettings) return;
-
-    try {
-      setIsUpdatingHolidaySettings(true);
-      const updated = await updateGlobalHolidaySettings(
-        !globalHolidaySettings.enabled
-      );
-      setGlobalHolidaySettings(updated);
-      setToast({
-        message: `Holiday effects ${
-          updated.enabled ? 'enabled' : 'disabled'
-        } globally`,
-        type: 'success',
-      });
-    } catch (error) {
-      console.error('Error updating holiday settings:', error);
-      setToast({
-        message: 'Failed to update holiday settings',
-        type: 'error',
-      });
-    } finally {
-      setIsUpdatingHolidaySettings(false);
-    }
-  };
-
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
-
-  useEffect(() => {
-    if (user?.isAdmin) {
-      fetchVersion();
-      fetchHolidaySettings();
-    }
-    if (user && hasPermission('audit')) {
-      fetchApiLogStats24hData();
-    }
-  }, [
-    user?.isAdmin,
-    fetchVersion,
-    fetchHolidaySettings,
-    fetchApiLogStats24hData,
-    user,
-  ]);
 
   const formatLoginsData = (daily: DailyStats[]) => {
     const labels = daily.map((item) =>
@@ -785,57 +721,6 @@ export default function Admin() {
                               <span>Update</span>
                             </button>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                    {/* Holiday Settings */}
-                    <div className="bg-zinc-900 rounded-lg p-3 sm:p-4 border-2 border-zinc-700/50 mt-4">
-                      <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Gift className="w-5 h-5 text-red-400" />
-                          <div>
-                            <h3 className="text-base sm:text-lg font-medium text-white mb-1">
-                              Global Holiday Settings
-                            </h3>
-                            <p className="text-xs sm:text-sm text-zinc-400">
-                              Enable or disable holiday effects for all users
-                              globally
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {globalHolidaySettings && (
-                        <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                          <div>
-                            <p className="text-white font-medium">
-                              Holiday Effects
-                            </p>
-                            <p className="text-xs text-zinc-400 mt-1">
-                              {globalHolidaySettings.enabled
-                                ? 'Enabled - Users can customize their holiday experience'
-                                : 'Disabled - Holiday settings hidden from all users'}
-                            </p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={globalHolidaySettings.enabled}
-                              onChange={handleToggleHolidaySettings}
-                              disabled={isUpdatingHolidaySettings}
-                              className="sr-only peer"
-                            />
-                            <div className="relative w-14 h-7 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600 shadow-inner"></div>
-                          </label>
-                        </div>
-                      )}
-
-                      {isUpdatingHolidaySettings && (
-                        <div className="mt-2 text-center">
-                          <RefreshCw className="w-4 h-4 animate-spin inline-block text-blue-400" />
-                          <span className="text-xs text-zinc-400 ml-2">
-                            Updating...
-                          </span>
                         </div>
                       )}
                     </div>

@@ -1,4 +1,4 @@
-import type { Placement } from "react-joyride";
+import type { Placement } from 'react-joyride';
 
 export const steps: {
   target: string;
@@ -12,69 +12,79 @@ export const steps: {
   {
     target: '#utc-time',
     title: 'UTC Time',
-    content: 'This shows the current UTC time for coordination with pilots worldwide.',
+    content:
+      'This shows the current UTC time for coordination with pilots worldwide.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#submit-link-btn',
     title: 'Submit Link',
-    content: 'Share this link with pilots to submit flight plans directly to your session.',
+    content:
+      'Share this link with pilots to submit flight plans directly to your session.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#view-link-btn',
     title: 'View Link',
-    content: 'This is the link to access your session. Copy and share it securely.',
+    content:
+      'This is the link to access your session. Copy and share it securely.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#wind-display',
     title: 'Wind and Weather',
-    content: 'Displays live METAR data including wind, temperature, visibility, and pressure. Click to toggle QNH/Altimeter.',
+    content:
+      'Displays live METAR data including wind, temperature, visibility, and pressure. Click to toggle QNH/Altimeter.',
     disableNext: true,
   },
   {
     target: '#frequency-display',
     title: 'Frequencies',
-    content: 'Lists radio frequencies for your airport. Expand to see all frequencies.',
+    content:
+      'Lists radio frequencies for your airport. Expand to see all frequencies.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#toolbar-middle',
     title: 'Session Status',
-    content: 'Shows your airport ICAO, connection status, and active controllers (avatars with roles).',
+    content:
+      'Shows your airport ICAO, connection status, and active controllers (avatars with roles).',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#view-tabs',
     title: 'View Tabs',
-    content: 'Switch between departures and arrivals (available in PFATC sessions).',
+    content:
+      'Switch between departures and arrivals (available in PFATC sessions).',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#position-dropdown',
     title: 'Select Your Position',
-    content: 'Choose your controlling position (e.g., Tower, Approach) to filter flights and show relevant statuses.',
+    content:
+      'Choose your controlling position (e.g., Tower, Approach) to filter flights and show relevant statuses.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#runway-dropdown-toolbar',
     title: 'Active Runway',
-    content: 'Set the active runway for departures. This updates ATIS and session settings.',
+    content:
+      'Set the active runway for departures. This updates ATIS and session settings.',
     placement: 'bottom' as Placement,
     disableNext: true,
   },
   {
     target: '#atis-button',
     title: 'ATIS Information',
-    content: 'Click to manage ATIS (weather and runway info). Keep it updated for pilots.',
+    content:
+      'Click to manage ATIS (weather and runway info). Keep it updated for pilots.',
     placement: 'left' as Placement,
     disableNext: true,
   },
@@ -95,35 +105,39 @@ export const steps: {
   {
     target: '#contact-button',
     title: 'Contact ACARS',
-    content: 'Send messages directly to pilots via ACARS (available in PFATC sessions).',
+    content:
+      'Send messages directly to pilots via ACARS (available in PFATC sessions).',
     placement: 'left' as Placement,
     disableNext: true,
   },
   {
     target: '#departure-table',
     title: 'Flight Strips Overview',
-    content: 'This is your departure table. Edit fields like callsign, runway, or status. Use PDC for clearances.',
+    content:
+      'This is your departure table. Edit fields like callsign, runway, or status. Use PDC for clearances.',
     placement: 'top' as Placement,
     disableNext: true,
   },
   {
     target: '#departure-table .column-time',
     title: 'TIME',
-    content: 'Shows when the flight strip was created or submitted (UTC). For reference only.',
+    content:
+      'Shows when the flight strip was created or submitted (UTC). For reference only.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .w',
     title: 'CALLSIGN',
-    content: 'The flight\'s callsign (e.g., BAW123). Enter or edit as needed.',
+    content: "The flight's callsign (e.g., BAW123). Enter or edit as needed.",
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-stand',
     title: 'STAND',
-    content: 'The parking stand/gate where the aircraft is located. Enter or edit the stand/gate number.',
+    content:
+      'The parking stand/gate where the aircraft is located. Enter or edit the stand/gate number.',
     placement: 'top',
     disableNext: true,
   },
@@ -137,14 +151,16 @@ export const steps: {
   {
     target: '#departure-table .column-w',
     title: 'W (Wake Turbulence)',
-    content: 'Wake Turbulence Category (L/M/H/S). Always auto-filled based on aircraft type but helps with separation.',
+    content:
+      'Wake Turbulence Category (L/M/H/S). Always auto-filled based on aircraft type but helps with separation.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-flight-type',
     title: 'V (Flight Type)',
-    content: 'Indicates if the pilot filed IFR (Instrument Flight Rules) or VFR (Visual Flight Rules).',
+    content:
+      'Indicates if the pilot filed IFR (Instrument Flight Rules) or VFR (Visual Flight Rules).',
     placement: 'top',
     disableNext: true,
   },
@@ -158,56 +174,64 @@ export const steps: {
   {
     target: '#departure-table .column-rwy',
     title: 'RWY (Runway)',
-    content: 'Departure runway assigned to the flight. Select or edit as needed.',
+    content:
+      'Departure runway assigned to the flight. Select or edit as needed.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-sid',
     title: 'SID',
-    content: 'Standard Instrument Departure procedure. Select or edit if applicable.',
+    content:
+      'Standard Instrument Departure procedure. Select or edit if applicable.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-rfl',
     title: 'RFL (Requested Flight Level)',
-    content: 'Requested Flight Level (cruising altitude). Enter or edit as needed.',
+    content:
+      'Requested Flight Level (cruising altitude). Enter or edit as needed.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-cfl',
     title: 'CFL (Cleared Flight Level)',
-    content: 'Cleared altitude assigned by ATC. Update when further climb instructions are given.',
+    content:
+      'Cleared altitude assigned by ATC. Update when further climb instructions are given.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-route',
     title: 'RTE (Route)',
-    content: 'Click to view or edit the flight route. Red icon indicates missing route, gray indicates route available.',
+    content:
+      'Click to view or edit the flight route. Red icon indicates missing route, gray indicates route available.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .w-28',
     title: 'ASSR (Squawk)',
-    content: 'Assigned transponder code (4 digits). Enter or edit as needed. Use refresh button to generate new code.',
+    content:
+      'Assigned transponder code (4 digits). Enter or edit as needed. Use refresh button to generate new code.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-clearance',
     title: 'C (Clearance)',
-    content: 'Indicates if the flight has been cleared for departure (IFR Clearance). Check when cleared.',
+    content:
+      'Indicates if the flight has been cleared for departure (IFR Clearance). Check when cleared.',
     placement: 'top',
     disableNext: true,
   },
   {
     target: '#departure-table .column-sts',
     title: 'STS (Status)',
-    content: 'Current status (e.g., PENDING, TAXI, RWY, DEPA). Update as the flight progresses.',
+    content:
+      'Current status (e.g., PENDING, TAXI, RWY, DEPA). Update as the flight progresses.',
     placement: 'top',
     disableNext: true,
   },
@@ -221,28 +245,32 @@ export const steps: {
   {
     target: '#departure-table .column-pdc',
     title: 'PDC',
-    content: 'Button to issue a Pre-Departure Clearance (PDC) to the pilot. Flashes orange when pilot requests PDC.',
+    content:
+      'Button to issue a Pre-Departure Clearance (PDC) to the pilot. Flashes orange when pilot requests PDC.',
     placement: 'left',
     disableNext: true,
   },
   {
     target: '#departure-table .column-more',
     title: 'MORE',
-    content: 'Access additional actions for the flight strip including hide/unhide and delete options.',
+    content:
+      'Access additional actions for the flight strip including hide/unhide and delete options.',
     placement: 'left',
     disableNext: true,
   },
   {
     target: '#add-departure-btn',
     title: 'Add Custom Flights',
-    content: 'Add manual flight strips if needed. Useful for missing flights or manual entries.',
+    content:
+      'Add manual flight strips if needed. Useful for missing flights or manual entries.',
     placement: 'top' as Placement,
     disableNext: true,
   },
   {
     target: '#settings-button',
     title: 'Settings',
-    content: 'Click to open settings and customize your experience. Configure table columns, sounds, and more.',
+    content:
+      'Click to open settings and customize your experience. Configure table columns, sounds, and more.',
     placement: 'left' as Placement,
     disableNext: true,
     isLast: true,

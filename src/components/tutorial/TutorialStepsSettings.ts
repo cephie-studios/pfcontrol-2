@@ -1,4 +1,4 @@
-import type { Placement } from "react-joyride";
+import type { Placement } from 'react-joyride';
 
 export const steps: {
   target: string;
@@ -11,28 +11,32 @@ export const steps: {
   {
     target: '#account-settings',
     title: 'Account Settings',
-    content: 'Manage your account connections (Roblox, VATSIM) and restart the tutorial if needed.',
+    content:
+      'Manage your account connections (Roblox, VATSIM) and restart the tutorial if needed.',
     placement: 'top' as Placement,
     disableNext: true,
   },
   {
     target: '#table-column-settings',
     title: 'Table Columns',
-    content: 'Customize which columns appear in your departure and arrival flight tables.',
+    content:
+      'Customize which columns appear in your departure and arrival flight tables.',
     placement: 'top' as Placement,
     disableNext: true,
   },
   {
     target: '#layout-settings',
     title: 'Layout Settings',
-    content: 'Configure table display options, like combined view and flight row transparency.',
+    content:
+      'Configure table display options, like combined view and flight row transparency.',
     placement: 'top' as Placement,
     disableNext: true,
   },
   {
     target: '#acars-settings',
     title: 'ACARS Settings',
-    content: 'Set up ACARS terminal panels (notes, charts) and adjust their sizes.',
+    content:
+      'Set up ACARS terminal panels (notes, charts) and adjust their sizes.',
     placement: 'top' as Placement,
     disableNext: true,
   },

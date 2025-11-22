@@ -38,10 +38,10 @@ export function containsProfanity(message: string): boolean {
 }
 
 export function containsHateSpeech(message: string): boolean {
-    return containsProfanity(message);
+  return containsProfanity(message);
 }
 
 export function getHateSpeechReason(message: string): string {
-    if (containsProfanity(message)) return 'Profanity detected';
-    return 'No hate speech detected';
+  if (containsProfanity(message)) return 'Profanity detected';
+  return 'No hate speech detected';
 }

@@ -8,7 +8,7 @@ const router = express.Router();
 // GET: /api/version - Get app version (cached)
 router.get('/', async (req, res) => {
   const cacheKey = 'app:version';
-  
+
   try {
     const cached = await redisConnection.get(cacheKey);
     if (cached) {
@@ -16,18 +16,29 @@ router.get('/', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for app version:', error.message);
+      console.warn(
+        '[Redis] Failed to read cache for app version:',
+        error.message
+      );
     }
   }
 
   try {
     const versionData = await getAppVersion();
-    
+
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(versionData), 'EX', 86400);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(versionData),
+        'EX',
+        86400
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn('[Redis] Failed to set cache for app version:', error.message);
+        console.warn(
+          '[Redis] Failed to set cache for app version:',
+          error.message
+        );
       }
     }
 
@@ -47,18 +58,31 @@ router.put('/', requireAuth, async (req, res) => {
 
     const { version } = req.body;
     if (!version || typeof version !== 'string') {
-      return res.status(400).json({ error: 'Version is required and must be a string' });
+      return res
+        .status(400)
+        .json({ error: 'Version is required and must be a string' });
     }
 
-    const updatedVersion = await updateAppVersion(version, req.user.username || 'Unknown Admin');
-    
+    const updatedVersion = await updateAppVersion(
+      version,
+      req.user.username || 'Unknown Admin'
+    );
+
     const cacheKey = 'app:version';
     try {
       await redisConnection.del(cacheKey);
-      await redisConnection.set(cacheKey, JSON.stringify(updatedVersion), 'EX', 86400);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(updatedVersion),
+        'EX',
+        86400
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn('[Redis] Failed to update cache for app version:', error.message);
+        console.warn(
+          '[Redis] Failed to update cache for app version:',
+          error.message
+        );
       }
     }
 

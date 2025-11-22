@@ -221,19 +221,25 @@ export default function FlightDetailsModal({
                 Cleared
               </label>
               <div className="p-2 flex items-center justify-center">
-              <Checkbox
-                checked={flight.clearance === 'true' || flight.clearance === true}
-                onChange={(checked) =>
-                  onFlightChange?.(
-                    flight.id,
-                    'clearance',
-                    String(checked),
-                    String(flight.clearance || false)
-                  )
-                }
-                label={flight.clearance === 'true' || flight.clearance === true ? 'YES' : 'NO'}
-                checkedClass="bg-green-600 border-green-600"
-              />
+                <Checkbox
+                  checked={
+                    flight.clearance === 'true' || flight.clearance === true
+                  }
+                  onChange={(checked) =>
+                    onFlightChange?.(
+                      flight.id,
+                      'clearance',
+                      String(checked),
+                      String(flight.clearance || false)
+                    )
+                  }
+                  label={
+                    flight.clearance === 'true' || flight.clearance === true
+                      ? 'YES'
+                      : 'NO'
+                  }
+                  checkedClass="bg-green-600 border-green-600"
+                />
               </div>
             </div>
           </div>
@@ -343,23 +349,23 @@ export default function FlightDetailsModal({
 
           {/* Alternate */}
           <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1">
-                Alternate
-              </label>
-              <AirportDropdown
-                  value={flight.alternate || ''}
-                  onChange={(value) =>
-                    onFlightChange?.(
-                      flight.id,
-                      'alternate',
-                      value,
-                      flight.alternate || ''
-                    )
-                  }
-                  size="sm"
-                  showFullName={false}
-                />
-            </div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Alternate
+            </label>
+            <AirportDropdown
+              value={flight.alternate || ''}
+              onChange={(value) =>
+                onFlightChange?.(
+                  flight.id,
+                  'alternate',
+                  value,
+                  flight.alternate || ''
+                )
+              }
+              size="sm"
+              showFullName={false}
+            />
+          </div>
 
           {/* Additional Info */}
           <div className="grid grid-cols-3 gap-4 border-t border-zinc-700 pt-4">

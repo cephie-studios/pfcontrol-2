@@ -1,6 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-html, body {
+html,
+body {
   background-color: #1a1a1a;
   color: #f2f2f2;
   overscroll-behavior: none;
@@ -11,37 +12,42 @@ button {
 }
 
 ::-webkit-scrollbar {
-    width: 8px;
-    background: #000000;
+  width: 8px;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #000000;
-    border-radius: 6px;
-    transition: background 0.3s;
+  background: #000000;
+  border-radius: 6px;
+  transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #000000;
+  background: #000000;
 }
 * {
-    scrollbar-width: thin;
-    scrollbar-color: #2a2a2a transparent;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
 
 /* Departure Table */
 @media (max-width: 1800px) {
-  .column-rwy, .column-w {
+  .column-rwy,
+  .column-w {
     display: none;
   }
 }
 @media (max-width: 1600px) {
-  .column-pdc, .column-hide, .column-time {
+  .column-pdc,
+  .column-hide,
+  .column-time {
     display: none;
   }
 }
 @media (max-width: 1300px) {
-  .column-stand, .column-rfl, .column-rmk {
+  .column-stand,
+  .column-rfl,
+  .column-rmk {
     display: none;
   }
 }

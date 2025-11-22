@@ -1,7 +1,10 @@
 import type { SessionUser } from '../types/session';
 import type { Airport } from '../types/airports';
 import type { ChatMessage } from '../types/chats';
-import type { GlobalChatMessage, ConnectedGlobalChatUser } from '../sockets/globalChatSocket';
+import type {
+  GlobalChatMessage,
+  ConnectedGlobalChatUser,
+} from '../sockets/globalChatSocket';
 
 interface MentionSuggestionsResult {
   suggestions: SessionUser[];
@@ -12,7 +15,10 @@ interface MentionSuggestionsResult {
 interface GlobalMentionSuggestionsResult {
   suggestions: Array<{
     type: 'user' | 'airport';
-    data: SessionUser | { icao: string; name: string } | ConnectedGlobalChatUser;
+    data:
+      | SessionUser
+      | { icao: string; name: string }
+      | ConnectedGlobalChatUser;
   }>;
   shouldShow: boolean;
   searchTerm: string;
@@ -52,7 +58,10 @@ export const renderMessage = (message: string): string => {
   );
 };
 
-export const isUserInActiveChat = (userId: string, activeChatUsers: string[]): boolean => {
+export const isUserInActiveChat = (
+  userId: string,
+  activeChatUsers: string[]
+): boolean => {
   return activeChatUsers.includes(userId);
 };
 
@@ -169,7 +178,7 @@ export const insertMentionIntoText = (
     const beforeMention = mentionMatch[1];
     const newText = beforeMention + `@${username} ` + textAfterCursor;
     const newCursorPos = beforeMention.length + username.length + 2;
-    
+
     return { newText, newCursorPos };
   }
 
@@ -196,40 +205,41 @@ export const isMessageMentioned = (
 ): boolean => {
   const isMentionedByUser = Boolean(
     'mentions' in message &&
-    message.mentions &&
-    Array.isArray(message.mentions) &&
-    currentUserId &&
-    message.mentions.includes(currentUserId)
+      message.mentions &&
+      Array.isArray(message.mentions) &&
+      currentUserId &&
+      message.mentions.includes(currentUserId)
   );
 
   const isMentionedByUserInGlobal = Boolean(
     'userMentions' in message &&
-    message.userMentions &&
-    Array.isArray(message.userMentions) &&
-    currentUserId &&
-    message.userMentions.some(
-      (username: string) =>
-        username.toLowerCase() === currentUserId.toLowerCase()
-    )
+      message.userMentions &&
+      Array.isArray(message.userMentions) &&
+      currentUserId &&
+      message.userMentions.some(
+        (username: string) =>
+          username.toLowerCase() === currentUserId.toLowerCase()
+      )
   );
 
   const isMentionedByAirport = Boolean(
     'airportMentions' in message &&
-    message.airportMentions &&
-    Array.isArray(message.airportMentions) &&
-    station &&
-    message.airportMentions.some(
-      (icao: string) => icao.toUpperCase() === station.toUpperCase()
-    )
+      message.airportMentions &&
+      Array.isArray(message.airportMentions) &&
+      station &&
+      message.airportMentions.some(
+        (icao: string) => icao.toUpperCase() === station.toUpperCase()
+      )
   );
 
   return isMentionedByUser || isMentionedByUserInGlobal || isMentionedByAirport;
 };
 
 export const getMessageTimeString = (timestamp: string | Date): string => {
-  const date = typeof timestamp === 'string'
-    ? new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z')
-    : timestamp;
+  const date =
+    typeof timestamp === 'string'
+      ? new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z')
+      : timestamp;
 
   return date.toLocaleTimeString([], {
     hour: '2-digit',

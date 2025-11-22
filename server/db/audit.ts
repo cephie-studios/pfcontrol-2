@@ -1,6 +1,6 @@
-import { mainDb } from "./connection.js";
-import { encrypt, decrypt } from "../utils/encryption.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
+import { sql } from 'kysely';
 
 export interface AdminActionData {
   adminId: number | string;
@@ -22,7 +22,7 @@ export async function logAdminAction(actionData: AdminActionData) {
     targetUsername = null,
     details = {},
     ipAddress = null,
-    userAgent = null
+    userAgent = null,
   } = actionData;
 
   try {
@@ -35,11 +35,18 @@ export async function logAdminAction(actionData: AdminActionData) {
         admin_id: String(adminId),
         admin_username: adminUsername,
         action_type: actionType,
-        target_user_id: targetUserId !== null && targetUserId !== undefined ? String(targetUserId) : undefined,
-        target_username: targetUsername !== null && targetUsername !== undefined ? targetUsername : undefined,
+        target_user_id:
+          targetUserId !== null && targetUserId !== undefined
+            ? String(targetUserId)
+            : undefined,
+        target_username:
+          targetUsername !== null && targetUsername !== undefined
+            ? targetUsername
+            : undefined,
         details: details as object,
         ip_address: encryptedIP ? JSON.stringify(encryptedIP) : undefined,
-        user_agent: userAgent !== null && userAgent !== undefined ? userAgent : undefined
+        user_agent:
+          userAgent !== null && userAgent !== undefined ? userAgent : undefined,
       })
       .returning(['id', 'timestamp'])
       .executeTakeFirst();
@@ -79,14 +86,14 @@ export async function getAuditLogs(
         'details',
         'ip_address',
         'user_agent',
-        'timestamp'
+        'timestamp',
       ]);
 
     if (filters.adminId) {
-      query = query.where(q =>
+      query = query.where((q) =>
         q.or([
           q('admin_id', 'ilike', `%${filters.adminId}%`),
-          q('admin_username', 'ilike', `%${filters.adminId}%`)
+          q('admin_username', 'ilike', `%${filters.adminId}%`),
         ])
       );
     }
@@ -96,10 +103,10 @@ export async function getAuditLogs(
     }
 
     if (filters.targetUserId) {
-      query = query.where(q =>
+      query = query.where((q) =>
         q.or([
           q('target_user_id', 'ilike', `%${filters.targetUserId}%`),
-          q('target_username', 'ilike', `%${filters.targetUserId}%`)
+          q('target_username', 'ilike', `%${filters.targetUserId}%`),
         ])
       );
     }
@@ -118,7 +125,7 @@ export async function getAuditLogs(
       .offset(offset)
       .execute();
 
-    const logs = logsResult.map(log => {
+    const logs = logsResult.map((log) => {
       let decryptedIP = null;
       if (log.ip_address) {
         try {
@@ -135,17 +142,22 @@ export async function getAuditLogs(
       return {
         ...log,
         ip_address: decryptedIP,
-        details: typeof log.details === 'string' ? JSON.parse(log.details) : log.details
+        details:
+          typeof log.details === 'string'
+            ? JSON.parse(log.details)
+            : log.details,
       };
     });
 
     // Count query for pagination
-    let countQuery = mainDb.selectFrom('audit_log').select(sql<number>`count(*)`.as('count'));
+    let countQuery = mainDb
+      .selectFrom('audit_log')
+      .select(sql<number>`count(*)`.as('count'));
     if (filters.adminId) {
-      countQuery = countQuery.where(q =>
+      countQuery = countQuery.where((q) =>
         q.or([
           q('admin_id', 'ilike', `%${filters.adminId}%`),
-          q('admin_username', 'ilike', `%${filters.adminId}%`)
+          q('admin_username', 'ilike', `%${filters.adminId}%`),
         ])
       );
     }
@@ -153,18 +165,26 @@ export async function getAuditLogs(
       countQuery = countQuery.where('action_type', '=', filters.actionType);
     }
     if (filters.targetUserId) {
-      countQuery = countQuery.where(q =>
+      countQuery = countQuery.where((q) =>
         q.or([
           q('target_user_id', 'ilike', `%${filters.targetUserId}%`),
-          q('target_username', 'ilike', `%${filters.targetUserId}%`)
+          q('target_username', 'ilike', `%${filters.targetUserId}%`),
         ])
       );
     }
     if (filters.dateFrom) {
-      countQuery = countQuery.where('timestamp', '>=', new Date(filters.dateFrom));
+      countQuery = countQuery.where(
+        'timestamp',
+        '>=',
+        new Date(filters.dateFrom)
+      );
     }
     if (filters.dateTo) {
-      countQuery = countQuery.where('timestamp', '<=', new Date(filters.dateTo));
+      countQuery = countQuery.where(
+        'timestamp',
+        '<=',
+        new Date(filters.dateTo)
+      );
     }
 
     const countResult = await countQuery.executeTakeFirst();
@@ -176,8 +196,8 @@ export async function getAuditLogs(
         page,
         limit,
         total: totalLogs,
-        pages: Math.ceil(totalLogs / limit)
-      }
+        pages: Math.ceil(totalLogs / limit),
+      },
     };
   } catch (error) {
     console.error('Error fetching audit logs:', error);
@@ -199,7 +219,7 @@ export async function getAuditLogById(logId: number | string) {
         'details',
         'ip_address',
         'user_agent',
-        'timestamp'
+        'timestamp',
       ])
       .where('id', '=', typeof logId === 'string' ? Number(logId) : logId)
       .executeTakeFirst();
@@ -225,7 +245,10 @@ export async function getAuditLogById(logId: number | string) {
     return {
       ...result,
       ip_address: decryptedIP,
-      details: typeof result.details === 'string' ? JSON.parse(result.details) : result.details
+      details:
+        typeof result.details === 'string'
+          ? JSON.parse(result.details)
+          : result.details,
     };
   } catch (error) {
     console.error('Error fetching audit log by ID:', error);
@@ -237,7 +260,11 @@ export async function cleanupOldAuditLogs(daysToKeep = 14) {
   try {
     const result = await mainDb
       .deleteFrom('audit_log')
-      .where('timestamp', '<', new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000))
+      .where(
+        'timestamp',
+        '<',
+        new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
+      )
       .executeTakeFirst();
 
     return Number(result?.numDeletedRows ?? 0);
@@ -250,25 +277,25 @@ export async function cleanupOldAuditLogs(daysToKeep = 14) {
 let cleanupInterval: NodeJS.Timeout | null = null;
 
 function startAutomaticCleanup() {
-    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+  const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
 
-    // Run initial cleanup after 1 minute
-    setTimeout(async () => {
-        try {
-            await cleanupOldAuditLogs(14);
-        } catch (error) {
-            console.error('Initial audit log cleanup failed:', error);
-        }
-    }, 60 * 1000);
+  // Run initial cleanup after 1 minute
+  setTimeout(async () => {
+    try {
+      await cleanupOldAuditLogs(14);
+    } catch (error) {
+      console.error('Initial audit log cleanup failed:', error);
+    }
+  }, 60 * 1000);
 
-    // Set up recurring cleanup
-    cleanupInterval = setInterval(async () => {
-        try {
-            await cleanupOldAuditLogs(14);
-        } catch (error) {
-            console.error('Scheduled audit log cleanup failed:', error);
-        }
-    }, CLEANUP_INTERVAL);
+  // Set up recurring cleanup
+  cleanupInterval = setInterval(async () => {
+    try {
+      await cleanupOldAuditLogs(14);
+    } catch (error) {
+      console.error('Scheduled audit log cleanup failed:', error);
+    }
+  }, CLEANUP_INTERVAL);
 }
 
 startAutomaticCleanup();

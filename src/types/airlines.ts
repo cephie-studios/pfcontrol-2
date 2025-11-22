@@ -1,4 +1,4 @@
 export interface Airline {
-    icao: string;
-    callsign: string;
+  icao: string;
+  callsign: string;
 }

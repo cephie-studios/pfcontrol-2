@@ -1,8 +1,8 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
-import { isAdmin } from "../middleware/admin.js";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
+import { isAdmin } from '../middleware/admin.js';
 import { invalidateAllUsersCache } from './admin.js';
-import { invalidateUserCache } from './users.js'
+import { invalidateUserCache } from './users.js';
 
 export async function getAllRoles() {
   try {
@@ -19,7 +19,7 @@ export async function getAllRoles() {
         'r.priority',
         'r.created_at',
         'r.updated_at',
-        sql<number>`COUNT(DISTINCT ur.user_id)`.as('user_count')
+        sql<number>`COUNT(DISTINCT ur.user_id)`.as('user_count'),
       ])
       .groupBy('r.id')
       .orderBy('r.priority', 'desc')
@@ -47,7 +47,14 @@ export async function getRoleById(id: number) {
   }
 }
 
-export async function createRole({ name, description, permissions, color, icon, priority }: {
+export async function createRole({
+  name,
+  description,
+  permissions,
+  color,
+  icon,
+  priority,
+}: {
   name: string;
   description?: string;
   permissions: Record<string, unknown>;
@@ -78,7 +85,14 @@ export async function createRole({ name, description, permissions, color, icon, 
 }
 export async function updateRole(
   id: number,
-  { name, description, permissions, color, icon, priority }: {
+  {
+    name,
+    description,
+    permissions,
+    color,
+    icon,
+    priority,
+  }: {
     name?: string;
     description?: string;
     permissions?: Record<string, unknown>;
@@ -91,7 +105,8 @@ export async function updateRole(
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (permissions !== undefined) updateData.permissions = sql`CAST(${JSON.stringify(permissions)} AS jsonb)`;
+    if (permissions !== undefined)
+      updateData.permissions = sql`CAST(${JSON.stringify(permissions)} AS jsonb)`;
     if (color !== undefined) updateData.color = color;
     if (icon !== undefined) updateData.icon = icon;
     if (priority !== undefined) updateData.priority = priority;
@@ -113,10 +128,7 @@ export async function updateRole(
 
 export async function deleteRole(id: number) {
   try {
-    await mainDb
-      .deleteFrom('user_roles')
-      .where('role_id', '=', id)
-      .execute();
+    await mainDb.deleteFrom('user_roles').where('role_id', '=', id).execute();
 
     await mainDb
       .updateTable('users')
@@ -142,7 +154,7 @@ export async function assignRoleToUser(userId: string, roleId: number) {
     await mainDb
       .insertInto('user_roles')
       .values({ user_id: userId, role_id: roleId })
-      .onConflict(oc => oc.columns(['user_id', 'role_id']).doNothing())
+      .onConflict((oc) => oc.columns(['user_id', 'role_id']).doNothing())
       .execute();
 
     const user = await mainDb
@@ -214,7 +226,7 @@ export async function getUserRoles(userId: string) {
         'r.icon',
         'r.priority',
         'r.created_at',
-        'r.updated_at'
+        'r.updated_at',
       ])
       .where('ur.user_id', '=', userId)
       .orderBy('r.priority', 'desc')
@@ -228,7 +240,9 @@ export async function getUserRoles(userId: string) {
   }
 }
 
-export async function updateRolePriorities(rolePriorities: { id: number; priority: number }[]) {
+export async function updateRolePriorities(
+  rolePriorities: { id: number; priority: number }[]
+) {
   try {
     await mainDb.transaction().execute(async (trx) => {
       for (const { id, priority } of rolePriorities) {
@@ -251,24 +265,18 @@ export async function getUsersWithRoles() {
     const users = await mainDb
       .selectFrom('users as u')
       .leftJoin('user_roles as ur', 'ur.user_id', 'u.id')
-      .select([
-        'u.id',
-        'u.username',
-        'u.avatar',
-        'u.created_at',
-        'u.role_id'
-      ])
-      .where(qb =>
+      .select(['u.id', 'u.username', 'u.avatar', 'u.created_at', 'u.role_id'])
+      .where((qb) =>
         qb.or([
           qb('ur.role_id', 'is not', null),
-          qb('u.role_id', 'is not', null)
+          qb('u.role_id', 'is not', null),
         ])
       )
       .distinct()
       .orderBy('u.username')
       .execute();
 
-    const userIds = users.map(u => u.id);
+    const userIds = users.map((u) => u.id);
     const userRoles = await mainDb
       .selectFrom('user_roles as ur')
       .innerJoin('roles as r', 'ur.role_id', 'r.id')
@@ -280,7 +288,7 @@ export async function getUsersWithRoles() {
         'r.icon',
         'r.priority',
         'r.permissions',
-        'r.created_at'
+        'r.created_at',
       ])
       .where('ur.user_id', 'in', userIds.length ? userIds : [''])
       .orderBy('r.priority', 'desc')
@@ -295,7 +303,7 @@ export async function getUsersWithRoles() {
       priority: number;
       permissions: unknown;
     };
-    
+
     const rolesByUser: Record<string, UserRole[]> = {};
     for (const role of userRoles) {
       if (!rolesByUser[role.user_id]) rolesByUser[role.user_id] = [];
@@ -305,44 +313,41 @@ export async function getUsersWithRoles() {
         color: role.color ?? '#6366F1',
         icon: role.icon ?? 'Star',
         priority: role.priority ?? 0,
-        permissions: role.permissions
+        permissions: role.permissions,
       });
     }
 
-    const usersWithRoles = users.map(user => {
+    const usersWithRoles = users.map((user) => {
       const roles = rolesByUser[user.id] || [];
       return {
         ...user,
         is_admin: isAdmin(user.id),
         roles,
         role_name: roles[0]?.name || null,
-        role_permissions: roles[0]?.permissions || null
+        role_permissions: roles[0]?.permissions || null,
       };
     });
 
     const allUsers = await mainDb
       .selectFrom('users')
-      .select([
-        'id',
-        'username',
-        'avatar',
-        'created_at',
-        'role_id'
-      ])
+      .select(['id', 'username', 'avatar', 'created_at', 'role_id'])
       .orderBy('username')
       .execute();
 
     const allRelevantUsers = allUsers
-      .filter(user => isAdmin(user.id) || usersWithRoles.find(u => u.id === user.id))
-      .map(user => {
-        const existing = usersWithRoles.find(u => u.id === user.id);
+      .filter(
+        (user) =>
+          isAdmin(user.id) || usersWithRoles.find((u) => u.id === user.id)
+      )
+      .map((user) => {
+        const existing = usersWithRoles.find((u) => u.id === user.id);
         if (existing) return existing;
         return {
           ...user,
           is_admin: isAdmin(user.id),
           roles: [],
           role_name: null,
-          role_permissions: null
+          role_permissions: null,
         };
       });
 
@@ -358,10 +363,13 @@ export async function getUsersWithRoles() {
       role_permissions: unknown;
     };
 
-    const uniqueUsers = allRelevantUsers.reduce((acc: UserWithRoles[], user) => {
-      if (!acc.find(u => u.id === user.id)) acc.push(user as UserWithRoles);
-      return acc;
-    }, []);
+    const uniqueUsers = allRelevantUsers.reduce(
+      (acc: UserWithRoles[], user) => {
+        if (!acc.find((u) => u.id === user.id)) acc.push(user as UserWithRoles);
+        return acc;
+      },
+      []
+    );
 
     return uniqueUsers.sort((a, b) => a.username.localeCompare(b.username));
   } catch (error) {

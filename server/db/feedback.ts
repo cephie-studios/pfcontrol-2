@@ -1,5 +1,5 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
 
 export async function getAllFeedback() {
   try {

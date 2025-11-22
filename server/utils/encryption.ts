@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+const envFile =
+  process.env.NODE_ENV === 'production'
+    ? '.env.production'
+    : '.env.development';
 dotenv.config({ path: envFile });
 
 const ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY;
@@ -28,7 +31,7 @@ export function encrypt(text: unknown) {
     return {
       iv: iv.toString('hex'),
       data: encrypted,
-      authTag: authTag.toString('hex')
+      authTag: authTag.toString('hex'),
     };
   } catch (error) {
     console.error('Encryption error:', error);
@@ -36,14 +39,28 @@ export function encrypt(text: unknown) {
   }
 }
 
-export function decrypt(encryptedData: { iv: string; data: string; authTag: string }) {
-  if (!encryptedData || typeof encryptedData !== 'object' || !encryptedData.iv || !encryptedData.data || !encryptedData.authTag) {
+export function decrypt(encryptedData: {
+  iv: string;
+  data: string;
+  authTag: string;
+}) {
+  if (
+    !encryptedData ||
+    typeof encryptedData !== 'object' ||
+    !encryptedData.iv ||
+    !encryptedData.data ||
+    !encryptedData.authTag
+  ) {
     return null;
   }
 
   try {
     const { iv, data, authTag } = encryptedData;
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'hex'));
+    const decipher = crypto.createDecipheriv(
+      ALGORITHM,
+      key,
+      Buffer.from(iv, 'hex')
+    );
 
     decipher.setAuthTag(Buffer.from(authTag, 'hex'));
 

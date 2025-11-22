@@ -17,7 +17,9 @@ export async function fetchActiveUpdateModal(): Promise<UpdateModal | null> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch active update modal: ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch active update modal: ${response.statusText}`
+    );
   }
 
   return response.json();

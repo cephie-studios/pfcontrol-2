@@ -1,12 +1,12 @@
-import { mainDb, flightsDb } from "./connection.js";
+import { mainDb, flightsDb } from './connection.js';
 import { cleanupOldStatistics } from './statistics.js';
 import { getAllSessions } from './sessions.js';
 import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { getAdminIds, isAdmin } from '../middleware/admin.js';
-import { getActiveUsersForSession } from "../websockets/sessionUsersWebsocket.js";
-import { getUserRoles } from "./roles.js";
+import { getActiveUsersForSession } from '../websockets/sessionUsersWebsocket.js';
+import { getUserRoles } from './roles.js';
 
 type RawUser = {
   id: string;
@@ -58,7 +58,9 @@ async function calculateDirectStatistics() {
           .executeTakeFirst();
         totalFlights += Number(flightResult?.count) || 0;
       } catch {
-        console.warn(`Could not count flights for session ${session.session_id}`);
+        console.warn(
+          `Could not count flights for session ${session.session_id}`
+        );
       }
     }
 
@@ -111,7 +113,7 @@ async function backfillStatistics() {
 
 export async function getDailyStatistics(days = 30) {
   const cacheKey = `admin:daily_stats:${days}`;
-  
+
   try {
     const cached = await redisConnection.get(cacheKey);
     if (cached) {
@@ -119,7 +121,10 @@ export async function getDailyStatistics(days = 30) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to read cache for daily stats (${days} days):`, error.message);
+      console.warn(
+        `[Redis] Failed to read cache for daily stats (${days} days):`,
+        error.message
+      );
     }
   }
 
@@ -131,7 +136,9 @@ export async function getDailyStatistics(days = 30) {
       .select([
         'date',
         mainDb.fn.coalesce('logins_count', sql`0`).as('logins_count'),
-        mainDb.fn.coalesce('new_sessions_count', sql`0`).as('new_sessions_count'),
+        mainDb.fn
+          .coalesce('new_sessions_count', sql`0`)
+          .as('new_sessions_count'),
         mainDb.fn.coalesce('new_flights_count', sql`0`).as('new_flights_count'),
         mainDb.fn.coalesce('new_users_count', sql`0`).as('new_users_count'),
       ])
@@ -148,7 +155,10 @@ export async function getDailyStatistics(days = 30) {
       await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(`[Redis] Failed to set cache for daily stats (${days} days):`, error.message);
+        console.warn(
+          `[Redis] Failed to set cache for daily stats (${days} days):`,
+          error.message
+        );
       }
     }
 
@@ -161,7 +171,7 @@ export async function getDailyStatistics(days = 30) {
 
 export async function getTotalStatistics() {
   const cacheKey = 'admin:total_stats';
-  
+
   try {
     const cached = await redisConnection.get(cacheKey);
     if (cached) {
@@ -169,7 +179,10 @@ export async function getTotalStatistics() {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for total stats:', error.message);
+      console.warn(
+        '[Redis] Failed to read cache for total stats:',
+        error.message
+      );
     }
   }
 
@@ -197,7 +210,10 @@ export async function getTotalStatistics() {
       await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn('[Redis] Failed to set cache for total stats:', error.message);
+        console.warn(
+          '[Redis] Failed to set cache for total stats:',
+          error.message
+        );
       }
     }
 
@@ -213,7 +229,12 @@ export async function getTotalStatistics() {
   }
 }
 
-export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin = 'all') {
+export async function getAllUsers(
+  page = 1,
+  limit = 50,
+  search = '',
+  filterAdmin = 'all'
+) {
   try {
     const offset = (page - 1) * limit;
     const cacheKey = `allUsers:${page}:${limit}:${search}:${filterAdmin}`;
@@ -247,21 +268,19 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
           'u.roblox_username',
           'u.role_id',
           'r.name as role_name',
-          'r.permissions as role_permissions'
+          'r.permissions as role_permissions',
         ])
         .orderBy('u.last_login', 'desc');
 
-      // Apply search filter
       if (search && search.trim()) {
         query = query.where((eb) =>
           eb.or([
             eb('u.username', 'ilike', `%${search.trim()}%`),
-            eb('u.id', '=', search.trim())
+            eb('u.id', '=', search.trim()),
           ])
         );
       }
 
-      // Apply admin filter
       if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
         const adminIds = getAdminIds();
         if (adminIds.length > 0) {
@@ -273,12 +292,15 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         } else {
           return {
             users: [],
-            pagination: { page, limit, total: 0, pages: 0 }
+            pagination: { page, limit, total: 0, pages: 0 },
           };
         }
       }
 
-      const countQuery = query.clearSelect().clearOrderBy().select(({ fn }) => fn.countAll().as('count'));
+      const countQuery = query
+        .clearSelect()
+        .clearOrderBy()
+        .select(({ fn }) => fn.countAll().as('count'));
       const countResult = await countQuery.executeTakeFirst();
       totalUsers = Number(countResult?.count) || 0;
 
@@ -302,9 +324,9 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
       }));
 
       // Fetch roles for multi-role support
-      const userIds = rawUsers.map(u => u.id);
+      const userIds = rawUsers.map((u) => u.id);
       const allUserRoles = await Promise.all(
-        userIds.map(userId => getUserRoles(userId))
+        userIds.map((userId) => getUserRoles(userId))
       );
 
       // Process users with admin status, settings decryption, etc.
@@ -321,24 +343,38 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         let rolePermissions = null;
         try {
           if (user.role_permissions) {
-            rolePermissions = typeof user.role_permissions === 'string'
-              ? JSON.parse(user.role_permissions)
-              : user.role_permissions;
+            rolePermissions =
+              typeof user.role_permissions === 'string'
+                ? JSON.parse(user.role_permissions)
+                : user.role_permissions;
           }
         } catch (error) {
-          console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
+          console.warn(
+            `Failed to parse role permissions for user ${user.id}:`,
+            error
+          );
         }
+        user.role_permissions = rolePermissions;
 
         let decryptedIP = user.ip_address;
         if (user.ip_address) {
           try {
-            if (typeof user.ip_address === 'string' && user.ip_address.trim().startsWith('{')) {
+            if (
+              typeof user.ip_address === 'string' &&
+              user.ip_address.trim().startsWith('{')
+            ) {
               decryptedIP = decrypt(JSON.parse(user.ip_address));
             } else {
-              const isEncryptedObject = (val: unknown): val is { iv: string; data: string; authTag: string } => {
+              const isEncryptedObject = (
+                val: unknown
+              ): val is { iv: string; data: string; authTag: string } => {
                 if (typeof val !== 'object' || val === null) return false;
                 const obj = val as Record<string, unknown>;
-                return typeof obj.iv === 'string' && typeof obj.data === 'string' && typeof obj.authTag === 'string';
+                return (
+                  typeof obj.iv === 'string' &&
+                  typeof obj.data === 'string' &&
+                  typeof obj.authTag === 'string'
+                );
               };
 
               if (isEncryptedObject(user.ip_address)) {
@@ -356,7 +392,7 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
           is_admin: isAdmin(user.id),
           settings: decryptedSettings,
           roles: allUserRoles[index],
-          current_sessions_count: 0
+          current_sessions_count: 0,
         };
       });
 
@@ -374,7 +410,12 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         filteredUsers = filteredUsers.slice(0, limit);
       }
 
-      await redisConnection.set(cacheKey, JSON.stringify({ users: filteredUsers, total: totalUsers }), 'EX', 300);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify({ users: filteredUsers, total: totalUsers }),
+        'EX',
+        300
+      );
     }
 
     return {
@@ -383,8 +424,8 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
         page,
         limit,
         total: totalUsers,
-        pages: Math.ceil(totalUsers / limit)
-      }
+        pages: Math.ceil(totalUsers / limit),
+      },
     };
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -395,7 +436,7 @@ export async function getAllUsers(page = 1, limit = 50, search = '', filterAdmin
 export async function getAdminSessions(page = 1, limit = 100, search = '') {
   try {
     const offset = (page - 1) * limit;
-    
+
     let query = mainDb
       .selectFrom('sessions as s')
       .leftJoin('users as u', 's.created_by', 'u.id')
@@ -409,7 +450,7 @@ export async function getAdminSessions(page = 1, limit = 100, search = '') {
         's.is_pfatc',
         'u.username',
         'u.discriminator',
-        'u.avatar'
+        'u.avatar',
       ])
       .orderBy('s.created_at', 'desc');
 
@@ -420,12 +461,15 @@ export async function getAdminSessions(page = 1, limit = 100, search = '') {
           eb('s.session_id', 'ilike', searchTerm),
           eb('s.airport_icao', 'ilike', searchTerm),
           eb('u.username', 'ilike', searchTerm),
-          eb('s.created_by', 'ilike', searchTerm)
+          eb('s.created_by', 'ilike', searchTerm),
         ])
       );
     }
 
-    const countQuery = query.clearSelect().clearOrderBy().select(({ fn }) => fn.countAll().as('count'));
+    const countQuery = query
+      .clearSelect()
+      .clearOrderBy()
+      .select(({ fn }) => fn.countAll().as('count'));
     const countResult = await countQuery.executeTakeFirst();
     const total = Number(countResult?.count) || 0;
     const pages = Math.ceil(total / limit);
@@ -445,12 +489,14 @@ export async function getAdminSessions(page = 1, limit = 100, search = '') {
         } catch {
           // Table may not exist, keep flight_count as 0
         }
-        const activeSessionUsers = await getActiveUsersForSession(session.session_id);
+        const activeSessionUsers = await getActiveUsersForSession(
+          session.session_id
+        );
         return {
           ...session,
           flight_count,
           active_users: activeSessionUsers,
-          active_user_count: activeSessionUsers.length
+          active_user_count: activeSessionUsers.length,
         };
       })
     );
@@ -461,8 +507,8 @@ export async function getAdminSessions(page = 1, limit = 100, search = '') {
         page,
         limit,
         total,
-        pages
-      }
+        pages,
+      },
     };
   } catch (error) {
     console.error('Error fetching admin sessions:', error);
@@ -474,10 +520,7 @@ export async function syncUserSessionCounts() {
   try {
     const sessionCounts = await mainDb
       .selectFrom('sessions')
-      .select([
-        'created_by',
-        mainDb.fn.countAll().as('session_count')
-      ])
+      .select(['created_by', mainDb.fn.countAll().as('session_count')])
       .groupBy('created_by')
       .execute();
 
@@ -488,14 +531,21 @@ export async function syncUserSessionCounts() {
         .where('id', '=', row.created_by)
         .execute();
     }
-    
+
     await mainDb
       .updateTable('users')
       .set({ total_sessions_created: 0 })
-      .where('id', 'not in', sessionCounts.map(r => r.created_by))
+      .where(
+        'id',
+        'not in',
+        sessionCounts.map((r) => r.created_by)
+      )
       .execute();
 
-    return { message: 'Session counts synced successfully', updatedUsers: sessionCounts.length };
+    return {
+      message: 'Session counts synced successfully',
+      updatedUsers: sessionCounts.length,
+    };
   } catch (error) {
     console.error('Error syncing user session counts:', error);
     throw error;
@@ -507,7 +557,13 @@ export async function invalidateAllUsersCache() {
     let cursor = '0';
     const keysToDelete: string[] = [];
     do {
-      const [newCursor, keys] = await redisConnection.scan(cursor, 'MATCH', 'allUsers:*', 'COUNT', 100);
+      const [newCursor, keys] = await redisConnection.scan(
+        cursor,
+        'MATCH',
+        'allUsers:*',
+        'COUNT',
+        100
+      );
       cursor = newCursor;
       keysToDelete.push(...keys);
     } while (cursor !== '0');

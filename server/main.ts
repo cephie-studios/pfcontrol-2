@@ -25,27 +25,32 @@ import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { initializeGlobalHolidaySettings } from './db/globalHolidaySettings.js';
 import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
 
-dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production'
+      ? '.env.production'
+      : '.env.development',
+});
 console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
 const requiredEnv = [
-    'DISCORD_CLIENT_ID',
-    'DISCORD_CLIENT_SECRET',
-    'DISCORD_REDIRECT_URI',
-    'FRONTEND_URL',
-    'JWT_SECRET',
-    'POSTGRES_DB_URL',
-    'REDIS_URL',
-    'PORT',
+  'DISCORD_CLIENT_ID',
+  'DISCORD_CLIENT_SECRET',
+  'DISCORD_REDIRECT_URI',
+  'FRONTEND_URL',
+  'JWT_SECRET',
+  'POSTGRES_DB_URL',
+  'REDIS_URL',
+  'PORT',
 ];
 const missingEnv = requiredEnv.filter(
-    (key) => !process.env[key] || process.env[key] === ''
+  (key) => !process.env[key] || process.env[key] === ''
 );
 if (missingEnv.length > 0) {
-    console.error(
-        'Missing required environment variables:',
-        missingEnv.join(', ')
-    );
-    process.exit(1);
+  console.error(
+    'Missing required environment variables:',
+    missingEnv.join(', ')
+  );
+  process.exit(1);
 }
 
 (async () => {
@@ -64,17 +69,27 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.set('trust proxy', 1);
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://control.pfconnect.online', 'https://test.pfconnect.online']
-    : [
-        'http://localhost:9901',
-        'http://localhost:5173',
-      ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Credentials']
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? [
+            'https://control.pfconnect.online',
+            'https://canary.pfconnect.online',
+          ]
+        : ['http://localhost:9901', 'http://localhost:5173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Allow-Credentials',
+    ],
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 
@@ -87,14 +102,17 @@ app.get('/health', (_req, res) => {
 app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
-app.use(express.static(path.join(__dirname, '..', '..', 'dist'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
-  }
-}));
+app.use(
+  express.static(path.join(__dirname, '..', '..', 'dist'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js'))
+        res.setHeader('Content-Type', 'application/javascript');
+    },
+  })
+);
 
 app.get('/{*any}', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', "..", "dist", "index.html"));
+  res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
 });
 
 const server = http.createServer(app);
@@ -121,7 +139,10 @@ overviewIO.adapter(createAdapter(pubClient, subClient));
 const arrivalsIO = setupArrivalsWebsocket(server);
 arrivalsIO.adapter(createAdapter(pubClient, subClient));
 
-const sectorControllerIO = setupSectorControllerWebsocket(server, sessionUsersIO);
+const sectorControllerIO = setupSectorControllerWebsocket(
+  server,
+  sessionUsersIO
+);
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 
 const voiceChatIO = setupVoiceChatWebsocket(server);
@@ -131,9 +152,12 @@ startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();
 setInterval(updateLeaderboard, 12 * 60 * 60 * 1000);
-setInterval(() => {
-  cleanupOldApiLogs(1);
-}, 60 * 60 * 1000);
+setInterval(
+  () => {
+    cleanupOldApiLogs(1);
+  },
+  60 * 60 * 1000
+);
 
 server.listen(PORT, () => {
   console.log(chalk.green(`Server running on http://localhost:${PORT}`));

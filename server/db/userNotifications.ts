@@ -1,6 +1,10 @@
-import { mainDb } from "./connection.js";
+import { mainDb } from './connection.js';
 
-export async function getUserNotifications(userId: string, unreadOnly = false, limit = 20) {
+export async function getUserNotifications(
+  userId: string,
+  unreadOnly = false,
+  limit = 20
+) {
   let query = mainDb
     .selectFrom('user_notifications')
     .selectAll()
@@ -10,13 +14,13 @@ export async function getUserNotifications(userId: string, unreadOnly = false, l
     query = query.where('read', '=', false);
   }
 
-  return await query
-    .orderBy('created_at', 'desc')
-    .limit(limit)
-    .execute();
+  return await query.orderBy('created_at', 'desc').limit(limit).execute();
 }
 
-export async function markNotificationAsRead(notificationId: number, userId: string) {
+export async function markNotificationAsRead(
+  notificationId: number,
+  userId: string
+) {
   const result = await mainDb
     .updateTable('user_notifications')
     .set({ read: true })
@@ -36,7 +40,10 @@ export async function markAllNotificationsAsRead(userId: string) {
     .execute();
 }
 
-export async function deleteNotification(notificationId: number, userId: string) {
+export async function deleteNotification(
+  notificationId: number,
+  userId: string
+) {
   await mainDb
     .deleteFrom('user_notifications')
     .where('id', '=', notificationId)

@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
-import { useSettings } from './hooks/settings/useSettings';
 
 import Home from './pages/Home';
 import Create from './pages/Create';
@@ -20,9 +19,6 @@ import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
-import SnowEffect from './components/holiday/SnowEffect';
-import HolidayMusic from './components/holiday/HolidayMusic';
-import HolidayAnimations from './components/holiday/HolidayAnimations';
 
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -42,33 +38,16 @@ import {
   type UpdateModal,
 } from './utils/fetch/updateModal';
 import { getTesterSettings } from './utils/fetch/data';
-import { fetchGlobalHolidayStatus } from './utils/fetch/data';
 
 export default function App() {
-  const { settings } = useSettings();
   const { user } = useAuth();
   const [testerGateEnabled, setTesterGateEnabled] = useState(false);
-  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
 
   const shouldBypassTesterGate = () => {
     return window.location.hostname === 'control.pfconnect.online';
   };
-
-  useEffect(() => {
-    const checkGlobalHolidayStatus = async () => {
-      try {
-        const status = await fetchGlobalHolidayStatus();
-        setGlobalHolidayEnabled(status.enabled);
-      } catch (error) {
-        console.error('Error fetching global holiday status:', error);
-        setGlobalHolidayEnabled(false);
-      }
-    };
-
-    checkGlobalHolidayStatus();
-  }, []);
 
   useEffect(() => {
     if (user) {
@@ -147,17 +126,6 @@ export default function App() {
 
   return (
     <Router>
-      {globalHolidayEnabled && settings?.holidayTheme?.enabled && (
-        <>
-          {settings.holidayTheme.snowEffect && <SnowEffect />}
-          {settings.holidayTheme.animations && <HolidayAnimations />}
-          <HolidayMusic
-            enabled={settings.holidayTheme.music ?? false}
-            volume={settings.holidayTheme.musicVolume ?? 50}
-          />
-        </>
-      )}
-
       {activeModal &&
         (!testerGateEnabled ||
           shouldBypassTesterGate() ||
@@ -176,10 +144,7 @@ export default function App() {
         <AccessDenied errorType="banned" />
       ) : (
         <Routes>
-          <Route
-            path="/"
-            element={<Home globalHolidayEnabled={globalHolidayEnabled} />}
-          />
+          <Route path="/" element={<Home />} />
           <Route path="/pfatc" element={<PFATCFlights />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
@@ -207,7 +172,7 @@ export default function App() {
             path="/view/:sessionId"
             element={
               <ProtectedRoute>
-                <Flights globalHolidayEnabled={globalHolidayEnabled} />
+                <Flights />
               </ProtectedRoute>
             }
           />

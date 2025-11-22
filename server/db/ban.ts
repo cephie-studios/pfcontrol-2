@@ -1,5 +1,5 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
 
 export async function banUser({
   userId,
@@ -17,12 +17,12 @@ export async function banUser({
   expiresAt?: string;
 }): Promise<void> {
   if (!userId && !ip) {
-    throw new Error("Either userId or ip must be provided");
+    throw new Error('Either userId or ip must be provided');
   }
-  const expiresAtValue = expiresAt === "" ? undefined : expiresAt;
+  const expiresAtValue = expiresAt === '' ? undefined : expiresAt;
 
   await mainDb
-    .insertInto("bans")
+    .insertInto('bans')
     .values({
       id: sql`DEFAULT`,
       user_id: userId || undefined,
@@ -38,29 +38,23 @@ export async function banUser({
 
 export async function unbanUser(userIdOrIp: string): Promise<void> {
   await mainDb
-    .updateTable("bans")
+    .updateTable('bans')
     .set({ active: false })
     .where(({ or, eb }) =>
-      or([
-        eb("user_id", "=", userIdOrIp),
-        eb("ip_address", "=", userIdOrIp),
-      ])
+      or([eb('user_id', '=', userIdOrIp), eb('ip_address', '=', userIdOrIp)])
     )
-    .where("active", "=", true)
+    .where('active', '=', true)
     .execute();
 }
 
 export async function isUserBanned(userId: string) {
   const result = await mainDb
-    .selectFrom("bans")
+    .selectFrom('bans')
     .selectAll()
-    .where("user_id", "=", userId)
-    .where("active", "=", true)
+    .where('user_id', '=', userId)
+    .where('active', '=', true)
     .where(({ or, eb }) =>
-      or([
-        eb("expires_at", "is", null),
-        eb("expires_at", ">", new Date()),
-      ])
+      or([eb('expires_at', 'is', null), eb('expires_at', '>', new Date())])
     )
     .executeTakeFirst();
   return result ?? null;
@@ -68,15 +62,12 @@ export async function isUserBanned(userId: string) {
 
 export async function isIpBanned(ip: string) {
   const result = await mainDb
-    .selectFrom("bans")
+    .selectFrom('bans')
     .selectAll()
-    .where("ip_address", "=", ip)
-    .where("active", "=", true)
+    .where('ip_address', '=', ip)
+    .where('active', '=', true)
     .where(({ or, eb }) =>
-      or([
-        eb("expires_at", "is", null),
-        eb("expires_at", ">", new Date()),
-      ])
+      or([eb('expires_at', 'is', null), eb('expires_at', '>', new Date())])
     )
     .executeTakeFirst();
   return result ?? null;
@@ -86,16 +77,16 @@ export async function getAllBans(page = 1, limit = 50) {
   const offset = (page - 1) * limit;
 
   const bans = await mainDb
-    .selectFrom("bans")
+    .selectFrom('bans')
     .selectAll()
-    .orderBy("banned_at", "desc")
+    .orderBy('banned_at', 'desc')
     .limit(limit)
     .offset(offset)
     .execute();
 
   const [{ count }] = await mainDb
-    .selectFrom("bans")
-    .select(({ fn }) => [fn.countAll().as("count")])
+    .selectFrom('bans')
+    .select(({ fn }) => [fn.countAll().as('count')])
     .execute();
 
   const total = Number(count);

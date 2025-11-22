@@ -4,7 +4,12 @@ import { redisConnection } from '../db/connection.js';
 const FLUSH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const STATS_KEY_PREFIX = 'stats_cache:';
 
-export async function incrementStat(userId: string, key: string, value: number = 1, subKey?: string) {
+export async function incrementStat(
+  userId: string,
+  key: string,
+  value: number = 1,
+  subKey?: string
+) {
   const redisKey = `${STATS_KEY_PREFIX}${userId}`;
   try {
     if (subKey) {
@@ -15,7 +20,10 @@ export async function incrementStat(userId: string, key: string, value: number =
     }
     await redisConnection.expire(redisKey, 300);
   } catch (error) {
-    console.error(`[Redis] Failed to increment stat for user ${userId}:`, error);
+    console.error(
+      `[Redis] Failed to increment stat for user ${userId}:`,
+      error
+    );
   }
 }
 
@@ -31,17 +39,21 @@ async function flushStats() {
 
       if (Object.keys(statsHash).length > 0) {
         const user = await getUserById(userId);
-        const existingStats = (user && user.statistics) ? user.statistics : {};
+        const existingStats = user && user.statistics ? user.statistics : {};
 
-        const stats: Record<string, number | Record<string, number>> = { ...existingStats };
+        const stats: Record<string, number | Record<string, number>> = {
+          ...existingStats,
+        };
         for (const [fullKey, val] of Object.entries(statsHash)) {
           const parts = fullKey.split('.');
           if (parts.length === 1) {
             stats[parts[0]] = (Number(stats[parts[0]]) || 0) + parseFloat(val);
           } else {
-            if (!stats[parts[0]]) stats[parts[0]] = {} as Record<string, number>;
+            if (!stats[parts[0]])
+              stats[parts[0]] = {} as Record<string, number>;
             (stats[parts[0]] as Record<string, number>)[parts[1]] =
-              ((stats[parts[0]] as Record<string, number>)[parts[1]] || 0) + parseFloat(val);
+              ((stats[parts[0]] as Record<string, number>)[parts[1]] || 0) +
+              parseFloat(val);
           }
         }
 

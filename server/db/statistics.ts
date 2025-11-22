@@ -1,4 +1,4 @@
-import { mainDb } from "./connection.js";
+import { mainDb } from './connection.js';
 import { sql } from 'kysely';
 
 export async function recordLogin() {
@@ -10,7 +10,7 @@ export async function recordLogin() {
       .onConflict((oc) =>
         oc.column('date').doUpdateSet({
           logins_count: sql`daily_statistics.logins_count + 1`,
-          updated_at: sql`NOW()`
+          updated_at: sql`NOW()`,
         })
       )
       .execute();
@@ -28,7 +28,7 @@ export async function recordNewSession() {
       .onConflict((oc) =>
         oc.column('date').doUpdateSet({
           new_sessions_count: sql`daily_statistics.new_sessions_count + 1`,
-          updated_at: sql`NOW()`
+          updated_at: sql`NOW()`,
         })
       )
       .execute();
@@ -46,7 +46,7 @@ export async function recordNewFlight() {
       .onConflict((oc) =>
         oc.column('date').doUpdateSet({
           new_flights_count: sql`daily_statistics.new_flights_count + 1`,
-          updated_at: sql`NOW()`
+          updated_at: sql`NOW()`,
         })
       )
       .execute();
@@ -64,7 +64,7 @@ export async function recordNewUser() {
       .onConflict((oc) =>
         oc.column('date').doUpdateSet({
           new_users_count: sql`daily_statistics.new_users_count + 1`,
-          updated_at: sql`NOW()`
+          updated_at: sql`NOW()`,
         })
       )
       .execute();

@@ -30,11 +30,15 @@ export async function detectVPN(req: Request): Promise<boolean> {
     const { data } = await axios.get(url, { timeout: 5000 });
     const info = data[clientIp];
 
-    if (info?.proxy === "yes" || info?.vpn === "yes" || Number(info?.risk) > 0) {
+    if (
+      info?.proxy === 'yes' ||
+      info?.vpn === 'yes' ||
+      Number(info?.risk) > 0
+    ) {
       return true;
     }
   } catch (err) {
-    console.error("VPN check error, allowing request:", err);
+    console.error('VPN check error, allowing request:', err);
   }
 
   return false;

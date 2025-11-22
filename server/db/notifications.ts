@@ -1,5 +1,5 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
 
 export async function getAllNotifications() {
   try {
@@ -60,9 +60,25 @@ export async function addNotification({
   }
 }
 
-export async function updateNotification(id: number, { type, text, show, customColor }: { type?: string, text?: string, show?: boolean, customColor?: string | null }) {
+export async function updateNotification(
+  id: number,
+  {
+    type,
+    text,
+    show,
+    customColor,
+  }: {
+    type?: string;
+    text?: string;
+    show?: boolean;
+    customColor?: string | null;
+  }
+) {
   try {
-    const updateData: Record<string, string | boolean | Date | null | undefined> = {};
+    const updateData: Record<
+      string,
+      string | boolean | Date | null | undefined
+    > = {};
     if (type !== undefined) updateData.type = type;
     if (text !== undefined) updateData.text = text;
     if (show !== undefined) updateData.show = show;
