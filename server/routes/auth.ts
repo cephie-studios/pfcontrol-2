@@ -353,8 +353,7 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
 
     const payload = userResponse.data || {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const root: Record<string, any> =
-      (payload).data || (payload).user || payload;
+    const root: Record<string, any> = payload.data || payload.user || payload;
     const cid = String(root?.cid ?? root?.id ?? '');
     const candidates = [
       root?.rating?.controller,
@@ -489,8 +488,7 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
     );
     const payload = userResponse.data || {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const root: Record<string, any> =
-      (payload).data || (payload).user || payload;
+    const root: Record<string, any> = payload.data || payload.user || payload;
     const cid = String(root?.cid ?? root?.id ?? '');
     const candidates2 = [
       root?.rating?.controller,
