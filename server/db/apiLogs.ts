@@ -62,7 +62,6 @@ export async function getApiLogs(
       ])
       .orderBy('timestamp', 'desc');
 
-    // Apply filters
     if (filters.userId) {
       query = query.where((q) =>
         q.or([

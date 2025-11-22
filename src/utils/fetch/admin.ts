@@ -248,14 +248,6 @@ export interface FlightLogsResponse {
   };
 }
 
-export interface GlobalHolidaySettings {
-  id: number;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  updated_by: string;
-}
-
 export interface ApiLog {
   id: number;
   user_id: string | null;

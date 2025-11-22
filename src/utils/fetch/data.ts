@@ -104,15 +104,3 @@ export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
   }
   return await response.json();
 }
-
-export async function fetchGlobalHolidayStatus(): Promise<{
-  enabled: boolean;
-}> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/data/holiday-enabled`
-  );
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return await response.json();
-}

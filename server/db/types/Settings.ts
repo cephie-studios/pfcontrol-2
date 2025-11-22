@@ -65,16 +65,6 @@ export interface AcarsSettings {
   autoRedirectToAcars: boolean;
 }
 
-export interface HolidayThemeSettings {
-  enabled: boolean;
-  snowEffect: boolean;
-  music: boolean;
-  musicVolume: number; // 0 to 100
-  animations: boolean;
-  santa: boolean;
-  customMusicUrl?: string;
-}
-
 export interface Settings {
   backgroundImage: BackgroundImageSettings;
   sounds: {
@@ -94,6 +84,5 @@ export interface Settings {
   hideFromLeaderboard: boolean;
   displayBackgroundOnProfile: boolean;
   bio: string;
-  holidayTheme: HolidayThemeSettings;
   [key: string]: unknown;
 }

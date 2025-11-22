@@ -18,26 +18,23 @@ import {
 
 const router = express.Router();
 
-// Helper function to ensure Tester role exists
 async function ensureTesterRole() {
   try {
     const roles = await getAllRoles();
     let testerRole = roles.find((r) => r.name === 'Tester');
 
     if (!testerRole) {
-      // Create Tester role with yellow color and flask icon
       const createdRole = await createRole({
         name: 'Tester',
         description: 'Beta tester with early access to new features',
         permissions: {},
-        color: '#EAB308', // Yellow
+        color: '#EAB308',
         icon: 'FlaskConical',
         priority: 5,
       });
       if (!createdRole) {
         throw new Error('Failed to create Tester role');
       }
-      // Patch: add user_count if missing
       if (
         'user_count' in createdRole &&
         typeof createdRole.user_count === 'number'
@@ -105,7 +102,6 @@ router.post('/', async (req, res) => {
       notes
     );
 
-    // Auto-assign Tester role
     try {
       const testerRole = await ensureTesterRole();
       if (testerRole) {
@@ -113,7 +109,6 @@ router.post('/', async (req, res) => {
       }
     } catch (roleError) {
       console.error('Failed to assign Tester role:', roleError);
-      // Don't fail the whole request if role assignment fails
     }
 
     if (req.user?.userId) {
@@ -158,7 +153,6 @@ router.delete('/:userId', async (req, res) => {
       return res.status(404).json({ error: 'Tester not found' });
     }
 
-    // Auto-remove Tester role
     try {
       const testerRole = await ensureTesterRole();
       if (testerRole) {
@@ -166,7 +160,6 @@ router.delete('/:userId', async (req, res) => {
       }
     } catch (roleError) {
       console.error('Failed to remove Tester role:', roleError);
-      // Don't fail the whole request if role removal fails
     }
 
     if (req.user?.userId) {
@@ -213,7 +206,6 @@ router.put('/settings', async (req, res) => {
       tester_gate_enabled
     );
 
-    // Log the settings update action
     if (req.user?.userId) {
       try {
         let ip = getClientIp(req);

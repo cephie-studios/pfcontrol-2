@@ -272,7 +272,6 @@ export async function getAllUsers(
         ])
         .orderBy('u.last_login', 'desc');
 
-      // Apply search filter
       if (search && search.trim()) {
         query = query.where((eb) =>
           eb.or([
@@ -282,7 +281,6 @@ export async function getAllUsers(
         );
       }
 
-      // Apply admin filter
       if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
         const adminIds = getAdminIds();
         if (adminIds.length > 0) {

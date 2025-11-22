@@ -59,7 +59,7 @@ export async function getUserById(userId: string) {
 
   if (cached) {
     const user = JSON.parse(cached);
-    return await applyGlobalHolidayOverride(user);
+    return user;
   }
 
   const user = await mainDb
@@ -120,38 +120,7 @@ export async function getUserById(userId: string) {
     }
   }
 
-  return await applyGlobalHolidayOverride(result);
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function applyGlobalHolidayOverride(user: any) {
-  try {
-    const { getGlobalHolidaySettings } = await import(
-      './globalHolidaySettings.js'
-    );
-    const globalSettings = await getGlobalHolidaySettings();
-
-    if (!globalSettings.enabled && user.settings?.holidayTheme) {
-      return {
-        ...user,
-        settings: {
-          ...user.settings,
-          holidayTheme: {
-            ...user.settings.holidayTheme,
-            enabled: false,
-          },
-        },
-      };
-    }
-
-    return user;
-  } catch (error) {
-    console.warn(
-      'Failed to check global holiday settings, returning user as-is:',
-      error
-    );
-    return user;
-  }
+  return result;
 }
 
 export async function getUserByUsername(username: string) {
@@ -179,7 +148,7 @@ export async function getUserByUsername(username: string) {
 
   if (cached) {
     const user = JSON.parse(cached);
-    return await applyGlobalHolidayOverride(user);
+    return user;
   }
 
   const user = await mainDb
@@ -223,7 +192,7 @@ export async function getUserByUsername(username: string) {
     }
   }
 
-  return await applyGlobalHolidayOverride(result);
+  return result;
 }
 
 export async function createOrUpdateUser(userData: {
@@ -318,14 +287,6 @@ export async function createOrUpdateUser(userData: {
     hideFromLeaderboard: false,
     displayBackgroundOnProfile: true,
     bio: '',
-    holidayTheme: {
-      enabled: true,
-      snowEffect: true,
-      music: true,
-      musicVolume: 50,
-      animations: true,
-      santa: true,
-    },
   };
 
   const encryptedAccessToken = encrypt(accessToken);

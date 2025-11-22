@@ -231,7 +231,6 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
       encryptedAtis = JSON.stringify(encrypted);
     }
 
-    // updateSession expects snake_case keys
     const session = await updateSession(sessionId, {
       active_runway: activeRunway,
       atis: encryptedAtis,

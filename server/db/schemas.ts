@@ -317,14 +317,14 @@ export async function createGlobalChatTable() {
     .addColumn('avatar', 'varchar(255)')
     .addColumn('station', 'varchar(50)')
     .addColumn('position', 'varchar(50)')
-    .addColumn('message', 'jsonb', (col) => col.notNull()) // Encrypted: {iv, data, authTag}
+    .addColumn('message', 'jsonb', (col) => col.notNull())
     .addColumn('airport_mentions', 'jsonb')
     .addColumn('user_mentions', 'jsonb')
     .addColumn('sent_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('deleted_at', 'timestamp')
     .execute();
 
-  // Create index for efficient deletion of old messages
+  // Index for efficient deletion of old messages
   await chatsDb.schema
     .createIndex('global_chat_sent_at_idx')
     .ifNotExists()

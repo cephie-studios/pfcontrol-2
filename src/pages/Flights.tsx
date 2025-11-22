@@ -56,9 +56,7 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function Flights({
-  globalHolidayEnabled = false,
-}: { globalHolidayEnabled?: boolean } = {}) {
+export default function Flights() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
@@ -785,10 +783,6 @@ export default function Flights({
   ]);
 
   const backgroundImage = useMemo(() => {
-    if (globalHolidayEnabled && settings?.holidayTheme?.enabled) {
-      return 'url("/assets/app/backgrounds/HolidayBackground.webp")';
-    }
-
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/app/backgrounds/mdpc_01.webp")';
 
@@ -833,8 +827,6 @@ export default function Flights({
     settings?.backgroundImage?.selectedImage,
     settings?.backgroundImage?.favorites,
     availableImages,
-    globalHolidayEnabled,
-    settings?.holidayTheme?.enabled,
   ]);
 
   const showCombinedView =

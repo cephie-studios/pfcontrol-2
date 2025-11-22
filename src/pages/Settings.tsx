@@ -20,6 +20,7 @@ import type {
 import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsSettings';
 import { updateTutorialStatus } from '../utils/fetch/auth';
+import { useAuth } from '../hooks/auth/useAuth';
 import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
 import BackgroundImageSettings from '../components/Settings/BackgroundImageSettings';
 import SoundSettings from '../components/Settings/SoundSettings';
@@ -27,14 +28,11 @@ import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
-import HolidayThemeSettings from '../components/Settings/HolidayThemeSettings';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Modal from '../components/common/Modal';
-import { useAuth } from '../hooks/auth/useAuth';
-import { fetchGlobalHolidayStatus } from '../utils/fetch/data';
 
 function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
   const navigator = useContext(UNSAFE_NavigationContext)?.navigator;
@@ -78,8 +76,6 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
   const navigate = useNavigate();
-  const [globalHolidayEnabled, setGlobalHolidayEnabled] = useState(true);
-  const [loadingGlobalHoliday, setLoadingGlobalHoliday] = useState(true);
 
   useEffect(() => {
     if (settings) {
@@ -95,23 +91,6 @@ export default function Settings() {
       preventNavigation.current = hasChanges;
     }
   }, [settings, localSettings]);
-
-  useEffect(() => {
-    const loadGlobalHolidayStatus = async () => {
-      try {
-        const status = await fetchGlobalHolidayStatus();
-        setGlobalHolidayEnabled(status.enabled);
-      } catch (error) {
-        console.error('Error fetching global holiday status:', error);
-        // Fail open - show holiday settings if fetch fails
-        setGlobalHolidayEnabled(true);
-      } finally {
-        setLoadingGlobalHoliday(false);
-      }
-    };
-
-    loadGlobalHolidayStatus();
-  }, []);
 
   useCustomBlocker(hasChanges, () => setShowDiscardToast(true));
 
@@ -285,16 +264,6 @@ export default function Settings() {
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         <div className="space-y-8">
-          <div id="holiday-theme-settings">
-            <HolidayThemeSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-              globalHolidayEnabled={
-                globalHolidayEnabled && !loadingGlobalHoliday
-              }
-            />
-          </div>
-
           <div id="account-settings">
             <AccountSettings
               settings={localSettings}
