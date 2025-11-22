@@ -72,9 +72,7 @@ const removeUserFromSession = async (
 
 export interface SessionUsersServer extends Server {
   sendMentionToUser: (userId: string, mention: Mention) => void;
-  getActiveUsersForSession: (
-    sessionId: string
-  ) => Promise<
+  getActiveUsersForSession: (sessionId: string) => Promise<
     Array<{
       id: string;
       username: string;

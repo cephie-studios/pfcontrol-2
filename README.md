@@ -8,7 +8,7 @@ We welcome contributions, bug reports, and feature requests. See the Contributin
 
 If you just want to try or demo PFControl:
 
-- Visit https://control.pfconnect.online
+- Visit [control.pfconnect.online](https://control.pfconnect.online)
 - Try PFControl by creating a session from the homepage.
 
 ## Development — Local setup
@@ -22,9 +22,11 @@ The following steps get the project running on your machine for development and 
    ```
 
 2. Create an environment file
-   Copy the example and update environment variables into `.env.development`
+   Copy the example and update environment variables into `.env.development`.
 
-   Fill in required secrets (API keys, DB URLs). Ask project maintainers if you need values.
+   > **Note:** For full functionality, you must set up PostgreSQL and Redis and provide the correct connection URLs in your `.env.development` file.
+   > If you are unable to set up these services locally, you can still run the frontend, but backend features will be limited or unavailable.
+   > If you need help or require development environment variables, join our [Discord server](https://pfconnect.online/discord), create a ticket, and ask for assistance.
 
 3. Start the development environment
    ```

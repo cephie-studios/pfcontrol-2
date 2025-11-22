@@ -88,11 +88,9 @@ router.get(
       res.json(stats);
     } catch (error) {
       console.error('Error fetching API logs stats for last 24 hours:', error);
-      res
-        .status(500)
-        .json({
-          error: 'Failed to fetch API logs statistics for last 24 hours',
-        });
+      res.status(500).json({
+        error: 'Failed to fetch API logs statistics for last 24 hours',
+      });
     }
   }
 );

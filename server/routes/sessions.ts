@@ -121,12 +121,10 @@ router.post(
       });
     } catch (error) {
       console.error('Error creating session:', error);
-      res
-        .status(500)
-        .json({
-          error: 'Internal server error',
-          message: 'Failed to create session',
-        });
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'Failed to create session',
+      });
     }
   }
 );
@@ -154,12 +152,10 @@ router.get('/mine', requireAuth, async (req, res) => {
     );
   } catch (error) {
     console.error('Error fetching user sessions:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to fetch user sessions',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch user sessions',
+    });
   }
 });
 
@@ -180,12 +176,10 @@ router.get('/:sessionId/submit', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching session for submit:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to fetch session',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch session',
+    });
   }
 });
 
@@ -219,12 +213,10 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching session:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to fetch session',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch session',
+    });
   }
 });
 
@@ -273,12 +265,10 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating session:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to update session',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to update session',
+    });
   }
 });
 
@@ -301,12 +291,10 @@ router.post(
       res.json({ customName: updatedSession.custom_name });
     } catch (error) {
       console.error('Error updating session name:', error);
-      res
-        .status(500)
-        .json({
-          error: 'Internal server error',
-          message: 'Failed to update session name',
-        });
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'Failed to update session name',
+      });
     }
   }
 );
@@ -339,12 +327,10 @@ router.post('/delete', requireAuth, async (req: Request, res: Response) => {
     res.json({ message: 'Session deleted successfully', sessionId });
   } catch (error) {
     console.error('Error deleting session:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to delete session',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to delete session',
+    });
   }
 });
 
@@ -389,12 +375,10 @@ router.post(
       });
     } catch (error) {
       console.error('Error deleting oldest session:', error);
-      res
-        .status(500)
-        .json({
-          error: 'Internal server error',
-          message: 'Failed to delete oldest session',
-        });
+      res.status(500).json({
+        error: 'Internal server error',
+        message: 'Failed to delete oldest session',
+      });
     }
   }
 );
@@ -415,12 +399,10 @@ router.get('/', async (_req, res) => {
     );
   } catch (error) {
     console.error('Error fetching sessions:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to fetch sessions',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch sessions',
+    });
   }
 });
 

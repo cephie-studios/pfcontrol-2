@@ -93,12 +93,10 @@ router.put(
       // Basic version validation
       const versionRegex = /^\d+\.\d+\.\d+(\.\d+)?$/;
       if (!versionRegex.test(version.trim())) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'Invalid version format. Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.BUILD',
-          });
+        return res.status(400).json({
+          error:
+            'Invalid version format. Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.BUILD',
+        });
       }
 
       const updatedVersion = await updateAppVersion(

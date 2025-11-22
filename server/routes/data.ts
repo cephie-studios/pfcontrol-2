@@ -101,12 +101,10 @@ router.get('/airports', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error reading airport data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airport data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport data',
+    });
   }
 });
 
@@ -149,12 +147,10 @@ router.get('/aircrafts', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error reading aircraft data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading aircraft data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading aircraft data',
+    });
   }
 });
 
@@ -194,12 +190,10 @@ router.get('/airlines', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error reading airline data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airline data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airline data',
+    });
   }
 });
 
@@ -296,12 +290,10 @@ router.get('/frequencies', async (req, res) => {
     res.json(frequencies);
   } catch (error) {
     console.error('Error reading airport frequencies:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airport frequencies',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport frequencies',
+    });
   }
 });
 
@@ -337,12 +329,10 @@ router.get('/backgrounds', (req, res) => {
     res.json(backgroundImages);
   } catch (error) {
     console.error('Error reading background images:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading background images',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading background images',
+    });
   }
 });
 
@@ -361,12 +351,10 @@ router.get('/airports/:icao/runways', (req, res) => {
     res.json(airport.runways || []);
   } catch (error) {
     console.error('Error reading airport data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airport data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport data',
+    });
   }
 });
 
@@ -385,12 +373,10 @@ router.get('/airports/:icao/sids', (req, res) => {
     res.json(airport.sids || []);
   } catch (error) {
     console.error('Error reading airport data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airport data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport data',
+    });
   }
 });
 
@@ -409,12 +395,10 @@ router.get('/airports/:icao/stars', (req, res) => {
     res.json(airport.stars || []);
   } catch (error) {
     console.error('Error reading airport data:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Error reading airport data',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport data',
+    });
   }
 });
 
@@ -494,12 +478,10 @@ router.get('/statistics', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Error fetching statistics:', error);
-    res
-      .status(500)
-      .json({
-        error: 'Internal server error',
-        message: 'Failed to fetch statistics',
-      });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch statistics',
+    });
   }
 });
 

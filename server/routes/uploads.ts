@@ -130,12 +130,10 @@ router.post(
           'Error uploading background image:',
           error.response?.data || error.message
         );
-        res
-          .status(500)
-          .json({
-            error: 'Failed to upload background image',
-            details: error.response?.data,
-          });
+        res.status(500).json({
+          error: 'Failed to upload background image',
+          details: error.response?.data,
+        });
       } else {
         console.error('Error uploading background image:', error);
         res.status(500).json({ error: 'Failed to upload background image' });
@@ -259,12 +257,10 @@ router.post(
           'Error uploading modal banner:',
           error.response?.data || error.message
         );
-        res
-          .status(500)
-          .json({
-            error: 'Failed to upload modal banner',
-            details: error.response?.data,
-          });
+        res.status(500).json({
+          error: 'Failed to upload modal banner',
+          details: error.response?.data,
+        });
       } else {
         console.error('Error uploading modal banner:', error);
         res.status(500).json({ error: 'Failed to upload modal banner' });
