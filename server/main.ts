@@ -17,6 +17,7 @@ import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
 import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
+import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
@@ -122,6 +123,9 @@ arrivalsIO.adapter(createAdapter(pubClient, subClient));
 
 const sectorControllerIO = setupSectorControllerWebsocket(server, sessionUsersIO);
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
+
+const voiceChatIO = setupVoiceChatWebsocket(server);
+voiceChatIO.adapter(createAdapter(pubClient, subClient));
 
 startStatsFlushing();
 startFlightLogsCleanup();

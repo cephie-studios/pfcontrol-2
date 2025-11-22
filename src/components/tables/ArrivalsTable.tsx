@@ -75,6 +75,12 @@ export default function ArrivalsTable({
   const [squawkValues, setSquawkValues] = useState<
     Record<string | number, string>
   >({});
+  const [remarkValues, setRemarkValues] = useState<
+    Record<string | number, string>
+  >({});
+  const [gateValues, setGateValues] = useState<Record<string | number, string>>(
+    {}
+  );
   const debounceTimeouts = useRef<Record<string | number, NodeJS.Timeout>>({});
   const isMobile = useMediaQuery({ maxWidth: 1000 });
 
@@ -85,6 +91,9 @@ export default function ArrivalsTable({
   const [customFlightOrder, setCustomFlightOrder] = useState<
     (string | number)[]
   >([]);
+
+  const [sortColumn, setSortColumn] = useState<string>('time');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     const savedOrder = localStorage.getItem('arrival-strip-order');
@@ -117,6 +126,69 @@ export default function ArrivalsTable({
 
     return orderedList;
   }, [flights, customFlightOrder]);
+
+  const getSortValue = useCallback((flight: Flight, column: string) => {
+    switch (column) {
+      case 'time':
+        return flight.timestamp || 0;
+      case 'callsign':
+        return flight.callsign || '';
+      case 'gate':
+        return flight.gate || '';
+      case 'aircraft':
+        return flight.aircraft || '';
+      case 'wakeTurbulence':
+        return flight.wtc || '';
+      case 'flightType':
+        return flight.flight_type || '';
+      case 'departure':
+        return flight.departure || '';
+      case 'runway':
+        return flight.runway || '';
+      case 'star':
+        return flight.star || '';
+      case 'rfl':
+        return flight.cruisingFL || '';
+      case 'cfl':
+        return flight.clearedFL || '';
+      case 'route':
+        return flight.route || '';
+      case 'squawk':
+        return flight.squawk || '';
+      case 'status':
+        return flight.status || '';
+      case 'remark':
+        return flight.remark || '';
+      default:
+        return '';
+    }
+  }, []);
+
+  const sortedFlights = useMemo(() => {
+    const flightsToSort = [...orderedFlights];
+    if (sortColumn) {
+      flightsToSort.sort((a, b) => {
+        const aVal = getSortValue(a, sortColumn);
+        const bVal = getSortValue(b, sortColumn);
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return flightsToSort;
+  }, [orderedFlights, sortColumn, sortDirection, getSortValue]);
+
+  const handleSort = useCallback(
+    (column: string) => {
+      if (sortColumn === column) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortColumn(column);
+        setSortDirection('asc');
+      }
+    },
+    [sortColumn, sortDirection]
+  );
 
   const saveFlightOrder = useCallback((flightIds: (string | number)[]) => {
     localStorage.setItem('arrival-strip-order', JSON.stringify(flightIds));
@@ -217,12 +289,6 @@ export default function ArrivalsTable({
     setDeleteConfirmOpen(false);
   };
 
-  const handleRemarkChange = (flightId: string | number, remark: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { remark });
-    }
-  };
-
   const debouncedHandleSquawkChange = useCallback(
     (flightId: string | number, squawk: string) => {
       setSquawkValues((prev) => ({ ...prev, [flightId]: squawk }));
@@ -278,15 +344,45 @@ export default function ArrivalsTable({
     }
   };
 
-  const handleGateChange = (flightId: string | number, gate: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { gate });
-    }
-  };
+  const debouncedHandleRemarkChange = useCallback(
+    (flightId: string | number, remark: string) => {
+      setRemarkValues((prev) => ({ ...prev, [flightId]: remark }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { remark });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
+
+  const debouncedHandleGateChange = useCallback(
+    (flightId: string | number, gate: string) => {
+      setGateValues((prev) => ({ ...prev, [flightId]: gate }));
+
+      if (debounceTimeouts.current[flightId]) {
+        clearTimeout(debounceTimeouts.current[flightId]);
+      }
+
+      debounceTimeouts.current[flightId] = setTimeout(() => {
+        if (onFlightChange) {
+          onFlightChange(flightId, { gate });
+        }
+        delete debounceTimeouts.current[flightId];
+      }, 500);
+    },
+    [onFlightChange]
+  );
 
   const visibleFlights = showHidden
-    ? orderedFlights
-    : orderedFlights.filter((flight) => !flight.hidden);
+    ? sortedFlights
+    : sortedFlights.filter((flight) => !flight.hidden);
 
   const hasHiddenFlights = orderedFlights.some((flight) => flight.hidden);
 
@@ -340,52 +436,125 @@ export default function ArrivalsTable({
             <thead>
               <tr className="bg-green-950 text-green-200">
                 {/* Drag handle column */}
-                <th className="py-2.5 px-2 text-left w-8"></th>
+                <th className="py-2.5 px-2 text-left w-8 select-none hover:bg-green-700"></th>
                 {/* Time column */}
-                <th className="py-2.5 px-4 text-left column-time">TIME</th>
+                <th
+                  className="py-2.5 px-4 text-left column-time cursor-pointer select-none hover:bg-green-700"
+                  onClick={() => handleSort('time')}
+                >
+                  TIME
+                </th>
                 {arrivalsColumns.callsign !== false && (
-                  <th className="py-2.5 px-4 text-left">CALLSIGN</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('callsign')}
+                  >
+                    CALLSIGN
+                  </th>
                 )}
                 {arrivalsColumns.gate !== false && (
-                  <th className="py-2.5 px-4 text-left w-24 column-gate">
+                  <th
+                    className="py-2.5 px-4 text-left w-24 column-gate cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('gate')}
+                  >
                     GATE
                   </th>
                 )}
                 {arrivalsColumns.aircraft !== false && (
-                  <th className="py-2.5 px-4 text-left">ATYP</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('aircraft')}
+                  >
+                    ATYP
+                  </th>
                 )}
                 {arrivalsColumns.wakeTurbulence !== false && (
-                  <th className="py-2.5 px-4 text-left column-w">W</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-w cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('wakeTurbulence')}
+                  >
+                    W
+                  </th>
                 )}
                 {arrivalsColumns.flightType !== false && (
-                  <th className="py-2.5 px-4 text-left">V</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('flightType')}
+                  >
+                    V
+                  </th>
                 )}
                 {arrivalsColumns.departure !== false && (
-                  <th className="py-2.5 px-4 text-left">ADEP</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('departure')}
+                  >
+                    ADEP
+                  </th>
                 )}
                 {arrivalsColumns.runway !== false && (
-                  <th className="py-2.5 px-4 text-left column-rwy">RWY</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-rwy cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('runway')}
+                  >
+                    RWY
+                  </th>
                 )}
                 {arrivalsColumns.star !== false && (
-                  <th className="py-2.5 px-4 text-left">STAR</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('star')}
+                  >
+                    STAR
+                  </th>
                 )}
                 {arrivalsColumns.rfl !== false && (
-                  <th className="py-2.5 px-4 text-left column-rfl">RFL</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-rfl cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('rfl')}
+                  >
+                    RFL
+                  </th>
                 )}
                 {arrivalsColumns.cfl !== false && (
-                  <th className="py-2.5 px-4 text-left">CFL</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('cfl')}
+                  >
+                    CFL
+                  </th>
                 )}
                 {arrivalsColumns.route !== false && (
-                  <th className="py-2.5 px-4 text-left column-route">ROUTE</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-route cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('route')}
+                  >
+                    ROUTE
+                  </th>
                 )}
                 {arrivalsColumns.squawk !== false && (
-                  <th className="py-2.5 px-4 text-left w-28">ASSR</th>
+                  <th
+                    className="py-2.5 px-4 text-left w-28 cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('squawk')}
+                  >
+                    ASSR
+                  </th>
                 )}
                 {arrivalsColumns.status !== false && (
-                  <th className="py-2.5 px-4 text-left">STS</th>
+                  <th
+                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('status')}
+                  >
+                    STS
+                  </th>
                 )}
                 {arrivalsColumns.remark !== false && (
-                  <th className="py-2.5 px-4 text-left w-64 column-rmk">RMK</th>
+                  <th
+                    className="py-2.5 px-4 text-left w-64 column-rmk cursor-pointer select-none hover:bg-green-700"
+                    onClick={() => handleSort('remark')}
+                  >
+                    RMK
+                  </th>
                 )}
                 <th className="py-2.5 px-4 text-center w-16">MORE</th>
               </tr>
@@ -451,9 +620,9 @@ export default function ArrivalsTable({
                     {arrivalsColumns.gate !== false && (
                       <td className="py-2 px-2 column-gate">
                         <TextInput
-                          value={flight.gate || ''}
+                          value={gateValues[flight.id] ?? (flight.gate || '')}
                           onChange={(value) =>
-                            handleGateChange(flight.id, value)
+                            debouncedHandleGateChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"
@@ -591,9 +760,11 @@ export default function ArrivalsTable({
                     {arrivalsColumns.remark !== false && (
                       <td className="py-2 px-4 column-rmk">
                         <TextInput
-                          value={flight.remark || ''}
+                          value={
+                            remarkValues[flight.id] ?? (flight.remark || '')
+                          }
                           onChange={(value) =>
-                            handleRemarkChange(flight.id, value)
+                            debouncedHandleRemarkChange(flight.id, value)
                           }
                           className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                           placeholder="-"

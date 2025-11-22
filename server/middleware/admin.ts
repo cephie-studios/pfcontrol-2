@@ -1,24 +1,16 @@
 import jwt from "jsonwebtoken";
-import { fileURLToPath } from 'url';
-import fs from "fs";
-import path from "path";
 import { Request, Response, NextFunction } from "express";
 import { JwtPayload } from "../types/JwtPayload.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 function getAdminIds() {
-  try {
-    const adminsPath = path.join(__dirname, '..', 'data', 'admins.json');
-    const adminIds = JSON.parse(fs.readFileSync(adminsPath, 'utf8'));
-    return adminIds;
-  } catch (error) {
-    console.error('Error reading admin IDs:', error);
+  const envAdmins = process.env.ADMIN_IDS;
+  if (!envAdmins) {
+    console.warn('ADMIN_IDS not set in environment variables.');
     return [];
   }
+  return envAdmins.split(',').map(id => id.trim());
 }
 
 function isAdmin(userId: string) {

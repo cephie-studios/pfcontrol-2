@@ -85,6 +85,9 @@ export default function Admin() {
     }>
   >([]);
 
+  const hasPermission = (permission: string) =>
+    Boolean(user?.isAdmin || user?.rolePermissions?.[permission]);
+
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
@@ -242,6 +245,8 @@ export default function Admin() {
     if (user?.isAdmin) {
       fetchVersion();
       fetchHolidaySettings();
+    }
+    if (user && hasPermission('audit')) {
       fetchApiLogStats24hData();
     }
   }, [
@@ -249,6 +254,7 @@ export default function Admin() {
     fetchVersion,
     fetchHolidaySettings,
     fetchApiLogStats24hData,
+    user,
   ]);
 
   const formatLoginsData = (daily: DailyStats[]) => {
@@ -660,17 +666,19 @@ export default function Admin() {
                 </div>
 
                 {/* API Calls Chart */}
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
-                    API Calls
-                  </h3>
-                  <div className="h-64 sm:h-80">
-                    <Line
-                      data={formatApiLogStats24hData(apiLogStats24h)}
-                      options={chartOptions}
-                    />
+                {hasPermission('audit') && (
+                  <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
+                      API Calls
+                    </h3>
+                    <div className="h-64 sm:h-80">
+                      <Line
+                        data={formatApiLogStats24hData(apiLogStats24h)}
+                        options={chartOptions}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Developer Controls */}

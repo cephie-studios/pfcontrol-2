@@ -18,8 +18,8 @@ export const AVAILABLE_PERMISSIONS = [
     },
     {
         key: 'audit',
-        label: 'Audit Logs',
-        description: 'View audit logs and security events',
+        label: 'Audit Logs / API Logs',
+        description: 'View audit & API logs and security events',
     },
     {
         key: 'bans',
@@ -47,10 +47,30 @@ export const AVAILABLE_PERMISSIONS = [
         description: 'View and manage chat reports',
     },
     {
+        key: 'feedback',
+        label: 'Feedback',
+        description: 'View and manage user feedback',
+    },
+    {
+        key: 'api_logs',
+        label: 'API Logs',
+        description: 'View recent API requests and metrics (alias - audit entitlements)',
+    },
+    {
+        key: 'flight_logs',
+        label: 'Flight Archive',
+        description: 'View archived flight logs',
+    },
+    {
+        key: 'update_modals',
+        label: 'Update Modals',
+        description: 'Manage update modals and announcements',
+    },
+    {
         key: 'event_controller',
         label: 'Event Controller',
         description: 'Edit flights across all PFATC sessions during events',
-    },
+    }
 ];
 
 export const AVAILABLE_ICONS = [
