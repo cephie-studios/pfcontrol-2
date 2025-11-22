@@ -192,6 +192,10 @@ export default function Admin() {
     fetchStats();
   }, [fetchStats]);
 
+  useEffect(() => {
+    fetchApiLogStats24hData();
+  }, [fetchApiLogStats24hData]);
+
   const formatLoginsData = (daily: DailyStats[]) => {
     const labels = daily.map((item) =>
       new Date(item.date).toLocaleDateString('en-US', {
@@ -558,7 +562,6 @@ export default function Admin() {
 
               {/* Charts */}
               <div className="space-y-6 sm:space-y-8">
-                {/* Flights Chart - Full Width */}
                 <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
                   <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                     Flights
@@ -571,9 +574,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Sessions and Logins - Side by Side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                  {/* Sessions Chart */}
                   <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
                     <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                       Sessions
@@ -586,7 +587,6 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* Logins Chart */}
                   <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
                     <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
                       Logins
@@ -600,7 +600,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* API Calls Chart */}
                 {hasPermission('audit') && (
                   <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
                     <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
