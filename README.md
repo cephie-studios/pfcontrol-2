@@ -37,9 +37,13 @@ Frontend will be available at http://localhost:5173 and Backend API at http://lo
 
 ## Project structure
 
-- `src/` — frontend application (React + Vite)
-- `server/` — backend (Express + TypeScript)
+- `src/` — frontend application (React + Vite + Tailwind CSS)
+- `server/` — backend (Express + TypeScript + Kysely)
 - `public/` — static assets
+
+## Code of Conduct
+
+We are committed to a welcoming, inclusive, and harassment-free community for everyone. All participants are expected to be respectful, considerate, and constructive. Unacceptable behavior such as harassment, discrimination, or personal attacks will not be tolerated. Community leaders enforce these standards and may take corrective action when necessary. Reports of misconduct can be sent to [support@pfconnect.online](mailto:support@pfconnect.online). See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for full details.
 
 ## License
 
