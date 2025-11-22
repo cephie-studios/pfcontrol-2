@@ -45,18 +45,13 @@ const EXCLUDED_PATHS = [
   '.woff',
   '.woff2',
   '.ttf',
-  '.eot'
+  '.eot',
 ];
 
-const SENSITIVE_FIELDS = [
-  'token',
-  'secret',
-  'key',
-  'authorization',
-];
+const SENSITIVE_FIELDS = ['token', 'secret', 'key', 'authorization'];
 
 function shouldLogRequest(path: string): boolean {
-  return !EXCLUDED_PATHS.some(excluded =>
+  return !EXCLUDED_PATHS.some((excluded) =>
     path.toLowerCase().includes(excluded.toLowerCase())
   );
 }
@@ -65,14 +60,14 @@ function sanitizeObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') return obj;
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item));
+    return obj.map((item) => sanitizeObject(item));
   } else {
     const sanitized: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       const lowerKey = key.toLowerCase();
 
-      if (SENSITIVE_FIELDS.some(field => lowerKey.includes(field))) {
+      if (SENSITIVE_FIELDS.some((field) => lowerKey.includes(field))) {
         sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeObject(value);
@@ -95,11 +90,11 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
       : logEntry.ip_address;
 
     const encryptedIpAddress = encrypt(ipAddress);
-    
+
     const encryptedRequestBody = logEntry.request_body
       ? encrypt(logEntry.request_body)
       : null;
-    
+
     const encryptedResponseBody = logEntry.response_body
       ? encrypt(logEntry.response_body)
       : null;
@@ -120,10 +115,16 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
         response_time: logEntry.response_time,
         ip_address: JSON.stringify(encryptedIpAddress),
         user_agent: logEntry.user_agent,
-        request_body: encryptedRequestBody ? JSON.stringify(encryptedRequestBody) : null,
-        response_body: encryptedResponseBody ? JSON.stringify(encryptedResponseBody) : null,
-        error_message: encryptedErrorMessage ? JSON.stringify(encryptedErrorMessage) : null,
-        timestamp: logEntry.timestamp
+        request_body: encryptedRequestBody
+          ? JSON.stringify(encryptedRequestBody)
+          : null,
+        response_body: encryptedResponseBody
+          ? JSON.stringify(encryptedResponseBody)
+          : null,
+        error_message: encryptedErrorMessage
+          ? JSON.stringify(encryptedErrorMessage)
+          : null,
+        timestamp: logEntry.timestamp,
       })
       .execute();
   } catch (error) {
@@ -143,7 +144,7 @@ export function apiLogger() {
       return next();
     }
 
-    res.send = function(data) {
+    res.send = function (data) {
       try {
         if (data && typeof data === 'object') {
           responseBody = truncateString(JSON.stringify(sanitizeObject(data)));
@@ -162,17 +163,21 @@ export function apiLogger() {
 
       try {
         let requestBody: string | null = null;
-        
+
         if (req.body && Object.keys(req.body).length > 0) {
           try {
-            requestBody = truncateString(JSON.stringify(sanitizeObject(req.body)));
+            requestBody = truncateString(
+              JSON.stringify(sanitizeObject(req.body))
+            );
           } catch {
             requestBody = '[SERIALIZATION_ERROR]';
           }
         }
 
         const ipAddress = getClientIp(req);
-        const finalIpAddress = Array.isArray(ipAddress) ? ipAddress.join(', ') : ipAddress;
+        const finalIpAddress = Array.isArray(ipAddress)
+          ? ipAddress.join(', ')
+          : ipAddress;
 
         const logEntry: ApiLogEntry = {
           user_id: req.user?.userId || null,
@@ -186,7 +191,7 @@ export function apiLogger() {
           request_body: requestBody,
           response_body: responseBody,
           error_message: errorMessage,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
 
         setImmediate(() => logApiCall(logEntry));
@@ -200,7 +205,9 @@ export function apiLogger() {
 }
 
 // Cleanup function to remove old logs
-export async function cleanupOldApiLogs(daysToKeep: number = 30): Promise<void> {
+export async function cleanupOldApiLogs(
+  daysToKeep: number = 30
+): Promise<void> {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);

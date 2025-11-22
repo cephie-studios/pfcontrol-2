@@ -1,5 +1,5 @@
 export interface DropdownOption {
-	value: string;
-	label: string;
-	selected?: boolean;
+  value: string;
+  label: string;
+  selected?: boolean;
 }

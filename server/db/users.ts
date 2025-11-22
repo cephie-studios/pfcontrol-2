@@ -1,8 +1,8 @@
-import { encrypt, decrypt } from "../utils/encryption.js";
-import type { Settings } from "./types/Settings.js";
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
-import { redisConnection } from "./connection.js";
+import { encrypt, decrypt } from '../utils/encryption.js';
+import type { Settings } from './types/Settings.js';
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
+import { redisConnection } from './connection.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { getUserRoles } from './roles.js';
 
@@ -11,9 +11,15 @@ export async function invalidateUserCache(userId: string) {
     await redisConnection.del(`user:${userId}`);
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to invalidate cache for user ${userId}:`, error.message);
+      console.warn(
+        `[Redis] Failed to invalidate cache for user ${userId}:`,
+        error.message
+      );
     } else {
-      console.warn(`[Redis] Failed to invalidate cache for user ${userId}:`, error);
+      console.warn(
+        `[Redis] Failed to invalidate cache for user ${userId}:`,
+        error
+      );
     }
   }
 }
@@ -23,16 +29,22 @@ async function invalidateUsernameCache(username: string) {
     await redisConnection.del(`user:username:${username}`);
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to invalidate username cache for ${username}:`, error.message);
+      console.warn(
+        `[Redis] Failed to invalidate username cache for ${username}:`,
+        error.message
+      );
     } else {
-      console.warn(`[Redis] Failed to invalidate username cache for ${username}:`, error);
+      console.warn(
+        `[Redis] Failed to invalidate username cache for ${username}:`,
+        error
+      );
     }
   }
 }
 
 export async function getUserById(userId: string) {
   const cacheKey = `user:${userId}`;
-  
+
   let cached = null;
   try {
     cached = await redisConnection.get(cacheKey);
@@ -44,19 +56,19 @@ export async function getUserById(userId: string) {
       console.warn('[Redis] Failed to read cache for user:', error.message);
     }
   }
-  
+
   if (cached) {
     const user = JSON.parse(cached);
     return await applyGlobalHolidayOverride(user);
   }
 
   const user = await mainDb
-    .selectFrom("users")
-    .leftJoin("roles", "users.role_id", "roles.id")
-    .selectAll("users")
-    .select("roles.permissions as role_permissions")
-    .select("roles.name as role_name")
-    .where("users.id", "=", userId)
+    .selectFrom('users')
+    .leftJoin('roles', 'users.role_id', 'roles.id')
+    .selectAll('users')
+    .select('roles.permissions as role_permissions')
+    .select('roles.name as role_name')
+    .where('users.id', '=', userId)
     .executeTakeFirst();
 
   if (!user) return null;
@@ -73,12 +85,18 @@ export async function getUserById(userId: string) {
     Object.assign(mergedPermissions, user.role_permissions);
   }
 
-  const safeDecrypt = (encryptedData: string | null | undefined, fieldName: string) => {
+  const safeDecrypt = (
+    encryptedData: string | null | undefined,
+    fieldName: string
+  ) => {
     if (!encryptedData) return null;
     try {
       return decrypt(JSON.parse(encryptedData));
     } catch (error) {
-      console.error(`Failed to decrypt ${fieldName} for user ${userId}:`, error);
+      console.error(
+        `Failed to decrypt ${fieldName} for user ${userId}:`,
+        error
+      );
       return null;
     }
   };
@@ -101,16 +119,18 @@ export async function getUserById(userId: string) {
       console.warn('[Redis] Failed to set cache for user:', error.message);
     }
   }
-  
+
   return await applyGlobalHolidayOverride(result);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function applyGlobalHolidayOverride(user: any) {
   try {
-    const { getGlobalHolidaySettings } = await import('./globalHolidaySettings.js');
+    const { getGlobalHolidaySettings } = await import(
+      './globalHolidaySettings.js'
+    );
     const globalSettings = await getGlobalHolidaySettings();
-    
+
     if (!globalSettings.enabled && user.settings?.holidayTheme) {
       return {
         ...user,
@@ -118,22 +138,25 @@ async function applyGlobalHolidayOverride(user: any) {
           ...user.settings,
           holidayTheme: {
             ...user.settings.holidayTheme,
-            enabled: false
-          }
-        }
+            enabled: false,
+          },
+        },
       };
     }
-    
+
     return user;
   } catch (error) {
-    console.warn('Failed to check global holiday settings, returning user as-is:', error);
+    console.warn(
+      'Failed to check global holiday settings, returning user as-is:',
+      error
+    );
     return user;
   }
 }
 
 export async function getUserByUsername(username: string) {
   const cacheKey = `user:username:${username}`;
-  
+
   let cached = null;
   try {
     cached = await redisConnection.get(cacheKey);
@@ -142,31 +165,41 @@ export async function getUserByUsername(username: string) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to read cache for username ${username}:`, error.message);
+      console.warn(
+        `[Redis] Failed to read cache for username ${username}:`,
+        error.message
+      );
     } else {
-      console.warn(`[Redis] Failed to read cache for username ${username}:`, error);
+      console.warn(
+        `[Redis] Failed to read cache for username ${username}:`,
+        error
+      );
     }
   }
-  
+
   if (cached) {
     const user = JSON.parse(cached);
     return await applyGlobalHolidayOverride(user);
   }
 
   const user = await mainDb
-    .selectFrom("users")
-    .leftJoin("roles", "users.role_id", "roles.id")
-    .selectAll("users")
-    .select("roles.permissions as role_permissions")
-    .where("users.username", "=", username)
+    .selectFrom('users')
+    .leftJoin('roles', 'users.role_id', 'roles.id')
+    .selectAll('users')
+    .select('roles.permissions as role_permissions')
+    .where('users.username', '=', username)
     .executeTakeFirst();
 
   if (!user) return null;
 
   const result = {
     ...user,
-    access_token: user.access_token ? decrypt(JSON.parse(user.access_token)) : null,
-    refresh_token: user.refresh_token ? decrypt(JSON.parse(user.refresh_token)) : null,
+    access_token: user.access_token
+      ? decrypt(JSON.parse(user.access_token))
+      : null,
+    refresh_token: user.refresh_token
+      ? decrypt(JSON.parse(user.refresh_token))
+      : null,
     sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
     settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
     ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
@@ -175,15 +208,21 @@ export async function getUserByUsername(username: string) {
   };
 
   try {
-    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30);
+    await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 60 * 30);
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to set cache for username ${username}:`, error.message);
+      console.warn(
+        `[Redis] Failed to set cache for username ${username}:`,
+        error.message
+      );
     } else {
-      console.warn(`[Redis] Failed to set cache for username ${username}:`, error);
+      console.warn(
+        `[Redis] Failed to set cache for username ${username}:`,
+        error
+      );
     }
   }
-  
+
   return await applyGlobalHolidayOverride(result);
 }
 
@@ -205,7 +244,7 @@ export async function createOrUpdateUser(userData: {
     accessToken,
     refreshToken,
     ipAddress,
-    isVpn = false
+    isVpn = false,
   } = userData;
 
   const defaultSettings = {
@@ -214,17 +253,17 @@ export async function createOrUpdateUser(userData: {
       chatNotificationSound: { enabled: true, volume: 100 },
       newStripSound: { enabled: true, volume: 100 },
       acarsBeep: { enabled: true, volume: 100 },
-      acarsChatPop: { enabled: true, volume: 100 }
+      acarsChatPop: { enabled: true, volume: 100 },
     },
     backgroundImage: {
       selectedImage: null,
       useCustomBackground: false,
-      favorites: []
+      favorites: [],
     },
     layout: {
       showCombinedView: false,
       flightRowOpacity: 100,
-      chartDrawerViewMode: 'legacy' as const
+      chartDrawerViewMode: 'legacy' as const,
     },
     departureTableColumns: {
       time: true as const,
@@ -245,7 +284,7 @@ export async function createOrUpdateUser(userData: {
       route: true,
       pdc: true,
       hide: true,
-      delete: true
+      delete: true,
     },
     arrivalsTableColumns: {
       time: true as const,
@@ -263,7 +302,7 @@ export async function createOrUpdateUser(userData: {
       status: true,
       remark: true,
       route: true,
-      hide: true
+      hide: true,
     },
     acars: {
       notesEnabled: true,
@@ -310,7 +349,7 @@ export async function createOrUpdateUser(userData: {
       settings: JSON.stringify(encryptedSettings),
       last_login: sql`NOW()`,
       updated_at: sql`NOW()`,
-      created_at: sql`NOW()`
+      created_at: sql`NOW()`,
     })
     .onConflict((oc) =>
       oc.column('id').doUpdateSet({
@@ -322,12 +361,12 @@ export async function createOrUpdateUser(userData: {
         last_login: sql`NOW()`,
         ip_address: JSON.stringify(encryptedIP),
         is_vpn: isVpn,
-        updated_at: sql`NOW()`
+        updated_at: sql`NOW()`,
       })
     )
     .execute();
 
-    await invalidateUserCache(id);
+  await invalidateUserCache(id);
   return await getUserById(id);
 }
 
@@ -345,7 +384,7 @@ export async function updateUserSettings(id: string, settings: Settings) {
     .set({
       settings: JSON.stringify(encryptedSettings),
       settings_updated_at: sql`NOW()`,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', id)
     .execute();
@@ -368,7 +407,7 @@ export async function addSessionToUser(userId: string, sessionId: string) {
       sessions: JSON.stringify(encryptedSessions),
       last_session_created: sql`NOW()`,
       total_sessions_created: sql`total_sessions_created + 1`,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -389,7 +428,7 @@ export async function removeSessionFromUser(userId: string, sessionId: string) {
     .updateTable('users')
     .set({
       sessions: JSON.stringify(encryptedSessions),
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -398,7 +437,20 @@ export async function removeSessionFromUser(userId: string, sessionId: string) {
   return await getUserById(userId);
 }
 
-export async function updateRobloxAccount(userId: string, { robloxUserId, robloxUsername, accessToken, refreshToken }: { robloxUserId: string; robloxUsername: string; accessToken: string; refreshToken: string }) {
+export async function updateRobloxAccount(
+  userId: string,
+  {
+    robloxUserId,
+    robloxUsername,
+    accessToken,
+    refreshToken,
+  }: {
+    robloxUserId: string;
+    robloxUsername: string;
+    accessToken: string;
+    refreshToken: string;
+  }
+) {
   const user = await getUserById(userId);
   if (!user) throw new Error('User not found');
 
@@ -409,7 +461,7 @@ export async function updateRobloxAccount(userId: string, { robloxUserId, roblox
       roblox_username: robloxUsername,
       roblox_access_token: accessToken,
       roblox_refresh_token: refreshToken,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -430,7 +482,7 @@ export async function unlinkRobloxAccount(userId: string) {
       roblox_username: null,
       roblox_access_token: null,
       roblox_refresh_token: null,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -440,7 +492,20 @@ export async function unlinkRobloxAccount(userId: string) {
   return await getUserById(userId);
 }
 
-export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId, ratingShort, ratingLong }: { vatsimCid: string; ratingId: number; ratingShort?: string; ratingLong?: string }) {
+export async function updateVatsimAccount(
+  userId: string,
+  {
+    vatsimCid,
+    ratingId,
+    ratingShort,
+    ratingLong,
+  }: {
+    vatsimCid: string;
+    ratingId: number;
+    ratingShort?: string;
+    ratingLong?: string;
+  }
+) {
   const user = await getUserById(userId);
   if (!user) throw new Error('User not found');
 
@@ -451,7 +516,7 @@ export async function updateVatsimAccount(userId: string, { vatsimCid, ratingId,
       vatsim_rating_id: ratingId,
       vatsim_rating_short: ratingShort ?? undefined,
       vatsim_rating_long: ratingLong ?? undefined,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -472,7 +537,7 @@ export async function unlinkVatsimAccount(userId: string) {
       vatsim_rating_id: null,
       vatsim_rating_short: null,
       vatsim_rating_long: null,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -486,7 +551,10 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
   const existingUser = await getUserById(id);
   if (!existingUser) throw new Error('User not found');
 
-  const mergedSettings = { ...existingUser.settings, tutorialCompleted: completed };
+  const mergedSettings = {
+    ...existingUser.settings,
+    tutorialCompleted: completed,
+  };
   const encryptedSettings = encrypt(mergedSettings);
 
   await mainDb
@@ -494,7 +562,7 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
     .set({
       settings: JSON.stringify(encryptedSettings),
       settings_updated_at: sql`NOW()`,
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', id)
     .execute();
@@ -504,22 +572,28 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
   return await getUserById(id);
 }
 
-export async function updateUserStatistics(userId: string, stats: Record<string, unknown>) {
+export async function updateUserStatistics(
+  userId: string,
+  stats: Record<string, unknown>
+) {
   const existingUser = await getUserById(userId);
   if (!existingUser) throw new Error('User not found');
 
-  const existingStats = (existingUser.statistics ?? {}) as Record<string, unknown>;
+  const existingStats = (existingUser.statistics ?? {}) as Record<
+    string,
+    unknown
+  >;
   const mergedStats: Record<string, unknown> = {
     ...existingStats,
     ...stats,
-    last_updated: new Date().toISOString()
+    last_updated: new Date().toISOString(),
   };
 
   await mainDb
     .updateTable('users')
     .set({
       statistics: JSON.stringify(mergedStats),
-      updated_at: sql`NOW()`
+      updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)
     .execute();
@@ -531,14 +605,10 @@ export async function deleteUser(userId: string) {
   const user = await getUserById(userId);
   if (!user) throw new Error('User not found');
 
-  await mainDb
-    .deleteFrom('users')
-    .where('id', '=', userId)
-    .execute();
+  await mainDb.deleteFrom('users').where('id', '=', userId).execute();
 
   await invalidateUserCache(userId);
   await invalidateUsernameCache(user.username);
-  
+
   return true;
 }
-

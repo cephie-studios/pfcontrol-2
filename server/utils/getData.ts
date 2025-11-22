@@ -9,15 +9,15 @@ const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
 const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 
 export function getAirportData() {
-    if (!fs.existsSync(airportsPath)) {
-        throw new Error("Airport data not found");
-    }
-    return JSON.parse(fs.readFileSync(airportsPath, "utf8"));
+  if (!fs.existsSync(airportsPath)) {
+    throw new Error('Airport data not found');
+  }
+  return JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
 }
 
 export function getAircraftData() {
-    if (!fs.existsSync(aircraftPath)) {
-        throw new Error("Aircraft data not found");
-    }
-    return JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
+  if (!fs.existsSync(aircraftPath)) {
+    throw new Error('Aircraft data not found');
+  }
+  return JSON.parse(fs.readFileSync(aircraftPath, 'utf8'));
 }

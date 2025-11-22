@@ -92,7 +92,6 @@ export default function FeedbackBanner({
     overallManuallySet,
   ]);
 
-
   const handleRatingClick = (
     categoryKey:
       | 'userInterface'
@@ -248,510 +247,538 @@ export default function FeedbackBanner({
     },
   ];
 
-  const DesktopFeedback = useMemo(() => (
-    <div
-      className={`fixed bottom-4 z-[9999] w-1/2 2xl:w-[45rem] left-1/2 transform -translate-x-1/2 pointer-events-auto transition-all duration-300`}
-    >
-      {showDetailedModal ? (
-        <div className="space-y-3 mb-3">
-          {/* Info banner */}
-          <div className="backdrop-blur-lg border-2 rounded-3xl px-6 py-4 bg-zinc-900/80 border-zinc-700/50">
-            <p className="text-zinc-400 text-sm leading-relaxed">
-              <strong className="text-blue-400">Help us improve!</strong> Rate
-              different aspects of PFControl and let us know what you think.
-            </p>
-          </div>
+  const DesktopFeedback = useMemo(
+    () => (
+      <div
+        className={`fixed bottom-4 z-[9999] w-1/2 2xl:w-[45rem] left-1/2 transform -translate-x-1/2 pointer-events-auto transition-all duration-300`}
+      >
+        {showDetailedModal ? (
+          <div className="space-y-3 mb-3">
+            {/* Info banner */}
+            <div className="backdrop-blur-lg border-2 rounded-3xl px-6 py-4 bg-zinc-900/80 border-zinc-700/50">
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                <strong className="text-blue-400">Help us improve!</strong> Rate
+                different aspects of PFControl and let us know what you think.
+              </p>
+            </div>
 
-          {/* Category Ratings - hidden when comment is expanded */}
-          {!isCommentExpanded && (
-            <div className="space-y-3">
-              {categories.map((category) => {
-                const currentRating = detailedRatings[category.key];
-                const displayRating =
-                  hoveredCategory === category.key && hoveredRating > 0
-                    ? hoveredRating
-                    : currentRating;
+            {/* Category Ratings - hidden when comment is expanded */}
+            {!isCommentExpanded && (
+              <div className="space-y-3">
+                {categories.map((category) => {
+                  const currentRating = detailedRatings[category.key];
+                  const displayRating =
+                    hoveredCategory === category.key && hoveredRating > 0
+                      ? hoveredRating
+                      : currentRating;
 
-                return (
-                  <div
-                    key={category.key}
-                    className="backdrop-blur-lg border-2 rounded-3xl px-6 py-4 bg-zinc-900/80 border-zinc-700/50"
+                  return (
+                    <div
+                      key={category.key}
+                      className="backdrop-blur-lg border-2 rounded-3xl px-6 py-4 bg-zinc-900/80 border-zinc-700/50"
+                    >
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="flex flex-col justify-center text-left">
+                          <span className="text-white text-md font-medium mb-0.5">
+                            {category.label}
+                            {category.key === 'overall' && (
+                              <span className="text-red-400 ml-1">*</span>
+                            )}
+                          </span>
+                          <span className="text-zinc-400 text-xs">
+                            {category.description}
+                          </span>
+                        </div>
+                        <div
+                          className="flex justify-center space-x-2"
+                          onMouseLeave={() => {
+                            setHoveredCategory(null);
+                            setHoveredRating(0);
+                          }}
+                        >
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              className="transition-all duration-200 hover:scale-110"
+                              onClick={() =>
+                                handleRatingClick(category.key, star)
+                              }
+                              onMouseEnter={() => {
+                                setHoveredCategory(category.key);
+                                setHoveredRating(star);
+                              }}
+                              disabled={isSubmitting}
+                              tabIndex={0}
+                            >
+                              <Star
+                                className={`w-8 h-8 transition-colors duration-200 ${
+                                  star <= displayRating
+                                    ? 'text-yellow-400 fill-yellow-400'
+                                    : 'text-zinc-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Comment Section */}
+            <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-4 bg-zinc-900/80 border-zinc-700/50 relative">
+              {!isCommentExpanded ? (
+                <button
+                  onClick={() => setIsCommentExpanded(true)}
+                  className="w-full text-left text-white font-semibold text-sm flex items-center justify-between"
+                  disabled={isSubmitting}
+                >
+                  <span>
+                    Additional Comments{' '}
+                    <span className="text-zinc-500 text-xs">(Optional)</span>
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-zinc-400" />
+                </button>
+              ) : (
+                <>
+                  <label className="text-white font-semibold text-sm block mb-3 ml-1">
+                    Additional Comments{' '}
+                    <span className="text-zinc-500 text-xs">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      key="desktop-feedback-textarea"
+                      ref={desktopTextareaRef}
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="What did you like? What could we improve?"
+                      className="w-full px-3 py-3 bg-zinc-900 border-2 border-zinc-700/50 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none resize-none text-sm pr-20"
+                      rows={8}
+                      maxLength={1000}
+                      disabled={isSubmitting}
+                    />
+                    <p className="absolute bottom-3 right-3 text-zinc-500 text-xs">
+                      {comment.length}/1000
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsCommentExpanded(false)}
+                    className="mt-2 text-zinc-400 hover:text-white transition-colors flex items-center"
+                    disabled={isSubmitting}
                   >
-                    <div className="flex flex-row items-center justify-between">
-                      <div className="flex flex-col justify-center text-left">
-                        <span className="text-white text-md font-medium mb-0.5">
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Collapse
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="backdrop-blur-lg border-2 rounded-3xl px-6 py-0 h-24 flex flex-row items-center justify-between bg-zinc-900/80 border-zinc-700/50">
+          {isSubmitted ? (
+            <div className="flex items-center justify-center space-x-2 w-full">
+              <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-green-400" />
+              </div>
+              <span className="text-white text-sm font-medium">
+                Thanks for your feedback!
+              </span>
+            </div>
+          ) : showDetailedModal ? (
+            <div className="flex flex-row items-center justify-between w-full">
+              <div className="flex flex-col justify-center text-left mt-1">
+                <span className="text-white text-md font-medium mb-1">
+                  Ready to submit?
+                </span>
+                <span className="text-zinc-400 text-xs mb-2">
+                  Review your ratings above
+                </span>
+              </div>
+
+              <div className="flex justify-end items-center space-x-3">
+                <button
+                  onClick={handleCloseDetailed}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                  disabled={isSubmitting}
+                  aria-label="Cancel"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <Button
+                  onClick={handleSubmitDetailed}
+                  disabled={detailedRatings.overall === 0 || isSubmitting}
+                  size="icon"
+                  className="w-8 h-8 flex items-center justify-center"
+                  aria-label="Submit feedback"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-row items-center justify-between w-full">
+              <div className="flex flex-col justify-center text-left mt-1">
+                <span className="text-white text-md font-medium mb-1">
+                  How's your experience?
+                </span>
+                <span className="text-zinc-400 text-xs mb-2 hidden xl:block">
+                  You can leave a comment with the chat icon.
+                </span>
+              </div>
+
+              <div
+                className="flex justify-center space-x-2"
+                onMouseLeave={() => setHoveredBannerRating(0)}
+              >
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const displayRating =
+                    hoveredBannerRating > 0 ? hoveredBannerRating : rating;
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      className="transition-all duration-200 hover:scale-110"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredBannerRating(star)}
+                      disabled={isSubmitting}
+                      tabIndex={0}
+                    >
+                      <Star
+                        className={`w-8 h-8 transition-colors duration-200 ${
+                          star <= displayRating
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-zinc-600'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-end items-center space-x-3">
+                <button
+                  onClick={handleShowDetailedFeedback}
+                  className="w-8 h-8 rounded-full backdrop-blur-lg border bg-zinc-900/80 border-zinc-700/50 flex items-center justify-center transition-all duration-300 ease-in-out hover:bg-zinc-800/80"
+                  disabled={isSubmitting}
+                  aria-label="Add comment"
+                >
+                  <MessageCircle className="h-5 w-5 text-zinc-400" />
+                </button>
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={rating === 0 || isSubmitting}
+                  size="icon"
+                  className="w-8 h-8 flex items-center justify-center"
+                  aria-label="Submit feedback"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </Button>
+
+                <button
+                  onClick={handleClose}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                  disabled={isSubmitting}
+                  aria-label="Close feedback"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ),
+    [
+      showDetailedModal,
+      isSubmitted,
+      rating,
+      hoveredBannerRating,
+      isSubmitting,
+      detailedRatings,
+      comment,
+      isCommentExpanded,
+      hoveredCategory,
+      hoveredRating,
+    ]
+  );
+
+  const MobileFeedback = useMemo(
+    () => (
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-[9999] p-4 pointer-events-auto transition-all duration-300`}
+      >
+        {showDetailedModal ? (
+          <div className="space-y-3 mb-3">
+            {/* Info banner */}
+            <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-3 bg-zinc-900/80 border-zinc-700/50">
+              <p className="text-blue-200 text-sm leading-relaxed">
+                <strong className="text-blue-100">Help us improve!</strong>
+                <br />
+                Rate different aspects of PFControl.
+              </p>
+            </div>
+
+            {/* Category Ratings - hidden when comment is expanded */}
+            {!isCommentExpanded && (
+              <div className="space-y-3">
+                {categories.map((category) => {
+                  const currentRating = detailedRatings[category.key];
+                  const displayRating =
+                    hoveredCategory === category.key && hoveredRating > 0
+                      ? hoveredRating
+                      : currentRating;
+
+                  return (
+                    <div
+                      key={category.key}
+                      className="backdrop-blur-lg border-2 rounded-3xl px-3 py-2 bg-zinc-900/80 border-zinc-700/50"
+                    >
+                      <div className="flex flex-row items-center justify-between">
+                        <span className="text-white text-sm font-medium">
                           {category.label}
                           {category.key === 'overall' && (
                             <span className="text-red-400 ml-1">*</span>
                           )}
                         </span>
-                        <span className="text-zinc-400 text-xs">
-                          {category.description}
-                        </span>
-                      </div>
-                      <div
-                        className="flex justify-center space-x-2"
-                        onMouseLeave={() => {
-                          setHoveredCategory(null);
-                          setHoveredRating(0);
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            className="transition-all duration-200 hover:scale-110"
-                            onClick={() =>
-                              handleRatingClick(category.key, star)
-                            }
-                            onMouseEnter={() => {
-                              setHoveredCategory(category.key);
-                              setHoveredRating(star);
-                            }}
-                            disabled={isSubmitting}
-                            tabIndex={0}
-                          >
-                            <Star
-                              className={`w-8 h-8 transition-colors duration-200 ${
-                                star <= displayRating
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-zinc-600'
-                              }`}
-                            />
-                          </button>
-                        ))}
+                        <div
+                          className="flex justify-center space-x-1"
+                          onMouseLeave={() => {
+                            setHoveredCategory(null);
+                            setHoveredRating(0);
+                          }}
+                        >
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              className="transition-all duration-200 hover:scale-110"
+                              onClick={() =>
+                                handleRatingClick(category.key, star)
+                              }
+                              onMouseEnter={() => {
+                                setHoveredCategory(category.key);
+                                setHoveredRating(star);
+                              }}
+                              disabled={isSubmitting}
+                              tabIndex={0}
+                            >
+                              <Star
+                                className={`w-6 h-6 transition-colors duration-200 ${
+                                  star <= displayRating
+                                    ? 'text-yellow-400 fill-yellow-400'
+                                    : 'text-zinc-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
 
-          {/* Comment Section */}
-          <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-4 bg-zinc-900/80 border-zinc-700/50 relative">
-            {!isCommentExpanded ? (
-              <button
-                onClick={() => setIsCommentExpanded(true)}
-                className="w-full text-left text-white font-semibold text-sm flex items-center justify-between"
-                disabled={isSubmitting}
-              >
-                <span>
-                  Additional Comments{' '}
-                  <span className="text-zinc-500 text-xs">(Optional)</span>
-                </span>
-                <ChevronDown className="w-4 h-4 text-zinc-400" />
-              </button>
-            ) : (
-              <>
-                <label className="text-white font-semibold text-sm block mb-3 ml-1">
-                  Additional Comments{' '}
-                  <span className="text-zinc-500 text-xs">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <textarea
-                    key="desktop-feedback-textarea"
-                    ref={desktopTextareaRef}
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="What did you like? What could we improve?"
-                    className="w-full px-3 py-3 bg-zinc-900 border-2 border-zinc-700/50 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none resize-none text-sm pr-20"
-                    rows={8}
-                    maxLength={1000}
-                    disabled={isSubmitting}
-                  />
-                  <p className="absolute bottom-3 right-3 text-zinc-500 text-xs">
-                    {comment.length}/1000
-                  </p>
-                </div>
+            {/* Comment Section */}
+            <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-3 bg-zinc-900/80 border-zinc-700/50 relative">
+              {!isCommentExpanded ? (
                 <button
-                  onClick={() => setIsCommentExpanded(false)}
-                  className="mt-2 text-zinc-400 hover:text-white transition-colors flex items-center"
+                  onClick={() => setIsCommentExpanded(true)}
+                  className="w-full text-left text-white font-semibold text-sm flex items-center justify-between"
                   disabled={isSubmitting}
                 >
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Collapse
+                  <span>
+                    Additional Comments{' '}
+                    <span className="text-zinc-500 text-xs">(Optional)</span>
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-zinc-400" />
                 </button>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="backdrop-blur-lg border-2 rounded-3xl px-6 py-0 h-24 flex flex-row items-center justify-between bg-zinc-900/80 border-zinc-700/50">
-        {isSubmitted ? (
-          <div className="flex items-center justify-center space-x-2 w-full">
-            <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-              <Check className="w-4 h-4 text-green-400" />
-            </div>
-            <span className="text-white text-sm font-medium">
-              Thanks for your feedback!
-            </span>
-          </div>
-        ) : showDetailedModal ? (
-          <div className="flex flex-row items-center justify-between w-full">
-            <div className="flex flex-col justify-center text-left mt-1">
-              <span className="text-white text-md font-medium mb-1">
-                Ready to submit?
-              </span>
-              <span className="text-zinc-400 text-xs mb-2">
-                Review your ratings above
-              </span>
-            </div>
-
-            <div className="flex justify-end items-center space-x-3">
-              <button
-                onClick={handleCloseDetailed}
-                className="text-zinc-400 hover:text-white transition-colors"
-                disabled={isSubmitting}
-                aria-label="Cancel"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <Button
-                onClick={handleSubmitDetailed}
-                disabled={detailedRatings.overall === 0 || isSubmitting}
-                size="icon"
-                className="w-8 h-8 flex items-center justify-center"
-                aria-label="Submit feedback"
-              >
-                {isSubmitting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="w-5 h-5 text-green-400" />
-                )}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-row items-center justify-between w-full">
-            <div className="flex flex-col justify-center text-left mt-1">
-              <span className="text-white text-md font-medium mb-1">
-                How's your experience?
-              </span>
-              <span className="text-zinc-400 text-xs mb-2 hidden xl:block">
-                You can leave a comment with the chat icon.
-              </span>
-            </div>
-
-            <div
-              className="flex justify-center space-x-2"
-              onMouseLeave={() => setHoveredBannerRating(0)}
-            >
-              {[1, 2, 3, 4, 5].map((star) => {
-                const displayRating =
-                  hoveredBannerRating > 0 ? hoveredBannerRating : rating;
-                return (
-                  <button
-                    key={star}
-                    type="button"
-                    className="transition-all duration-200 hover:scale-110"
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredBannerRating(star)}
-                    disabled={isSubmitting}
-                    tabIndex={0}
-                  >
-                    <Star
-                      className={`w-8 h-8 transition-colors duration-200 ${
-                        star <= displayRating
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-zinc-600'
-                      }`}
+              ) : (
+                <>
+                  <label className="text-white font-semibold text-sm block mb-2">
+                    Additional Comments{' '}
+                    <span className="text-zinc-500 text-xs">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      key="mobile-feedback-textarea"
+                      ref={mobileTextareaRef}
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="What did you like? What could we improve?"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none resize-none text-sm pr-20"
+                      rows={3}
+                      maxLength={1000}
+                      disabled={isSubmitting}
                     />
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end items-center space-x-3">
-              <button
-                onClick={handleShowDetailedFeedback}
-                className="w-8 h-8 rounded-full backdrop-blur-lg border bg-zinc-900/80 border-zinc-700/50 flex items-center justify-center transition-all duration-300 ease-in-out hover:bg-zinc-800/80"
-                disabled={isSubmitting}
-                aria-label="Add comment"
-              >
-                <MessageCircle className="h-5 w-5 text-zinc-400" />
-              </button>
-
-              <Button
-                onClick={handleSubmit}
-                disabled={rating === 0 || isSubmitting}
-                size="icon"
-                className="w-8 h-8 flex items-center justify-center"
-                aria-label="Submit feedback"
-              >
-                {isSubmitting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="w-5 h-5 text-green-400" />
-                )}
-              </Button>
-
-              <button
-                onClick={handleClose}
-                className="text-zinc-400 hover:text-white transition-colors"
-                disabled={isSubmitting}
-                aria-label="Close feedback"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [showDetailedModal, isSubmitted, rating, hoveredBannerRating, isSubmitting, detailedRatings, comment, isCommentExpanded, hoveredCategory, hoveredRating]);
-
-  const MobileFeedback = useMemo(() => (
-    <div
-      className={`fixed bottom-0 left-0 right-0 z-[9999] p-4 pointer-events-auto transition-all duration-300`}
-    >
-      {showDetailedModal ? (
-        <div className="space-y-3 mb-3">
-          {/* Info banner */}
-          <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-3 bg-zinc-900/80 border-zinc-700/50">
-            <p className="text-blue-200 text-sm leading-relaxed">
-              <strong className="text-blue-100">Help us improve!</strong>
-              <br />
-              Rate different aspects of PFControl.
-            </p>
-          </div>
-
-          {/* Category Ratings - hidden when comment is expanded */}
-          {!isCommentExpanded && (
-            <div className="space-y-3">
-              {categories.map((category) => {
-                const currentRating = detailedRatings[category.key];
-                const displayRating =
-                  hoveredCategory === category.key && hoveredRating > 0
-                    ? hoveredRating
-                    : currentRating;
-
-                return (
-                  <div
-                    key={category.key}
-                    className="backdrop-blur-lg border-2 rounded-3xl px-3 py-2 bg-zinc-900/80 border-zinc-700/50"
-                  >
-                    <div className="flex flex-row items-center justify-between">
-                      <span className="text-white text-sm font-medium">
-                        {category.label}
-                        {category.key === 'overall' && (
-                          <span className="text-red-400 ml-1">*</span>
-                        )}
-                      </span>
-                      <div
-                        className="flex justify-center space-x-1"
-                        onMouseLeave={() => {
-                          setHoveredCategory(null);
-                          setHoveredRating(0);
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            className="transition-all duration-200 hover:scale-110"
-                            onClick={() =>
-                              handleRatingClick(category.key, star)
-                            }
-                            onMouseEnter={() => {
-                              setHoveredCategory(category.key);
-                              setHoveredRating(star);
-                            }}
-                            disabled={isSubmitting}
-                            tabIndex={0}
-                          >
-                            <Star
-                              className={`w-6 h-6 transition-colors duration-200 ${
-                                star <= displayRating
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-zinc-600'
-                              }`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <p className="absolute bottom-2 right-3 text-zinc-500 text-xs">
+                      {comment.length}/1000
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Comment Section */}
-          <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-3 bg-zinc-900/80 border-zinc-700/50 relative">
-            {!isCommentExpanded ? (
-              <button
-                onClick={() => setIsCommentExpanded(true)}
-                className="w-full text-left text-white font-semibold text-sm flex items-center justify-between"
-                disabled={isSubmitting}
-              >
-                <span>
-                  Additional Comments{' '}
-                  <span className="text-zinc-500 text-xs">(Optional)</span>
-                </span>
-                <ChevronDown className="w-4 h-4 text-zinc-400" />
-              </button>
-            ) : (
-              <>
-                <label className="text-white font-semibold text-sm block mb-2">
-                  Additional Comments{' '}
-                  <span className="text-zinc-500 text-xs">(Optional)</span>
-                </label>
-                <div className="relative">
-                  <textarea
-                    key="mobile-feedback-textarea"
-                    ref={mobileTextareaRef}
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="What did you like? What could we improve?"
-                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none resize-none text-sm pr-20"
-                    rows={3}
-                    maxLength={1000}
-                    disabled={isSubmitting}
-                  />
-                  <p className="absolute bottom-2 right-3 text-zinc-500 text-xs">
-                    {comment.length}/1000
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsCommentExpanded(false)}
-                  className="mt-2 text-zinc-400 hover:text-white transition-colors flex items-center"
-                  disabled={isSubmitting}
-                >
-                  <ChevronUp className="w-4 h-4 mr-1" />
-                  Collapse
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-4 bg-zinc-900/80 border-zinc-700/50 space-y-4">
-        {isSubmitted ? (
-          <div className="flex items-center justify-center space-x-2 w-full">
-            <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-              <Check className="w-4 h-4 text-green-400" />
-            </div>
-            <span className="text-white text-sm font-medium">
-              Thanks for your feedback!
-            </span>
-          </div>
-        ) : showDetailedModal ? (
-          <>
-            {/* Header */}
-            <div className="flex items-center justify-center relative">
-              <span className="text-white text-md font-medium">
-                Ready to submit?
-              </span>
-            </div>
-
-            {/* Submit button */}
-            <div className="flex justify-center items-center space-x-3">
-              <button
-                onClick={handleCloseDetailed}
-                className="text-zinc-400 hover:text-white transition-colors"
-                disabled={isSubmitting}
-                aria-label="Cancel"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <Button
-                onClick={handleSubmitDetailed}
-                disabled={detailedRatings.overall === 0 || isSubmitting}
-                size="icon"
-                className="w-10 h-10 flex items-center justify-center"
-                aria-label="Submit feedback"
-              >
-                {isSubmitting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="w-5 h-5 text-green-400" />
-                )}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Header */}
-            <div className="flex items-center justify-center relative">
-              <span className="text-white text-md font-medium">
-                How's your experience?
-              </span>
-              <button
-                onClick={handleClose}
-                className="absolute right-0 text-zinc-400 hover:text-white transition-colors"
-                disabled={isSubmitting}
-                aria-label="Close feedback"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Stars */}
-            <div
-              className="flex justify-center space-x-1"
-              onMouseLeave={() => setHoveredBannerRating(0)}
-            >
-              {[1, 2, 3, 4, 5].map((star) => {
-                const displayRating =
-                  hoveredBannerRating > 0 ? hoveredBannerRating : rating;
-                return (
                   <button
-                    key={star}
-                    type="button"
-                    className="transition-all duration-200 hover:scale-110"
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredBannerRating(star)}
+                    onClick={() => setIsCommentExpanded(false)}
+                    className="mt-2 text-zinc-400 hover:text-white transition-colors flex items-center"
                     disabled={isSubmitting}
-                    tabIndex={0}
                   >
-                    <Star
-                      className={`w-6 h-6 transition-colors duration-200 ${
-                        star <= displayRating
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-zinc-600'
-                      }`}
-                    />
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Collapse
                   </button>
-                );
-              })}
+                </>
+              )}
             </div>
+          </div>
+        ) : null}
 
-            {/* Action buttons */}
-            <div className="flex justify-center items-center space-x-3">
-              <button
-                onClick={handleShowDetailedFeedback}
-                className="w-10 h-10 rounded-full backdrop-blur-lg border bg-zinc-900/80 border-zinc-700/50 flex items-center justify-center transition-all duration-300 ease-in-out hover:bg-zinc-800/80"
-                disabled={isSubmitting}
-                aria-label="Give detailed feedback"
-              >
-                <MessageCircle className="h-5 w-5 text-zinc-400" />
-              </button>
-
-              <Button
-                onClick={handleSubmit}
-                disabled={rating === 0 || isSubmitting}
-                size="icon"
-                className="w-10 h-10 flex items-center justify-center"
-                aria-label="Submit feedback"
-              >
-                {isSubmitting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check className="w-5 h-5 text-green-400" />
-                )}
-              </Button>
+        <div className="backdrop-blur-lg border-2 rounded-3xl px-4 py-4 bg-zinc-900/80 border-zinc-700/50 space-y-4">
+          {isSubmitted ? (
+            <div className="flex items-center justify-center space-x-2 w-full">
+              <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-green-400" />
+              </div>
+              <span className="text-white text-sm font-medium">
+                Thanks for your feedback!
+              </span>
             </div>
-          </>
-        )}
+          ) : showDetailedModal ? (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-center relative">
+                <span className="text-white text-md font-medium">
+                  Ready to submit?
+                </span>
+              </div>
+
+              {/* Submit button */}
+              <div className="flex justify-center items-center space-x-3">
+                <button
+                  onClick={handleCloseDetailed}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                  disabled={isSubmitting}
+                  aria-label="Cancel"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <Button
+                  onClick={handleSubmitDetailed}
+                  disabled={detailedRatings.overall === 0 || isSubmitting}
+                  size="icon"
+                  className="w-10 h-10 flex items-center justify-center"
+                  aria-label="Submit feedback"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-center relative">
+                <span className="text-white text-md font-medium">
+                  How's your experience?
+                </span>
+                <button
+                  onClick={handleClose}
+                  className="absolute right-0 text-zinc-400 hover:text-white transition-colors"
+                  disabled={isSubmitting}
+                  aria-label="Close feedback"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Stars */}
+              <div
+                className="flex justify-center space-x-1"
+                onMouseLeave={() => setHoveredBannerRating(0)}
+              >
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const displayRating =
+                    hoveredBannerRating > 0 ? hoveredBannerRating : rating;
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      className="transition-all duration-200 hover:scale-110"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredBannerRating(star)}
+                      disabled={isSubmitting}
+                      tabIndex={0}
+                    >
+                      <Star
+                        className={`w-6 h-6 transition-colors duration-200 ${
+                          star <= displayRating
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-zinc-600'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex justify-center items-center space-x-3">
+                <button
+                  onClick={handleShowDetailedFeedback}
+                  className="w-10 h-10 rounded-full backdrop-blur-lg border bg-zinc-900/80 border-zinc-700/50 flex items-center justify-center transition-all duration-300 ease-in-out hover:bg-zinc-800/80"
+                  disabled={isSubmitting}
+                  aria-label="Give detailed feedback"
+                >
+                  <MessageCircle className="h-5 w-5 text-zinc-400" />
+                </button>
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={rating === 0 || isSubmitting}
+                  size="icon"
+                  className="w-10 h-10 flex items-center justify-center"
+                  aria-label="Submit feedback"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-5 h-5 text-green-400" />
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [showDetailedModal, isSubmitted, rating, hoveredBannerRating, isSubmitting, detailedRatings, comment, isCommentExpanded, hoveredCategory, hoveredRating]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ),
+    [
+      showDetailedModal,
+      isSubmitted,
+      rating,
+      hoveredBannerRating,
+      isSubmitting,
+      detailedRatings,
+      comment,
+      isCommentExpanded,
+      hoveredCategory,
+      hoveredRating,
+    ]
+  );
 
   return (
     <Portal>

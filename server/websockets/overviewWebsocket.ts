@@ -130,21 +130,30 @@ export function setupOverviewWebsocket(
             }
           }
 
-          const oldFlight = await getFlightById(validSessionId, flightId as string);
+          const oldFlight = await getFlightById(
+            validSessionId,
+            flightId as string
+          );
 
-          const updatedFlight = await updateFlight(validSessionId, flightId as string, updates);
+          const updatedFlight = await updateFlight(
+            validSessionId,
+            flightId as string,
+            updates
+          );
 
           if (updatedFlight) {
             socket.emit('flightUpdateAck', { flightId, updates });
 
             io.emit('flightUpdated', {
-                sessionId: validSessionId,
-                flight: updatedFlight
+              sessionId: validSessionId,
+              flight: updatedFlight,
             });
 
-            const flightsIO = (await import('./flightsWebsocket.js')).getFlightsIO();
+            const flightsIO = (
+              await import('./flightsWebsocket.js')
+            ).getFlightsIO();
             if (flightsIO) {
-                flightsIO.to(validSessionId).emit('flightUpdated', updatedFlight);
+              flightsIO.to(validSessionId).emit('flightUpdated', updatedFlight);
             }
 
             await broadcastToArrivalSessions(updatedFlight);

@@ -1,10 +1,4 @@
-import {
-  Info,
-  AlertTriangle,
-  CheckCircle,
-  ShieldX,
-  X,
-} from 'lucide-react';
+import { Info, AlertTriangle, CheckCircle, ShieldX, X } from 'lucide-react';
 import { useSettings } from '../hooks/settings/useSettings';
 import { useNotifications } from '../hooks/useNotifications';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -15,7 +9,9 @@ export default function NotificationBanner() {
   const { currentNotification, hideNotification } = useNotifications();
 
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const notificationMode = isMobile ? 'list' : (settings?.notificationViewMode || 'list');
+  const notificationMode = isMobile
+    ? 'list'
+    : settings?.notificationViewMode || 'list';
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -63,12 +59,17 @@ export default function NotificationBanner() {
   return (
     <div
       className={`border-b px-4 py-2 relative z-10 ${!currentNotification.custom_color ? getLegacyNotificationClass(currentNotification.type) : ''}`}
-      style={currentNotification.custom_color ? getLegacyCustomStyle(currentNotification.custom_color) : {}}
+      style={
+        currentNotification.custom_color
+          ? getLegacyCustomStyle(currentNotification.custom_color)
+          : {}
+      }
     >
       <div className="container mx-auto max-w-7xl flex justify-between items-center">
         <div className="flex items-center space-x-2 flex-1 justify-center">
           <div className="flex items-center space-x-2 flex-shrink-0">
-            {currentNotification.custom_icon || getNotificationIcon(currentNotification.type)}
+            {currentNotification.custom_icon ||
+              getNotificationIcon(currentNotification.type)}
             <span className="text-sm font-medium">System Notice:</span>
           </div>
           <span className="text-sm">{linkify(currentNotification.text)}</span>

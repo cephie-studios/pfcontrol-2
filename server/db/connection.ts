@@ -4,7 +4,12 @@ import pg from 'pg';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development' });
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production'
+      ? '.env.production'
+      : '.env.development',
+});
 
 import type { MainDatabase } from './types/connection/MainDatabase';
 import type { FlightsDatabase } from './types/connection/FlightsDatabase';
@@ -14,27 +19,27 @@ export const mainDb = new Kysely<MainDatabase>({
   dialect: new PostgresDialect({
     pool: new pg.Pool({
       connectionString: process.env.POSTGRES_DB_URL,
-      ssl: { rejectUnauthorized: false }
-    })
-  })
+      ssl: { rejectUnauthorized: false },
+    }),
+  }),
 });
 
 export const flightsDb = new Kysely<FlightsDatabase>({
   dialect: new PostgresDialect({
     pool: new pg.Pool({
       connectionString: process.env.POSTGRES_DB_URL_FLIGHTS,
-      ssl: { rejectUnauthorized: false }
-    })
-  })
+      ssl: { rejectUnauthorized: false },
+    }),
+  }),
 });
 
 export const chatsDb = new Kysely<ChatsDatabase>({
   dialect: new PostgresDialect({
     pool: new pg.Pool({
       connectionString: process.env.POSTGRES_DB_URL_CHATS,
-      ssl: { rejectUnauthorized: false }
-    })
-  })
+      ssl: { rejectUnauthorized: false },
+    }),
+  }),
 });
 
 if (!process.env.REDIS_URL) {

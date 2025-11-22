@@ -98,7 +98,8 @@ export default function NotificationSettings({
                     Notification Display Mode
                   </h4>
                   <p className="text-zinc-400 text-sm">
-                    Choose between the legacy banner at the top or the modern list view at the bottom
+                    Choose between the legacy banner at the top or the modern
+                    list view at the bottom
                   </p>
                 </div>
               </div>
@@ -106,7 +107,8 @@ export default function NotificationSettings({
                 <div className="mb-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg flex items-start gap-2">
                   <Smartphone className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-blue-300">
-                    Only List View is available on mobile devices. Legacy Banner is a desktop-only feature.
+                    Only List View is available on mobile devices. Legacy Banner
+                    is a desktop-only feature.
                   </p>
                 </div>
               )}
@@ -118,8 +120,8 @@ export default function NotificationSettings({
                     isMobile
                       ? 'bg-blue-600 text-white cursor-default'
                       : (settings.notificationViewMode || 'list') === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                 >
                   <LayoutList className="h-4 w-4" />
@@ -132,8 +134,8 @@ export default function NotificationSettings({
                     isMobile
                       ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50'
                       : (settings.notificationViewMode || 'list') === 'legacy'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                 >
                   <PanelTop className="h-4 w-4" />
@@ -152,9 +154,11 @@ export default function NotificationSettings({
                   Notification Information
                 </h4>
                 <p className="text-yellow-200/80 text-xs sm:text-sm leading-relaxed">
-                <strong>List View (Default):</strong> Shows notifications at the bottom of the page in a modern, expandable list format.
-                <br />
-                  <strong>Legacy Banner:</strong> Displays notifications at the top of the page, similar to PFControl v1.
+                  <strong>List View (Default):</strong> Shows notifications at
+                  the bottom of the page in a modern, expandable list format.
+                  <br />
+                  <strong>Legacy Banner:</strong> Displays notifications at the
+                  top of the page, similar to PFControl v1.
                 </p>
               </div>
             </div>

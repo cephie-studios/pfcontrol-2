@@ -16,6 +16,7 @@ If you just want to try or demo PFControl:
 The following steps get the project running on your machine for development and testing.
 
 1. Install dependencies
+
    ```
    npm install --legacy-peer-deps
    ```

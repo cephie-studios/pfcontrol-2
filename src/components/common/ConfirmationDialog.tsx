@@ -66,9 +66,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
             {/* Title and Description */}
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {title}
-              </h3>
+              <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
               <p className="text-gray-300 text-sm leading-relaxed">
                 {description}
               </p>

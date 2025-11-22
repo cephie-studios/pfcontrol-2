@@ -11,16 +11,20 @@ export interface SectorControllerSocketCallbacks {
 export function createSectorControllerSocket(
   user: { userId: string; username: string; avatar?: string | null },
   callbacks: SectorControllerSocketCallbacks = {}
-): { socket: Socket; selectStation: (station: string) => void; deselectStation: () => void } {
+): {
+  socket: Socket;
+  selectStation: (station: string) => void;
+  deselectStation: () => void;
+} {
   const socket = io(SERVER_URL, {
     path: '/sockets/sector-controller',
     query: {
-      user: JSON.stringify(user)
+      user: JSON.stringify(user),
     },
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5
+    reconnectionAttempts: 5,
   });
 
   socket.on('stationSelected', (data: { station: string }) => {

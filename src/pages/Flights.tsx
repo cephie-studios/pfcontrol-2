@@ -56,7 +56,9 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function Flights({ globalHolidayEnabled = false }: { globalHolidayEnabled?: boolean } = {}) {
+export default function Flights({
+  globalHolidayEnabled = false,
+}: { globalHolidayEnabled?: boolean } = {}) {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;

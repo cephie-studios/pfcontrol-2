@@ -1,8 +1,8 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
-import { redisConnection } from "./connection.js";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
+import { redisConnection } from './connection.js';
 
-const ACTIVE_MODAL_CACHE_KEY = "update_modal:active";
+const ACTIVE_MODAL_CACHE_KEY = 'update_modal:active';
 const CACHE_TTL = 24 * 60 * 60; // 24 hours (but we'll invalidate manually)
 
 export async function getActiveUpdateModal() {
@@ -16,10 +16,10 @@ export async function getActiveUpdateModal() {
   }
 
   const modal = await mainDb
-    .selectFrom("update_modals")
+    .selectFrom('update_modals')
     .selectAll()
-    .where("is_active", "=", true)
-    .orderBy("published_at", "desc")
+    .where('is_active', '=', true)
+    .orderBy('published_at', 'desc')
     .executeTakeFirst();
 
   const result = modal || null;
@@ -28,7 +28,7 @@ export async function getActiveUpdateModal() {
     await redisConnection.set(
       ACTIVE_MODAL_CACHE_KEY,
       JSON.stringify(result),
-      "EX",
+      'EX',
       CACHE_TTL
     );
   } catch (error) {
@@ -48,9 +48,9 @@ async function invalidateActiveModalCache() {
 
 export async function getAllUpdateModals() {
   const modals = await mainDb
-    .selectFrom("update_modals")
+    .selectFrom('update_modals')
     .selectAll()
-    .orderBy("created_at", "desc")
+    .orderBy('created_at', 'desc')
     .execute();
 
   return modals;
@@ -58,9 +58,9 @@ export async function getAllUpdateModals() {
 
 export async function getUpdateModalById(id: number) {
   const modal = await mainDb
-    .selectFrom("update_modals")
+    .selectFrom('update_modals')
     .selectAll()
-    .where("id", "=", id)
+    .where('id', '=', id)
     .executeTakeFirst();
 
   return modal || null;
@@ -72,7 +72,7 @@ export async function createUpdateModal(data: {
   banner_url?: string;
 }) {
   const modal = await mainDb
-    .insertInto("update_modals")
+    .insertInto('update_modals')
     .values({
       title: data.title,
       content: data.content,
@@ -96,12 +96,12 @@ export async function updateUpdateModal(
   }
 ) {
   const modal = await mainDb
-    .updateTable("update_modals")
+    .updateTable('update_modals')
     .set({
       ...data,
       updated_at: sql`NOW()`,
     })
-    .where("id", "=", id)
+    .where('id', '=', id)
     .returningAll()
     .executeTakeFirst();
 
@@ -116,10 +116,7 @@ export async function deleteUpdateModal(id: number) {
   const modal = await getUpdateModalById(id);
   const wasActive = modal?.is_active;
 
-  await mainDb
-    .deleteFrom("update_modals")
-    .where("id", "=", id)
-    .execute();
+  await mainDb.deleteFrom('update_modals').where('id', '=', id).execute();
 
   if (wasActive) {
     await invalidateActiveModalCache();
@@ -128,19 +125,19 @@ export async function deleteUpdateModal(id: number) {
 
 export async function publishUpdateModal(id: number) {
   await mainDb
-    .updateTable("update_modals")
+    .updateTable('update_modals')
     .set({ is_active: false })
-    .where("is_active", "=", true)
+    .where('is_active', '=', true)
     .execute();
 
   const modal = await mainDb
-    .updateTable("update_modals")
+    .updateTable('update_modals')
     .set({
       is_active: true,
       published_at: sql`NOW()`,
       updated_at: sql`NOW()`,
     })
-    .where("id", "=", id)
+    .where('id', '=', id)
     .returningAll()
     .executeTakeFirst();
 
@@ -151,12 +148,12 @@ export async function publishUpdateModal(id: number) {
 
 export async function unpublishUpdateModal(id: number) {
   const modal = await mainDb
-    .updateTable("update_modals")
+    .updateTable('update_modals')
     .set({
       is_active: false,
       updated_at: sql`NOW()`,
     })
-    .where("id", "=", id)
+    .where('id', '=', id)
     .returningAll()
     .executeTakeFirst();
 

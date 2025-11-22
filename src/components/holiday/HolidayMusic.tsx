@@ -34,7 +34,7 @@ const TRACK_FILES = [
   'Dean Martin - Let It Snow! Let It Snow! Let It Snow!.mp3',
   'Michael Buble - The Christmas Song.mp3',
   'Michael Buble - White Christmas.mp3',
-  'Brenda Lee - Rockin\' Around The Christmas Tree.mp3',
+  "Brenda Lee - Rockin' Around The Christmas Tree.mp3",
   'Michael Buble - Winter Wonderland.mp3',
 ];
 

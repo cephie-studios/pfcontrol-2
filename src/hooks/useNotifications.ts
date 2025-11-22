@@ -77,7 +77,10 @@ export function useNotifications() {
     const idStr = id.toString();
     setHiddenNotifications((prev) => {
       const updatedHidden = [...prev, idStr];
-      localStorage.setItem('hiddenNotifications', JSON.stringify(updatedHidden));
+      localStorage.setItem(
+        'hiddenNotifications',
+        JSON.stringify(updatedHidden)
+      );
       return updatedHidden;
     });
   }, []);

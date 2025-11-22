@@ -1,4 +1,4 @@
-import { mainDb } from './connection.js'
+import { mainDb } from './connection.js';
 
 export async function getAppVersion() {
   const result = await mainDb
@@ -14,7 +14,7 @@ export async function getAppVersion() {
         id: 1,
         version: '2.0.0.3',
         updated_at: new Date(),
-        updated_by: 'system'
+        updated_by: 'system',
       })
       .onConflict((oc) => oc.column('id').doNothing())
       .execute();
@@ -22,13 +22,13 @@ export async function getAppVersion() {
     return {
       version: '2.0.0.3',
       updated_at: new Date().toISOString(),
-      updated_by: 'system'
+      updated_by: 'system',
     };
   }
 
   return {
     ...result,
-    updated_at: result.updated_at?.toISOString() ?? null
+    updated_at: result.updated_at?.toISOString() ?? null,
   };
 }
 
@@ -39,13 +39,13 @@ export async function updateAppVersion(version: string, updatedBy: string) {
       id: 1,
       version,
       updated_at: new Date(),
-      updated_by: updatedBy
+      updated_by: updatedBy,
     })
     .onConflict((oc) =>
       oc.column('id').doUpdateSet({
         version: version,
         updated_at: new Date(),
-        updated_by: updatedBy
+        updated_by: updatedBy,
       })
     )
     .returning(['version', 'updated_at', 'updated_by'])
@@ -60,6 +60,6 @@ export async function updateAppVersion(version: string, updatedBy: string) {
 
   return {
     ...result,
-    updated_at: result?.updated_at?.toISOString() ?? null
+    updated_at: result?.updated_at?.toISOString() ?? null,
   };
 }

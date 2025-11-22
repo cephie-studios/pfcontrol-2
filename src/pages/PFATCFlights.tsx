@@ -76,10 +76,15 @@ export default function PFATCFlights() {
   const debounceTimersRef = useRef(debounceTimers);
   const updatingFlightsRef = useRef(updatingFlights);
 
-  const [openActionMenuId, setOpenActionMenuId] = useState<string | number | null>(null);
-  const [selectedFlightForModal, setSelectedFlightForModal] = useState<Flight | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<
+    string | number | null
+  >(null);
+  const [selectedFlightForModal, setSelectedFlightForModal] =
+    useState<Flight | null>(null);
   const [isFlightDetailModalOpen, setIsFlightDetailModalOpen] = useState(false);
-  const actionButtonRefs = useRef<Record<string | number, HTMLButtonElement | null>>({});
+  const actionButtonRefs = useRef<
+    Record<string | number, HTMLButtonElement | null>
+  >({});
 
   const handleOpenFlightDetails = (flight: Flight) => {
     setSelectedFlightForModal(flight);
@@ -115,7 +120,9 @@ export default function PFATCFlights() {
   const [activeAcarsFlights, setActiveAcarsFlights] = useState<
     Set<string | number>
   >(new Set());
-  const [activeAcarsFlightsData, setActiveAcarsFlightsData] = useState<Flight[]>([]);
+  const [activeAcarsFlightsData, setActiveAcarsFlightsData] = useState<
+    Flight[]
+  >([]);
   const [eventControllerViewEnabled, setEventControllerViewEnabled] =
     useState(false);
 
@@ -393,11 +400,12 @@ export default function PFATCFlights() {
           }
         );
 
-              if (response.ok) {
-                const flights: Flight[] = await response.json();
-                setActiveAcarsFlights(new Set(flights.map((f) => f.id)));
-                setActiveAcarsFlightsData(flights);
-              }      } catch {
+        if (response.ok) {
+          const flights: Flight[] = await response.json();
+          setActiveAcarsFlights(new Set(flights.map((f) => f.id)));
+          setActiveAcarsFlightsData(flights);
+        }
+      } catch {
         // Ignore errors
       }
     };
@@ -472,8 +480,8 @@ export default function PFATCFlights() {
 
   const allPossibleFlights = useMemo(() => {
     const flightsMap = new Map<string | number, FlightWithDetails>();
-    allFlights.forEach(f => flightsMap.set(f.id, f));
-    activeAcarsFlightsData.forEach(f => {
+    allFlights.forEach((f) => flightsMap.set(f.id, f));
+    activeAcarsFlightsData.forEach((f) => {
       if (!flightsMap.has(f.id)) {
         flightsMap.set(f.id, {
           ...f,
@@ -500,8 +508,8 @@ export default function PFATCFlights() {
       if (!overviewSocketRef.current) {
         throw new Error('Overview socket not available');
       }
-//...
-//...
+      //...
+      //...
       overviewSocketRef.current.sendContact(
         flight.sessionId,
         flightId,
@@ -519,7 +527,7 @@ export default function PFATCFlights() {
     if (!showHidden && flight.hidden) {
       return false;
     }
-    
+
     const matchesSearch =
       !searchTerm ||
       flight.callsign?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -678,7 +686,12 @@ export default function PFATCFlights() {
   );
 
   const handleToggleHidden = (flight: Flight) => {
-    handleFieldChange(flight.id, 'hidden', String(!flight.hidden), String(flight.hidden || false));
+    handleFieldChange(
+      flight.id,
+      'hidden',
+      String(!flight.hidden),
+      String(flight.hidden || false)
+    );
     setOpenActionMenuId(null);
   };
 
@@ -689,14 +702,14 @@ export default function PFATCFlights() {
       value: string,
       originalValue: string
     ) => {
-          if (!isEventController) {
-            return;
-          }
+      if (!isEventController) {
+        return;
+      }
 
-          let processedValue: string | boolean = value;
-          if (field === 'clearance' || field === 'hidden') {
-            processedValue = value === 'true';
-          }
+      let processedValue: string | boolean = value;
+      if (field === 'clearance' || field === 'hidden') {
+        processedValue = value === 'true';
+      }
 
       setOverviewData((prev) => {
         if (!prev) return prev;
@@ -743,12 +756,7 @@ export default function PFATCFlights() {
         return next;
       });
     },
-    [
-      debounceTimers,
-      handleAutoSave,
-      isEventController,
-      setOverviewData,
-    ]
+    [debounceTimers, handleAutoSave, isEventController, setOverviewData]
   );
 
   const getCurrentValue = useCallback(
@@ -886,7 +894,13 @@ export default function PFATCFlights() {
 
     if (cellType === 'text' && field === 'callsign') {
       return (
-        <div title={!airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ''}>
+        <div
+          title={
+            !airlinesLoading
+              ? parseCallsign(flight.callsign, airlines)
+              : flight.callsign || ''
+          }
+        >
           <TextInput
             value={currentValue}
             onChange={(value) =>
@@ -947,7 +961,10 @@ export default function PFATCFlights() {
 
   const flightForModal = useMemo(() => {
     if (!selectedFlightForModal) return null;
-    return allFlights.find(f => f.id === selectedFlightForModal.id) || selectedFlightForModal;
+    return (
+      allFlights.find((f) => f.id === selectedFlightForModal.id) ||
+      selectedFlightForModal
+    );
   }, [allFlights, selectedFlightForModal]);
 
   if (loading) {
@@ -1167,9 +1184,13 @@ export default function PFATCFlights() {
             </div>
           </div>
 
-          {allFlights.some(f => f.hidden) && (
+          {allFlights.some((f) => f.hidden) && (
             <div className="mb-4">
-              <Button onClick={() => setShowHidden(s => !s)} variant="outline" size="sm">
+              <Button
+                onClick={() => setShowHidden((s) => !s)}
+                variant="outline"
+                size="sm"
+              >
                 {showHidden ? 'Hide Hidden Flights' : 'Show Hidden Flights'}
               </Button>
             </div>
@@ -1215,9 +1236,9 @@ export default function PFATCFlights() {
                       Remark
                     </th>
                     {isEventController && (
-                    <th className="px-3 pr-6 py-4 text-center text-zinc-400 font-medium">
-                      More
-                    </th>
+                      <th className="px-3 pr-6 py-4 text-center text-zinc-400 font-medium">
+                        More
+                      </th>
                     )}
                   </tr>
                 </thead>
@@ -1297,76 +1318,88 @@ export default function PFATCFlights() {
                           {renderEditableCell(flight, 'remark', 'text')}
                         </td>
                         {isEventController && (
-                        <td className="px-3 pr-6 py-4 flex justify-center">
-                        <button
-                        type="button"
-                        ref={(el) => {
-                          if (el) {
-                            actionButtonRefs.current[flight.id] = el;
-                          }
-                        }}
-                        className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${(!isEventController || !selectedStation) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => {
-                          setOpenActionMenuId(
-                            openActionMenuId === flight.id ? null : flight.id
-                          );
-                        }}
-                        title="Actions"
-                        disabled={!isEventController || !selectedStation}
-                      >
-                        <Menu className="h-6 w-6" strokeWidth={2.5} />
-                      </button>
-                      {openActionMenuId === flight.id &&
-                        createPortal(
-                          <>
-                            <div
-                              className="fixed inset-0"
-                              style={{ zIndex: 9997 }}
-                              onClick={() => setOpenActionMenuId(null)}
-                            />
-                            <div
-                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
-                              style={{
-                                zIndex: 9998,
-                                top: (() => {
-                                  const btn = actionButtonRefs.current[flight.id];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    return `${rect.bottom + 4}px`;
-                                  }
-                                  return '0px';
-                                })(),
-                                left: (() => {
-                                  const btn = actionButtonRefs.current[flight.id];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    return `${rect.right - 160}px`;
-                                  }
-                                  return '0px';
-                                })(),
+                          <td className="px-3 pr-6 py-4 flex justify-center">
+                            <button
+                              type="button"
+                              ref={(el) => {
+                                if (el) {
+                                  actionButtonRefs.current[flight.id] = el;
+                                }
                               }}
+                              className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!isEventController || !selectedStation ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              onClick={() => {
+                                setOpenActionMenuId(
+                                  openActionMenuId === flight.id
+                                    ? null
+                                    : flight.id
+                                );
+                              }}
+                              title="Actions"
+                              disabled={!isEventController || !selectedStation}
                             >
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => handleOpenFlightDetails(flight)}
-                              >
-                                <FileText className="w-4 h-4" />
-                                Details
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => handleToggleHidden(flight)}
-                              >
-                                {flight.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                {flight.hidden ? 'Unhide' : 'Hide'}
-                              </button>
-                            </div>
-                          </>,
-                          document.body
-                        )}
-                        </td>
+                              <Menu className="h-6 w-6" strokeWidth={2.5} />
+                            </button>
+                            {openActionMenuId === flight.id &&
+                              createPortal(
+                                <>
+                                  <div
+                                    className="fixed inset-0"
+                                    style={{ zIndex: 9997 }}
+                                    onClick={() => setOpenActionMenuId(null)}
+                                  />
+                                  <div
+                                    className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
+                                    style={{
+                                      zIndex: 9998,
+                                      top: (() => {
+                                        const btn =
+                                          actionButtonRefs.current[flight.id];
+                                        if (btn) {
+                                          const rect =
+                                            btn.getBoundingClientRect();
+                                          return `${rect.bottom + 4}px`;
+                                        }
+                                        return '0px';
+                                      })(),
+                                      left: (() => {
+                                        const btn =
+                                          actionButtonRefs.current[flight.id];
+                                        if (btn) {
+                                          const rect =
+                                            btn.getBoundingClientRect();
+                                          return `${rect.right - 160}px`;
+                                        }
+                                        return '0px';
+                                      })(),
+                                    }}
+                                  >
+                                    <button
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
+                                      onClick={() =>
+                                        handleOpenFlightDetails(flight)
+                                      }
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                      Details
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
+                                      onClick={() => handleToggleHidden(flight)}
+                                    >
+                                      {flight.hidden ? (
+                                        <Eye className="w-4 h-4" />
+                                      ) : (
+                                        <EyeOff className="w-4 h-4" />
+                                      )}
+                                      {flight.hidden ? 'Unhide' : 'Hide'}
+                                    </button>
+                                  </div>
+                                </>,
+                                document.body
+                              )}
+                          </td>
                         )}
                       </tr>
                     ))

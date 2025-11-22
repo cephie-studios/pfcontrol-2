@@ -11,7 +11,9 @@ export const createChartHandlers = (
   isChartDragging: boolean,
   setIsChartDragging: React.Dispatch<React.SetStateAction<boolean>>,
   chartDragStart: { x: number; y: number },
-  setChartDragStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>,
+  setChartDragStart: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number }>
+  >,
   containerRef: React.RefObject<HTMLDivElement>,
   imageSize: { width: number; height: number }
 ) => {
@@ -109,7 +111,12 @@ export const createChartHandlers = (
 
     if (e.touches.length === 1 && isChartDragging) {
       // Single touch - pan
-      if (!containerRef.current || imageSize.width === 0 || imageSize.height === 0) return;
+      if (
+        !containerRef.current ||
+        imageSize.width === 0 ||
+        imageSize.height === 0
+      )
+        return;
 
       const container = containerRef.current;
       const rect = container.getBoundingClientRect();
@@ -142,7 +149,12 @@ export const createChartHandlers = (
       const deltaX = currentCenter.x - lastTouchCenter.x;
       const deltaY = currentCenter.y - lastTouchCenter.y;
 
-      if (!containerRef.current || imageSize.width === 0 || imageSize.height === 0) return;
+      if (
+        !containerRef.current ||
+        imageSize.width === 0 ||
+        imageSize.height === 0
+      )
+        return;
 
       const container = containerRef.current;
       const rect = container.getBoundingClientRect();

@@ -1,6 +1,6 @@
-import { mainDb } from "./connection.js";
-import { encrypt, decrypt } from "../utils/encryption.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
+import { sql } from 'kysely';
 
 export interface FlightLogData {
   userId: string;
@@ -22,7 +22,7 @@ export async function logFlightAction(logData: FlightLogData) {
     flightId,
     oldData = null,
     newData = null,
-    ipAddress = null
+    ipAddress = null,
   } = logData;
 
   try {
@@ -39,7 +39,7 @@ export async function logFlightAction(logData: FlightLogData) {
         old_data: oldData,
         new_data: newData,
         ip_address: encryptedIP,
-        timestamp: sql`NOW()`
+        timestamp: sql`NOW()`,
       })
       .execute();
   } catch (error) {
@@ -51,7 +51,11 @@ export async function cleanupOldFlightLogs(daysToKeep = 30) {
   try {
     const result = await mainDb
       .deleteFrom('flight_logs')
-      .where('timestamp', '<', new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000))
+      .where(
+        'timestamp',
+        '<',
+        new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
+      )
       .executeTakeFirst();
 
     return Number(result?.numDeletedRows ?? 0);
@@ -144,7 +148,7 @@ export async function getFlightLogs(
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       query = query.where('timestamp', '>=', startOfDay);
       query = query.where('timestamp', '<=', endOfDay);
     }
@@ -192,7 +196,7 @@ export async function getFlightLogs(
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       countQuery = countQuery.where('timestamp', '>=', startOfDay);
       countQuery = countQuery.where('timestamp', '<=', endOfDay);
     }
@@ -210,7 +214,7 @@ export async function getFlightLogs(
     const total = await countQuery.executeTakeFirst();
 
     return {
-      logs: logs.map(log => ({
+      logs: logs.map((log) => ({
         ...log,
         ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,
       })),

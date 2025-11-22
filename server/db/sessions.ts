@@ -1,8 +1,8 @@
-import { mainDb, flightsDb } from "./connection.js";
+import { mainDb, flightsDb } from './connection.js';
 import { addFlight } from './flights.js';
-import { validateSessionId } from "../utils/validation.js";
-import { encrypt } from "../utils/encryption.js";
-import { sql } from "kysely";
+import { validateSessionId } from '../utils/validation.js';
+import { encrypt } from '../utils/encryption.js';
+import { sql } from 'kysely';
 
 interface CreateSessionParams {
   sessionId: string;
@@ -13,13 +13,21 @@ interface CreateSessionParams {
   isPFATC?: boolean;
 }
 
-export async function createSession({ sessionId, accessId, activeRunway, airportIcao, createdBy, isPFATC, isTutorial }: CreateSessionParams & { isTutorial?: boolean }) {
+export async function createSession({
+  sessionId,
+  accessId,
+  activeRunway,
+  airportIcao,
+  createdBy,
+  isPFATC,
+  isTutorial,
+}: CreateSessionParams & { isTutorial?: boolean }) {
   const validSessionId = validateSessionId(sessionId);
 
   const encryptedAtis = encrypt({
     letter: 'A',
     text: '',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   await mainDb
@@ -31,7 +39,7 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
       airport_icao: airportIcao.toUpperCase(),
       created_by: createdBy,
       is_pfatc: isPFATC,
-      atis: JSON.stringify(encryptedAtis)
+      atis: JSON.stringify(encryptedAtis),
     })
     .execute();
 
@@ -91,17 +99,29 @@ export async function createSession({ sessionId, accessId, activeRunway, airport
 }
 
 export async function getSessionById(sessionId: string) {
-  return await mainDb
-    .selectFrom('sessions')
-    .selectAll()
-    .where('session_id', '=', sessionId)
-    .executeTakeFirst() || null;
+  return (
+    (await mainDb
+      .selectFrom('sessions')
+      .selectAll()
+      .where('session_id', '=', sessionId)
+      .executeTakeFirst()) || null
+  );
 }
 
 export async function getSessionsByUser(userId: string) {
   return await mainDb
     .selectFrom('sessions')
-    .select(['session_id', 'access_id', 'active_runway', 'airport_icao', 'created_at', 'created_by', 'is_pfatc', 'custom_name', 'refreshed_at'])
+    .select([
+      'session_id',
+      'access_id',
+      'active_runway',
+      'airport_icao',
+      'created_at',
+      'created_by',
+      'is_pfatc',
+      'custom_name',
+      'refreshed_at',
+    ])
     .where('created_by', '=', userId)
     .orderBy('created_at', 'desc')
     .execute();
@@ -116,13 +136,26 @@ export async function getSessionsByUserDetailed(userId: string) {
     .execute();
 }
 
-export async function updateSession(sessionId: string, updates: Partial<{ active_runway: string; airport_icao: string; flight_strips: string; atis: string; custom_name: string; refreshed_at: Date; is_pfatc: boolean; }>) {
+export async function updateSession(
+  sessionId: string,
+  updates: Partial<{
+    active_runway: string;
+    airport_icao: string;
+    flight_strips: string;
+    atis: string;
+    custom_name: string;
+    refreshed_at: Date;
+    is_pfatc: boolean;
+  }>
+) {
   return await mainDb
     .updateTable('sessions')
     .set({
       ...updates,
       airport_icao: updates.airport_icao?.toUpperCase(),
-      refreshed_at: updates.refreshed_at ? new Date(updates.refreshed_at) : undefined
+      refreshed_at: updates.refreshed_at
+        ? new Date(updates.refreshed_at)
+        : undefined,
     })
     .where('session_id', '=', sessionId)
     .returningAll()
@@ -133,7 +166,7 @@ export async function updateSessionName(sessionId: string, customName: string) {
   return await mainDb
     .updateTable('sessions')
     .set({
-      custom_name: customName
+      custom_name: customName,
     })
     .where('session_id', '=', sessionId)
     .returningAll()
