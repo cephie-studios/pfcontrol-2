@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Radio, Plane, MapPin } from 'lucide-react';
+import { X, Radio, Plane, MapPin, Search } from 'lucide-react';
 import { fetchFrequencies } from '../../utils/fetch/data';
 import type { AirportFrequency } from '../../types/airports';
 import type { Flight } from '../../types/flight';
@@ -41,10 +41,24 @@ export default function ContactAcarsSidebar({
   const [frequencies, setFrequencies] = useState<
     { type: string; freq: string }[]
   >([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const flightsWithAcars = flights;
 
   const isCenterStation = airportIcao.includes('_CTR');
+
+  const filteredFlights = useMemo(() => {
+    if (!searchTerm.trim()) return flightsWithAcars;
+    const lowerSearch = searchTerm.toLowerCase();
+    return flightsWithAcars.filter(
+      (flight) =>
+        (flight.callsign?.toLowerCase() || '').includes(lowerSearch) ||
+        flight.user?.discord_username?.toLowerCase().includes(lowerSearch) ||
+        flight.aircraft?.toLowerCase().includes(lowerSearch) ||
+        (flight.departure?.toLowerCase() || '').includes(lowerSearch) ||
+        (flight.arrival?.toLowerCase() || '').includes(lowerSearch)
+    );
+  }, [flightsWithAcars, searchTerm]);
 
   const getDefaultMessage = () => {
     if (frequencies.length > 0) {
@@ -165,13 +179,30 @@ export default function ContactAcarsSidebar({
           </div>
         ) : (
           <>
+            {/* Search Bar */}
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+                Search Flights
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by callsign, pilot, aircraft, or route..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-950 border border-gray-800 rounded-full text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
             {/* Flight Selection */}
             <div className="mb-6">
               <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
                 Select Flight
               </label>
               <div className="space-y-2 max-h-1/2 overflow-y-auto pr-2">
-                {flightsWithAcars.map((flight) => (
+                {filteredFlights.map((flight) => (
                   <button
                     key={flight.id}
                     onClick={() => setSelectedFlight(flight)}
@@ -232,6 +263,11 @@ export default function ContactAcarsSidebar({
                     </div>
                   </button>
                 ))}
+                {filteredFlights.length === 0 && searchTerm.trim() && (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>No flights match your search.</p>
+                  </div>
+                )}
               </div>
             </div>
 
