@@ -430,7 +430,7 @@ export default function Home({
         </div>
       </section>
 
-      <section className="text-white py-20 text-center px-2 sm:px-6 relative bg-black">
+      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
         <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
@@ -498,62 +498,7 @@ export default function Home({
         </div>
       </section>
 
-      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
-          <h2
-            className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
-            style={{ lineHeight: 1.4 }}
-          >
-            The Team
-          </h2>
-          <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
-          <p className="text-xl text-center text-gray-300 max-w-3xl mx-auto">
-            The team behind PFControl.
-          </p>
-        </div>
-
-        <div className="mt-20 mb-16 max-w-5xl mx-auto px-2 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/team/devbanane.webp"
-                alt="devbanane"
-                className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600"
-              />
-              <span className="text-white text-lg font-semibold">
-                devbanane
-              </span>
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent text-md font-medium">
-                Lead Developer
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/team/iceit.webp"
-                alt="iceit"
-                className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600"
-              />
-              <span className="text-white text-lg font-semibold">iceit</span>
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-200 bg-clip-text text-transparent text-md font-medium">
-                Ice Wizard
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/team/linuss.webp"
-                alt="frenchfries"
-                className="h-32 w-32 rounded-full mb-2 border-2 border-blue-600"
-              />
-              <span className="text-white text-lg font-semibold">Linuss</span>
-              <span className="bg-gradient-to-r from-orange-300 to-red-700 bg-clip-text text-transparent text-md font-medium">
-                Contributor
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
+      <section className="text-white py-24 -mb-24 text-center px-2 sm:px-6 relative bg-black">
         <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
