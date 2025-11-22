@@ -124,6 +124,9 @@ export default function DepartureTable({
     (string | number)[]
   >([]);
 
+  const [sortColumn, setSortColumn] = useState<string>('time');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   useEffect(() => {
     const savedOrder = localStorage.getItem('flight-strip-order');
     if (savedOrder) {
@@ -155,6 +158,71 @@ export default function DepartureTable({
 
     return orderedList;
   }, [flights, customFlightOrder]);
+
+  const getSortValue = useCallback((flight: Flight, column: string) => {
+    switch (column) {
+      case 'time':
+        return flight.timestamp || 0;
+      case 'callsign':
+        return flight.callsign || '';
+      case 'stand':
+        return flight.stand || '';
+      case 'aircraft':
+        return flight.aircraft || '';
+      case 'wakeTurbulence':
+        return flight.wtc || '';
+      case 'flightType':
+        return flight.flight_type || '';
+      case 'arrival':
+        return flight.arrival || '';
+      case 'runway':
+        return flight.runway || '';
+      case 'sid':
+        return flight.sid || '';
+      case 'rfl':
+        return flight.cruisingFL || '';
+      case 'cfl':
+        return flight.clearedFL || '';
+      case 'route':
+        return flight.route || '';
+      case 'squawk':
+        return flight.squawk || '';
+      case 'clearance':
+        return isClearanceChecked(flight.clearance) ? 1 : 0;
+      case 'status':
+        return flight.status || '';
+      case 'remark':
+        return flight.remark || '';
+      default:
+        return '';
+    }
+  }, []);
+
+  const sortedFlights = useMemo(() => {
+    const flightsToSort = [...orderedFlights];
+    if (sortColumn) {
+      flightsToSort.sort((a, b) => {
+        const aVal = getSortValue(a, sortColumn);
+        const bVal = getSortValue(b, sortColumn);
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return flightsToSort;
+  }, [orderedFlights, sortColumn, sortDirection, getSortValue]);
+
+  const handleSort = useCallback(
+    (column: string) => {
+      if (sortColumn === column) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortColumn(column);
+        setSortDirection('asc');
+      }
+    },
+    [sortColumn, sortDirection]
+  );
 
   const saveFlightOrder = useCallback((flightIds: (string | number)[]) => {
     localStorage.setItem('flight-strip-order', JSON.stringify(flightIds));
@@ -380,8 +448,8 @@ export default function DepartureTable({
   };
 
   const visibleFlights = showHidden
-    ? orderedFlights
-    : orderedFlights.filter((flight) => !flight.hidden);
+    ? sortedFlights
+    : sortedFlights.filter((flight) => !flight.hidden);
   const hasHiddenFlights = orderedFlights.some((flight) => flight.hidden);
 
   const handlePDCOpen = (flight: Flight) => {
@@ -513,57 +581,133 @@ export default function DepartureTable({
             <thead>
               <tr className="bg-blue-950 text-blue-200">
                 {/* Drag handle column */}
-                <th className="py-2.5 px-2 text-left w-8"></th>
+                <th className="py-2.5 px-2 text-left w-8 select-none hover:bg-blue-700"></th>
                 {/* Time column */}
-                <th className="py-2.5 px-4 text-left column-time">TIME</th>
+                <th
+                  className="py-2.5 px-4 text-left column-time cursor-pointer select-none hover:bg-blue-700"
+                  onClick={() => handleSort('time')}
+                >
+                  TIME
+                </th>
                 {departureColumns.callsign !== false && (
-                  <th className="py-2.5 px-4 text-left w">CALLSIGN</th>
+                  <th
+                    className="py-2.5 px-4 text-left w cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('callsign')}
+                  >
+                    CALLSIGN
+                  </th>
                 )}
                 {departureColumns.stand !== false && (
-                  <th className="py-2.5 px-4 text-left w-24 column-stand">
+                  <th
+                    className="py-2.5 px-4 text-left w-24 column-stand cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('stand')}
+                  >
                     STAND
                   </th>
                 )}
                 {departureColumns.aircraft !== false && (
-                  <th className="py-2.5 px-4 text-left column-atyp">ATYP</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-atyp cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('aircraft')}
+                  >
+                    ATYP
+                  </th>
                 )}
                 {departureColumns.wakeTurbulence !== false && (
-                  <th className="py-2.5 px-4 text-left column-w">W</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-w cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('wakeTurbulence')}
+                  >
+                    W
+                  </th>
                 )}
                 {departureColumns.flightType !== false && (
-                  <th className="py-2.5 px-4 text-left column-flight-type">
+                  <th
+                    className="py-2.5 px-4 text-left column-flight-type cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('flightType')}
+                  >
                     V
                   </th>
                 )}
                 {departureColumns.arrival !== false && (
-                  <th className="py-2.5 px-4 text-left column-ades">ADES</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-ades cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('arrival')}
+                  >
+                    ADES
+                  </th>
                 )}
                 {departureColumns.runway !== false && (
-                  <th className="py-2.5 px-4 text-left column-rwy">RWY</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-rwy cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('runway')}
+                  >
+                    RWY
+                  </th>
                 )}
                 {departureColumns.sid !== false && (
-                  <th className="py-2.5 px-4 text-left column-sid">SID</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-sid cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('sid')}
+                  >
+                    SID
+                  </th>
                 )}
                 {departureColumns.rfl !== false && (
-                  <th className="py-2.5 px-4 text-left column-rfl">RFL</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-rfl cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('rfl')}
+                  >
+                    RFL
+                  </th>
                 )}
                 {departureColumns.cfl !== false && (
-                  <th className="py-2.5 px-4 text-left column-cfl">CFL</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-cfl cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('cfl')}
+                  >
+                    CFL
+                  </th>
                 )}
                 {departureColumns.route !== false && (
-                  <th className="py-2.5 px-4 text-left column-route">RTE</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-route cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('route')}
+                  >
+                    RTE
+                  </th>
                 )}
                 {departureColumns.squawk !== false && (
-                  <th className="py-2.5 px-4 text-center w-28">ASSR</th>
+                  <th
+                    className="py-2.5 px-4 text-center w-28 cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('squawk')}
+                  >
+                    ASSR
+                  </th>
                 )}
                 {departureColumns.clearance !== false && (
-                  <th className="py-2.5 px-4 text-left column-clearance">C</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-clearance cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('clearance')}
+                  >
+                    C
+                  </th>
                 )}
                 {departureColumns.status !== false && (
-                  <th className="py-2.5 px-4 text-left column-sts">STS</th>
+                  <th
+                    className="py-2.5 px-4 text-left column-sts cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('status')}
+                  >
+                    STS
+                  </th>
                 )}
                 {departureColumns.remark !== false && (
-                  <th className="py-2.5 px-4 text-left w-64 column-rmk">RMK</th>
+                  <th
+                    className="py-2.5 px-4 text-left w-64 column-rmk cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('remark')}
+                  >
+                    RMK
+                  </th>
                 )}
                 {departureColumns.pdc !== false && (
                   <th className="py-2.5 px-2 text-left column-pdc">PDC</th>

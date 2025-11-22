@@ -376,7 +376,7 @@ export default function UpdateModalsSection() {
 
       {/* Add/Edit Modal */}
       {(showAddModal || editingModal) && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
           <div className="bg-zinc-900 border-2 border-zinc-700 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold mb-4 text-white">
               {editingModal ? 'Edit Update Modal' : 'Create Update Modal'}
