@@ -7,7 +7,10 @@ import { generateATIS } from '../utils/fetch/atis';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { steps } from '../components/tutorial/TutorialStepsCreate';
 import { useData } from '../hooks/data/useData';
-import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from 'react-joyride-react19-compat';
 import Navbar from '../components/Navbar';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import RunwayDropdown from '../components/dropdowns/RunwayDropdown';

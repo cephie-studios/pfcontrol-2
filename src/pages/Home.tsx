@@ -17,7 +17,10 @@ import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsHome';
-import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from 'react-joyride-react19-compat';
 import Modal from '../components/common/Modal';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';

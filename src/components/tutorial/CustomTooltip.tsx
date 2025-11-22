@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '../common/Button';
-import type { TooltipRenderProps } from 'react-joyride';
+import type { TooltipRenderProps } from 'react-joyride-react19-compat';
 import { X } from 'lucide-react';
 
 interface CustomStep {

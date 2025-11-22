@@ -1,4 +1,4 @@
-import type { Placement } from 'react-joyride';
+import type { Placement } from 'react-joyride-react19-compat';
 
 export const steps: {
   target: string;

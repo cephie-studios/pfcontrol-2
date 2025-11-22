@@ -18,7 +18,7 @@ The following steps get the project running on your machine for development and 
 1. Install dependencies
 
    ```
-   npm install --legacy-peer-deps
+   npm install
    ```
 
 2. Create an environment file

@@ -22,7 +22,10 @@ import type {
   DepartureTableColumnSettings,
 } from '../types/settings';
 import type { FieldEditingState } from '../sockets/sessionUsersSocket';
-import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from 'react-joyride-react19-compat';
 import Navbar from '../components/Navbar';
 import Toolbar from '../components/tools/Toolbar';
 import DepartureTable from '../components/tables/DepartureTable';

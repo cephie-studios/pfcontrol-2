@@ -21,7 +21,10 @@ import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsSettings';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
-import Joyride, { type CallBackProps, STATUS } from 'react-joyride';
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from 'react-joyride-react19-compat';
 import BackgroundImageSettings from '../components/Settings/BackgroundImageSettings';
 import SoundSettings from '../components/Settings/SoundSettings';
 import LayoutSettings from '../components/Settings/LayoutSettings';
