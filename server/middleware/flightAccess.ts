@@ -17,7 +17,6 @@ export async function requireFlightAccess(
       });
     }
 
-    // Get session info
     const session = await mainDb
       .selectFrom('sessions')
       .select(['session_id', 'access_id', 'created_by', 'is_pfatc'])
@@ -84,7 +83,6 @@ export async function canModifySession(
   accessId?: string
 ): Promise<boolean> {
   try {
-    // Get session info
     const session = await mainDb
       .selectFrom('sessions')
       .select(['session_id', 'access_id', 'created_by', 'is_pfatc'])
@@ -95,18 +93,15 @@ export async function canModifySession(
       return false;
     }
 
-    // Check if event controller
     const hasEventControllerRole = await isEventController(userId);
     if (hasEventControllerRole && session.is_pfatc) {
       return true;
     }
 
-    // Check accessId
     if (accessId && accessId === session.access_id) {
       return true;
     }
 
-    // Check ownership
     if (userId === session.created_by) {
       return true;
     }

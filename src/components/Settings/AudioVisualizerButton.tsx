@@ -57,7 +57,6 @@ const AudioVisualizerButton: React.FC<{
       ? 'bg-orange-600/80 hover:bg-orange-600/90 border-orange-500/80 hover:border-orange-500/90 text-white shadow-lg'
       : 'bg-orange-600/60 hover:bg-orange-600/80 border-orange-500/60 hover:border-orange-500/80 text-orange-100 hover:text-white';
   } else {
-    // default variant
     variantClasses = isPlaying
       ? 'bg-purple-600/80 hover:bg-purple-600/90 border-purple-500/80 hover:border-purple-500/90 text-white shadow-lg'
       : 'bg-purple-600/60 hover:bg-purple-600/80 border-purple-500/60 hover:border-purple-500/80 text-purple-100 hover:text-white';
@@ -96,7 +95,6 @@ const AudioVisualizerButton: React.FC<{
           : '0 2px 4px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {/* Animated background bars when playing */}
       {isPlaying && (
         <div className="absolute inset-0 flex items-end justify-center space-x-0.5 opacity-20 pointer-events-none">
           {Array.from({ length: 8 }).map((_, index) => (
@@ -113,7 +111,6 @@ const AudioVisualizerButton: React.FC<{
         </div>
       )}
 
-      {/* Button content */}
       <div className="relative z-10 flex items-center justify-center gap-2">
         {variant === 'custom' && <Star className="h-4 w-4" />}
         {variant === 'default' && <Star className="h-4 w-4" />}

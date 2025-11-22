@@ -107,7 +107,7 @@ export function setupChatWebsocket(
             username: user.username,
             avatar: user.avatar,
             message: sanitizedMessage,
-            mentions: mentionedUserIds, // Store user IDs, not usernames
+            mentions: mentionedUserIds,
           });
 
           const formattedMsg = {

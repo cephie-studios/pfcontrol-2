@@ -279,7 +279,6 @@ let cleanupInterval: NodeJS.Timeout | null = null;
 function startAutomaticCleanup() {
   const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
 
-  // Run initial cleanup after 1 minute
   setTimeout(async () => {
     try {
       await cleanupOldAuditLogs(14);
@@ -288,7 +287,6 @@ function startAutomaticCleanup() {
     }
   }, 60 * 1000);
 
-  // Set up recurring cleanup
   cleanupInterval = setInterval(async () => {
     try {
       await cleanupOldAuditLogs(14);

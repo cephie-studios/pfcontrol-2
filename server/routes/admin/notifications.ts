@@ -34,7 +34,6 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Type and text are required' });
     }
 
-    // Handle both camelCase and snake_case, clean up empty strings
     const colorValue = custom_color !== undefined ? custom_color : customColor;
     const cleanColor = colorValue?.trim() || null;
 
@@ -45,7 +44,6 @@ router.post('/', async (req, res) => {
       customColor: cleanColor,
     });
 
-    // Log the action
     if (req.user?.userId) {
       const ip = getClientIp(req);
       await logAdminAction({
@@ -78,9 +76,8 @@ router.put('/:id', async (req, res) => {
     const { type, text, show, customColor, custom_color } = req.body;
     const numericId = Number(id);
 
-    // Handle both camelCase and snake_case, clean up empty strings
     const colorValue = custom_color !== undefined ? custom_color : customColor;
-    const cleanColor = colorValue?.trim() || null; // null instead of undefined to explicitly clear
+    const cleanColor = colorValue?.trim() || null;
 
     const notification = await updateNotification(numericId, {
       type,

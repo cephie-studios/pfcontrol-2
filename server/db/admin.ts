@@ -244,12 +244,10 @@ export async function getAllUsers(
     let totalUsers = 0;
 
     if (cached) {
-      // Use cached data directly (already processed)
       const parsed = JSON.parse(cached);
       filteredUsers = parsed.users;
       totalUsers = parsed.total;
     } else {
-      // Build query with Kysely
       let query = mainDb
         .selectFrom('users as u')
         .leftJoin('roles as r', 'u.role_id', 'r.id')
@@ -323,13 +321,11 @@ export async function getAllUsers(
         role_permissions: r.role_permissions ?? null,
       }));
 
-      // Fetch roles for multi-role support
       const userIds = rawUsers.map((u) => u.id);
       const allUserRoles = await Promise.all(
         userIds.map((userId) => getUserRoles(userId))
       );
 
-      // Process users with admin status, settings decryption, etc.
       const usersWithAdminStatus = rawUsers.map((user, index) => {
         let decryptedSettings = null;
         try {

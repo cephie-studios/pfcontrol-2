@@ -165,7 +165,7 @@ export default function PilotProfile() {
       setUserStats(userData.statistics || {});
       setRanks(userData.ranks || {});
     } catch {
-      // Ignore errors for stats
+      // ignore
     }
   };
 

@@ -345,7 +345,7 @@ export default function Flights() {
           setActiveAcarsFlights(new Set(flights.map((f) => f.id)));
         }
       } catch {
-        // Ignore errors
+        // ignore
       }
     };
 
@@ -483,10 +483,8 @@ export default function Flights() {
     flightId: string | number,
     checked: boolean
   ) => {
-    // Persist as boolean
     handleFlightUpdate(flightId, { clearance: checked });
 
-    // Always stop flashing once checked
     if (checked) {
       setFlashingPDCIds((prev) => {
         const next = new Set(prev);
@@ -513,7 +511,6 @@ export default function Flights() {
       return;
     }
 
-    // Check if it's a custom departure flight
     const isCustomDeparture = customDepartureFlights.some(
       (f) => f.id === flightId
     );
@@ -524,7 +521,6 @@ export default function Flights() {
       return;
     }
 
-    // Check if it's a custom arrival flight
     const isCustomArrival = customArrivalFlights.some((f) => f.id === flightId);
     if (isCustomArrival) {
       setCustomArrivalFlights((prev) =>
@@ -550,7 +546,6 @@ export default function Flights() {
   };
 
   const handleFlightDelete = (flightId: string | number) => {
-    // Check if it's a custom departure flight
     const isCustomDeparture = customDepartureFlights.some(
       (f) => f.id === flightId
     );
@@ -561,14 +556,12 @@ export default function Flights() {
       return;
     }
 
-    // Check if it's a custom arrival flight
     const isCustomArrival = customArrivalFlights.some((f) => f.id === flightId);
     if (isCustomArrival) {
       setCustomArrivalFlights((prev) => prev.filter((f) => f.id !== flightId));
       return;
     }
 
-    // Regular flight deletion via WebSocket
     if (flightsSocket?.socket?.connected) {
       flightsSocket.deleteFlight(flightId);
     } else {
@@ -599,14 +592,9 @@ export default function Flights() {
     };
 
     try {
-      // Save to database via API
       await addFlight(sessionId, newFlightData);
-
-      // Flight will be broadcast via WebSocket and added automatically
-      // No need to add to local state here - prevents duplicates
     } catch (error) {
       console.error('Failed to add custom departure:', error);
-      // Optionally show an error toast to the user
     }
   };
 
@@ -690,7 +678,6 @@ export default function Flights() {
         hidden: localHiddenFlights.has(flight.id),
       }));
 
-    // Combine regular flights with custom flights
     let allDepartures = [...regularDepartures, ...customDepartureFlights];
 
     if (position !== 'ALL') {
@@ -725,7 +712,6 @@ export default function Flights() {
       hidden: localHiddenFlights.has(flight.id),
     }));
 
-    // Combine regular arrivals with custom arrivals
     return [...mappedArrivals, ...customArrivalFlights];
   }, [
     flights,
@@ -957,7 +943,6 @@ export default function Flights() {
     handleTouchEnd,
   } = chartHandlers;
 
-  // Early return for validation states
   if (validatingAccess) {
     return (
       <div className="min-h-screen text-white relative">

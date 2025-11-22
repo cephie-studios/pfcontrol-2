@@ -345,7 +345,6 @@ export default function PFATCFlights() {
           return next;
         });
       },
-      // Flight update acknowledgment
       ({ flightId }) => {
         setUpdatingFlights((prev) => {
           const next = new Set(prev);
@@ -353,7 +352,6 @@ export default function PFATCFlights() {
           return next;
         });
       },
-      // Flight error handler
       (error) => {
         console.error('Flight operation error:', error);
         if (error.flightId) {
@@ -406,7 +404,7 @@ export default function PFATCFlights() {
           setActiveAcarsFlightsData(flights);
         }
       } catch {
-        // Ignore errors
+        // ignore
       }
     };
 

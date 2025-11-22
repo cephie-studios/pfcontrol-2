@@ -15,8 +15,6 @@ import { getClientIp } from '../../utils/getIpAddress.js';
 import { deleteOldImage } from '../uploads.js';
 
 const router = express.Router();
-
-// Require notifications permission for all update modal endpoints
 router.use(requirePermission('notifications'));
 
 // GET: /api/admin/update-modals - Get all update modals
@@ -65,7 +63,6 @@ router.post('/', async (req, res) => {
 
     const modal = await createUpdateModal({ title, content, banner_url });
 
-    // Log the action
     if (req.user?.userId) {
       const ip = getClientIp(req);
       await logAdminAction({

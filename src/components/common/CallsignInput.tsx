@@ -23,16 +23,13 @@ export default function CallsignInput({
   const [dropdownSearch, setDropdownSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const dropdownSearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Combine both the main input value and dropdown search filter
     const mainSearchTerm = value.toUpperCase();
     const dropdownSearchTerm = dropdownSearch.toUpperCase();
 
     let filtered = airlines;
 
-    // Filter by main input value if exists
     if (value) {
       filtered = airlines.filter(
         (airline) =>
@@ -42,7 +39,6 @@ export default function CallsignInput({
       );
     }
 
-    // Further filter by dropdown search if exists
     if (dropdownSearch) {
       filtered = filtered.filter(
         (airline) =>
@@ -102,32 +98,6 @@ export default function CallsignInput({
   const handleInputFocus = () => {
     setShowSuggestions(true);
   };
-
-  // Parse the callsign to check if it's valid
-  const parsedCallsign = useMemo(() => {
-    if (!value || value.length < 4) return null;
-
-    const callsignPattern = /^([A-Z]{2,3})(\d+[A-Z]?)$/;
-    const match = value.match(callsignPattern);
-
-    if (!match) return null;
-
-    const airlineCode = match[1];
-    const flightNumber = match[2];
-    const airline = airlines.find((a) => a.icao === airlineCode);
-
-    if (airline) {
-      const formattedName = airline.callsign
-        .split(' ')
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-        )
-        .join(' ');
-      return `${formattedName} ${flightNumber}`;
-    }
-
-    return null;
-  }, [value, airlines]);
 
   return (
     <div className="relative">

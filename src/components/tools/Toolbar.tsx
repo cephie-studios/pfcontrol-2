@@ -138,7 +138,6 @@ export default function Toolbar({
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const { user } = useAuth();
 
-  // Load initial ATIS data on mount or when sessionId/accessId changes
   useEffect(() => {
     const loadInitialAtisData = async () => {
       if (!sessionId || !accessId) return;
@@ -213,7 +212,6 @@ export default function Toolbar({
   const handleChatSidebarMention = (mention: ChatMention) => {
     setUnreadMentions((prev) => [...prev, mention]);
 
-    // Separate mentions by chat type
     if (mention.sessionId === 'global-chat') {
       setUnreadGlobalMentions((prev) => [...prev, mention]);
     } else {
@@ -272,7 +270,6 @@ export default function Toolbar({
   const handleChatToggle = () => {
     setChatOpen((prev) => !prev);
     if (!chatOpen) {
-      // Only close others when opening
       setAtisOpen(false);
       onCloseAllSidebars?.();
     }
@@ -334,7 +331,6 @@ export default function Toolbar({
     };
   }, [sessionId, accessId, user]);
 
-  // Update position without reconnecting socket
   useEffect(() => {
     if (socketRef.current) {
       socketRef.current.emit('positionChange', position);
@@ -347,7 +343,6 @@ export default function Toolbar({
     }
   }, [activeRunway]);
 
-  // Clear all unread mentions when chat opens
   useEffect(() => {
     if (chatOpen) {
       setUnreadMentions([]);
@@ -435,7 +430,6 @@ export default function Toolbar({
                     border: `2px solid ${highestRole?.color || '#ffffff'}`,
                   }}
                 />
-                {/* Combined tooltip for username and role */}
                 <div
                   className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-0.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
                   style={{

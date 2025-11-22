@@ -254,7 +254,7 @@ export default function AcarsSettings({
     console.log(
       'Rendered with settings.sidebarWidth',
       settings?.acars.sidebarWidth
-    ); // DEBUG
+    );
   }, [settings]);
 
   if (!settings) return null;

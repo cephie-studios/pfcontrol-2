@@ -26,16 +26,13 @@ const arrivalStatusOptions = [
 ];
 
 const eventStatusOptions = [
-  // Departure phase
   { value: 'PENDING', label: 'PENDING' },
   { value: 'STUP', label: 'STUP' },
   { value: 'PUSH', label: 'PUSH' },
   { value: 'TAXI_ORIG', label: 'TAXI' },
   { value: 'RWY_ORIG', label: 'RWY' },
   { value: 'DEPA', label: 'DEPA' },
-  // Enroute phase
   { value: 'ENROUTE', label: 'ENROUTE' },
-  // Arrival phase
   { value: 'APP', label: 'APP' },
   { value: 'RWY_ARRV', label: 'RWY' },
   { value: 'TAXI_ARRV', label: 'TAXI' },

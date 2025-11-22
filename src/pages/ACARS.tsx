@@ -102,7 +102,6 @@ export default function ACARS() {
     handleTouchEnd,
   } = chartHandlers;
 
-  // Format callsign for display
   const formattedCallsign = useMemo(() => {
     if (!flight?.callsign) return null;
     return parseCallsign(flight.callsign, airlines);

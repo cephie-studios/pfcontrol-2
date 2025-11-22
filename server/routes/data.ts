@@ -528,7 +528,6 @@ router.get('/leaderboard', async (req, res) => {
       const visibleUsers: TopUser[] = [];
       for (const user of users) {
         const userData = await getUserById(user.userId);
-        // Skip if user has opted out or if settings are missing
         if (!userData?.settings?.hideFromLeaderboard) {
           visibleUsers.push(user);
           if (visibleUsers.length >= 3) break;

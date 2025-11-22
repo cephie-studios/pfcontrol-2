@@ -184,12 +184,12 @@ export default function AdminUsers() {
         });
       }
 
-      const updatedUsers = await fetchData(); // Get fresh users data
+      const updatedUsers = await fetchData();
       const updatedUser = updatedUsers.find(
         (u) => u.id === selectedUserForRole.id
       );
       if (updatedUser) {
-        setSelectedUserForRole(updatedUser); // Update modal with fresh data
+        setSelectedUserForRole(updatedUser);
       }
     } catch (error) {
       setToast({
@@ -1171,7 +1171,6 @@ export default function AdminUsers() {
                   <div>
                     <button
                       onClick={() => {
-                        // Remove all roles
                         selectedUserForRole.roles?.forEach((role) =>
                           handleRemoveRole(selectedUserForRole.id, role.id)
                         );

@@ -106,7 +106,6 @@ router.put(
           .json({ error: 'Role priorities array is required' });
       }
 
-      // Validate each priority object has valid id and priority
       const invalidEntries = rolePriorities.filter(
         (item) =>
           !item.id ||

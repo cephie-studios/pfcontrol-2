@@ -129,7 +129,6 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
       .execute();
   } catch (error) {
     console.error('Failed to log API call:', error);
-    // Logging failures shouldn't break the API
   }
 }
 

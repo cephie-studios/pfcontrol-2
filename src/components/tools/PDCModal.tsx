@@ -48,7 +48,6 @@ const PDCModal: React.FC<PDCModalProps> = ({
     );
   };
 
-  // Helper function that takes squawk as parameter (like Java)
   const generateIdentifier = (squawk: string, callsign?: string): string => {
     const firstThreeNumbers = squawk.substring(0, 3);
 
@@ -75,14 +74,12 @@ const PDCModal: React.FC<PDCModalProps> = ({
     }
   }, [isOpen, flight]);
 
-  // Pre-fill remarks with default text when modal opens
   useEffect(() => {
     if (isOpen && flight) {
       const sidText = flight.sid || 'DCT';
       const isVFR = flight.flight_type === 'VFR';
       const isRadarVectors = sidText === 'RADAR VECTORS';
       const clearedAlt = flight.clearedFL || '030';
-      const freqs = getFrequencies();
 
       let climbInstruction;
       if (isVFR || isRadarVectors) {
@@ -95,7 +92,6 @@ const PDCModal: React.FC<PDCModalProps> = ({
       setCustomRemarks(defaultRemarks);
     }
 
-    // Reset remarks when modal closes
     if (!isOpen) {
       setCustomRemarks('');
     }

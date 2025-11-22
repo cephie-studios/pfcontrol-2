@@ -83,7 +83,6 @@ function sanitizeFlightForClient(
   };
 }
 
-// Sanitize flight for owner - includes ACARS token
 function sanitizeFlightForOwner(
   flight: FlightsDatabase[string]
 ): ClientFlight & { acars_token?: string } {
@@ -314,7 +313,6 @@ export async function getFlightsBySessionWithTime(
       .orderBy('callsign', 'asc')
       .execute();
 
-    // Enrich flights with user data
     const userIds = [
       ...new Set(
         flights
@@ -415,7 +413,6 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
 
   flightData.id = await generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
-  // Check both aircraft and aircraft_type fields (SimBrief uses aircraft_type)
   flightData.wtc = await getWakeTurbulence(
     flightData.aircraft || flightData.aircraft_type || ''
   );
@@ -487,7 +484,6 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     incrementStat(flightData.user_id, 'total_flights_submitted', 1, 'total');
   }
 
-  // Return flight with ACARS token for the owner
   return sanitizeFlightForOwner(result);
 }
 

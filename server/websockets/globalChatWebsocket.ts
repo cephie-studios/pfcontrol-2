@@ -74,7 +74,6 @@ export function setupGlobalChatWebsocket(
     },
   });
 
-  // Clean up old messages every 5 minutes
   setInterval(
     async () => {
       try {
@@ -245,7 +244,6 @@ export function setupGlobalChatWebsocket(
           return;
         }
 
-        // Decrypt the message
         let decryptedMessage = '';
         try {
           if (result.message) {
@@ -263,7 +261,6 @@ export function setupGlobalChatWebsocket(
         let airportMentions = null;
         let userMentions = null;
 
-        // Handle airport mentions (could be array if jsonb column, or string if text column)
         if (result.airport_mentions) {
           if (Array.isArray(result.airport_mentions)) {
             airportMentions = result.airport_mentions;
@@ -280,7 +277,6 @@ export function setupGlobalChatWebsocket(
           }
         }
 
-        // Handle user mentions (could be array if jsonb column, or string if text column)
         if (result.user_mentions) {
           if (Array.isArray(result.user_mentions)) {
             userMentions = result.user_mentions;
@@ -347,7 +343,6 @@ export function setupGlobalChatWebsocket(
           }
         }
 
-        // Send @user mentions
         if (userMentions && userMentions.length > 0) {
           try {
             const users = await mainDb
@@ -456,7 +451,6 @@ export function setupGlobalChatWebsocket(
   return io;
 }
 
-// Parse @airport mentions (e.g., @lclk, @LCLK)
 function parseAirportMentions(message: string): string[] {
   const airportRegex = /@([A-Za-z]{4})\b/g;
   const mentions: string[] = [];
@@ -467,13 +461,11 @@ function parseAirportMentions(message: string): string[] {
   return mentions;
 }
 
-// Parse @user mentions (e.g., @username)
 function parseUserMentions(message: string): string[] {
   const userRegex = /@(\w+)/g;
   const mentions: string[] = [];
   let match;
   while ((match = userRegex.exec(message)) !== null) {
-    // Exclude 4-letter all-caps mentions (airports)
     const mention = match[1];
     if (!(mention.length === 4 && mention === mention.toUpperCase())) {
       mentions.push(mention);

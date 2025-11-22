@@ -4,7 +4,6 @@ import { getActiveUpdateModal } from '../db/updateModals.js';
 const router = express.Router();
 
 // GET: /api/update-modal/active - Get the active update modal
-// Note: Modal tracking is done via localStorage on the client side
 router.get('/active', async (req, res) => {
   try {
     const modal = await getActiveUpdateModal();

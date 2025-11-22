@@ -14,8 +14,6 @@ import { sql } from 'kysely';
 
 const router = express.Router();
 
-// Global chat routes - MUST be defined before parameterized routes to avoid conflicts
-
 // POST: /api/chats/global/:messageId/report - Report a global chat message
 router.post('/global/:messageId/report', requireAuth, async (req, res) => {
   try {
@@ -74,7 +72,6 @@ router.get('/global/messages', requireAuth, async (req, res) => {
       let airportMentions = null;
       let userMentions = null;
 
-      // Handle airport mentions (could be array if jsonb column, or string if text column)
       if (msg.airport_mentions) {
         if (Array.isArray(msg.airport_mentions)) {
           airportMentions = msg.airport_mentions;
@@ -90,7 +87,6 @@ router.get('/global/messages', requireAuth, async (req, res) => {
         }
       }
 
-      // Handle user mentions (could be array if jsonb column, or string if text column)
       if (msg.user_mentions) {
         if (Array.isArray(msg.user_mentions)) {
           userMentions = msg.user_mentions;
@@ -113,7 +109,7 @@ router.get('/global/messages', requireAuth, async (req, res) => {
         avatar: msg.avatar,
         station: msg.station,
         position: msg.position,
-        message: decryptedMessage, // Return decrypted message
+        message: decryptedMessage,
         airportMentions,
         userMentions,
         sent_at: msg.sent_at,
@@ -126,8 +122,6 @@ router.get('/global/messages', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch global chat messages' });
   }
 });
-
-// Session chat routes - defined after global routes to avoid param conflicts
 
 // GET: /api/chats/:sessionId
 router.get('/:sessionId', requireAuth, async (req, res) => {

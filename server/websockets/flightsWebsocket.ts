@@ -350,7 +350,6 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         await deleteFlight(sessionId, flightId as string);
         io.to(sessionId).emit('flightDeleted', { flightId });
 
-        // Log the delete action
         await logFlightAction({
           userId: userId || 'unknown',
           username: (socket.handshake.query.username as string) || 'unknown',
@@ -562,7 +561,7 @@ async function broadcastToArrivalSessions(flight: ClientFlight): Promise<void> {
       }
     }
   } catch {
-    // Silent error handling
+    // ignore
   }
 }
 

@@ -78,7 +78,6 @@ export default function FeedbackBanner({
         detailedRatings.easeOfUse;
       const avg = sum / 4;
       const rounded = Math.round(avg);
-      // Only update if the value actually changed
       if (detailedRatings.overall !== rounded) {
         setDetailedRatings((prev) => ({ ...prev, overall: rounded }));
       }

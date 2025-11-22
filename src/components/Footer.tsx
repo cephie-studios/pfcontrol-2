@@ -207,7 +207,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom row (version/credits moved here) */}
+        {/* Bottom row */}
         <div className="mt-8 border-t border-zinc-700/50 pt-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div className="text-gray-500 text-sm text-center md:text-left space-x-2">
             METAR by{' '}

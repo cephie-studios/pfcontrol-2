@@ -4,12 +4,9 @@ export function linearToLogVolume(linearVolume: number): number {
   const clamped = Math.max(0, Math.min(200, linearVolume));
 
   if (clamped <= 100) {
-    // 0-100%: Use squared curve for natural feel
-    // 50% slider → 25% actual volume
     const normalized = clamped / 100;
     return Math.pow(normalized, 2);
   } else {
-    // 100-200%: Linear above 100% (1.0 to 2.0)
     return 1.0 + (clamped - 100) / 100;
   }
 }
@@ -18,7 +15,6 @@ export function playAudioWithGain(
   audioElement: HTMLAudioElement,
   volume: number
 ): void {
-  // For volumes <= 1.0, just use the audio element directly
   if (volume <= 1.0) {
     audioElement.volume = volume;
     audioElement.play().catch(() => {});
@@ -37,7 +33,7 @@ export function playAudioWithGain(
   source.connect(gainNode);
   gainNode.connect(audioContext.destination);
 
-  audioElement.volume = 1.0; // Set to max, gain will amplify
+  audioElement.volume = 1.0;
   audioElement.play().catch(() => {});
 }
 
@@ -86,7 +82,6 @@ export function playSoundWithSettings(
     return Promise.resolve();
   }
 
-  // Convert from percentage (10-200%) to logarithmic scale
   const logVolume = linearToLogVolume(soundSettings.volume || 100);
 
   const adjustedVolume = logVolume * fallbackVolume;
@@ -106,7 +101,6 @@ export function playSoundWithSettings(
         audio.removeEventListener('canplay', onCanPlay);
         audio.removeEventListener('error', onError);
 
-        // Use playAudioWithGain to support volumes above 100%
         playAudioWithGain(audio, adjustedVolume);
         resolve();
       };
@@ -121,7 +115,6 @@ export function playSoundWithSettings(
       audio.addEventListener('canplay', onCanPlay);
       audio.addEventListener('error', onError);
 
-      // Preload the audio
       audio.load();
     } catch (error) {
       console.warn(

@@ -223,7 +223,6 @@ router.post(
         return res.status(400).json({ error: 'Invalid or missing image file' });
       }
 
-      // Generate sequential filename: updateModalBanner1, updateModalBanner2, etc.
       const timestamp = Date.now();
       const filename = `updateModalBanner${timestamp}`;
 

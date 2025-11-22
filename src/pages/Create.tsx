@@ -125,7 +125,6 @@ export default function Create() {
           'Failed to generate ATIS during session creation:',
           atisError
         );
-        // Continue with session creation even if ATIS generation fails
       }
 
       if (isPFATCNetwork && atisResponse?.atisText) {

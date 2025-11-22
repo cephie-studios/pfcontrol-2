@@ -23,7 +23,6 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-// Heavy routes in separate files
 router.use('/users', usersRouter);
 router.use('/sessions', sessionsRouter);
 router.use('/audit-logs', auditLogsRouter);
@@ -86,7 +85,6 @@ router.put(
           .json({ error: 'Version is required and must be a string' });
       }
 
-      // Basic version validation
       const versionRegex = /^\d+\.\d+\.\d+(\.\d+)?$/;
       if (!versionRegex.test(version.trim())) {
         return res.status(400).json({

@@ -259,7 +259,6 @@ export async function reportGlobalChatMessage(
     throw new Error('Message not found');
   }
 
-  // Decrypt the message
   let plainMessage = '';
   try {
     if (messageRow.message) {

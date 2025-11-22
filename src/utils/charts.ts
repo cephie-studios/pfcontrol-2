@@ -62,7 +62,6 @@ export const createChartHandlers = (
     setIsChartDragging(false);
   };
 
-  // Touch event handlers for mobile
   const getTouchDistance = (touches: React.TouchList) => {
     if (touches.length < 2) return null;
     const dx = touches[0].clientX - touches[1].clientX;
@@ -78,14 +77,12 @@ export const createChartHandlers = (
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Check if touch started on a button or interactive element
     const target = e.target as HTMLElement;
     if (target.closest('button')) {
-      return; // Let the button handle the touch
+      return;
     }
 
     if (e.touches.length === 1) {
-      // Single touch - start panning
       setIsChartDragging(true);
       setChartDragStart({
         x: e.touches[0].clientX - chartPan.x,
@@ -94,7 +91,6 @@ export const createChartHandlers = (
       lastTouchDistance = null;
       lastTouchCenter = null;
     } else if (e.touches.length === 2) {
-      // Two touches - initialize pinch zoom
       setIsChartDragging(false);
       lastTouchDistance = getTouchDistance(e.touches);
       lastTouchCenter = getTouchCenter(e.touches);
@@ -104,13 +100,11 @@ export const createChartHandlers = (
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Only prevent default when actively panning or zooming, not on simple taps
     if (e.touches.length >= 1 && (isChartDragging || e.touches.length === 2)) {
-      e.preventDefault(); // Prevent scrolling
+      e.preventDefault();
     }
 
     if (e.touches.length === 1 && isChartDragging) {
-      // Single touch - pan
       if (
         !containerRef.current ||
         imageSize.width === 0 ||
@@ -135,17 +129,14 @@ export const createChartHandlers = (
         y: Math.max(-maxPanY, Math.min(maxPanY, newY)),
       });
     } else if (e.touches.length === 2 && lastTouchDistance && lastTouchCenter) {
-      // Two touches - pinch zoom with center point anchoring
       const currentDistance = getTouchDistance(e.touches);
       const currentCenter = getTouchCenter(e.touches);
 
       if (!currentDistance || !currentCenter) return;
 
-      // Calculate zoom scale
       const scale = currentDistance / lastTouchDistance;
       const newZoom = Math.max(0.5, Math.min(5, initialZoom * scale));
 
-      // Calculate pan adjustment to keep zoom centered
       const deltaX = currentCenter.x - lastTouchCenter.x;
       const deltaY = currentCenter.y - lastTouchCenter.y;
 
@@ -178,12 +169,10 @@ export const createChartHandlers = (
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (e.touches.length === 0) {
-      // All touches ended
       setIsChartDragging(false);
       lastTouchDistance = null;
       lastTouchCenter = null;
     } else if (e.touches.length === 1) {
-      // One touch remaining after pinch - reset for panning
       lastTouchDistance = null;
       lastTouchCenter = null;
       setIsChartDragging(true);

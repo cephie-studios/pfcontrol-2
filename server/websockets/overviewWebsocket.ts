@@ -417,7 +417,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
                     avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
                   }
                 } catch {
-                  // Ignore avatar fetch errors in fallback
+                  // ignore
                 }
               }
 

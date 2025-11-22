@@ -153,10 +153,8 @@ export async function getApiLogs(
     const totalResult = await countQuery.executeTakeFirst();
     const total = Number(totalResult?.count || 0);
 
-    // Get paginated results
     const logs = await query.limit(limit).offset(offset).execute();
 
-    // Decrypt sensitive fields for display
     const decryptedLogs = logs.map((log) => ({
       ...log,
       ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,

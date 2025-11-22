@@ -3,7 +3,6 @@ import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 
 const ACTIVE_MODAL_CACHE_KEY = 'update_modal:active';
-const CACHE_TTL = 24 * 60 * 60; // 24 hours (but we'll invalidate manually)
 
 export async function getActiveUpdateModal() {
   try {
@@ -29,7 +28,7 @@ export async function getActiveUpdateModal() {
       ACTIVE_MODAL_CACHE_KEY,
       JSON.stringify(result),
       'EX',
-      CACHE_TTL
+      24 * 60 * 60
     );
   } catch (error) {
     console.warn('[Redis] Failed to cache active modal:', error);

@@ -320,7 +320,6 @@ export default function ChartDrawer({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Prevent body scrolling when chart drawer is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';

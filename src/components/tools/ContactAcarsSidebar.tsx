@@ -271,7 +271,7 @@ export default function ContactAcarsSidebar({
               </div>
             </div>
 
-            {/* Position Selector - Hidden for Center Stations */}
+            {/* Position Selector */}
             {selectedFlight && frequencies.length > 0 && !isCenterStation && (
               <div className="mb-6">
                 <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">

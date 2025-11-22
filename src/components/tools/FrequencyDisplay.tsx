@@ -1,4 +1,3 @@
-// src/components/tools/FrequencyDisplay.tsx
 import React, { useState, useEffect } from 'react';
 import { Radio, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchFrequencies } from '../../utils/fetch/data';

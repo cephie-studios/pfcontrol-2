@@ -74,7 +74,7 @@ export default function TableColumnSettings({
     column: keyof DepartureTableColumnSettings,
     value: boolean
   ) => {
-    if (column === 'time') return; // time column cannot be disabled
+    if (column === 'time') return;
     onDepartureColumnsChange({
       ...departureColumns,
       [column]: value,
@@ -85,7 +85,7 @@ export default function TableColumnSettings({
     column: keyof ArrivalsTableColumnSettings,
     value: boolean
   ) => {
-    if (column === 'time') return; // time column cannot be disabled
+    if (column === 'time') return;
     onArrivalsColumnsChange({
       ...arrivalsColumns,
       [column]: value,

@@ -157,7 +157,6 @@ export default function Admin() {
   const handleUpdateVersion = async () => {
     if (!newVersion.trim() || !user?.isAdmin) return;
 
-    // Basic version validation
     const versionRegex = /^\d+\.\d+\.\d+(\.\d+)?$/;
     if (!versionRegex.test(newVersion.trim())) {
       setToast({
