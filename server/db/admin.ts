@@ -307,6 +307,41 @@ export async function getAllUsers(
       let rows;
       if (isIpSearch) {
         rows = await query.execute();
+      } else if (filterAdmin === 'cached') {
+        try {
+          let cursor = '0';
+          const cachedUserIds: string[] = [];
+          
+          do {
+            const [newCursor, keys] = await redisConnection.scan(
+              cursor,
+              'MATCH',
+              'user:*',
+              'COUNT',
+              1000
+            );
+            cursor = newCursor;
+            
+            const userIds = keys
+              .filter(key => key.startsWith('user:') && !key.includes(':username:'))
+              .map(key => key.replace('user:', ''));
+            
+            cachedUserIds.push(...userIds);
+          } while (cursor !== '0');
+
+          if (cachedUserIds.length === 0) {
+            return {
+              users: [],
+              pagination: { page, limit, total: 0, pages: 0 },
+            };
+          }
+
+          query = query.where('u.id', 'in', cachedUserIds);
+          rows = await query.execute();
+        } catch (error) {
+          console.error('Error getting cached user IDs from Redis:', error);
+          rows = await query.execute();
+        }
       } else {
         const countQuery = query
           .clearSelect()
@@ -414,29 +449,29 @@ export async function getAllUsers(
           if (!u.ip_address) return false;
           return String(u.ip_address).toLowerCase().includes(lowerSearch);
         });
-        totalUsers = usersAfterIpFilter.length;
-        filteredUsers = usersAfterIpFilter.slice(offset, offset + limit);
-      } else {
-        filteredUsers = usersWithAdminStatus;
       }
 
-      const usersWithCacheStatus = await Promise.all(
-        filteredUsers.map(async (user) => {
-          const isCached = await redisConnection.exists(`user:${user.id}`);
-          return { ...user, cached: isCached === 1 };
-        })
-      );
+      let usersWithCacheStatus;
+      if (filterAdmin === 'cached') {
+        usersWithCacheStatus = usersAfterIpFilter.map(user => ({ ...user, cached: true }));
+      } else {
+        usersWithCacheStatus = await Promise.all(
+          usersAfterIpFilter.map(async (user) => {
+            const isCached = await redisConnection.exists(`user:${user.id}`);
+            return { ...user, cached: isCached === 1 };
+          })
+        );
+      }
 
-      filteredUsers = usersWithCacheStatus;
-
-      if (!isIpSearch && filterAdmin === 'cached') {
-        filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
+      if (filterAdmin === 'cached') {
+        filteredUsers = usersWithCacheStatus;
         totalUsers = filteredUsers.length;
-        filteredUsers = filteredUsers.slice(0, limit);
-      } else if (isIpSearch && filterAdmin === 'cached') {
-        filteredUsers = usersWithCacheStatus.filter((user) => user.cached);
-        totalUsers = filteredUsers.length;
-        filteredUsers = filteredUsers.slice(0, limit);
+        filteredUsers = filteredUsers.slice(offset, offset + limit);
+      } else if (isIpSearch) {
+        totalUsers = usersWithCacheStatus.length;
+        filteredUsers = usersWithCacheStatus.slice(offset, offset + limit);
+      } else {
+        filteredUsers = usersWithCacheStatus;
       }
 
       try {
