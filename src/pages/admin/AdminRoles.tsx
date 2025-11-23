@@ -63,7 +63,7 @@ function RoleItem({
       onDragStart={(e) => onDragStart(e, role.id)}
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, role.id)}
-      className="bg-zinc-800 border border-zinc-700 rounded-lg p-4 hover:border-zinc-600 transition-all cursor-move lg:cursor-move"
+      className="bg-zinc-800 border-2 border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600 transition-all cursor-move lg:cursor-move"
     >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center space-x-3 flex-1 mb-4 lg:mb-0">
@@ -461,9 +461,7 @@ export default function AdminRoles() {
           <div className="mb-6 lg:mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
               <div className="flex items-center mb-4 lg:mb-0">
-                <div className="p-3 bg-rose-500/20 rounded-xl mr-4">
-                  <ShieldUser className="h-8 w-8 text-rose-400" />
-                </div>
+                <ShieldUser className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400 mr-4 mb-1" />
                 <h1
                   className="text-3xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600 font-extrabold mb-2"
                   style={{ lineHeight: 1.4 }}

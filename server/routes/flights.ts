@@ -1,6 +1,5 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
-import optionalAuth from '../middleware/optionalAuth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
   getFlightsBySession,
@@ -33,41 +32,36 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post(
-  '/:sessionId',
-  optionalAuth,
-  flightCreationLimiter,
-  async (req, res) => {
-    try {
-      const flightData = {
-        ...req.body,
-        user_id: req.user?.userId,
-        ip_address: getClientIp(req),
-      };
+router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
+  try {
+    const flightData = {
+      ...req.body,
+      user_id: req.user?.userId,
+      ip_address: getClientIp(req),
+    };
 
-      const flight = await addFlight(req.params.sessionId, flightData);
+    const flight = await addFlight(req.params.sessionId, flightData);
 
-      await recordNewFlight();
+    await recordNewFlight();
 
-      const sanitizedFlight = flight
-        ? Object.fromEntries(
-            Object.entries(flight).filter(
-              ([k]) => !['acars_token', 'user_id', 'ip_address'].includes(k)
-            )
+    const sanitizedFlight = flight
+      ? Object.fromEntries(
+          Object.entries(flight).filter(
+            ([k]) => !['acars_token', 'user_id', 'ip_address'].includes(k)
           )
-        : {};
-      broadcastFlightEvent(
-        req.params.sessionId,
-        'flightAdded',
-        sanitizedFlight
-      );
-      res.status(201).json(flight);
-    } catch (err) {
-      console.error('Failed to add flight:', err);
-      res.status(500).json({ error: 'Failed to add flight' });
-    }
+        )
+      : {};
+    broadcastFlightEvent(
+      req.params.sessionId,
+      'flightAdded',
+      sanitizedFlight
+    );
+    res.status(201).json(flight);
+  } catch (err) {
+    console.error('Failed to add flight:', err);
+    res.status(500).json({ error: 'Failed to add flight' });
   }
-);
+});
 
 // PUT: /api/flights/:sessionId/:flightId - update a flight (for external access/fallback)
 router.put(

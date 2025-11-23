@@ -457,9 +457,7 @@ export default function Admin() {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center mb-4">
-              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4">
-                <LayoutDashboard className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
-              </div>
+              <LayoutDashboard className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mr-4" />
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
@@ -468,20 +466,18 @@ export default function Admin() {
                   Admin Overview
                 </h1>
               </div>
-            </div>
-
-            {/* Time Range Selector */}
-            <div className="flex flex-wrap gap-2 pt-4">
-              {[7, 30, 90].map((days) => (
-                <Button
-                  key={days}
-                  onClick={() => setTimeRange(days)}
-                  variant={timeRange === days ? 'primary' : 'outline'}
-                  size="sm"
-                >
-                  {days} days
-                </Button>
-              ))}
+              <div className="flex flex-wrap gap-2 ml-auto">
+                {[7, 30, 90].map((days) => (
+                  <Button
+                    key={days}
+                    onClick={() => setTimeRange(days)}
+                    variant={timeRange === days ? 'primary' : 'outline'}
+                    size="sm"
+                  >
+                    {days} days
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 

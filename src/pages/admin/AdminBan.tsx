@@ -152,13 +152,10 @@ export default function AdminBan() {
 
         {/* Main Content */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0">
-          {/* Left: Ban Form */}
           <div className="flex-1">
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <div className="p-3 bg-red-500/20 rounded-xl mr-4">
-                  <Ban className="h-8 w-8 text-red-400" />
-                </div>
+                <Ban className="h-8 w-8 sm:h-10 sm:w-10 text-red-400 mr-4" />
                 <h1 className="text-5xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 font-extrabold mb-2">
                   Ban User/IP
                 </h1>

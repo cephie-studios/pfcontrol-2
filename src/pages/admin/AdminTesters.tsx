@@ -173,9 +173,7 @@ export default function AdminTesters() {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center mb-4">
-              <div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl mr-3 sm:mr-4">
-                <ShieldCheck className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
-              </div>
+              <ShieldCheck className="h-8 w-8 sm:h-10 sm:w-10 text-purple-400 mr-4 mb-1" />
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600 font-extrabold mb-2"

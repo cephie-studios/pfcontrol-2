@@ -542,15 +542,13 @@ export default function AdminSessions() {
             <div className="mb-6 sm:mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-xl mr-3 sm:mr-4">
-                    <Database className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400" />
-                  </div>
+                  <Database className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-400 mr-4" />
                   <div>
                     <h1
                       className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 font-extrabold mb-2"
-                      style={{ lineHeight: 1.2 }}
+                      style={{ lineHeight: 1.4 }}
                     >
-                      Sessions
+                      Session Management
                     </h1>
                   </div>
                 </div>

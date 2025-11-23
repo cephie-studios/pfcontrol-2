@@ -251,9 +251,7 @@ export default function AdminApiLogs() {
               <div className="mb-6 sm:mb-8">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                   <div className="flex items-center min-w-0 flex-1">
-                    <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4 flex-shrink-0">
-                      <HeartPulse className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
-                    </div>
+                    <HeartPulse className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mr-4 mb-1" />
                     <div>
                       <h1
                         className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"

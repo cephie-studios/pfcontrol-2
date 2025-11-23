@@ -569,9 +569,7 @@ export default function AdminUsers() {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center mb-4">
-              <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl mr-3 sm:mr-4">
-                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
-              </div>
+              <Users className="h-8 w-8 sm:h-10 sm:w-10 text-green-400 mr-4" />
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 font-extrabold mb-2"

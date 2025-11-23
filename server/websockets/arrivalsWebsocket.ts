@@ -26,7 +26,6 @@ interface ArrivalUpdateData {
 }
 
 let io: SocketServer;
-const updateTimers = new Map<string, NodeJS.Timeout>();
 export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
   io = new SocketServer(httpServer, {
     path: '/sockets/arrivals',

@@ -147,9 +147,7 @@ export default function AdminChatReports() {
             {/* Header */}
             <div className="mb-6 sm:mb-8">
               <div className="flex items-center mb-4">
-                <div className="p-2 sm:p-3 bg-red-500/20 rounded-xl mr-3 sm:mr-4">
-                  <ShieldAlert className="h-6 w-6 sm:h-8 sm:w-8 text-red-400" />
-                </div>
+                <ShieldAlert className="h-8 w-8 sm:h-10 sm:w-10 text-red-400 mr-4 mb-1" />
                 <div>
                   <h1
                     className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 font-extrabold mb-2"

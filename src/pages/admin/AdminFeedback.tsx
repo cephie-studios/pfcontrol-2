@@ -185,9 +185,7 @@ export default function AdminFeedback() {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center mb-4">
-              <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-xl mr-3 sm:mr-4">
-                <Star className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400" />
-              </div>
+              <Star className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-400 mr-4 mb-1" />
               <div>
                 <h1
                   className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 font-extrabold mb-2"
@@ -247,7 +245,7 @@ export default function AdminFeedback() {
               {feedbackStats && (
                 <div className="space-y-4 mb-6">
                   {/* Star Ratings */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 md:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-4">
                     <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
                       <div className="text-2xl font-bold text-yellow-400">
                         {Number(feedbackStats.average_rating)?.toFixed(1) ||

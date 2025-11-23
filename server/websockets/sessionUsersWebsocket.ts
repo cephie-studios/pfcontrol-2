@@ -310,25 +310,6 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
     }
   };
 
-  const cleanupInterval = setInterval(() => {
-    const now = Date.now();
-    const maxAge = 30 * 1000;
-
-    for (const [sessionId, sessionStates] of fieldEditingStates.entries()) {
-      for (const [fieldKey, state] of sessionStates.entries()) {
-        if (now - state.timestamp > maxAge) {
-          sessionStates.delete(fieldKey);
-        }
-      }
-
-      if (sessionStates.size === 0) {
-        fieldEditingStates.delete(sessionId);
-      } else {
-        broadcastFieldEditingStates(sessionId);
-      }
-    }
-  }, 5000);
-
   io.on('connection', async (socket) => {
     try {
       const sessionId = validateSessionId(
