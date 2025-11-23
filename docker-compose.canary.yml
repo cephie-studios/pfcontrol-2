@@ -10,7 +10,7 @@ services:
     environment:
       - NODE_ENV=production
     env_file:
-      - .env.preview
+      - .env.canary
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped

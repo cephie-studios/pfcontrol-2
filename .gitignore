@@ -10,7 +10,7 @@ lerna-debug.log*
 .env*
 !.env.example
 !.env.vite.production
-!.env.vite.preview
+!.env.vite.canary
 !.env.vite.development
 scripts
 node_modules

@@ -14,7 +14,7 @@ RUN npm ci && npm cache clean --force
 COPY . .
 
 # Copy frontend env for Vite build
-COPY .env.vite.preview .env.preview
+COPY .env.vite.canary .env.canary
 
 # Build the backend (TypeScript compilation)
 RUN npm run build:server
