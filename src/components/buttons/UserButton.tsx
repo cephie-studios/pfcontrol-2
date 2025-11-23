@@ -6,7 +6,6 @@ import {
   ChevronDown,
   List,
   LayoutDashboard,
-  Notebook,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
@@ -166,7 +165,7 @@ export default function CustomUserButton({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="flex items-center space-x-3 hover:border-blue-500 text-white px-4 py-2 rounded-full font-medium transition-all duration-300 hover:shadow-xl hover:bg-zinc-900/95"
+        className="flex items-center space-x-3 hover:border-blue-500 text-white px-2 py-2 rounded-full font-medium transition-all duration-300 hover:shadow-xl hover:bg-zinc-900/95"
       >
         {user.avatar ? (
           <img
@@ -188,8 +187,8 @@ export default function CustomUserButton({
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl py-2 z-50 animate-in slide-in-from-top-1 duration-200">
-          <div className="px-4 py-3 border-b border-gray-700/50 block cursor-default">
+        <div className="absolute right-0 mt-2 w-64 bg-black border border-zinc-800 rounded-xl shadow-2xl py-2 z-50 animate-in slide-in-from-top-1 duration-200">
+          <div className="px-4 py-3 border-b border-gray-800 block cursor-default">
             <div className="flex items-center space-x-3">
               {user.avatar ? (
                 <img
