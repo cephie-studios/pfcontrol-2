@@ -1,0 +1,17 @@
+name: Enforce Canary as PR Source
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure PR source is canary
+        run: |
+          if [[ "${{ github.head_ref }}" != "canary" ]]; then
+            echo "PRs to main must originate from the canary branch."
+            exit 1
+          fi
