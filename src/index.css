@@ -38,7 +38,7 @@ button {
   }
 }
 @media (max-width: 1600px) {
-  .column-pdc,
+  .column-route,
   .column-hide,
   .column-time {
     display: none;
