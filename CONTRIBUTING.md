@@ -62,8 +62,6 @@ Before submitting a PR, please ensure:
 
 ## Contributor License Agreement
 
-(The following agreement is a modified version of the Developer’s Certificate of Origin 1.1, adapted from the version used by Express.js at [expressjs.com](https://expressjs.com/en/resources/contributing.html))
-
 By making a contribution to this project, you certify that:
 
  **(a)** The contribution was created in whole or in part by you and you
