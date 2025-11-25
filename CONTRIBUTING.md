@@ -1,5 +1,7 @@
 # Contributing to PFControl
 
+Contributions are welcome!
+
 ## How to Contribute
 
 - **Fork the repo** and open a pull request (to the `preview` branch so it can be tested on [canary.pfconnect.online](https://canary.pfconnect.online)).
