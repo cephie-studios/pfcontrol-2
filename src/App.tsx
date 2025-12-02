@@ -19,6 +19,7 @@ import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
+import CanaryModal from './components/modals/CanaryModal';
 
 import Admin from './pages/Admin';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -126,6 +127,8 @@ export default function App() {
 
   return (
     <Router>
+      <CanaryModal />
+
       {activeModal &&
         (!testerGateEnabled ||
           shouldBypassTesterGate() ||
