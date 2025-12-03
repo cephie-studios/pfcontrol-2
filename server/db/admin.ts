@@ -273,15 +273,14 @@ export async function getAllUsers(
       const trimmedSearch = search && search.trim() ? search.trim() : '';
 
       const isIpSearch = Boolean(
-        trimmedSearch &&
-          /^[0-9A-Fa-f:.\u0025\u005b\u005d]+$/.test(trimmedSearch)
+        trimmedSearch && /[.:]/.test(trimmedSearch)
       );
 
       if (!isIpSearch && trimmedSearch) {
         query = query.where((eb) =>
           eb.or([
             eb('u.username', 'ilike', `%${trimmedSearch}%`),
-            eb('u.id', '=', trimmedSearch),
+            eb('u.id', 'ilike', `%${trimmedSearch}%`),
           ])
         );
       } else if (isIpSearch) {
