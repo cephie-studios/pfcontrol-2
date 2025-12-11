@@ -150,7 +150,7 @@ export default function AccountSettings({
   };
 
   return (
-    <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border-2 border-zinc-800 p-4 sm:p-6 z-1">
+    <div className="bg-zinc-900 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-zinc-700/50 p-4 sm:p-6 z-1">
       <div className="flex items-center mb-4 sm:mb-6">
         <div className="p-2 bg-blue-500/20 rounded-lg mr-3 flex-shrink-0">
           <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />

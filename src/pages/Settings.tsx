@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useContext } from 'react';
+import { useEffect, useState, useRef, useContext, useMemo } from 'react';
 import {
   UNSAFE_NavigationContext,
   useLocation,
@@ -36,6 +36,15 @@ import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Modal from '../components/common/Modal';
+import { fetchBackgrounds } from '../utils/fetch/data';
+
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+
+interface AvailableImage {
+  filename: string;
+  path: string;
+  extension: string;
+}
 
 function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
   const navigator = useContext(UNSAFE_NavigationContext)?.navigator;
@@ -75,6 +84,8 @@ export default function Settings() {
   const [showTutorialCompleteModal, setShowTutorialCompleteModal] =
     useState(false);
   const preventNavigation = useRef(false);
+  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
+  const [customLoaded, setCustomLoaded] = useState(false);
 
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
@@ -107,6 +118,71 @@ export default function Settings() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasChanges]);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const data = await fetchBackgrounds();
+        setAvailableImages(data);
+      } catch (error) {
+        console.error('Error loading available images:', error);
+      }
+    };
+    loadImages();
+  }, []);
+
+  const backgroundImage = useMemo(() => {
+    const selectedImage = settings?.backgroundImage?.selectedImage;
+    let bgImage = 'url("/assets/images/hero.webp")';
+
+    const getImageUrl = (filename: string | null): string | null => {
+      if (!filename || filename === 'random' || filename === 'favorites') {
+        return filename;
+      }
+      if (filename.startsWith('https://api.cephie.app/')) {
+        return filename;
+      }
+      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
+    };
+
+    if (selectedImage === 'random') {
+      if (availableImages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableImages.length);
+        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
+      }
+    } else if (selectedImage === 'favorites') {
+      const favorites = settings?.backgroundImage?.favorites || [];
+      if (favorites.length > 0) {
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
+        const favImageUrl = getImageUrl(randomFav);
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
+          bgImage = `url(${favImageUrl})`;
+        }
+      }
+    } else if (selectedImage) {
+      const imageUrl = getImageUrl(selectedImage);
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+        bgImage = `url(${imageUrl})`;
+      }
+    }
+
+    return bgImage;
+  }, [
+    settings?.backgroundImage?.selectedImage,
+    settings?.backgroundImage?.favorites,
+    availableImages,
+  ]);
+
+  useEffect(() => {
+    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
+      setCustomLoaded(true);
+    }
+  }, [backgroundImage]);
 
   const handleLocalSettingsChange = (updatedSettings: Settings) => {
     setLocalSettings(updatedSettings);
@@ -242,113 +318,124 @@ export default function Settings() {
     );
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white relative">
       <Navbar />
 
-      {/* Header */}
-      <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 relative z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pt-24 sm:pt-28">
-          <div className="flex items-center mb-4">
-            <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl mr-3 sm:mr-4">
-              <SettingsIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
-            </div>
-            <div>
-              <h1
-                className="text-3xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
-                style={{ lineHeight: 1.4 }}
-              >
-                Settings
-              </h1>
-            </div>
-          </div>
+      <div className="relative w-full h-80 md:h-96 overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="/assets/images/hero.webp"
+            alt="Banner"
+            className="object-cover w-full h-full scale-110"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: customLoaded ? 1 : 0,
+              transition: 'opacity 0.5s ease-in-out',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+        </div>
+
+        <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center">
+            YOUR SETTINGS
+          </h1>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
-        <div className="space-y-8">
-          <div id="account-settings">
-            <AccountSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-            />
-          </div>
+      <div className="container mx-auto max-w-5xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
+        <div className="overflow-hidden">
+          <div className="p-6 space-y-8">
+            <div id="account-settings">
+              <AccountSettings
+                settings={localSettings}
+                onChange={handleLocalSettingsChange}
+              />
+            </div>
 
-          <div id="table-column-settings">
-            <TableColumnSettings
-              departureColumns={
-                localSettings?.departureTableColumns || {
-                  time: true,
-                  callsign: true,
-                  stand: true,
-                  aircraft: true,
-                  wakeTurbulence: true,
-                  flightType: true,
-                  arrival: true,
-                  runway: true,
-                  sid: true,
-                  rfl: true,
-                  cfl: true,
-                  squawk: true,
-                  clearance: true,
-                  status: true,
-                  remark: true,
-                  pdc: true,
-                  hide: true,
-                  delete: true,
+            <div id="table-column-settings">
+              <TableColumnSettings
+                departureColumns={
+                  localSettings?.departureTableColumns || {
+                    time: true,
+                    callsign: true,
+                    stand: true,
+                    aircraft: true,
+                    wakeTurbulence: true,
+                    flightType: true,
+                    arrival: true,
+                    runway: true,
+                    sid: true,
+                    rfl: true,
+                    cfl: true,
+                    squawk: true,
+                    clearance: true,
+                    status: true,
+                    remark: true,
+                    pdc: true,
+                    hide: true,
+                    delete: true,
+                  }
                 }
-              }
-              arrivalsColumns={
-                localSettings?.arrivalsTableColumns || {
-                  time: true,
-                  callsign: true,
-                  gate: true,
-                  aircraft: true,
-                  wakeTurbulence: true,
-                  flightType: true,
-                  departure: true,
-                  runway: true,
-                  star: true,
-                  rfl: true,
-                  cfl: true,
-                  squawk: true,
-                  status: true,
-                  remark: true,
-                  hide: true,
+                arrivalsColumns={
+                  localSettings?.arrivalsTableColumns || {
+                    time: true,
+                    callsign: true,
+                    gate: true,
+                    aircraft: true,
+                    wakeTurbulence: true,
+                    flightType: true,
+                    departure: true,
+                    runway: true,
+                    star: true,
+                    rfl: true,
+                    cfl: true,
+                    squawk: true,
+                    status: true,
+                    remark: true,
+                    hide: true,
+                  }
                 }
-              }
-              onDepartureColumnsChange={handleDepartureColumnsChange}
-              onArrivalsColumnsChange={handleArrivalsColumnsChange}
-              onReset={handleResetTableColumns}
-            />
-          </div>
+                onDepartureColumnsChange={handleDepartureColumnsChange}
+                onArrivalsColumnsChange={handleArrivalsColumnsChange}
+                onReset={handleResetTableColumns}
+              />
+            </div>
 
-          <div id="layout-settings">
-            <LayoutSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-            />
-          </div>
+            <div id="layout-settings">
+              <LayoutSettings
+                settings={localSettings}
+                onChange={handleLocalSettingsChange}
+              />
+            </div>
 
-          <div id="acars-settings">
-            <AcarsSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-            />
-          </div>
+            <div id="acars-settings">
+              <AcarsSettings
+                settings={localSettings}
+                onChange={handleLocalSettingsChange}
+              />
+            </div>
 
-          <div id="sound-settings">
-            <SoundSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-            />
-          </div>
+            <div id="sound-settings">
+              <SoundSettings
+                settings={localSettings}
+                onChange={handleLocalSettingsChange}
+              />
+            </div>
 
-          <div id="background-image-settings">
-            <BackgroundImageSettings
-              settings={localSettings}
-              onChange={handleLocalSettingsChange}
-            />
+            <div id="background-image-settings">
+              <BackgroundImageSettings
+                settings={localSettings}
+                onChange={handleLocalSettingsChange}
+              />
+            </div>
           </div>
         </div>
       </div>
