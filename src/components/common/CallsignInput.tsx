@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../hooks/data/useData';
 import { ChevronDown } from 'lucide-react';
 
@@ -21,6 +21,8 @@ export default function CallsignInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredAirlines, setFilteredAirlines] = useState(airlines);
   const [dropdownSearch, setDropdownSearch] = useState('');
+  const [validationError, setValidationError] = useState<string>('');
+  const [hasBlurred, setHasBlurred] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +85,18 @@ export default function CallsignInput({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const validateCallsign = (callsign: string): string => {
+    if (!callsign) {
+      return '';
+    }
+
+    if (!/\d/.test(callsign)) {
+      return 'Callsign must contain at least one number';
+    }
+
+    return '';
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.toUpperCase();
     onChange(newValue);
@@ -92,6 +106,8 @@ export default function CallsignInput({
   const handleAirlineSelect = (icao: string) => {
     onChange(icao);
     setShowSuggestions(false);
+    setHasBlurred(true);
+    setValidationError(validateCallsign(icao));
     inputRef.current?.blur();
   };
 
@@ -99,11 +115,21 @@ export default function CallsignInput({
     setShowSuggestions(true);
   };
 
+  const handleBlur = () => {
+    setHasBlurred(true);
+    if (value) {
+      setValidationError(validateCallsign(value));
+    }
+  };
+
+  const shouldShowError = hasBlurred && validationError && !showSuggestions;
+
   return (
     <div className="relative">
-      {/* Input box */}
       <div
-        className={`relative bg-gray-800 border-2 border-blue-600 transition-all duration-75 ${
+        className={`relative bg-gray-800 border-2 transition-all duration-75 z-10 ${
+          shouldShowError ? 'border-red-600' : 'border-blue-600'
+        } ${
           showSuggestions && filteredAirlines.length > 0
             ? 'rounded-t-3xl rounded-b-none border-b-0'
             : 'rounded-3xl'
@@ -115,6 +141,7 @@ export default function CallsignInput({
           value={value}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
+          onBlur={handleBlur}
           required={required}
           placeholder={placeholder}
           className="w-full pl-6 pr-10 p-3 bg-transparent text-white font-semibold focus:outline-none"
@@ -127,16 +154,19 @@ export default function CallsignInput({
         )}
       </div>
 
-      {/* Dropdown suggestions */}
+      {shouldShowError && (
+        <div className="text-red-400 text-xs mt-1 ml-4 relative z-0">
+          {validationError}
+        </div>
+      )}
+
       {showSuggestions && filteredAirlines.length > 0 && (
         <div
           ref={dropdownRef}
           className="absolute z-50 w-full bg-gray-800 border-2 border-blue-600 border-t-0 rounded-b-3xl shadow-2xl"
         >
-          {/* Divider line */}
           <div className="border-t border-blue-600/50 mx-4" />
 
-          {/* Suggestions list */}
           <div
             className="max-h-64 overflow-y-auto py-2"
             style={{

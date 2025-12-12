@@ -102,6 +102,11 @@ function validateFlightFields(updates: Partial<FlightsDatabase>) {
   ) {
     throw new Error('Callsign must be 16 characters or less');
   }
+  if (typeof updates.callsign === 'string' && (updates.callsign as string).length > 0) {
+    if (!/\d/.test(updates.callsign)) {
+      throw new Error('Callsign must contain at least one number');
+    }
+  }
   if (
     typeof updates.stand === 'string' &&
     (updates.stand as string).length > 8

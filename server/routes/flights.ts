@@ -16,6 +16,7 @@ import {
   flightCreationLimiter,
   acarsValidationLimiter,
 } from '../middleware/rateLimiting.js';
+import { validateCallsign } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -34,6 +35,14 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
 router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
   try {
+    if (req.body.callsign) {
+      try {
+        req.body.callsign = validateCallsign(req.body.callsign);
+      } catch (err) {
+        return res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid callsign' });
+      }
+    }
+
     const flightData = {
       ...req.body,
       user_id: req.user?.userId,
@@ -70,9 +79,14 @@ router.put(
   requireFlightAccess,
   async (req, res) => {
     try {
-      if (req.body.callsign && req.body.callsign.length > 16) {
-        return res.status(400).json({ error: 'Callsign too long' });
+      if (req.body.callsign) {
+        try {
+          req.body.callsign = validateCallsign(req.body.callsign);
+        } catch (err) {
+          return res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid callsign' });
+        }
       }
+      
       if (req.body.stand && req.body.stand.length > 8) {
         return res.status(400).json({ error: 'Stand too long' });
       }

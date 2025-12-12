@@ -55,6 +55,10 @@ export function validateCallsign(callsign: unknown) {
     throw new Error('Callsign can only contain letters and numbers');
   }
 
+  if (!/\d/.test(trimmed)) {
+    throw new Error('Callsign must contain at least one number');
+  }
+
   return trimmed.toUpperCase();
 }
 
