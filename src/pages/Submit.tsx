@@ -25,7 +25,7 @@ import { createFlightsSocket } from '../sockets/flightsSocket';
 import { addFlight } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds } from '../utils/fetch/data';
+import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
 import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
@@ -77,6 +77,7 @@ export default function Submit() {
     cruisingFL: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
   const [flightsSocket, setFlightsSocket] = useState<ReturnType<
     typeof createFlightsSocket
   > | null>(null);
@@ -297,6 +298,41 @@ export default function Submit() {
       flight_type: 'IFR',
       cruisingFL: '',
     });
+  };
+
+  const handleGenerateRoute = async () => {
+    if (!form.departure || !form.arrival) {
+      setError(
+        'Please select both departure and arrival airports to generate a route.'
+      );
+      return;
+    }
+
+    setError('');
+    setIsGeneratingRoute(true);
+
+    const minimumDelay = new Promise((resolve) => setTimeout(resolve, 500));
+
+    try {
+      const [routeData] = await Promise.all([
+        fetchRoute(form.departure, form.arrival),
+        minimumDelay,
+      ]);
+
+      if (routeData.success) {
+        const route = routeData.path
+          .map((point: { name: string }) => point.name)
+          .join(', ');
+        setForm((f) => ({ ...f, route }));
+      } else {
+        setError('Failed to generate a route. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating route:', error);
+      setError('An error occurred while generating the route.');
+    } finally {
+      setIsGeneratingRoute(false);
+    }
   };
 
   if (loading) {
@@ -612,14 +648,30 @@ export default function Submit() {
                   <Route className="h-4 w-4 mr-2 text-gray-400" />
                   Route
                 </label>
-                <input
-                  type="text"
-                  name="route"
-                  value={form.route}
-                  onChange={(e) => handleChange('route')(e.target.value)}
-                  placeholder="e.g. HAZEL NOVMA LEDGO"
-                  className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="route"
+                    value={form.route}
+                    onChange={(e) => handleChange('route')(e.target.value)}
+                    placeholder="e.g. HAZEL NOVMA LEDGO"
+                    className="flex items-center w-full pl-6 pr-28 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGenerateRoute}
+                    disabled={isGeneratingRoute}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {isGeneratingRoute ? (
+                      <div className="py-0.5">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      'Generate'
+                    )}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="flex items-center mb-2 text-sm font-medium text-gray-300">

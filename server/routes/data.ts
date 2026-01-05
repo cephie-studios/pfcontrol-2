@@ -7,6 +7,8 @@ import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, flightsDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS } from '../db/leaderboard.js';
 import { getUserById } from '../db/users.js';
+import { getWaypointData } from '../utils/getData.js';
+import { findPath } from '../utils/findRoute.js';
 import { sql } from 'kysely';
 
 import dotenv from 'dotenv';
@@ -22,6 +24,7 @@ const __dirname = path.dirname(__filename);
 const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
 const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 const airlinesPath = path.join(__dirname, '..', 'data', 'airlineData.json');
+const waypointsPath = path.join(__dirname, '..', 'data', 'waypointData.json');
 const backgroundsPath = path.join(
   process.cwd(),
   'public',
@@ -34,6 +37,7 @@ if (
   !fs.existsSync(airportsPath) ||
   !fs.existsSync(aircraftPath) ||
   !fs.existsSync(airlinesPath) ||
+  !fs.existsSync(waypointsPath) ||
   !fs.existsSync(backgroundsPath)
 ) {
   console.error(`Data file missing`);
@@ -59,6 +63,10 @@ interface Airport {
   departures: Record<string, Record<string, string>>;
   stars: string[];
   arrivals: Record<string, Record<string, string>>;
+  location?: {
+    x: number;
+    y: number;
+  };
 }
 
 const router = express.Router();
@@ -561,6 +569,64 @@ router.get('/tester-settings', async (req, res) => {
   } catch (error) {
     console.error('Error fetching tester settings:', error);
     res.status(500).json({ error: 'Failed to fetch tester settings' });
+  }
+});
+
+router.get('/findRoute', async (req, res) => {
+  const from = typeof req.query.from === 'string' ? req.query.from : '';
+  const to = typeof req.query.to === 'string' ? req.query.to : '';
+
+  if (!from || !to) {
+    return res.status(400).json({ error: 'Missing required query parameters: from, to' });
+  }
+
+  const cacheKey = `route:${from}:${to}`;
+
+  try {
+    const cachedRoute = await redisConnection.get(cacheKey);
+    if (cachedRoute) {
+      return res.json(JSON.parse(cachedRoute));
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn('[Redis] Failed to read cache for route:', error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(waypointsPath)) {
+      return res.status(404).json({ error: 'Waypoint data not found' });
+    }
+
+    const waypointData = getWaypointData();
+
+    const allPoints = [
+      ...waypointData,
+    ];
+
+    const { path, distance, success } = findPath(from, to, allPoints);
+
+    if (!success) {
+      return res.status(404).json({ error: 'Route not found' });
+    }
+
+    const routeData = { path, distance };
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(routeData), 'EX', 43200); // Cache for 12 hours
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('[Redis] Failed to set cache for route:', error.message);
+      }
+    }
+
+    res.json(routeData);
+  } catch (error) {
+    console.error('Error finding route:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error finding route',
+    });
   }
 });
 
