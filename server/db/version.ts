@@ -8,28 +8,46 @@ export async function getAppVersion() {
     .executeTakeFirst();
 
   if (!result) {
+    const defaultVersion = {
+      version: '2.0.0.0',
+      updated_at: new Date().toISOString(),
+      updated_by: 'system',
+    };
+
     await mainDb
       .insertInto('app_settings')
       .values({
         id: 1,
-        version: '2.0.0.3',
+        version: defaultVersion.version,
         updated_at: new Date(),
-        updated_by: 'system',
+        updated_by: defaultVersion.updated_by,
       })
       .onConflict((oc) => oc.column('id').doNothing())
       .execute();
 
-    return {
-      version: '2.0.0.3',
-      updated_at: new Date().toISOString(),
-      updated_by: 'system',
-    };
+    try {
+      const { redisConnection } = await import('./connection.js');
+      await redisConnection.set('app:version', JSON.stringify(defaultVersion));
+    } catch (error) {
+      console.warn('[Redis] Failed to set version cache:', error);
+    }
+
+    return defaultVersion;
   }
 
-  return {
+  const versionData = {
     ...result,
     updated_at: result.updated_at?.toISOString() ?? null,
   };
+
+  try {
+    const { redisConnection } = await import('./connection.js');
+    await redisConnection.set('app:version', JSON.stringify(versionData));
+  } catch (error) {
+    console.warn('[Redis] Failed to set version cache:', error);
+  }
+
+  return versionData;
 }
 
 export async function updateAppVersion(version: string, updatedBy: string) {
