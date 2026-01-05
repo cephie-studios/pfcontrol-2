@@ -141,6 +141,10 @@ export default function Admin() {
     }
   }, [user?.isAdmin]);
 
+  useEffect(() => {
+    fetchVersion();
+  }, [fetchVersion]);
+
   const fetchApiLogStats24hData = useCallback(async () => {
     try {
       const data = await fetchApiLogStats24h();
