@@ -677,43 +677,6 @@ export async function revealFlightLogIP(
   return response.json();
 }
 
-export async function fetchGlobalHolidaySettings(): Promise<GlobalHolidaySettings> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
-    {
-      credentials: 'include',
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch global holiday settings');
-  }
-
-  return response.json();
-}
-
-export async function updateGlobalHolidaySettings(
-  enabled: boolean
-): Promise<GlobalHolidaySettings> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/admin/holiday-settings`,
-    {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ enabled }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to update global holiday settings');
-  }
-
-  return response.json();
-}
-
 export async function fetchFeedback(): Promise<Feedback[]> {
   return makeAdminRequest('/feedback');
 }
