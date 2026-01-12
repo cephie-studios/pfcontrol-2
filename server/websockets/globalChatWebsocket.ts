@@ -19,9 +19,30 @@ const connectedGlobalChatUsers = new Map<
     avatar: string | null;
     station: string | null;
     position: string | null;
+    lastSeen: number;
   }
 >();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
+
+// Cleanup inactive users from connectedGlobalChatUsers
+const cleanupInactiveGlobalUsers = () => {
+  const now = Date.now();
+  const INACTIVE_THRESHOLD = 5 * 60 * 1000;
+  let removedCount = 0;
+  
+  for (const [userId, userData] of connectedGlobalChatUsers.entries()) {
+    if (now - userData.lastSeen > INACTIVE_THRESHOLD) {
+      connectedGlobalChatUsers.delete(userId);
+      removedCount++;
+    }
+  }
+  
+  if (removedCount > 0) {
+    console.log(`[GlobalChat] Cleaned up ${removedCount} inactive users`);
+  }
+};
+
+const globalChatCleanupInterval = setInterval(cleanupInactiveGlobalUsers, 2 * 60 * 1000);
 
 interface SessionUsersWebsocketIO {
   getActiveUsersForSession?(
@@ -140,6 +161,7 @@ export function setupGlobalChatWebsocket(
           avatar: avatarUrl,
           station: station,
           position: position || null,
+          lastSeen: Date.now(),
         });
 
         io.to('global-chat').emit(
@@ -154,6 +176,7 @@ export function setupGlobalChatWebsocket(
           avatar: null,
           station: station,
           position: position || null,
+          lastSeen: Date.now(),
         });
         io.to('global-chat').emit(
           'connectedGlobalChatUsers',
@@ -182,6 +205,7 @@ export function setupGlobalChatWebsocket(
           avatar: avatarUrl || existingUser?.avatar || null,
           station: socket.data.station,
           position: socket.data.position || null,
+          lastSeen: Date.now(),
         });
         io.to('global-chat').emit(
           'connectedGlobalChatUsers',
@@ -446,6 +470,14 @@ export function setupGlobalChatWebsocket(
         );
       }
     });
+  });
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[GlobalChat] Cleaning up intervals...');
+    clearInterval(globalChatCleanupInterval);
+    connectedGlobalChatUsers.clear();
+    activeGlobalChatUsers.clear();
   });
 
   return io;

@@ -9,8 +9,24 @@ import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { sanitizeMessage } from '../utils/sanitization.js';
 import type { Server } from 'http';
 
-const activeChatUsers = new Map();
+const activeChatUsers = new Map<string, Set<string>>();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
+
+// Cleanup empty chat user sets periodically
+const cleanupChatUsers = () => {
+  let removedCount = 0;
+  for (const [sessionId, userSet] of activeChatUsers.entries()) {
+    if (userSet.size === 0) {
+      activeChatUsers.delete(sessionId);
+      removedCount++;
+    }
+  }
+  if (removedCount > 0) {
+    console.log(`[Chat] Cleaned up ${removedCount} empty session user sets`);
+  }
+};
+
+const chatCleanupInterval = setInterval(cleanupChatUsers, 5 * 60 * 1000);
 
 interface MentionData {
   messageId: string;
@@ -188,11 +204,14 @@ export function setupChatWebsocket(
           if (!activeChatUsers.has(sessionId)) {
             activeChatUsers.set(sessionId, new Set());
           }
-          activeChatUsers.get(sessionId).add(userId);
-          io.to(sessionId).emit(
-            'activeChatUsers',
-            Array.from(activeChatUsers.get(sessionId))
-          );
+          const userSet = activeChatUsers.get(sessionId);
+          if (userSet) {
+            userSet.add(userId);
+            io.to(sessionId).emit(
+              'activeChatUsers',
+              Array.from(userSet)
+            );
+          }
         }
       });
 
@@ -200,11 +219,14 @@ export function setupChatWebsocket(
         const sessionId = socket.data.sessionId;
         const userId = socket.data.userId;
         if (sessionId && userId && activeChatUsers.has(sessionId)) {
-          activeChatUsers.get(sessionId).delete(userId);
-          io.to(sessionId).emit(
-            'activeChatUsers',
-            Array.from(activeChatUsers.get(sessionId))
-          );
+          const userSet = activeChatUsers.get(sessionId);
+          if (userSet) {
+            userSet.delete(userId);
+            io.to(sessionId).emit(
+              'activeChatUsers',
+              Array.from(userSet)
+            );
+          }
         }
       });
 
@@ -212,14 +234,17 @@ export function setupChatWebsocket(
         const sessionId = socket.data.sessionId;
         const userId = socket.data.userId;
         if (activeChatUsers.has(sessionId)) {
-          activeChatUsers.get(sessionId).delete(userId);
-          if (activeChatUsers.get(sessionId).size === 0) {
-            activeChatUsers.delete(sessionId);
-          } else {
-            io.to(sessionId).emit(
-              'activeChatUsers',
-              Array.from(activeChatUsers.get(sessionId))
-            );
+          const userSet = activeChatUsers.get(sessionId);
+          if (userSet) {
+            userSet.delete(userId);
+            if (userSet.size === 0) {
+              activeChatUsers.delete(sessionId);
+            } else {
+              io.to(sessionId).emit(
+                'activeChatUsers',
+                Array.from(userSet)
+              );
+            }
           }
         }
       });
@@ -227,6 +252,13 @@ export function setupChatWebsocket(
       console.error('Invalid session or access ID');
       socket.disconnect(true);
     }
+  });
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[Chat] Cleaning up intervals...');
+    clearInterval(chatCleanupInterval);
+    activeChatUsers.clear();
   });
 
   return io;

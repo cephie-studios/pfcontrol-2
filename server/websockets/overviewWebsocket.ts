@@ -277,7 +277,7 @@ export function setupOverviewWebsocket(
     });
   });
 
-  setInterval(async () => {
+  const overviewBroadcastInterval = setInterval(async () => {
     if (activeOverviewClients.size > 0) {
       try {
         const overviewData = await getOverviewData(sessionUsersIO);
@@ -287,6 +287,14 @@ export function setupOverviewWebsocket(
       }
     }
   }, 5000);
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[Overview] Cleaning up intervals...');
+    clearInterval(overviewBroadcastInterval);
+    activeOverviewClients.clear();
+    eventControllerClients.clear();
+  });
 
   return io;
 }
