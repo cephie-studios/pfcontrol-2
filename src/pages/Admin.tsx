@@ -9,7 +9,6 @@ import {
   Save,
   RefreshCw,
   Menu,
-  Gift,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AdminSidebar from '../components/admin/AdminSidebar';
@@ -409,6 +408,7 @@ export default function Admin() {
             size: 11,
           },
         },
+        beginAtZero: true,
       },
     },
     interaction: {

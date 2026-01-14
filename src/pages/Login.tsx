@@ -106,7 +106,9 @@ export default function Login() {
                 <span className="text-sm">
                   I agree to the{' '}
                   <Link
-                    to="/terms"
+                    to="https://terms.pfconnect.online"
+                    target="_blank"
+                    rel="noreferrer"
                     className="text-blue-400 underline hover:text-blue-300 transition-colors"
                     tabIndex={0}
                   >
@@ -114,7 +116,9 @@ export default function Login() {
                   </Link>
                   ,{' '}
                   <Link
-                    to="/privacy"
+                    to="https://privacy.pfconnect.online"
+                    target="_blank"
+                    rel="noreferrer"
                     className="text-blue-400 underline hover:text-blue-300 transition-colors"
                     tabIndex={0}
                   >
@@ -122,7 +126,9 @@ export default function Login() {
                   </Link>
                   , and{' '}
                   <Link
-                    to="/cookies"
+                    to="https://cookies.pfconnect.online"
+                    target="_blank"
+                    rel="noreferrer"
                     className="text-blue-400 underline hover:text-blue-300 transition-colors"
                     tabIndex={0}
                   >
