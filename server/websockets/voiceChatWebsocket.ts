@@ -41,6 +41,9 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
         'Access-Control-Allow-Credentials',
       ],
     },
+    perMessageDeflate: {
+      threshold: 512,
+    },
   });
 
   const voiceCleanupInterval = setInterval(() => {

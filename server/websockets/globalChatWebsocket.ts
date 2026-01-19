@@ -93,6 +93,9 @@ export function setupGlobalChatWebsocket(
       ],
       credentials: true,
     },
+    perMessageDeflate: {
+      threshold: 512,
+    },
   });
 
   setInterval(

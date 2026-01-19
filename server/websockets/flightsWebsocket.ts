@@ -97,6 +97,9 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     pingInterval: 5000,
     upgradeTimeout: 3000,
     allowUpgrades: true,
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   });
 
   io.on('connection', async (socket: Socket) => {

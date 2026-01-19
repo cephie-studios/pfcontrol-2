@@ -63,6 +63,9 @@ export function setupChatWebsocket(
       ],
       credentials: true,
     },
+    perMessageDeflate: {
+      threshold: 512,
+    },
   });
 
   io.on('connection', async (socket) => {

@@ -274,6 +274,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       ],
       credentials: true,
     },
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   }) as SessionUsersServer;
 
   const scheduleATISGeneration = (sessionId: string, config: unknown) => {
@@ -484,20 +487,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         await updateUserInSession(sessionId, user.userId, { position });
         const updatedUsers = await getActiveUsersForSession(sessionId);
         io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
-        const overviewIO = getOverviewIO();
-        if (overviewIO) {
-          setTimeout(async () => {
-            try {
-              const { getOverviewData } = await import(
-                './overviewWebsocket.js'
-              );
-              const overviewData = await getOverviewData(io);
-              overviewIO.emit('overviewData', overviewData);
-            } catch (error) {
-              console.error('Error broadcasting overview update:', error);
-            }
-          }, 100);
-        }
+        // Removed redundant overviewData broadcast - already sent every 30s
       });
 
       const userKey = `${user.userId}-${sessionId}`;
