@@ -79,6 +79,7 @@ export interface Settings {
   acars: AcarsSettings;
   tutorialCompleted: boolean;
   displayStatsOnProfile: boolean;
+  displayControllerRatingOnProfile: boolean;
   displayLinkedAccountsOnProfile: boolean;
   hideFromLeaderboard: boolean;
   displayBackgroundOnProfile: boolean;

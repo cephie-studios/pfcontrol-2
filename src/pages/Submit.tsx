@@ -33,6 +33,7 @@ import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
 import CallsignInput from '../components/common/CallsignInput';
+import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -42,6 +43,7 @@ interface SessionData {
   activeRunway?: string;
   atis?: unknown;
   isPFATC?: boolean;
+  createdBy: string;
 }
 
 interface AvailableImage {
@@ -77,6 +79,7 @@ export default function Submit() {
     cruisingFL: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
   const [flightsSocket, setFlightsSocket] = useState<ReturnType<
     typeof createFlightsSocket
@@ -90,6 +93,7 @@ export default function Submit() {
       session?.isPFATC &&
       (settings?.acars?.autoRedirectToAcars ?? true)
     ) {
+      if (session?.createdBy && session.createdBy !== user?.userId) return;
       navigate(
         `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
       );
@@ -101,6 +105,8 @@ export default function Submit() {
     settings?.acars?.autoRedirectToAcars,
     sessionId,
     navigate,
+    session?.createdBy,
+    user?.userId,
   ]);
 
   useEffect(() => {
@@ -117,6 +123,7 @@ export default function Submit() {
       ),
     ])
       .then(([sessionData]) => {
+        console.log('Session data loaded for submit:', sessionData);
         setSession(sessionData);
         setForm((f) => ({
           ...f,
@@ -124,7 +131,10 @@ export default function Submit() {
         }));
         setInitialLoadComplete(true);
       })
-      .catch(() => setError('Session not found'))
+      .catch((err) => {
+        console.error('Error loading session data:', err);
+        setError('Session not found');
+      })
       .finally(() => setLoading(false));
   }, [sessionId, initialLoadComplete]);
 
@@ -152,6 +162,9 @@ export default function Submit() {
         setSubmittedFlight(flight);
         setSuccess(true);
         setIsSubmitting(false);
+        if (session?.createdBy && session.createdBy !== user?.userId) {
+          setShowRating(true);
+        }
       },
       () => {},
       () => {},
@@ -258,6 +271,9 @@ export default function Submit() {
         });
         setSubmittedFlight(flight);
         setSuccess(true);
+        if (session?.createdBy && session.createdBy !== user?.userId) {
+          setShowRating(true);
+        }
       } catch (error) {
         if (error instanceof Error) {
           if (error.message.includes('Callsign')) {
@@ -287,6 +303,7 @@ export default function Submit() {
   const handleCreateAnother = () => {
     setSuccess(false);
     setSubmittedFlight(null);
+    setShowRating(false);
     setForm({
       callsign: '',
       aircraft_type: '',
@@ -406,6 +423,18 @@ export default function Submit() {
           <WindDisplay icao={session.airportIcao} />
         </div>
 
+        {/* Controller Rating (Inline Version) */}
+        {showRating && session?.createdBy && (
+          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <ControllerRatingPopup
+              controllerId={session.createdBy}
+              flightId={submittedFlight?.id?.toString()}
+              onClose={() => setShowRating(false)}
+              isInline={true}
+            />
+          </div>
+        )}
+
         {/* Success Message */}
         {success && submittedFlight && (
           <>
@@ -498,18 +527,19 @@ export default function Submit() {
                   </div>
                 )}
                 <div className="mt-6 pt-4 border-t border-green-800 space-x-2">
-                  {session?.isPFATC && (
-                    <Button
-                      onClick={() =>
-                        navigate(
-                          `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
-                        )
-                      }
-                    >
-                      <TowerControl className="h-5 w-5 mr-2" />
-                      Go to ACARS
-                    </Button>
-                  )}
+                      {session?.isPFATC && (
+                        <Button
+                          onClick={() => {
+                            setShowRating(false);
+                            navigate(
+                              `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
+                            );
+                          }}
+                        >
+                          <TowerControl className="h-5 w-5 mr-2" />
+                          Go to ACARS
+                        </Button>
+                      )}
                   <Button onClick={handleCreateAnother} variant="outline">
                     <PlusCircle className="h-5 w-5 mr-2" />
                     Create Another Flight Plan

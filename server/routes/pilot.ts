@@ -2,6 +2,7 @@ import express from 'express';
 import { getUserByUsername } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
+import { getControllerRatingStats } from '../db/ratings.js';
 
 const router = express.Router();
 
@@ -40,6 +41,8 @@ router.get('/:username', async (req, res) => {
         userResult.settings?.displayControllerStatsOnProfile ?? true,
       displayPilotStatsOnProfile:
         userResult.settings?.displayPilotStatsOnProfile ?? true,
+      displayControllerRatingOnProfile:
+        userResult.settings?.displayControllerRatingOnProfile ?? true,
       displayLinkedAccountsOnProfile:
         userResult.settings?.displayLinkedAccountsOnProfile ?? true,
       displayBackgroundOnProfile:
@@ -50,6 +53,12 @@ router.get('/:username', async (req, res) => {
     const shouldIncludeLinkedAccounts =
       privacySettings.displayLinkedAccountsOnProfile;
     const shouldIncludeBackground = privacySettings.displayBackgroundOnProfile;
+    const shouldIncludeRating = privacySettings.displayControllerRatingOnProfile;
+
+    let ratingStats = null;
+    if (shouldIncludeRating) {
+        ratingStats = await getControllerRatingStats(userResult.id);
+    }
 
     const profile = {
       user: {
@@ -77,6 +86,7 @@ router.get('/:username', async (req, res) => {
         role_description: rolesResult[0]?.description || null,
         bio: userResult.settings?.bio ?? '',
         statistics: shouldIncludeStats ? userResult.statistics || {} : {},
+        rating: ratingStats,
         background_image: shouldIncludeBackground
           ? userResult.settings?.backgroundImage
           : null,

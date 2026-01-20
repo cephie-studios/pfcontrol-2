@@ -251,6 +251,17 @@ export async function createMainTables() {
     .on('api_logs')
     .column('status_code')
     .execute();
+
+  await mainDb.schema
+    .createTable('controller_ratings')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('controller_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('pilot_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('rating', 'integer', (col) => col.notNull())
+    .addColumn('flight_id', 'varchar(255)')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .execute();
 }
 
 // Helper to create a dynamic flights table for a session
