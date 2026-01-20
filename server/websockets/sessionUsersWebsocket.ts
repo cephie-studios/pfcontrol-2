@@ -91,12 +91,54 @@ export interface SessionUsersServer extends Server {
 }
 
 const sessionATISConfigs = new Map();
-const atisTimers = new Map();
+const atisTimers = new Map<string, NodeJS.Timeout>();
 const fieldEditingStates = new Map();
 const userActivity = new Map<
   string,
   { lastActive: number; sessionStart: number; totalActive: number }
 >();
+
+const cleanupOldSessions = async () => {
+  try {
+    const activeSessionIds = new Set<string>();
+    
+    const keys = await redisConnection.keys('activeUsers:*');
+    for (const key of keys) {
+      const sessionId = key.replace('activeUsers:', '');
+      const userCount = await redisConnection.hlen(key);
+      if (userCount > 0) {
+        activeSessionIds.add(sessionId);
+      }
+    }
+    
+    for (const [sessionId, timer] of atisTimers.entries()) {
+      if (!activeSessionIds.has(sessionId)) {
+        clearInterval(timer);
+        atisTimers.delete(sessionId);
+        sessionATISConfigs.delete(sessionId);
+        console.log(`[Cleanup] Removed ATIS timer for session ${sessionId}`);
+      }
+    }
+    
+    for (const sessionId of fieldEditingStates.keys()) {
+      if (!activeSessionIds.has(sessionId)) {
+        fieldEditingStates.delete(sessionId);
+        console.log(`[Cleanup] Removed field editing states for session ${sessionId}`);
+      }
+    }
+    
+    for (const userKey of userActivity.keys()) {
+      const sessionId = userKey.split('-')[1];
+      if (sessionId && !activeSessionIds.has(sessionId)) {
+        userActivity.delete(userKey);
+      }
+    }
+  } catch (error) {
+    console.error('[Cleanup] Error cleaning up old sessions:', error);
+  }
+};
+
+const sessionCleanupInterval = setInterval(cleanupOldSessions, 10 * 60 * 1000);
 
 interface Mention {
   [key: string]: unknown;
@@ -231,6 +273,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         'https://canary.pfconnect.online',
       ],
       credentials: true,
+    },
+    perMessageDeflate: {
+      threshold: 1024,
     },
   }) as SessionUsersServer;
 
@@ -442,20 +487,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         await updateUserInSession(sessionId, user.userId, { position });
         const updatedUsers = await getActiveUsersForSession(sessionId);
         io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
-        const overviewIO = getOverviewIO();
-        if (overviewIO) {
-          setTimeout(async () => {
-            try {
-              const { getOverviewData } = await import(
-                './overviewWebsocket.js'
-              );
-              const overviewData = await getOverviewData(io);
-              overviewIO.emit('overviewData', overviewData);
-            } catch (error) {
-              console.error('Error broadcasting overview update:', error);
-            }
-          }, 100);
-        }
+        // Removed redundant overviewData broadcast - already sent every 30s
       });
 
       const userKey = `${user.userId}-${sessionId}`;
@@ -511,6 +543,19 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   };
 
   io.getActiveUsersForSession = getActiveUsersForSession;
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[SessionUsers] Cleaning up timers...');
+    clearInterval(sessionCleanupInterval);
+    for (const timer of atisTimers.values()) {
+      clearInterval(timer);
+    }
+    atisTimers.clear();
+    sessionATISConfigs.clear();
+    fieldEditingStates.clear();
+    userActivity.clear();
+  });
 
   return io;
 }

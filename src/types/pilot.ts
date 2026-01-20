@@ -25,6 +25,10 @@ export interface PilotProfile {
     role_description: string | null;
     bio: string;
     statistics: Record<string, unknown>;
+    rating: {
+      averageRating: number;
+      ratingCount: number;
+    } | null;
     background_image?: {
       selectedImage?: string;
       useCustomBackground?: boolean;
@@ -34,6 +38,7 @@ export interface PilotProfile {
   privacySettings: {
     displayControllerStatsOnProfile: boolean;
     displayPilotStatsOnProfile: boolean;
+    displayControllerRatingOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
     displayBackgroundOnProfile: boolean;
   };

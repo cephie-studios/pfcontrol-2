@@ -43,6 +43,9 @@ export function setupOverviewWebsocket(
     },
     transports: ['websocket', 'polling'],
     allowEIO3: true,
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   });
 
   io.engine.on('connection_error', (err) => {
@@ -178,15 +181,7 @@ export function setupOverviewWebsocket(
               );
             }
 
-            try {
-              const overviewData = await getOverviewData(sessionUsersIO);
-              io.emit('overviewData', overviewData);
-            } catch (error) {
-              console.error(
-                'Error broadcasting overview data after flight update:',
-                error
-              );
-            }
+            // Removed redundant overviewData broadcast - already sent every 30s
           } else {
             socket.emit('flightError', {
               action: 'update',
@@ -277,7 +272,7 @@ export function setupOverviewWebsocket(
     });
   });
 
-  setInterval(async () => {
+  const overviewBroadcastInterval = setInterval(async () => {
     if (activeOverviewClients.size > 0) {
       try {
         const overviewData = await getOverviewData(sessionUsersIO);
@@ -286,7 +281,15 @@ export function setupOverviewWebsocket(
         console.error('Error broadcasting overview data:', error);
       }
     }
-  }, 5000);
+  }, 30000); // Changed from 5s to 30s to reduce bandwidth usage
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[Overview] Cleaning up intervals...');
+    clearInterval(overviewBroadcastInterval);
+    activeOverviewClients.clear();
+    eventControllerClients.clear();
+  });
 
   return io;
 }

@@ -20,7 +20,39 @@ import { validateCallsign } from '../utils/validation.js';
 
 const router = express.Router();
 
-const activeAcarsTerminals = new Map();
+const activeAcarsTerminals = new Map<string, {
+  sessionId: string;
+  flightId: string;
+  connectedAt: string;
+  lastSeen: number;
+}>();
+
+// Cleanup old ACARS terminals periodically
+const cleanupAcarsTerminals = () => {
+  const now = Date.now();
+  const INACTIVE_THRESHOLD = 10 * 60 * 1000;
+  let removedCount = 0;
+  
+  for (const [key, terminal] of activeAcarsTerminals.entries()) {
+    if (now - terminal.lastSeen > INACTIVE_THRESHOLD) {
+      activeAcarsTerminals.delete(key);
+      removedCount++;
+    }
+  }
+  
+  if (removedCount > 0) {
+    console.log(`[ACARS] Cleaned up ${removedCount} inactive terminals`);
+  }
+};
+
+const acarsCleanupInterval = setInterval(cleanupAcarsTerminals, 5 * 60 * 1000);
+
+// Cleanup on shutdown
+process.on('SIGTERM', () => {
+  console.log('[ACARS] Cleaning up...');
+  clearInterval(acarsCleanupInterval);
+  activeAcarsTerminals.clear();
+});
 
 // GET: /api/flights/:sessionId - get all flights for a session
 router.get('/:sessionId', requireAuth, async (req, res) => {
@@ -173,6 +205,7 @@ router.post('/acars/active', acarsValidationLimiter, async (req, res) => {
       sessionId,
       flightId,
       connectedAt: new Date().toISOString(),
+      lastSeen: Date.now(),
     });
 
     res.json({ success: true });
@@ -205,8 +238,13 @@ router.get('/acars/active', async (req, res) => {
 
     for (const [
       key,
-      { sessionId, flightId },
+      terminal,
     ] of activeAcarsTerminals.entries()) {
+      const { sessionId, flightId } = terminal;
+      
+      // Update last seen
+      terminal.lastSeen = Date.now();
+      
       try {
         const tableName = `flights_${sessionId}`;
         const result = await flightsDb

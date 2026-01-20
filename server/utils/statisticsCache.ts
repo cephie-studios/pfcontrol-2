@@ -1,7 +1,7 @@
 import { updateUserStatistics, getUserById } from '../db/users.js';
 import { redisConnection } from '../db/connection.js';
 
-const FLUSH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const FLUSH_INTERVAL = 5 * 60 * 1000;
 const STATS_KEY_PREFIX = 'stats_cache:';
 
 export async function incrementStat(
@@ -66,12 +66,31 @@ async function flushStats() {
   }
 }
 
+let flushInterval: NodeJS.Timeout | null = null;
+
 export function startStatsFlushing() {
-  setInterval(flushStats, FLUSH_INTERVAL);
+  if (flushInterval) {
+    clearInterval(flushInterval);
+  }
+  flushInterval = setInterval(flushStats, FLUSH_INTERVAL);
+  console.log('[StatsCache] Started stats flushing');
 }
 
 // Flush on shutdown
 process.on('SIGINT', async () => {
+  console.log('[StatsCache] Flushing stats before shutdown...');
+  if (flushInterval) {
+    clearInterval(flushInterval);
+  }
+  await flushStats();
+  process.exit();
+});
+
+process.on('SIGTERM', async () => {
+  console.log('[StatsCache] Flushing stats before shutdown...');
+  if (flushInterval) {
+    clearInterval(flushInterval);
+  }
   await flushStats();
   process.exit();
 });

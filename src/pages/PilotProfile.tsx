@@ -377,9 +377,11 @@ export default function PilotProfile() {
 
                 {/* User Info */}
                 <div className="flex-1 text-center md:text-left">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                    {profile.user.username}
-                  </h1>
+                  <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-4 justify-center md:justify-start">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4">
+                      {profile.user.username}
+                    </h1>
+                  </div>
                   {(profile.user.is_admin ||
                     (profile.user.roles && profile.user.roles.length > 0) ||
                     isVatsimLinked) && (
@@ -438,7 +440,7 @@ export default function PilotProfile() {
                         })}
                     </div>
                   )}
-                  <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-center md:justify-start mt-2">
+                  <div className="flex flex-col md:flex-row flex-wrap items-center md:items-start gap-2 md:gap-4 justify-center md:justify-start mt-2">
                     <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
                       <Calendar className="h-5 w-5" />
                       <span className="text-base md:text-lg">
@@ -452,6 +454,33 @@ export default function PilotProfile() {
                         )}
                       </span>
                     </div>
+
+                    {profile.user.rating && profile.user.rating.ratingCount > 0 && (
+                      <>
+                        <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-zinc-700 self-center" />
+                        <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-4 h-4 md:w-5 md:h-5 ${
+                                  star <=
+                                  Math.round(profile.user.rating!.averageRating)
+                                    ? 'fill-yellow-500 text-yellow-500'
+                                    : 'text-zinc-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-base md:text-lg font-medium text-zinc-300">
+                            {profile.user.rating.averageRating.toFixed(1)}{' '}
+                            <span className="text-zinc-500 font-normal">
+                              ({profile.user.rating.ratingCount})
+                            </span>
+                          </span>
+                        </div>
+                      </>
+                    )}
                     {/* Roblox */}
                     {(isCurrentUser ||
                       profile.privacySettings

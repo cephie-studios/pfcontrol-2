@@ -173,6 +173,7 @@ router.get('/:sessionId/submit', async (req, res) => {
       airportIcao: session.airport_icao,
       activeRunway: session.active_runway,
       isPFATC: session.is_pfatc,
+      createdBy: session.created_by,
     });
   } catch (error) {
     console.error('Error fetching session for submit:', error);

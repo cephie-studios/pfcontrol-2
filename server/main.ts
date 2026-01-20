@@ -23,6 +23,7 @@ import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
+import { getAppVersion } from './db/version.js';
 
 dotenv.config({
   path:
@@ -139,6 +140,7 @@ sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 const voiceChatIO = setupVoiceChatWebsocket(server);
 voiceChatIO.adapter(createAdapter(pubClient, subClient));
 
+getAppVersion();
 startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();

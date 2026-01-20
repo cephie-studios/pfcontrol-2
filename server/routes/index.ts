@@ -13,6 +13,7 @@ import adminRouter from './admin/index.js';
 import updateModalRouter from './updateModal.js';
 import versionRouter from './version.js';
 import feedbackRouter from './feedback.js';
+import ratingsRouter from './ratings.js';
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.use('/admin', adminRouter);
 router.use('/update-modal', updateModalRouter);
 router.use('/version', versionRouter);
 router.use('/feedback', feedbackRouter);
+router.use('/ratings', ratingsRouter);
 
 export default router;

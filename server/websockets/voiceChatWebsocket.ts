@@ -41,9 +41,12 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
         'Access-Control-Allow-Credentials',
       ],
     },
+    perMessageDeflate: {
+      threshold: 512,
+    },
   });
 
-  setInterval(() => {
+  const voiceCleanupInterval = setInterval(() => {
     const now = Date.now();
     voiceUsers.forEach((sessionUsers, sessionId) => {
       sessionUsers.forEach((user, userId) => {
@@ -316,6 +319,14 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       console.error('[Voice Chat] Connection error:', error);
       socket.disconnect(true);
     }
+  });
+
+  // Cleanup on shutdown
+  process.on('SIGTERM', () => {
+    console.log('[VoiceChat] Cleaning up intervals...');
+    clearInterval(voiceCleanupInterval);
+    voiceUsers.clear();
+    userSessions.clear();
   });
 
   return io;

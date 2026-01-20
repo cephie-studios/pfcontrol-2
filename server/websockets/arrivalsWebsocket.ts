@@ -38,6 +38,9 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
       ],
       credentials: true,
     },
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   });
 
   io.on('connection', async (socket: Socket) => {

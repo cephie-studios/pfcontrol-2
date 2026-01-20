@@ -15,6 +15,7 @@ import { UpdateModalsTable } from './main/UpdateModalsTable';
 import { FlightLogsTable } from './main/FlightLogsTable';
 import { FeedbackTable } from './main/FeedbackTable';
 import { ApiLogsTable } from './main/ApiLogsTable';
+import { ControllerRatingsTable } from './main/ControllerRatingsTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -34,4 +35,5 @@ export interface MainDatabase {
   flight_logs: FlightLogsTable;
   feedback: FeedbackTable;
   api_logs: ApiLogsTable;
+  controller_ratings: ControllerRatingsTable;
 }

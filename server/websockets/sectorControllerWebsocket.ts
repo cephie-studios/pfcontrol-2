@@ -60,6 +60,9 @@ export function setupSectorControllerWebsocket(
       ],
       credentials: true,
     },
+    perMessageDeflate: {
+      threshold: 1024,
+    },
   });
 
   io.on('connection', async (socket) => {
@@ -121,21 +124,6 @@ export function setupSectorControllerWebsocket(
 
           await addSectorController(user.userId, sectorController);
 
-          // Broadcast to overview socket
-          const overviewIO = getOverviewIO();
-          if (overviewIO) {
-            setTimeout(async () => {
-              try {
-                const { getOverviewData } = await import(
-                  './overviewWebsocket.js'
-                );
-                const overviewData = await getOverviewData(sessionUsersIO);
-                overviewIO.emit('overviewData', overviewData);
-              } catch (error) {
-                console.error('Error broadcasting overview update:', error);
-              }
-            }, 100);
-          }
 
           socket.emit('stationSelected', { station });
         } catch (error) {
@@ -149,21 +137,6 @@ export function setupSectorControllerWebsocket(
         try {
           await removeSectorController(user.userId);
 
-          // Broadcast to overview socket
-          const overviewIO = getOverviewIO();
-          if (overviewIO) {
-            setTimeout(async () => {
-              try {
-                const { getOverviewData } = await import(
-                  './overviewWebsocket.js'
-                );
-                const overviewData = await getOverviewData(sessionUsersIO);
-                overviewIO.emit('overviewData', overviewData);
-              } catch (error) {
-                console.error('Error broadcasting overview update:', error);
-              }
-            }, 100);
-          }
 
           socket.emit('stationDeselected');
         } catch (error) {
@@ -173,22 +146,6 @@ export function setupSectorControllerWebsocket(
 
       socket.on('disconnect', async () => {
         await removeSectorController(user.userId);
-
-        // Broadcast to overview socket
-        const overviewIO = getOverviewIO();
-        if (overviewIO) {
-          setTimeout(async () => {
-            try {
-              const { getOverviewData } = await import(
-                './overviewWebsocket.js'
-              );
-              const overviewData = await getOverviewData(sessionUsersIO);
-              overviewIO.emit('overviewData', overviewData);
-            } catch (error) {
-              console.error('Error broadcasting overview update:', error);
-            }
-          }, 100);
-        }
       });
     } catch (error) {
       console.error('Error in sector controller websocket connection:', error);
