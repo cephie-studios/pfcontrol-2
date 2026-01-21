@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useMediaQuery } from 'react-responsive';
 import {
@@ -34,7 +34,7 @@ interface ArrivalsTableProps {
   arrivalsColumns?: ArrivalsTableColumnSettings;
 }
 
-export default function ArrivalsTable({
+function ArrivalsTable({
   flights,
   onFlightChange,
   onFlightDelete,
@@ -887,3 +887,5 @@ export default function ArrivalsTable({
     </div>
   );
 }
+
+export default memo(ArrivalsTable);
