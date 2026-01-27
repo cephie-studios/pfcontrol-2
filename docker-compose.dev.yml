@@ -1,6 +1,42 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pfcontrol-postgres-dev
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: pfcontrol
+      POSTGRES_PASSWORD: pfcontrol
+      POSTGRES_DB: pfcontrol
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - pfcontrol-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pfcontrol']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pfcontrol-redis-dev
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - pfcontrol-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   pfcontrol-dev:
     build:
       context: .
@@ -18,6 +54,15 @@ services:
     restart: unless-stopped
     networks:
       - pfcontrol-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
 
 networks:
   pfcontrol-network:

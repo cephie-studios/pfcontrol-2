@@ -13,27 +13,56 @@ If you just want to try or demo PFControl:
 
 ## Development — Local setup
 
-The following steps get the project running on your machine for development and testing.
+Getting started with PFControl development is straightforward. We've set up Docker Compose to handle PostgreSQL and Redis for you, so you don't need to manually configure databases.
 
-1. Install dependencies
+### Setup instructions
 
+1. **Install Docker Desktop** (if you don't have it)
+   Download from [docker.com](https://www.docker.com/products/docker-desktop) and open it. Make sure it fully starts up.
+
+2. **Clone the repository**
+   ```bash
+   git clone https://github.com/PFConnect/pfcontrol-2.git
+   cd pfcontrol-2
    ```
+
+3. **Start PostgreSQL and Redis**
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+   This starts local PostgreSQL and Redis containers in the background. First-time setup downloads the images and takes about 30 seconds.
+
+4. **Set up your environment file**
+   ```bash
+   cp .env.example .env.development
+   ```
+   This creates a `.env.development` file with localhost connection strings that point to the Docker containers.
+
+5. **Install dependencies and start the dev server**
+   ```bash
    npm install
-   ```
-
-2. Create an environment file
-   Copy the example and update environment variables into `.env.development`.
-
-   > **Note:** For full functionality, you must set up PostgreSQL and Redis and provide the correct connection URLs in your `.env.development` file.
-   > If you are unable to set up these services locally, you can still run the frontend, but backend features will be limited or unavailable.
-   > If you need help or require development environment variables, join our [Discord server](https://pfconnect.online/discord), create a ticket, and ask for assistance.
-
-3. Start the development environment
-   ```
    npm run dev
    ```
 
-Frontend will be available at http://localhost:5173 and Backend API at http://localhost:9901 by default.
+That's it! The frontend will be at [http://localhost:5173](http://localhost:5173) and the backend API at [http://localhost:9901](http://localhost:9901).
+
+**When you're done**, stop the databases with:
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+To reset your local database (fresh start), run:
+```bash
+docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+### Troubleshooting
+
+- **"Cannot connect to the Docker daemon"**: Make sure Docker Desktop is running. Open the Docker Desktop application before running docker-compose commands
+- **"Cannot connect to PostgreSQL"**: Make sure Docker Compose is running (`docker ps` should show postgres and redis containers)
+- **"Port 5432 already in use"**: You might have PostgreSQL installed locally. Either stop your local PostgreSQL or change the port mapping in `docker-compose.dev.yml`
+- **Need help?** Join our [Discord server](https://pfconnect.online/discord), create a ticket, and we'll help you out
 
 ## Project structure
 

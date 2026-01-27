@@ -5,8 +5,10 @@ export async function createMainTables() {
   await mainDb.schema
     .createTable('app_settings')
     .ifNotExists()
-    .addColumn('key', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('value', 'text')
+    .addColumn('id', 'integer', (col) => col.primaryKey())
+    .addColumn('version', 'varchar(50)', (col) => col.notNull())
+    .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+    .addColumn('updated_by', 'varchar(255)', (col) => col.notNull())
     .execute();
 
   // users (assuming based on typical UsersTable interface)
@@ -27,6 +29,7 @@ export async function createMainTables() {
     .createTable('sessions')
     .ifNotExists()
     .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
+    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
     .addColumn('user_id', 'varchar(255)', (col) =>
       col.references('users.id').onDelete('cascade')
     )
@@ -89,6 +92,7 @@ export async function createMainTables() {
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('title', 'varchar(255)', (col) => col.notNull())
     .addColumn('message', 'text', (col) => col.notNull())
+    .addColumn('show', 'boolean', (col) => col.defaultTo(true))
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
@@ -122,10 +126,9 @@ export async function createMainTables() {
   await mainDb.schema
     .createTable('tester_settings')
     .ifNotExists()
-    .addColumn('tester_id', 'integer', (col) =>
-      col.references('testers.id').onDelete('cascade').primaryKey()
-    )
-    .addColumn('settings', 'jsonb')
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('setting_key', 'varchar(255)', (col) => col.unique().notNull())
+    .addColumn('setting_value', 'boolean', (col) => col.notNull())
     .execute();
 
   // daily_statistics
