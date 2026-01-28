@@ -3,7 +3,7 @@ name: Enforce Canary as PR Source
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-    branches: [main]
+    branches: [main, canary]
 
 jobs:
   check-branch:
@@ -11,7 +11,8 @@ jobs:
     steps:
       - name: Ensure PR source is canary
         run: |
-          if [[ "${{ github.head_ref }}" != "canary" ]]; then
+          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "canary" ]]; then
             echo "PRs to main must originate from the canary branch."
             exit 1
           fi
+          echo "PR source is valid for the target branch."
