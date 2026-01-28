@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
@@ -21,19 +21,21 @@ import AccessDenied from './components/AccessDenied';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
 import CanaryModal from './components/modals/CanaryModal';
 
-import Admin from './pages/Admin';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAudit from './pages/admin/AdminAudit';
-import AdminBan from './pages/admin/AdminBan';
-import AdminSessions from './pages/admin/AdminSessions';
-import AdminTesters from './pages/admin/AdminTesters';
-import AdminNotifications from './pages/admin/AdminNotifications';
-import AdminRoles from './pages/admin/AdminRoles';
-import AdminChatReports from './pages/admin/AdminChatReports';
-import AdminFlightLogs from './pages/admin/AdminFlightLogs';
-import AdminFeedback from './pages/admin/AdminFeedback';
-import AdminApiLogs from './pages/admin/AdminApiLogs';
-import AdminRatings from './pages/admin/AdminRatings';
+const Admin = lazy(() => import('./pages/Admin'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAudit = lazy(() => import('./pages/admin/AdminAudit'));
+const AdminBan = lazy(() => import('./pages/admin/AdminBan'));
+const AdminSessions = lazy(() => import('./pages/admin/AdminSessions'));
+const AdminTesters = lazy(() => import('./pages/admin/AdminTesters'));
+const AdminNotifications = lazy(
+  () => import('./pages/admin/AdminNotifications')
+);
+const AdminRoles = lazy(() => import('./pages/admin/AdminRoles'));
+const AdminChatReports = lazy(() => import('./pages/admin/AdminChatReports'));
+const AdminFlightLogs = lazy(() => import('./pages/admin/AdminFlightLogs'));
+const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
+const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
+const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
 
 import {
   fetchActiveUpdateModal,
@@ -193,113 +195,121 @@ export default function App() {
             path="/admin/*"
             element={
               <ProtectedRoute requireTester={false} requirePermission="admin">
-                <Routes>
-                  <Route
-                    index
-                    element={
-                      <ProtectedRoute requirePermission="admin">
-                        <Admin />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="users"
-                    element={
-                      <ProtectedRoute requirePermission="users">
-                        <AdminUsers />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="audit"
-                    element={
-                      <ProtectedRoute requirePermission="audit">
-                        <AdminAudit />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="bans"
-                    element={
-                      <ProtectedRoute requirePermission="bans">
-                        <AdminBan />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="sessions"
-                    element={
-                      <ProtectedRoute requirePermission="sessions">
-                        <AdminSessions />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="testers"
-                    element={
-                      <ProtectedRoute requirePermission="testers">
-                        <AdminTesters />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="notifications"
-                    element={
-                      <ProtectedRoute requirePermission="notifications">
-                        <AdminNotifications />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="roles"
-                    element={
-                      <ProtectedRoute requirePermission="roles">
-                        <AdminRoles />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="chat-reports"
-                    element={
-                      <ProtectedRoute requirePermission="chat_reports">
-                        <AdminChatReports />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="flight-logs"
-                    element={
-                      <ProtectedRoute requirePermission="audit">
-                        <AdminFlightLogs />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="feedback"
-                    element={
-                      <ProtectedRoute requirePermission="admin">
-                        <AdminFeedback />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="api-logs"
-                    element={
-                      <ProtectedRoute requirePermission="admin">
-                        <AdminApiLogs />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="ratings"
-                    element={
-                      <ProtectedRoute requirePermission="admin">
-                        <AdminRatings />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+                      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <Routes>
+                    <Route
+                      index
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <Admin />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="users"
+                      element={
+                        <ProtectedRoute requirePermission="users">
+                          <AdminUsers />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="audit"
+                      element={
+                        <ProtectedRoute requirePermission="audit">
+                          <AdminAudit />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="bans"
+                      element={
+                        <ProtectedRoute requirePermission="bans">
+                          <AdminBan />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="sessions"
+                      element={
+                        <ProtectedRoute requirePermission="sessions">
+                          <AdminSessions />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="testers"
+                      element={
+                        <ProtectedRoute requirePermission="testers">
+                          <AdminTesters />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="notifications"
+                      element={
+                        <ProtectedRoute requirePermission="notifications">
+                          <AdminNotifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="roles"
+                      element={
+                        <ProtectedRoute requirePermission="roles">
+                          <AdminRoles />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="chat-reports"
+                      element={
+                        <ProtectedRoute requirePermission="chat_reports">
+                          <AdminChatReports />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="flight-logs"
+                      element={
+                        <ProtectedRoute requirePermission="audit">
+                          <AdminFlightLogs />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="feedback"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminFeedback />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="api-logs"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminApiLogs />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="ratings"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminRatings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </ProtectedRoute>
             }
           />

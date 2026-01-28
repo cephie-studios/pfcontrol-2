@@ -600,45 +600,58 @@ export default function PFATCFlights() {
 
   const [showHidden, setShowHidden] = useState(false);
 
-  const filteredFlights = allFlights.filter((flight) => {
-    if (!showHidden && flight.hidden) {
-      return false;
-    }
+  const filteredFlights = useMemo(() => {
+    return allFlights.filter((flight) => {
+      if (!showHidden && flight.hidden) {
+        return false;
+      }
 
-    const matchesSearch =
-      !searchTerm ||
-      flight.callsign?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      flight.aircraft?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      flight.departure?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      flight.arrival?.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        !searchTerm ||
+        flight.callsign?.toLowerCase().includes(searchLower) ||
+        flight.aircraft?.toLowerCase().includes(searchLower) ||
+        flight.departure?.toLowerCase().includes(searchLower) ||
+        flight.arrival?.toLowerCase().includes(searchLower);
 
-    const matchesAirport =
-      !selectedAirport ||
-      flight.departure === selectedAirport ||
-      flight.arrival === selectedAirport;
+      const matchesAirport =
+        !selectedAirport ||
+        flight.departure === selectedAirport ||
+        flight.arrival === selectedAirport;
 
-    const matchesStatus = !selectedStatus || flight.status === selectedStatus;
-    const matchesFlightType =
-      !selectedFlightType || flight.flight_type === selectedFlightType;
+      const matchesStatus = !selectedStatus || flight.status === selectedStatus;
+      const matchesFlightType =
+        !selectedFlightType || flight.flight_type === selectedFlightType;
 
+      return (
+        matchesSearch && matchesAirport && matchesStatus && matchesFlightType
+      );
+    });
+  }, [
+    allFlights,
+    showHidden,
+    searchTerm,
+    selectedAirport,
+    selectedStatus,
+    selectedFlightType,
+  ]);
+
+  const airportSessions = useMemo(() => {
     return (
-      matchesSearch && matchesAirport && matchesStatus && matchesFlightType
+      overviewData?.activeSessions
+        .filter((session) => !session.sessionId.startsWith('sector-'))
+        .reduce(
+          (acc, session) => {
+            if (!acc[session.airportIcao]) {
+              acc[session.airportIcao] = [];
+            }
+            acc[session.airportIcao].push(session);
+            return acc;
+          },
+          {} as Record<string, OverviewSession[]>
+        ) || {}
     );
-  });
-
-  const airportSessions =
-    overviewData?.activeSessions
-      .filter((session) => !session.sessionId.startsWith('sector-'))
-      .reduce(
-        (acc, session) => {
-          if (!acc[session.airportIcao]) {
-            acc[session.airportIcao] = [];
-          }
-          acc[session.airportIcao].push(session);
-          return acc;
-        },
-        {} as Record<string, OverviewSession[]>
-      ) || {};
+  }, [overviewData?.activeSessions]);
 
   const statusOptions = [
     { label: 'All Statuses', value: '' },

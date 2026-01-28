@@ -4,6 +4,7 @@ import {
   useRef,
   useLayoutEffect,
   useCallback,
+  memo,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
@@ -32,7 +33,7 @@ const sizeClasses = {
   lg: 'px-6 py-4 text-lg',
 };
 
-export default function Dropdown({
+function Dropdown({
   options,
   placeholder = 'Select option',
   value,
@@ -329,3 +330,5 @@ export default function Dropdown({
     </>
   );
 }
+
+export default memo(Dropdown);

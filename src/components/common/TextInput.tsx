@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ChangeEvent } from 'react';
 
 interface TextInputProps {
@@ -18,7 +19,7 @@ interface TextInputProps {
   editingUsername?: string;
 }
 
-export default function TextInput({
+function TextInput({
   value,
   onChange,
   placeholder = '',
@@ -75,3 +76,5 @@ export default function TextInput({
     </div>
   );
 }
+
+export default memo(TextInput);

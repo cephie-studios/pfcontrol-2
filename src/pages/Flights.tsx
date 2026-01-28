@@ -266,43 +266,54 @@ export default function Flights() {
 
     flightsSocketConnectedRef.current = true;
 
+    const handleFlightUpdate = (flight: Flight) => {
+      setFlights((prev) => {
+        const index = prev.findIndex((f) => f.id === flight.id);
+        if (index === -1) return prev;
+        const newFlights = [...prev];
+        newFlights[index] = flight;
+        return newFlights;
+      });
+    };
+
+    const handleFlightAdded = (flight: Flight) => {
+      setFlights((prev) => {
+        const exists = prev.some((f) => f.id === flight.id);
+        if (exists) return prev;
+        return [...prev, flight];
+      });
+
+      const currentSettings = settingsRef.current;
+      if (currentSettings) {
+        playSoundWithSettings('newStripSound', currentSettings, 0.7).catch(
+          (error) => {
+            console.warn('Failed to play new strip sound:', error);
+          }
+        );
+      }
+    };
+
+    const handleFlightDeleted = ({
+      flightId,
+    }: {
+      flightId: string | number;
+    }) => {
+      setFlights((prev) => prev.filter((flight) => flight.id !== flightId));
+    };
+
+    const handleFlightError = (error: string) => {
+      console.error('Flight websocket error:', error);
+    };
+
     const socket = createFlightsSocket(
       sessionId,
       accessId,
       user?.userId || '',
       user?.username || '',
-      (flight: Flight) => {
-        setFlights((prev) =>
-          prev.map((f) => (f.id === flight.id ? flight : f))
-        );
-      },
-      // onFlightAdded
-      (flight: Flight) => {
-        setFlights((prev) => {
-          const exists = prev.some((f) => f.id === flight.id);
-          if (exists) {
-            return prev;
-          }
-          return [...prev, flight];
-        });
-
-        const currentSettings = settingsRef.current;
-        if (currentSettings) {
-          playSoundWithSettings('newStripSound', currentSettings, 0.7).catch(
-            (error) => {
-              console.warn('Failed to play new strip sound:', error);
-            }
-          );
-        }
-      },
-      // onFlightDeleted
-      ({ flightId }) => {
-        setFlights((prev) => prev.filter((flight) => flight.id !== flightId));
-      },
-      // onFlightError
-      (error) => {
-        console.error('Flight websocket error:', error);
-      }
+      handleFlightUpdate,
+      handleFlightAdded,
+      handleFlightDeleted,
+      handleFlightError
     );
     socket.socket.on('sessionUpdated', (updates) => {
       setSession((prev) => (prev ? { ...prev, ...updates } : null));
@@ -312,7 +323,14 @@ export default function Flights() {
       flightsSocketConnectedRef.current = false;
       socket.socket.disconnect();
     };
-  }, [sessionId, accessId, initialLoadComplete]);
+  }, [
+    sessionId,
+    accessId,
+    initialLoadComplete,
+    accessError,
+    user?.userId,
+    user?.username,
+  ]);
   const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
     if (!flightsSocket?.socket) {
       console.warn('handleIssuePDC: no flights socket available');

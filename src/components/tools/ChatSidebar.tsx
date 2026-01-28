@@ -256,7 +256,7 @@ export default function ChatSidebar({
         socketRef.current = null;
       }
     };
-  }, [sessionId, accessId, user, open, activeTab]);
+  }, [sessionId, accessId, user?.userId, open, activeTab]);
 
   useEffect(() => {
     if (!socketRef.current) return;

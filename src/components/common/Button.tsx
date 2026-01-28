@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
@@ -17,7 +19,7 @@ interface ButtonProps {
   accentColor?: 'green' | 'blue' | 'purple' | 'gray';
 }
 
-export default function Button({
+function Button({
   children,
   onClick,
   variant = 'primary',
@@ -74,3 +76,5 @@ export default function Button({
     </button>
   );
 }
+
+export default memo(Button);
