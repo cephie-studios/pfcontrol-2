@@ -20,7 +20,7 @@ function normalizeForProfanity(s: string) {
 }
 
 export function containsProfanity(message: string): boolean {
-  if (!message || typeof message !== 'string') return false;
+  if (!message) return false;
   const raw = message.toLowerCase().trim();
 
   try {

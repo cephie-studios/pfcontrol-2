@@ -92,7 +92,6 @@ export default function ATIS({
           let atisData = null;
           if (
             typeof sessionData.atis === 'object' &&
-            sessionData.atis !== null &&
             icao in sessionData.atis
           ) {
             // @ts-expect-error: dynamic key access
@@ -206,12 +205,12 @@ export default function ATIS({
       }
     };
 
-    loadPreviousATIS();
+    loadPreviousATIS().then();
   }, [sessionId, accessId, icao, open, availableRunways]);
 
   useEffect(() => {
     if (icao && !fetchedAirports.has(icao)) {
-      fetchAirportData(icao);
+      fetchAirportData(icao).then();
     }
   }, [icao, fetchedAirports, fetchAirportData]);
 

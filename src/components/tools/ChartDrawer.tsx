@@ -141,13 +141,11 @@ export default function ChartDrawer({
         (icao) => icao !== departureAirport && icao !== arrivalAirport
       );
 
-  const allChartsForLegacy = [
+  const chartsToUse = [
     ...departureCharts,
     ...arrivalCharts,
     ...otherAirports.flatMap((icao) => getChartsForAirport(icao)),
   ];
-
-  const chartsToUse = allChartsForLegacy;
 
   const filteredDepartureCharts = departureCharts.filter(
     (chart) =>

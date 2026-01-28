@@ -44,7 +44,7 @@ export default function ProtectedRoute({
 
         const settings = await getTesterSettings();
 
-        if (settings && typeof settings.tester_gate_enabled === 'boolean') {
+        if (settings) {
           setTesterGateEnabled(settings.tester_gate_enabled);
         } else {
           console.error(
@@ -59,7 +59,7 @@ export default function ProtectedRoute({
       }
     };
 
-    checkGateStatus();
+    checkGateStatus().then();
   }, [requireTester, user]);
 
   if (isLoading || (requireTester && testerGateEnabled === null)) {

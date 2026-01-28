@@ -92,7 +92,7 @@ export default function App() {
 
         const settings = await getTesterSettings();
 
-        if (settings && typeof settings.tester_gate_enabled === 'boolean') {
+        if (settings) {
           setTesterGateEnabled(settings.tester_gate_enabled);
         } else {
           console.error(
@@ -107,7 +107,7 @@ export default function App() {
       }
     };
 
-    checkGateStatus();
+    checkGateStatus().then();
   }, []);
 
   const handleCloseModal = () => {
