@@ -58,8 +58,8 @@ export function setupChatWebsocket(
       origin: [
         'http://localhost:5173',
         'http://localhost:9901',
-        'https://control.pfconnect.online',
-        'https://canary.pfconnect.online',
+        'https://pfcontrol.com',
+        'https://canary.pfcontrol.com',
       ],
       credentials: true,
     },

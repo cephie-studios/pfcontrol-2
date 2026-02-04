@@ -50,7 +50,7 @@ export default function App() {
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
 
   const shouldBypassTesterGate = () => {
-    return window.location.hostname === 'control.pfconnect.online';
+    return window.location.hostname === 'pfcontrol.com';
   };
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function App() {
   useEffect(() => {
     const checkGateStatus = async () => {
       try {
-        // Bypass tester gate for control.pfconnect.online
+        // Bypass tester gate for pfcontrol.com
         if (shouldBypassTesterGate()) {
           setTesterGateEnabled(false);
           return;

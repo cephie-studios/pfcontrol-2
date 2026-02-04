@@ -26,7 +26,7 @@ export default function ProtectedRoute({
   );
 
   const shouldBypassTesterGate = () => {
-    return window.location.hostname === 'control.pfconnect.online';
+    return window.location.hostname === 'pfcontrol.com';
   };
 
   useEffect(() => {

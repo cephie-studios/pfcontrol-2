@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 function shouldBypassTesterGate(req: Request): boolean {
   const host = req.get('host') || req.get('x-forwarded-host') || '';
-  return host === 'control.pfconnect.online';
+  return host === 'pfcontrol.com';
 }
 
 export async function requireTester(
@@ -71,7 +71,7 @@ export async function checkTesterGateStatus() {
 
 export async function checkTesterGateStatusWithDomain(host?: string) {
   try {
-    if (host === 'control.pfconnect.online') {
+    if (host === 'pfcontrol.com') {
       return false;
     }
 

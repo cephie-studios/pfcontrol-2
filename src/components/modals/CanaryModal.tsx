@@ -9,7 +9,7 @@ export default function CanaryModal() {
   const isEarlyReleaseVersion = () => {
     return (
       window.location.hostname === 'localhost' ||
-      window.location.hostname === 'canary.pfconnect.online'
+      window.location.hostname === 'canary.pfcontrol.com'
     );
   };
 
@@ -54,9 +54,7 @@ export default function CanaryModal() {
         <div className="flex justify-between space-x-3 w-full">
           <Button
             size="sm"
-            onClick={() =>
-              (window.location.href = 'https://control.pfconnect.online')
-            }
+            onClick={() => (window.location.href = 'https://pfcontrol.com')}
           >
             Go to Stable Version
           </Button>

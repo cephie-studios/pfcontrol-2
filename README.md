@@ -8,7 +8,7 @@ We welcome contributions, bug reports, and feature requests. See the Contributin
 
 If you just want to try or demo PFControl:
 
-- Visit [control.pfconnect.online](https://control.pfconnect.online)
+- Visit [pfcontrol.com](https://pfcontrol.com)
 - Try PFControl by creating a session from the homepage.
 
 ## Development — Local setup

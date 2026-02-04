@@ -329,7 +329,7 @@ export default function Navbar({
                 <TowerControl className="h-8 w-8 text-blue-400" />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                   PFControl
-                  {window.location.hostname === 'canary.pfconnect.online' && (
+                  {window.location.hostname === 'canary.pfcontrol.com' && (
                     <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
                       {' '}
                       Canary

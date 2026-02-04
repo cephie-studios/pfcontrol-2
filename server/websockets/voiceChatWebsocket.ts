@@ -26,8 +26,8 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       origin:
         process.env.NODE_ENV === 'production'
           ? [
-              'https://control.pfconnect.online',
-              'https://canary.pfconnect.online',
+              'https://pfcontrol.com',
+              'https://canary.pfcontrol.com',
             ]
           : ['http://localhost:9901', 'http://localhost:5173'],
       credentials: true,

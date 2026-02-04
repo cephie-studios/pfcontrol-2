@@ -560,7 +560,7 @@ router.get('/tester-settings', async (req, res) => {
   try {
     const host = req.get('host') || req.get('x-forwarded-host') || '';
 
-    if (host === 'control.pfconnect.online') {
+    if (host === 'pfcontrol.com') {
       return res.json({ tester_gate_enabled: false });
     }
 

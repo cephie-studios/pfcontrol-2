@@ -4,7 +4,7 @@ Contributions are welcome!
 
 ## How to Contribute
 
-- **Fork the repo** and open a pull request (to the `canary` branch so it can be tested on [canary.pfconnect.online](https://canary.pfconnect.online)).
+- **Fork the repo** and open a pull request (to the `canary` branch so it can be tested on [canary.pfcontrol.com](https://canary.pfcontrol.com)).
 - **Follow the existing code style** and conventions.
 - **Run checks before submitting:**
   - `npm run lint` to check for lint errors.
