@@ -5,45 +5,79 @@ export async function createMainTables() {
   await mainDb.schema
     .createTable('app_settings')
     .ifNotExists()
-    .addColumn('id', 'integer', (col) => col.primaryKey())
+    .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('version', 'varchar(50)', (col) => col.notNull())
     .addColumn('updated_at', 'timestamp', (col) => col.notNull())
     .addColumn('updated_by', 'varchar(255)', (col) => col.notNull())
     .execute();
 
-  // users (assuming based on typical UsersTable interface)
-  await mainDb.schema
-    .createTable('users')
-    .ifNotExists()
-    .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('username', 'varchar(255)', (col) => col.unique().notNull())
-    .addColumn('email', 'varchar(255)', (col) => col.unique().notNull())
-    .addColumn('password_hash', 'varchar(255)', (col) => col.notNull())
-    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
-    .addColumn('statistics', 'jsonb', (col) => col.defaultTo('{}'))
-    .execute();
-
-  // sessions
-  await mainDb.schema
-    .createTable('sessions')
-    .ifNotExists()
-    .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
-    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
-    .addColumn('user_id', 'varchar(255)', (col) =>
-      col.references('users.id').onDelete('cascade')
-    )
-    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
-    .addColumn('expires_at', 'timestamp')
-    .execute();
-
-  // roles
+  // roles (must be created before users because users references roles)
   await mainDb.schema
     .createTable('roles')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('name', 'varchar(255)', (col) => col.unique().notNull())
     .addColumn('description', 'text')
+    .addColumn('permissions', 'jsonb', (col) => col.notNull())
+    .addColumn('color', 'varchar(50)')
+    .addColumn('icon', 'varchar(255)')
+    .addColumn('priority', 'integer')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .execute();
+
+  // users
+  await mainDb.schema
+    .createTable('users')
+    .ifNotExists()
+    .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
+    .addColumn('username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('discriminator', 'varchar(10)', (col) => col.notNull())
+    .addColumn('avatar', 'text')
+    .addColumn('access_token', 'text')
+    .addColumn('refresh_token', 'text')
+    .addColumn('last_login', 'timestamp')
+    .addColumn('ip_address', 'text')
+    .addColumn('is_vpn', 'boolean')
+    .addColumn('sessions', 'text')
+    .addColumn('last_session_created', 'timestamp')
+    .addColumn('last_session_deleted', 'timestamp')
+    .addColumn('settings', 'text')
+    .addColumn('settings_updated_at', 'timestamp')
+    .addColumn('total_sessions_created', 'integer', (col) => col.defaultTo(0))
+    .addColumn('total_minutes', 'integer', (col) => col.defaultTo(0))
+    .addColumn('vatsim_cid', 'varchar(50)')
+    .addColumn('vatsim_rating_id', 'integer')
+    .addColumn('vatsim_rating_short', 'varchar(10)')
+    .addColumn('vatsim_rating_long', 'varchar(255)')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('roblox_user_id', 'varchar(255)')
+    .addColumn('roblox_username', 'varchar(255)')
+    .addColumn('roblox_access_token', 'text')
+    .addColumn('roblox_refresh_token', 'text')
+    .addColumn('role_id', 'integer', (col) =>
+      col.references('roles.id').onDelete('set null')
+    )
+    .addColumn('tutorialCompleted', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('statistics', 'text')
+    .execute();
+
+  // sessions
+  await mainDb.schema
+    .createTable('sessions')
+    .ifNotExists()
+    .addColumn('session_id', 'varchar(255)', (col) => col.primaryKey())
+    .addColumn('access_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('active_runway', 'varchar(10)')
+    .addColumn('airport_icao', 'varchar(10)', (col) => col.notNull())
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('created_by', 'varchar(255)', (col) => col.notNull())
+    .addColumn('is_pfatc', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('flight_strips', 'text')
+    .addColumn('atis', 'text')
+    .addColumn('custom_name', 'varchar(255)')
+    .addColumn('refreshed_at', 'timestamp')
     .execute();
 
   // user_roles
@@ -56,6 +90,7 @@ export async function createMainTables() {
     .addColumn('role_id', 'integer', (col) =>
       col.references('roles.id').onDelete('cascade')
     )
+    .addColumn('assigned_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addPrimaryKeyConstraint('user_roles_pkey', ['user_id', 'role_id'])
     .execute();
 
@@ -64,12 +99,16 @@ export async function createMainTables() {
     .createTable('audit_log')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) =>
-      col.references('users.id').onDelete('set null')
-    )
-    .addColumn('action', 'varchar(255)', (col) => col.notNull())
+    .addColumn('admin_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('admin_username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('action_type', 'varchar(100)', (col) => col.notNull())
+    .addColumn('target_user_id', 'varchar(255)')
+    .addColumn('target_username', 'varchar(255)')
     .addColumn('details', 'jsonb')
+    .addColumn('ip_address', 'text')
+    .addColumn('user_agent', 'text')
     .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // bans
@@ -77,12 +116,14 @@ export async function createMainTables() {
     .createTable('bans')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('user_id', 'varchar(255)', (col) =>
-      col.references('users.id').onDelete('cascade').notNull()
-    )
+    .addColumn('user_id', 'varchar(255)')
+    .addColumn('ip_address', 'text')
+    .addColumn('username', 'varchar(255)')
     .addColumn('reason', 'text')
+    .addColumn('banned_by', 'varchar(255)', (col) => col.notNull())
     .addColumn('banned_at', 'timestamp', (col) => col.defaultTo('now()'))
     .addColumn('expires_at', 'timestamp')
+    .addColumn('active', 'boolean', (col) => col.defaultTo(true))
     .execute();
 
   // notifications
@@ -90,10 +131,12 @@ export async function createMainTables() {
     .createTable('notifications')
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
-    .addColumn('title', 'varchar(255)', (col) => col.notNull())
-    .addColumn('message', 'text', (col) => col.notNull())
+    .addColumn('type', 'varchar(50)', (col) => col.notNull())
+    .addColumn('text', 'text', (col) => col.notNull())
     .addColumn('show', 'boolean', (col) => col.defaultTo(true))
+    .addColumn('custom_color', 'varchar(50)')
     .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // user_notifications
@@ -102,13 +145,13 @@ export async function createMainTables() {
     .ifNotExists()
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('user_id', 'varchar(255)', (col) =>
-      col.references('users.id').onDelete('cascade')
+      col.references('users.id').onDelete('cascade').notNull()
     )
-    .addColumn('notification_id', 'integer', (col) =>
-      col.references('notifications.id').onDelete('cascade')
-    )
+    .addColumn('type', 'varchar(50)', (col) => col.notNull())
+    .addColumn('title', 'varchar(255)', (col) => col.notNull())
+    .addColumn('message', 'text', (col) => col.notNull())
     .addColumn('read', 'boolean', (col) => col.defaultTo(false))
-    .addColumn('read_at', 'timestamp')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // testers
@@ -119,7 +162,12 @@ export async function createMainTables() {
     .addColumn('user_id', 'varchar(255)', (col) =>
       col.references('users.id').onDelete('cascade').unique().notNull()
     )
-    .addColumn('approved', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('added_by', 'varchar(255)', (col) => col.notNull())
+    .addColumn('added_by_username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('notes', 'text')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // tester_settings
@@ -129,15 +177,21 @@ export async function createMainTables() {
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('setting_key', 'varchar(255)', (col) => col.unique().notNull())
     .addColumn('setting_value', 'boolean', (col) => col.notNull())
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // daily_statistics
   await mainDb.schema
     .createTable('daily_statistics')
     .ifNotExists()
-    .addColumn('date', 'date', (col) => col.primaryKey())
-    .addColumn('flights_count', 'integer', (col) => col.defaultTo(0))
-    .addColumn('users_count', 'integer', (col) => col.defaultTo(0))
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('date', 'date', (col) => col.notNull().unique())
+    .addColumn('logins_count', 'integer', (col) => col.defaultTo(0))
+    .addColumn('new_sessions_count', 'integer', (col) => col.defaultTo(0))
+    .addColumn('new_flights_count', 'integer', (col) => col.defaultTo(0))
+    .addColumn('new_users_count', 'integer', (col) => col.defaultTo(0))
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo('now()'))
     .execute();
 
   // chat_report
@@ -186,7 +240,7 @@ export async function createMainTables() {
     .addColumn('old_data', 'jsonb')
     .addColumn('new_data', 'jsonb')
     .addColumn('ip_address', 'varchar(255)')
-    .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('timestamp', 'timestamp', (col) => col.notNull().defaultTo('now()'))
     .execute();
 
   // feedback
@@ -213,14 +267,15 @@ export async function createMainTables() {
     .addColumn('path', 'text', (col) => col.notNull())
     .addColumn('status_code', 'integer', (col) => col.notNull())
     .addColumn('response_time', 'integer', (col) => col.notNull())
-    .addColumn('ip_address', 'text')
+    .addColumn('ip_address', 'text', (col) => col.notNull())
     .addColumn('user_agent', 'text')
     .addColumn('request_body', 'text')
     .addColumn('response_body', 'text')
     .addColumn('error_message', 'text')
-    .addColumn('timestamp', 'timestamp', (col) => col.defaultTo('now()'))
+    .addColumn('timestamp', 'timestamp', (col) => col.notNull().defaultTo('now()'))
     .execute();
 
+  // api_logs indexes
   try {
     await mainDb.schema
       .createIndex('idx_api_logs_timestamp')
@@ -255,6 +310,7 @@ export async function createMainTables() {
     .column('status_code')
     .execute();
 
+  // controller_ratings
   await mainDb.schema
     .createTable('controller_ratings')
     .ifNotExists()
@@ -276,7 +332,7 @@ export async function createFlightsTable(sessionId: string) {
     .addColumn('id', 'varchar(255)', (col) => col.primaryKey())
     .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
     .addColumn('user_id', 'varchar(255)')
-    .addColumn('ip_address', 'varchar(45)')
+    .addColumn('ip_address', 'text')
     .addColumn('callsign', 'varchar(255)')
     .addColumn('aircraft', 'varchar(255)')
     .addColumn('flight_type', 'varchar(50)')
