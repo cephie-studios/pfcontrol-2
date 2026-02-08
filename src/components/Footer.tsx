@@ -96,7 +96,7 @@ export default function Footer() {
 
             <div className="flex items-center space-x-5 pt-2 flex-wrap">
               <a
-                href="https://github.com/pfconnect"
+                href="https://cephie.app/github"
                 target="_blank"
                 rel="noopener noreferrer"
                 title="GitHub"
@@ -105,7 +105,7 @@ export default function Footer() {
                 <SiGithub className="h-5 w-5 md:h-6 md:w-6" />
               </a>
               <a
-                href="https://pfconnect.online/discord"
+                href="https://cephie.app/discord"
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Discord"

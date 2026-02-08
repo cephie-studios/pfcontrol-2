@@ -22,7 +22,7 @@ Getting started with PFControl development is straightforward. We've set up Dock
 
 2. **Clone the repository**
    ```bash
-   git clone https://github.com/PFConnect/pfcontrol-2.git
+   git clone https://github.com/cephie-studios/pfcontrol-2.git
    cd pfcontrol-2
    ```
 
