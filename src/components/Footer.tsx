@@ -8,6 +8,7 @@ import {
   Shield,
   Cookie,
   BookPlus,
+  DollarSign,
 } from 'lucide-react';
 import { FaDiscord, FaYoutube } from 'react-icons/fa';
 import { SiGithub } from 'react-icons/si';
@@ -55,6 +56,7 @@ export default function Footer() {
     { href: '/create', label: 'Create Session', icon: BookPlus },
     { href: '/sessions', label: 'My Sessions', icon: FolderOpen },
     { href: '/pfatc', label: 'PFATC Overview', icon: TowerControl },
+    { href: '/pricing', label: 'Pricing', icon: DollarSign },
   ];
 
   const legalLinks = [
@@ -70,7 +72,7 @@ export default function Footer() {
     },
     {
       href: 'https://cephie.app/legal/cookies',
-      label: 'Cookies Policy',
+      label: 'Cookie Policy',
       icon: Cookie,
     },
   ];

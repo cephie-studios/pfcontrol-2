@@ -132,7 +132,7 @@ export default function Login() {
                     className="text-blue-400 underline hover:text-blue-300 transition-colors"
                     tabIndex={0}
                   >
-                    Cookies Policy
+                    Cookie Policy
                   </Link>
                 </span>
               }

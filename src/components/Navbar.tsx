@@ -445,10 +445,10 @@ export default function Navbar({
               {!sessionId && (
                 <div className="space-x-6">
                   <a
-                    href="/create"
+                    href="/pricing"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    Create Session
+                    Pricing
                   </a>
                   <a
                     href="/sessions"
