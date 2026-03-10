@@ -1,5 +1,6 @@
-import { User, Radio, ExternalLink } from 'lucide-react';
+import { User, Radio, ExternalLink, Lock } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
+import { useEffectivePlan } from '../../hooks/billing/usePlan';
 import type { OverviewSession } from '../../sockets/overviewSocket';
 
 interface SidebarProps {
@@ -17,6 +18,8 @@ export default function AcarsSidebar({
   onAtisClick,
 }: SidebarProps) {
   const { user } = useAuth();
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUsePdcAtis = effectiveCapabilities.pdcAtis;
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b h-1/2 overflow-y-auto border-zinc-700 ">
@@ -138,27 +141,44 @@ export default function AcarsSidebar({
           <Radio className="w-5 h-5 text-blue-500" />
           ATIS
         </h3>
-        <div className="space-y-3">
-          {activeSessions
-            .filter((session) => session.atis && session.atis.text)
-            .map((session) => (
-              <div
-                key={session.sessionId}
-                className="cursor-pointer hover:bg-zinc-800 p-3 rounded-lg transition-colors border border-zinc-700 hover:border-zinc-600"
-                onClick={() => onAtisClick(session)}
-              >
-                <div className="font-semibold text-blue-400 text-sm">
-                  {session.airportIcao} ATIS {session.atis?.letter}
+        {canUsePdcAtis ? (
+          <div className="space-y-3">
+            {activeSessions
+              .filter((session) => session.atis && session.atis.text)
+              .map((session) => (
+                <div
+                  key={session.sessionId}
+                  className="cursor-pointer hover:bg-zinc-800 p-3 rounded-lg transition-colors border border-zinc-700 hover:border-zinc-600"
+                  onClick={() => onAtisClick(session)}
+                >
+                  <div className="font-semibold text-blue-400 text-sm">
+                    {session.airportIcao} ATIS {session.atis?.letter}
+                  </div>
+                  <div className="text-zinc-300 text-xs whitespace-pre-wrap mt-1 line-clamp-2">
+                    {session.atis?.text}
+                  </div>
                 </div>
-                <div className="text-zinc-300 text-xs whitespace-pre-wrap mt-1 line-clamp-2">
-                  {session.atis?.text}
-                </div>
-              </div>
-            ))}
-          {activeSessions.filter((s) => s.atis && s.atis.text).length === 0 && (
-            <div className="text-sm text-zinc-500">No ATIS available</div>
-          )}
-        </div>
+              ))}
+            {activeSessions.filter((s) => s.atis && s.atis.text).length === 0 && (
+              <div className="text-sm text-zinc-500">No ATIS available</div>
+            )}
+          </div>
+        ) : (
+          <div className="text-xs text-zinc-300 bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex items-start gap-2">
+            <Lock className="w-4 h-4 text-blue-400 mt-0.5" />
+            <div>
+              <p className="font-semibold text-blue-300 mb-1">
+                Upgrade to view ATIS via ACARS
+              </p>
+              <p>
+                Automatic ATIS via ACARS is available on the{' '}
+                <span className="font-semibold">Basic</span> and{' '}
+                <span className="font-semibold">Ultimate</span> plans. Visit the
+                pricing page to upgrade your plan.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

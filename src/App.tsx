@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
+import { usePlan } from './hooks/billing/usePlan';
 
 import Home from './pages/Home';
 import Create from './pages/Create';
@@ -46,13 +47,13 @@ import { getTesterSettings } from './utils/fetch/data';
 
 export default function App() {
   const { user } = useAuth();
+  const { plan } = usePlan();
   const [testerGateEnabled, setTesterGateEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
 
-  const shouldBypassTesterGate = () => {
-    return window.location.hostname === 'pfcontrol.com';
-  };
+  const isMainHost = () => window.location.hostname === 'pfcontrol.com';
+  const isCanaryHost = () => window.location.hostname === 'canary.pfcontrol.com';
 
   useEffect(() => {
     if (user) {
@@ -85,8 +86,8 @@ export default function App() {
   useEffect(() => {
     const checkGateStatus = async () => {
       try {
-        // Bypass tester gate for pfcontrol.com
-        if (shouldBypassTesterGate()) {
+        // Bypass tester gate for main production host
+        if (isMainHost()) {
           setTesterGateEnabled(false);
           return;
         }
@@ -135,8 +136,8 @@ export default function App() {
 
       {activeModal &&
         (!testerGateEnabled ||
-          shouldBypassTesterGate() ||
-          (testerGateEnabled && user?.isTester) ||
+          isMainHost() ||
+          (testerGateEnabled && (user?.isTester || plan === 'ultimate')) ||
           user?.isAdmin) && (
           <UpdateOverviewModal
             isOpen={showUpdateModal}

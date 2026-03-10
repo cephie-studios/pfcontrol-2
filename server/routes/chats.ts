@@ -11,8 +11,38 @@ import requireAuth from '../middleware/auth.js';
 import { chatsDb } from '../db/connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
+import { getUserPlan } from '../middleware/planGuard.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
 
 const router = express.Router();
+
+async function ensureTextChatAllowed(userId: string | undefined) {
+  if (!userId) {
+    return {
+      allowed: false,
+      status: 401,
+      body: { error: 'Unauthorized' as const },
+    };
+  }
+
+  const plan = await getUserPlan(userId);
+  const capabilities = getPlanCapabilitiesForPlan(plan);
+
+  if (!capabilities.textChat) {
+    return {
+      allowed: false,
+      status: 402,
+      body: {
+        error: 'Upgrade required' as const,
+        reason: 'text_chat_not_in_plan' as const,
+        requiredPlan: 'basic' as const,
+        currentPlan: plan,
+      },
+    };
+  }
+
+  return { allowed: true as const, status: 200 as const, body: null as null };
+}
 
 // POST: /api/chats/global/:messageId/report - Report a global chat message
 router.post('/global/:messageId/report', requireAuth, async (req, res) => {
@@ -40,6 +70,11 @@ router.post('/global/:messageId/report', requireAuth, async (req, res) => {
 // GET: /api/chats/global - Get global chat messages (last 30 minutes)
 router.get('/global/messages', requireAuth, async (req, res) => {
   try {
+    const check = await ensureTextChatAllowed(req.user?.userId);
+    if (!check.allowed) {
+      return res.status(check.status).json(check.body);
+    }
+
     const messages = await chatsDb
       .selectFrom('global_chat')
       .selectAll()
@@ -126,6 +161,11 @@ router.get('/global/messages', requireAuth, async (req, res) => {
 // GET: /api/chats/:sessionId
 router.get('/:sessionId', requireAuth, async (req, res) => {
   try {
+    const check = await ensureTextChatAllowed(req.user?.userId);
+    if (!check.allowed) {
+      return res.status(check.status).json(check.body);
+    }
+
     const messages = await getChatMessages(req.params.sessionId);
     res.json(messages);
   } catch {
@@ -140,6 +180,11 @@ router.post(
   requireAuth,
   async (req, res) => {
     try {
+      const check = await ensureTextChatAllowed(req.user?.userId);
+      if (!check.allowed) {
+        return res.status(check.status).json(check.body);
+      }
+
       const { message } = req.body;
       if (typeof message !== 'string' || message.length > 500) {
         return res.status(400).json({ error: 'Message too long' });

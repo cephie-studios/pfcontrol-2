@@ -6,6 +6,8 @@ import type { AirportFrequencies } from '../../types/airports';
 import Button from '../common/Button';
 import TextInput from '../common/TextInput';
 import Checkbox from '../common/Checkbox';
+import { useEffectivePlan } from '../../hooks/billing/usePlan';
+import { PlanUpsellSidebar } from '../billing/PlanUpsellSidebar';
 
 interface PDCModalProps {
   isOpen: boolean;
@@ -23,6 +25,8 @@ const PDCModal: React.FC<PDCModalProps> = ({
   flight,
   onIssuePDC,
 }) => {
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUsePdcAtis = effectiveCapabilities.pdcAtis;
   const { frequencies, fetchAirportData, fetchedAirports } = useData();
   const [airportFreqs, setAirportFreqs] = useState<AirportFrequencies>({});
   const [customFreqs, setCustomFreqs] = useState<AirportFrequencies>(() => {
@@ -256,7 +260,9 @@ IDENTIFIER: ${identifier}`;
           <div className="flex items-center gap-3">
             <Plane className="h-6 w-6 text-blue-400" />
             <span className="font-extrabold text-xl text-blue-300">
-              PDC Generator - {flight.callsign}
+              {canUsePdcAtis
+                ? `PDC Generator - ${flight.callsign}`
+                : 'Upgrade required for PDC & ATIS'}
             </span>
           </div>
           <button
@@ -538,29 +544,33 @@ IDENTIFIER: ${identifier}`;
               Generated at {new Date().toLocaleTimeString()}
             </div>
             <div className="flex gap-3">
-              <Button onClick={copyToClipboard} disabled={loading} size="sm">
-                Copy PDC
-              </Button>
+              {canUsePdcAtis && (
+                <>
+                  <Button onClick={copyToClipboard} disabled={loading} size="sm">
+                    Copy PDC
+                  </Button>
 
-              {/* NEW: Issue PDC to pilot via flights websocket */}
-              {typeof onIssuePDC === 'function' && (
-                <Button
-                  onClick={async () => {
-                    if (!flight) return;
-                    const pdcText = generatePDCText();
-                    try {
-                      await onIssuePDC(flight.id, pdcText);
-                      onClose();
-                    } catch (err) {
-                      console.error('Issue PDC failed', err);
-                      setError('Failed to issue PDC');
-                    }
-                  }}
-                  disabled={loading}
-                  size="sm"
-                >
-                  Issue PDC to Pilot
-                </Button>
+                  {/* Issue PDC to pilot via flights websocket */}
+                  {typeof onIssuePDC === 'function' && (
+                    <Button
+                      onClick={async () => {
+                        if (!flight) return;
+                        const pdcText = generatePDCText();
+                        try {
+                          await onIssuePDC(flight.id, pdcText);
+                          onClose();
+                        } catch (err) {
+                          console.error('Issue PDC failed', err);
+                          setError('Failed to issue PDC');
+                        }
+                      }}
+                      disabled={loading}
+                      size="sm"
+                    >
+                      Issue PDC to Pilot
+                    </Button>
+                  )}
+                </>
               )}
 
               <Button onClick={onClose} variant="outline" size="sm">
@@ -569,7 +579,7 @@ IDENTIFIER: ${identifier}`;
             </div>
           </div>
         </div>
-      </div>
+      </div>	
     </div>
   );
 };

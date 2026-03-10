@@ -36,7 +36,7 @@ export default function Login() {
   };
 
   if (user.user) {
-    navigate('/');
+    navigate(searchParams.get('callback') || '/', { replace: true });
     return null;
   }
 
@@ -80,12 +80,12 @@ export default function Login() {
       </div>
 
       <div className="container mx-auto max-w-md px-4 pb-8 relative z-10">
-        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-3xl p-8 space-y-6 shadow-2xl animate-fade-in">
+        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-4xl p-8 space-y-6 shadow-2xl animate-fade-in">
           <Button
             onClick={handleLogin}
             disabled={!agreed}
             variant="primary"
-            size="lg"
+            size="md"
             className={buttonClass}
           >
             <FaDiscord className="w-6 h-6" />

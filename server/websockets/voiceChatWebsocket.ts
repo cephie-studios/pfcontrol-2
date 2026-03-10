@@ -3,6 +3,8 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { mainDb } from '../db/connection.js';
 import type { Server } from 'http';
+import { getUserPlan } from '../middleware/planGuard.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
 
 interface VoiceUser {
   userId: string;
@@ -26,9 +28,9 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       origin:
         process.env.NODE_ENV === 'production'
           ? [
-              'https://pfcontrol.com',
-              'https://canary.pfcontrol.com',
-            ]
+            'https://pfcontrol.com',
+            'https://canary.pfcontrol.com',
+          ]
           : ['http://localhost:9901', 'http://localhost:5173'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -111,6 +113,18 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
 
       const valid = await validateSessionAccess(sessionId, accessId);
       if (!valid) {
+        socket.disconnect(true);
+        return;
+      }
+
+      const plan = await getUserPlan(userId);
+      const capabilities = getPlanCapabilitiesForPlan(plan);
+      if (!capabilities.voiceChat) {
+        socket.emit('voice-error', {
+          message: 'Voice chat is only available on the Ultimate plan.',
+          requiredPlan: 'ultimate',
+          currentPlan: plan,
+        });
         socket.disconnect(true);
         return;
       }

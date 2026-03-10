@@ -14,6 +14,8 @@ import updateModalRouter from './updateModal.js';
 import versionRouter from './version.js';
 import feedbackRouter from './feedback.js';
 import ratingsRouter from './ratings.js';
+import stripeRouter from './stripe.js';
+import planRouter from './plan.js';
 
 const router = express.Router();
 
@@ -31,5 +33,7 @@ router.use('/update-modal', updateModalRouter);
 router.use('/version', versionRouter);
 router.use('/feedback', feedbackRouter);
 router.use('/ratings', ratingsRouter);
+router.use('/stripe', stripeRouter);
+router.use('/plan', planRouter);
 
 export default router;

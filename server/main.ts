@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import stripeWebhookRouter from './routes/stripeWebhook.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import chalk from 'chalk';
@@ -66,9 +67,9 @@ app.use(
     origin:
       process.env.NODE_ENV === 'production'
         ? [
-            'https://pfcontrol.com',
-            'https://canary.pfcontrol.com',
-          ]
+          'https://pfcontrol.com',
+          'https://canary.pfcontrol.com',
+        ]
         : ['http://localhost:9901', 'http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -83,6 +84,11 @@ app.use(
   })
 );
 app.use(cookieParser());
+
+// IMPORTANT: Stripe webhooks rely on the raw body for signature verification.
+// The webhook router mounts its own express.raw() body parser, so it must run
+// before the global JSON parser.
+app.use('/api/stripe', stripeWebhookRouter);
 app.use(express.json());
 
 app.use(apiLogger());
@@ -90,7 +96,6 @@ app.use(apiLogger());
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', environment: process.env.NODE_ENV });
 });
-
 app.use('/api', apiRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));

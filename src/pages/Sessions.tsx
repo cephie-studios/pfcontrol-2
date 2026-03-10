@@ -14,6 +14,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useEffectivePlan } from '../hooks/billing/usePlan';
 import { useSettings } from '../hooks/settings/useSettings';
 import {
   fetchMySessions,
@@ -38,6 +39,7 @@ interface AvailableImage {
 export default function Sessions() {
   const { user, isLoading } = useAuth();
   const { settings } = useSettings();
+  const { effectiveLimits } = useEffectivePlan();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,7 +51,11 @@ export default function Sessions() {
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
 
-  const maxSessions = user?.isAdmin || user?.isTester ? 50 : 10;
+  const planMaxSessions = effectiveLimits.maxSessions || 0;
+  const hasSpecialRole = !!(user?.isAdmin || user?.isTester);
+  const maxSessions = hasSpecialRole
+    ? Math.max(50, planMaxSessions)
+    : planMaxSessions || 10;
 
   useEffect(() => {
     if (!user) {
@@ -273,7 +279,7 @@ export default function Sessions() {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
-        <div className="bg-gray-900/70 backdrop-blur-md rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
+        <div className="overflow-hidden">
           <div className="p-6 space-y-6">
             {error && (
               <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">

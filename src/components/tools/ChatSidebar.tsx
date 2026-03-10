@@ -19,6 +19,7 @@ import {
 } from '../../utils/chats';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { useData } from '../../hooks/data/useData';
+import { useEffectivePlan } from '../../hooks/billing/usePlan';
 import { createChatSocket } from '../../sockets/chatSocket';
 import {
   createGlobalChatSocket,
@@ -50,6 +51,7 @@ import Loader from '../common/Loader';
 import Modal from '../common/Modal';
 import Toast from '../common/Toast';
 import VoiceChat from './VoiceChat';
+import { PlanUpsellSidebar } from '../billing/PlanUpsellSidebar';
 
 interface ChatSidebarProps {
   sessionId: string;
@@ -80,6 +82,9 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const { user } = useAuth();
   const { airports } = useData();
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUseTextChat = effectiveCapabilities.textChat;
+  const canUseVoiceChat = effectiveCapabilities.voiceChat;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
@@ -151,17 +156,16 @@ export default function ChatSidebar({
     typeof createVoiceChatSocket
   > | null>(null);
 
-  const [unreadSessionMentions, setUnreadSessionMentions] = useState<
-    ChatMention[]
-  >([]);
-  const [unreadGlobalMentions, setUnreadGlobalMentions] = useState<
-    ChatMention[]
-  >([]);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [, setUnreadSessionMentions] = useState<ChatMention[]>([]);
+  const [, setUnreadGlobalMentions] = useState<ChatMention[]>([]);
   const [userVolumes, setUserVolumes] = useState<Map<string, number>>(() => {
     const storedVolumes = localStorage.getItem('userVolumes');
     return storedVolumes ? new Map(JSON.parse(storedVolumes)) : new Map();
   });
+
+  const [requiresUpgrade, setRequiresUpgrade] = useState(false);
+
+  const showUpgradeSidebar = !!user && (!canUseTextChat || requiresUpgrade);
 
   const getConnectionIcon = () => {
     if (connectionState.connecting)
@@ -187,8 +191,16 @@ export default function ChatSidebar({
     };
   }, [open]);
 
+  // When the sidebar is closed, clear any temporary upgrade state so that
+  // eligible plans (e.g. Basic with text chat) see chat again next time.
   useEffect(() => {
-    if (!sessionId || !accessId || !user) return;
+    if (!open) {
+      setRequiresUpgrade(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!sessionId || !accessId || !user || !canUseTextChat) return;
 
     if (!socketRef.current) {
       socketRef.current = createChatSocket(
@@ -256,7 +268,7 @@ export default function ChatSidebar({
         socketRef.current = null;
       }
     };
-  }, [sessionId, accessId, user?.userId, open, activeTab]);
+  }, [sessionId, accessId, user?.userId, open, activeTab, canUseTextChat]);
 
   useEffect(() => {
     if (!socketRef.current) return;
@@ -269,7 +281,7 @@ export default function ChatSidebar({
   }, [open]);
 
   useEffect(() => {
-    if (!sessionId || !open || messagesLoaded) return;
+    if (!sessionId || !open || messagesLoaded || !canUseTextChat) return;
 
     setLoading(true);
     setErrorMessage(null);
@@ -279,17 +291,21 @@ export default function ChatSidebar({
         setLoading(false);
         setMessagesLoaded(true);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error('Failed to fetch chat messages:', error);
-        setErrorMessage('Failed to load chat messages');
+        if (error?.status === 402) {
+          setRequiresUpgrade(true);
+        } else {
+          setErrorMessage('Failed to load chat messages');
+        }
         setMessages([]);
         setLoading(false);
         setMessagesLoaded(true);
       });
-  }, [sessionId, open, messagesLoaded]);
+  }, [sessionId, open, messagesLoaded, canUseTextChat]);
 
   useEffect(() => {
-    if (!user || !isPFATC) return;
+    if (!user || !isPFATC || !canUseTextChat) return;
 
     if (!globalSocketRef.current) {
       globalSocketRef.current = createGlobalChatSocket(
@@ -384,7 +400,7 @@ export default function ChatSidebar({
         globalSocketRef.current = null;
       }
     };
-  }, [user?.userId, station, position, isPFATC, open, activeTab]);
+  }, [user?.userId, station, position, isPFATC, open, activeTab, canUseTextChat]);
 
   useEffect(() => {
     if (!globalSocketRef.current) return;
@@ -578,38 +594,16 @@ export default function ChatSidebar({
   }
 
   useEffect(() => {
-    if (chatOpen) {
-      if (activeTab === 'session') {
-        setUnreadSessionMentions([]);
-      } else if (activeTab === 'pfatc') {
-        setUnreadGlobalMentions([]);
-      }
-      const totalUnread = [
-        ...unreadSessionMentions,
-        ...unreadGlobalMentions,
-      ].filter((mention) => {
-        if (activeTab === 'session') {
-          return mention.sessionId !== 'global-chat';
-        } else {
-          return mention.sessionId === 'global-chat';
-        }
-      });
-      setUnreadGlobalMentions(totalUnread);
-    }
-  }, [chatOpen, activeTab]);
-
-  useEffect(() => {
-    if (open) {
-      if (activeTab === 'session') {
-        setUnreadSessionMentions([]);
-      } else if (activeTab === 'pfatc') {
-        setUnreadGlobalMentions([]);
-      }
+    if (!open) return;
+    if (activeTab === 'session') {
+      setUnreadSessionMentions([]);
+    } else if (activeTab === 'pfatc') {
+      setUnreadGlobalMentions([]);
     }
   }, [activeTab, open]);
 
   useEffect(() => {
-    if (!sessionId || !accessId || !user || !open) return;
+    if (!sessionId || !accessId || !user || !open || !canUseVoiceChat) return;
 
     voiceSocketRef.current = createVoiceChatSocket(
       sessionId,
@@ -636,7 +630,7 @@ export default function ChatSidebar({
       setConnectionState({ connected: false, connecting: false, error: null });
       setIsInVoice(false);
     };
-  }, [sessionId, accessId, user, open]);
+  }, [sessionId, accessId, user, open, canUseVoiceChat]);
 
   useEffect(() => {
     try {
@@ -648,6 +642,34 @@ export default function ChatSidebar({
       console.warn('Failed to save user volumes to localStorage:', error);
     }
   }, [userVolumes]);
+
+  if (showUpgradeSidebar) {
+    return (
+      <div
+        className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
+          open ? 'translate-x-[] shadow-2xl shadow-black/90' : 'translate-x-full'
+        } rounded-l-3xl border-l-2 border-blue-800 flex flex-col`}
+        style={{ zIndex: 10000 }}
+      >
+        <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold text-xl text-blue-300">
+              Chat
+            </span>
+          </div>
+          <button
+            onClick={() => onClose()}
+            className="p-1 rounded-full hover:bg-gray-700"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <PlanUpsellSidebar />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -704,7 +726,13 @@ export default function ChatSidebar({
 
             {sessionId && (
               <button
-                onClick={() => setActiveTab('voice')}
+                onClick={() => {
+                  if (!canUseVoiceChat) {
+                    setRequiresUpgrade(true);
+                    return;
+                  }
+                  setActiveTab('voice');
+                }}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 font-semibold transition-colors relative ${
                   activeTab === 'voice'
                     ? 'bg-blue-600 text-white'
@@ -803,6 +831,8 @@ export default function ChatSidebar({
             <div className="flex justify-center items-center h-full">
               <Loader />
             </div>
+          ) : !canUseTextChat || requiresUpgrade ? (
+            <PlanUpsellSidebar />
           ) : errorMessage ? (
             <div className="flex justify-center items-center h-full text-red-400">
               {errorMessage}
@@ -935,7 +965,7 @@ export default function ChatSidebar({
       )}
 
       {/* Voice Chat Content */}
-      {sessionId && activeTab === 'voice' && (
+      {sessionId && activeTab === 'voice' && canUseVoiceChat && (
         <VoiceChat
           sessionId={sessionId}
           accessId={accessId}
@@ -1101,7 +1131,7 @@ export default function ChatSidebar({
       {/* Input Section */}
       <div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-bl-3xl relative">
         <div className="relative">
-          {activeTab === 'session' && (
+          {activeTab === 'session' && canUseTextChat && (
             <>
               {showMentionSuggestions && mentionSuggestions.length > 0 && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">

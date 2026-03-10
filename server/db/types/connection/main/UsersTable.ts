@@ -28,4 +28,9 @@ export interface UsersTable {
   role_id?: number;
   tutorialCompleted?: boolean;
   statistics?: string;
+  stripe_customer_id?: string | null;
+  subscription_plan?: 'free' | 'basic' | 'ultimate' | null;
+  subscription_status?: string | null;
+  subscription_current_period_end?: Date | null;
+  subscription_cancel_at_period_end?: boolean | null;
 }

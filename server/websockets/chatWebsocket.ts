@@ -8,6 +8,8 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { sanitizeMessage } from '../utils/sanitization.js';
 import type { Server } from 'http';
+import { getUserPlan } from '../middleware/planGuard.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
 
 const activeChatUsers = new Map<string, Set<string>>();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
@@ -85,7 +87,19 @@ export function setupChatWebsocket(
         : socket.handshake.query.userId;
 
       const valid = await validateSessionAccess(sessionId, accessId);
-      if (!valid) {
+      if (!valid || !userId) {
+        socket.disconnect(true);
+        return;
+      }
+
+      const plan = await getUserPlan(userId);
+      const capabilities = getPlanCapabilitiesForPlan(plan);
+      if (!capabilities.textChat) {
+        socket.emit('chatError', {
+          message: 'Text chat is only available on the Basic plan or higher.',
+          requiredPlan: 'basic',
+          currentPlan: plan,
+        });
         socket.disconnect(true);
         return;
       }

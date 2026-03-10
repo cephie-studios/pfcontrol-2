@@ -23,6 +23,8 @@ import { encrypt, decrypt } from '../utils/encryption.js';
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
 import requireAuth from '../middleware/auth.js';
+import { getUserPlan } from '../middleware/planGuard.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
@@ -65,14 +67,24 @@ router.post(
         userRoles.some(
           (role) => role.name === 'Tester' || role.name === 'Event Controller'
         );
-      const maxSessions = hasSpecialRole ? 50 : 10;
+
+      const plan = await getUserPlan(createdBy);
+      const capabilities = getPlanCapabilitiesForPlan(plan);
+      const maxSessionsForPlan = capabilities.maxSessions;
+
+      const maxSessions = hasSpecialRole
+        ? Math.max(50, maxSessionsForPlan)
+        : maxSessionsForPlan;
 
       if (userSessions.length >= maxSessions) {
-        return res.status(400).json({
-          error: 'Session limit reached',
-          message: `You can only have ${maxSessions} active sessions. Please delete an old session first.`,
+        return res.status(402).json({
+          error: 'Upgrade required',
+          reason: 'session_limit_reached',
+          message: `You can only have ${maxSessions} active sessions on your current plan. Please delete an old session or upgrade your plan.`,
           sessionCount: userSessions.length,
           maxSessions,
+          requiredPlan: plan === 'free' ? 'basic' : 'ultimate',
+          currentPlan: plan,
         });
       }
 

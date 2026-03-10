@@ -10,6 +10,7 @@ interface TerminalProps {
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   handleRequestPDC: () => void;
   pdcRequested: boolean;
+  canRequestPdc: boolean;
 }
 
 export default function AcarsTerminal({
@@ -20,6 +21,7 @@ export default function AcarsTerminal({
   messagesEndRef,
   handleRequestPDC,
   pdcRequested,
+  canRequestPdc,
 }: TerminalProps) {
   return (
     <div className="flex flex-col h-full">
@@ -54,15 +56,23 @@ export default function AcarsTerminal({
           <Button
             size="sm"
             variant="outline"
-            onClick={pdcRequested ? undefined : handleRequestPDC}
+            onClick={
+              pdcRequested || !canRequestPdc ? undefined : handleRequestPDC
+            }
             className={`text-left py-2 px-3 transition-colors items-start rounded-xl border-[0.5px] ${
               pdcRequested
                 ? 'bg-purple-600/20 border-purple-500 text-purple-200 hover:bg-purple-600/20 hover:border-purple-500 hover:text-purple-200 pointer-events-none'
-                : 'text-purple-600 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border-purple-700 hover:bg-purple-800/90 hover:border-purple-600 hover:text-purple-200'
+                : canRequestPdc
+                  ? 'text-purple-600 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border-purple-700 hover:bg-purple-800/90 hover:border-purple-600 hover:text-purple-200'
+                  : 'text-zinc-500 bg-zinc-800/80 border-zinc-700 cursor-not-allowed'
             }`}
-            disabled={pdcRequested}
+            disabled={pdcRequested || !canRequestPdc}
           >
-            {pdcRequested ? 'PDC REQUESTED' : 'REQUEST PDC'}
+            {pdcRequested
+              ? 'PDC REQUESTED'
+              : canRequestPdc
+                ? 'REQUEST PDC'
+                : 'PDC (Upgrade required)'}
           </Button>
         </div>
       </div>

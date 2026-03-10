@@ -6,8 +6,10 @@ import {
   ChevronDown,
   List,
   LayoutDashboard,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
+import { usePlan } from '../../hooks/billing/usePlan';
 import ProtectedRoute from '../ProtectedRoute';
 
 interface CustomUserButtonProps {
@@ -22,6 +24,7 @@ export default function CustomUserButton({
   onAction,
 }: CustomUserButtonProps) {
   const { user, isLoading, logout } = useAuth();
+  const { plan } = usePlan();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +115,18 @@ export default function CustomUserButton({
           >
             <User className="w-4 h-4" />
             <span>Profile</span>
+          </button>
+
+          <button
+            onClick={() =>
+              handleAction(() => {
+                window.location.href = '/pricing';
+              })
+            }
+            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Manage subscription</span>
           </button>
 
           <button
@@ -224,6 +239,17 @@ export default function CustomUserButton({
             >
               <User className="w-4 h-4" />
               <span className="font-medium">Profile</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setIsDropdownOpen(false);
+                window.location.href = '/pricing';
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="font-medium">Manage subscription</span>
             </button>
 
             <button

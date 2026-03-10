@@ -22,6 +22,7 @@ import { getChartsForAirport, playNotificationSound } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
+import { useEffectivePlan } from '../hooks/billing/usePlan';
 
 import AcarsSidebar from '../components/acars/AcarsSidebar';
 import AcarsTerminal from '../components/acars/AcarsTerminal';
@@ -65,6 +66,9 @@ export default function ACARS() {
   const notesInitializedRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUsePdcAtis = effectiveCapabilities.pdcAtis;
 
   const chartHandlers = useMemo(
     () =>
@@ -416,6 +420,18 @@ NOTES:
 
   const handleRequestPDC = () => {
     if (!flight || !socketRef.current?.socket || pdcRequested) return;
+
+    if (!canUsePdcAtis) {
+      const upgradeMsg: AcarsMessage = {
+        id: `${Date.now()}-pdc-upgrade`,
+        timestamp: new Date().toISOString(),
+        station: 'SYSTEM',
+        text: 'PDC is available on the Basic and Ultimate plans. Visit the pricing page to upgrade your plan.',
+        type: 'warning',
+      };
+      setMessages((prev) => [...prev, upgradeMsg]);
+      return;
+    }
     socketRef.current.socket.emit('requestPDC', {
       flightId: flight.id,
       callsign: flight.callsign,
@@ -435,6 +451,18 @@ NOTES:
 
   const handleAtisClick = (session: OverviewSession) => {
     if (!session.atis?.text) return;
+
+    if (!canUsePdcAtis) {
+      const upgradeMsg: AcarsMessage = {
+        id: `${Date.now()}-atis-upgrade`,
+        timestamp: new Date().toISOString(),
+        station: 'SYSTEM',
+        text: 'Automatic ATIS via ACARS is available on the Basic and Ultimate plans. Visit the pricing page to upgrade your plan.',
+        type: 'warning',
+      };
+      setMessages((prev) => [...prev, upgradeMsg]);
+      return;
+    }
     const atisMsg: AcarsMessage = {
       id: `${Date.now()}-atis`,
       timestamp: new Date().toISOString(),
@@ -676,6 +704,7 @@ NOTES:
             messagesEndRef={messagesEndRef}
             handleRequestPDC={handleRequestPDC}
             pdcRequested={pdcRequested}
+            canRequestPdc={canUsePdcAtis}
           />
         </div>
 
@@ -732,6 +761,7 @@ NOTES:
               messagesEndRef={messagesEndRef}
               handleRequestPDC={handleRequestPDC}
               pdcRequested={pdcRequested}
+              canRequestPdc={canUsePdcAtis}
             />
           )}
           {mobileTab === 'notes' && (

@@ -64,6 +64,7 @@ export async function deleteOldImage(url: string | undefined, userId?: string) {
 
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload';
+import { requirePlan } from '../middleware/planGuard.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
@@ -76,7 +77,7 @@ function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
 
 router.post(
   '/upload-background',
-  requireAuth,
+  ...requirePlan('basic'),
   upload.single('image'),
   async (req: Request, res: Response) => {
     try {
@@ -159,7 +160,7 @@ router.post(
 // DELETE: /api/uploads/delete-background - Delete the current background image
 router.delete(
   '/delete-background',
-  requireAuth,
+  ...requirePlan('basic'),
   async (req: Request, res: Response) => {
     try {
       const user = req.user;

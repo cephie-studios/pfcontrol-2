@@ -7,7 +7,9 @@ import {
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
+import { useEffect, useState } from 'react';
 import { BiSolidBalloon } from 'react-icons/bi';
+import { useEffectivePlan } from '../hooks/billing/usePlan';
 
 type FeatureValue = boolean | string;
 
@@ -31,6 +33,10 @@ const features: Feature[] = [
   { label: 'Early feature access', free: false, basic: false, ultimate: true },
 ];
 
+type PlanTier = 'free' | 'basic' | 'ultimate';
+
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+
 const plans = [
   {
     id: 'free',
@@ -50,7 +56,7 @@ const plans = [
     name: 'Basic',
     price: '$2.99',
     priceDetail: '/month',
-    tagline: 'For active controllers & small teams.',
+    tagline: 'For active controllers.',
     icon: TicketsPlane,
     highlight: false,
     topBadge: null,
@@ -95,6 +101,72 @@ function FeatureCell({ value }: { value: FeatureValue }) {
 }
 
 export default function Pricing() {
+  const { effectivePlan } = useEffectivePlan();
+  const [prices, setPrices] = useState<{ basic: string | null; ultimate: string | null }>({
+    basic: null,
+    ultimate: null,
+  });
+  const [loadingTier, setLoadingTier] = useState<PlanTier | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadPrices = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/stripe/prices`);
+        const data = await res.json();
+        setPrices({
+          basic: data.basic ?? null,
+          ultimate: data.ultimate ?? null,
+        });
+      } catch (err) {
+        console.error('Failed to load Stripe prices:', err);
+      }
+    };
+    loadPrices();
+  }, []);
+
+  const handleSubscribe = async (tier: PlanTier) => {
+    if (tier === 'free') {
+      window.location.href = '/create';
+      return;
+    }
+
+    setCheckoutError(null);
+    setLoadingTier(tier);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/stripe/checkout-session`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        window.location.href = `/login?callback=${encodeURIComponent('/pricing')}`;
+        return;
+      }
+
+      if (res.ok && data.url) {
+        window.location.href = data.url as string;
+        return;
+      }
+      setCheckoutError(
+        data.error ||
+          'Checkout failed. Please try again or contact us on Discord.'
+      );
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setCheckoutError(
+        'Request failed. Please try again or contact us on Discord.'
+      );
+    } finally {
+      setLoadingTier(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
@@ -112,15 +184,25 @@ export default function Pricing() {
           <h1 className="text-2xl sm:text-3xl md:text-[4rem] lg:text-[6rem] font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent leading-tight mb-4" style={{ lineHeight: 1.4 }}>
             Pricing
           </h1>
+          <p className="text-gray-400 text-lg max-w-xl text-center">
+            Upgrade your PFControl experience with one of our paid plans and simultaniously support the development of the platform.
+          </p>
         </div>
       </div>
 
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gray-950 mb-24">
         <div className="max-w-5xl mx-auto">
 
+          {checkoutError && (
+            <div className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {checkoutError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-10 items-start">
             {paidPlans.map((plan) => {
               const Icon = plan.icon;
+              const isCurrent = effectivePlan === plan.id;
               return (
                 <div
                   key={plan.id}
@@ -142,7 +224,7 @@ export default function Pricing() {
                       </div>
                       <div className="flex-1">
                         <h3
-                          className="text-2xl sm:text-3xl font-extrabold text-white"
+                          className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2"
                         >
                           {plan.name}
                         </h3>
@@ -182,13 +264,21 @@ export default function Pricing() {
                     </ul>
 
                     <Button
-                      onClick={plan.ctaAction}
-                      variant={plan.ctaVariant}
-                      className='w-full justify-center font-semibold'
-                      >
+                      onClick={() => handleSubscribe(plan.id as PlanTier)}
+                      variant={isCurrent ? 'primary' : plan.ctaVariant}
+                      className='w-full justify-center font-semibold disabled:opacity-60'
+                      disabled={loadingTier === plan.id || isCurrent}
+                    >
                       <div className="flex flex-row items-center leading-tight text-xl text">
-                        {plan.price}
-                        <span className='text-sm mt-1 ml-0.5'>{plan.priceDetail}</span>
+                        {isCurrent
+                          ? 'Current plan'
+                          : plan.id === 'basic'
+                            ? prices.basic ?? plan.price
+                            : prices.ultimate ?? plan.price}
+                        <span className='text-sm mt-1 ml-0.5'>
+                          {!isCurrent && plan.priceDetail}
+                          {loadingTier === plan.id && !isCurrent ? ' · Redirecting…' : ''}
+                        </span>
                       </div>
                     </Button>
                   </div>
@@ -219,8 +309,13 @@ export default function Pricing() {
                               <Icon className="h-7 w-7 text-white" />
                             </div>
                             <div className="flex-1">
-                              <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+                              <h3 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
                                 {plan.name}
+                                {effectivePlan === 'free' && (
+                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/60">
+                                    Current plan
+                                  </span>
+                                )}
                               </h3>
                               <p className="text-gray-400 text-xs mt-1">
                                 {plan.tagline}
