@@ -5,8 +5,6 @@ const STRIPE_BASIC_PRICE_ID = process.env.STRIPE_BASIC_PRICE_ID;
 const STRIPE_ULTIMATE_PRICE_ID = process.env.STRIPE_ULTIMATE_PRICE_ID;
 
 if (!STRIPE_SECRET_KEY) {
-  // We intentionally don't crash here in case Stripe is not configured in some environments.
-  // Individual route handlers should check for the presence of this key and fail gracefully.
   console.warn(
     '[Stripe] STRIPE_SECRET_KEY is not set. Stripe subscription features will be disabled.'
   );
@@ -15,8 +13,8 @@ if (!STRIPE_SECRET_KEY) {
 export const stripe =
   STRIPE_SECRET_KEY != null && STRIPE_SECRET_KEY !== ''
     ? new Stripe(STRIPE_SECRET_KEY, {
-        apiVersion: '2023-10-16',
-      })
+      apiVersion: '2026-02-25.clover',
+    })
     : null;
 
 export type StripePlanTier = 'free' | 'basic' | 'ultimate';
@@ -41,4 +39,3 @@ export function formatStripeAmount(
   });
   return formatter.format(amount);
 }
-
