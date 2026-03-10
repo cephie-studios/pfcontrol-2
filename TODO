@@ -1,4 +1,0 @@
-- Merge ProtectedPlanRoute into ProtectedRoute 
-- Display the plans on the user profiles (just add it as a role -> also on the /view page)
-- Instead of redirecting to pricing page show the paid plans in the component
-- Check all restrictions
