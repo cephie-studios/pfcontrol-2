@@ -3,6 +3,9 @@ import { sql } from 'kysely';
 import { isAdmin } from '../middleware/admin.js';
 import { invalidateAllUsersCache } from './admin.js';
 import { invalidateUserCache } from './users.js';
+import { decrypt } from '../utils/encryption.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
+import type { SubscriptionPlan } from '../middleware/planGuard.js';
 
 export async function getAllRoles() {
   try {
@@ -238,6 +241,107 @@ export async function getUserRoles(userId: string) {
     console.error('Error fetching user roles:', error);
     throw error;
   }
+}
+
+export type DisplayRole = {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  priority: number;
+};
+
+export async function getDisplayRoles(
+  userId: string,
+  options?: {
+    settings?: { customBadge?: { name: string; color?: string; icon?: string } } | null;
+    subscription_plan?: string | null;
+    subscription_status?: string | null;
+  }
+): Promise<DisplayRole[]> {
+  const dbRoles: DisplayRole[] = (await getUserRoles(userId)).map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description ?? null,
+    color: r.color ?? '#6366F1',
+    icon: r.icon ?? 'Star',
+    priority: r.priority ?? 0,
+  }));
+
+  let settings = options?.settings;
+  let subscriptionPlan: string | null = options?.subscription_plan ?? null;
+  let subscriptionStatus: string | null = options?.subscription_status ?? null;
+
+  if (settings === undefined || subscriptionPlan === undefined || subscriptionStatus === undefined) {
+    try {
+      const row = await mainDb
+        .selectFrom('users')
+        .select(['settings', 'subscription_plan', 'subscription_status'])
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      if (row) {
+        if (settings === undefined && row.settings) {
+          try {
+            settings = decrypt(JSON.parse(row.settings as string)) as { customBadge?: { name: string; color?: string; icon?: string } };
+          } catch {
+            settings = null;
+          }
+        }
+        if (subscriptionPlan === undefined) subscriptionPlan = row.subscription_plan as string | null;
+        if (subscriptionStatus === undefined) subscriptionStatus = row.subscription_status as string | null;
+      }
+    } catch {
+      settings = settings ?? null;
+    }
+  }
+
+  const effectivePlan: SubscriptionPlan =
+    (subscriptionPlan === 'basic' || subscriptionPlan === 'ultimate') && subscriptionStatus === 'active'
+      ? (subscriptionPlan as SubscriptionPlan)
+      : 'free';
+
+  if (effectivePlan === 'basic') {
+    dbRoles.push({
+      id: -3,
+      name: 'Basic',
+      description: null,
+      color: '#ef4444',
+      icon: 'TicketsPlane',
+      priority: 999997,
+    });
+  } else if (effectivePlan === 'ultimate') {
+    dbRoles.push({
+      id: -4,
+      name: 'Ultimate',
+      description: null,
+      color: '#a855f7',
+      icon: 'BiSolidBalloon',
+      priority: 999997,
+    });
+  }
+
+  const hasProfileBadge = getPlanCapabilitiesForPlan(effectivePlan).profileBadge;
+  const customBadge = settings?.customBadge?.name?.trim()
+    ? {
+      name: (settings.customBadge.name || '').trim(),
+      color: settings.customBadge.color ?? '#6366F1',
+      icon: settings.customBadge.icon ?? 'Award',
+    }
+    : null;
+
+  if (hasProfileBadge && customBadge) {
+    dbRoles.push({
+      id: -2,
+      name: customBadge.name,
+      description: null,
+      color: customBadge.color,
+      icon: customBadge.icon,
+      priority: 999998,
+    });
+  }
+
+  return dbRoles;
 }
 
 export async function updateRolePriorities(

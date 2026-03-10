@@ -2,6 +2,7 @@ import type { SubscriptionPlan } from '../middleware/planGuard.js';
 
 export interface PlanCapabilities {
   maxSessions: number;
+  maxConcurrentSessionUsers: number;
   pfatcOverview: boolean;
   basicAcars: boolean;
   pdcAtis: boolean;
@@ -15,6 +16,7 @@ export interface PlanCapabilities {
 export const PLAN_LIMITS: Record<SubscriptionPlan, PlanCapabilities> = {
   free: {
     maxSessions: 3,
+    maxConcurrentSessionUsers: 2,
     pfatcOverview: true,
     basicAcars: true,
     pdcAtis: false,
@@ -26,6 +28,7 @@ export const PLAN_LIMITS: Record<SubscriptionPlan, PlanCapabilities> = {
   },
   basic: {
     maxSessions: 50,
+    maxConcurrentSessionUsers: 0,
     pfatcOverview: true,
     basicAcars: true,
     pdcAtis: true,
@@ -37,6 +40,7 @@ export const PLAN_LIMITS: Record<SubscriptionPlan, PlanCapabilities> = {
   },
   ultimate: {
     maxSessions: 250,
+    maxConcurrentSessionUsers: 0,
     pfatcOverview: true,
     basicAcars: true,
     pdcAtis: true,

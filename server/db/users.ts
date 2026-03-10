@@ -24,6 +24,22 @@ export async function invalidateUserCache(userId: string) {
   }
 }
 
+export async function invalidateUserAndUsernameCache(
+  userId: string,
+  username?: string | null
+) {
+  await invalidateUserCache(userId);
+  const nameToInvalidate = username ?? (await mainDb
+    .selectFrom('users')
+    .select('username')
+    .where('id', '=', userId)
+    .executeTakeFirst())
+    ?.username;
+  if (nameToInvalidate) {
+    await invalidateUsernameCache(nameToInvalidate);
+  }
+}
+
 async function invalidateUsernameCache(username: string) {
   try {
     await redisConnection.del(`user:username:${username}`);

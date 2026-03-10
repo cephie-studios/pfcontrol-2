@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { getUserById } from '../db/users.js';
 import requireAuth from './auth.js';
+import { isAdmin } from './admin.js';
+import { isTester } from './tester.js';
 
 export type SubscriptionPlan = 'free' | 'basic' | 'ultimate';
 
@@ -10,6 +12,9 @@ export function comparePlans(userPlan: SubscriptionPlan, required: SubscriptionP
 }
 
 export async function getUserPlan(userId: string): Promise<SubscriptionPlan> {
+  if (isAdmin(userId)) return 'ultimate';
+  if (await isTester(userId)) return 'ultimate';
+
   const user = await getUserById(userId);
   if (!user) return 'free';
 

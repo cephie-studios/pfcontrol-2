@@ -65,7 +65,14 @@ export interface AcarsSettings {
   autoRedirectToAcars: boolean;
 }
 
+export interface CustomBadgeSettings {
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
 export interface Settings {
+  customBadge?: CustomBadgeSettings;
   backgroundImage: BackgroundImageSettings;
   sounds: {
     startupSound: SoundSettings;

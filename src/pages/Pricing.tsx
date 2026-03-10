@@ -25,7 +25,7 @@ const features: Feature[] = [
   { label: 'Unlimited flights per session', free: true, basic: true, ultimate: true },
   { label: 'PFATC Overview', free: true, basic: true, ultimate: true },
   { label: 'Basic ACARS', free: true, basic: true, ultimate: true },
-  { label: 'PDC & ATIS (ACARS)', free: false, basic: true, ultimate: true },
+  { label: 'PDC (ACARS)', free: false, basic: true, ultimate: true },
   { label: 'Custom profile badge', free: false, basic: true, ultimate: true },
   { label: 'Custom background images', free: false, basic: true, ultimate: true },
   { label: 'Text chat', free: false, basic: true, ultimate: true },
@@ -54,7 +54,7 @@ const plans = [
   {
     id: 'basic',
     name: 'Basic',
-    price: '$2.99',
+    price: '$1.99',
     priceDetail: '/month',
     tagline: 'For active controllers.',
     icon: TicketsPlane,
@@ -71,7 +71,7 @@ const plans = [
   {
     id: 'ultimate',
     name: 'Ultimate',
-    price: '$5.99',
+    price: '$4.99',
     priceDetail: '/month',
     tagline: 'Everything, for the serious controller.',
     icon: BiSolidBalloon,
@@ -108,6 +108,24 @@ export default function Pricing() {
   });
   const [loadingTier, setLoadingTier] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const isOnPaidPlan = effectivePlan === 'basic' || effectivePlan === 'ultimate';
+
+  const handleDowngradeClick = async () => {
+    setDowngradeLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/stripe/portal-session`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      }
+    } finally {
+      setDowngradeLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadPrices = async () => {
@@ -171,7 +189,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
 
-      <div className="relative w-full h-64 md:h-72 overflow-hidden">
+      <div className="relative w-full h-72 md:h-80 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="/assets/images/hero.webp"
@@ -218,19 +236,29 @@ export default function Pricing() {
                   ].join(' ')}
                 >
                   <div className="p-5 sm:p-7">
-                    <div className="flex items-start gap-3 mb-6">
-                      <div className="p-3 rounded-full bg-blue-700">
-                        <Icon className="h-7 w-7 text-white" />
+                    <div className="flex items-start justify-between gap-3 mb-6">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="p-3 rounded-full bg-blue-700 flex-shrink-0">
+                          <Icon className="h-7 w-7 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3
+                            className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2"
+                          >
+                            {plan.name}
+                          </h3>
+                          <p className="text-gray-400 text-xs mt-1">
+                            {plan.tagline}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3
-                          className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2"
-                        >
-                          {plan.name}
-                        </h3>
-                        <p className="text-gray-400 text-xs mt-1">
-                          {plan.tagline}
-                        </p>
+                      <div className="flex-shrink-0 text-right">
+                        <span className="text-xl sm:text-2xl font-bold text-white">
+                          {plan.id === 'basic' ? (prices.basic ?? plan.price) : (prices.ultimate ?? plan.price)}
+                        </span>
+                        {plan.priceDetail && (
+                          <span className="text-sm text-gray-400">{plan.priceDetail}</span>
+                        )}
                       </div>
                     </div>
 
@@ -264,19 +292,31 @@ export default function Pricing() {
                     </ul>
 
                     <Button
-                      onClick={() => handleSubscribe(plan.id as PlanTier)}
+                      onClick={() =>
+                        effectivePlan === 'ultimate' && plan.id === 'basic'
+                          ? handleDowngradeClick()
+                          : handleSubscribe(plan.id as PlanTier)
+                      }
                       variant={isCurrent ? 'primary' : plan.ctaVariant}
                       className='w-full justify-center font-semibold disabled:opacity-60'
-                      disabled={loadingTier === plan.id || isCurrent}
+                      disabled={
+                        loadingTier === plan.id ||
+                        isCurrent ||
+                        (effectivePlan === 'ultimate' && plan.id === 'basic' && downgradeLoading)
+                      }
                     >
                       <div className="flex flex-row items-center leading-tight text-xl text">
                         {isCurrent
                           ? 'Current plan'
-                          : plan.id === 'basic'
-                            ? prices.basic ?? plan.price
-                            : prices.ultimate ?? plan.price}
+                          : effectivePlan === 'ultimate' && plan.id === 'basic'
+                            ? (downgradeLoading ? 'Opening…' : 'Downgrade')
+                            : plan.id === 'basic'
+                              ? prices.basic ?? plan.price
+                              : prices.ultimate ?? plan.price}
                         <span className='text-sm mt-1 ml-0.5'>
-                          {!isCurrent && plan.priceDetail}
+                          {!isCurrent &&
+                            !(effectivePlan === 'ultimate' && plan.id === 'basic') &&
+                            plan.priceDetail}
                           {loadingTier === plan.id && !isCurrent ? ' · Redirecting…' : ''}
                         </span>
                       </div>
@@ -312,7 +352,7 @@ export default function Pricing() {
                               <h3 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
                                 {plan.name}
                                 {effectivePlan === 'free' && (
-                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/60">
+                                  <span className="text-xs font-semibold px-2 py-0.5 mt-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/60">
                                     Current plan
                                   </span>
                                 )}
@@ -322,6 +362,16 @@ export default function Pricing() {
                               </p>
                             </div>
                           </div>
+                          {isOnPaidPlan && (
+                            <Button
+                              variant="outline"
+                              onClick={handleDowngradeClick}
+                              disabled={downgradeLoading}
+                              className="w-full sm:w-auto self-start mt-6"
+                            >
+                              {downgradeLoading ? 'Opening…' : 'Downgrade to Free'}
+                            </Button>
+                          )}
                         </div>
 
                         <div className="md:w-2/3">

@@ -1,8 +1,8 @@
 import express from 'express';
 import { getUserByUsername } from '../db/users.js';
-import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
+import { getDisplayRoles } from '../db/roles.js';
 
 const router = express.Router();
 
@@ -20,21 +20,11 @@ router.get('/:username', async (req, res) => {
       return res.status(404).json({ error: 'Pilot not found' });
     }
 
-    const rolesResult = await mainDb
-      .selectFrom('roles as r')
-      .innerJoin('user_roles as ur', 'ur.role_id', 'r.id')
-      .select([
-        'r.id',
-        'r.name',
-        'r.description',
-        'r.color',
-        'r.icon',
-        'r.priority',
-      ])
-      .where('ur.user_id', '=', userResult.id)
-      .orderBy('r.priority', 'desc')
-      .orderBy('r.created_at', 'desc')
-      .execute();
+    const rolesResult = await getDisplayRoles(userResult.id, {
+      settings: userResult.settings,
+      subscription_plan: userResult.subscription_plan,
+      subscription_status: userResult.subscription_status,
+    });
 
     const privacySettings = {
       displayControllerStatsOnProfile:

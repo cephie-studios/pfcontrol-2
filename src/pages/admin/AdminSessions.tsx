@@ -32,6 +32,7 @@ import {
   Braces,
   Menu,
 } from 'lucide-react';
+import { BiSolidBalloon } from 'react-icons/bi';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import Loader from '../../components/common/Loader';
@@ -76,6 +77,7 @@ const getIconComponent = (iconName: string) => {
     TrendingUp,
     FlaskConical,
     Braces,
+    BiSolidBalloon,
   };
   return icons[iconName] || Star;
 };

@@ -5,6 +5,7 @@ type Plan = 'free' | 'basic' | 'ultimate';
 
 interface PlanCapabilities {
   maxSessions: number;
+  maxConcurrentSessionUsers: number;
   pfatcOverview: boolean;
   basicAcars: boolean;
   pdcAtis: boolean;
@@ -29,14 +30,51 @@ interface PlanResponse {
 }
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+const PLAN_STORAGE_KEY_PREFIX = 'pfcontrol_plan_';
+
+function getPlanFromStorage(userId: string): PlanResponse | null {
+  try {
+    const raw = localStorage.getItem(`${PLAN_STORAGE_KEY_PREFIX}${userId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object' || typeof (parsed as PlanResponse).plan !== 'string') return null;
+    return parsed as PlanResponse;
+  } catch {
+    return null;
+  }
+}
+
+function setPlanInStorage(userId: string, data: PlanResponse): void {
+  try {
+    localStorage.setItem(`${PLAN_STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(data));
+  } catch {
+    // ignore quota or disabled localStorage
+  }
+}
 
 export function usePlan() {
+  const { user } = useAuth();
+  const userId = user?.userId;
   const [data, setData] = useState<PlanResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
+    const cached = getPlanFromStorage(userId);
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
 
     const syncIfNeeded = async () => {
       try {
@@ -59,8 +97,7 @@ export function usePlan() {
     };
 
     const load = async () => {
-      setLoading(true);
-      setError(null);
+      if (!cached) setLoading(true);
       try {
         await syncIfNeeded();
         let res = await fetch(`${API_BASE_URL}/api/plan/me`, {
@@ -93,6 +130,7 @@ export function usePlan() {
 
         if (!cancelled) {
           setData(json);
+          setPlanInStorage(userId, json);
         }
       } catch (err) {
         if (!cancelled) {
@@ -111,7 +149,7 @@ export function usePlan() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   return {
     plan: data?.plan ?? 'free',
@@ -122,6 +160,7 @@ export function usePlan() {
       data?.capabilities ??
       {
         maxSessions: data?.limits?.maxSessions ?? 3,
+        maxConcurrentSessionUsers: 2,
         pfatcOverview: true,
         basicAcars: true,
         pdcAtis: false,
@@ -142,6 +181,7 @@ export function usePlan() {
 
 const ULTIMATE_CAPABILITIES: PlanCapabilities = {
   maxSessions: 250,
+  maxConcurrentSessionUsers: 0,
   pfatcOverview: true,
   basicAcars: true,
   pdcAtis: true,

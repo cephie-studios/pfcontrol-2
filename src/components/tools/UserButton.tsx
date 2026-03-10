@@ -12,6 +12,8 @@ import { useAuth } from '../../hooks/auth/useAuth';
 import { usePlan } from '../../hooks/billing/usePlan';
 import ProtectedRoute from '../ProtectedRoute';
 
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+
 interface CustomUserButtonProps {
   className?: string;
   isMobile?: boolean;
@@ -24,7 +26,14 @@ export default function CustomUserButton({
   onAction,
 }: CustomUserButtonProps) {
   const { user, isLoading, logout } = useAuth();
-  const { plan } = usePlan();
+  const { plan, subscriptionCancelAtPeriodEnd } = usePlan();
+
+  const subscriptionButtonLabel =
+    plan === 'free'
+      ? 'Upgrade'
+      : subscriptionCancelAtPeriodEnd
+        ? 'Continue subscription'
+        : 'Manage subscription';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -119,14 +128,34 @@ export default function CustomUserButton({
 
           <button
             onClick={() =>
-              handleAction(() => {
-                window.location.href = '/pricing';
+              handleAction(async () => {
+                if (plan === 'free') {
+                  window.location.href = '/pricing';
+                  return;
+                }
+                try {
+                  const res = await fetch(
+                    `${API_BASE_URL}/api/stripe/portal-session`,
+                    {
+                      method: 'POST',
+                      credentials: 'include',
+                    }
+                  );
+                  const data = await res.json().catch(() => ({}));
+                  if (res.ok && data.url) {
+                    window.location.href = data.url;
+                  } else {
+                    window.location.href = '/pricing';
+                  }
+                } catch {
+                  window.location.href = '/pricing';
+                }
               })
             }
             className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
           >
             <CreditCard className="w-4 h-4" />
-            <span>Manage subscription</span>
+            <span>{subscriptionButtonLabel}</span>
           </button>
 
           <button
@@ -242,14 +271,34 @@ export default function CustomUserButton({
             </button>
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 setIsDropdownOpen(false);
-                window.location.href = '/pricing';
+                if (plan === 'free') {
+                  window.location.href = '/pricing';
+                  return;
+                }
+                try {
+                  const res = await fetch(
+                    `${API_BASE_URL}/api/stripe/portal-session`,
+                    {
+                      method: 'POST',
+                      credentials: 'include',
+                    }
+                  );
+                  const data = await res.json().catch(() => ({}));
+                  if (res.ok && data.url) {
+                    window.location.href = data.url;
+                  } else {
+                    window.location.href = '/pricing';
+                  }
+                } catch {
+                  window.location.href = '/pricing';
+                }
               }}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
             >
               <CreditCard className="w-4 h-4" />
-              <span className="font-medium">Manage subscription</span>
+              <span className="font-medium">{subscriptionButtonLabel}</span>
             </button>
 
             <button

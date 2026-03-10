@@ -8,7 +8,6 @@ import {
 import {
   Save,
   AlertTriangle,
-  Settings as SettingsIcon,
   Check,
   RotateCcw,
   ImageIcon,
@@ -31,7 +30,9 @@ import SoundSettings from '../components/Settings/SoundSettings';
 import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
+import CustomBadgeSettings from '../components/Settings/CustomBadgeSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
+import { useEffectivePlan } from '../hooks/billing/usePlan';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
@@ -78,6 +79,8 @@ function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
 export default function Settings() {
   const { settings, updateSettings, loading } = useSettings();
   const { refreshUser } = useAuth();
+  const { effectiveCapabilities } = useEffectivePlan();
+  const profileBadge = effectiveCapabilities.profileBadge;
   const [localSettings, setLocalSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -370,6 +373,15 @@ export default function Settings() {
                 onChange={handleLocalSettingsChange}
               />
             </div>
+
+            {profileBadge && (
+              <div id="custom-badge-settings">
+                <CustomBadgeSettings
+                  settings={localSettings}
+                  onChange={handleLocalSettingsChange}
+                />
+              </div>
+            )}
 
             <div id="table-column-settings">
               <TableColumnSettings

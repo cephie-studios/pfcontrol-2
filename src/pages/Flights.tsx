@@ -301,8 +301,12 @@ export default function Flights() {
       setFlights((prev) => prev.filter((flight) => flight.id !== flightId));
     };
 
-    const handleFlightError = (error: string) => {
-      console.error('Flight websocket error:', error);
+    const handleFlightError = (payload: {
+      action: string;
+      flightId?: string | number;
+      error: string;
+    }) => {
+      console.error('Flight websocket error:', payload.action, payload.error, payload.flightId);
     };
 
     const socket = createFlightsSocket(
@@ -447,6 +451,11 @@ export default function Flights() {
       handleMentionReceived,
       (editingStates: FieldEditingState[]) =>
         setFieldEditingStates(editingStates),
+      (payload) => {
+        setAccessError(
+          `This session is full. Free plan sessions allow up to ${payload.limit} other people (besides the host). Ask the host to upgrade for unlimited users.`
+        );
+      },
       'ALL'
     );
 

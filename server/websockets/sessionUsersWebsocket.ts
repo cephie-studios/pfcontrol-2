@@ -1,7 +1,7 @@
 import { Server as SocketServer, Server } from 'socket.io';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
-import { getUserRoles } from '../db/roles.js';
+import { getDisplayRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
@@ -9,6 +9,8 @@ import { incrementStat } from '../utils/statisticsCache.js';
 import { getOverviewIO } from './overviewWebsocket.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { redisConnection } from '../db/connection.js';
+import { getUserPlan } from '../middleware/planGuard.js';
+import { getPlanCapabilitiesForPlan } from '../lib/planLimits.js';
 
 interface SessionUser {
   id: string;
@@ -101,7 +103,7 @@ const userActivity = new Map<
 const cleanupOldSessions = async () => {
   try {
     const activeSessionIds = new Set<string>();
-    
+
     const keys = await redisConnection.keys('activeUsers:*');
     for (const key of keys) {
       const sessionId = key.replace('activeUsers:', '');
@@ -110,7 +112,7 @@ const cleanupOldSessions = async () => {
         activeSessionIds.add(sessionId);
       }
     }
-    
+
     for (const [sessionId, timer] of atisTimers.entries()) {
       if (!activeSessionIds.has(sessionId)) {
         clearInterval(timer);
@@ -119,14 +121,14 @@ const cleanupOldSessions = async () => {
         console.log(`[Cleanup] Removed ATIS timer for session ${sessionId}`);
       }
     }
-    
+
     for (const sessionId of fieldEditingStates.keys()) {
       if (!activeSessionIds.has(sessionId)) {
         fieldEditingStates.delete(sessionId);
         console.log(`[Cleanup] Removed field editing states for session ${sessionId}`);
       }
     }
-    
+
     for (const userKey of userActivity.keys()) {
       const sessionId = userKey.split('-')[1];
       if (sessionId && !activeSessionIds.has(sessionId)) {
@@ -382,6 +384,20 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       }
 
       let users = await getActiveUsersForSession(sessionId);
+      const session = await getSessionById(sessionId);
+      if (session?.created_by) {
+        const creatorPlan = await getUserPlan(session.created_by);
+        const maxOtherUsers = getPlanCapabilitiesForPlan(creatorPlan).maxConcurrentSessionUsers;
+        // Limit applies to users other than the session creator (creator always has a slot)
+        if (maxOtherUsers > 0 && user.userId !== session.created_by) {
+          const otherCount = users.filter((u) => u.id !== session.created_by).length;
+          if (otherCount >= maxOtherUsers) {
+            socket.emit('sessionFull', { limit: maxOtherUsers });
+            socket.disconnect(true);
+            return;
+          }
+        }
+      }
 
       let userRoles: Array<{
         id: number;
@@ -391,11 +407,11 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         priority: number;
       }> = [];
       try {
-        userRoles = (await getUserRoles(user.userId)).map((role) => ({
+        userRoles = (await getDisplayRoles(user.userId)).map((role) => ({
           id: role.id,
           name: role.name,
-          color: role.color ?? '#000000',
-          icon: role.icon ?? '',
+          color: role.color ?? '#6366F1',
+          icon: role.icon ?? 'Star',
           priority: role.priority ?? 0,
         }));
       } catch (error) {

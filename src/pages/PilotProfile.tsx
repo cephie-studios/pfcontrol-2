@@ -24,7 +24,9 @@ import {
   MessageCircle,
   Edit,
   Users,
+  TicketsPlane,
 } from 'lucide-react';
+import { BiSolidBalloon } from 'react-icons/bi';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -250,6 +252,8 @@ export default function PilotProfile() {
       Sparkles,
       Flame,
       Trophy,
+      TicketsPlane,
+      BiSolidBalloon,
     };
     return icons[iconName] || Star;
   };

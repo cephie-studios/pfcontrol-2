@@ -38,6 +38,7 @@ import {
   WifiOff,
   Phone,
 } from 'lucide-react';
+import { getIconComponent } from '../../utils/roles';
 import type { ChatMessage, ChatMention } from '../../types/chats';
 import type { SessionUser } from '../../types/session';
 import type { ToastType } from '../common/Toast';
@@ -775,23 +776,56 @@ export default function ChatSidebar({
 
       {activeTab !== 'voice' && (
         <div className="px-5 py-2 border-b border-blue-800 bg-zinc-900">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2 items-center">
             <>
               {activeTab === 'session' ? (
                 sessionUsers.map((sessionUser) => (
-                  <img
+                  <div
                     key={sessionUser.id}
-                    src={
-                      sessionUser.avatar || '/assets/app/default/avatar.webp'
-                    }
-                    alt={sessionUser.username}
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      isUserInActiveChat(sessionUser.id, activeChatUsers)
-                        ? 'border-green-500'
-                        : 'border-gray-500'
-                    }`}
-                    title={sessionUser.username}
-                  />
+                    className="flex flex-col items-center gap-0.5"
+                    title={sessionUser.roles?.length
+                      ? `${sessionUser.username} (${sessionUser.roles.map((r) => r.name).join(', ')})`
+                      : sessionUser.username}
+                  >
+                    <img
+                      src={
+                        sessionUser.avatar || '/assets/app/default/avatar.webp'
+                      }
+                      alt={sessionUser.username}
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        isUserInActiveChat(sessionUser.id, activeChatUsers)
+                          ? 'border-green-500'
+                          : 'border-gray-500'
+                      }`}
+                    />
+                    {sessionUser.roles && sessionUser.roles.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-0.5 max-w-[80px]">
+                        {sessionUser.roles.slice(0, 3).map((role) => {
+                          const RoleIcon = getIconComponent(role.icon);
+                          return (
+                            <span
+                              key={role.id}
+                              className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium border"
+                              style={{
+                                backgroundColor: `${role.color}20`,
+                                borderColor: `${role.color}60`,
+                                color: role.color,
+                              }}
+                              title={role.name}
+                            >
+                              <RoleIcon className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+                              {role.name}
+                            </span>
+                          );
+                        })}
+                        {sessionUser.roles.length > 3 && (
+                          <span className="text-[10px] text-zinc-400">
+                            +{sessionUser.roles.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ))
               ) : (
                 <div className="flex flex-wrap gap-1">

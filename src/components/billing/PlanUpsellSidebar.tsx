@@ -39,7 +39,7 @@ const plans = [
   {
     id: 'basic' as PlanTier,
     name: 'Basic',
-    price: '$2.99',
+    price: '$1.99',
     priceDetail: '/month',
     tagline: 'Unlock text chat, PDC & more.',
     icon: TicketsPlane,
@@ -48,7 +48,7 @@ const plans = [
   {
     id: 'ultimate' as PlanTier,
     name: 'Ultimate',
-    price: '$5.99',
+    price: '$4.99',
     priceDetail: '/month',
     tagline: 'Everything, including voice chat.',
     icon: BiSolidBalloon,

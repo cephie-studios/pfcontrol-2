@@ -1,7 +1,7 @@
 import express from 'express';
 import { stripe } from '../lib/stripe.js';
 import { mainDb } from '../db/connection.js';
-import { invalidateUserCache } from '../db/users.js';
+import { invalidateUserAndUsernameCache } from '../db/users.js';
 import Stripe from 'stripe';
 
 const router = express.Router();
@@ -138,7 +138,7 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
     .where('stripe_customer_id', '=', customerId)
     .execute();
 
-  await invalidateUserCache(userId);
+  await invalidateUserAndUsernameCache(userId);
 }
 
 export default router;

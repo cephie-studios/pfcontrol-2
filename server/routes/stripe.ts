@@ -1,10 +1,46 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
-import { getUserById, invalidateUserCache } from '../db/users.js';
+import { getUserById, invalidateUserAndUsernameCache } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { stripe, getPriceIdForTier, formatStripeAmount, StripePlanTier } from '../lib/stripe.js';
 
 const router = express.Router();
+
+async function ensureStripeCustomer(
+  userId: string,
+  existingCustomerId: string | null | undefined,
+  email: string | undefined
+): Promise<string> {
+  if (existingCustomerId) {
+    try {
+      const customer = await stripe!.customers.retrieve(existingCustomerId);
+      if (!(customer as { deleted?: boolean }).deleted) {
+        return existingCustomerId;
+      }
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'resource_missing') {
+        // Customer doesn't exist
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  const customer = await stripe!.customers.create({
+    metadata: { pfcontrolUserId: userId },
+    email,
+  });
+
+  await mainDb
+    .updateTable('users')
+    .set({ stripe_customer_id: customer.id })
+    .where('id', '=', userId)
+    .execute();
+  await invalidateUserAndUsernameCache(userId);
+
+  return customer.id;
+}
 
 router.get('/prices', async (_req, res) => {
   try {
@@ -72,30 +108,15 @@ router.post('/checkout-session', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    let stripeCustomerId: string | null = user.stripe_customer_id ?? null;
-
-    if (!stripeCustomerId) {
-      const email =
-        typeof (user as any).email === 'string' && (user as any).email
-          ? (user as any).email
-          : undefined;
-      const customer = await stripe.customers.create({
-        metadata: {
-          pfcontrolUserId: user.id,
-        },
-        email,
-      });
-      stripeCustomerId = customer.id;
-
-      await mainDb
-        .updateTable('users')
-        .set({
-          stripe_customer_id: stripeCustomerId,
-        })
-        .where('id', '=', user.id)
-        .execute();
-      await invalidateUserCache(user.id);
-    }
+    const email =
+      typeof (user as any).email === 'string' && (user as any).email
+        ? (user as any).email
+        : undefined;
+    const stripeCustomerId = await ensureStripeCustomer(
+      user.id,
+      user.stripe_customer_id ?? null,
+      email
+    );
 
     const frontendBaseUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
     const successUrl = `${frontendBaseUrl.replace(/\/$/, '')}/?stripe=success`;
@@ -145,30 +166,15 @@ router.post('/portal-session', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    let stripeCustomerId: string | null = user.stripe_customer_id ?? null;
-
-    if (!stripeCustomerId) {
-      const email =
-        typeof (user as any).email === 'string' && (user as any).email
-          ? (user as any).email
-          : undefined;
-      const customer = await stripe.customers.create({
-        metadata: {
-          pfcontrolUserId: user.id,
-        },
-        email,
-      });
-      stripeCustomerId = customer.id;
-
-      await mainDb
-        .updateTable('users')
-        .set({
-          stripe_customer_id: stripeCustomerId,
-        })
-        .where('id', '=', user.id)
-        .execute();
-      await invalidateUserCache(user.id);
-    }
+    const email =
+      typeof (user as any).email === 'string' && (user as any).email
+        ? (user as any).email
+        : undefined;
+    const stripeCustomerId = await ensureStripeCustomer(
+      user.id,
+      user.stripe_customer_id ?? null,
+      email
+    );
 
     const frontendBaseUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
     const returnUrl =
@@ -272,7 +278,7 @@ router.post('/sync', requireAuth, async (req, res) => {
       .where('id', '=', user.id)
       .execute();
 
-    await invalidateUserCache(user.id);
+    await invalidateUserAndUsernameCache(user.id, user.username);
 
     return res.json({
       plan,

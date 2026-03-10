@@ -34,6 +34,7 @@ export function createSessionUsersSocket(
   onReconnect?: () => void,
   onMention?: (mention: ChatMention) => void,
   onFieldEditingUpdate?: (editingStates: FieldEditingState[]) => void,
+  onSessionFull?: (payload: { limit: number }) => void,
   position?: string
 ) {
   const socket = io(SOCKET_URL, {
@@ -74,6 +75,9 @@ export function createSessionUsersSocket(
 
   if (onFieldEditingUpdate) {
     socket.on('fieldEditingUpdate', onFieldEditingUpdate);
+  }
+  if (onSessionFull) {
+    socket.on('sessionFull', onSessionFull);
   }
 
   socket.emitAtisGenerated = (data: unknown) => {

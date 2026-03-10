@@ -13,7 +13,12 @@ import {
   TrendingUp,
   FlaskConical,
   TowerControl,
+  Plane,
+  Ticket,
+  TicketsPlane,
+  Braces,
 } from 'lucide-react';
+import { BiSolidBalloon } from 'react-icons/bi';
 
 export const AVAILABLE_PERMISSIONS = [
   {
@@ -104,6 +109,11 @@ export const AVAILABLE_ICONS = [
   { value: 'TrendingUp', label: 'Trending Up', icon: TrendingUp },
   { value: 'FlaskConical', label: 'Flask', icon: FlaskConical },
   { value: 'TowerControl', label: 'Tower Control', icon: TowerControl },
+  { value: 'Plane', label: 'Plane', icon: Plane },
+  { value: 'Ticket', label: 'Ticket', icon: Ticket },
+  { value: 'TicketsPlane', label: 'Tickets / Plane', icon: TicketsPlane },
+  { value: 'Braces', label: 'Developer', icon: Braces },
+  { value: 'BiSolidBalloon', label: 'Balloon', icon: BiSolidBalloon },
 ];
 
 export const PRESET_COLORS = [

@@ -274,279 +274,305 @@ IDENTIFIER: ${identifier}`;
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          {loading && (
-            <div className="flex items-center justify-center p-4">
-              <Loader className="animate-spin h-5 w-5 mr-2" />
-              <span className="text-sm text-gray-400">
-                Loading frequency data...
-              </span>
-            </div>
-          )}
+        <div
+          className={`flex-1 overflow-y-auto ${canUsePdcAtis ? 'p-5 space-y-6' : ''}`}
+        >
+          {!canUsePdcAtis ? (
+            <PlanUpsellSidebar description="PDC & ATIS features are available on the Basic plan and above. Upgrade to generate and issue PDCs." />
+          ) : (
+            <>
+              {loading && (
+                <div className="flex items-center justify-center p-4">
+                  <Loader className="animate-spin h-5 w-5 mr-2" />
+                  <span className="text-sm text-gray-400">
+                    Loading frequency data...
+                  </span>
+                </div>
+              )}
 
-          {error && (
-            <div className="text-red-400 text-sm p-3 bg-red-900/20 rounded-lg border border-red-700 flex items-center">
-              <Info className="h-4 w-4 mr-2" />
-              {error}
-            </div>
-          )}
+              {error && (
+                <div className="text-red-400 text-sm p-3 bg-red-900/20 rounded-lg border border-red-700 flex items-center">
+                  <Info className="h-4 w-4 mr-2" />
+                  {error}
+                </div>
+              )}
 
-          {/* Generated PDC */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">
-                Generated PDC
-              </h3>
-              <Button
-                onClick={copyToClipboard}
-                size="sm"
-                variant="outline"
-                className={`flex items-center gap-1 transition-all duration-300 ${
-                  copied
-                    ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white'
-                    : ''
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </Button>
-            </div>
-            <div className="bg-black p-4 rounded-lg border border-zinc-700 font-mono text-sm text-green-400 whitespace-pre-wrap max-h-48 overflow-y-auto">
-              {generatePDCText()}
-            </div>
-          </div>
-
-          {/* PDC Format */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">PDC Format</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPdcFormat('standard')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'standard'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
-                }`}
-              >
-                Standard ACARS
-              </button>
-              <button
-                onClick={() => setPdcFormat('simplified')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'simplified'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
-                }`}
-              >
-                Simplified
-              </button>
-            </div>
-          </div>
-
-          {/* Flight Information */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">
-              Flight Information
-            </h3>
-            <div className="grid grid-cols-2 gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
-              <div>
-                <span className="text-xs text-gray-400">Callsign</span>
-                <div className="font-mono font-bold">{flight.callsign}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Aircraft</span>
-                <div className="font-mono">{flight.aircraft || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Departure</span>
-                <div className="font-mono">{flight.departure || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Arrival</span>
-                <div className="font-mono">{flight.arrival || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">SID</span>
-                <div className="font-mono">{flight.sid || 'DCT'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Cruising FL</span>
-                <div className="font-mono">{flight.cruisingFL || 'N/A'}</div>
-              </div>
-            </div>
-          </div>
-          {/* Remarks */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">Remarks</h3>
-            <div>
-              <textarea
-                value={customRemarks}
-                onChange={(e) => setCustomRemarks(e.target.value)}
-                placeholder="Enter PDC remarks..."
-                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg p-3 font-mono text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                maxLength={250}
-              />
-              <p className="text-xs text-gray-500 mt-1">Edit Remarks</p>
-            </div>
-          </div>
-
-          {/* Frequencies */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">
-                Frequencies
-              </h3>
-              <div className="flex gap-2">
-                <Checkbox
-                  checked={useCustomFreqs}
-                  onChange={setUseCustomFreqs}
-                  label="Use Custom Frequencies"
-                  className="text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs block mb-1 text-gray-300">
-                  Clearance Delivery
-                </label>
-                <TextInput
-                  value={
-                    useCustomFreqs
-                      ? customFreqs.clearanceDelivery || ''
-                      : airportFreqs.clearanceDelivery || '122.800'
-                  }
-                  onChange={(value) =>
-                    handleCustomFreqChange('clearanceDelivery', value)
-                  }
-                  placeholder="e.g. 121.65"
-                  className="w-full bg-zinc-800 border border-zinc-700"
-                  disabled={!useCustomFreqs}
-                />
-              </div>
-              <div>
-                <label className="text-xs block mb-1 text-gray-300">
-                  Departure
-                </label>
-                <TextInput
-                  value={
-                    useCustomFreqs
-                      ? customFreqs.departure || ''
-                      : airportFreqs.departure || '122.800'
-                  }
-                  onChange={(value) =>
-                    handleCustomFreqChange('departure', value)
-                  }
-                  placeholder="e.g. 133.0"
-                  className="w-full bg-zinc-800 border border-zinc-700"
-                  disabled={!useCustomFreqs}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Transponder & Identifier */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">
-              Transponder & Identifier
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-gray-300">Squawk Code</label>
-                  <button
-                    onClick={() => setUseCustomSquawk(!useCustomSquawk)}
-                    className={`text-xs px-2 py-1 rounded ${
-                      useCustomSquawk ? 'bg-blue-600' : 'bg-gray-700'
+              {/* Generated PDC */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-blue-300">
+                    Generated PDC
+                  </h3>
+                  <Button
+                    onClick={copyToClipboard}
+                    size="sm"
+                    variant="outline"
+                    className={`flex items-center gap-1 transition-all duration-300 ${
+                      copied
+                        ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white'
+                        : ''
                     }`}
                   >
-                    {useCustomSquawk ? 'Custom' : 'Auto'}
-                  </button>
+                    {copied ? (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <TextInput
-                  value={
-                    useCustomSquawk ? customSquawk : flight.squawk || autoSquawk
-                  }
-                  onChange={handleSquawkChange}
-                  placeholder="e.g. 1234"
-                  className="w-full bg-zinc-800 border border-zinc-700 font-mono"
-                  maxLength={4}
-                  disabled={!useCustomSquawk}
-                />
-                {useCustomSquawk && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Only digits 0-7 allowed
-                  </p>
-                )}
+                <div className="bg-black p-4 rounded-lg border border-zinc-700 font-mono text-sm text-green-400 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  {generatePDCText()}
+                </div>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-gray-300">Identifier</label>
+
+              {/* PDC Format */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-blue-300">
+                  PDC Format
+                </h3>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => setUseCustomIdentifier(!useCustomIdentifier)}
-                    className={`text-xs px-2 py-1 rounded ${
-                      useCustomIdentifier ? 'bg-blue-600' : 'bg-gray-700'
+                    onClick={() => setPdcFormat('standard')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pdcFormat === 'standard'
+                        ? 'bg-blue-600 text-white border border-blue-500'
+                        : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
                     }`}
                   >
-                    {useCustomIdentifier ? 'Custom' : 'Auto'}
+                    Standard ACARS
+                  </button>
+                  <button
+                    onClick={() => setPdcFormat('simplified')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pdcFormat === 'simplified'
+                        ? 'bg-blue-600 text-white border border-blue-500'
+                        : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                    }`}
+                  >
+                    Simplified
                   </button>
                 </div>
-                <TextInput
-                  value={
-                    useCustomIdentifier
-                      ? customIdentifier
-                      : getIdentifier(getSquawk())
-                  }
-                  onChange={handleIdentifierChange}
-                  placeholder="e.g. AB12"
-                  className="w-full bg-zinc-800 border border-zinc-700 font-mono"
-                  maxLength={4}
-                  disabled={!useCustomIdentifier}
-                />
-                {useCustomIdentifier && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Letters and numbers only
-                  </p>
-                )}
               </div>
-            </div>
-          </div>
-          {/* Warning */}
-          <div className="bg-amber-900/20 p-3 rounded-lg border border-amber-700 text-amber-300 text-xs">
-            <div className="flex items-start">
-              <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium mb-1">Verification Required</p>
-                <p>
-                  This is an automatically generated PDC. Verify all information
-                  before issuing to the pilot. Flight plan details may need
-                  additional verification.
-                </p>
+
+              {/* Flight Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-blue-300">
+                  Flight Information
+                </h3>
+                <div className="grid grid-cols-2 gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                  <div>
+                    <span className="text-xs text-gray-400">Callsign</span>
+                    <div className="font-mono font-bold">{flight.callsign}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Aircraft</span>
+                    <div className="font-mono">{flight.aircraft || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Departure</span>
+                    <div className="font-mono">{flight.departure || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Arrival</span>
+                    <div className="font-mono">{flight.arrival || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">SID</span>
+                    <div className="font-mono">{flight.sid || 'DCT'}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400">Cruising FL</span>
+                    <div className="font-mono">
+                      {flight.cruisingFL || 'N/A'}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+              {/* Remarks */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-blue-300">Remarks</h3>
+                <div>
+                  <textarea
+                    value={customRemarks}
+                    onChange={(e) => setCustomRemarks(e.target.value)}
+                    placeholder="Enter PDC remarks..."
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg p-3 font-mono text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    maxLength={250}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Edit Remarks</p>
+                </div>
+              </div>
+
+              {/* Frequencies */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-blue-300">
+                    Frequencies
+                  </h3>
+                  <div className="flex gap-2">
+                    <Checkbox
+                      checked={useCustomFreqs}
+                      onChange={setUseCustomFreqs}
+                      label="Use Custom Frequencies"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs block mb-1 text-gray-300">
+                      Clearance Delivery
+                    </label>
+                    <TextInput
+                      value={
+                        useCustomFreqs
+                          ? customFreqs.clearanceDelivery || ''
+                          : airportFreqs.clearanceDelivery || '122.800'
+                      }
+                      onChange={(value) =>
+                        handleCustomFreqChange('clearanceDelivery', value)
+                      }
+                      placeholder="e.g. 121.65"
+                      className="w-full bg-zinc-800 border border-zinc-700"
+                      disabled={!useCustomFreqs}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs block mb-1 text-gray-300">
+                      Departure
+                    </label>
+                    <TextInput
+                      value={
+                        useCustomFreqs
+                          ? customFreqs.departure || ''
+                          : airportFreqs.departure || '122.800'
+                      }
+                      onChange={(value) =>
+                        handleCustomFreqChange('departure', value)
+                      }
+                      placeholder="e.g. 133.0"
+                      className="w-full bg-zinc-800 border border-zinc-700"
+                      disabled={!useCustomFreqs}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Transponder & Identifier */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-blue-300">
+                  Transponder & Identifier
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs text-gray-300">
+                        Squawk Code
+                      </label>
+                      <button
+                        onClick={() => setUseCustomSquawk(!useCustomSquawk)}
+                        className={`text-xs px-2 py-1 rounded ${
+                          useCustomSquawk ? 'bg-blue-600' : 'bg-gray-700'
+                        }`}
+                      >
+                        {useCustomSquawk ? 'Custom' : 'Auto'}
+                      </button>
+                    </div>
+                    <TextInput
+                      value={
+                        useCustomSquawk
+                          ? customSquawk
+                          : flight.squawk || autoSquawk
+                      }
+                      onChange={handleSquawkChange}
+                      placeholder="e.g. 1234"
+                      className="w-full bg-zinc-800 border border-zinc-700 font-mono"
+                      maxLength={4}
+                      disabled={!useCustomSquawk}
+                    />
+                    {useCustomSquawk && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Only digits 0-7 allowed
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs text-gray-300">
+                        Identifier
+                      </label>
+                      <button
+                        onClick={() =>
+                          setUseCustomIdentifier(!useCustomIdentifier)
+                        }
+                        className={`text-xs px-2 py-1 rounded ${
+                          useCustomIdentifier ? 'bg-blue-600' : 'bg-gray-700'
+                        }`}
+                      >
+                        {useCustomIdentifier ? 'Custom' : 'Auto'}
+                      </button>
+                    </div>
+                    <TextInput
+                      value={
+                        useCustomIdentifier
+                          ? customIdentifier
+                          : getIdentifier(getSquawk())
+                      }
+                      onChange={handleIdentifierChange}
+                      placeholder="e.g. AB12"
+                      className="w-full bg-zinc-800 border border-zinc-700 font-mono"
+                      maxLength={4}
+                      disabled={!useCustomIdentifier}
+                    />
+                    {useCustomIdentifier && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Letters and numbers only
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {/* Warning */}
+              <div className="bg-amber-900/20 p-3 rounded-lg border border-amber-700 text-amber-300 text-xs">
+                <div className="flex items-start">
+                  <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium mb-1">Verification Required</p>
+                    <p>
+                      This is an automatically generated PDC. Verify all
+                      information before issuing to the pilot. Flight plan
+                      details may need additional verification.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
         <div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-b-3xl">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Generated at {new Date().toLocaleTimeString()}
-            </div>
-            <div className="flex gap-3">
+            {canUsePdcAtis && (
+              <div className="text-sm text-gray-500">
+                Generated at {new Date().toLocaleTimeString()}
+              </div>
+            )}
+            <div className={`flex gap-3 ${!canUsePdcAtis ? 'ml-auto' : ''}`}>
               {canUsePdcAtis && (
                 <>
-                  <Button onClick={copyToClipboard} disabled={loading} size="sm">
+                  <Button
+                    onClick={copyToClipboard}
+                    disabled={loading}
+                    size="sm"
+                  >
                     Copy PDC
                   </Button>
 
@@ -579,7 +605,7 @@ IDENTIFIER: ${identifier}`;
             </div>
           </div>
         </div>
-      </div>	
+      </div>
     </div>
   );
 };

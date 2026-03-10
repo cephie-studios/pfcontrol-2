@@ -5,6 +5,8 @@ import type { AirportFrequency } from '../../types/airports';
 import type { Flight } from '../../types/flight';
 import Button from '../common/Button';
 import Dropdown from '../common/Dropdown';
+import { PlanUpsellSidebar } from '../billing/PlanUpsellSidebar';
+import { useEffectivePlan } from '../../hooks/billing/usePlan';
 import {
   containsHateSpeech,
   containsProfanity,
@@ -34,6 +36,9 @@ export default function ContactAcarsSidebar({
   airportIcao,
   fallbackFrequency,
 }: ContactAcarsSidebarProps) {
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUseContactAcars = effectiveCapabilities.pdcAtis;
+
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [customMessage, setCustomMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -138,6 +143,36 @@ export default function ContactAcarsSidebar({
       setSending(false);
     }
   };
+
+  if (!canUseContactAcars) {
+    return (
+      <div
+        className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
+          open ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
+        } rounded-l-3xl border-l-2 border-blue-800 flex flex-col ${
+          open ? '' : 'pointer-events-none'
+        }`}
+        style={{ zIndex: 10000 }}
+      >
+        <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold text-xl text-blue-300">
+              Contact ACARS
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-700"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <PlanUpsellSidebar description="Contact ACARS (sending messages to pilots) is available on the Basic and Ultimate plans. Upgrade to use this feature." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

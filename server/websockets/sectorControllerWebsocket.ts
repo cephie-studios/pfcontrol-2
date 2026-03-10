@@ -1,7 +1,7 @@
 import { Server as SocketServer } from 'socket.io';
 import type { Server as HttpServer } from 'http';
 import { redisConnection } from '../db/connection.js';
-import { getUserRoles } from '../db/roles.js';
+import { getDisplayRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getOverviewIO } from './overviewWebsocket.js';
 import type { SessionUsersServer } from './sessionUsersWebsocket.js';
@@ -68,8 +68,8 @@ async function getUserRolesWithCache(
 
   let roles: SectorController['roles'] = [];
   try {
-    const dbRoles = await getUserRoles(userId);
-    roles = dbRoles.map((role) => ({
+    const displayRoles = await getDisplayRoles(userId);
+    roles = displayRoles.map((role) => ({
       id: role.id,
       name: role.name,
       color: role.color ?? '#000000',

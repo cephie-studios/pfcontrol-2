@@ -17,6 +17,8 @@ import { useInView } from 'react-intersection-observer';
 import { fetchBackgrounds } from '../../utils/fetch/data';
 import type { Settings } from '../../types/settings';
 import Button from '../common/Button';
+import { useEffectivePlan } from '../../hooks/billing/usePlan';
+import { PlanUpsellSidebar } from '../billing/PlanUpsellSidebar';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -135,6 +137,8 @@ export default function BackgroundImageSettings({
   settings,
   onChange,
 }: BackgroundImageSettingsProps) {
+  const { effectiveCapabilities } = useEffectivePlan();
+  const canUseCustomBackgrounds = effectiveCapabilities.customBackgrounds;
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>([]);
   const [loadingImages, setLoadingImages] = useState(false);
@@ -222,6 +226,10 @@ export default function BackgroundImageSettings({
   };
 
   const handleFile = async (file: File) => {
+    if (!canUseCustomBackgrounds) {
+      setError('Custom backgrounds require the Basic plan or above.');
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       setError('Please select a valid image file');
       return;
@@ -239,7 +247,13 @@ export default function BackgroundImageSettings({
         credentials: 'include',
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) {
+        if (res.status === 402) {
+          setError('Custom backgrounds require the Basic plan or above.');
+          return;
+        }
+        throw new Error('Upload failed');
+      }
 
       const uploadResult = await res.json();
       const newImageUrl = uploadResult.url;
@@ -388,7 +402,7 @@ export default function BackgroundImageSettings({
         )}
 
         {/* Current Background Display - Only for user-uploaded images */}
-        {settings?.backgroundImage?.selectedImage &&
+        {canUseCustomBackgrounds && settings?.backgroundImage?.selectedImage &&
           !['random', 'favorites'].includes(
             settings.backgroundImage.selectedImage
           ) &&
@@ -425,142 +439,152 @@ export default function BackgroundImageSettings({
             </div>
           )}
 
-        {/* Upload Section */}
-        {!settings?.backgroundImage?.useCustomBackground && (
+        {!canUseCustomBackgrounds ? (
           <div className="mb-6">
-            <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-              <Upload className="h-4 w-4 mr-2 text-blue-400" />
-              Upload Custom Background
-            </h4>
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              className={`
-                                relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
-                                ${
-                                  dragActive
-                                    ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
-                                    : 'border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50'
-                                }
-                            `}
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploading}
-              />
-              <div className="flex flex-col items-center space-y-4">
-                <div
-                  className={`p-4 rounded-xl transition-colors duration-300 ${
-                    dragActive
-                      ? 'bg-blue-500/20'
-                      : uploading
-                        ? 'bg-blue-500/20'
-                        : 'bg-zinc-700/50'
-                  }`}
-                >
-                  {uploading ? (
-                    <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
-                  ) : (
-                    <Upload className="h-8 w-8 text-zinc-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-white mb-2">
-                    {dragActive
-                      ? 'Drop your image here'
-                      : uploading
-                        ? 'Uploading...'
-                        : 'Upload Background Image'}
-                  </p>
-                  <p className="text-zinc-400 text-sm">
-                    Drag and drop an image here, or click to browse
-                  </p>
-                  <p className="text-sm text-red-400 mt-2">
-                    Pictures you upload are public
-                  </p>
-                </div>
-              </div>
-            </div>
+            <PlanUpsellSidebar
+              description="Custom background images and Cephie Snap integration are available on the Basic plan and above. Upgrade to upload your own backgrounds."
+            />
           </div>
-        )}
-
-        {/* Your Cephie Snap pictures */}
-        <div className="mb-6">
-          <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-            <Camera className="h-4 w-4 mr-2 text-cyan-400" />
-            Your Cephie Snap pictures
-          </h4>
-          <p className="text-zinc-400 text-xs mb-3">
-            Images you uploaded at{' '}
-            <a
-              href="https://snap.cephie.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1"
-            >
-              snap.cephie.app
-              <ExternalLink className="h-3 w-3" />
-            </a>{' '}
-            - select one as your background.
-          </p>
-          {loadingCephieSnap ? (
-            <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-              <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
-              <span className="text-zinc-400 text-sm">Loading your Snap pictures...</span>
-            </div>
-          ) : cephieSnapImages.length === 0 ? (
-            <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
-              <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
-              <p className="text-zinc-400 text-sm">No Cephie Snap pictures yet.</p>
-              <a
-                href="https://snap.cephie.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 mt-2"
-              >
-                Upload at snap.cephie.app
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          ) : (
-            <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {cephieSnapImages.map((img) => {
-                const isSelected = selectedImage === img.url;
-                return (
-                  <div
-                    key={img.id}
-                    className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                      isSelected
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-                        : 'border-zinc-700 hover:border-zinc-600'
-                    }`}
-                    onClick={() => handleSelectImage(img.url)}
-                  >
-                    <div className="aspect-video relative bg-zinc-800">
-                      <img
-                        src={img.url}
-                        alt="Cephie Snap"
-                        className="w-full h-full object-cover group-hover:brightness-110 transition-all"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-                          <Eye className="h-3 w-3 text-white" />
-                        </div>
+        ) : (
+          <>
+            {/* Upload Section */}
+            {!settings?.backgroundImage?.useCustomBackground && (
+              <div className="mb-6">
+                <h4 className="text-white font-medium text-sm mb-3 flex items-center">
+                  <Upload className="h-4 w-4 mr-2 text-blue-400" />
+                  Upload Custom Background
+                </h4>
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`
+                                    relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
+                                    ${
+                                      dragActive
+                                        ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
+                                        : 'border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50'
+                                    }
+                                `}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileInput}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={uploading}
+                  />
+                  <div className="flex flex-col items-center space-y-4">
+                    <div
+                      className={`p-4 rounded-xl transition-colors duration-300 ${
+                        dragActive
+                          ? 'bg-blue-500/20'
+                          : uploading
+                            ? 'bg-blue-500/20'
+                            : 'bg-zinc-700/50'
+                      }`}
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
+                      ) : (
+                        <Upload className="h-8 w-8 text-zinc-400" />
                       )}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-white mb-2">
+                        {dragActive
+                          ? 'Drop your image here'
+                          : uploading
+                            ? 'Uploading...'
+                            : 'Upload Background Image'}
+                      </p>
+                      <p className="text-zinc-400 text-sm">
+                        Drag and drop an image here, or click to browse
+                      </p>
+                      <p className="text-sm text-red-400 mt-2">
+                        Pictures you upload are public
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
               </div>
+            )}
+
+            {/* Your Cephie Snap pictures */}
+            <div className="mb-6">
+              <h4 className="text-white font-medium text-sm mb-3 flex items-center">
+                <Camera className="h-4 w-4 mr-2 text-cyan-400" />
+                Your Cephie Snap pictures
+              </h4>
+              <p className="text-zinc-400 text-xs mb-3">
+                Images you uploaded at{' '}
+                <a
+                  href="https://snap.cephie.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1"
+                >
+                  snap.cephie.app
+                  <ExternalLink className="h-3 w-3" />
+                </a>{' '}
+                - select one as your background.
+              </p>
+              {loadingCephieSnap ? (
+                <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
+                  <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
+                  <span className="text-zinc-400 text-sm">Loading your Snap pictures...</span>
+                </div>
+              ) : cephieSnapImages.length === 0 ? (
+                <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
+                  <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
+                  <p className="text-zinc-400 text-sm">No Cephie Snap pictures yet.</p>
+                  <a
+                    href="https://snap.cephie.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 mt-2"
+                  >
+                    Upload at snap.cephie.app
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              ) : (
+                <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {cephieSnapImages.map((img) => {
+                    const isSelected = selectedImage === img.url;
+                    return (
+                      <div
+                        key={img.id}
+                        className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
+                          isSelected
+                            ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
+                            : 'border-zinc-700 hover:border-zinc-600'
+                        }`}
+                        onClick={() => handleSelectImage(img.url)}
+                      >
+                        <div className="aspect-video relative bg-zinc-800">
+                          <img
+                            src={img.url}
+                            alt="Cephie Snap"
+                            className="w-full h-full object-cover group-hover:brightness-110 transition-all"
+                          />
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
+                              <Eye className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
 
         {/* Available Backgrounds */}
         <div>
