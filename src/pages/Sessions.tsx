@@ -273,7 +273,7 @@ export default function Sessions() {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
-        <div className="bg-gray-900/70 backdrop-blur-md rounded-3xl border border-gray-800 shadow-2xl overflow-hidden">
+        <div className="overflow-hidden">
           <div className="p-6 space-y-6">
             {error && (
               <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">
