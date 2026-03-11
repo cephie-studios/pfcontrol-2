@@ -25,7 +25,10 @@ async function ensureDatabasesExist() {
   const url = new URL(mainDbUrl);
   const baseConnectionString = `postgresql://${url.username}:${url.password}@${url.host}/postgres`;
 
-  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  const isLocalhost =
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === 'postgres';
 
   const client = new pg.Client({
     connectionString: baseConnectionString,
@@ -66,7 +69,10 @@ await ensureDatabasesExist();
 
 function getSSLConfig(connectionString: string) {
   const url = new URL(connectionString);
-  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  const isLocalhost =
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === 'postgres';
   return isLocalhost ? false : { rejectUnauthorized: false };
 }
 

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   pfcontrol:
@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '9900:9900'
+      - "9900:9900"
     environment:
       - NODE_ENV=production
     env_file:

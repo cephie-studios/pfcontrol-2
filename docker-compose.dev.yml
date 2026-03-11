@@ -1,11 +1,11 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: pfcontrol-postgres-dev
     ports:
-      - '5432:5432'
+      - "5432:5432"
     environment:
       POSTGRES_USER: pfcontrol
       POSTGRES_PASSWORD: pfcontrol
@@ -16,7 +16,7 @@ services:
     networks:
       - pfcontrol-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U pfcontrol']
+      test: ["CMD-SHELL", "pg_isready -U pfcontrol"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,14 +25,14 @@ services:
     image: redis:7-alpine
     container_name: pfcontrol-redis-dev
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
     networks:
       - pfcontrol-network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -42,8 +42,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - '9901:9901'
-      - '5173:5173'
+      - "9901:9901"
+      - "5173:5173"
     environment:
       - NODE_ENV=development
     env_file:
