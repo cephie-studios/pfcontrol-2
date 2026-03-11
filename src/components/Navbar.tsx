@@ -19,7 +19,7 @@ import type { Notification as AdminNotification } from '../utils/fetch/admin';
 import CustomUserButton from './tools/UserButton';
 import Button from './common/Button';
 import FeedbackBanner from './tools/FeedbackBanner';
-import { usePlan } from '../hooks/billing/usePlan';
+import { useEffectivePlan } from '../hooks/billing/usePlan';
 
 type NavbarProps = {
   sessionId?: string;
@@ -36,7 +36,7 @@ export default function Navbar({
   mobileSidebarOpen,
 }: NavbarProps) {
   const { user } = useAuth();
-  const { plan } = usePlan();
+  const { effectivePlan } = useEffectivePlan();
   const {
     notifications: filteredNotifications,
     currentNotification,
@@ -346,12 +346,12 @@ export default function Navbar({
                   {user && (
                     <>
                       {' '}
-                      {plan === 'ultimate' && (
+                      {effectivePlan === 'ultimate' && (
                         <span className="bg-gradient-to-r from-purple-300 to-purple-500 bg-clip-text text-transparent italic text-md">
                           Ultimate
                         </span>
                       )}
-                      {plan === 'basic' && (
+                      {effectivePlan === 'basic' && (
                         <span className="bg-gradient-to-r from-red-300 to-red-500 bg-clip-text text-transparent italic text-md">
                           Basic
                         </span>
