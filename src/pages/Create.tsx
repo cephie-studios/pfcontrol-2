@@ -272,7 +272,7 @@ export default function Create() {
       </div>
 
       <div className="relative z-10 max-w-xl mx-auto px-4 -mt-24 md:-mt-32 pb-12">
-        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-3xl p-6 space-y-6 shadow-2xl">
+        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-4xl p-6 space-y-6 shadow-2xl">
           {error && (
             <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">
               <AlertCircle className="h-5 w-5 mr-2 text-red-400" />
