@@ -656,4 +656,115 @@ router.get('/findRoute', async (req, res) => {
   }
 });
 
+// GET: /api/data/airports/:icao/status - Get airport status with active controller, flights, runway, and METAR
+router.get('/airports/:icao/status', async (req, res) => {
+  try {
+    const icao = req.params.icao.toUpperCase();
+
+    const sessions = await mainDb
+      .selectFrom('sessions')
+      .select(['session_id', 'created_by', 'active_runway', 'created_at'])
+      .where('airport_icao', '=', icao)
+      .where('is_pfatc', '=', true)
+      .orderBy('created_at', 'desc')
+      .limit(10)
+      .execute();
+
+    if (sessions.length === 0) {
+      return res.status(404).json({
+        error: 'No active PFATC session found',
+        message: `No PFATC controller is currently online at ${icao}`
+      });
+    }
+
+    let validSession = null;
+    let controller = null;
+    let flightCount = 0;
+
+    for (const session of sessions) {
+      const sessionController = await mainDb
+        .selectFrom('users')
+        .select(['id', 'username', 'avatar'])
+        .where('id', '=', session.created_by)
+        .executeTakeFirst();
+
+      if (!sessionController) {
+        continue;
+      }
+
+      let sessionFlightCount = 0;
+      try {
+        const tableName = `flights_${session.session_id}`;
+        const result = await flightsDb
+          .selectFrom(tableName)
+          .select(sql`count(*)`.as('count'))
+          .executeTakeFirst();
+        sessionFlightCount = parseInt(result?.count as string, 10) || 0;
+      } catch {
+        sessionFlightCount = 0;
+      }
+
+      if (sessionFlightCount > 0) {
+        validSession = session;
+        controller = sessionController;
+        flightCount = sessionFlightCount;
+        break;
+      }
+    }
+
+    if (!validSession || !controller) {
+      return res.status(404).json({
+        error: 'No active PFATC session found',
+        message: `No PFATC controller with active flights is currently online at ${icao}`
+      });
+    }
+
+    let metar = null;
+    try {
+      const metarResponse = await fetch(
+        `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+        }
+      );
+
+      if (metarResponse.ok) {
+        const metarText = await metarResponse.text();
+        if (metarText && metarText.trim() !== '') {
+          const metarData = JSON.parse(metarText);
+          if (Array.isArray(metarData) && metarData.length > 0) {
+            metar = metarData[0];
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching METAR:', error);
+    }
+
+    res.json({
+      icao,
+      sessionId: validSession.session_id,
+      controller: {
+        id: controller.id,
+        username: controller.username,
+        avatar: controller.avatar
+          ? `https://cdn.discordapp.com/avatars/${controller.id}/${controller.avatar}.png`
+          : null,
+      },
+      activeRunway: validSession.active_runway,
+      flightCount,
+      createdAt: validSession.created_at,
+      metar,
+    });
+  } catch (error) {
+    console.error('Error fetching airport status:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch airport status',
+    });
+  }
+});
+
 export default router;
