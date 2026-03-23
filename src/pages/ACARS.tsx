@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
+import { useAuth } from '../hooks/auth/useAuth';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import {
   createOverviewSocket,
@@ -22,11 +23,13 @@ import { getChartsForAirport, playNotificationSound } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
+import type { SessionInfo } from '../types/session';
 
 import AcarsSidebar from '../components/acars/AcarsSidebar';
 import AcarsTerminal from '../components/acars/AcarsTerminal';
 import AcarsNotePanel from '../components/acars/AcarsNotePanel';
 import ChartDrawer from '../components/tools/ChartDrawer';
+import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -36,10 +39,13 @@ export default function ACARS() {
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('acars_token');
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { airports, airlines, loading: dataLoading } = useData();
   const { settings, loading: settingsLoading } = useSettings();
   const [loading, setLoading] = useState(true);
   const [flight, setFlight] = useState<Flight | null>(null);
+  const [session, setSession] = useState<SessionInfo | null>(null);
+  const [showRating, setShowRating] = useState(false);
   const [messages, setMessages] = useState<AcarsMessage[]>([]);
   const [activeSessions, setActiveSessions] = useState<OverviewSession[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -231,6 +237,16 @@ NOTES:
           await validateResponse.json();
         if (!valid) throw new Error('Invalid access token');
         setSessionAccessId(sessionAccess);
+
+        const sessionResponse = await fetch(
+          `${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`,
+          { credentials: 'include' }
+        );
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          setSession(sessionData);
+        }
+
         const flightResponse = await fetch(
           `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}`,
           { credentials: 'include' }
@@ -402,6 +418,18 @@ NOTES:
       overviewSocket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      session &&
+      flight &&
+      user &&
+      session.createdBy !== user.userId &&
+      (settings?.acars?.autoRedirectToAcars ?? true)
+    ) {
+      setShowRating(true);
+    }
+  }, [session, flight, user, settings?.acars?.autoRedirectToAcars]);
 
   const addPDCMessage = (text: string) => {
     const message: AcarsMessage = {
@@ -636,6 +664,18 @@ NOTES:
           </div>
         </div>
       </div>
+
+      {/* Controller Rating Popup */}
+      {showRating && session?.createdBy && (
+        <div className="max-w-3xl mx-auto px-4 pt-6">
+          <ControllerRatingPopup
+            controllerId={session.createdBy}
+            flightId={flightId}
+            onClose={() => setShowRating(false)}
+            isInline={true}
+          />
+        </div>
+      )}
 
       {/* Desktop Layout */}
       <div
