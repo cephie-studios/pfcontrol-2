@@ -93,7 +93,6 @@ export default function Submit() {
       session?.isPFATC &&
       (settings?.acars?.autoRedirectToAcars ?? true)
     ) {
-      if (session?.createdBy && session.createdBy !== user?.userId) return;
       navigate(
         `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
       );
