@@ -7,6 +7,7 @@ import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, flightsDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
 import { getUserById } from '../db/users.js';
+import { getFlightLogsCount } from '../db/flightLogs.js';
 import { getWaypointData } from '../utils/getData.js';
 import { findPath } from '../utils/findRoute.js';
 import { sql } from 'kysely';
@@ -440,6 +441,8 @@ router.get('/statistics', async (req, res) => {
       .select(({ fn }) => fn.countAll().as('count'))
       .executeTakeFirst();
 
+    const flightLogsCount = await getFlightLogsCount();
+
     const sessions = await mainDb
       .selectFrom('sessions')
       .select(['session_id'])
@@ -468,6 +471,7 @@ router.get('/statistics', async (req, res) => {
       sessionsCreated: Number(sessionsCreated?.count) || 0,
       registeredUsers: Number(registeredUsers?.count) || 0,
       flightsLogged,
+      flightLogs: flightLogsCount,
     };
 
     try {

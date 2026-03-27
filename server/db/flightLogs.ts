@@ -13,6 +13,19 @@ export interface FlightLogData {
   ipAddress?: string | null;
 }
 
+export async function getFlightLogsCount(): Promise<number> {
+  try {
+    const row = await mainDb
+      .selectFrom('flight_logs')
+      .select(({ fn }) => fn.countAll().as('count'))
+      .executeTakeFirst();
+    return Number(row?.count) || 0;
+  } catch (error) {
+    console.error('Error counting flight logs:', error);
+    throw error;
+  }
+}
+
 export async function logFlightAction(logData: FlightLogData) {
   const {
     userId,
