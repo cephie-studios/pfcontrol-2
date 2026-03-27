@@ -84,10 +84,10 @@ export async function cleanupOldStatistics() {
   }
 
   try {
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const threeSixtyFiveDaysAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
     await mainDb
       .deleteFrom('daily_statistics')
-      .where('date', '<', ninetyDaysAgo)
+      .where('date', '<', threeSixtyFiveDaysAgo)
       .execute();
     lastCleanupTime = now;
   } catch (error) {
