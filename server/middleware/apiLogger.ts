@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { mainDb } from '../db/connection.js';
-import { encrypt } from '../utils/encryption.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
 import { sql } from 'kysely';
@@ -89,20 +88,6 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
       ? logEntry.ip_address.join(', ')
       : logEntry.ip_address;
 
-    const encryptedIpAddress = encrypt(ipAddress);
-
-    const encryptedRequestBody = logEntry.request_body
-      ? encrypt(logEntry.request_body)
-      : null;
-
-    const encryptedResponseBody = logEntry.response_body
-      ? encrypt(logEntry.response_body)
-      : null;
-
-    const encryptedErrorMessage = logEntry.error_message
-      ? encrypt(logEntry.error_message)
-      : null;
-
     await mainDb
       .insertInto('api_logs')
       .values({
@@ -113,17 +98,11 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
         path: logEntry.path,
         status_code: logEntry.status_code,
         response_time: logEntry.response_time,
-        ip_address: JSON.stringify(encryptedIpAddress),
+        ip_address: ipAddress,
         user_agent: logEntry.user_agent,
-        request_body: encryptedRequestBody
-          ? JSON.stringify(encryptedRequestBody)
-          : null,
-        response_body: encryptedResponseBody
-          ? JSON.stringify(encryptedResponseBody)
-          : null,
-        error_message: encryptedErrorMessage
-          ? JSON.stringify(encryptedErrorMessage)
-          : null,
+        request_body: logEntry.request_body,
+        response_body: logEntry.response_body,
+        error_message: logEntry.error_message,
         timestamp: logEntry.timestamp,
       })
       .execute();

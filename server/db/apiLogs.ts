@@ -3,6 +3,32 @@ import { decrypt } from '../utils/encryption.js';
 import { redisConnection } from './connection.js';
 import { sql } from 'kysely';
 
+// Decrypts the raw text field in the api_logs table
+function readApiLogTextField(raw: string | null): string | null {
+  if (raw == null) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'iv' in parsed &&
+      'data' in parsed &&
+      'authTag' in parsed
+    ) {
+      const decrypted = decrypt(
+        parsed as { iv: string; data: string; authTag: string }
+      );
+      if (decrypted == null) return null;
+      return typeof decrypted === 'string'
+        ? decrypted
+        : JSON.stringify(decrypted);
+    }
+  } catch {
+    /* not legacy ciphertext JSON */
+  }
+  return raw;
+}
+
 export interface ApiLogFilters {
   userId?: string;
   username?: string;
@@ -157,16 +183,10 @@ export async function getApiLogs(
 
     const decryptedLogs = logs.map((log) => ({
       ...log,
-      ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,
-      request_body: log.request_body
-        ? decrypt(JSON.parse(log.request_body))
-        : null,
-      response_body: log.response_body
-        ? decrypt(JSON.parse(log.response_body))
-        : null,
-      error_message: log.error_message
-        ? decrypt(JSON.parse(log.error_message))
-        : null,
+      ip_address: readApiLogTextField(log.ip_address),
+      request_body: readApiLogTextField(log.request_body),
+      response_body: readApiLogTextField(log.response_body),
+      error_message: readApiLogTextField(log.error_message),
     }));
 
     return {
@@ -194,19 +214,12 @@ export async function getApiLogById(logId: number | string) {
 
     if (!log) return null;
 
-    // Decrypt sensitive fields
     return {
       ...log,
-      ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,
-      request_body: log.request_body
-        ? decrypt(JSON.parse(log.request_body))
-        : null,
-      response_body: log.response_body
-        ? decrypt(JSON.parse(log.response_body))
-        : null,
-      error_message: log.error_message
-        ? decrypt(JSON.parse(log.error_message))
-        : null,
+      ip_address: readApiLogTextField(log.ip_address),
+      request_body: readApiLogTextField(log.request_body),
+      response_body: readApiLogTextField(log.response_body),
+      error_message: readApiLogTextField(log.error_message),
     };
   } catch (error) {
     console.error('Error fetching API log by ID:', error);
