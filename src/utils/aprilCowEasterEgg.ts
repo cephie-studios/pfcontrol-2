@@ -204,7 +204,7 @@ export async function tryPlayAprilCowEasterEgg() {
           );
           fallbackTexture.colorSpace = SRGBColorSpace;
 
-          const modelLayouts = [
+          const desktopModelLayouts = [
             { x: -3.4, y: -0.45, z: -0.35, rotY: -Math.PI / 4 },
             { x: -1.7, y: -0.52, z: -0.95, rotY: -Math.PI / 9 },
             { x: 0, y: -0.45, z: 0.25, rotY: Math.PI / 18 },
@@ -215,6 +215,17 @@ export async function tryPlayAprilCowEasterEgg() {
             { x: 0.95, y: -0.61, z: -2.2, rotY: -Math.PI / 8 },
             { x: 2.7, y: -0.59, z: -2.0, rotY: Math.PI / 3.6 },
           ];
+
+          const mobileModelLayouts = [
+            { x: 0, y: -0.45, z: 0.25, rotY: Math.PI / 18 },
+            { x: -0.95, y: -0.62, z: -2.15, rotY: Math.PI / 10 },
+            { x: 0.95, y: -0.61, z: -2.2, rotY: -Math.PI / 8 },
+          ];
+
+          const modelLayouts =
+            window.matchMedia('(max-width: 768px)').matches
+              ? mobileModelLayouts
+              : desktopModelLayouts;
 
           modelLayouts.forEach((layout) => {
             const cow = cloneSkinnedModel(gltf.scene);
