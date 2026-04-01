@@ -200,11 +200,11 @@ export default function Home() {
         <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-7xl mx-auto mt-16 md:mt-24 gap-10 md:gap-0 relative z-10">
           <div className="flex-1 max-w-xl text-center md:text-left md:ml-12">
             <h1 className="text-5xl sm:text-6xl md:text-[5rem] lg:text-[7rem] font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent leading-tight mb-4">
-              PFControl
+              PFClown
             </h1>
             <p className="text-base sm:text-xl text-white max-w-lg mx-auto md:mx-0 mb-8 sm:mb-10">
-              The next-generation flight strip platform built for real-time
-              coordination between air traffic controllers with enterprise-level
+              The last-generation flight strip platform built for interdimensional
+              coordination between air traffic clowns with no
               reliability.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
@@ -218,7 +218,7 @@ export default function Home() {
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
                 id="start-session-btn"
               >
-                Start Session Now
+                Start Clowning Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
@@ -228,7 +228,7 @@ export default function Home() {
                 id="pfatc-flights-btn"
               >
                 <TowerControl className="mr-2 h-5 w-5" />
-                See PFATC Flights
+                See PFClowner Flights
               </Button>
             </div>
           </div>

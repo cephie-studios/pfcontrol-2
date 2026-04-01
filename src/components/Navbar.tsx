@@ -328,7 +328,7 @@ export default function Navbar({
               <a href="/" className="flex items-center space-x-2">
                 <TowerControl className="h-8 w-8 text-blue-400" />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                  PFControl
+                  PFClown
                   {window.location.hostname === 'canary.pfcontrol.com' && (
                     <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
                       {' '}
@@ -341,6 +341,10 @@ export default function Navbar({
                       Developers
                     </span>
                   )}
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent italic text-md">
+                    {' '}
+                    Early Access Pre-Alpha
+                  </span>
                 </span>
               </a>
             </div>
@@ -448,19 +452,19 @@ export default function Navbar({
                     href="/create"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    Create Session
+                    Create Troll
                   </a>
                   <a
                     href="/sessions"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    My Sessions
+                    My Trolls
                   </a>
                   <a
                     href="/pfatc"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    PFATC Flights
+                    PFClowner Flights
                   </a>
                 </div>
               )}
