@@ -14,6 +14,7 @@ import { steps } from '../components/tutorial/TutorialStepsFlights';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { getChartsForAirport } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
+import { tryPlayAprilCowEasterEgg } from '../utils/aprilCowEasterEgg';
 import { useData } from '../hooks/data/useData';
 import type { Flight } from '../types/flight';
 import type { Position } from '../types/session';
@@ -131,6 +132,7 @@ export default function Flights() {
   const flightsSocketConnectedRef = useRef(false);
   const arrivalsSocketConnectedRef = useRef(false);
   const sessionUsersSocketConnectedRef = useRef(false);
+  const aprilCowTriggeredRef = useRef(false);
 
   useEffect(() => {
     userRef.current = user;
@@ -258,6 +260,14 @@ export default function Flights() {
     settings,
     accessError,
   ]);
+
+  useEffect(() => {
+    if (!sessionId || !accessId || accessError) return;
+    if (aprilCowTriggeredRef.current) return;
+
+    aprilCowTriggeredRef.current = true;
+    void tryPlayAprilCowEasterEgg();
+  }, [sessionId, accessId, accessError]);
 
   useEffect(() => {
     if (!sessionId || !accessId || !initialLoadComplete || accessError) return;
