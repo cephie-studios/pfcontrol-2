@@ -30,6 +30,129 @@ button {
   scrollbar-color: #2a2a2a transparent;
 }
 
+.dvd-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+
+.dvd-toggle {
+  position: fixed;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(7, 10, 20, 0.72);
+  color: #ffffff;
+  pointer-events: auto;
+  user-select: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.dvd-toggle-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dvd-toggle-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(200, 200, 200, 0.35);
+  transition: background 0.25s ease;
+}
+
+.dvd-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.25s ease;
+}
+
+.dvd-toggle-track.is-on {
+  background: rgba(93, 255, 181, 0.85);
+}
+
+.dvd-toggle-track.is-on .dvd-toggle-thumb {
+  transform: translateX(16px);
+}
+
+.dvd-logo {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 58px;
+  will-change: transform;
+  user-select: none;
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55));
+}
+
+.dvd-logo.is-hidden {
+  display: none;
+}
+
+.dvd-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.dvd-trail-logo {
+  --trail-intensity: 0.5;
+  position: absolute;
+  width: 128px;
+  height: 58px;
+  object-fit: contain;
+  opacity: 0.55;
+  animation: dvdTrailFade 3s linear forwards;
+  pointer-events: none;
+}
+
+.dvd-logo-corner-hit {
+  animation: dvdCornerHit 300ms ease-out;
+}
+
+@keyframes dvdTrailFade {
+  0% {
+    opacity: 0.72;
+  }
+  70% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes dvdCornerHit {
+  0% {
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(1.5) brightness(1.35);
+  }
+  100% {
+    filter: saturate(1) brightness(1);
+  }
+}
+
 /* Departure Table */
 @media (max-width: 1800px) {
   .column-rwy,
@@ -93,5 +216,11 @@ button {
     flex-direction: column !important;
     gap: 4px;
     align-items: flex-start;
+  }
+
+  .dvd-toggle {
+    right: 10px;
+    padding: 7px 9px;
+    gap: 6px;
   }
 }
