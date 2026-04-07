@@ -187,14 +187,14 @@ export default function Footer() {
               <h3 className="text-white font-medium mb-2">Contact</h3>
               <div className="space-y-2">
                 <a
-                  href="mailto:support@pfconnect.online"
+                  href="mailto:support@cephie.app"
                   className="flex items-center text-gray-300 text-sm hover:text-blue-400 transition-colors"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  support@pfconnect.online
+                  support@cephie.app
                 </a>
                 <a
-                  href="https://pfconnect.online/discord"
+                  href="https://cephie.app/discord"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center text-gray-300 text-sm hover:text-blue-400 transition-colors"

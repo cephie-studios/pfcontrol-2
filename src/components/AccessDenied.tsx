@@ -103,7 +103,7 @@ export default function AccessDenied({
           errorType === 'pilot-not-found' ||
           errorType === 'flight-not-found' ? (
             <Link
-              to="https://pfconnect.online/discord"
+              to="https://cephie.app/discord"
               className={`inline-flex items-center px-8 py-4 rounded-full ${'bg-[#4f62a5] hover:bg-[#45568f]'} text-white text-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl`}
             >
               <FaDiscord className="mr-3 h-6 w-6 group-hover:-translate-x-1 transition-transform duration-300" />
@@ -111,7 +111,7 @@ export default function AccessDenied({
             </Link>
           ) : (
             <Link
-              to="https://pfconnect.online/discord"
+              to="https://cephie.app/discord"
               className={`inline-flex items-center px-8 py-4 rounded-full ${
                 errorType === 'invalid-session'
                   ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800'

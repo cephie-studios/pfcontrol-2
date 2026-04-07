@@ -146,7 +146,7 @@ export default function AccountSettings({
   };
 
   const handleJoinDiscord = () => {
-    window.open('https://pfconnect.online/discord', '_blank');
+    window.open('https://cephie.app/discord', '_blank');
   };
 
   return (

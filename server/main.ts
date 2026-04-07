@@ -18,6 +18,7 @@ import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
 import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
+import { setupNotificationsWebsocket } from './websockets/notificationsWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
@@ -139,6 +140,9 @@ sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 
 const voiceChatIO = setupVoiceChatWebsocket(server);
 voiceChatIO.adapter(createAdapter(pubClient, subClient));
+
+const notificationsIO = setupNotificationsWebsocket(server);
+notificationsIO.adapter(createAdapter(pubClient, subClient));
 
 getAppVersion();
 startStatsFlushing();

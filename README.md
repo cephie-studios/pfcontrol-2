@@ -72,7 +72,7 @@ docker-compose -f docker-compose.dev.yml up -d
 
 ## Code of Conduct
 
-We are committed to a welcoming, inclusive, and harassment-free community for everyone. All participants are expected to be respectful, considerate, and constructive. Unacceptable behavior such as harassment, discrimination, or personal attacks will not be tolerated. Community leaders enforce these standards and may take corrective action when necessary. Reports of misconduct can be sent to [support@pfconnect.online](mailto:support@cephie.app). See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for full details.
+We are committed to a welcoming, inclusive, and harassment-free community for everyone. All participants are expected to be respectful, considerate, and constructive. Unacceptable behavior such as harassment, discrimination, or personal attacks will not be tolerated. Community leaders enforce these standards and may take corrective action when necessary. Reports of misconduct can be sent to [support@cephie.app](mailto:support@cephie.app). See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for full details.
 
 ## License
 
