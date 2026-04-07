@@ -8,6 +8,7 @@ import {
   deleteNotification,
 } from '../../db/notifications.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
+import { broadcastNotificationsUpdate } from '../../websockets/notificationsWebsocket.js';
 
 const router = express.Router();
 
@@ -62,6 +63,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    broadcastNotificationsUpdate();
     res.json(notification);
   } catch (error) {
     console.error('Error adding notification:', error);
@@ -104,6 +106,7 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    broadcastNotificationsUpdate();
     res.json(notification);
   } catch (error) {
     console.error('Error updating notification:', error);
@@ -133,6 +136,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    broadcastNotificationsUpdate();
     res.json({ message: 'Notification deleted', deleted });
   } catch (error) {
     console.error('Error deleting notification:', error);

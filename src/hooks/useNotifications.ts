@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchActiveNotifications } from '../utils/fetch/data';
 import type { Notification as AdminNotification } from '../utils/fetch/admin';
+import { createNotificationsSocket } from '../sockets/notificationsSocket';
 
 type AppNotification = AdminNotification & { custom_icon?: React.ReactNode };
 
@@ -56,6 +57,13 @@ export function useNotifications() {
 
   useEffect(() => {
     fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const socket = createNotificationsSocket(fetchNotifications);
+    return () => {
+      socket.disconnect();
+    };
   }, [fetchNotifications]);
 
   // Rotate notifications every 10 seconds
