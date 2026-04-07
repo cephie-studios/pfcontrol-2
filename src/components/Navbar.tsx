@@ -500,9 +500,9 @@ export default function Navbar({
           <div className="mobile-menu-container relative md:hidden">
             <div
               className={`
-                            absolute top-2 right-0 w-80 max-w-[calc(100vw-2rem)]
-                            bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50
-                            rounded-2xl shadow-2xl overflow-hidden
+                            absolute top-2 right-0 w-72 max-w-[calc(100vw-2rem)]
+                            bg-zinc-950 backdrop-blur-xl border border-zinc-800
+                            rounded-3xl shadow-2xl overflow-hidden
                             transform transition-all duration-300 ease-out origin-top-right
                             ${
                               isMenuOpen
@@ -511,13 +511,11 @@ export default function Navbar({
                             }
                         `}
             >
-              <div className="border-t border-zinc-700/50 p-4">
-                <CustomUserButton
-                  isMobile={true}
-                  className="w-full"
-                  onAction={() => setIsMenuOpen(false)}
-                />
-              </div>
+              <CustomUserButton
+                isMobile={true}
+                className="w-full"
+                onAction={() => setIsMenuOpen(false)}
+              />
             </div>
 
             {isMenuOpen && (

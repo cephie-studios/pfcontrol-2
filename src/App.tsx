@@ -42,6 +42,7 @@ import {
   type UpdateModal,
 } from './utils/fetch/updateModal';
 import { getTesterSettings } from './utils/fetch/data';
+import { Loader } from 'lucide-react';
 
 export default function App() {
   const { user } = useAuth();
@@ -197,8 +198,8 @@ export default function App() {
               <ProtectedRoute requireTester={false} requirePermission="admin">
                 <Suspense
                   fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-gray-900">
-                      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                    <div className="flex items-center justify-center min-h-screen bg-black">
+                      <Loader className="animate-spin h-10 w-10 text-blue-600" />
                     </div>
                   }
                 >

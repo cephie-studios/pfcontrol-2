@@ -3,9 +3,9 @@ import {
   User,
   LogOut,
   Settings,
-  ChevronDown,
   List,
   LayoutDashboard,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
@@ -60,7 +60,7 @@ export default function CustomUserButton({
 
   if (!user) {
     const baseClasses = isMobile
-      ? 'w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
+      ? 'w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
       : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl';
 
     return (
@@ -78,59 +78,49 @@ export default function CustomUserButton({
 
   if (isMobile) {
     return (
-      <div className={`w-full space-y-3 ${className}`}>
-        <div className="flex items-center space-x-3 px-4 py-3 bg-zinc-800/60 rounded-xl border border-zinc-700/50 hover:bg-zinc-700/60 transition-colors">
+      <div className={`w-full ${className}`}>
+        <div className="flex items-center space-x-3 px-3.5 py-3">
           {user.avatar ? (
             <img
               src={user.avatar}
               alt={user.username}
-              className="w-10 h-10 rounded-full ring-2 ring-blue-500/30"
+              className="w-9 h-9 rounded-full"
             />
           ) : (
-            <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+            <div className="w-9 h-9 bg-zinc-800 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-zinc-400" />
             </div>
           )}
-          <div className="flex-1">
-            <p className="text-white font-semibold text-sm">{user.username}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-zinc-50 font-semibold text-sm truncate">{user.username}</p>
             {user.isAdmin && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 mt-1">
-                Admin
-              </span>
+              <p className="text-xs text-zinc-500 mt-0.5">Administrator</p>
             )}
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="p-1.5 border-t border-zinc-800/80">
           <button
-            onClick={() =>
-              handleAction(
-                () => (window.location.href = '/user/' + user.username)
-              )
-            }
-            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
+            onClick={() => handleAction(() => (window.location.href = '/user/' + user.username))}
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
           >
-            <User className="w-4 h-4" />
+            <User className="w-4 h-4 shrink-0" />
             <span>Profile</span>
           </button>
 
           <button
-            onClick={() =>
-              handleAction(() => (window.location.href = '/sessions'))
-            }
-            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
+            onClick={() => handleAction(() => (window.location.href = '/sessions'))}
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
           >
-            <List className="w-4 h-4" />
+            <List className="w-4 h-4 shrink-0" />
             <span>My Sessions</span>
           </button>
 
           <button
-            onClick={() => {
-              window.location.href = '/settings';
-            }}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200 font-medium"
+            onClick={() => handleAction(() => (window.location.href = '/settings'))}
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-4 h-4 shrink-0" />
             <span>Settings</span>
           </button>
 
@@ -138,22 +128,22 @@ export default function CustomUserButton({
             (user.rolePermissions && user.rolePermissions.admin)) && (
             <ProtectedRoute requirePermission="admin" requireTester={false}>
               <button
-                onClick={() => {
-                  window.location.href = '/admin';
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-blue-400 hover:text-blue-300 hover:bg-blue-600/20 rounded-xl transition-all duration-200 font-medium"
+                onClick={() => handleAction(() => (window.location.href = '/admin'))}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
               >
-                <LayoutDashboard className="w-4 h-4" />
+                <LayoutDashboard className="w-4 h-4 shrink-0" />
                 <span>Dashboard</span>
               </button>
             </ProtectedRoute>
           )}
+        </div>
 
+        <div className="p-1.5 border-t border-zinc-800/80">
           <button
             onClick={() => handleAction(logout)}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-600/20 rounded-xl transition-all duration-200 font-medium border-t border-zinc-700/50 pt-4 mt-2"
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-500 hover:bg-zinc-800 hover:text-red-400 transition-colors duration-150 text-sm font-medium"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 shrink-0" />
             <span>Sign Out</span>
           </button>
         </div>
@@ -165,64 +155,62 @@ export default function CustomUserButton({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="flex items-center space-x-3 hover:border-blue-500 text-white px-2 py-2 rounded-full font-medium transition-all duration-300 hover:shadow-xl hover:bg-zinc-900/95"
+        className="flex items-center space-x-2.5 text-white px-1.5 py-1.5 rounded-full transition-colors duration-200 hover:bg-zinc-900 border border-transparent hover:border-zinc-800"
       >
         {user.avatar ? (
           <img
             src={user.avatar}
             alt={user.username}
-            className="w-8 h-8 rounded-full ring-2 ring-blue-500/30"
+            className="w-7 h-7 rounded-full"
           />
         ) : (
-          <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
+          <div className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-zinc-400" />
           </div>
         )}
-        <span className="hidden md:block font-semibold">{user.username}</span>
+        <span className="hidden md:block text-md font-medium text-zinc-200">
+          {user.username}
+        </span>
         <ChevronDown
-          className={`w-4 h-4 text-blue-400 transition-transform duration-200 ${
-            isDropdownOpen ? 'rotate-180' : ''
-          }`}
+          className={`w-3.5 h-3.5 text-blue-300 transition-transform duration-200 -ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-black border border-zinc-800 rounded-2xl shadow-2xl py-2 z-50 animate-in slide-in-from-top-1 duration-200">
-          <div className="px-4 py-3 border-b border-gray-800 block cursor-default">
-            <div className="flex items-center space-x-3">
+        <div className="absolute right-0 mt-2 w-60 bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl backdrop-blur-xl z-50 overflow-hidden animate-in slide-in-from-top-1 duration-150">
+          <div className="px-3.5 py-3 border-b border-zinc-800/80">
+            <div className="flex items-center space-x-2.5">
               {user.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.username}
-                  className="w-10 h-10 rounded-full ring-2 ring-blue-500/30"
+                  className="w-8 h-8 rounded-full"
                 />
               ) : (
-                <div className="w-10 h-10 bg-glinear-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-zinc-400" />
                 </div>
               )}
-              <div className="flex-1">
-                <p className="text-white font-semibold text-sm">
+              <div className="flex-1 min-w-0">
+                <p className="text-zinc-50 font-semibold text-sm truncate">
                   {user.username}
                 </p>
                 {user.isAdmin && (
-                  <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 mt-1">
-                    Administrator
-                  </div>
+                  <p className="text-xs text-zinc-500 mt-0.5">Administrator</p>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="py-2 px-2">
+          <div className="p-1.5">
             <button
               onClick={() => {
                 setIsDropdownOpen(false);
                 window.location.href = '/user/' + user.username;
               }}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
             >
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4 shrink-0" />
               <span className="font-medium">Profile</span>
             </button>
 
@@ -231,50 +219,54 @@ export default function CustomUserButton({
                 setIsDropdownOpen(false);
                 window.location.href = '/sessions';
               }}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
             >
-              <List className="w-4 h-4" />
+              <List className="w-4 h-4 shrink-0" />
               <span className="font-medium">My Sessions</span>
             </button>
 
             <button
               onClick={() => {
+                setIsDropdownOpen(false);
                 window.location.href = '/settings';
               }}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-blue-600/20 hover:text-white transition-all duration-200 group"
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4 shrink-0" />
               <span className="font-medium">Settings</span>
             </button>
           </div>
+
           {(user.isAdmin ||
             (user.rolePermissions &&
               (user.rolePermissions.admin ||
                 user.rolePermissions.support ||
                 user.rolePermissions.moderation))) && (
             <ProtectedRoute requirePermission="admin" requireTester={false}>
-              <div className="border-t border-gray-700/50 py-2 px-2">
+              <div className="border-t border-zinc-800/80 p-1.5">
                 <button
                   onClick={() => {
+                    setIsDropdownOpen(false);
                     window.location.href = '/admin';
                   }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-blue-400 hover:bg-blue-600/20 hover:text-blue-300 transition-all duration-200 group"
+                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-blue-400 hover:bg-blue-800/20 transition-colors duration-150 text-sm"
                 >
-                  <LayoutDashboard className="w-4 h-4" />
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
                   <span className="font-medium">Dashboard</span>
                 </button>
               </div>
             </ProtectedRoute>
           )}
-          <div className="border-t border-gray-700/50 pt-2 px-2">
+
+          <div className="border-t border-zinc-800/80 p-1.5">
             <button
               onClick={() => {
                 setIsDropdownOpen(false);
                 logout();
               }}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-600/20 hover:text-red-300 transition-all duration-200 group"
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-red-500 hover:bg-red-800/20 hover:text-red-400 transition-colors duration-150 text-sm"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 shrink-0" />
               <span className="font-medium">Sign Out</span>
             </button>
           </div>

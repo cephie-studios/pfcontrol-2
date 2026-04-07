@@ -471,7 +471,7 @@ export default function Admin() {
                 </h1>
               </div>
               <div className="flex flex-wrap gap-2 ml-auto">
-                {[7, 30, 90].map((days) => (
+                {[7, 30, 90, 365].map((days) => (
                   <Button
                     key={days}
                     onClick={() => setTimeRange(days)}
