@@ -1,8 +1,7 @@
-import { mainDb, flightsDb } from './connection.js';
+import { mainDb } from './connection.js';
 import { addFlight } from './flights.js';
 import { validateSessionId } from '../utils/validation.js';
 import { encrypt } from '../utils/encryption.js';
-import { sql } from 'kysely';
 
 interface CreateSessionParams {
   sessionId: string;
@@ -39,42 +38,8 @@ export async function createSession({
       airport_icao: airportIcao.toUpperCase(),
       created_by: createdBy,
       is_pfatc: isPFATC,
-      atis: JSON.stringify(encryptedAtis),
+      atis: encryptedAtis,
     })
-    .execute();
-
-  await flightsDb.schema
-    .createTable(`flights_${validSessionId}`)
-    .ifNotExists()
-    .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
-    .addColumn('session_id', 'varchar(8)', (col) => col.notNull())
-    .addColumn('user_id', 'varchar(36)')
-    .addColumn('ip_address', 'varchar(45)')
-    .addColumn('callsign', 'varchar(16)')
-    .addColumn('aircraft', 'varchar(16)')
-    .addColumn('flight_type', 'varchar(16)')
-    .addColumn('departure', 'varchar(4)')
-    .addColumn('arrival', 'varchar(4)')
-    .addColumn('alternate', 'varchar(4)')
-    .addColumn('route', 'text')
-    .addColumn('sid', 'varchar(16)')
-    .addColumn('star', 'varchar(16)')
-    .addColumn('runway', 'varchar(10)')
-    .addColumn('clearedfl', 'varchar(8)')
-    .addColumn('cruisingfl', 'varchar(8)')
-    .addColumn('stand', 'varchar(8)')
-    .addColumn('gate', 'varchar(8)')
-    .addColumn('remark', 'text')
-    .addColumn('timestamp', 'varchar(32)')
-    .addColumn('created_at', 'timestamp', (col) => col.defaultTo(sql`NOW()`))
-    .addColumn('updated_at', 'timestamp', (col) => col.defaultTo(sql`NOW()`))
-    .addColumn('status', 'varchar(16)')
-    .addColumn('clearance', 'varchar(16)')
-    .addColumn('position', 'jsonb')
-    .addColumn('squawk', 'varchar(8)')
-    .addColumn('wtc', 'varchar(4)')
-    .addColumn('hidden', 'boolean', (col) => col.defaultTo(false))
-    .addColumn('acars_token', 'varchar(16)')
     .execute();
 
   if (isTutorial) {
@@ -141,8 +106,8 @@ export async function updateSession(
   updates: Partial<{
     active_runway: string;
     airport_icao: string;
-    flight_strips: string;
-    atis: string;
+    flight_strips: unknown;
+    atis: unknown;
     custom_name: string;
     refreshed_at: Date;
     is_pfatc: boolean;
@@ -165,9 +130,7 @@ export async function updateSession(
 export async function updateSessionName(sessionId: string, customName: string) {
   return await mainDb
     .updateTable('sessions')
-    .set({
-      custom_name: customName,
-    })
+    .set({ custom_name: customName })
     .where('session_id', '=', sessionId)
     .returningAll()
     .executeTakeFirst();
@@ -177,13 +140,18 @@ export async function deleteSession(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
 
   await mainDb
-    .deleteFrom('sessions')
+    .deleteFrom('flights')
     .where('session_id', '=', validSessionId)
     .execute();
 
-  await flightsDb.schema
-    .dropTable(`flights_${validSessionId}`)
-    .ifExists()
+  await mainDb
+    .deleteFrom('session_chat')
+    .where('session_id', '=', validSessionId)
+    .execute();
+
+  await mainDb
+    .deleteFrom('sessions')
+    .where('session_id', '=', validSessionId)
     .execute();
 }
 

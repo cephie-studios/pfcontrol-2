@@ -18,11 +18,11 @@ import {
   sanitizeSquawk,
   sanitizeFlightLevel,
 } from '../utils/sanitization.js';
-import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
+import { mainDb } from '../db/connection.js';
 
 interface ArrivalUpdateData {
   flightId: string | number;
-  updates: Partial<FlightsDatabase[string]>;
+  updates: Record<string, unknown>;
 }
 
 let io: SocketServer;
@@ -204,29 +204,15 @@ async function findFlightSourceSession(
   arrivalAirport: string
 ): Promise<string | null> {
   try {
-    const allSessions = await getAllSessions();
-    const pfatcSessions = allSessions.filter(
-      (session) => session.is_pfatc && session.airport_icao !== arrivalAirport
-    );
-
-    for (const session of pfatcSessions) {
-      try {
-        const flights = await getFlightsBySessionWithTime(
-          session.session_id,
-          2
-        );
-        const flight = flights.find((f) => f.id === flightId);
-        if (flight) {
-          return session.session_id;
-        }
-      } catch (error) {
-        console.error(
-          `Error checking session ${session.session_id} for flight ${flightId}:`,
-          error
-        );
-      }
-    }
-    return null;
+    const row = await mainDb
+      .selectFrom('flights as f')
+      .innerJoin('sessions as s', 's.session_id', 'f.session_id')
+      .select('f.session_id')
+      .where('f.id', '=', flightId)
+      .where('s.is_pfatc', '=', true)
+      .where('s.airport_icao', '!=', arrivalAirport.toUpperCase())
+      .executeTakeFirst();
+    return row?.session_id ?? null;
   } catch (error) {
     console.error('Error finding flight source session:', error);
     return null;

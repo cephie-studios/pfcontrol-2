@@ -8,7 +8,7 @@ import {
 } from '../db/chats.js';
 import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 import requireAuth from '../middleware/auth.js';
-import { chatsDb } from '../db/connection.js';
+import { mainDb } from '../db/connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
 
@@ -40,7 +40,7 @@ router.post('/global/:messageId/report', requireAuth, async (req, res) => {
 // GET: /api/chats/global - Get global chat messages (last 30 minutes)
 router.get('/global/messages', requireAuth, async (req, res) => {
   try {
-    const messages = await chatsDb
+    const messages = await mainDb
       .selectFrom('global_chat')
       .selectAll()
       .where((eb) =>

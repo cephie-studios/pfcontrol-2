@@ -48,7 +48,7 @@ export async function logAdminAction(actionData: AdminActionData) {
         user_agent:
           userAgent !== null && userAgent !== undefined ? userAgent : undefined,
       })
-      .returning(['id', 'timestamp'])
+      .returning(['id', 'created_at'])
       .executeTakeFirst();
 
     return result?.id;
@@ -86,7 +86,7 @@ export async function getAuditLogs(
         'details',
         'ip_address',
         'user_agent',
-        'timestamp',
+        'created_at',
       ]);
 
     if (filters.adminId) {
@@ -112,15 +112,15 @@ export async function getAuditLogs(
     }
 
     if (filters.dateFrom) {
-      query = query.where('timestamp', '>=', new Date(filters.dateFrom));
+      query = query.where('created_at', '>=', new Date(filters.dateFrom));
     }
 
     if (filters.dateTo) {
-      query = query.where('timestamp', '<=', new Date(filters.dateTo));
+      query = query.where('created_at', '<=', new Date(filters.dateTo));
     }
 
     const logsResult = await query
-      .orderBy('timestamp', 'desc')
+      .orderBy('created_at', 'desc')
       .limit(limit)
       .offset(offset)
       .execute();
@@ -174,14 +174,14 @@ export async function getAuditLogs(
     }
     if (filters.dateFrom) {
       countQuery = countQuery.where(
-        'timestamp',
+        'created_at',
         '>=',
         new Date(filters.dateFrom)
       );
     }
     if (filters.dateTo) {
       countQuery = countQuery.where(
-        'timestamp',
+        'created_at',
         '<=',
         new Date(filters.dateTo)
       );
@@ -219,7 +219,7 @@ export async function getAuditLogById(logId: number | string) {
         'details',
         'ip_address',
         'user_agent',
-        'timestamp',
+        'created_at',
       ])
       .where('id', '=', typeof logId === 'string' ? Number(logId) : logId)
       .executeTakeFirst();
@@ -261,7 +261,7 @@ export async function cleanupOldAuditLogs(daysToKeep = 14) {
     const result = await mainDb
       .deleteFrom('audit_log')
       .where(
-        'timestamp',
+        'created_at',
         '<',
         new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       )

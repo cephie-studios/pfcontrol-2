@@ -1,5 +1,5 @@
 import { Kysely, PostgresDialect } from 'kysely';
-import { createMainTables, createGlobalChatTable } from './schemas.js';
+import { createMainTables } from './schemas.js';
 import pg from 'pg';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
@@ -8,64 +8,12 @@ dotenv.config({
   path:
     process.env.NODE_ENV === 'production'
       ? '.env.production'
-      : '.env.development',
+      : process.env.NODE_ENV === 'canary'
+        ? '.env.canary'
+        : '.env.development',
 });
 
-import type { MainDatabase } from './types/connection/MainDatabase';
-import type { FlightsDatabase } from './types/connection/FlightsDatabase';
-import type { ChatsDatabase } from './types/connection/ChatsDatabase';
-
-// create databases if they don't exist
-async function ensureDatabasesExist() {
-  const mainDbUrl = process.env.POSTGRES_DB_URL;
-  if (!mainDbUrl) {
-    throw new Error('POSTGRES_DB_URL is not defined');
-  }
-
-  const url = new URL(mainDbUrl);
-  const baseConnectionString = `postgresql://${url.username}:${url.password}@${url.host}/postgres`;
-
-  const isLocalhost =
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    url.hostname === 'postgres';
-
-  const client = new pg.Client({
-    connectionString: baseConnectionString,
-    ssl: isLocalhost ? false : { rejectUnauthorized: false },
-  });
-
-  try {
-    await client.connect();
-
-    const flightsDbName = 'pfcontrol_flights';
-    const flightsResult = await client.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
-      [flightsDbName]
-    );
-    if (flightsResult.rows.length === 0) {
-      await client.query(`CREATE DATABASE ${flightsDbName}`);
-      console.log(`[Database] Created database: ${flightsDbName}`);
-    }
-
-    const chatsDbName = 'pfcontrol_chats';
-    const chatsResult = await client.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
-      [chatsDbName]
-    );
-    if (chatsResult.rows.length === 0) {
-      await client.query(`CREATE DATABASE ${chatsDbName}`);
-      console.log(`[Database] Created database: ${chatsDbName}`);
-    }
-  } catch (error) {
-    console.error('[Database] Error ensuring databases exist:', error);
-    throw error;
-  } finally {
-    await client.end();
-  }
-}
-
-await ensureDatabasesExist();
+import type { MainDatabase } from './types/connection/MainDatabase.js';
 
 function getSSLConfig(connectionString: string) {
   const url = new URL(connectionString);
@@ -76,29 +24,14 @@ function getSSLConfig(connectionString: string) {
   return isLocalhost ? false : { rejectUnauthorized: false };
 }
 
+const dbUrl = process.env.POSTGRES_DB_URL;
+if (!dbUrl) throw new Error('POSTGRES_DB_URL is not defined');
+
 export const mainDb = new Kysely<MainDatabase>({
   dialect: new PostgresDialect({
     pool: new pg.Pool({
-      connectionString: process.env.POSTGRES_DB_URL,
-      ssl: getSSLConfig(process.env.POSTGRES_DB_URL as string),
-    }),
-  }),
-});
-
-export const flightsDb = new Kysely<FlightsDatabase>({
-  dialect: new PostgresDialect({
-    pool: new pg.Pool({
-      connectionString: process.env.POSTGRES_DB_URL_FLIGHTS,
-      ssl: getSSLConfig(process.env.POSTGRES_DB_URL_FLIGHTS as string),
-    }),
-  }),
-});
-
-export const chatsDb = new Kysely<ChatsDatabase>({
-  dialect: new PostgresDialect({
-    pool: new pg.Pool({
-      connectionString: process.env.POSTGRES_DB_URL_CHATS,
-      ssl: getSSLConfig(process.env.POSTGRES_DB_URL_CHATS as string),
+      connectionString: dbUrl,
+      ssl: getSSLConfig(dbUrl),
     }),
   }),
 });
@@ -118,7 +51,6 @@ redisConnection.on('connect', () => {
 
 try {
   await createMainTables();
-  await createGlobalChatTable();
   console.log('[Database] Tables initialized successfully');
 } catch (err) {
   console.error('Failed to create tables:', err);

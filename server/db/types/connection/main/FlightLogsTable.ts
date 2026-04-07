@@ -8,5 +8,5 @@ export interface FlightLogsTable {
   old_data: object | null;
   new_data: object | null;
   ip_address: string | null;
-  timestamp: Date;
+  created_at: Date;
 }

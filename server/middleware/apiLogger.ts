@@ -20,7 +20,7 @@ export interface ApiLogEntry {
   request_body: string | null;
   response_body: string | null;
   error_message: string | null;
-  timestamp: Date;
+  created_at: Date;
 }
 
 const EXCLUDED_PATHS = [
@@ -103,7 +103,7 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
         request_body: logEntry.request_body,
         response_body: logEntry.response_body,
         error_message: logEntry.error_message,
-        timestamp: logEntry.timestamp,
+        created_at: logEntry.created_at,
       })
       .execute();
   } catch (error) {
@@ -169,7 +169,7 @@ export function apiLogger() {
           request_body: requestBody,
           response_body: responseBody,
           error_message: errorMessage,
-          timestamp: new Date(),
+          created_at: new Date(),
         };
 
         setImmediate(() => logApiCall(logEntry));
@@ -192,7 +192,7 @@ export async function cleanupOldApiLogs(
 
     const result = await mainDb
       .deleteFrom('api_logs')
-      .where('timestamp', '<', cutoffDate)
+      .where('created_at', '<', cutoffDate)
       .execute();
 
     console.log(`Cleaned up ${result.length} old API log entries`);

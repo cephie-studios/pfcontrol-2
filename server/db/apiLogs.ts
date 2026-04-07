@@ -84,9 +84,9 @@ export async function getApiLogs(
         'request_body',
         'response_body',
         'error_message',
-        'timestamp',
+        'created_at',
       ])
-      .orderBy('timestamp', 'desc');
+      .orderBy('created_at', 'desc');
 
     if (filters.userId) {
       query = query.where((q) =>
@@ -110,11 +110,11 @@ export async function getApiLogs(
     }
 
     if (filters.dateFrom) {
-      query = query.where('timestamp', '>=', new Date(filters.dateFrom));
+      query = query.where('created_at', '>=', new Date(filters.dateFrom));
     }
 
     if (filters.dateTo) {
-      query = query.where('timestamp', '<=', new Date(filters.dateTo));
+      query = query.where('created_at', '<=', new Date(filters.dateTo));
     }
 
     if (filters.search) {
@@ -154,14 +154,14 @@ export async function getApiLogs(
     }
     if (filters.dateFrom) {
       countQuery = countQuery.where(
-        'timestamp',
+        'created_at',
         '>=',
         new Date(filters.dateFrom)
       );
     }
     if (filters.dateTo) {
       countQuery = countQuery.where(
-        'timestamp',
+        'created_at',
         '<=',
         new Date(filters.dateTo)
       );
@@ -242,7 +242,7 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
           'errorCount'
         ),
       ])
-      .where('timestamp', '>=', cutoffDate)
+      .where('created_at', '>=', cutoffDate)
       .executeTakeFirst();
 
     const totalRequests = Number(totalStatsResult?.totalRequests || 0);
@@ -261,7 +261,7 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
         sql<number>`count(*)`.as('count'),
         sql<number>`avg(response_time)`.as('avgResponseTime'),
       ])
-      .where('timestamp', '>=', cutoffDate)
+      .where('created_at', '>=', cutoffDate)
       .groupBy('path')
       .orderBy('count', 'desc')
       .limit(10)
@@ -271,7 +271,7 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
     const statusCodeDistribution = await mainDb
       .selectFrom('api_logs')
       .select(['status_code', sql<number>`count(*)`.as('count')])
-      .where('timestamp', '>=', cutoffDate)
+      .where('created_at', '>=', cutoffDate)
       .groupBy('status_code')
       .orderBy('count', 'desc')
       .execute();
@@ -280,15 +280,15 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
     const dailyStats = await mainDb
       .selectFrom('api_logs')
       .select([
-        sql<string>`date(timestamp)`.as('date'),
+        sql<string>`date(created_at)`.as('date'),
         sql<number>`count(*)`.as('requestCount'),
         sql<number>`count(case when status_code >= 400 then 1 end)`.as(
           'errorCount'
         ),
         sql<number>`avg(response_time)`.as('avgResponseTime'),
       ])
-      .where('timestamp', '>=', cutoffDate)
-      .groupBy(sql`date(timestamp)`)
+      .where('created_at', '>=', cutoffDate)
+      .groupBy(sql`date(created_at)`)
       .orderBy('date', 'desc')
       .execute();
 
@@ -348,7 +348,7 @@ export async function getApiLogStatsLast24Hours(): Promise<
     const hourlyStats = await mainDb
       .selectFrom('api_logs')
       .select([
-        sql<string>`date_trunc('hour', timestamp)`.as('hour'),
+        sql<string>`date_trunc('hour', created_at)`.as('hour'),
         sql<number>`count(case when status_code >= 200 and status_code < 300 then 1 end)`.as(
           'successful'
         ),
@@ -362,8 +362,8 @@ export async function getApiLogStatsLast24Hours(): Promise<
           'other'
         ),
       ])
-      .where('timestamp', '>=', cutoffDate)
-      .groupBy(sql`date_trunc('hour', timestamp)`)
+      .where('created_at', '>=', cutoffDate)
+      .groupBy(sql`date_trunc('hour', created_at)`)
       .orderBy('hour', 'asc')
       .execute();
 

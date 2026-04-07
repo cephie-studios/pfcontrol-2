@@ -1,5 +1,5 @@
 import { Server as SocketServer } from 'socket.io';
-import { chatsDb, mainDb } from '../db/connection.js';
+import { mainDb } from '../db/connection.js';
 import { reportGlobalChatMessage } from '../db/chats.js';
 import { sanitizeMessage } from '../utils/sanitization.js';
 import {
@@ -101,7 +101,7 @@ export function setupGlobalChatWebsocket(
   setInterval(
     async () => {
       try {
-        await chatsDb
+        await mainDb
           .updateTable('global_chat')
           .set({ deleted_at: sql`(NOW() AT TIME ZONE 'UTC')` })
           .where((eb) =>
@@ -232,7 +232,7 @@ export function setupGlobalChatWebsocket(
       }
 
       try {
-        const result = await chatsDb
+        const result = await mainDb
           .insertInto('global_chat')
           .values({
             id: sql`DEFAULT`,
@@ -327,7 +327,7 @@ export function setupGlobalChatWebsocket(
           avatar: result.avatar ?? null,
           station: result.station ?? null,
           position: result.position ?? null,
-          message: result.message,
+          message: result.message as string,
           airport_mentions: airportMentions,
           user_mentions: userMentions,
           sent_at: result.sent_at ? new Date(result.sent_at) : new Date(),
@@ -411,7 +411,7 @@ export function setupGlobalChatWebsocket(
 
     socket.on('deleteGlobalMessage', async ({ messageId, userId }) => {
       try {
-        const result = await chatsDb
+        const result = await mainDb
           .updateTable('global_chat')
           .set({ deleted_at: sql`NOW()` })
           .where('id', '=', messageId)

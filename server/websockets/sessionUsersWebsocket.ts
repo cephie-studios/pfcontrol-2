@@ -162,7 +162,8 @@ async function generateAutoATIS(
     const session = await getSessionById(sessionId);
     if (!session?.atis) return;
 
-    const storedAtis = JSON.parse(session.atis);
+    const storedAtis =
+      typeof session.atis === 'string' ? JSON.parse(session.atis) : session.atis;
     const currentAtis = decrypt(storedAtis);
     const currentLetter = currentAtis.letter || 'A';
     const identOptions = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -439,7 +440,10 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       try {
         const session = await getSessionById(sessionId);
         if (session?.atis) {
-          const encryptedAtis = JSON.parse(session.atis);
+          const encryptedAtis =
+            typeof session.atis === 'string'
+              ? JSON.parse(session.atis)
+              : session.atis;
           const decryptedAtis = decrypt(encryptedAtis);
           socket.emit('atisUpdate', decryptedAtis);
         }

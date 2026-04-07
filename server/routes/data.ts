@@ -4,7 +4,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
 import { getActiveNotifications } from '../db/notifications.js';
-import { mainDb, flightsDb, redisConnection } from '../db/connection.js';
+import { mainDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
 import { getUserById } from '../db/users.js';
 import { getFlightLogsCount } from '../db/flightLogs.js';
@@ -518,29 +518,11 @@ router.get('/statistics', async (req, res) => {
 
     const flightLogsCount = await getFlightLogsCount();
 
-    const sessions = await mainDb
-      .selectFrom('sessions')
-      .select(['session_id'])
-      .execute();
-
-    let flightsLogged = 0;
-    for (const session of sessions) {
-      try {
-        const tableName =
-          `flights_${session.session_id}` as keyof typeof flightsDb.schema;
-        const flightResult = await flightsDb
-          .selectFrom(tableName)
-          .select(sql`count(*)`.as('count'))
-          .executeTakeFirst();
-        flightsLogged += parseInt(flightResult!.count as string, 10);
-      } catch (error) {
-        const errMsg = error instanceof Error ? error.message : String(error);
-        console.warn(
-          `Could not count flights for session ${session.session_id}:`,
-          errMsg
-        );
-      }
-    }
+    const flightCountRow = await mainDb
+      .selectFrom('flights')
+      .select(sql`count(*)`.as('count'))
+      .executeTakeFirst();
+    const flightsLogged = parseInt(flightCountRow?.count as string, 10) || 0;
 
     const result = {
       sessionsCreated: Number(sessionsCreated?.count) || 0,
@@ -812,10 +794,10 @@ router.get('/airports/:icao/status', async (req, res) => {
 
       let sessionFlightCount = 0;
       try {
-        const tableName = `flights_${session.session_id}`;
-        const result = await flightsDb
-          .selectFrom(tableName)
+        const result = await mainDb
+          .selectFrom('flights')
           .select(sql`count(*)`.as('count'))
+          .where('session_id', '=', session.session_id)
           .executeTakeFirst();
         sessionFlightCount = parseInt(result?.count as string, 10) || 0;
       } catch {

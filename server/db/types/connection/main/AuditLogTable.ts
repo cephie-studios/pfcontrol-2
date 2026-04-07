@@ -8,6 +8,5 @@ export interface AuditLogTable {
   details?: object;
   ip_address?: string;
   user_agent?: string;
-  timestamp?: Date;
   created_at?: Date;
 }

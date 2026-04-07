@@ -9,7 +9,7 @@ import {
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { updateSession, getAllSessions } from '../db/sessions.js';
 import { getArrivalsIO } from './arrivalsWebsocket.js';
-import { flightsDb, mainDb } from '../db/connection.js';
+import { mainDb } from '../db/connection.js';
 import {
   validateSessionId,
   validateAccessId,
@@ -23,7 +23,6 @@ import {
   sanitizeRunway,
 } from '../utils/sanitization.js';
 import type { Server as HTTPServer } from 'http';
-import type { FlightsDatabase } from '../db/types/connection/FlightsDatabase.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
 import { isEventController } from '../middleware/flightAccess.js';
@@ -167,7 +166,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
     socket.on(
       'addFlight',
-      async (flightData: Partial<FlightsDatabase[string]>) => {
+      async (flightData: Partial<AddFlightData>) => {
         const sessionId = socket.data.sessionId;
         try {
           const enhancedFlightData = {
@@ -183,8 +182,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
           socket.emit('flightAdded', flight);
 
-          const { acars_token, user_id, ip_address, ...sanitizedFlight } =
-            flight;
+          const { acars_token: _acars, ...sanitizedFlight } = flight;
           socket.to(sessionId).emit('flightAdded', sanitizedFlight);
 
           await broadcastToArrivalSessions(sanitizedFlight);
@@ -226,9 +224,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             return;
           }
 
-          const oldFlight = await flightsDb
-            .selectFrom(`flights_${sessionId}`)
+          const oldFlight = await mainDb
+            .selectFrom('flights')
             .selectAll()
+            .where('session_id', '=', sessionId)
             .where('id', '=', flightId as string)
             .executeTakeFirst();
 
@@ -342,9 +341,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         return;
       }
       try {
-        const flightToDelete = await flightsDb
-          .selectFrom(`flights_${sessionId}`)
+        const flightToDelete = await mainDb
+          .selectFrom('flights')
           .selectAll()
+          .where('session_id', '=', sessionId)
           .where('id', '=', flightId as string)
           .executeTakeFirst();
         const { acars_token, user_id, ip_address, ...sanitizedOldData } =
@@ -498,25 +498,16 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         }
         try {
           validateFlightId(flightId);
-          const allSessions = await getAllSessions();
           let targetSessionId = sessionId;
-
-          for (const session of allSessions) {
-            try {
-              const tableName = `flights_${session.session_id}`;
-              const result = await flightsDb
-                .selectFrom(tableName)
-                .select('session_id')
-                .where('id', '=', flightId as string)
-                .execute();
-
-              if (result.length > 0) {
-                targetSessionId = session.session_id;
-                break;
-              }
-            } catch {
-              continue;
-            }
+          try {
+            const flightRow = await mainDb
+              .selectFrom('flights')
+              .select('session_id')
+              .where('id', '=', flightId as string)
+              .executeTakeFirst();
+            if (flightRow) targetSessionId = flightRow.session_id;
+          } catch {
+            // fall back to current session
           }
 
           const sanitizedMessage = message

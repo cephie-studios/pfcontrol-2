@@ -52,7 +52,7 @@ export async function logFlightAction(logData: FlightLogData) {
         old_data: oldData,
         new_data: newData,
         ip_address: encryptedIP,
-        timestamp: sql`NOW()`,
+        created_at: sql`NOW()`,
       })
       .execute();
   } catch (error) {
@@ -65,7 +65,7 @@ export async function cleanupOldFlightLogs(daysToKeep = 30) {
     const result = await mainDb
       .deleteFrom('flight_logs')
       .where(
-        'timestamp',
+        'created_at',
         '<',
         new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       )
@@ -126,7 +126,7 @@ export async function getFlightLogs(
     let query = mainDb
       .selectFrom('flight_logs')
       .selectAll()
-      .orderBy('timestamp', 'desc')
+      .orderBy('created_at', 'desc')
       .limit(limit)
       .offset((page - 1) * limit);
 
@@ -162,8 +162,8 @@ export async function getFlightLogs(
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      query = query.where('timestamp', '>=', startOfDay);
-      query = query.where('timestamp', '<=', endOfDay);
+      query = query.where('created_at', '>=', startOfDay);
+      query = query.where('created_at', '<=', endOfDay);
     }
     if (filters.text) {
       const searchPattern = `%${filters.text}%`;
@@ -210,8 +210,8 @@ export async function getFlightLogs(
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      countQuery = countQuery.where('timestamp', '>=', startOfDay);
-      countQuery = countQuery.where('timestamp', '<=', endOfDay);
+      countQuery = countQuery.where('created_at', '>=', startOfDay);
+      countQuery = countQuery.where('created_at', '<=', endOfDay);
     }
     if (filters.text) {
       const searchPattern = `%${filters.text}%`;

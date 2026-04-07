@@ -1,7 +1,5 @@
-import { FlightsDatabase } from './types/connection/FlightsDatabase.js';
-import { validateSessionId } from '../utils/validation.js';
-import { flightsDb, mainDb } from './connection.js';
-import { validateFlightId } from '../utils/validation.js';
+import { mainDb } from './connection.js';
+import { validateSessionId, validateFlightId } from '../utils/validation.js';
 import { getSessionById } from './sessions.js';
 import {
   generateRandomId,
@@ -12,6 +10,7 @@ import {
 import crypto from 'crypto';
 import { sql } from 'kysely';
 import { incrementStat } from '../utils/statisticsCache.js';
+import type { FlightsTable } from './types/connection/main/FlightsTable.js';
 
 function createUTCDate(): Date {
   const now = new Date();
@@ -31,8 +30,6 @@ function createUTCDate(): Date {
 export interface ClientFlight {
   id: string;
   session_id: string;
-  user_id?: string;
-  ip_address?: string;
   callsign?: string;
   aircraft?: string;
   flight_type?: string;
@@ -48,7 +45,7 @@ export interface ClientFlight {
   stand?: string;
   gate?: string;
   remark?: string;
-  timestamp?: string;
+  flight_plan_time?: string;
   created_at?: Date;
   updated_at?: Date;
   status?: string;
@@ -65,64 +62,56 @@ export interface ClientFlight {
   };
 }
 
-function sanitizeFlightForClient(
-  flight: FlightsDatabase[string]
-): ClientFlight {
+function sanitizeFlightForClient(flight: FlightsTable): ClientFlight {
   const {
-    user_id,
-    ip_address,
-    acars_token,
+    user_id: _uid,
+    ip_address: _ip,
+    acars_token: _tok,
     cruisingfl,
     clearedfl,
-    ...sanitizedFlight
+    ...rest
   } = flight;
   return {
-    ...sanitizedFlight,
+    ...rest,
     cruisingFL: cruisingfl,
     clearedFL: clearedfl,
   };
 }
 
 function sanitizeFlightForOwner(
-  flight: FlightsDatabase[string]
+  flight: FlightsTable
 ): ClientFlight & { acars_token?: string } {
-  const { user_id, ip_address, cruisingfl, clearedfl, ...sanitizedFlight } =
+  const { user_id: _uid, ip_address: _ip, cruisingfl, clearedfl, ...rest } =
     flight;
   return {
-    ...sanitizedFlight,
+    ...rest,
     cruisingFL: cruisingfl,
     clearedFL: clearedfl,
   };
 }
 
-function validateFlightFields(updates: Partial<FlightsDatabase>) {
+function validateFlightFields(updates: Partial<FlightsTable>) {
   if (
     typeof updates.callsign === 'string' &&
-    (updates.callsign as string).length > 16
+    updates.callsign.length > 16
   ) {
     throw new Error('Callsign must be 16 characters or less');
   }
-  if (typeof updates.callsign === 'string' && (updates.callsign as string).length > 0) {
+  if (typeof updates.callsign === 'string' && updates.callsign.length > 0) {
     if (!/\d/.test(updates.callsign)) {
       throw new Error('Callsign must contain at least one number');
     }
   }
-  if (
-    typeof updates.stand === 'string' &&
-    (updates.stand as string).length > 8
-  ) {
+  if (typeof updates.stand === 'string' && updates.stand.length > 8) {
     throw new Error('Stand must be 8 characters or less');
   }
   if (typeof updates.squawk === 'string') {
-    const squawk = updates.squawk as string;
+    const squawk = updates.squawk;
     if (squawk.length > 0 && (squawk.length > 4 || !/^\d{1,4}$/.test(squawk))) {
       throw new Error('Squawk must be up to 4 numeric digits');
     }
   }
-  if (
-    typeof updates.remark === 'string' &&
-    (updates.remark as string).length > 50
-  ) {
+  if (typeof updates.remark === 'string' && updates.remark.length > 50) {
     throw new Error('Remark must be 50 characters or less');
   }
   if (updates.cruisingfl !== undefined) {
@@ -145,24 +134,12 @@ function validateFlightFields(updates: Partial<FlightsDatabase>) {
 
 export async function getFlightsBySession(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
-  const tableName = `flights_${validSessionId}`;
-
-  let tableExistsResult: boolean;
-  try {
-    await flightsDb.selectFrom(tableName).select('id').limit(1).execute();
-    tableExistsResult = true;
-  } catch {
-    tableExistsResult = false;
-  }
-
-  if (!tableExistsResult) {
-    return [];
-  }
 
   try {
-    const flights = await flightsDb
-      .selectFrom(tableName)
+    const flights = await mainDb
+      .selectFrom('flights')
       .selectAll()
+      .where('session_id', '=', validSessionId)
       .orderBy('created_at', 'asc')
       .execute();
 
@@ -176,21 +153,14 @@ export async function getFlightsBySession(sessionId: string) {
 
     const usersMap = new Map<
       string,
-      {
-        id: string;
-        discord_username: string;
-        discord_avatar_url: string | null;
-      }
+      { id: string; discord_username: string; discord_avatar_url: string | null }
     >();
+
     if (userIds.length > 0) {
       try {
         const users = await mainDb
           .selectFrom('users')
-          .select([
-            'id',
-            'username as discord_username',
-            'avatar as discord_avatar_url',
-          ])
+          .select(['id', 'username as discord_username', 'avatar as discord_avatar_url'])
           .where('id', 'in', userIds)
           .execute();
 
@@ -208,33 +178,13 @@ export async function getFlightsBySession(sessionId: string) {
       }
     }
 
-    const enrichedFlights = flights.map((flight) => {
-      const sanitized = sanitizeFlightForClient(
-        flight as unknown as FlightsDatabase[string]
-      );
-
-      let user = undefined;
-      if (flight.user_id && usersMap.has(flight.user_id)) {
-        user = usersMap.get(flight.user_id);
-      }
-
-      return {
-        ...sanitized,
-        user,
-      };
-    });
-
-    return enrichedFlights;
+    return flights.map((flight) => ({
+      ...sanitizeFlightForClient(flight),
+      user: flight.user_id ? usersMap.get(flight.user_id) : undefined,
+    }));
   } catch (error) {
     console.error('Error fetching flights:', error);
-    const fallbackFlights = await flightsDb
-      .selectFrom(tableName)
-      .selectAll()
-      .orderBy('created_at', 'asc')
-      .execute();
-    return fallbackFlights.map((flight) =>
-      sanitizeFlightForClient(flight as unknown as FlightsDatabase[string])
-    );
+    return [];
   }
 }
 
@@ -246,44 +196,20 @@ export async function validateAcarsAccess(
   try {
     const validSessionId = validateSessionId(sessionId);
     const validFlightId = validateFlightId(flightId);
-    const tableName = `flights_${validSessionId}`;
 
-    // Check if the table exists before querying it
-    let tableExistsResult: boolean;
-    try {
-      await flightsDb.selectFrom(tableName).select('id').limit(1).execute();
-      tableExistsResult = true;
-    } catch {
-      tableExistsResult = false;
-    }
-
-    if (!tableExistsResult) {
-      console.error(`Table ${tableName} does not exist`);
-      return { valid: false };
-    }
-
-    const result = await flightsDb
-      .selectFrom(tableName)
-      .select(['acars_token'])
+    const result = await mainDb
+      .selectFrom('flights')
+      .select('acars_token')
+      .where('session_id', '=', validSessionId)
       .where('id', '=', validFlightId)
       .executeTakeFirst();
 
-    if (!result) {
-      return { valid: false };
-    }
-
-    const isValid = result.acars_token === acarsToken;
-
-    if (!isValid) {
+    if (!result || result.acars_token !== acarsToken) {
       return { valid: false };
     }
 
     const session = await getSessionById(sessionId);
-
-    return {
-      valid: true,
-      accessId: session?.access_id || null,
-    };
+    return { valid: true, accessId: session?.access_id || null };
   } catch (error) {
     console.error('Error validating ACARS access:', error);
     return { valid: false };
@@ -296,37 +222,24 @@ export async function getFlightsBySessionWithTime(
 ) {
   try {
     const validSessionId = validateSessionId(sessionId);
-    const tableName = `flights_${validSessionId}`;
-
-    let tableExistsResult: boolean;
-    try {
-      await flightsDb.selectFrom(tableName).select('id').limit(1).execute();
-      tableExistsResult = true;
-    } catch {
-      tableExistsResult = false;
-    }
-
-    if (!tableExistsResult) {
-      return [];
-    }
 
     const sinceDateUTC = createUTCDate();
     sinceDateUTC.setUTCHours(sinceDateUTC.getUTCHours() - hoursBack);
+    const sinceIso = sinceDateUTC.toISOString();
 
-    const sinceDateISOString = sinceDateUTC.toISOString();
-
-    const flights = await flightsDb
-      .selectFrom(tableName)
+    const flights = await mainDb
+      .selectFrom('flights')
       .selectAll()
+      .where('session_id', '=', validSessionId)
       .where((eb) =>
         eb.or([
-          eb('timestamp', '>=', sinceDateISOString),
-          eb('updated_at', '>=', sql<Date>`${sinceDateISOString}`),
-          eb('created_at', '>=', sql<Date>`${sinceDateISOString}`),
+          eb('flight_plan_time', '>=', sinceIso),
+          eb('updated_at', '>=', sql<Date>`${sinceIso}`),
+          eb('created_at', '>=', sql<Date>`${sinceIso}`),
         ])
       )
       .orderBy(
-        sql`COALESCE(timestamp::timestamp, created_at, updated_at)`,
+        sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`,
         'desc'
       )
       .orderBy('callsign', 'asc')
@@ -342,21 +255,14 @@ export async function getFlightsBySessionWithTime(
 
     const usersMap = new Map<
       string,
-      {
-        id: string;
-        discord_username: string;
-        discord_avatar_url: string | null;
-      }
+      { id: string; discord_username: string; discord_avatar_url: string | null }
     >();
+
     if (userIds.length > 0) {
       try {
         const users = await mainDb
           .selectFrom('users')
-          .select([
-            'id',
-            'username as discord_username',
-            'avatar as discord_avatar_url',
-          ])
+          .select(['id', 'username as discord_username', 'avatar as discord_avatar_url'])
           .where('id', 'in', userIds)
           .execute();
 
@@ -374,23 +280,10 @@ export async function getFlightsBySessionWithTime(
       }
     }
 
-    const enrichedFlights = flights.map((flight) => {
-      const sanitized = sanitizeFlightForClient(
-        flight as unknown as FlightsDatabase[string]
-      );
-
-      let user = undefined;
-      if (flight.user_id && usersMap.has(flight.user_id)) {
-        user = usersMap.get(flight.user_id);
-      }
-
-      return {
-        ...sanitized,
-        user,
-      };
-    });
-
-    return enrichedFlights;
+    return flights.map((flight) => ({
+      ...sanitizeFlightForClient(flight),
+      user: flight.user_id ? usersMap.get(flight.user_id) : undefined,
+    }));
   } catch (error) {
     console.error(`Error fetching flights for session ${sessionId}:`, error);
     return [];
@@ -402,41 +295,30 @@ export interface AddFlightData {
   user_id?: string;
   squawk?: string;
   wtc?: string;
-  timestamp?: string;
+  flight_plan_time?: string;
   acars_token?: string;
   aircraft_type?: string;
   aircraft?: string;
-  icao?: string;
   departure?: string;
   runway?: string;
   sid?: string;
   cruisingFL?: number;
   clearedFL?: number;
-  cruisingfl?: number;
-  clearedfl?: number;
-  gate?: string;
+  cruisingfl?: number | string;
+  clearedfl?: number | string;
   [key: string]: unknown;
 }
 
 export async function addFlight(sessionId: string, flightData: AddFlightData) {
   const validSessionId = validateSessionId(sessionId);
-  const tableName = `flights_${validSessionId}`;
-
-  try {
-    await sql`ALTER TABLE ${sql.table(tableName)} ADD COLUMN IF NOT EXISTS gate VARCHAR(8);`.execute(
-      flightsDb
-    );
-  } catch {
-    // Column might already exist, continue
-  }
 
   flightData.id = await generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
   flightData.wtc = await getWakeTurbulence(
     flightData.aircraft || flightData.aircraft_type || ''
   );
-  if (!flightData.timestamp) {
-    flightData.timestamp = new Date().toISOString();
+  if (!flightData.flight_plan_time) {
+    flightData.flight_plan_time = new Date().toISOString();
   }
   flightData.acars_token = crypto.randomBytes(4).toString('hex');
   flightData.updated_at = createUTCDate();
@@ -446,12 +328,10 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     delete flightData.aircraft_type;
   }
 
-  flightData.icao = flightData.departure;
-
   if (!flightData.runway) {
     try {
       const session = await getSessionById(validSessionId);
-      if (session && session.active_runway) {
+      if (session?.active_runway) {
         flightData.runway = session.active_runway;
       }
     } catch (error) {
@@ -473,34 +353,30 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     delete flightData.clearedFL;
   }
 
-  const { icao, ...flightDataForDb } = flightData;
+  // Strip non-column fields
+  const { icao: _icao, aircraft_type: _at, ...insertData } = flightData as Record<string, unknown>;
 
-  const result = await flightsDb
-    .insertInto(tableName)
+  const result = await mainDb
+    .insertInto('flights')
     .values({
-      id: flightDataForDb.id ?? sql`DEFAULT`,
       session_id: validSessionId,
-      ...flightDataForDb,
-      cruisingfl:
-        flightDataForDb.cruisingfl !== undefined &&
-        flightDataForDb.cruisingfl !== null
-          ? String(flightDataForDb.cruisingfl)
-          : undefined,
-      clearedfl:
-        flightDataForDb.clearedfl !== undefined &&
-        flightDataForDb.clearedfl !== null
-          ? String(flightDataForDb.clearedfl)
-          : undefined,
+      id: String(insertData.id ?? sql`gen_random_uuid()`),
+      ...Object.fromEntries(
+        Object.entries(insertData).filter(([k]) => k !== 'id').map(([k, v]) => {
+          if ((k === 'cruisingfl' || k === 'clearedfl') && v !== undefined && v !== null) {
+            return [k, String(v)];
+          }
+          return [k, v];
+        })
+      ),
     })
     .returningAll()
     .executeTakeFirst();
 
-  if (!result) {
-    throw new Error('Failed to insert flight');
-  }
+  if (!result) throw new Error('Failed to insert flight');
 
   if (flightData.user_id) {
-    incrementStat(flightData.user_id, 'total_flights_submitted', 1, 'total');
+    incrementStat(String(flightData.user_id), 'total_flights_submitted', 1, 'total');
   }
 
   return sanitizeFlightForOwner(result);
@@ -509,19 +385,15 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
 export async function getFlightById(sessionId: string, flightId: string) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
-  const tableName = `flights_${validSessionId}`;
 
-  const result = await flightsDb
-    .selectFrom(tableName)
-    .selectAll()
-    .where('id', '=', validFlightId)
-    .executeTakeFirst();
-
-  if (!result) {
-    return null;
-  }
-
-  return result;
+  return (
+    (await mainDb
+      .selectFrom('flights')
+      .selectAll()
+      .where('session_id', '=', validSessionId)
+      .where('id', '=', validFlightId)
+      .executeTakeFirst()) ?? null
+  );
 }
 
 export async function updateFlight(
@@ -531,91 +403,50 @@ export async function updateFlight(
 ) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
-  const tableName = `flights_${validSessionId}`;
 
   const allowedColumns = [
-    'callsign',
-    'aircraft',
-    'departure',
-    'arrival',
-    'flight_type',
-    'stand',
-    'gate',
-    'runway',
-    'sid',
-    'star',
-    'cruisingFL',
-    'clearedFL',
-    'squawk',
-    'wtc',
-    'status',
-    'remark',
-    'clearance',
-    'pdc_remarks',
-    'hidden',
-    'route',
+    'callsign', 'aircraft', 'departure', 'arrival', 'flight_type',
+    'stand', 'gate', 'runway', 'sid', 'star',
+    'cruisingfl', 'clearedfl', 'squawk', 'wtc', 'status',
+    'remark', 'clearance', 'pdc_remarks', 'hidden', 'route',
   ];
 
   const dbUpdates: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(updates)) {
     let dbKey = key;
     if (key === 'cruisingFL') dbKey = 'cruisingfl';
-    if (key === 'clearedFL') dbKey = 'clearedfl';
-    if (allowedColumns.includes(key)) {
-      if (dbKey === 'clearance') {
-        dbUpdates[dbKey] = String(value);
-      } else {
-        dbUpdates[dbKey] = value;
-      }
+    if (key === 'clearedFL')  dbKey = 'clearedfl';
+    if (allowedColumns.includes(dbKey)) {
+      dbUpdates[dbKey] = dbKey === 'clearance' ? String(value) : value;
     }
   }
 
-  validateFlightFields(dbUpdates as Partial<FlightsDatabase>);
-
-  for (const col of Object.keys(dbUpdates)) {
-    try {
-      await sql`ALTER TABLE ${sql.table(tableName)} ADD COLUMN IF NOT EXISTS ${sql.raw(`"${col}"`)} TEXT;`.execute(
-        flightsDb
-      );
-    } catch (err) {
-      console.error('Could not ensure column exists:', col, String(err));
-    }
-  }
+  validateFlightFields(dbUpdates as Partial<FlightsTable>);
 
   if (Object.keys(dbUpdates).length === 0) {
     throw new Error('No valid fields to update');
   }
-
   dbUpdates.updated_at = createUTCDate();
 
-  try {
-    await sql`ALTER TABLE ${sql.table(tableName)} ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP;`.execute(
-      flightsDb
-    );
-  } catch (err) {
-    console.error('Could not ensure column exists:', 'updated_at', String(err));
-  }
-
-  const result = await flightsDb
-    .updateTable(tableName)
+  const result = await mainDb
+    .updateTable('flights')
     .set(dbUpdates)
+    .where('session_id', '=', validSessionId)
     .where('id', '=', validFlightId)
     .returningAll()
     .executeTakeFirst();
 
-  if (!result) {
-    throw new Error('Flight not found or update failed');
-  }
+  if (!result) throw new Error('Flight not found or update failed');
 
-  return sanitizeFlightForClient(result as unknown as FlightsDatabase[string]);
+  return sanitizeFlightForClient(result);
 }
 
 export async function deleteFlight(sessionId: string, flightId: string) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
-  const tableName = `flights_${validSessionId}`;
-  await flightsDb
-    .deleteFrom(tableName)
+  await mainDb
+    .deleteFrom('flights')
+    .where('session_id', '=', validSessionId)
     .where('id', '=', validFlightId)
     .execute();
 }
