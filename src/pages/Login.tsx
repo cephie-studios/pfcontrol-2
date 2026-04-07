@@ -80,7 +80,7 @@ export default function Login() {
       </div>
 
       <div className="container mx-auto max-w-md px-4 pb-8 relative z-10">
-        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-3xl p-8 space-y-6 shadow-2xl animate-fade-in">
+        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-[3rem] p-6 space-y-6 animate-fade-in">
           <Button
             onClick={handleLogin}
             disabled={!agreed}
@@ -95,7 +95,7 @@ export default function Login() {
           <hr className="w-full border-gray-700" />
 
           <div
-            className={`w-full flex items-center border-2 border-blue-600 rounded-2xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
+            className={`w-full flex items-center border-2 border-blue-600 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
                       ${agreed ? 'bg-blue-600/30' : 'bg-blue-600/10'}
                       hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
           >
@@ -140,10 +140,11 @@ export default function Login() {
             />
           </div>
 
-          <p className="text-xs text-gray-500 text-center max-w-xs">
-            PFConnect Studios is an independent service and is not in any way
-            affiliated with Project Flight.
-          </p>
+          <div className="flex w-full justify-center">
+            <p className="text-xs text-gray-500 text-center max-w-xs">
+              PFConnect Studios is an independent service and is not in any way affiliated with Project Flight.
+            </p>
+          </div>
         </div>
       </div>
     </div>

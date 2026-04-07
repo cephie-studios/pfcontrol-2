@@ -340,6 +340,9 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
   }
 
   if (!flightData.sid) {
+    if (!flightData.icao && flightData.departure) {
+      flightData.icao = flightData.departure as string;
+    }
     const sidResult = await generateSID(flightData);
     flightData.sid = sidResult.sid;
   }

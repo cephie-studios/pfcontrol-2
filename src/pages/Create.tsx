@@ -61,7 +61,7 @@ export default function Create() {
     if (user) {
       fetchMySessions()
         .then((sessions) => {
-          const maxSessions = user.isAdmin || user.isTester ? 50 : 10;
+          const maxSessions = user.isAdmin || user.isTester ? 100 : 50;
           setSessionCount(sessions.length);
           setSessionLimitReached(sessions.length >= maxSessions);
         })
@@ -163,7 +163,7 @@ export default function Create() {
     }
 
     if (sessionLimitReached) {
-      const maxSessions = user?.isAdmin || user?.isTester ? 50 : 10;
+      const maxSessions = user?.isAdmin || user?.isTester ? 100 : 50;
       setError(
         `Session limit reached. You can create up to ${maxSessions} sessions.`
       );
@@ -302,7 +302,7 @@ export default function Create() {
               />
               <span>
                 Sessions: {sessionCount}/
-                {user?.isAdmin || user?.isTester ? 50 : 10}
+                {user?.isAdmin || user?.isTester ? 100 : 50}
                 {sessionLimitReached && ' (Limit reached)'}
               </span>
             </div>

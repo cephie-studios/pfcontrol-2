@@ -49,7 +49,7 @@ export default function Sessions() {
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
 
-  const maxSessions = user?.isAdmin || user?.isTester ? 50 : 10;
+  const maxSessions = user?.isAdmin || user?.isTester ? 100 : 50;
 
   useEffect(() => {
     if (!user) {

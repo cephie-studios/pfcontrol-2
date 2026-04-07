@@ -60,12 +60,12 @@ router.post(
       const userSessions = await getSessionsByUser(createdBy);
 
       const userRoles = await getUserRoles(createdBy);
-      const hasSpecialRole =
+      const isTester =
         isAdmin(createdBy) ||
         userRoles.some(
           (role) => role.name === 'Tester' || role.name === 'Event Controller'
         );
-      const maxSessions = hasSpecialRole ? 50 : 10;
+      const maxSessions = isTester ? 100 : 50;
 
       if (userSessions.length >= maxSessions) {
         return res.status(400).json({
