@@ -38,7 +38,7 @@ export async function createSession({
       airport_icao: airportIcao.toUpperCase(),
       created_by: createdBy,
       is_pfatc: isPFATC,
-      atis: encryptedAtis,
+      atis: JSON.stringify(encryptedAtis),
     })
     .execute();
 
