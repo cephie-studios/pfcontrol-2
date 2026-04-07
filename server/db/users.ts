@@ -105,8 +105,19 @@ export async function getUserById(userId: string) {
     ...user,
     access_token: safeDecrypt(user.access_token, 'access_token'),
     refresh_token: safeDecrypt(user.refresh_token, 'refresh_token'),
-    sessions: safeDecrypt(user.sessions, 'sessions') || [],
-    settings: safeDecrypt(user.settings, 'settings'),
+    settings: user.settings
+      ? (() => {
+          try {
+            const settingsObj =
+              typeof user.settings === 'string'
+                ? JSON.parse(user.settings)
+                : user.settings;
+            return decrypt(settingsObj);
+          } catch {
+            return null;
+          }
+        })()
+      : null,
     ip_address: safeDecrypt(user.ip_address, 'ip_address'),
     role_permissions: mergedPermissions,
     statistics: user.statistics || {},
@@ -169,8 +180,9 @@ export async function getUserByUsername(username: string) {
     refresh_token: user.refresh_token
       ? decrypt(JSON.parse(user.refresh_token))
       : null,
-    sessions: user.sessions ? decrypt(JSON.parse(user.sessions)) : null,
-    settings: user.settings ? decrypt(JSON.parse(user.settings)) : null,
+    settings: user.settings
+      ? decrypt(typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings)
+      : null,
     ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
     role_permissions: user.role_permissions || null,
     statistics: user.statistics || {},
@@ -306,7 +318,6 @@ export async function createOrUpdateUser(userData: {
       refresh_token: JSON.stringify(encryptedRefreshToken),
       ip_address: JSON.stringify(encryptedIP),
       is_vpn: isVpn,
-      sessions: JSON.stringify(encryptedSessions),
       settings: JSON.stringify(encryptedSettings),
       last_login: sql`NOW()`,
       updated_at: sql`NOW()`,
@@ -355,17 +366,10 @@ export async function updateUserSettings(id: string, settings: Settings) {
   return await getUserById(id);
 }
 
-export async function addSessionToUser(userId: string, sessionId: string) {
-  const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
-
-  const sessions = [...user.sessions, sessionId];
-  const encryptedSessions = encrypt(sessions);
-
+export async function addSessionToUser(userId: string, _sessionId: string) {
   await mainDb
     .updateTable('users')
     .set({
-      sessions: JSON.stringify(encryptedSessions),
       last_session_created: sql`NOW()`,
       total_sessions_created: sql`total_sessions_created + 1`,
       updated_at: sql`NOW()`,
@@ -378,17 +382,11 @@ export async function addSessionToUser(userId: string, sessionId: string) {
   return await getUserById(userId);
 }
 
-export async function removeSessionFromUser(userId: string, sessionId: string) {
-  const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
-
-  const sessions = (user.sessions || []).filter((s: string) => s !== sessionId);
-  const encryptedSessions = encrypt(sessions);
-
+export async function removeSessionFromUser(userId: string, _sessionId: string) {
   await mainDb
     .updateTable('users')
     .set({
-      sessions: JSON.stringify(encryptedSessions),
+      last_session_deleted: sql`NOW()`,
       updated_at: sql`NOW()`,
     })
     .where('id', '=', userId)

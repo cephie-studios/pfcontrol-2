@@ -1,6 +1,5 @@
-import { mainDb, flightsDb } from './connection.js';
+import { mainDb } from './connection.js';
 import { cleanupOldStatistics } from './statistics.js';
-import { getAllSessions } from './sessions.js';
 import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 import { decrypt } from '../utils/encryption.js';
@@ -11,7 +10,7 @@ import { getUserRoles } from './roles.js';
 type RawUser = {
   id: string;
   username: string;
-  discriminator: string;
+  discriminator?: string;
   avatar: string | null;
   last_login: Date | null;
   ip_address: string | null;
@@ -19,7 +18,7 @@ type RawUser = {
   total_sessions_created: number;
   total_minutes: number;
   created_at: Date | undefined;
-  settings: string | null;
+  settings: unknown;
   roblox_username: string | null;
   role_id: number | null;
   role_name: string | null;
@@ -46,23 +45,11 @@ async function calculateDirectStatistics() {
       .select(({ fn }) => fn.countAll().as('count'))
       .executeTakeFirst();
 
-    const sessions = await getAllSessions();
-    let totalFlights = 0;
-
-    for (const session of sessions) {
-      try {
-        const tableName = `flights_${session.session_id}`;
-        const flightResult = await flightsDb
-          .selectFrom(tableName)
-          .select(({ fn }) => fn.countAll().as('count'))
-          .executeTakeFirst();
-        totalFlights += Number(flightResult?.count) || 0;
-      } catch {
-        console.warn(
-          `Could not count flights for session ${session.session_id}`
-        );
-      }
-    }
+    const flightCountResult = await mainDb
+      .selectFrom('flights')
+      .select(({ fn }) => fn.countAll().as('count'))
+      .executeTakeFirst();
+    const totalFlights = Number(flightCountResult?.count) || 0;
 
     return {
       total_logins: 0,
@@ -379,7 +366,11 @@ export async function getAllUsers(
         let decryptedSettings = null;
         try {
           if (user.settings) {
-            decryptedSettings = decrypt(JSON.parse(user.settings));
+            const settingsObj =
+              typeof user.settings === 'string'
+                ? JSON.parse(user.settings)
+                : user.settings;
+            decryptedSettings = decrypt(settingsObj);
           }
         } catch {
           console.warn(`Failed to decrypt settings for user ${user.id}`);
@@ -548,19 +539,25 @@ export async function getAdminSessions(page = 1, limit = 100, search = '') {
 
     const sessions = await query.limit(limit).offset(offset).execute();
 
+    const sessionIds = sessions.map((s) => s.session_id);
+
+    const flightCounts =
+      sessionIds.length > 0
+        ? await mainDb
+            .selectFrom('flights')
+            .select(['session_id', mainDb.fn.countAll().as('count')])
+            .where('session_id', 'in', sessionIds)
+            .groupBy('session_id')
+            .execute()
+        : [];
+
+    const flightCountMap = new Map(
+      flightCounts.map((r) => [r.session_id, Number(r.count)])
+    );
+
     const sessionsWithDetails = await Promise.all(
       sessions.map(async (session) => {
-        let flight_count = 0;
-        try {
-          const tableName = `flights_${session.session_id}`;
-          const flightResult = await flightsDb
-            .selectFrom(tableName)
-            .select(({ fn }) => fn.countAll().as('count'))
-            .executeTakeFirst();
-          flight_count = Number(flightResult?.count) || 0;
-        } catch {
-          // Table may not exist, keep flight_count as 0
-        }
+        const flight_count = flightCountMap.get(session.session_id) || 0;
         const activeSessionUsers = await getActiveUsersForSession(
           session.session_id
         );

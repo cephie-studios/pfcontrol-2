@@ -1,17 +1,16 @@
 export interface UsersTable {
   id: string;
   username: string;
-  discriminator: string;
+  discriminator?: string;
   avatar?: string;
   access_token?: string;
   refresh_token?: string;
   last_login?: Date;
   ip_address?: string;
   is_vpn?: boolean;
-  sessions?: string;
   last_session_created?: Date;
   last_session_deleted?: Date;
-  settings?: string;
+  settings?: unknown;
   settings_updated_at?: Date;
   total_sessions_created?: number;
   total_minutes?: number;
@@ -26,6 +25,6 @@ export interface UsersTable {
   roblox_access_token?: string | null;
   roblox_refresh_token?: string | null;
   role_id?: number;
-  tutorialCompleted?: boolean;
-  statistics?: string;
+  tutorial_completed?: boolean;
+  statistics?: unknown;
 }

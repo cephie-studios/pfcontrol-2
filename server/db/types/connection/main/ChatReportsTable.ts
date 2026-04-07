@@ -6,9 +6,9 @@ export interface ChatReportsTable {
   reported_user_id: string;
   message: string;
   reason: string;
-  timestamp?: Date;
+  created_at?: Date;
   status?: 'pending' | 'resolved';
-  avatar?: string;
+  reporter_avatar?: string;
   reported_username?: string;
   reporter_username?: string;
   reported_avatar?: string;

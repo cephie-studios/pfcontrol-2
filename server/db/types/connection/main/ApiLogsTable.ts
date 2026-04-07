@@ -11,5 +11,5 @@ export interface ApiLogsTable {
   request_body: string | null;
   response_body: string | null;
   error_message: string | null;
-  timestamp: Date;
+  created_at: Date;
 }

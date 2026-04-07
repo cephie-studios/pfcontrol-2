@@ -11,7 +11,7 @@ import {
 import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
 import { recordNewFlight } from '../db/statistics.js';
 import { getClientIp } from '../utils/getIpAddress.js';
-import { mainDb, flightsDb } from '../db/connection.js';
+import { mainDb } from '../db/connection.js';
 import {
   flightCreationLimiter,
   acarsValidationLimiter,
@@ -246,10 +246,10 @@ router.get('/acars/active', async (req, res) => {
       terminal.lastSeen = Date.now();
       
       try {
-        const tableName = `flights_${sessionId}`;
-        const result = await flightsDb
-          .selectFrom(tableName)
+        const result = await mainDb
+          .selectFrom('flights')
           .selectAll()
+          .where('session_id', '=', sessionId)
           .where('id', '=', flightId)
           .execute();
 

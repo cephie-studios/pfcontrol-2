@@ -344,7 +344,10 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
           let atisData = null;
           if (session.atis) {
             try {
-              const encryptedAtis = JSON.parse(session.atis);
+              const encryptedAtis =
+                typeof session.atis === 'string'
+                  ? JSON.parse(session.atis)
+                  : session.atis;
               atisData = decrypt(encryptedAtis);
             } catch (err) {
               console.error('Error decrypting ATIS:', err);

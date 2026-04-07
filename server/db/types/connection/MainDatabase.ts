@@ -16,6 +16,9 @@ import { FlightLogsTable } from './main/FlightLogsTable';
 import { FeedbackTable } from './main/FeedbackTable';
 import { ApiLogsTable } from './main/ApiLogsTable';
 import { ControllerRatingsTable } from './main/ControllerRatingsTable';
+import { FlightsTable } from './main/FlightsTable';
+import { SessionChatTable } from './main/SessionChatTable';
+import { GlobalChatTable } from './main/GlobalChatTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -36,4 +39,7 @@ export interface MainDatabase {
   feedback: FeedbackTable;
   api_logs: ApiLogsTable;
   controller_ratings: ControllerRatingsTable;
+  flights: FlightsTable;
+  session_chat: SessionChatTable;
+  global_chat: GlobalChatTable;
 }
