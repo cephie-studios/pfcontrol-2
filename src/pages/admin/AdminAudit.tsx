@@ -657,7 +657,7 @@ export default function AdminAudit() {
                             <div className="flex items-center space-x-2">
                               <Clock className="w-4 h-4 text-zinc-500" />
                               <span className="text-sm">
-                                {formatDate(log.timestamp)}
+                                {formatDate(log.created_at)}
                               </span>
                             </div>
                           </td>
@@ -747,7 +747,7 @@ export default function AdminAudit() {
                       )}
 
                       <p className="text-zinc-300">
-                        <strong>Timestamp:</strong> {formatDate(log.timestamp)}
+                        <strong>Timestamp:</strong> {formatDate(log.created_at)}
                       </p>
 
                       <div className="flex items-center space-x-2">
@@ -869,7 +869,7 @@ export default function AdminAudit() {
                         Timestamp
                       </h3>
                       <p className="text-white">
-                        {formatDate(selectedLog.timestamp)}
+                        {formatDate(selectedLog.created_at)}
                       </p>
                     </div>
                     <div className="bg-zinc-800 rounded-lg p-4">

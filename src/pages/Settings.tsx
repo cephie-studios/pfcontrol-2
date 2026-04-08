@@ -8,10 +8,8 @@ import {
 import {
   Save,
   AlertTriangle,
-  Settings as SettingsIcon,
   Check,
   RotateCcw,
-  ImageIcon,
 } from 'lucide-react';
 import type {
   Settings,

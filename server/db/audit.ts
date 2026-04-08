@@ -129,14 +129,13 @@ export async function getAuditLogs(
       let decryptedIP = null;
       if (log.ip_address) {
         try {
-          const parsed = JSON.parse(log.ip_address as string);
+          const parsed =
+            typeof log.ip_address === 'string'
+              ? JSON.parse(log.ip_address)
+              : log.ip_address;
           decryptedIP = decrypt(parsed);
         } catch {
-          try {
-            decryptedIP = decrypt(JSON.parse(log.ip_address as string));
-          } catch {
-            decryptedIP = null;
-          }
+          decryptedIP = null;
         }
       }
       return {
@@ -231,14 +230,13 @@ export async function getAuditLogById(logId: number | string) {
     let decryptedIP = null;
     if (result.ip_address) {
       try {
-        const parsed = JSON.parse(result.ip_address as string);
+        const parsed =
+          typeof result.ip_address === 'string'
+            ? JSON.parse(result.ip_address)
+            : result.ip_address;
         decryptedIP = decrypt(parsed);
       } catch {
-        try {
-          decryptedIP = decrypt(JSON.parse(result.ip_address as string));
-        } catch {
-          decryptedIP = null;
-        }
+        decryptedIP = null;
       }
     }
 

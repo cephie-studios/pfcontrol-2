@@ -229,7 +229,13 @@ export async function getFlightLogs(
     return {
       logs: logs.map((log) => ({
         ...log,
-        ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,
+        ip_address: log.ip_address
+          ? decrypt(
+              typeof log.ip_address === 'string'
+                ? JSON.parse(log.ip_address)
+                : log.ip_address
+            )
+          : null,
       })),
       pagination: {
         page,
@@ -256,7 +262,13 @@ export async function getFlightLogById(logId: string | number) {
 
     return {
       ...log,
-      ip_address: log.ip_address ? decrypt(JSON.parse(log.ip_address)) : null,
+      ip_address: log.ip_address
+        ? decrypt(
+            typeof log.ip_address === 'string'
+              ? JSON.parse(log.ip_address)
+              : log.ip_address
+          )
+        : null,
     };
   } catch (error) {
     console.error('Error fetching flight log by ID:', error);

@@ -366,7 +366,7 @@ export const getChartsForAirport = (icao: string) => {
         file: 'MDPC_OVR.png',
         name: 'Airport Diagram',
         type: 'Information',
-        credits: '© iceit PFConnect Studios',
+        credits: '© iceit Cephie Studios',
       },
       {
         file: 'MDPC_GND_1.jpg',

@@ -58,7 +58,7 @@ router.post('/:userId/reveal-ip', async (req, res) => {
         ipAddress: ip,
         userAgent: req.get('User-Agent'),
         details: {
-          revealedIP: user.ipAddress,
+          revealedIP: user.ip_address,
           timestamp: new Date().toISOString(),
         },
       });
@@ -67,7 +67,7 @@ router.post('/:userId/reveal-ip', async (req, res) => {
     res.json({
       userId: user.id,
       username: user.username,
-      ip_address: user.ipAddress,
+      ip_address: user.ip_address,
     });
   } catch (error) {
     console.error('Error revealing IP address:', error);

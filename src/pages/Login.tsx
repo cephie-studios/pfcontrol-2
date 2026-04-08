@@ -142,7 +142,7 @@ export default function Login() {
 
           <div className="flex w-full justify-center">
             <p className="text-xs text-gray-500 text-center max-w-xs">
-              PFConnect Studios is an independent service and is not in any way affiliated with Project Flight.
+              PFControl is an independent service and is not in any way affiliated with Project Flight.
             </p>
           </div>
         </div>
