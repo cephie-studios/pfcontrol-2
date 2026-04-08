@@ -563,6 +563,16 @@ export default function PilotProfile() {
                   <Share2 className="w-4 h-4" />
                   <span>{shareClicked ? 'Copied!' : 'Share'}</span>
                 </Button>
+                {isCurrentUser && (
+                  <Button
+                    onClick={() => (window.location.href = '/my-flights')}
+                    className="flex items-center gap-2 self-center md:self-auto"
+                    variant="outline"
+                  >
+                    <Plane className="w-4 h-4" />
+                    <span>My Flights</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

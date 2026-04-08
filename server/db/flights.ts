@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { sql } from 'kysely';
 import { incrementStat } from '../utils/statisticsCache.js';
 import type { FlightsTable } from './types/connection/main/FlightsTable.js';
+import type { FlightLogsTable } from './types/connection/main/FlightLogsTable.js';
 
 function createUTCDate(): Date {
   const now = new Date();
@@ -186,6 +187,122 @@ export async function getFlightsBySession(sessionId: string) {
     console.error('Error fetching flights:', error);
     return [];
   }
+}
+
+export async function getFlightsByUser(userId: string) {
+  try {
+    const flights = await mainDb
+      .selectFrom('flights')
+      .selectAll()
+      .where('user_id', '=', userId)
+      .orderBy('created_at', 'desc')
+      .execute();
+
+    return flights.map((flight) => sanitizeFlightForClient(flight));
+  } catch (error) {
+    console.error(`Error fetching flights for user ${userId}:`, error);
+    return [];
+  }
+}
+
+export async function getFlightByIdForUser(userId: string, flightId: string) {
+  try {
+    const validFlightId = validateFlightId(flightId);
+    const flight = await mainDb
+      .selectFrom('flights')
+      .selectAll()
+      .where('id', '=', validFlightId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+
+    return flight ? sanitizeFlightForClient(flight) : null;
+  } catch (error) {
+    console.error(`Error fetching flight ${flightId} for user ${userId}:`, error);
+    return null;
+  }
+}
+
+export async function getFlightLogsForUser(userId: string, flightId: string) {
+  try {
+    const validFlightId = validateFlightId(flightId);
+
+    const ownedFlight = await mainDb
+      .selectFrom('flights')
+      .select(['id', 'created_at'])
+      .where('id', '=', validFlightId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+
+    if (!ownedFlight) {
+      return { logs: [], logsDiscardedDueToAge: false };
+    }
+
+    const retentionThreshold = new Date(
+      Date.now() - 365 * 24 * 60 * 60 * 1000
+    );
+    const logsDiscardedDueToAge = !!(
+      ownedFlight.created_at && ownedFlight.created_at < retentionThreshold
+    );
+
+    const logs = await mainDb
+      .selectFrom('flight_logs')
+      .selectAll()
+      .where('flight_id', '=', validFlightId)
+      .orderBy('created_at', 'desc')
+      .execute();
+
+    return {
+      logs: logs.map((log: FlightLogsTable) => ({
+      id: log.id,
+      action: log.action,
+      old_data: log.old_data,
+      new_data: log.new_data,
+      created_at: log.created_at,
+      })),
+      logsDiscardedDueToAge,
+    };
+  } catch (error) {
+    console.error(
+      `Error fetching flight logs for flight ${flightId} and user ${userId}:`,
+      error
+    );
+    return { logs: [], logsDiscardedDueToAge: false };
+  }
+}
+
+export async function claimFlightForUser(
+  sessionId: string,
+  flightId: string,
+  acarsToken: string,
+  userId: string
+) {
+  const validSessionId = validateSessionId(sessionId);
+  const validFlightId = validateFlightId(flightId);
+
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['id', 'user_id', 'acars_token'])
+    .where('session_id', '=', validSessionId)
+    .where('id', '=', validFlightId)
+    .executeTakeFirst();
+
+  if (!flight) return { ok: false, reason: 'not_found' as const };
+  if (flight.acars_token !== acarsToken)
+    return { ok: false, reason: 'invalid_token' as const };
+  if (flight.user_id && flight.user_id !== userId)
+    return { ok: false, reason: 'already_claimed' as const };
+
+  await mainDb
+    .updateTable('flights')
+    .set({
+      user_id: userId,
+      updated_at: createUTCDate(),
+    })
+    .where('session_id', '=', validSessionId)
+    .where('id', '=', validFlightId)
+    .execute();
+
+  return { ok: true as const };
 }
 
 export async function validateAcarsAccess(
@@ -418,7 +535,7 @@ export async function updateFlight(
   for (const [key, value] of Object.entries(updates)) {
     let dbKey = key;
     if (key === 'cruisingFL') dbKey = 'cruisingfl';
-    if (key === 'clearedFL')  dbKey = 'clearedfl';
+    if (key === 'clearedFL') dbKey = 'clearedfl';
     if (allowedColumns.includes(dbKey)) {
       dbUpdates[dbKey] = dbKey === 'clearance' ? String(value) : value;
     }

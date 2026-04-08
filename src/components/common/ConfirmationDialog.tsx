@@ -49,11 +49,11 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   const dialogContent = (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 px-2"
       onClick={onCancel}
     >
       <div
-        className={`bg-zinc-900 border-2 ${currentVariant.border} rounded-lg shadow-lg max-w-md w-full`}
+        className={`bg-zinc-900 border-2 ${currentVariant.border} rounded-4xl shadow-lg max-w-md w-full`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

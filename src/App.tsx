@@ -7,6 +7,8 @@ import Create from './pages/Create';
 import Sessions from './pages/Sessions';
 import Submit from './pages/Submit';
 import Flights from './pages/Flights';
+import MyFlights from './pages/MyFlights';
+import MyFlightDetail from './pages/MyFlightDetail';
 import Settings from './pages/Settings';
 import PFATCFlights from './pages/PFATCFlights';
 import ACARS from './pages/ACARS';
@@ -18,6 +20,7 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
+import Loader from './components/common/Loader';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
 import CanaryModal from './components/modals/CanaryModal';
 
@@ -42,7 +45,6 @@ import {
   type UpdateModal,
 } from './utils/fetch/updateModal';
 import { getTesterSettings } from './utils/fetch/data';
-import { Loader } from 'lucide-react';
 
 export default function App() {
   const { user } = useAuth();
@@ -191,6 +193,22 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/my-flights"
+            element={
+              <ProtectedRoute>
+                <MyFlights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-flights/:id"
+            element={
+              <ProtectedRoute>
+                <MyFlightDetail />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/*"
@@ -198,8 +216,8 @@ export default function App() {
               <ProtectedRoute requireTester={false} requirePermission="admin">
                 <Suspense
                   fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-black">
-                      <Loader className="animate-spin h-10 w-10 text-blue-600" />
+                    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                      <Loader />
                     </div>
                   }
                 >

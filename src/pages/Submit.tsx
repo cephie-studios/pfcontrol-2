@@ -34,6 +34,8 @@ import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
 import CallsignInput from '../components/common/CallsignInput';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
+import Modal from '../components/common/Modal';
+import { getDiscordLoginUrl } from '../utils/fetch/auth';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -81,10 +83,17 @@ export default function Submit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [flightsSocket, setFlightsSocket] = useState<ReturnType<
     typeof createFlightsSocket
   > | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  useEffect(() => {
+    if (success && submittedFlight && !user) {
+      setShowAccountPrompt(true);
+    }
+  }, [success, submittedFlight, user]);
 
   useEffect(() => {
     if (
@@ -303,6 +312,7 @@ export default function Submit() {
     setSuccess(false);
     setSubmittedFlight(null);
     setShowRating(false);
+    setShowAccountPrompt(false);
     setForm({
       callsign: '',
       aircraft_type: '',
@@ -526,19 +536,19 @@ export default function Submit() {
                   </div>
                 )}
                 <div className="mt-6 pt-4 border-t border-green-800 space-x-2">
-                      {session?.isPFATC && (
-                        <Button
-                          onClick={() => {
-                            setShowRating(false);
-                            navigate(
-                              `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
-                            );
-                          }}
-                        >
-                          <TowerControl className="h-5 w-5 mr-2" />
-                          Go to ACARS
-                        </Button>
-                      )}
+                  {session?.isPFATC && (
+                    <Button
+                      onClick={() => {
+                        setShowRating(false);
+                        navigate(
+                          `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
+                        );
+                      }}
+                    >
+                      <TowerControl className="h-5 w-5 mr-2" />
+                      Go to ACARS
+                    </Button>
+                  )}
                   <Button onClick={handleCreateAnother} variant="outline">
                     <PlusCircle className="h-5 w-5 mr-2" />
                     Create Another Flight Plan
@@ -737,6 +747,36 @@ export default function Submit() {
           </div>
         )}
       </div>
+      {!user && (
+        <Modal
+          isOpen={showAccountPrompt}
+          onClose={() => setShowAccountPrompt(false)}
+          title="Don’t lose this flight"
+          variant="primary"
+          footer={
+            <>
+              <Button
+                onClick={() => {
+                  const callback = submittedFlight
+                    ? `/my-flights?claimSessionId=${encodeURIComponent(sessionId || '')}&claimFlightId=${encodeURIComponent(String(submittedFlight.id))}&claimToken=${encodeURIComponent(submittedFlight.acars_token || '')}`
+                    : '/my-flights';
+                  window.location.href = getDiscordLoginUrl(callback);
+                }}
+              >
+                Create Account Now
+              </Button>
+              <Button variant="outline" onClick={() => setShowAccountPrompt(false)}>
+                Skip for now
+              </Button>
+            </>
+          }
+        >
+          <p className="text-gray-300">
+            Create an account to save this flight right now and unlock My Flights,
+            session history, and the full PFControl experience.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

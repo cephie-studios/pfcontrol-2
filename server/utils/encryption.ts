@@ -67,7 +67,11 @@ export function decrypt(encryptedData: {
     let decrypted = decipher.update(data, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
-    return JSON.parse(decrypted);
+    try {
+      return JSON.parse(decrypted);
+    } catch {
+      return decrypted;
+    }
   } catch (error) {
     console.error('Decryption error:', error);
     return null;

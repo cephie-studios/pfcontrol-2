@@ -3,6 +3,11 @@ import requireAuth from '../middleware/auth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
   getFlightsBySession,
+  getFlightsByUser,
+  getFlightByIdForUser,
+  getFlightLogsForUser,
+  claimFlightForUser,
+  getFlightById,
   addFlight,
   updateFlight,
   deleteFlight,
@@ -53,6 +58,116 @@ process.on('SIGTERM', () => {
   clearInterval(acarsCleanupInterval);
   activeAcarsTerminals.clear();
 });
+
+// GET: /api/flights/me - get flights submitted by current user
+router.get('/me/list', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const flights = await getFlightsByUser(req.user.userId);
+    res.json(flights);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch your flights' });
+  }
+});
+
+// GET: /api/flights/me/:flightId - get one owned flight
+router.get('/me/:flightId', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const flight = await getFlightByIdForUser(req.user.userId, req.params.flightId);
+    if (!flight) return res.status(404).json({ error: 'Flight not found' });
+    res.json(flight);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch flight' });
+  }
+});
+
+// GET: /api/flights/me/:flightId/logs - get owned flight logs
+router.get('/me/:flightId/logs', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const logsData = await getFlightLogsForUser(
+      req.user.userId,
+      req.params.flightId
+    );
+    res.json(logsData);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch flight logs' });
+  }
+});
+
+// POST: /api/flights/claim - claim a just-submitted guest flight after login
+router.post('/claim', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { sessionId, flightId, acarsToken } = req.body ?? {};
+    if (!sessionId || !flightId || !acarsToken) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await claimFlightForUser(
+      String(sessionId),
+      String(flightId),
+      String(acarsToken),
+      req.user.userId
+    );
+
+    if (!result.ok) {
+      if (result.reason === 'not_found') {
+        return res.status(404).json({ error: 'Flight not found' });
+      }
+      if (result.reason === 'invalid_token') {
+        return res.status(403).json({ error: 'Invalid claim token' });
+      }
+      if (result.reason === 'already_claimed') {
+        return res.status(409).json({ error: 'Flight already claimed' });
+      }
+      return res.status(400).json({ error: 'Unable to claim flight' });
+    }
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to claim flight' });
+  }
+});
+
+// GET: /api/flights/:sessionId/:flightId/acars-flight - get specific flight for ACARS token
+router.get(
+  '/:sessionId/:flightId/acars-flight',
+  acarsValidationLimiter,
+  async (req, res) => {
+    try {
+      const { sessionId, flightId } = req.params;
+      const acarsToken =
+        typeof req.query.acars_token === 'string'
+          ? req.query.acars_token
+          : undefined;
+
+      if (!acarsToken) {
+        return res.status(400).json({ error: 'Missing access token' });
+      }
+
+      const validation = await validateAcarsAccess(sessionId, flightId, acarsToken);
+      if (!validation.valid) {
+        return res.status(403).json({ error: 'Invalid ACARS token' });
+      }
+
+      const flight = await getFlightById(sessionId, flightId);
+      if (!flight) {
+        return res.status(404).json({ error: 'Flight not found' });
+      }
+
+      const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
+      void user_id;
+      void ip_address;
+      void acars_token;
+      res.json(sanitizedFlight);
+    } catch {
+      res.status(500).json({ error: 'Failed to load flight' });
+    }
+  }
+);
 
 // GET: /api/flights/:sessionId - get all flights for a session
 router.get('/:sessionId', requireAuth, async (req, res) => {

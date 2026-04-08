@@ -30,6 +30,8 @@ import AcarsTerminal from '../components/acars/AcarsTerminal';
 import AcarsNotePanel from '../components/acars/AcarsNotePanel';
 import ChartDrawer from '../components/tools/ChartDrawer';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
+import Modal from '../components/common/Modal';
+import { getDiscordLoginUrl } from '../utils/fetch/auth';
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -65,6 +67,7 @@ export default function ACARS() {
     'terminal'
   );
   const [showChartsDrawer, setShowChartsDrawer] = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   const socketRef = useRef<ReturnType<typeof createFlightsSocket> | null>(null);
   const initializedRef = useRef(false);
@@ -248,21 +251,15 @@ NOTES:
         }
 
         const flightResponse = await fetch(
-          `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}`,
-          { credentials: 'include' }
+          `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}/${flightId}/acars-flight?acars_token=${accessId}`
         );
         if (!flightResponse.ok) {
-          if (flightResponse.status === 401) {
-            setIsAuthError(true);
-            throw new Error('Authentication required');
-          }
           throw new Error('Failed to load flight data');
         }
-        const flights: Flight[] = await flightResponse.json();
-        const currentFlight = flights.find(
-          (f) => String(f.id) === String(flightId)
-        );
-        if (!currentFlight) throw new Error('Flight not found');
+        const currentFlight: Flight = await flightResponse.json();
+        if (!currentFlight || String(currentFlight.id) !== String(flightId)) {
+          throw new Error('Flight not found');
+        }
         setFlight(currentFlight);
         setLoading(false);
         await fetch(
@@ -285,6 +282,12 @@ NOTES:
     };
     validateAndLoad();
   }, [sessionId, flightId, accessId]);
+
+  useEffect(() => {
+    if (!loading && !user && flight) {
+      setShowAccountPrompt(true);
+    }
+  }, [loading, user, flight]);
 
   useEffect(() => {
     if (!sessionId || !flightId) return;
@@ -839,6 +842,37 @@ NOTES:
         departureAirport={flight?.departure}
         arrivalAirport={flight?.arrival}
       />
+      {!user && (
+        <Modal
+          isOpen={showAccountPrompt}
+          onClose={() => setShowAccountPrompt(false)}
+          title="Secure this flight to your account"
+          variant="primary"
+          footer={
+            <>
+              <Button
+                onClick={() => {
+                  const callback =
+                    sessionId && flight?.id && accessId
+                      ? `/my-flights?claimSessionId=${encodeURIComponent(sessionId)}&claimFlightId=${encodeURIComponent(String(flight.id))}&claimToken=${encodeURIComponent(accessId)}`
+                      : '/my-flights';
+                  window.location.href = getDiscordLoginUrl(callback);
+                }}
+              >
+                Create Account Now
+              </Button>
+              <Button variant="outline" onClick={() => setShowAccountPrompt(false)}>
+                Skip for now
+              </Button>
+            </>
+          }
+        >
+          <p className="text-gray-300">
+            Keep flying as a guest, but creating an account now will immediately
+            attach this ACARS flight to your profile and unlock My Flights.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   LogOut,
   Settings,
   List,
+  Plane,
   LayoutDashboard,
   ChevronDown,
 } from 'lucide-react';
@@ -115,6 +116,15 @@ export default function CustomUserButton({
             <List className="w-4 h-4 shrink-0" />
             <span>My Sessions</span>
           </button>
+          <button
+            onClick={() =>
+              handleAction(() => (window.location.href = '/my-flights'))
+            }
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
+          >
+            <Plane className="w-4 h-4 shrink-0" />
+            <span>My Flights</span>
+          </button>
 
           <button
             onClick={() => handleAction(() => (window.location.href = '/settings'))}
@@ -223,6 +233,16 @@ export default function CustomUserButton({
             >
               <List className="w-4 h-4 shrink-0" />
               <span className="font-medium">My Sessions</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsDropdownOpen(false);
+                window.location.href = '/my-flights';
+              }}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+            >
+              <Plane className="w-4 h-4 shrink-0" />
+              <span className="font-medium">My Flights</span>
             </button>
 
             <button

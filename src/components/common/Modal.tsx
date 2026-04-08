@@ -41,7 +41,7 @@ export default function Modal({
         : 'text-blue-400';
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/65 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
       <div
         className={`bg-zinc-900 border-2 ${borderColor} rounded-2xl max-w-md w-full p-6 animate-fade-in`}
       >

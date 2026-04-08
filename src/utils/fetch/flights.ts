@@ -24,6 +24,62 @@ export async function addFlight(
   return res.json();
 }
 
+export async function fetchMyFlights(): Promise<Flight[]> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/list`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to fetch your flights');
+  return res.json();
+}
+
+export async function claimSubmittedFlight(
+  sessionId: string,
+  flightId: string,
+  acarsToken: string
+): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/claim`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, flightId, acarsToken }),
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to claim submitted flight');
+  }
+}
+
+export async function fetchMyFlightById(flightId: string): Promise<Flight> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to fetch flight');
+  return res.json();
+}
+
+export interface FlightLogItem {
+  id: number;
+  action: 'add' | 'update' | 'delete';
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface MyFlightLogsResponse {
+  logs: FlightLogItem[];
+  logsDiscardedDueToAge: boolean;
+}
+
+export async function fetchMyFlightLogs(
+  flightId: string
+): Promise<MyFlightLogsResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to fetch flight logs');
+  return res.json();
+}
+
 export async function updateFlight(
   sessionId: string,
   flightId: string | number,

@@ -34,7 +34,7 @@ import WindDisplay from '../components/tools/WindDisplay';
 import FrequencyDisplay from '../components/tools/FrequencyDisplay';
 import ChartDrawer from '../components/tools/ChartDrawer';
 import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
-import ChatSidebar from '../components/tools/ChatSidebar';
+import { ChatSidebar } from '../components/chat';
 import Button from '../components/common/Button';
 import Dropdown from '../components/common/Dropdown';
 import TextInput from '../components/common/TextInput';

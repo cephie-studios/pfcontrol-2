@@ -40,7 +40,7 @@ import Button from '../common/Button';
 import RunwayDropdown from '../dropdowns/RunwayDropdown';
 import Dropdown from '../common/Dropdown';
 import FrequencyDisplay from './FrequencyDisplay';
-import ChatSidebar from './ChatSidebar';
+import { ChatSidebar } from '../chat';
 import ATIS from './ATIS';
 
 interface ToolbarProps {

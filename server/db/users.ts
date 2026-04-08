@@ -86,12 +86,16 @@ export async function getUserById(userId: string) {
   }
 
   const safeDecrypt = (
-    encryptedData: string | null | undefined,
+    encryptedData: unknown,
     fieldName: string
   ) => {
     if (!encryptedData) return null;
     try {
-      return decrypt(JSON.parse(encryptedData));
+      const parsed =
+        typeof encryptedData === 'string'
+          ? JSON.parse(encryptedData)
+          : encryptedData;
+      return decrypt(parsed);
     } catch (error) {
       console.error(
         `Failed to decrypt ${fieldName} for user ${userId}:`,
@@ -175,15 +179,29 @@ export async function getUserByUsername(username: string) {
   const result = {
     ...user,
     access_token: user.access_token
-      ? decrypt(JSON.parse(user.access_token))
+      ? decrypt(
+          typeof user.access_token === 'string'
+            ? JSON.parse(user.access_token)
+            : user.access_token
+        )
       : null,
     refresh_token: user.refresh_token
-      ? decrypt(JSON.parse(user.refresh_token))
+      ? decrypt(
+          typeof user.refresh_token === 'string'
+            ? JSON.parse(user.refresh_token)
+            : user.refresh_token
+        )
       : null,
     settings: user.settings
       ? decrypt(typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings)
       : null,
-    ip_address: user.ip_address ? decrypt(JSON.parse(user.ip_address)) : null,
+    ip_address: user.ip_address
+      ? decrypt(
+          typeof user.ip_address === 'string'
+            ? JSON.parse(user.ip_address)
+            : user.ip_address
+        )
+      : null,
     role_permissions: user.role_permissions || null,
     statistics: user.statistics || {},
   };

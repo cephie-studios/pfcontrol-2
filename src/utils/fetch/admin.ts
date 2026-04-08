@@ -126,7 +126,7 @@ export interface AuditLog {
   details: Record<string, unknown>;
   ip_address?: string;
   user_agent?: string;
-  timestamp: string;
+  created_at: string;
 }
 
 export interface AuditLogsResponse {

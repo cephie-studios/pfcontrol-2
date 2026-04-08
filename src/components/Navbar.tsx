@@ -456,6 +456,14 @@ export default function Navbar({
                   >
                     My Sessions
                   </a>
+                  {user && (
+                    <a
+                      href="/my-flights"
+                      className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
+                    >
+                      My Flights
+                    </a>
+                  )}
                   <a
                     href="/pfatc"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
