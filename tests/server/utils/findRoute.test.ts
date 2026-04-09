@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it } from 'vitest';
 import { findPath, type NavPoint } from '../../../server/utils/findRoute.js';
 
 describe('findPath', () => {

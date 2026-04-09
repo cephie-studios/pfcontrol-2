@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/middleware/auth.js', () => ({
   __esModule: true,
@@ -38,26 +39,29 @@ describe('POST /api/ratings', () => {
   });
 
   it('returns 400 when controllerId is missing', async () => {
-    const res = await request(app).post('/').send({ rating: 5 });
+    const res = await appRequest(app, 'POST', '/', { rating: 5 });
 
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when rating self', async () => {
-    const res = await request(app)
-      .post('/')
-      .send({ controllerId: 'pilot1', rating: 5 });
+    const res = await appRequest(app, 'POST', '/', {
+      controllerId: 'pilot1',
+      rating: 5,
+    });
 
     expect(res.status).toBe(400);
   });
 
   it('submits rating when valid', async () => {
-    const res = await request(app)
-      .post('/')
-      .send({ controllerId: 'ctrl1', rating: 4, flightId: 'f1' });
+    const res = await appRequest(app, 'POST', '/', {
+      controllerId: 'ctrl1',
+      rating: 4,
+      flightId: 'f1',
+    });
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    expect((res.body as { success: boolean }).success).toBe(true);
     expect(addControllerRating).toHaveBeenCalledWith(
       'ctrl1',
       'pilot1',

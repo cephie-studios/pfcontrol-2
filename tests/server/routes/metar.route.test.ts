@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 import metarRouter from '../../../server/routes/metar.js';
 
@@ -23,9 +24,9 @@ describe('GET /api/metar/:icao', () => {
   });
 
   it('returns first METAR object when upstream returns json array', async () => {
-    const res = await request(app).get('/EGLL');
+    const res = await appRequest(app, 'GET', '/EGLL');
 
     expect(res.status).toBe(200);
-    expect(res.body.raw).toContain('EGLL');
+    expect((res.body as { raw: string }).raw).toContain('EGLL');
   });
 });

@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/db/users.js', () => ({
   getUserByUsername: vi.fn(),
@@ -41,7 +42,7 @@ describe('GET /api/pilot/:username', () => {
   it('returns 404 when user is unknown', async () => {
     vi.mocked(getUserByUsername).mockResolvedValue(null);
 
-    const res = await request(app).get('/nobody');
+    const res = await appRequest(app, 'GET', '/nobody');
 
     expect(res.status).toBe(404);
   });
@@ -74,9 +75,11 @@ describe('GET /api/pilot/:username', () => {
       ratingCount: 0,
     });
 
-    const res = await request(app).get('/pilot');
+    const res = await appRequest(app, 'GET', '/pilot');
 
     expect(res.status).toBe(200);
-    expect(res.body.user.username).toBe('pilot');
+    expect((res.body as { user: { username: string } }).user.username).toBe(
+      'pilot'
+    );
   });
 });

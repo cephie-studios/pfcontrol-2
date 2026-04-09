@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/db/version.js', () => ({
   getAppVersion: vi.fn(),
@@ -33,9 +34,9 @@ describe('GET /api/version', () => {
       updated_by: 'system',
     });
 
-    const res = await request(app).get('/');
+    const res = await appRequest(app, 'GET', '/');
 
     expect(res.status).toBe(200);
-    expect(res.body.version).toBe('2.0.0');
+    expect((res.body as { version: string }).version).toBe('2.0.0');
   });
 });

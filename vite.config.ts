@@ -15,10 +15,4 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
-  test: {
-    environment: 'node',
-    setupFiles: ['tests/setup/vitestSetup.ts'],
-    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', 'dist/**', 'server/dist/**'],
-  },
 });

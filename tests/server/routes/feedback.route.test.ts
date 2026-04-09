@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/middleware/auth.js', () => ({
   __esModule: true,
@@ -38,13 +39,16 @@ describe('POST /api/feedback', () => {
   });
 
   it('returns 400 when rating is out of range', async () => {
-    const res = await request(app).post('/').send({ rating: 10 });
+    const res = await appRequest(app, 'POST', '/', { rating: 10 });
 
     expect(res.status).toBe(400);
   });
 
   it('creates feedback when valid', async () => {
-    const res = await request(app).post('/').send({ rating: 5, comment: ' ok ' });
+    const res = await appRequest(app, 'POST', '/', {
+      rating: 5,
+      comment: ' ok ',
+    });
 
     expect(res.status).toBe(200);
     expect(addFeedback).toHaveBeenCalled();

@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/db/updateModals.js', () => ({
   getActiveUpdateModal: vi.fn(),
@@ -20,7 +21,7 @@ describe('GET /api/update-modal/active', () => {
   it('returns modal payload', async () => {
     vi.mocked(getActiveUpdateModal).mockResolvedValue(null);
 
-    const res = await request(app).get('/active');
+    const res = await appRequest(app, 'GET', '/active');
 
     expect(res.status).toBe(200);
     expect(res.body).toBeNull();

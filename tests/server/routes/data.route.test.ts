@@ -1,6 +1,7 @@
 import express from 'express';
-import request from 'supertest';
-import { describe, expect, it, vi } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vitest';
+
+import { appRequest } from '../helpers/appRequest.js';
 
 vi.mock('../../../server/db/connection.js', () => ({
   mainDb: {},
@@ -17,7 +18,7 @@ describe('GET /api/data/airports', () => {
   app.use('/', dataRouter);
 
   it('returns airport json when data files exist', async () => {
-    const res = await request(app).get('/airports');
+    const res = await appRequest(app, 'GET', '/airports');
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
