@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Upload,
   Trash2,
@@ -13,7 +13,6 @@ import {
   Camera,
   ExternalLink,
 } from 'lucide-react';
-import { useInView } from 'react-intersection-observer';
 import { fetchBackgrounds } from '../../utils/fetch/data';
 import type { Settings } from '../../types/settings';
 import Button from '../common/Button';
@@ -68,14 +67,29 @@ function BackgroundImageItem({
   );
   const isSelected = selectedImage === image.filename;
 
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    rootMargin: '50px',
-  });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '50px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
-      ref={ref}
+      ref={containerRef}
       className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
         isSelected
           ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'

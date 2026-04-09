@@ -5,19 +5,7 @@ import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  BarElement,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Line } from '../../lib/chartJs';
 import {
   fetchControllerRatingStats,
   fetchControllerDailyRatingStats,
@@ -26,18 +14,6 @@ import {
 } from '../../utils/fetch/admin';
 import Toast from '../../components/common/Toast';
 import ErrorScreen from '../../components/common/ErrorScreen';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  BarElement
-);
 
 const getAvatarUrl = (userId: string, avatar: string | null) => {
   if (!avatar) return null;

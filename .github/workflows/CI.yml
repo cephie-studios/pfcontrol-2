@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -37,6 +37,9 @@ jobs:
 
       - name: Run type check
         run: npm run type-check
+
+      - name: Run tests
+        run: npm test
 
       - name: Build project
         run: npm run build-only

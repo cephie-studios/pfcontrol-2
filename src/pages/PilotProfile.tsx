@@ -25,15 +25,6 @@ import {
   Edit,
   Users,
 } from 'lucide-react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import { SiRoblox } from 'react-icons/si';
 import { fetchPilotProfile } from '../utils/fetch/pilot';
 import { getCurrentUser } from '../utils/fetch/auth';
@@ -44,15 +35,6 @@ import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import Navbar from '../components/Navbar';
 import AccessDenied from '../components/AccessDenied';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 type Ranks = Record<string, number | string | null>;
 

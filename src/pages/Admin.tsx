@@ -13,19 +13,7 @@ import {
 import Navbar from '../components/Navbar';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import Loader from '../components/common/Loader';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  BarElement,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Line } from '../lib/chartJs';
 import { useAuth } from '../hooks/auth/useAuth';
 import {
   fetchAdminStatistics,
@@ -39,18 +27,6 @@ import {
 import Toast from '../components/common/Toast';
 import Button from '../components/common/Button';
 import ErrorScreen from '../components/common/ErrorScreen';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  BarElement
-);
 
 export default function Admin() {
   const { user } = useAuth();
