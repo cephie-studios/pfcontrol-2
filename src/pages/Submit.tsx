@@ -99,6 +99,7 @@ export default function Submit() {
     if (
       success &&
       submittedFlight &&
+      user &&
       session?.isPFATC &&
       (settings?.acars?.autoRedirectToAcars ?? true)
     ) {
@@ -109,6 +110,7 @@ export default function Submit() {
   }, [
     success,
     submittedFlight,
+    user,
     session?.isPFATC,
     settings?.acars?.autoRedirectToAcars,
     sessionId,
@@ -540,13 +542,18 @@ export default function Submit() {
                     <Button
                       onClick={() => {
                         setShowRating(false);
-                        navigate(
-                          `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
-                        );
+                        const acarsPath = `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`;
+                        if (user) {
+                          navigate(acarsPath);
+                        } else {
+                          window.location.href = getDiscordLoginUrl(acarsPath);
+                        }
                       }}
                     >
                       <TowerControl className="h-5 w-5 mr-2" />
-                      Go to ACARS
+                      {user
+                        ? 'Go to ACARS'
+                        : 'Log in to access ACARS and PDCs'}
                     </Button>
                   )}
                   <Button onClick={handleCreateAnother} variant="outline">

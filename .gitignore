@@ -1,4 +1,3 @@
-# Logs
 logs
 *.log
 npm-debug.log*
@@ -12,7 +11,8 @@ lerna-debug.log*
 !.env.vite.production
 !.env.vite.canary
 !.env.vite.development
-scripts
+/scripts/*
+!/scripts/verify-node-modules.mjs
 node_modules
 dist
 dist-ssr
@@ -20,7 +20,6 @@ dist-ssr
 
 .vite
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
