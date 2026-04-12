@@ -57,6 +57,7 @@ interface ChatSidebarProps {
   isPFATC?: boolean;
   unreadSessionCount?: number;
   unreadGlobalCount?: number;
+  onVoiceStateChange?: (_inVoice: boolean) => void;
 }
 
 export default function ChatSidebar({
@@ -71,6 +72,7 @@ export default function ChatSidebar({
   isPFATC = false,
   unreadSessionCount = 0,
   unreadGlobalCount = 0,
+  onVoiceStateChange,
 }: ChatSidebarProps) {
   const { user } = useAuth();
   const { airports } = useData();
@@ -141,6 +143,7 @@ export default function ChatSidebar({
   const [talkingUsers, setTalkingUsers] = useState<Set<string>>(new Set());
   const [audioLevels, setAudioLevels] = useState<Map<string, number>>(new Map());
   const [isInVoice, setIsInVoice] = useState(false);
+  const [voiceDevices, setVoiceDevices] = useState<MediaDeviceInfo[]>([]);
 
   const voiceSocketRef = useRef<ReturnType<
     typeof createVoiceChatSocket
@@ -168,6 +171,10 @@ export default function ChatSidebar({
   // to be recreated when the map changes.
   const userVolumesRef = useRef(userVolumes);
   useEffect(() => { userVolumesRef.current = userVolumes; }, [userVolumes]);
+
+  useEffect(() => {
+    onVoiceStateChange?.(isInVoice);
+  }, [isInVoice, onVoiceStateChange]);
 
   const getConnectionIcon = () => {
     if (connectionState.connecting)
@@ -737,7 +744,7 @@ export default function ChatSidebar({
   }, [activeTab, open]);
 
   useEffect(() => {
-    if (!sessionId || !accessId || !user || !open) return;
+    if (!sessionId || !accessId || !user) return;
 
     voiceSocketRef.current = createVoiceChatSocket(
       sessionId,
@@ -774,12 +781,14 @@ export default function ChatSidebar({
         });
       },
       () => userVolumesRef.current,
-      // onDevicesRefreshed — no-op here; VoiceChat manages its own device list
-      undefined
+      (devices: MediaDeviceInfo[]) => setVoiceDevices(devices),
     );
 
     if (voiceSocketRef.current) {
       voiceSocketRef.current.socket.emit('get-voice-users');
+      voiceSocketRef.current.socket.on('user-left-voice', ({ userId: leftId }: { userId: string }) => {
+        setVoiceUsers((prev) => prev.filter((u) => u.userId !== leftId));
+      });
     }
 
     return () => {
@@ -788,12 +797,19 @@ export default function ChatSidebar({
         voiceSocketRef.current = null;
       }
       setVoiceUsers([]);
+      setVoiceDevices([]);
       setTalkingUsers(new Set());
       setConnectionState({ connected: false, connecting: false, error: null });
       setIsInVoice(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, accessId, user, open]);
+  }, [sessionId, accessId, user]);
+
+  useEffect(() => {
+    if (open && voiceSocketRef.current) {
+      voiceSocketRef.current.socket.emit('get-voice-users');
+    }
+  }, [open]);
 
   useEffect(() => {
     try {
@@ -1073,6 +1089,7 @@ export default function ChatSidebar({
             setUserVolumes={setUserVolumes}
             talkingUsers={talkingUsers}
             audioLevels={audioLevels}
+            externalDevices={voiceDevices}
           />
           <div className="shrink-0 relative mx-5 mb-5 mt-0 rounded-bl-3xl pt-8">
             <div

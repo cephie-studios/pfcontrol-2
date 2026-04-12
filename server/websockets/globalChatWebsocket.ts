@@ -138,6 +138,18 @@ export function setupGlobalChatWebsocket(
       return;
     }
 
+    try {
+      const user = await mainDb
+        .selectFrom('users')
+        .select(['username'])
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      socket.data.username = user?.username || 'Unknown';
+    } catch (error) {
+      console.error('[Global Chat] Error fetching username:', error);
+      socket.data.username = 'Unknown';
+    }
+
     socket.data.userId = userId;
     socket.data.station = station;
     socket.data.position = position;
@@ -160,7 +172,7 @@ export function setupGlobalChatWebsocket(
 
         connectedGlobalChatUsers.set(userId, {
           id: userId,
-          username: user?.username || 'Unknown',
+          username: socket.data.username,
           avatar: avatarUrl,
           station: station,
           position: position || null,
@@ -189,11 +201,11 @@ export function setupGlobalChatWebsocket(
     }
 
     socket.on('globalTyping', ({ username }: { username: string }) => {
-      socket.broadcast.emit('globalUserTyping', { userId, username });
+      socket.broadcast.emit('globalUserTyping', { userId, username: socket.data.username });
     });
 
     socket.on('globalChatMessage', async ({ user, message }) => {
-      if (!message || message.length > 500) return;
+      if (!message || message.length > 500 || user.userId !== socket.data.userId) return;
 
       const sanitizedMessage = sanitizeMessage(message, 500);
       if (!sanitizedMessage) return;
@@ -208,7 +220,7 @@ export function setupGlobalChatWebsocket(
 
         connectedGlobalChatUsers.set(user.userId, {
           id: user.userId,
-          username: user.username || existingUser?.username || 'Unknown',
+          username: socket.data.username,
           avatar: avatarUrl || existingUser?.avatar || null,
           station: socket.data.station,
           position: socket.data.position || null,
