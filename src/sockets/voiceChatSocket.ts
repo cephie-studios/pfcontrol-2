@@ -542,13 +542,15 @@ export function createVoiceChatSocket(
     const pc = peerConnections.get(fromUserId);
     if (pc) {
       try {
-        localStream?.getTracks().forEach(track => {
+        const stream = localStream;
+        if (!stream) return;
+        stream.getTracks().forEach(track => {
           const existing = pc.getTransceivers().find(t => t.receiver.track.kind === track.kind);
           if (existing) {
             if (existing.sender.track !== track) existing.sender.replaceTrack(track);
             existing.direction = 'sendrecv';
           } else {
-            pc.addTransceiver(track, { direction: 'sendrecv', streams: [localStream!] });
+            pc.addTransceiver(track, { direction: 'sendrecv', streams: [stream] });
           }
         });
         await pc.setLocalDescription();
@@ -559,7 +561,7 @@ export function createVoiceChatSocket(
     }
   });
 
-  const cleanup = () => {
+  const cleanupRTC = () => {
     stopAudioLevelMonitoring();
     peerConnections.forEach(pc => pc.close());
     peerConnections.clear();
@@ -569,9 +571,22 @@ export function createVoiceChatSocket(
     audioElements.clear();
     boostGainNodes.forEach(g => { try { g.disconnect(); } catch {/**/} });
     boostGainNodes.clear();
+    remoteAudioMonitorIntervals.forEach(i => clearInterval(i));
+    remoteAudioMonitorIntervals.clear();
+    statsIntervals.forEach(i => clearInterval(i));
+    statsIntervals.clear();
     iceHangTimeouts.forEach(t => clearTimeout(t));
     iceHangTimeouts.clear();
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    candidateBufferMap.clear();
+    makingOfferMap.clear();
+    ignoreOfferMap.clear();
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (analyser) { try { analyser.disconnect(); } catch {/**/} analyser = null; }
+    if (microphone) { try { microphone.disconnect(); } catch {/**/} microphone = null; }
+  };
+
+  const cleanup = () => {
+    cleanupRTC();
     if (audioContext && audioContext.state !== 'closed') audioContext.close();
     socket.disconnect();
   };
@@ -627,7 +642,7 @@ export function createVoiceChatSocket(
     },
     leaveVoice: () => {
       socket.emit('leave-voice-session');
-      cleanup();
+      cleanupRTC();
     },
     cleanup,
   };

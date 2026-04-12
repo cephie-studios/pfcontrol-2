@@ -19,6 +19,7 @@ interface VoiceChatProps {
   setUserVolumes: React.Dispatch<React.SetStateAction<Map<string, number>>>;
   talkingUsers: Set<string>;
   audioLevels: Map<string, number>;
+  externalDevices?: MediaDeviceInfo[];
 }
 
 export default function VoiceChat({
@@ -30,6 +31,7 @@ export default function VoiceChat({
   setUserVolumes,
   talkingUsers,
   audioLevels,
+  externalDevices,
 }: VoiceChatProps) {
   const { user } = useAuth();
 
@@ -59,6 +61,10 @@ export default function VoiceChat({
   });
 
   const refreshDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      console.warn('Media devices API not available');
+      return;
+    }
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter((d) => d.kind === 'audioinput');
@@ -70,11 +76,18 @@ export default function VoiceChat({
 
   useEffect(() => {
     if (!isInVoice) return;
+    if (!navigator.mediaDevices) return;
     navigator.mediaDevices.addEventListener('devicechange', refreshDevices);
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', refreshDevices);
     };
   }, [isInVoice, refreshDevices]);
+
+  useEffect(() => {
+    if (externalDevices && externalDevices.length > 0) {
+      setAudioInputDevices(externalDevices);
+    }
+  }, [externalDevices]);
 
   useEffect(() => {
     try {
