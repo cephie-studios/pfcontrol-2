@@ -1,4 +1,5 @@
 import io from 'socket.io-client';
+import { playSound, SOUNDS } from '../utils/playSound';
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -468,6 +469,10 @@ export function createVoiceChatSocket(
   socket.on('user-joined-voice', async ({ userId: newUserId }) => {
     if (newUserId === userId) return;
 
+    if (localStream) {
+      playSound(SOUNDS.VC_CONNECT, 0.6).catch(() => {});
+    }
+
     if (!localStream) {
       console.log(`[VoiceChat] user-joined-voice from ${newUserId} ignored — not in voice yet`);
       return;
@@ -499,6 +504,10 @@ export function createVoiceChatSocket(
   });
 
   socket.on('user-left-voice', ({ userId: leftUserId }) => {
+    if (localStream) {
+      playSound(SOUNDS.VC_DISCONNECT, 0.6).catch(() => {});
+    }
+
     const pc = peerConnections.get(leftUserId);
     if (pc) { pc.close(); peerConnections.delete(leftUserId); }
     const stream = audioStreams.get(leftUserId);
@@ -595,7 +604,10 @@ export function createVoiceChatSocket(
     socket,
     joinVoice: () => {
       initializeAudio().then(ok => {
-        if (ok) socket.emit('join-voice-session');
+        if (ok) {
+          socket.emit('join-voice-session');
+          playSound(SOUNDS.VC_CONNECT, 0.6).catch(() => {});
+        }
       });
     },
     getVoiceUsers: () => socket.emit('get-voice-users'),
@@ -642,6 +654,7 @@ export function createVoiceChatSocket(
     },
     leaveVoice: () => {
       socket.emit('leave-voice-session');
+      playSound(SOUNDS.VC_DISCONNECT, 0.6).catch(() => {});
       cleanupRTC();
     },
     cleanup,
