@@ -33,7 +33,6 @@ export default function VoiceChat({
 }: VoiceChatProps) {
   const { user } = useAuth();
 
-
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioInput, setSelectedAudioInput] = useState<string>(() => {
     try {
@@ -68,7 +67,6 @@ export default function VoiceChat({
       console.warn('Failed to enumerate audio devices:', err);
     }
   }, []);
-
 
   useEffect(() => {
     if (!isInVoice) return;
