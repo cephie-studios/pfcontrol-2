@@ -16,6 +16,14 @@ export type GlobalChatSuggestion = {
 const mentionListClass =
   'absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-40 overflow-y-auto';
 
+function typingText(users: Map<string, string>): string | null {
+  const names = Array.from(users.values());
+  if (names.length === 0) return null;
+  if (names.length === 1) return `${names[0]} is typing…`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
+  return 'Several people are typing…';
+}
+
 /** Single floating composer for session + PFATC: gradient, @-mentions, textarea, send. */
 export function ChatTextComposer({
   isGlobalChat,
@@ -36,6 +44,7 @@ export function ChatTextComposer({
   globalSuggestions,
   selectedGlobalSuggestionIndex,
   insertGlobalMention,
+  typingUsers,
 }: {
   isGlobalChat: boolean;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -55,7 +64,9 @@ export function ChatTextComposer({
   globalSuggestions: GlobalChatSuggestion[];
   selectedGlobalSuggestionIndex: number;
   insertGlobalMention: (value: string) => void;
+  typingUsers: Map<string, string>;
 }) {
+  const typing = typingText(typingUsers);
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
       <div className="relative px-5 pb-5 pt-14 rounded-bl-3xl">
@@ -204,6 +215,17 @@ export function ChatTextComposer({
                   ))}
                 </div>
               )}
+
+          {typing && (
+            <div className="flex items-center gap-1.5 px-1 pb-1.5 text-xs text-zinc-400">
+              <span className="flex gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-zinc-400 animate-bounce [animation-delay:0ms]" />
+                <span className="w-1 h-1 rounded-full bg-zinc-400 animate-bounce [animation-delay:150ms]" />
+                <span className="w-1 h-1 rounded-full bg-zinc-400 animate-bounce [animation-delay:300ms]" />
+              </span>
+              {typing}
+            </div>
+          )}
 
           <textarea
             ref={textareaRef}

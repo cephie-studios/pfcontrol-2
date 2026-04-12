@@ -95,6 +95,10 @@ export function setupChatWebsocket(
 
       socket.join(sessionId);
 
+      socket.on('typing', ({ username }: { username: string }) => {
+        socket.to(sessionId).emit('userTyping', { userId, username });
+      });
+
       socket.on('chatMessage', async ({ user, message }) => {
         const sessionId = socket.data.sessionId;
         if (!sessionId || !message || message.length > 500) return;

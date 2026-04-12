@@ -188,6 +188,10 @@ export function setupGlobalChatWebsocket(
       }
     }
 
+    socket.on('globalTyping', ({ username }: { username: string }) => {
+      socket.broadcast.emit('globalUserTyping', { userId, username });
+    });
+
     socket.on('globalChatMessage', async ({ user, message }) => {
       if (!message || message.length > 500) return;
 

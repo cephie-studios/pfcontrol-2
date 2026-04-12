@@ -51,7 +51,7 @@ interface ChatSidebarProps {
   open: boolean;
   onClose: () => void;
   sessionUsers: SessionUser[];
-  onMentionReceived?: (mention: ChatMention) => void;
+  onMentionReceived?: (_: ChatMention) => void;
   station?: string;
   position?: string;
   isPFATC?: boolean;
@@ -138,23 +138,36 @@ export default function ChatSidebar({
     connecting: false,
     error: null,
   });
+  const [talkingUsers, setTalkingUsers] = useState<Set<string>>(new Set());
+  const [audioLevels, setAudioLevels] = useState<Map<string, number>>(new Map());
   const [isInVoice, setIsInVoice] = useState(false);
 
   const voiceSocketRef = useRef<ReturnType<
     typeof createVoiceChatSocket
   > | null>(null);
 
-  const [unreadSessionMentions, setUnreadSessionMentions] = useState<
+  const [, setUnreadSessionMentions] = useState<
     ChatMention[]
   >([]);
-  const [unreadGlobalMentions, setUnreadGlobalMentions] = useState<
-    ChatMention[]
-  >([]);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [, setUnreadGlobalMentions] = useState<ChatMention[]>([]);
+
+  // userId -> username for people currently typing
+  const [sessionTypingUsers, setSessionTypingUsers] = useState<Map<string, string>>(new Map());
+  const [globalTypingUsers, setGlobalTypingUsers] = useState<Map<string, string>>(new Map());
+  // Timeouts that auto-clear a user from the typing map after inactivity
+  const sessionTypingTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const globalTypingTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Timestamp of last typing emit — used to throttle sends
+  const lastSessionTypingEmit = useRef(0);
+  const lastGlobalTypingEmit = useRef(0);
   const [userVolumes, setUserVolumes] = useState<Map<string, number>>(() => {
     const storedVolumes = localStorage.getItem('userVolumes');
     return storedVolumes ? new Map(JSON.parse(storedVolumes)) : new Map();
   });
+  // Ref so the voice socket always reads the latest volumes without needing
+  // to be recreated when the map changes.
+  const userVolumesRef = useRef(userVolumes);
+  useEffect(() => { userVolumesRef.current = userVolumes; }, [userVolumes]);
 
   const getConnectionIcon = () => {
     if (connectionState.connecting)
@@ -235,6 +248,22 @@ export default function ChatSidebar({
             newMap.set(data.messageId, data.reason || 'Hate speech detected');
             return newMap;
           });
+        },
+        ({ userId: typingId, username }: { userId: string; username: string }) => {
+          setSessionTypingUsers((prev) => new Map(prev).set(typingId, username));
+          const prev = sessionTypingTimeouts.current.get(typingId);
+          if (prev) clearTimeout(prev);
+          sessionTypingTimeouts.current.set(
+            typingId,
+            setTimeout(() => {
+              setSessionTypingUsers((m) => {
+                const next = new Map(m);
+                next.delete(typingId);
+                return next;
+              });
+              sessionTypingTimeouts.current.delete(typingId);
+            }, 3000)
+          );
         }
       );
 
@@ -249,7 +278,7 @@ export default function ChatSidebar({
         socketRef.current = null;
       }
     };
-  }, [sessionId, accessId, user?.userId, open, activeTab]);
+  }, [sessionId, accessId, user, open, activeTab, onMentionReceived]);
 
   useEffect(() => {
     if (!socketRef.current) return;
@@ -328,7 +357,7 @@ export default function ChatSidebar({
         (mention) => {
           if (!open || activeTab !== 'pfatc') {
             if (
-              mention.mentionedUserId === user.userId &&
+              user && mention.mentionedUserId === user.userId &&
               onMentionReceivedRef.current
             ) {
               onMentionReceivedRef.current({
@@ -363,6 +392,22 @@ export default function ChatSidebar({
         },
         (users: ConnectedGlobalChatUser[]) => {
           setConnectedGlobalChatUsers(users);
+        },
+        ({ userId: typingId, username }: { userId: string; username: string }) => {
+          setGlobalTypingUsers((prev) => new Map(prev).set(typingId, username));
+          const prev = globalTypingTimeouts.current.get(typingId);
+          if (prev) clearTimeout(prev);
+          globalTypingTimeouts.current.set(
+            typingId,
+            setTimeout(() => {
+              setGlobalTypingUsers((m) => {
+                const next = new Map(m);
+                next.delete(typingId);
+                return next;
+              });
+              globalTypingTimeouts.current.delete(typingId);
+            }, 3000)
+          );
         }
       );
 
@@ -370,14 +415,14 @@ export default function ChatSidebar({
         globalSocketRef.current.socket.emit('globalChatOpened');
       }
     }
-
+    
     return () => {
       if (globalSocketRef.current) {
         globalSocketRef.current.socket.disconnect();
         globalSocketRef.current = null;
       }
     };
-  }, [user?.userId, station, position, isPFATC, open, activeTab]);
+  }, [user, station, position, isPFATC, open, activeTab]);
 
   useEffect(() => {
     if (!globalSocketRef.current) return;
@@ -403,7 +448,7 @@ export default function ChatSidebar({
         setGlobalMessages([]);
         setGlobalLoading(false);
       });
-  }, [open, activeTab]);
+  }, [open, activeTab, globalMessages.length]);
 
   const isGlobalChat = activeTab === 'pfatc';
   const textMessages: ChatListMessage[] = isGlobalChat
@@ -439,6 +484,14 @@ export default function ChatSidebar({
     setMentionSuggestions(result.suggestions);
     setShowMentionSuggestions(result.shouldShow);
     setSelectedSuggestionIndex(result.shouldShow ? 0 : -1);
+
+    if (value && socketRef.current && user) {
+      const now = Date.now();
+      if (now - lastSessionTypingEmit.current > 2000) {
+        lastSessionTypingEmit.current = now;
+        socketRef.current.sendTyping(user.username);
+      }
+    }
   };
 
   const insertMention = (username: string) => {
@@ -469,6 +522,7 @@ export default function ChatSidebar({
       message: input.trim(),
     });
     setInput('');
+    lastSessionTypingEmit.current = 0;
   };
 
   const sendGlobalMessage = () => {
@@ -483,6 +537,7 @@ export default function ChatSidebar({
       message: globalInput.trim(),
     });
     setGlobalInput('');
+    lastGlobalTypingEmit.current = 0;
   };
 
   async function handleDelete(msgId: number) {
@@ -524,6 +579,14 @@ export default function ChatSidebar({
     setGlobalSuggestions(result.suggestions);
     setShowGlobalSuggestions(result.shouldShow);
     setSelectedGlobalSuggestionIndex(result.shouldShow ? 0 : -1);
+
+    if (value && globalSocketRef.current && user) {
+      const now = Date.now();
+      if (now - lastGlobalTypingEmit.current > 2000) {
+        lastGlobalTypingEmit.current = now;
+        globalSocketRef.current.sendTyping(user.username);
+      }
+    }
   };
 
   const insertGlobalMention = (value: string) => {
@@ -664,27 +727,6 @@ export default function ChatSidebar({
   }
 
   useEffect(() => {
-    if (chatOpen) {
-      if (activeTab === 'session') {
-        setUnreadSessionMentions([]);
-      } else if (activeTab === 'pfatc') {
-        setUnreadGlobalMentions([]);
-      }
-      const totalUnread = [
-        ...unreadSessionMentions,
-        ...unreadGlobalMentions,
-      ].filter((mention) => {
-        if (activeTab === 'session') {
-          return mention.sessionId !== 'global-chat';
-        } else {
-          return mention.sessionId === 'global-chat';
-        }
-      });
-      setUnreadGlobalMentions(totalUnread);
-    }
-  }, [chatOpen, activeTab]);
-
-  useEffect(() => {
     if (open) {
       if (activeTab === 'session') {
         setUnreadSessionMentions([]);
@@ -701,12 +743,39 @@ export default function ChatSidebar({
       sessionId,
       accessId,
       user.userId,
-      (users) => setVoiceUsers(users),
+      (users) => {
+        setVoiceUsers(users);
+      },
       (state) => setConnectionState(state),
-      () => {},
-      () => {},
-      () => {},
-      userVolumes
+      // onUserStartedTalking
+      (talkingUserId: string) => {
+        setTalkingUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(talkingUserId);
+          return newSet;
+        });
+      },
+      // onUserStoppedTalking
+      (talkingUserId: string) => {
+        setTalkingUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(talkingUserId);
+          return newSet;
+        });
+      },
+      // onAudioLevelUpdate — 3rd arg is isTalking (derived in socket)
+      (levelUserId: string, level: number, isTalking: boolean) => {
+        setAudioLevels((prev) => new Map(prev).set(levelUserId, level));
+        setTalkingUsers((prev) => {
+          const newSet = new Set(prev);
+          if (isTalking) newSet.add(levelUserId);
+          else newSet.delete(levelUserId);
+          return newSet;
+        });
+      },
+      () => userVolumesRef.current,
+      // onDevicesRefreshed — no-op here; VoiceChat manages its own device list
+      undefined
     );
 
     if (voiceSocketRef.current) {
@@ -719,9 +788,11 @@ export default function ChatSidebar({
         voiceSocketRef.current = null;
       }
       setVoiceUsers([]);
+      setTalkingUsers(new Set());
       setConnectionState({ connected: false, connecting: false, error: null });
       setIsInVoice(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, accessId, user, open]);
 
   useEffect(() => {
@@ -787,7 +858,7 @@ export default function ChatSidebar({
         <div className="border-b border-blue-800 bg-zinc-900 px-4 pb-3 pt-2">
           <div className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60">
             <div
-              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
+              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
               style={{
                 width:
                   tabCount > 0
@@ -818,7 +889,7 @@ export default function ChatSidebar({
                       <MessageCircle className="h-4 w-4 shrink-0" />
                       <span>Session</span>
                       {unreadSessionCount > 0 && activeTab !== 'session' && (
-                        <span className="absolute right-1 top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                        <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
                           {unreadSessionCount}
                         </span>
                       )}
@@ -829,7 +900,7 @@ export default function ChatSidebar({
                       <Phone className="h-4 w-4 shrink-0" />
                       <span>Voice</span>
                       <span
-                        className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full pl-[1px] text-xs text-white ${
+                        className={`flex h-5 min-w-5 items-center justify-center rounded-full pl-px text-xs text-white ${
                           isInVoice ? 'border border-green-500' : 'bg-zinc-700/90'
                         }`}
                       >
@@ -842,7 +913,7 @@ export default function ChatSidebar({
                       <Radio className="h-4 w-4 shrink-0" />
                       <span>PFATC</span>
                       {unreadGlobalCount > 0 && activeTab !== 'pfatc' && (
-                        <span className="absolute right-1 top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                        <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
                           {unreadGlobalCount}
                         </span>
                       )}
@@ -983,6 +1054,7 @@ export default function ChatSidebar({
             globalSuggestions={globalSuggestions}
             selectedGlobalSuggestionIndex={selectedGlobalSuggestionIndex}
             insertGlobalMention={insertGlobalMention}
+            typingUsers={isGlobalChat ? globalTypingUsers : sessionTypingUsers}
           />
         </div>
       )}
@@ -991,24 +1063,20 @@ export default function ChatSidebar({
       {sessionId && activeTab === 'voice' && (
         <div className="flex-1 flex flex-col min-h-0">
           <VoiceChat
-            sessionId={sessionId}
-            accessId={accessId}
             open={open}
             activeTab={activeTab}
-            onMentionReceived={onMentionReceived}
             voiceUsers={voiceUsers}
-            setVoiceUsers={setVoiceUsers}
-            connectionState={connectionState}
-            setConnectionState={setConnectionState}
             isInVoice={isInVoice}
             setIsInVoice={setIsInVoice}
             voiceSocket={voiceSocketRef.current}
             userVolumes={userVolumes}
             setUserVolumes={setUserVolumes}
+            talkingUsers={talkingUsers}
+            audioLevels={audioLevels}
           />
           <div className="shrink-0 relative mx-5 mb-5 mt-0 rounded-bl-3xl pt-8">
             <div
-              className="pointer-events-none absolute inset-0 rounded-bl-3xl bg-gradient-to-t from-zinc-900 to-transparent"
+              className="pointer-events-none absolute inset-0 rounded-bl-3xl bg-linear-to-t from-zinc-900 to-transparent"
               aria-hidden
             />
             <div className="relative z-10 flex justify-center gap-2 w-full px-0 pb-0 pt-1">
