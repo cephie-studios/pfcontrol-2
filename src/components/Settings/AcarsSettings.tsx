@@ -20,25 +20,25 @@ export default function AcarsSettings({ settings, onChange }: AcarsSettingsProps
   const minTerminal = 20, maxTerminal = 80;
   const minNotes = 10, maxNotes = 60;
 
-  const calculatedWidths = useMemo(() => {
-    if (!settings) return { sidebar: 30, terminal: 50, notes: 20 };
-    let sidebarWidth = Math.max(minSidebar, Math.min(maxSidebar, settings.acars.sidebarWidth ?? 30));
-    let terminalWidth = settings.acars.terminalWidth ?? 50;
-    let notesWidth = settings.acars.notesWidth ?? 20;
-    const notesEnabled = settings.acars.notesEnabled;
-    if (notesEnabled) {
-      notesWidth = Math.max(minNotes, Math.min(maxNotes, notesWidth));
-      terminalWidth = 100 - sidebarWidth - notesWidth;
-      terminalWidth = Math.max(minTerminal, terminalWidth);
-      if (sidebarWidth + terminalWidth + notesWidth > 100) {
-        notesWidth = Math.max(minNotes, 100 - sidebarWidth - terminalWidth);
-      }
-    } else {
-      notesWidth = 0;
-      terminalWidth = Math.max(minTerminal, 100 - sidebarWidth);
+ const calculatedWidths = useMemo(() => {
+  if (!settings) return { sidebar: 30, terminal: 50, notes: 20 };
+  const sidebarWidth = Math.max(minSidebar, Math.min(maxSidebar, settings.acars.sidebarWidth ?? 30));
+  let terminalWidth = settings.acars.terminalWidth ?? 50;
+  let notesWidth = settings.acars.notesWidth ?? 20;
+  const notesEnabled = settings.acars.notesEnabled;
+  if (notesEnabled) {
+    notesWidth = Math.max(minNotes, Math.min(maxNotes, notesWidth));
+    terminalWidth = 100 - sidebarWidth - notesWidth;
+    terminalWidth = Math.max(minTerminal, terminalWidth);
+    if (sidebarWidth + terminalWidth + notesWidth > 100) {
+      notesWidth = Math.max(minNotes, 100 - sidebarWidth - terminalWidth);
     }
-    return { sidebar: sidebarWidth, terminal: terminalWidth, notes: notesWidth };
-  }, [settings]);
+  } else {
+    notesWidth = 0;
+    terminalWidth = Math.max(minTerminal, 100 - sidebarWidth);
+  }
+  return { sidebar: sidebarWidth, terminal: terminalWidth, notes: notesWidth };
+}, [settings]);
 
   useEffect(() => {
     if (!isDragging) setPreviewWidths(calculatedWidths);
