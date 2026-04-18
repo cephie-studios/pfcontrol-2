@@ -1,417 +1,112 @@
-import { Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
-import {
-  SOUNDS,
-  linearToLogVolume,
-  playAudioWithGain,
-} from '../../utils/playSound';
+import { Image, UserCircle, Palette, CheckCircle2 } from 'lucide-react';
 import type { Settings } from '../../types/settings';
-import AudioVisualizerButton from './AudioVisualizerButton';
 import Button from '../common/Button';
 
-interface SoundSettingsProps {
+// SHARED DESIGN TOKENS
+const TOKENS = {
+  container: "bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden",
+  header: "w-full p-5 border-b border-zinc-800 flex items-center justify-between gap-3",
+  iconBox: "p-2.5 rounded-lg flex-shrink-0 flex items-center justify-center",
+  section: "bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-5 transition-all duration-200",
+  title: "text-lg font-semibold text-zinc-100",
+  description: "text-zinc-400 text-sm mt-0.5",
+  label: "text-white font-medium mb-3 block",
+};
+
+interface BackgroundSettingsProps {
   settings: Settings | null;
   onChange: (updatedSettings: Settings) => void;
 }
 
-const soundConfigs = [
-  {
-    key: 'startupSound' as const,
-    label: 'Session Startup Sound',
-    description: 'Plays when you join a session',
-    sound: SOUNDS.SESSION_STARTUP,
-    color: 'blue',
-  },
-  {
-    key: 'chatNotificationSound' as const,
-    label: 'Chat Notification Sound',
-    description: 'Plays when you receive a chat message',
-    sound: SOUNDS.CHAT_NOTIFICATION,
-    color: 'green',
-  },
-  {
-    key: 'newStripSound' as const,
-    label: 'New Strip Sound',
-    description: 'Plays when a new flight strip appears',
-    sound: SOUNDS.NEW_STRIP,
-    color: 'purple',
-  },
-  {
-    key: 'acarsBeep' as const,
-    label: 'ACARS Alert Sound (BEEP BEEP)',
-    description: 'Plays for PDC, warnings, and contact messages in ACARS',
-    sound: SOUNDS.ACARS_BEEP,
-    color: 'cyan',
-  },
-  {
-    key: 'acarsChatPop' as const,
-    label: 'ACARS Chat Sound',
-    description: 'Plays for system messages and ATIS in ACARS',
-    sound: SOUNDS.ACARS_CHAT_POP,
-    color: 'orange',
-  },
-];
-
-export default function SoundSettings({
-  settings,
-  onChange,
-}: SoundSettingsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [playingKey, setPlayingKey] = useState<keyof Settings['sounds'] | null>(
-    null
-  );
-
-  const handleToggle = (soundKey: keyof Settings['sounds']) => {
-    if (!settings) return;
-    const updatedSettings = {
-      ...settings,
-      sounds: {
-        ...settings.sounds,
-        [soundKey]: {
-          ...settings.sounds[soundKey],
-          enabled: !settings.sounds[soundKey].enabled,
-        },
-      },
-    };
-    onChange(updatedSettings);
-  };
-
-  const handleVolumeChange = (
-    soundKey: keyof Settings['sounds'],
-    volume: number
-  ) => {
-    if (!settings) return;
-    const updatedSettings = {
-      ...settings,
-      sounds: {
-        ...settings.sounds,
-        [soundKey]: {
-          ...settings.sounds[soundKey],
-          volume,
-        },
-      },
-    };
-    onChange(updatedSettings);
-  };
-
-  const handlePlayTest = (soundKey: keyof Settings['sounds']) => {
-    const soundSetting = settings?.sounds[soundKey];
-    const config = soundConfigs.find((c) => c.key === soundKey);
-    if (!soundSetting?.enabled || !config?.sound) return;
-
-    try {
-      setPlayingKey(soundKey);
-      const audio = new Audio(config.sound);
-      const logVolume = linearToLogVolume(soundSetting.volume);
-
-      const onCanPlay = () => {
-        audio.removeEventListener('canplaythrough', onCanPlay);
-        audio.removeEventListener('error', onError);
-
-        playAudioWithGain(audio, logVolume);
-      };
-
-      const onError = (error: Event) => {
-        audio.removeEventListener('canplaythrough', onCanPlay);
-        audio.removeEventListener('error', onError);
-        console.warn('Failed to play test sound:', error);
-        setPlayingKey(null);
-      };
-
-      audio.addEventListener('canplaythrough', onCanPlay);
-      audio.addEventListener('error', onError);
-      audio.onended = () => setPlayingKey(null);
-      audio.load();
-    } catch (error) {
-      console.warn('Failed to play test sound:', error);
-      setPlayingKey(null);
-    }
-  };
-
+export default function BackgroundSettings({ settings, onChange }: BackgroundSettingsProps) {
   if (!settings) return null;
 
-  const getColorClasses = (color: string) => {
-    switch (color) {
-      case 'blue':
-        return {
-          bg: 'bg-blue-500/20',
-          text: 'text-blue-400',
-          border: 'border-blue-500/30',
-          hover: 'hover:bg-blue-500/30',
-        };
-      case 'green':
-        return {
-          bg: 'bg-green-500/20',
-          text: 'text-green-400',
-          border: 'border-green-500/30',
-          hover: 'hover:bg-green-500/30',
-        };
-      case 'purple':
-        return {
-          bg: 'bg-purple-500/20',
-          text: 'text-purple-400',
-          border: 'border-purple-500/30',
-          hover: 'hover:bg-purple-500/30',
-        };
-      case 'cyan':
-        return {
-          bg: 'bg-cyan-500/20',
-          text: 'text-cyan-400',
-          border: 'border-cyan-500/30',
-          hover: 'hover:bg-cyan-500/30',
-        };
-      case 'orange':
-        return {
-          bg: 'bg-orange-500/20',
-          text: 'text-orange-400',
-          border: 'border-orange-500/30',
-          hover: 'hover:bg-orange-500/30',
-        };
-      default:
-        return {
-          bg: 'bg-zinc-500/20',
-          text: 'text-zinc-400',
-          border: 'border-zinc-500/30',
-          hover: 'hover:bg-zinc-500/30',
-        };
-    }
+  const updateBackground = (url: string) => {
+    onChange({ ...settings, profileBackgroundUrl: url });
   };
 
+  const PRESETS = [
+    { name: 'Midnight', url: '/bg/midnight.jpg', color: 'bg-zinc-950' },
+    { name: 'Skyline', url: '/bg/skyline.jpg', color: 'bg-blue-900' },
+    { name: 'Terminal', url: '/bg/terminal.jpg', color: 'bg-emerald-950' },
+  ];
+
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
-        <div className="flex items-center justify-between gap-3">
-          <div
-            className="flex items-center flex-1 min-w-0 cursor-pointer"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <div className="p-2 bg-orange-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
-              <Volume2 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
-            </div>
-            <div className="text-left min-w-0">
-              <h3 className="text-lg sm:text-xl font-semibold text-white">
-                Sound Settings
-              </h3>
-              <p className="text-zinc-400 text-xs sm:text-sm mt-1 hidden sm:block">
-                Configure audio notifications and their volume levels
-              </p>
-            </div>
+    <div className={TOKENS.container}>
+      {/* Unified Header */}
+      <div className={TOKENS.header}>
+        <div className="flex items-center gap-4">
+          <div className={`${TOKENS.iconBox} bg-indigo-500/10`}>
+            <Palette className="h-5 w-5 text-indigo-500" />
           </div>
-          <Button
-            onClick={() => setIsExpanded(!isExpanded)}
-            variant="outline"
-            size="sm"
-            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 p-2 flex-shrink-0"
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
-        }`}
-      >
-        <div className="p-4 sm:p-6">
-          <div className="space-y-4">
-            {soundConfigs.map(({ key, label, description, color }) => {
-              const soundSetting = settings.sounds[key];
-              const colors = getColorClasses(color);
-
-              return (
-                <div
-                  key={key}
-                  className={`bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-5 transition-all ${
-                    soundSetting.enabled
-                      ? `hover:${colors.border}`
-                      : 'opacity-75'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start flex-1">
-                      {/* Icon Toggle Button */}
-                      <button
-                        onClick={() => handleToggle(key)}
-                        className={`relative p-2 rounded-lg mr-4 mt-0.5 transition-all duration-200 cursor-pointer group ${
-                          soundSetting.enabled
-                            ? `${colors.bg} ${colors.hover}`
-                            : 'bg-zinc-700/30 hover:bg-zinc-600/30'
-                        }`}
-                      >
-                        {soundSetting.enabled ? (
-                          <Volume2
-                            className={`h-5 w-5 transition-colors ${colors.text}`}
-                          />
-                        ) : (
-                          <VolumeX className="h-5 w-5 text-zinc-500 group-hover:text-zinc-400 transition-colors" />
-                        )}
-
-                        {/* Toggle indicator */}
-                        <div
-                          className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-zinc-800 transition-all ${
-                            soundSetting.enabled
-                              ? 'bg-emerald-500'
-                              : 'bg-zinc-600'
-                          }`}
-                        />
-                      </button>
-
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-white font-medium">{label}</h4>
-                        </div>
-                        <p className="text-zinc-400 text-sm">{description}</p>
-                      </div>
-                    </div>
-
-                    <div className="ml-4">
-                      <AudioVisualizerButton
-                        isPlaying={playingKey === key}
-                        onClick={() => handlePlayTest(key)}
-                        label="Test"
-                        variant={
-                          key === 'startupSound'
-                            ? 'default'
-                            : key === 'chatNotificationSound'
-                              ? 'notification'
-                              : key === 'newStripSound'
-                                ? 'newstrip'
-                                : key === 'acarsBeep'
-                                  ? 'acars-beep'
-                                  : key === 'acarsChatPop'
-                                    ? 'acars-chat'
-                                    : 'custom'
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Volume Control */}
-                  <div
-                    className={`transition-all ${
-                      soundSetting.enabled
-                        ? 'opacity-100'
-                        : 'opacity-50 pointer-events-none'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <span className="text-xs text-zinc-500 w-16 text-center">
-                        10%
-                      </span>
-                      <div className="flex-1 relative flex items-center">
-                        <input
-                          type="range"
-                          min="10"
-                          max="200"
-                          step="10"
-                          value={soundSetting.volume}
-                          onChange={(e) =>
-                            handleVolumeChange(key, parseInt(e.target.value))
-                          }
-                          className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer volume-slider"
-                        />
-                        <div
-                          className={`absolute top-0 left-0 h-2 rounded-lg pointer-events-none ${
-                            soundSetting.volume <= 100
-                              ? 'bg-gradient-to-r from-green-500 to-yellow-500'
-                              : 'bg-gradient-to-r from-yellow-500 to-red-500'
-                          }`}
-                          style={{
-                            width: `${Math.min(
-                              ((soundSetting.volume - 10) / 190) * 100,
-                              100
-                            )}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-zinc-500 w-16 text-center">
-                        200%
-                      </span>
-                      <span
-                        className={`text-sm font-medium w-16 text-center px-2 py-1 rounded ${
-                          soundSetting.volume <= 100
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-red-500/20 text-red-400'
-                        }`}
-                      >
-                        {soundSetting.volume}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div>
+            <h3 className={TOKENS.title}>Appearance & Background</h3>
+            <p className={TOKENS.description}>Customize your profile's visual presence</p>
           </div>
         </div>
       </div>
 
-      <style>{`
-                .volume-slider::-webkit-slider-thumb {
-                    appearance: none;
-                    height: 18px;
-                    width: 18px;
-                    border-radius: 50%;
-                    background: #ffffff;
-                    cursor: pointer;
-                    border: 2px solid #10b981;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    position: relative;
-                    z-index: 10;
-                }
-                .volume-slider::-moz-range-thumb {
-                    height: 18px;
-                    width: 18px;
-                    border-radius: 50%;
-                    background: #ffffff;
-                    cursor: pointer;
-                    border: 2px solid #10b981;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    position: relative;
-                    z-index: 10;
-                }
-                .volume-slider {
-                    background: transparent;
-                    position: relative;
-                    z-index: 5;
-                }
-                .opacity-slider::-webkit-slider-thumb {
-                    appearance: none;
-                    height: 18px;
-                    width: 18px;
-                    border-radius: 50%;
-                    background: #ffffff;
-                    cursor: pointer;
-                    border: 2px solid #a855f7;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    position: relative;
-                    z-index: 10;
-                }
-                .opacity-slider::-moz-range-thumb {
-                    height: 18px;
-                    width: 18px;
-                    border-radius: 50%;
-                    background: #ffffff;
-                    cursor: pointer;
-                    border: 2px solid #a855f7;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    position: relative;
-                    z-index: 10;
-                }
-                .opacity-slider {
-                    background: transparent;
-                    position: relative;
-                    z-index: 5;
-                }
-            `}</style>
+      <div className="p-5 space-y-6">
+        {/* Background Selection Section */}
+        <div className={TOKENS.section}>
+          <label className={TOKENS.label}>Profile Background</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {PRESETS.map((bg) => (
+              <button
+                key={bg.url}
+                onClick={() => updateBackground(bg.url)}
+                className={`relative h-20 rounded-lg border-2 transition-all overflow-hidden ${
+                  settings.profileBackgroundUrl === bg.url 
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/20' 
+                    : 'border-zinc-700 hover:border-zinc-500'
+                } ${bg.color}`}
+              >
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold uppercase tracking-wider text-white/50">
+                  {bg.name}
+                </span>
+                {settings.profileBackgroundUrl === bg.url && (
+                  <div className="absolute top-2 right-2 bg-indigo-500 rounded-full p-0.5">
+                    <CheckCircle2 className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <div className="mt-4">
+            <input
+              type="text"
+              placeholder="Custom Image URL..."
+              value={settings.profileBackgroundUrl}
+              onChange={(e) => updateBackground(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Avatar Scale Section */}
+        <div className={TOKENS.section}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`${TOKENS.iconBox} bg-amber-500/10`}>
+              <UserCircle className="h-5 w-5 text-amber-500" />
+            </div>
+            <h4 className="text-zinc-100 font-medium">Avatar Display Size</h4>
+          </div>
+          
+          <div className="flex gap-2">
+            {['Small', 'Normal', 'Large'].map((size) => (
+              <Button
+                key={size}
+                variant={settings.avatarSize === size.toLowerCase() ? 'primary' : 'secondary'}
+                className="flex-1 py-2 text-xs"
+                onClick={() => onChange({ ...settings, avatarSize: size.toLowerCase() })}
+              >
+                {size}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
