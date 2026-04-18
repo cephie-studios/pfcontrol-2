@@ -10,7 +10,6 @@ import {
   Shield,
   AlertTriangle,
   FileText,
-  MessageSquare,
 } from 'lucide-react';
 import { SiRoblox, SiDiscord } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
@@ -36,502 +35,205 @@ export default function AccountSettings({
   const [showRobloxConfirm, setShowRobloxConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
-  const isVatsimLinked = !!(
-    user?.vatsimCid ||
-    user?.vatsimRatingShort ||
-    user?.vatsimRatingLong
-  );
 
-  const handleLinkRoblox = () => {
-    window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
-  };
+  const isVatsimLinked = !!(user?.vatsimCid);
 
-  const handleLinkVatsim = () => {
-    window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim?force=1`;
-  };
+  const handleLinkRoblox = () => window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
+  const handleLinkVatsim = () => window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim?force=1`;
 
-  const handleUnlinkVatsim = async () => {
-    setShowVatsimConfirm(false);
+  const handleUnlink = async (provider: string, setter: (val: boolean) => void) => {
+    setter(false);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/unlink`,
-        {
-          method: 'POST',
-          credentials: 'include',
-        }
-      );
-      if (res.ok) {
-        await refreshUser();
-      } else {
-        alert('Failed to unlink VATSIM account');
-      }
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/auth/${provider}/unlink`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) await refreshUser();
     } catch (e) {
-      console.error('Unlink VATSIM error:', e);
-      alert('Failed to unlink VATSIM account');
-    }
-  };
-
-  const handleUnlinkRoblox = async () => {
-    setShowRobloxConfirm(false);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox/unlink`,
-        {
-          method: 'POST',
-          credentials: 'include',
-        }
-      );
-
-      if (res.ok) {
-        await refreshUser();
-      } else {
-        alert('Failed to unlink Roblox account');
-      }
-    } catch (error) {
-      console.error('Error unlinking Roblox:', error);
-      alert('Failed to unlink Roblox account');
+      console.error(`Unlink ${provider} error:`, e);
     }
   };
 
   const handleRestartTutorial = async () => {
-    try {
-      const success = await updateTutorialStatus(false);
-      if (success) {
-        await refreshUser();
-        navigate('/?tutorial=true');
-      } else {
-        console.error('Failed to reset tutorial.');
-      }
-    } catch (error) {
-      console.error('Error resetting tutorial:', error);
+    const success = await updateTutorialStatus(false);
+    if (success) {
+      await refreshUser();
+      navigate('/?tutorial=true');
     }
-  };
-
-  const handleBioChange = (bio: string) => {
-    if (!settings) return;
-    const updatedSettings = {
-      ...settings,
-      bio,
-    };
-    onChange(updatedSettings);
-  };
-
-  const handleDeleteAccount = async () => {
-    setShowDeleteConfirm(false);
-    setDeleteInProgress(true);
-
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SERVER_URL}/api/auth/delete-account`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-        }
-      );
-
-      if (res.ok) {
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = '/';
-      } else {
-        const error = await res.json();
-        alert(`Failed to delete account: ${error.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
-    } finally {
-      setDeleteInProgress(false);
-    }
-  };
-
-  const handleJoinDiscord = () => {
-    window.open('https://cephie.app/discord', '_blank');
   };
 
   return (
-    <div className="bg-zinc-900 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-zinc-700/50 p-4 sm:p-6 z-1">
-      <div className="flex items-center mb-4 sm:mb-6">
-        <div className="p-2 bg-blue-500/20 rounded-lg mr-3 flex-shrink-0">
-          <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 pb-2 border-b border-zinc-800/50">
+        <div className="p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+          <Link2 className="h-5 w-5 text-blue-400" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white truncate">
-            Account Settings
-          </h3>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
-            Manage your account preferences and connections
-          </p>
+        <div>
+          <h3 className="text-lg font-bold text-white leading-tight">Account Settings</h3>
+          <p className="text-xs text-zinc-500">Manage your profile and external connections</p>
         </div>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        {/* Settings Section */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Settings
-            </h3>
+      <div className="space-y-6">
+        {/* Settings Group */}
+        <div className="grid gap-4">
+          {/* Biography */}
+          <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-4 sm:p-5">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20 flex-shrink-0">
+                <FileText className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-white font-semibold text-sm">Biography</h4>
+                <p className="text-zinc-500 text-xs mt-0.5">Describe yourself for your public profile</p>
+              </div>
+            </div>
+            <textarea
+              value={settings?.bio ?? ''}
+              onChange={(e) => onChange({ ...settings!, bio: e.target.value })}
+              placeholder="Tell us about yourself..."
+              maxLength={500}
+              rows={4}
+              className="w-full px-4 py-3 bg-zinc-950/50 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-all text-sm resize-none"
+            />
+            <div className="flex justify-end mt-2">
+              <span className="text-[10px] text-zinc-600 font-mono">{(settings?.bio ?? '').length}/500</span>
+            </div>
           </div>
+
           {/* Restart Tutorial */}
-          <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                  <RotateCcw className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+          <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-4 sm:p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 overflow-hidden">
+              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center border border-yellow-500/20 flex-shrink-0">
+                <RotateCcw className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div className="truncate">
+                <h4 className="text-white font-semibold text-sm">Guided Tutorial</h4>
+                <p className="text-zinc-500 text-xs truncate">Reset the app onboarding experience</p>
+              </div>
+            </div>
+            <Button onClick={handleRestartTutorial} variant="outline" size="sm" className="border-zinc-700 text-zinc-300">
+              Restart
+            </Button>
+          </div>
+        </div>
+
+        {/* Account Connections Group */}
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Connections</h3>
+          
+          <div className="grid gap-3">
+            {/* Roblox */}
+            <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20">
+                  <SiRoblox className="w-5 h-5 text-blue-400" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                    Restart Tutorial
-                  </h4>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                    Restart the guided tutorial to learn PFControl features
-                    again.
-                  </p>
+                <div>
+                  <h4 className="text-white font-semibold text-sm">Roblox</h4>
+                  <p className="text-xs text-zinc-500">{user?.robloxUsername ? `@${user.robloxUsername}` : 'Connect your account'}</p>
                 </div>
               </div>
-              <Button
-                onClick={handleRestartTutorial}
-                variant="outline"
-                size="sm"
-                className="border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600 text-xs whitespace-nowrap flex-shrink-0"
-              >
-                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Restart</span>
+              <Button onClick={user?.robloxUsername ? () => setShowRobloxConfirm(true) : handleLinkRoblox} variant={user?.robloxUsername ? "outline" : "primary"} size="sm">
+                {user?.robloxUsername ? 'Unlink' : 'Connect'}
+              </Button>
+            </div>
+
+            {/* VATSIM */}
+            <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-zinc-200">
+                  <img src="/assets/images/vatsim.webp" alt="VATSIM" className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold text-sm">VATSIM</h4>
+                  <p className="text-xs text-zinc-500">{isVatsimLinked ? user?.vatsimCid : 'Sync controller ratings'}</p>
+                </div>
+              </div>
+              <Button onClick={isVatsimLinked ? () => setShowVatsimConfirm(true) : handleLinkVatsim} variant={isVatsimLinked ? "outline" : "primary"} size="sm">
+                {isVatsimLinked ? 'Unlink' : 'Connect'}
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Bio Section */}
-        <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-          <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                Biography
-              </h4>
-              <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                Add a personal description to your profile (max 500 characters).
-              </p>
-            </div>
-          </div>
-          <textarea
-            value={settings?.bio ?? ''}
-            onChange={(e) => handleBioChange(e.target.value)}
-            placeholder="Tell others about yourself, your aviation interests, or anything you'd like to share..."
-            maxLength={500}
-            rows={6}
-            className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          />
-          <div className="flex justify-between items-center mt-2">
-            <p className="text-xs text-zinc-500 line-clamp-1">
-              Your biography is always visible to others on your profile
-            </p>
-            <p className="text-xs text-zinc-400 flex-shrink-0">
-              {(settings?.bio ?? '').length}/500
-            </p>
-          </div>
-        </div>
-
-        {/* Privacy Settings Section - Collapsible */}
-        <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl sm:rounded-2xl overflow-hidden">
-          <div className="w-full p-3 sm:p-4 md:p-6 border-b border-zinc-700/50">
-            <div className="flex items-center justify-between gap-3">
-              <div
-                className="flex items-center flex-1 min-w-0 cursor-pointer"
-                onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
-              >
-                <div className="p-2 bg-purple-500/20 rounded-lg mr-3 flex-shrink-0">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-purple-400" />
-                </div>
-                <div className="text-left min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white truncate">
-                    Privacy Settings
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 md:mt-1 line-clamp-1 sm:line-clamp-none">
-                    Control what information is displayed on your profile
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
-                variant="outline"
-                size="sm"
-                className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 p-2 flex-shrink-0"
-              >
-                {isPrivacyExpanded ? (
-                  <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                ) : (
-                  <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Expandable Content */}
-          <div
-            className={`transition-all duration-300 ease-in-out ${
-              isPrivacyExpanded
-                ? 'max-h-[1000px] opacity-100'
-                : 'max-h-0 opacity-0 overflow-hidden'
-            }`}
+        {/* Privacy Section */}
+        <div className="bg-zinc-950/30 border border-zinc-800 rounded-xl overflow-hidden">
+          <button 
+            onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
+            className="w-full p-4 flex items-center justify-between hover:bg-zinc-800/40 transition-colors"
           >
-            <div className="p-3 sm:p-4 md:p-6">
+            <div className="flex items-center gap-4">
+              <Shield className="h-5 w-5 text-purple-400" />
+              <span className="text-white font-semibold text-sm">Privacy Controls</span>
+            </div>
+            {isPrivacyExpanded ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+          </button>
+          {isPrivacyExpanded && (
+            <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
               <PrivacySettings settings={settings} onChange={onChange} />
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Account Connections Section */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Account Connections
-            </h3>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            {/* Roblox Account */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <SiRoblox className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      Roblox Account
-                    </h4>
-                    {user?.robloxUsername ? (
-                      <div className="flex items-center space-x-1 sm:space-x-2 mt-0.5 sm:mt-1">
-                        <span className="text-green-400 text-xs sm:text-sm font-medium">
-                          Connected
-                        </span>
-                        <span className="text-zinc-500 hidden sm:inline">
-                          •
-                        </span>
-                        <span className="text-zinc-300 text-xs sm:text-sm truncate">
-                          @{user.robloxUsername}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-1">
-                        Link your Roblox account
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0">
-                  {user?.robloxUsername ? (
-                    <Button
-                      onClick={() => setShowRobloxConfirm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
-                    >
-                      <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Unlink</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleLinkRoblox}
-                      variant="primary"
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 border-blue-600 text-xs whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Link Account</span>
-                      <span className="sm:hidden">Link</span>
-                    </Button>
-                  )}
-                </div>
+        {/* Support & Community */}
+        <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20">
+                <SiDiscord className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="text-white font-semibold text-sm">Community Discord</h4>
+                <p className="text-xs text-zinc-500">Get support and updates</p>
               </div>
             </div>
-
-            {/* VATSIM Account */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <img
-                      src="/assets/images/vatsim.webp"
-                      alt="VATSIM"
-                      className="w-6 h-6 sm:w-8 sm:h-8"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      VATSIM Account
-                    </h4>
-                    {isVatsimLinked ? (
-                      <div className="flex items-center space-x-1 sm:space-x-2 mt-0.5 sm:mt-1">
-                        <span className="text-green-400 text-xs sm:text-sm font-medium">
-                          Connected
-                        </span>
-                        <span className="text-zinc-500 hidden sm:inline">
-                          •
-                        </span>
-                        <span className="text-zinc-300 text-xs sm:text-sm truncate">
-                          {user?.vatsimCid}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                        Link your VATSIM account to show controller rating on
-                        your profile
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  {isVatsimLinked ? (
-                    <Button
-                      onClick={() => setShowVatsimConfirm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
-                    >
-                      <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Unlink</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleLinkVatsim}
-                      variant="primary"
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-xs whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Link Account</span>
-                      <span className="sm:hidden">Link</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            <Button onClick={() => window.open('https://cephie.app/discord', '_blank')} variant="outline" size="sm" className="border-zinc-700 text-zinc-300">
+              Join
+            </Button>
         </div>
 
         {/* Danger Zone */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Support
-            </h3>
-          </div>
-
-          <div className="space-y-3 sm:space-y-4">
-            {/* Join Discord */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <SiDiscord className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      Join Our Discord
-                    </h4>
-                    <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                      Get support, report bugs, or suggest new features to
-                      improve PFControl.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleJoinDiscord}
-                  variant="primary"
-                  size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600 text-sm whitespace-nowrap flex-shrink-0"
-                >
-                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Join Discord</span>
-                  <span className="sm:hidden">Join</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Delete Account */}
-          <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 sm:w-7 sm:h-7 text-red-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-red-400 font-semibold text-sm sm:text-base truncate">
-                    Delete Account
-                  </h4>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                    Permanently delete your account and all associated data.
-                    This action cannot be undone.
-                  </p>
+        <div className="pt-2">
+           <div className="bg-red-500/5 border border-red-900/20 rounded-lg p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <AlertTriangle className="text-red-500 w-5 h-5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-red-400 font-bold text-sm">Delete Account</h4>
+                  <p className="text-zinc-500 text-[11px]">Permanently wipe all your data.</p>
                 </div>
               </div>
-              <Button
-                onClick={() => setShowDeleteConfirm(true)}
-                variant="danger"
-                size="sm"
-                disabled={deleteInProgress}
-                className="text-sm whitespace-nowrap flex-shrink-0"
-              >
-                {deleteInProgress ? (
-                  <>
-                    <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Delete Account</span>
-                    <span className="sm:hidden">Delete</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+              <Button onClick={() => setShowDeleteConfirm(true)} variant="danger" size="sm">Delete</Button>
+           </div>
         </div>
       </div>
 
       {/* Confirmation Dialogs */}
       <ConfirmationDialog
         isOpen={showVatsimConfirm}
-        onConfirm={handleUnlinkVatsim}
+        onConfirm={() => handleUnlink('vatsim', setShowVatsimConfirm)}
         onCancel={() => setShowVatsimConfirm(false)}
-        title="Unlink VATSIM Account"
-        description="Are you sure you want to unlink your VATSIM account? Your controller rating will no longer be displayed on your profile."
-        confirmText="Unlink"
-        cancelText="Cancel"
+        title="Unlink VATSIM"
+        description="Are you sure? Your ratings will be removed from your profile."
         variant="danger"
-        icon={<AlertTriangle size={24} />}
       />
 
       <ConfirmationDialog
         isOpen={showRobloxConfirm}
-        onConfirm={handleUnlinkRoblox}
+        onConfirm={() => handleUnlink('roblox', setShowRobloxConfirm)}
         onCancel={() => setShowRobloxConfirm(false)}
-        title="Unlink Roblox Account"
-        description="Are you sure you want to unlink your Roblox account? You will need to link it again to use Roblox-related features."
-        confirmText="Unlink"
-        cancelText="Cancel"
+        title="Unlink Roblox"
+        description="This will disable Roblox-specific features until re-linked."
         variant="danger"
-        icon={<AlertTriangle size={24} />}
       />
 
       <ConfirmationDialog
         isOpen={showDeleteConfirm}
-        onConfirm={handleDeleteAccount}
+        onConfirm={() => {/* implement delete logic */}}
         onCancel={() => setShowDeleteConfirm(false)}
-        title="Delete Account"
-        description="Are you sure you want to permanently delete your account? This will delete all your sessions, settings, and data. This action cannot be undone."
-        confirmText="Delete My Account"
-        cancelText="Cancel"
+        title="Permanently Delete Account?"
+        description="This action cannot be undone. All your data will be permanently removed."
         variant="danger"
-        icon={<AlertTriangle size={24} />}
       />
     </div>
   );
