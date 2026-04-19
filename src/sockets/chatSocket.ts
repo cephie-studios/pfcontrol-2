@@ -12,7 +12,8 @@ export function createChatSocket(
   onDeleteError?: (data: { messageId: number; error: string }) => void,
   onActiveChatUsers?: (users: string[]) => void,
   onMention?: (mention: ChatMention) => void,
-  onMessageAutomodded?: (data: { messageId: number }) => void
+  onMessageAutomodded?: (data: { messageId: number }) => void,
+  onUserTyping?: (data: { userId: string; username: string }) => void
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
@@ -49,10 +50,17 @@ export function createChatSocket(
     socket.on('messageAutomodded', onMessageAutomodded);
   }
 
+  if (onUserTyping) {
+    socket.on('userTyping', onUserTyping);
+  }
+
   return {
     socket,
     deleteMessage: (messageId: number, userId: string) => {
       socket.emit('deleteMessage', { messageId, userId });
+    },
+    sendTyping: (username: string) => {
+      socket.emit('typing', { username });
     },
   };
 }

@@ -147,4 +147,6 @@ export const SOUNDS = {
   NEW_STRIP: '/assets/app/sounds/newStrip.mp3',
   ACARS_BEEP: '/assets/app/sounds/ACARSBeep.wav',
   ACARS_CHAT_POP: '/assets/app/sounds/ACARSChatPop.mp3',
+  VC_CONNECT: '/assets/app/sounds/vcConnect.mp3',
+  VC_DISCONNECT: '/assets/app/sounds/vcDisconnect.mp3',
 } as const;

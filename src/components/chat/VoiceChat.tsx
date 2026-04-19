@@ -1,48 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import {
   type VoiceUser,
-  type VoiceConnectionState,
   createVoiceChatSocket,
 } from '../../sockets/voiceChatSocket';
 import Button from '../common/Button';
-import type { ChatMention } from '../../types/chats';
+import Dropdown from '../common/Dropdown';
 
 interface VoiceChatProps {
-  sessionId: string;
-  accessId: string;
   open: boolean;
   activeTab: string;
-  onMentionReceived?: (mention: ChatMention) => void;
   voiceUsers: VoiceUser[];
-  setVoiceUsers: (users: VoiceUser[]) => void;
-  connectionState: VoiceConnectionState;
-  setConnectionState: (state: VoiceConnectionState) => void;
   isInVoice: boolean;
-  setIsInVoice: (inVoice: boolean) => void;
+  setIsInVoice: (_v: boolean) => void;
   voiceSocket: ReturnType<typeof createVoiceChatSocket> | null;
   userVolumes: Map<string, number>;
   setUserVolumes: React.Dispatch<React.SetStateAction<Map<string, number>>>;
+  talkingUsers: Set<string>;
+  audioLevels: Map<string, number>;
+  externalDevices?: MediaDeviceInfo[];
 }
 
 export default function VoiceChat({
-  sessionId,
-  accessId,
   voiceUsers,
-  setVoiceUsers,
-  setConnectionState,
   isInVoice,
   setIsInVoice,
   voiceSocket,
   userVolumes,
   setUserVolumes,
+  talkingUsers,
+  audioLevels,
+  externalDevices,
 }: VoiceChatProps) {
   const { user } = useAuth();
-  const [talkingUsers, setTalkingUsers] = useState<Set<string>>(new Set());
-  const [audioLevels, setAudioLevels] = useState<Map<string, number>>(
-    new Map()
-  );
+
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioInput, setSelectedAudioInput] = useState<string>(() => {
+    try {
+      return localStorage.getItem('voice-chat-audio-input') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
   const [isMuted, setIsMuted] = useState(() => {
     try {
       const saved = localStorage.getItem('voice-chat-muted');
@@ -60,41 +60,69 @@ export default function VoiceChat({
     }
   });
 
+  const refreshDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      console.warn('Media devices API not available');
+      return;
+    }
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter((d) => d.kind === 'audioinput');
+      setAudioInputDevices(audioInputs);
+    } catch (err) {
+      console.warn('Failed to enumerate audio devices:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isInVoice) return;
+    if (!navigator.mediaDevices) return;
+    navigator.mediaDevices.addEventListener('devicechange', refreshDevices);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', refreshDevices);
+    };
+  }, [isInVoice, refreshDevices]);
+
+  useEffect(() => {
+    if (externalDevices && externalDevices.length > 0) {
+      setAudioInputDevices(externalDevices);
+    }
+  }, [externalDevices]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('voice-chat-audio-input', selectedAudioInput);
+    } catch {/* ignore */}
+  }, [selectedAudioInput]);
+
   useEffect(() => {
     try {
       localStorage.setItem('voice-chat-muted', isMuted.toString());
-    } catch (error) {
-      console.warn('Failed to save mute state to localStorage:', error);
-    }
+    } catch {/* ignore */}
   }, [isMuted]);
 
   useEffect(() => {
     try {
       localStorage.setItem('voice-chat-deafened', isDeafened.toString());
-    } catch (error) {
-      console.warn('Failed to save deafen state to localStorage:', error);
-    }
+    } catch {/* ignore */}
   }, [isDeafened]);
 
   useEffect(() => {
-    if (!voiceSocket) return;
-
-    const applyStates = () => {
-      if (voiceSocket) {
-        voiceSocket.setMuted(isMuted);
-        voiceSocket.setDeafened(isDeafened);
-      }
-    };
-
-    const timer = setTimeout(applyStates, 100);
+    if (!voiceSocket || !isInVoice) return;
+    const timer = setTimeout(() => {
+      voiceSocket.setMuted(isMuted);
+      voiceSocket.setDeafened(isDeafened);
+    }, 50);
     return () => clearTimeout(timer);
-  }, [isMuted, isDeafened, voiceSocket]);
+  }, [isMuted, isDeafened, voiceSocket, isInVoice]);
 
   const joinVoice = () => {
-    if (voiceSocket) {
-      voiceSocket.joinVoice();
-      setIsInVoice(true);
-    }
+    if (!voiceSocket) return;
+    voiceSocket.joinVoice();
+    setIsInVoice(true);
+    setTimeout(() => {
+      refreshDevices();
+    }, 800);
   };
 
   const leaveVoice = () => {
@@ -102,25 +130,31 @@ export default function VoiceChat({
       voiceSocket.leaveVoice();
     }
     setIsInVoice(false);
+    setAudioInputDevices([]);
   };
 
   const toggleMute = () => {
-    if (voiceSocket) {
-      const newMuted = !isMuted;
-      voiceSocket.setMuted(newMuted);
-      setIsMuted(newMuted);
-    }
+    if (!voiceSocket) return;
+    const newMuted = !isMuted;
+    voiceSocket.setMuted(newMuted);
+    setIsMuted(newMuted);
   };
 
   const toggleDeafen = () => {
-    if (voiceSocket) {
-      const newDeafened = !isDeafened;
-      voiceSocket.setDeafened(newDeafened);
-      setIsDeafened(newDeafened);
-      if (newDeafened) {
-        setIsMuted(true);
-        voiceSocket.setMuted(true);
-      }
+    if (!voiceSocket) return;
+    const newDeafened = !isDeafened;
+    voiceSocket.setDeafened(newDeafened);
+    setIsDeafened(newDeafened);
+    if (newDeafened) {
+      setIsMuted(true);
+      voiceSocket.setMuted(true);
+    }
+  };
+
+  const handleDeviceChange = (deviceId: string) => {
+    setSelectedAudioInput(deviceId);
+    if (voiceSocket && isInVoice) {
+      voiceSocket.setAudioInputDevice(deviceId);
     }
   };
 
@@ -151,23 +185,22 @@ export default function VoiceChat({
     }
   };
 
-  const handleVolumeMouseUp = () => {
-    try {
-      localStorage.setItem(
-        'userVolumes',
-        JSON.stringify(Array.from(userVolumes.entries()))
-      );
-    } catch (error) {
-      console.warn('Failed to save user volumes to localStorage:', error);
-    }
-  };
+  const deviceOptions = [
+    { label: 'Default', value: 'default' },
+    ...audioInputDevices
+      .filter((d) => d.deviceId && d.deviceId !== 'default')
+      .map((device, index) => ({
+        label: device.label || `Microphone ${index + 1}`,
+        value: device.deviceId,
+      })),
+  ];
 
   return (
     <div className="flex-1 px-5 py-4 flex flex-col">
       {!isInVoice ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <Phone className="w-16 h-16 text-zinc-600 mb-4" />
-          <p className="text-zinc-400 mb-6 text-sm max-w-[12rem]">
+          <p className="text-zinc-400 mb-6 text-sm max-w-48">
             Join voice chat to talk with other controllers in this session
           </p>
           <Button onClick={joinVoice} variant="success">
@@ -202,7 +235,7 @@ export default function VoiceChat({
                             '/assets/app/default/avatar.webp'
                           }
                           alt={voiceUser.username}
-                          className={`w-10 h-10 rounded-full border-2 ${
+                          className={`w-10 h-10 rounded-full border-2 transition-colors duration-200 ${
                             isTalking ? 'border-green-400' : 'border-zinc-600'
                           }`}
                         />
@@ -229,7 +262,7 @@ export default function VoiceChat({
 
                     {!isCurrentUser && (
                       <div className="flex items-center gap-2 mt-2">
-                        <Volume2 className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                        <Volume2 className="w-4 h-4 text-zinc-400 shrink-0" />
                         <input
                           type="range"
                           min="0"
@@ -241,7 +274,6 @@ export default function VoiceChat({
                               parseInt(e.target.value)
                             )
                           }
-                          onMouseUp={handleVolumeMouseUp}
                           className="flex-1 h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer volume-slider"
                           style={{
                             background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentVolume / 400) * 100}%, #4a5568 ${(currentVolume / 400) * 100}%, #4a5568 100%)`,
@@ -260,6 +292,23 @@ export default function VoiceChat({
               <div className="text-center text-zinc-400 text-sm py-8">
                 You're alone in voice chat
               </div>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label className="text-xs text-zinc-400 mb-1 block">
+              Input Device
+            </label>
+            <Dropdown
+              options={deviceOptions}
+              value={selectedAudioInput}
+              onChange={handleDeviceChange}
+              placeholder="Select input device"
+            />
+            {deviceOptions.length === 1 && (
+              <p className="text-xs text-zinc-500 mt-1">
+                Device labels available after joining voice
+              </p>
             )}
           </div>
 
