@@ -44,7 +44,7 @@ export const steps: {
     target: '#pfatc-checkbox',
     title: 'PFATC Network',
     content:
-      "Check this if you're controlling on the PFATC Network. This makes your session publicly visible.",
+      "Check this if you're controlling on the PFATC Network. This makes your session publicly visible. (Enabled for tutorial)",
     placement: 'top' as Placement,
     disableNext: true,
   },

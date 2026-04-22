@@ -591,7 +591,7 @@ function DepartureTable({
                 </th>
                 {departureColumns.callsign !== false && (
                   <th
-                    className="py-2.5 px-4 text-left w cursor-pointer select-none hover:bg-blue-700"
+                    className="py-2.5 px-4 text-left column-callsign w cursor-pointer select-none hover:bg-blue-700"
                     onClick={() => handleSort('callsign')}
                   >
                     CALLSIGN
@@ -781,7 +781,7 @@ function DepartureTable({
                       </span>
                     </td>
                     {departureColumns.callsign !== false && (
-                      <td className="py-2 px-4">
+                      <td className="py-2 px-4 column-callsign">
                         <div
                           title={
                             !airlinesLoading

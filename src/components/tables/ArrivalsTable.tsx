@@ -446,7 +446,7 @@ function ArrivalsTable({
                 </th>
                 {arrivalsColumns.callsign !== false && (
                   <th
-                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    className="py-2.5 px-4 text-left column-callsign cursor-pointer select-none hover:bg-green-700"
                     onClick={() => handleSort('callsign')}
                   >
                     CALLSIGN
@@ -604,7 +604,7 @@ function ArrivalsTable({
                       </span>
                     </td>
                     {arrivalsColumns.callsign !== false && (
-                      <td className="py-2 px-4">
+                      <td className="py-2 px-4 column-callsign">
                         <span
                           className="text-white font-mono"
                           title={

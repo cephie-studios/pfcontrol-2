@@ -127,9 +127,17 @@ export const steps: {
     disableNext: true,
   },
   {
-    target: '#departure-table .w',
+    target: '#departure-table th.column-callsign',
     title: 'CALLSIGN',
-    content: "The flight's callsign (e.g., BAW123). Enter or edit as needed.",
+    content: "The flight's callsign (e.g., DLH123). Enter or edit as needed.",
+    placement: 'top',
+    disableNext: true,
+  },
+  {
+    target: '#departure-table td.column-callsign',
+    title: 'Callsign Tooltip',
+    content:
+      'You can hover over a callsign and the spoken version will appear in a tool tip.',
     placement: 'top',
     disableNext: true,
   },

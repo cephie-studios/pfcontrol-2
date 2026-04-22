@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Info,
   MessageCircle,
+  Phone,
   Settings,
   Wifi,
   WifiOff,
@@ -120,6 +121,7 @@ export default function Toolbar({
 }: ToolbarProps) {
   const [runway, setRunway] = useState(activeRunway || '');
   const [chatOpen, setChatOpen] = useState(false);
+  const [isInVoice, setIsInVoice] = useState(false);
   const [atisOpen, setAtisOpen] = useState(false);
   const [activeUsers, setActiveUsers] = useState<SessionUser[]>([]);
   const [unreadMentions, setUnreadMentions] = useState<ChatMention[]>([]);
@@ -578,6 +580,14 @@ export default function Toolbar({
               {unreadMentions.length}
             </div>
           )}
+          {isInVoice && !chatOpen && unreadMentions.length === 0 && (
+            <div className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 rounded-full bg-green-500 border-2 border-zinc-900">
+              <Phone className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+          {isInVoice && !chatOpen && unreadMentions.length > 0 && (
+            <Phone className="absolute -bottom-1 -right-1 w-3 h-3 text-green-400" />
+          )}
         </Button>
 
         <Button
@@ -631,6 +641,7 @@ export default function Toolbar({
           isPFATC={isPFATC}
           unreadSessionCount={unreadSessionMentions.length}
           unreadGlobalCount={unreadGlobalMentions.length}
+          onVoiceStateChange={setIsInVoice}
         />
 
         <ATIS

@@ -44,7 +44,7 @@ export async function createSession({
 
   if (isTutorial) {
     await addFlight(sessionId, {
-      callsign: 'EXAMPLE123',
+      callsign: 'DLH123',
       aircraft: 'A320',
       flight_type: 'IFR',
       departure: airportIcao,

@@ -44,7 +44,8 @@ export function createGlobalChatSocket(
   onMessageAutomodded?: (data: { messageId: number; reason: string }) => void,
   onMention?: (mention: GlobalChatMention) => void,
   onAirportMention?: (mention: GlobalChatMention) => void,
-  onConnectedGlobalChatUsers?: (users: ConnectedGlobalChatUser[]) => void
+  onConnectedGlobalChatUsers?: (users: ConnectedGlobalChatUser[]) => void,
+  onUserTyping?: (data: { userId: string; username: string }) => void
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
@@ -92,10 +93,17 @@ export function createGlobalChatSocket(
     socket.on('connectedGlobalChatUsers', onConnectedGlobalChatUsers);
   }
 
+  if (onUserTyping) {
+    socket.on('globalUserTyping', onUserTyping);
+  }
+
   return {
     socket,
     deleteMessage: (messageId: number, userId: string) => {
       socket.emit('deleteGlobalMessage', { messageId, userId });
+    },
+    sendTyping: (username: string) => {
+      socket.emit('globalTyping', { username });
     },
   };
 }
