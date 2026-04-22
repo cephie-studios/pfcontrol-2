@@ -12,6 +12,7 @@ import {
   Loader2,
   Camera,
   ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { fetchBackgrounds } from '../../utils/fetch/data';
 import type { Settings } from '../../types/settings';
@@ -36,111 +37,40 @@ interface BackgroundImageSettingsProps {
   onChange: (updatedSettings: Settings) => void;
 }
 
-interface BackgroundImageItemProps {
-  image: AvailableImage;
-  index: number;
-  settings: Settings | null;
-  selectedImage: string | null;
-  loadedImages: Record<string, boolean>;
-  onSelectImage: (filename: string) => void;
-  onToggleFavorite: (filename: string) => void;
-  onImageLoad: (path: string) => void;
-  getPhotoCredit: (filename: string) => string | null;
-}
-
-function BackgroundImageItem({
-  image,
-  index,
-  settings,
-  selectedImage,
-  loadedImages,
-  onSelectImage,
-  onToggleFavorite,
-  onImageLoad,
-  getPhotoCredit,
-}: BackgroundImageItemProps) {
-  const photoCredit = getPhotoCredit(image.filename);
-  const isImageLoaded = loadedImages[image.path];
-  const fullImageUrl = `${API_BASE_URL}${image.path}`;
-  const isFavorite = (settings?.backgroundImage?.favorites || []).includes(
-    image.filename
-  );
-  const isSelected = selectedImage === image.filename;
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry?.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '50px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
+// Sub-component for individual background items
+function BackgroundItem({ 
+  isSelected, 
+  onClick, 
+  children, 
+  className = "",
+  variantColor = "blue" 
+}: { 
+  isSelected: boolean; 
+  onClick: () => void; 
+  children: React.ReactNode;
+  className?: string;
+  variantColor?: string;
+}) {
   return (
     <div
-      ref={containerRef}
-      className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-        isSelected
-          ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-          : 'border-zinc-700 hover:border-zinc-600'
-      }`}
+      onClick={onClick}
+      className={`
+        relative aspect-video rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group border
+        ${isSelected 
+          ? `border-${variantColor}-500/50 ring-2 ring-${variantColor}-500/20` 
+          : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/50'}
+        ${className}
+      `}
     >
-      <div
-        className="aspect-video relative"
-        onClick={() => onSelectImage(image.filename)}
-      >
-        {!isImageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 animate-pulse"></div>
-        )}
-        {inView && (
-          <img
-            src={fullImageUrl}
-            alt={`Background option ${index + 1}`}
-            className={`w-full h-full object-cover transition-all duration-300 ${
-              isImageLoaded ? 'opacity-100' : 'opacity-0'
-            } group-hover:brightness-110`}
-            onLoad={() => onImageLoad(image.path)}
-          />
-        )}
-        {isSelected && (
-          <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-            <Eye className="h-3 w-3 text-white" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(image.filename);
-        }}
-        className={`absolute top-2 left-2 p-1 rounded-full transition-colors ${
-          isFavorite
-            ? 'bg-yellow-500 text-white'
-            : 'bg-black/50 text-gray-300 hover:text-yellow-400'
-        }`}
-      >
-        <Star className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} />
-      </button>
-      {photoCredit && isImageLoaded && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-          <div className="flex items-center text-xs text-white">
-            <User className="h-3 w-3 mr-1" />
-            <span>@{photoCredit}</span>
-          </div>
+      {children}
+      {isSelected && (
+        <div className={`absolute top-2 right-2 p-1 rounded-full bg-${variantColor}-500 shadow-lg`}>
+          <Eye className="h-3 w-3 text-white" />
         </div>
       )}
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+         {!isSelected && <Plus className="text-white/50 w-6 h-6" />}
+      </div>
     </div>
   );
 }
@@ -151,101 +81,64 @@ export default function BackgroundImageSettings({
 }: BackgroundImageSettingsProps) {
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>([]);
-  const [loadingImages, setLoadingImages] = useState(false);
-  const [loadingCephieSnap, setLoadingCephieSnap] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState('');
-  const [dragActive, setDragActive] = useState(false);
+  const [loading, setLoading] = useState({ images: false, snap: false });
+  const [status, setStatus] = useState({ uploading: false, deleting: false, error: '' });
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    loadAvailableImages();
-    loadCephieSnapImages();
+    const loadData = async () => {
+      setLoading({ images: true, snap: true });
+      try {
+        const [bgData, snapRes] = await Promise.all([
+          fetchBackgrounds(),
+          fetch(`${API_BASE_URL}/api/uploads/cephie-snap-images`, { credentials: 'include' })
+        ]);
+        setAvailableImages(bgData);
+        if (snapRes.ok) {
+          const snapData = await snapRes.json();
+          setCephieSnapImages(snapData.images ?? []);
+        }
+      } catch (e) {
+        setStatus(prev => ({ ...prev, error: 'Failed to sync background gallery' }));
+      } finally {
+        setLoading({ images: false, snap: false });
+      }
+    };
+    loadData();
   }, []);
 
-  const loadCephieSnapImages = async () => {
-    try {
-      setLoadingCephieSnap(true);
-      const res = await fetch(`${API_BASE_URL}/api/uploads/cephie-snap-images`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      setCephieSnapImages(data.images ?? []);
-    } catch {
-      setCephieSnapImages([]);
-    } finally {
-      setLoadingCephieSnap(false);
-    }
-  };
-
-  const loadAvailableImages = async () => {
-    try {
-      setLoadingImages(true);
-      const data = await fetchBackgrounds();
-      setAvailableImages(data);
-    } catch (error) {
-      console.error('Error loading available images:', error);
-      setError('Failed to load background images');
-    } finally {
-      setLoadingImages(false);
-    }
-  };
-
-  const handleSelectImage = (imageUrl: string) => {
+  const handleSelectImage = (imageUrl: string | null) => {
     if (!settings) return;
-
-    let selectedValue: string | null = imageUrl;
-    if (imageUrl === '') {
-      selectedValue = null;
-    }
-
-    const isUserUploaded =
-      selectedValue && selectedValue.startsWith('https://api.cephie.app/');
-
-    const updatedSettings = {
+    const isUserUploaded = imageUrl?.startsWith('https://api.cephie.app/');
+    onChange({
       ...settings,
       backgroundImage: {
         ...settings.backgroundImage,
-        selectedImage: selectedValue,
+        selectedImage: imageUrl || null,
         useCustomBackground: !!isUserUploaded,
       },
-    };
-    onChange(updatedSettings);
+    });
   };
 
   const handleToggleFavorite = (filename: string) => {
     if (!settings) return;
-
-    const currentFavorites = settings.backgroundImage?.favorites || [];
-    const isFavorite = currentFavorites.includes(filename);
-
-    const newFavorites = isFavorite
-      ? currentFavorites.filter((f) => f !== filename)
-      : [...currentFavorites, filename];
-
-    const updatedSettings = {
+    const current = settings.backgroundImage?.favorites || [];
+    const updated = current.includes(filename) 
+      ? current.filter(f => f !== filename) 
+      : [...current, filename];
+    
+    onChange({
       ...settings,
-      backgroundImage: {
-        ...settings.backgroundImage,
-        favorites: newFavorites,
-      },
-    };
-    onChange(updatedSettings);
+      backgroundImage: { ...settings.backgroundImage, favorites: updated }
+    });
   };
 
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file');
-      return;
-    }
-
+  const handleUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) return setStatus(p => ({ ...p, error: 'Invalid file type' }));
+    
     const formData = new FormData();
     formData.append('image', file);
-
-    setUploading(true);
-    setError('');
+    setStatus(p => ({ ...p, uploading: true, error: '' }));
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/uploads/upload-background`, {
@@ -253,477 +146,206 @@ export default function BackgroundImageSettings({
         credentials: 'include',
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
-
-      const uploadResult = await res.json();
-      const newImageUrl = uploadResult.url;
-
-      if (settings && newImageUrl) {
-        const updatedSettings = {
-          ...settings,
-          backgroundImage: {
-            ...settings.backgroundImage,
-            selectedImage: newImageUrl,
-            useCustomBackground: true,
-          },
-        };
-        onChange(updatedSettings);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      handleSelectImage(data.url);
+      // Refresh snap images
+      const snapRes = await fetch(`${API_BASE_URL}/api/uploads/cephie-snap-images`, { credentials: 'include' });
+      if (snapRes.ok) {
+        const snapData = await snapRes.json();
+        setCephieSnapImages(snapData.images ?? []);
       }
-
-      await loadAvailableImages();
-      await loadCephieSnapImages();
     } catch {
-      setError('Failed to upload image');
+      setStatus(p => ({ ...p, error: 'Upload failed' }));
     } finally {
-      setUploading(false);
+      setStatus(p => ({ ...p, uploading: false }));
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFile(files[0]);
-    }
+  const getPhotoCredit = (filename: string) => {
+    if (!filename || filename.match(/^[A-Z]{4}\./i)) return null;
+    const match = filename.match(/^(.+?)__\d{3}\./i);
+    return match ? match[1] : null;
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFile(file);
-    }
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/uploads/delete-background`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Delete failed');
-
-      if (settings) {
-        const updatedSettings = {
-          ...settings,
-          backgroundImage: {
-            ...settings.backgroundImage,
-            selectedImage: null,
-            useCustomBackground: false,
-          },
-        };
-        onChange(updatedSettings);
-      }
-
-      await loadAvailableImages();
-    } catch {
-      setError('Failed to delete image');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleImageLoad = (imagePath: string) => {
-    setLoadedImages((prev) => ({
-      ...prev,
-      [imagePath]: true,
-    }));
-  };
-
-  const getPhotoCredit = (filename: string): string | null => {
-    if (!filename) return null;
-    if (filename.match(/^[A-Z]{4}\.(png|jpg|jpeg)$/i)) {
-      return null;
-    }
-    const match = filename.match(/^(.+?)__\d{3}\.(png|jpg|jpeg)$/i);
-    if (match) {
-      return match[1];
-    }
-    return null;
-  };
-
-  const getImageUrl = (filename: string | null): string | null => {
-    if (!filename || filename === 'random' || filename === 'favorites') {
-      return filename;
-    }
-    if (filename.startsWith('https://api.cephie.app/')) {
-      return filename;
-    }
-    return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-  };
-
-  const favoriteCount = (settings?.backgroundImage?.favorites || []).length;
   const selectedImage = settings?.backgroundImage?.selectedImage;
+  const favorites = settings?.backgroundImage?.favorites || [];
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="p-4 sm:p-6 border-b border-zinc-700/50">
-        <div className="flex items-center">
-          <div className="p-2 bg-cyan-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
-            <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+    <div className="space-y-6">
+      {/* Header Card */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+            <ImageIcon className="h-5 w-5 text-cyan-400" />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-lg sm:text-xl font-semibold text-white">
-              Background Images
-            </h3>
-            <p className="text-zinc-400 text-xs sm:text-sm mt-1">
-              Choose from available backgrounds or upload your own custom image
-            </p>
+          <div>
+            <h3 className="text-lg font-bold text-white">Interface Background</h3>
+            <p className="text-xs text-zinc-500">Personalize your workspace with custom imagery</p>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-4 sm:p-6">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center">
-            <X className="h-5 w-5 text-red-400 mr-3 flex-shrink-0" />
-            <p className="text-red-300 text-sm flex-1">{error}</p>
-            <button
-              onClick={() => setError('')}
-              className="text-red-400 hover:text-red-300 ml-3"
-            >
-              <X className="h-4 w-4" />
+        {status.error && (
+          <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-400 text-sm">
+              <X size={14} /> {status.error}
+            </div>
+            <button onClick={() => setStatus(p => ({ ...p, error: '' }))} className="text-zinc-500 hover:text-white">
+              <X size={14} />
             </button>
           </div>
         )}
 
-        {/* Current Background Display - Only for user-uploaded images */}
-        {settings?.backgroundImage?.selectedImage &&
-          !['random', 'favorites'].includes(
-            settings.backgroundImage.selectedImage
-          ) &&
-          settings.backgroundImage.selectedImage !== null &&
-          (getPhotoCredit(settings.backgroundImage.selectedImage) ||
-            settings.backgroundImage.useCustomBackground) && (
-            <div className="mb-6">
-              <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-                <Camera className="h-4 w-4 mr-2 text-cyan-400" />
-                Current Background
-              </h4>
-              <div className="relative w-full max-w-2xl h-48 rounded-xl overflow-hidden border border-zinc-700/50 group">
-                <img
-                  src={
-                    getImageUrl(settings.backgroundImage.selectedImage) ??
-                    undefined
-                  }
-                  alt="Current background"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
-                  <Button
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    variant="danger"
-                    size="sm"
-                    className="bg-red-600/90 hover:bg-red-700 backdrop-blur-sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {deleting ? 'Deleting...' : 'Delete'}
-                  </Button>
-                </div>
-              </div>
+        {/* Action Grid (Presest) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* None */}
+          <BackgroundItem 
+            isSelected={!selectedImage} 
+            variantColor="zinc"
+            onClick={() => handleSelectImage(null)}
+          >
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <EyeOff className="text-zinc-600" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Default</span>
             </div>
-          )}
+          </BackgroundItem>
 
-        {/* Upload Section */}
-        {!settings?.backgroundImage?.useCustomBackground && (
-          <div className="mb-6">
-            <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-              <Upload className="h-4 w-4 mr-2 text-blue-400" />
-              Upload Custom Background
-            </h4>
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              className={`
-                                relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
-                                ${
-                                  dragActive
-                                    ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
-                                    : 'border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50'
-                                }
-                            `}
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploading}
-              />
-              <div className="flex flex-col items-center space-y-4">
-                <div
-                  className={`p-4 rounded-xl transition-colors duration-300 ${
-                    dragActive
-                      ? 'bg-blue-500/20'
-                      : uploading
-                        ? 'bg-blue-500/20'
-                        : 'bg-zinc-700/50'
-                  }`}
-                >
-                  {uploading ? (
-                    <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
-                  ) : (
-                    <Upload className="h-8 w-8 text-zinc-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-white mb-2">
-                    {dragActive
-                      ? 'Drop your image here'
-                      : uploading
-                        ? 'Uploading...'
-                        : 'Upload Background Image'}
-                  </p>
-                  <p className="text-zinc-400 text-sm">
-                    Drag and drop an image here, or click to browse
-                  </p>
-                  <p className="text-sm text-red-400 mt-2">
-                    Pictures you upload are public
-                  </p>
-                </div>
-              </div>
+          {/* Random */}
+          <BackgroundItem 
+            isSelected={selectedImage === 'random'} 
+            variantColor="purple"
+            onClick={() => handleSelectImage('random')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 flex flex-col items-center justify-center gap-2">
+              <Shuffle className="text-purple-400" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-purple-400">Randomize</span>
             </div>
-          </div>
-        )}
+          </BackgroundItem>
 
-        {/* Your Cephie Snap pictures */}
-        <div className="mb-6">
-          <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-            <Camera className="h-4 w-4 mr-2 text-cyan-400" />
-            Your Cephie Snap pictures
-          </h4>
-          <p className="text-zinc-400 text-xs mb-3">
-            Images you uploaded at{' '}
-            <a
-              href="https://snap.cephie.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1"
-            >
-              snap.cephie.app
-              <ExternalLink className="h-3 w-3" />
-            </a>{' '}
-            - select one as your background.
-          </p>
-          {loadingCephieSnap ? (
-            <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-              <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
-              <span className="text-zinc-400 text-sm">Loading your Snap pictures...</span>
+          {/* Favorites */}
+          <BackgroundItem 
+            isSelected={selectedImage === 'favorites'} 
+            variantColor="yellow"
+            onClick={() => favorites.length > 0 && handleSelectImage('favorites')}
+            className={favorites.length === 0 ? "opacity-40 grayscale pointer-events-none" : ""}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 flex flex-col items-center justify-center gap-2">
+              <Star className="text-yellow-400" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-yellow-400">My Stashed ({favorites.length})</span>
             </div>
-          ) : cephieSnapImages.length === 0 ? (
-            <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
-              <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
-              <p className="text-zinc-400 text-sm">No Cephie Snap pictures yet.</p>
-              <a
-                href="https://snap.cephie.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 mt-2"
-              >
-                Upload at snap.cephie.app
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          ) : (
-            <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {cephieSnapImages.map((img) => {
-                const isSelected = selectedImage === img.url;
-                return (
-                  <div
-                    key={img.id}
-                    className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                      isSelected
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-                        : 'border-zinc-700 hover:border-zinc-600'
-                    }`}
-                    onClick={() => handleSelectImage(img.url)}
-                  >
-                    <div className="aspect-video relative bg-zinc-800">
-                      <img
-                        src={img.url}
-                        alt="Cephie Snap"
-                        className="w-full h-full object-cover group-hover:brightness-110 transition-all"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-                          <Eye className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            </div>
-          )}
+          </BackgroundItem>
         </div>
 
-        {/* Available Backgrounds */}
-        <div>
-          <h4 className="text-white font-medium text-sm mb-4 flex items-center">
-            <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
-            Available Backgrounds
-          </h4>
-
-          {loadingImages ? (
-            <div className="flex items-center justify-center p-12 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-              <Loader2 className="h-6 w-6 animate-spin text-cyan-400 mr-3" />
-              <span className="text-zinc-400">Loading backgrounds...</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-              {/* No Background */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === null || selectedImage === ''
-                    ? 'border-emerald-500 shadow-lg shadow-emerald-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() => handleSelectImage('')}
-              >
-                <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <EyeOff className="h-8 w-8 text-zinc-400 mx-auto mb-2 group-hover:text-zinc-300 transition-colors" />
-                    <span className="text-zinc-400 text-xs group-hover:text-zinc-300 transition-colors">
-                      No Background
-                    </span>
-                  </div>
-                </div>
-                {(selectedImage === null || selectedImage === '') && (
-                  <div className="absolute top-2 right-2 bg-emerald-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Random */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'random'
-                    ? 'border-purple-500 shadow-lg shadow-purple-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() => handleSelectImage('random')}
-              >
-                <div className="aspect-video bg-gradient-to-br from-purple-800 to-purple-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <Shuffle className="h-8 w-8 text-purple-400 mx-auto mb-2 group-hover:text-purple-300 transition-colors" />
-                    <span className="text-purple-400 text-xs group-hover:text-purple-300 transition-colors">
-                      Random
-                    </span>
-                  </div>
-                </div>
-                {selectedImage === 'random' && (
-                  <div className="absolute top-2 right-2 bg-purple-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Favorites */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'favorites'
-                    ? 'border-yellow-500 shadow-lg shadow-yellow-500/25'
-                    : favoriteCount === 0
-                      ? 'border-zinc-600 opacity-50 cursor-not-allowed'
-                      : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() =>
-                  favoriteCount > 0 && handleSelectImage('favorites')
-                }
-              >
-                <div className="aspect-video bg-gradient-to-br from-yellow-800 to-yellow-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <Star className="h-8 w-8 text-yellow-400 mx-auto mb-2 group-hover:text-yellow-300 transition-colors" />
-                    <span className="text-yellow-400 text-xs group-hover:text-yellow-300 transition-colors">
-                      Favorites ({favoriteCount})
-                    </span>
-                  </div>
-                </div>
-                {selectedImage === 'favorites' && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Available Images */}
-              {availableImages.map((image, index) => (
-                <BackgroundImageItem
-                  key={index}
-                  image={image}
-                  index={index}
-                  settings={settings}
-                  selectedImage={selectedImage ?? null}
-                  loadedImages={loadedImages}
-                  onSelectImage={handleSelectImage}
-                  onToggleFavorite={handleToggleFavorite}
-                  onImageLoad={handleImageLoad}
-                  getPhotoCredit={getPhotoCredit}
-                />
-              ))}
-            </div>
-          )}
-          {availableImages.length === 0 && !loadingImages && (
-            <div className="text-center p-8 text-gray-400">
-              <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No background images available yet.</p>
-              <p className="text-xs mt-2">
-                Upload your own image or wait for images to be added.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-500/20 rounded-lg">
-          <div className="flex items-start">
-            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-            <div>
-              <h4 className="text-blue-300 font-medium text-sm mb-1">
-                How it works
-              </h4>
-              <p className="text-blue-200/80 text-xs sm:text-sm leading-relaxed">
-                Select "No Background" for the default transparent background,
-                "Random" for any available image each session, "Favorites" for
-                random selection from your starred images only, or choose a
-                specific image. Click the star to add/remove favorites. Remember
-                to save your changes!
-              </p>
+        {/* Upload Zone */}
+        <div className="relative group">
+          <input 
+            type="file" 
+            className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+            onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+            disabled={status.uploading}
+          />
+          <div className={`
+            border-2 border-dashed rounded-xl p-8 transition-all duration-300 flex flex-col items-center justify-center gap-3
+            ${status.uploading ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-zinc-800 bg-zinc-950/30 group-hover:border-zinc-700 group-hover:bg-zinc-800/20'}
+          `}>
+            {status.uploading ? (
+              <Loader2 className="animate-spin text-cyan-400" />
+            ) : (
+              <Upload className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+            )}
+            <div className="text-center">
+              <p className="text-sm font-semibold text-zinc-300">Upload New Background</p>
+              <p className="text-[11px] text-zinc-500 mt-1">Images are stored in your Cephie Snap Cloud</p>
             </div>
           </div>
         </div>
       </div>
 
-      <style>{`
-                @keyframes skeletonPulse {
-                    0% { background-position: -200% 0; }
-                    100% { background-position: 200% 0; }
-                }
-                .skeleton-loading {
-                    background: linear-gradient(110deg, rgba(55, 65, 81, 0.5) 8%, rgba(75, 85, 99, 0.8) 18%, rgba(55, 65, 81, 0.5) 33%);
-                    background-size: 200% 100%;
-                    animation: skeletonPulse 1.5s ease-in-out infinite;
-                }
-            `}</style>
+      {/* Gallery Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Public Gallery</h4>
+          {loading.images && <Loader2 size={12} className="animate-spin text-zinc-600" />}
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {availableImages.map((img) => {
+            const isFav = favorites.includes(img.filename);
+            const isSel = selectedImage === img.filename;
+            const credit = getPhotoCredit(img.filename);
+
+            return (
+              <div key={img.filename} className="group relative">
+                <BackgroundItem 
+                  isSelected={isSel}
+                  variantColor="cyan"
+                  onClick={() => handleSelectImage(img.filename)}
+                >
+                  <img 
+                    src={`${API_BASE_URL}${img.path}`} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                    loading="lazy"
+                    alt=""
+                  />
+                  {credit && (
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                      <p className="text-[9px] text-zinc-300 flex items-center gap-1">
+                        <User size={10} /> {credit}
+                      </p>
+                    </div>
+                  )}
+                </BackgroundItem>
+                
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(img.filename); }}
+                  className={`
+                    absolute top-2 left-2 p-1.5 rounded-lg border transition-all z-20
+                    ${isFav 
+                      ? 'bg-yellow-500 border-yellow-400 text-white' 
+                      : 'bg-zinc-900/80 border-zinc-700 text-zinc-400 opacity-0 group-hover:opacity-100'}
+                  `}
+                >
+                  <Star size={12} fill={isFav ? "currentColor" : "none"} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Cloud Snap Section */}
+      {cephieSnapImages.length > 0 && (
+        <div className="space-y-4 pt-4">
+          <div className="flex items-center gap-2 px-1">
+            <Camera size={14} className="text-cyan-400" />
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Cloud Snapshots</h4>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {cephieSnapImages.map((img) => (
+              <BackgroundItem
+                key={img.id}
+                isSelected={selectedImage === img.url}
+                variantColor="cyan"
+                onClick={() => handleSelectImage(img.url)}
+              >
+                <img src={img.url} className="w-full h-full object-cover" loading="lazy" />
+              </BackgroundItem>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Information Footer */}
+      <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl flex gap-4">
+        <div className="p-2 bg-blue-500/10 rounded-lg h-fit">
+          <ExternalLink size={14} className="text-blue-400" />
+        </div>
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          <strong className="text-zinc-300 block mb-1">Background Logic</strong>
+          Individual selection overrides presets. Use "Random" to cycle through all public images. 
+          Use "Stashed" to cycle through only your starred favorites.
+        </p>
+      </div>
     </div>
   );
 }
