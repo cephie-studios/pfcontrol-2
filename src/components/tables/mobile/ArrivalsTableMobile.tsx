@@ -446,8 +446,8 @@ export default function ArrivalsTableMobile({
                   <div>
                     <label className="block text-gray-400 mb-1">Time</label>
                     <span className="text-white font-mono">
-                      {flight.timestamp
-                        ? new Date(flight.timestamp).toLocaleTimeString(
+                      {(flight.timestamp || flight.created_at)
+                        ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
                             'en-GB',
                             {
                               hour: '2-digit',

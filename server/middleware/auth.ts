@@ -43,3 +43,34 @@ export default async function requireAuth(
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
+
+// Like requireAuth but does not reject unauthenticated requests.
+// Sets req.user if a valid token is present, otherwise continues as guest.
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  const token = req.cookies.auth_token;
+  if (!token || !JWT_SECRET) return next();
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET as string) as JwtPayload;
+    const user = await getUserById(decoded.userId);
+    if (user) {
+      req.user = {
+        userId: decoded.userId,
+        username: decoded.username,
+        discriminator: decoded.discriminator,
+        avatar: decoded.avatar,
+        isAdmin: isAdmin(decoded.userId),
+        iat: decoded.iat,
+        exp: decoded.exp,
+      };
+    }
+  } catch {
+    // invalid/expired token — continue as guest
+  }
+
+  next();
+}

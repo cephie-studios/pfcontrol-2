@@ -56,6 +56,9 @@ export interface ClientFlight {
   wtc?: string;
   hidden?: boolean;
   pdc_remarks?: string;
+  notes?: string;
+  acars_token?: string;
+  isPFATC?: boolean;
   user?: {
     id: string;
     discord_username: string;
@@ -193,12 +196,28 @@ export async function getFlightsByUser(userId: string) {
   try {
     const flights = await mainDb
       .selectFrom('flights')
-      .selectAll()
-      .where('user_id', '=', userId)
-      .orderBy('created_at', 'desc')
+      .leftJoin('sessions', 'sessions.session_id', 'flights.session_id')
+      .select([
+        'flights.id', 'flights.session_id', 'flights.user_id', 'flights.ip_address',
+        'flights.callsign', 'flights.aircraft', 'flights.flight_type',
+        'flights.departure', 'flights.arrival', 'flights.alternate', 'flights.route',
+        'flights.sid', 'flights.star', 'flights.runway',
+        'flights.clearedfl', 'flights.cruisingfl',
+        'flights.stand', 'flights.gate', 'flights.remark',
+        'flights.flight_plan_time', 'flights.status', 'flights.clearance',
+        'flights.position', 'flights.squawk', 'flights.wtc', 'flights.hidden',
+        'flights.acars_token', 'flights.pdc_remarks', 'flights.notes',
+        'flights.created_at', 'flights.updated_at',
+        'sessions.is_pfatc',
+      ])
+      .where('flights.user_id', '=', userId)
+      .orderBy('flights.created_at', 'desc')
       .execute();
 
-    return flights.map((flight) => sanitizeFlightForClient(flight));
+    return flights.map((flight) => ({
+      ...sanitizeFlightForOwner(flight as unknown as FlightsTable),
+      isPFATC: flight.is_pfatc ?? false,
+    }));
   } catch (error) {
     console.error(`Error fetching flights for user ${userId}:`, error);
     return [];
@@ -215,7 +234,7 @@ export async function getFlightByIdForUser(userId: string, flightId: string) {
       .where('user_id', '=', userId)
       .executeTakeFirst();
 
-    return flight ? sanitizeFlightForClient(flight) : null;
+    return flight ? sanitizeFlightForOwner(flight) : null;
   } catch (error) {
     console.error(`Error fetching flight ${flightId} for user ${userId}:`, error);
     return null;
@@ -568,5 +587,15 @@ export async function deleteFlight(sessionId: string, flightId: string) {
     .deleteFrom('flights')
     .where('session_id', '=', validSessionId)
     .where('id', '=', validFlightId)
+    .execute();
+}
+
+export async function updateFlightNotes(userId: string, flightId: string, notes: string) {
+  const validFlightId = validateFlightId(flightId);
+  await mainDb
+    .updateTable('flights')
+    .set({ notes, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
     .execute();
 }

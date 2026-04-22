@@ -175,8 +175,16 @@ export default function AdminFlightLogs() {
     }
   };
 
+  const parseTimestamp = (value: string): Date => {
+    const num = Number(value);
+    if (!isNaN(num) && value.trim() !== '') {
+      return new Date(num < 1e12 ? num * 1000 : num);
+    }
+    return new Date(value);
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return parseTimestamp(dateString).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

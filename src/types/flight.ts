@@ -33,6 +33,8 @@ export interface Flight {
   hidden?: boolean;
   acars_token?: string;
   pdc_remarks?: string;
+  notes?: string;
+  isPFATC?: boolean;
   user?: {
     discord_username?: string;
     discord_avatar_url?: string;

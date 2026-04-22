@@ -1,5 +1,5 @@
 import express from 'express';
-import requireAuth from '../middleware/auth.js';
+import requireAuth, { optionalAuth } from '../middleware/auth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
   getFlightsBySession,
@@ -12,6 +12,7 @@ import {
   updateFlight,
   deleteFlight,
   validateAcarsAccess,
+  updateFlightNotes,
 } from '../db/flights.js';
 import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
 import { recordNewFlight } from '../db/statistics.js';
@@ -79,6 +80,21 @@ router.get('/me/:flightId', requireAuth, async (req, res) => {
     res.json(flight);
   } catch {
     res.status(500).json({ error: 'Failed to fetch flight' });
+  }
+});
+
+// PATCH: /api/flights/me/:flightId/notes - save personal notes for owned flight
+router.patch('/me/:flightId/notes', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { notes } = req.body ?? {};
+    if (typeof notes !== 'string' || notes.length > 2000) {
+      return res.status(400).json({ error: 'Notes must be a string under 2000 characters' });
+    }
+    await updateFlightNotes(req.user.userId, req.params.flightId, notes);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to save notes' });
   }
 });
 
@@ -180,7 +196,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
+router.post('/:sessionId', flightCreationLimiter, optionalAuth, async (req, res) => {
   try {
     if (req.body.callsign) {
       try {

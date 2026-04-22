@@ -111,3 +111,16 @@ export async function deleteFlight(
   );
   if (!res.ok) throw new Error('Failed to delete flight');
 }
+
+export async function updateFlightNotes(
+  flightId: string,
+  notes: string
+): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}/notes`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) throw new Error('Failed to save notes');
+}

@@ -1,4 +1,5 @@
 import { mainDb } from './connection.js';
+import { sql } from 'kysely';
 
 export async function createMainTables() {
   // app_settings
@@ -473,4 +474,7 @@ export async function createMainTables() {
     .on('global_chat')
     .column('sent_at')
     .execute();
+
+  // Additive column migrations (safe to run on existing tables)
+  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS notes TEXT`.execute(mainDb);
 }

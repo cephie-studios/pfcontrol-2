@@ -55,7 +55,7 @@ export function createFlightsSocket(
     socket,
     // Add a new flight via websocket
     addFlight: (flightData: Partial<Flight>) => {
-      socket.emit('addFlight', flightData);
+      socket.emit('addFlight', { ...flightData, userId });
     },
     // Update a flight via websocket
     updateFlight: (flightId: string | number, updates: Partial<Flight>) => {

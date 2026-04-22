@@ -588,8 +588,8 @@ export default function DepartureTableMobile({
                 {/* Time is always visible */}
                 <div>
                   <strong>Time:</strong>{' '}
-                  {flight.timestamp
-                    ? new Date(flight.timestamp).toLocaleTimeString('en-GB', {
+                  {(flight.timestamp || flight.created_at)
+                    ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString('en-GB', {
                         hour: '2-digit',
                         minute: '2-digit',
                         timeZone: 'UTC',
