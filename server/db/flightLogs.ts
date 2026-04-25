@@ -2,7 +2,7 @@ import { mainDb } from './connection.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
 
-const FLIGHT_LOG_RETENTION_DAYS = 365;
+const FLIGHT_LOG_RETENTION_DAYS = 90;
 
 export interface FlightLogData {
   userId: string;
