@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../hooks/data/useData';
 import { ChevronDown } from 'lucide-react';
+import PrefilledIndicator from './PrefilledIndicator';
 
 interface CallsignInputProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_newValue: string) => void;
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  isPrefilled?: boolean;
 }
 
 export default function CallsignInput({
@@ -16,11 +18,11 @@ export default function CallsignInput({
   placeholder = 'e.g. DLH123',
   required = false,
   maxLength = 16,
+  isPrefilled = false,
 }: CallsignInputProps) {
   const { airlines } = useData();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredAirlines, setFilteredAirlines] = useState(airlines);
-  const [dropdownSearch, setDropdownSearch] = useState('');
   const [validationError, setValidationError] = useState<string>('');
   const [hasBlurred, setHasBlurred] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +30,6 @@ export default function CallsignInput({
 
   useEffect(() => {
     const mainSearchTerm = value.toUpperCase();
-    const dropdownSearchTerm = dropdownSearch.toUpperCase();
 
     let filtered = airlines;
 
@@ -38,14 +39,6 @@ export default function CallsignInput({
           airline.icao.toUpperCase().startsWith(mainSearchTerm) ||
           airline.callsign.toUpperCase().startsWith(mainSearchTerm) ||
           airline.callsign.toUpperCase().includes(mainSearchTerm)
-      );
-    }
-
-    if (dropdownSearch) {
-      filtered = filtered.filter(
-        (airline) =>
-          airline.icao.toUpperCase().includes(dropdownSearchTerm) ||
-          airline.callsign.toUpperCase().includes(dropdownSearchTerm)
       );
     }
 
@@ -67,7 +60,7 @@ export default function CallsignInput({
     });
 
     setFilteredAirlines(filtered);
-  }, [value, dropdownSearch, airlines]);
+  }, [value, airlines]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -127,13 +120,11 @@ export default function CallsignInput({
   return (
     <div className="relative">
       <div
-        className={`relative bg-gray-800 border-2 transition-all duration-75 z-10 ${
-          shouldShowError ? 'border-red-600' : 'border-blue-600'
-        } ${
-          showSuggestions && filteredAirlines.length > 0
+        className={`relative bg-gray-800 border-2 transition-all duration-75 z-10 ${shouldShowError ? 'border-red-600' : 'border-blue-600'
+          } ${showSuggestions && filteredAirlines.length > 0
             ? 'rounded-t-3xl rounded-b-none border-b-0'
             : 'rounded-3xl'
-        }`}
+          }`}
       >
         <input
           ref={inputRef}
@@ -144,14 +135,17 @@ export default function CallsignInput({
           onBlur={handleBlur}
           required={required}
           placeholder={placeholder}
-          className="w-full pl-6 pr-10 p-3 bg-transparent text-white font-semibold focus:outline-none"
+          className={`w-full pl-6 p-3 bg-transparent text-white font-semibold focus:outline-none ${isPrefilled || (filteredAirlines.length > 0) ? 'pr-14' : 'pr-6'}`}
           maxLength={maxLength}
         />
-        {filteredAirlines.length > 0 && (
-          <ChevronDown
-            className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 transition-transform duration-300 ${showSuggestions ? 'rotate-180' : ''}`}
-          />
-        )}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {isPrefilled && <PrefilledIndicator />}
+          {filteredAirlines.length > 0 && (
+            <ChevronDown
+              className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${showSuggestions ? 'rotate-180' : ''}`}
+            />
+          )}
+        </div>
       </div>
 
       {shouldShowError && (

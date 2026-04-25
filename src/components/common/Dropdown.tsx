@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
+import PrefilledIndicator from './PrefilledIndicator';
 import type { ReactNode } from 'react';
 import type { DropdownOption } from '../../types/dropdown';
 
@@ -24,6 +25,7 @@ interface DropdownProps {
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   id?: string;
+  isPrefilled?: boolean;
 }
 
 const sizeClasses = {
@@ -46,6 +48,7 @@ function Dropdown({
   className = '',
   size = 'md',
   id,
+  isPrefilled = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMeasured, setIsMeasured] = useState(false);
@@ -311,9 +314,8 @@ function Dropdown({
             type="button"
             key={option.value}
             data-dropdown-selected={isSelected ? true : undefined}
-            className={`block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-blue-600 hover:text-white ${
-              isSelected ? 'text-white font-medium' : 'text-gray-300'
-            }`}
+            className={`block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-blue-600 hover:text-white ${isSelected ? 'text-white font-medium' : 'text-gray-300'
+              }`}
             onClick={() => handleOptionClick(option.value)}
           >
             {renderOption ? renderOption(option) : option.label}
@@ -333,21 +335,23 @@ function Dropdown({
           onClick={toggleOpen}
           disabled={disabled}
           className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
-            ${
-              disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-650'
+            ${disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-650'
             } ${sizeClasses[size]} ${className}`}
         >
           <span className="truncate ml-2 font-semibold">{displayValue}</span>
-          <span
-            className="transition-transform duration-200 ml-2 shrink-0"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-          >
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </span>
+          <div className="flex items-center gap-2 mr-2">
+            <span
+              className="transition-transform duration-200 shrink-0"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            >
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </span>
+            {isPrefilled && <PrefilledIndicator />}
+          </div>
         </button>
       </div>
 

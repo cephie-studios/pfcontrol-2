@@ -8,6 +8,7 @@ interface AircraftDropdownProps {
   disabled?: boolean;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showFullName?: boolean;
+  isPrefilled?: boolean;
 }
 
 export default function AircraftDropdown({
@@ -16,6 +17,7 @@ export default function AircraftDropdown({
   disabled = false,
   size = 'md',
   showFullName = true,
+  isPrefilled = false,
 }: AircraftDropdownProps) {
   const { aircrafts, loading } = useData();
 
@@ -56,6 +58,7 @@ export default function AircraftDropdown({
       disabled={disabled || loading}
       getDisplayValue={getDisplayValue}
       size={size}
+      isPrefilled={isPrefilled}
     />
   );
 }

@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
 const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 const waypointsPath = path.join(__dirname, '..', 'data', 'waypointData.json');
+const airlinesPath = path.join(__dirname, '..', 'data', 'airlineData.json');
 
 export function getAirportData() {
   if (!fs.existsSync(airportsPath)) {
@@ -28,4 +29,11 @@ export function getWaypointData() {
     throw new Error('Waypoint data not found');
   }
   return JSON.parse(fs.readFileSync(waypointsPath, 'utf8'));
+}
+
+export function getAirlineData() {
+  if (!fs.existsSync(airlinesPath)) {
+    throw new Error('Airline data not found');
+  }
+  return JSON.parse(fs.readFileSync(airlinesPath, 'utf8'));
 }
