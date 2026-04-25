@@ -1,4 +1,7 @@
 import express from 'express';
+import multer from 'multer';
+import FormData from 'form-data';
+import axios from 'axios';
 import requireAuth, { optionalAuth } from '../middleware/auth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
@@ -8,11 +11,15 @@ import {
   getFlightLogsForUser,
   claimFlightForUser,
   getFlightById,
+  getPublicFlightById,
   addFlight,
   updateFlight,
   deleteFlight,
   validateAcarsAccess,
   updateFlightNotes,
+  addSnapImage,
+  deleteSnapImage,
+  toggleFeaturedOnProfile,
 } from '../db/flights.js';
 import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
 import { recordNewFlight } from '../db/statistics.js';
@@ -21,8 +28,25 @@ import { mainDb } from '../db/connection.js';
 import {
   flightCreationLimiter,
   acarsValidationLimiter,
+  generalApiLimiter,
 } from '../middleware/rateLimiting.js';
 import { validateCallsign } from '../utils/validation.js';
+
+const snapUpload = multer({ storage: multer.memoryStorage() });
+const CEPHIE_API_KEY = process.env.CEPHIE_API_KEY;
+const CEPHIE_API_BASE = 'https://api.cephie.app';
+const CEPHIE_UPLOAD_URL = `${CEPHIE_API_BASE}/api/v1/images/upload`;
+
+function getCephieIdFromUrl(url: string): string | null {
+  if (!url || !url.startsWith('https://api.cephie.app/')) return null;
+  try {
+    const parts = new URL(url).pathname.split('/').filter(Boolean);
+    if (parts[0] === 'img' && parts.length === 2) return parts[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 const router = express.Router();
 
@@ -95,6 +119,104 @@ router.patch('/me/:flightId/notes', requireAuth, async (req, res) => {
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to save notes' });
+  }
+});
+
+// POST: /api/flights/me/:flightId/snap - upload a Cephie Snap photo for owned flight
+router.post(
+  '/me/:flightId/snap',
+  requireAuth,
+  snapUpload.single('image'),
+  async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+      const userId = req.user.userId;
+      const { flightId } = req.params;
+      const file = req.file;
+
+      if (!file || !file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ error: 'Invalid or missing image file' });
+      }
+
+      const formData = new FormData();
+      formData.append('image', file.buffer, file.originalname);
+
+      const uploadResponse = await axios.post(CEPHIE_UPLOAD_URL, formData, {
+        headers: {
+          'x-user-id': userId,
+          'x-api-key': CEPHIE_API_KEY,
+          ...formData.getHeaders(),
+        },
+        maxBodyLength: Infinity,
+      });
+
+      const imageUrl = uploadResponse.data?.url;
+      if (!imageUrl) {
+        return res.status(500).json({ error: 'No URL returned from Cephie upload' });
+      }
+
+      const cephieId = getCephieIdFromUrl(imageUrl) ?? imageUrl;
+      const result = await addSnapImage(userId, flightId, cephieId, imageUrl);
+      if (!result.ok) {
+        // Clean up uploaded image since DB update failed
+        try {
+          await axios.delete(`${CEPHIE_API_BASE}/api/v1/images/${cephieId}`, {
+            headers: { 'Content-Type': 'application/json', 'x-api-key': CEPHIE_API_KEY },
+            data: { userId },
+          });
+        } catch { /* best-effort */ }
+        return res.status(404).json({ error: 'Flight not found or not owned by you' });
+      }
+
+      res.json({ url: imageUrl, cephie_id: cephieId, snap_images: result.snap_images });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Cephie Snap upload error:', error.response?.data || error.message);
+        return res.status(500).json({ error: 'Failed to upload snap', details: error.response?.data });
+      }
+      console.error('Snap upload error:', error);
+      res.status(500).json({ error: 'Failed to upload snap' });
+    }
+  }
+);
+
+// DELETE: /api/flights/me/:flightId/snap/:cephieId - delete a Cephie Snap photo
+router.delete('/me/:flightId/snap/:cephieId', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = req.user.userId;
+    const { flightId, cephieId } = req.params;
+
+    const result = await deleteSnapImage(userId, flightId, cephieId);
+    if (!result.ok) {
+      return res.status(404).json({ error: 'Snap not found or not owned by you' });
+    }
+
+    // Delete from Cephie
+    try {
+      await axios.delete(`${CEPHIE_API_BASE}/api/v1/images/${cephieId}`, {
+        headers: { 'Content-Type': 'application/json', 'x-api-key': CEPHIE_API_KEY },
+        data: { userId },
+      });
+    } catch (err) {
+      console.warn('Failed to delete image from Cephie (continuing):', err);
+    }
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Failed to delete snap' });
+  }
+});
+
+// PATCH: /api/flights/me/:flightId/feature - toggle featured on profile
+router.patch('/me/:flightId/feature', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const result = await toggleFeaturedOnProfile(req.user.userId, req.params.flightId);
+    if (!result.ok) return res.status(404).json({ error: 'Flight not found or not owned by you' });
+    res.json({ featured: result.featured });
+  } catch {
+    res.status(500).json({ error: 'Failed to toggle featured status' });
   }
 });
 
@@ -184,6 +306,24 @@ router.get(
     }
   }
 );
+
+// GET: /api/flights/public/:flightId - get a publicly shared flight (no auth required)
+router.get('/public/:flightId', generalApiLimiter, async (req, res) => {
+  try {
+    const flight = await getPublicFlightById(req.params.flightId);
+    if (!flight) {
+      return res.status(404).json({ error: 'Flight not found' });
+    }
+    // Exclude sensitive/private fields; include snap_images and notes for public view
+    const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
+    void user_id;
+    void ip_address;
+    void acars_token;
+    res.json(sanitizedFlight);
+  } catch {
+    res.status(500).json({ error: 'Failed to load flight' });
+  }
+});
 
 // GET: /api/flights/:sessionId - get all flights for a session
 router.get('/:sessionId', requireAuth, async (req, res) => {

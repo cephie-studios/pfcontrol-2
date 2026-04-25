@@ -477,4 +477,6 @@ export async function createMainTables() {
 
   // Additive column migrations (safe to run on existing tables)
   await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS notes TEXT`.execute(mainDb);
+  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS snap_images JSONB DEFAULT '[]'`.execute(mainDb);
+  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS featured_on_profile BOOLEAN DEFAULT false`.execute(mainDb);
 }

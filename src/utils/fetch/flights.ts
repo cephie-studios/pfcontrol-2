@@ -63,11 +63,15 @@ export interface FlightLogItem {
   old_data: Record<string, unknown> | null;
   new_data: Record<string, unknown> | null;
   created_at: string;
+  username: string;
+  user_id: string;
+  avatar_url: string | null;
 }
 
 export interface MyFlightLogsResponse {
   logs: FlightLogItem[];
   logsDiscardedDueToAge: boolean;
+  pilotUserId?: string;
 }
 
 export async function fetchMyFlightLogs(
@@ -112,6 +116,12 @@ export async function deleteFlight(
   if (!res.ok) throw new Error('Failed to delete flight');
 }
 
+export async function fetchPublicFlight(flightId: string): Promise<Flight> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/public/${flightId}`);
+  if (!res.ok) throw new Error('Failed to fetch public flight');
+  return res.json();
+}
+
 export async function updateFlightNotes(
   flightId: string,
   notes: string
@@ -123,4 +133,49 @@ export async function updateFlightNotes(
     body: JSON.stringify({ notes }),
   });
   if (!res.ok) throw new Error('Failed to save notes');
+}
+
+export interface SnapImage {
+  cephie_id: string;
+  url: string;
+}
+
+export async function uploadSnapImage(
+  flightId: string,
+  file: File
+): Promise<{ url: string; cephie_id: string; snap_images: SnapImage[] }> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}/snap`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Failed to upload snap');
+  return res.json();
+}
+
+export async function deleteSnapImage(
+  flightId: string,
+  cephieId: string
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/flights/me/${flightId}/snap/${encodeURIComponent(cephieId)}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  );
+  if (!res.ok) throw new Error('Failed to delete snap');
+}
+
+export async function toggleFeaturedOnProfile(
+  flightId: string
+): Promise<{ featured: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}/feature`, {
+    method: 'PATCH',
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to toggle featured status');
+  return res.json();
 }

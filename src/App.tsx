@@ -12,6 +12,7 @@ import MyFlightDetail from './pages/MyFlightDetail';
 import Settings from './pages/Settings';
 import PFATCFlights from './pages/PFATCFlights';
 import ACARS from './pages/ACARS';
+import PublicFlightView from './pages/PublicFlightView';
 import PilotProfile from './pages/PilotProfile';
 
 import Login from './pages/Login';
@@ -159,6 +160,7 @@ export default function App() {
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
           <Route path="/submit/:sessionId" element={<Submit />} />
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
+          <Route path="flight/:flightId" element={<PublicFlightView />} />
           <Route path="/user/:username" element={<PilotProfile />} />
 
           <Route

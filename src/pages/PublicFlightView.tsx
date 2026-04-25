@@ -1,37 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   ArrowRight,
   CalendarClock,
   Camera,
-  Check,
   ExternalLink,
   History,
-  Plus,
   Route,
-  Share2,
-  Star,
   StickyNote,
-  Trash2,
   X,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
-import {
-  fetchMyFlightById,
-  fetchMyFlightLogs,
-  updateFlightNotes,
-  uploadSnapImage,
-  deleteSnapImage as deleteSnapImageApi,
-  toggleFeaturedOnProfile,
-  type FlightLogItem,
-  type SnapImage,
-} from '../utils/fetch/flights';
-import type { Flight } from '../types/flight';
-import { useSettings } from '../hooks/settings/useSettings';
+import { fetchPublicFlight } from '../utils/fetch/flights';
 import { fetchBackgrounds } from '../utils/fetch/data';
+import { useSettings } from '../hooks/settings/useSettings';
 import { useData } from '../hooks/data/useData';
+import type { Flight } from '../types/flight';
 import { parseCallsign } from '../utils/callsignParser';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -42,21 +27,12 @@ interface AvailableImage {
   extension: string;
 }
 
-interface SessionSubmitInfo {
-  sessionId: string;
-  airportIcao: string;
-  activeRunway?: string;
-  isPFATC: boolean;
-  createdBy: string;
-}
-
 const getDisplayStatus = (status?: string) => {
   if (!status) return 'PENDING';
   if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
   if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
   return status;
 };
-
 
 function SectionCard({
   icon,
@@ -81,119 +57,101 @@ function SectionCard({
   );
 }
 
-export default function MyFlightDetail() {
-  const { id } = useParams<{ id: string }>();
+interface StatusEntry {
+  id: number;
+  label: React.ReactNode;
+  at: string;
+}
+
+export default function PublicFlightView() {
+  const { flightId } = useParams<{ flightId: string }>();
   const { settings } = useSettings();
   const { airlines } = useData();
+
   const [flight, setFlight] = useState<Flight | null>(null);
-  const [logs, setLogs] = useState<FlightLogItem[]>([]);
-  const [logsDiscardedDueToAge, setLogsDiscardedDueToAge] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
-  const [sessionInfo, setSessionInfo] = useState<SessionSubmitInfo | null>(null);
-  const [notes, setNotes] = useState('');
-  const [notesSaved, setNotesSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [featured, setFeatured] = useState(false);
-  const [featuredLoading, setFeaturedLoading] = useState(false);
-  const [featuredToast, setFeaturedToast] = useState('');
-  const [snaps, setSnaps] = useState<SnapImage[]>([]);
-  const [snapUploading, setSnapUploading] = useState(false);
-  const [snapError, setSnapError] = useState('');
+  const [isPFATC, setIsPFATC] = useState(false);
+  const [statusTimeline, setStatusTimeline] = useState<StatusEntry[]>([]);
+  const [controllers, setControllers] = useState<{ user_id: string; username: string; avatar_url: string | null }[]>([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [pilotUserId, setPilotUserId] = useState<string | null>(null);
-  const snapInputRef = useRef<HTMLInputElement>(null);
-  const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const notesInitialized = useRef(false);
 
   useEffect(() => {
-    fetchBackgrounds()
-      .then(setAvailableImages)
-      .catch((err) => console.error('Error loading images:', err));
+    fetchBackgrounds().then(setAvailableImages).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!id) return;
-    Promise.all([fetchMyFlightById(id), fetchMyFlightLogs(id)])
-      .then(([flightData, logsData]) => {
-        setFlight(flightData);
-        setNotes(flightData.notes ?? '');
-        setFeatured(flightData.featured_on_profile ?? false);
-        setSnaps(flightData.snap_images ?? []);
-        notesInitialized.current = true;
-        setLogs(logsData.logs);
-        setLogsDiscardedDueToAge(logsData.logsDiscardedDueToAge);
-        if (logsData.pilotUserId) setPilotUserId(logsData.pilotUserId);
-        fetch(`${API_BASE_URL}/api/sessions/${flightData.session_id}/submit`)
+    if (!flightId) {
+      setError('Invalid link.');
+      setLoading(false);
+      return;
+    }
+    fetchPublicFlight(flightId)
+      .then((data) => {
+        setFlight(data);
+
+        // Fetch session info for PFATC badge
+        fetch(`${API_BASE_URL}/api/sessions/${data.session_id}/submit`)
           .then((r) => (r.ok ? r.json() : null))
-          .then((data) => { if (data) setSessionInfo(data); })
+          .then((info) => { if (info?.isPFATC) setIsPFATC(true); })
+          .catch(() => {});
+
+        // Fetch flight logs for public timeline
+        fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, { credentials: 'include' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((logsData) => {
+            if (!logsData?.logs) return;
+            // Extract unique controllers (updaters who aren't the pilot)
+            const pilotUserId: string | undefined = logsData.pilotUserId;
+            const seen = new Set<string>();
+            const ctrlList: { user_id: string; username: string; avatar_url: string | null }[] = [];
+            for (const log of logsData.logs) {
+              if (log.action === 'update' && log.user_id !== pilotUserId && !seen.has(log.user_id)) {
+                seen.add(log.user_id);
+                ctrlList.push({ user_id: log.user_id, username: log.username, avatar_url: log.avatar_url });
+              }
+            }
+            setControllers(ctrlList);
+
+            const timeline: StatusEntry[] = logsData.logs
+              .map((log: { id: number; action: string; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }) => {
+                const oldStatus = (log.old_data?.status as string | undefined) ?? null;
+                const newStatus = (log.new_data?.status as string | undefined) ?? null;
+                if (log.action === 'add' && newStatus) {
+                  return { id: log.id, label: `Created as ${newStatus}`, at: log.created_at };
+                }
+                if (log.action === 'update' && oldStatus !== newStatus && newStatus) {
+                  return {
+                    id: log.id,
+                    label: (
+                      <span className="flex items-center gap-1.5">
+                        <span>{oldStatus || 'N/A'}</span>
+                        <ArrowRight className="h-3 w-3 text-zinc-500 shrink-0" />
+                        <span className="text-blue-400">{newStatus}</span>
+                      </span>
+                    ),
+                    at: log.created_at,
+                  };
+                }
+                return null;
+              })
+              .filter(Boolean)
+              .reverse() as StatusEntry[];
+            setStatusTimeline(timeline);
+          })
           .catch(() => {});
       })
-      .catch(() => setError('Failed to load flight details.'))
+      .catch(() => setError('This flight is not available or does not exist.'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [flightId]);
 
-  useEffect(() => {
-    if (!notesInitialized.current || !id) return;
-    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
-    notesDebounceRef.current = setTimeout(async () => {
-      try {
-        await updateFlightNotes(id, notes);
-        setNotesSaved(true);
-        setTimeout(() => setNotesSaved(false), 2000);
-      } catch { /* silent */ }
-    }, 800);
-    return () => { if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current); };
-  }, [notes, id]);
-
-  const statusTimeline = useMemo(() => {
-    return logs
-      .map((log) => {
-        const oldStatus = (log.old_data?.status as string | undefined) ?? null;
-        const newStatus = (log.new_data?.status as string | undefined) ?? null;
-        if (log.action === 'add' && newStatus) {
-          return { id: log.id, label: `Created as ${newStatus}`, at: log.created_at };
-        }
-        if (log.action === 'update' && oldStatus !== newStatus && newStatus) {
-          return {
-            id: log.id,
-            label: (
-              <span className="flex items-center gap-1.5">
-                <span>{oldStatus || 'N/A'}</span>
-                <ArrowRight className="h-3 w-3 text-zinc-500 shrink-0" />
-                <span className="text-blue-400">{newStatus}</span>
-              </span>
-            ),
-            at: log.created_at,
-          };
-        }
-        return null;
-      })
-      .filter((item): item is NonNullable<typeof item> => !!item)
-      .reverse();
-  }, [logs]);
-
-  const controllers = useMemo(() => {
-    const seen = new Set<string>();
-    const result = logs
-      .filter((log) => log.action === 'update' && log.user_id !== pilotUserId)
-      .reduce<{ user_id: string; username: string; avatar_url: string | null }[]>((acc, log) => {
-        if (!seen.has(log.user_id)) {
-          seen.add(log.user_id);
-          acc.push({ user_id: log.user_id, username: log.username, avatar_url: log.avatar_url });
-        }
-        return acc;
-      }, []);
-    return result;
-  }, [logs, pilotUserId]);
+  const snaps = flight?.snap_images ?? [];
 
   const backgroundImage = useMemo(() => {
-    // If there's a snap photo, use it as hero background
-    if (snaps.length > 0) {
-      return `url(${snaps[0].url})`;
-    }
+    if (snaps.length > 0) return `url(${snaps[0].url})`;
+
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/images/hero.webp")';
     const getImageUrl = (filename: string | null): string | null => {
@@ -224,66 +182,14 @@ export default function MyFlightDetail() {
     if (backgroundImage !== 'url("/assets/images/hero.webp")') setCustomLoaded(true);
   }, [backgroundImage]);
 
-  const acarsUrl = flight?.acars_token
-    ? `${window.location.origin}/acars/${flight.session_id}/${flight.id}?acars_token=${flight.acars_token}`
-    : null;
-
-  const publicFlightUrl = flight?.acars_token
-    ? `${window.location.origin}/flight/${flight.id}`
-    : null;
-
-  const handleShare = async () => {
-    if (!publicFlightUrl) return;
-    await navigator.clipboard.writeText(publicFlightUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleToggleFeatured = async () => {
-    if (!id || featuredLoading) return;
-    setFeaturedLoading(true);
-    try {
-      const { featured: newFeatured } = await toggleFeaturedOnProfile(id);
-      setFeatured(newFeatured);
-      setFeaturedToast(newFeatured ? 'Added to profile' : 'Removed from profile');
-      setTimeout(() => setFeaturedToast(''), 2500);
-    } catch {
-      setFeaturedToast('Failed to update');
-      setTimeout(() => setFeaturedToast(''), 2500);
-    } finally {
-      setFeaturedLoading(false);
-    }
-  };
-
-  const handleSnapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    setSnapUploading(true);
-    setSnapError('');
-    try {
-      const result = await uploadSnapImage(id, file);
-      setSnaps(result.snap_images);
-    } catch {
-      setSnapError('Upload failed. Please try again.');
-    } finally {
-      setSnapUploading(false);
-      if (snapInputRef.current) snapInputRef.current.value = '';
-    }
-  };
-
-  const handleSnapDelete = async (cephieId: string) => {
-    if (!id) return;
-    try {
-      await deleteSnapImageApi(id, cephieId);
-      setSnaps((prev) => prev.filter((s) => s.cephie_id !== cephieId));
-    } catch {
-      setSnapError('Failed to delete photo.');
-    }
-  };
+  const acarsUrl =
+    flight?.acars_token && flight?.session_id
+      ? `${window.location.origin}/acars/${flight.session_id}/${flight.id}?acars_token=${flight.acars_token}`
+      : null;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <Navbar /><Loader />
       </div>
     );
@@ -295,27 +201,19 @@ export default function MyFlightDetail() {
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700/50 text-red-300 text-sm">
-            {error || 'Flight not found'}
+            {error || 'Flight not found.'}
           </div>
         </div>
       </div>
     );
   }
 
-  const isPFATC = sessionInfo?.isPFATC ?? false;
   const formattedCallsign = parseCallsign(flight.callsign || '', airlines);
   const hasSpokenName = formattedCallsign !== (flight.callsign || '').toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Navbar />
-
-      {/* Featured toast */}
-      {featuredToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-zinc-800 border border-zinc-600 text-sm text-zinc-200 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-          {featuredToast}
-        </div>
-      )}
 
       {/* Lightbox */}
       {lightboxSrc && (
@@ -373,7 +271,7 @@ export default function MyFlightDetail() {
             )}
           </div>
 
-          {/* Route — plain text, no pill */}
+          {/* Route — plain text */}
           {flight.departure && flight.arrival && (
             <p className="font-mono text-zinc-400 text-sm tracking-wider flex items-center gap-2">
               <span className="text-white font-semibold">{flight.departure}</span>
@@ -394,126 +292,42 @@ export default function MyFlightDetail() {
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleFeatured}
-              disabled={featuredLoading}
-              title={featured ? 'Remove from profile' : 'Add to public profile'}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                featured
-                  ? 'bg-amber-600 border-amber-500 text-amber-50 hover:bg-amber-500'
-                  : 'bg-zinc-700 border-zinc-600 text-zinc-200 hover:bg-zinc-600'
-              }`}
+          {/* ACARS link */}
+          {acarsUrl && (
+            <a
+              href={acarsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border bg-indigo-700 border-indigo-600 text-indigo-100 hover:bg-indigo-600 transition-all"
             >
-              <Star className={`h-3.5 w-3.5 ${featured ? 'fill-amber-300' : ''}`} />
-              {featured ? 'Featured' : 'Feature'}
-            </button>
-
-            {acarsUrl && (
-              <>
-                <button
-                  onClick={handleShare}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                    copied
-                      ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300'
-                      : 'bg-zinc-700 border-zinc-600 text-zinc-200 hover:bg-zinc-600'
-                  }`}
-                >
-                  {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Share2 className="h-3.5 w-3.5" /> Share</>}
-                </button>
-                <a
-                  href={acarsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border bg-indigo-700 border-indigo-600 text-indigo-100 hover:bg-indigo-600 transition-all"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  ACARS
-                </a>
-              </>
-            )}
-          </div>
+              <ExternalLink className="h-3.5 w-3.5" />
+              ACARS
+            </a>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="container mx-auto max-w-4xl px-4 pb-10 -mt-4 relative z-10 space-y-4">
 
-        {/* Back button */}
-        <Link
-          to="/my-flights"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/80 border border-zinc-700/80 text-zinc-400 hover:text-white hover:bg-zinc-700/80 hover:border-zinc-600 text-sm font-medium transition-all"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to My Flights
-        </Link>
-
-        {/* Cephie Snap */}
-        <SectionCard
-          icon={<Camera className="h-4 w-4" />}
-          title="Photos"
-          right={
-            <button
-              onClick={() => snapInputRef.current?.click()}
-              disabled={snapUploading || snaps.length >= 12}
-              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border border-purple-500 bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {snapUploading ? 'Uploading…' : 'Add Photo'}
-            </button>
-          }
-        >
-          <input
-            ref={snapInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleSnapUpload}
-          />
-          {snapError && (
-            <p className="text-red-400 text-xs mb-3 font-mono">{snapError}</p>
-          )}
-          {snaps.length === 0 && !snapUploading ? (
-            <button
-              onClick={() => snapInputRef.current?.click()}
-              className="w-full flex flex-col items-center justify-center gap-3 py-10 rounded-xl border-2 border-dashed border-zinc-700/60 text-zinc-600 hover:border-purple-500/40 hover:text-zinc-400 transition-colors"
-            >
-              <Camera className="h-8 w-8" />
-              <span className="text-sm">Upload flight photos</span>
-            </button>
-          ) : (
+        {/* Photo gallery */}
+        {snaps.length > 0 && (
+          <SectionCard icon={<Camera className="h-4 w-4" />} title="Photos">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {snaps.map((snap) => (
-                <div key={snap.cephie_id} className="relative group rounded-xl overflow-hidden aspect-video bg-zinc-800">
-                  <img
-                    src={snap.url}
-                    alt="Cephie Snap"
-                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => setLightboxSrc(snap.url)}
-                  />
-                  <button
-                    onClick={() => handleSnapDelete(snap.cephie_id)}
-                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-zinc-900/80 text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-zinc-900 transition-all"
-                    title="Delete photo"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                <div
+                  key={snap.cephie_id}
+                  className="rounded-xl overflow-hidden aspect-video bg-zinc-800 cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setLightboxSrc(snap.url)}
+                >
+                  <img src={snap.url} alt="Cephie Snap" className="w-full h-full object-cover" />
                 </div>
               ))}
-              {snapUploading && (
-                <div className="rounded-xl aspect-video bg-zinc-800 border border-zinc-700/60 flex items-center justify-center">
-                  <div className="h-5 w-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-                </div>
-              )}
             </div>
-          )}
-          {snaps.length >= 12 && (
-            <p className="text-xs text-zinc-600 mt-2 text-right font-mono">12/12 photos</p>
-          )}
-        </SectionCard>
+          </SectionCard>
+        )}
 
-        {/* Flight Details */}
+        {/* Flight Details — strip layout */}
         <SectionCard
           icon={<Route className="h-4 w-4" />}
           title="Flight Details"
@@ -524,7 +338,7 @@ export default function MyFlightDetail() {
                 <div className="flex items-center gap-1">
                   {controllers.map((c) => (
                     <div key={c.user_id} className="relative group">
-                      <Link to={`/pilot/${c.username}`}>
+                      <Link to={`/user/${c.username}`}>
                         <img
                           src={c.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`}
                           alt={c.username}
@@ -652,37 +466,15 @@ export default function MyFlightDetail() {
         </SectionCard>
 
         {/* Flight Notes */}
-        <SectionCard
-          icon={<StickyNote className="h-4 w-4" />}
-          title="Flight Notes"
-          right={
-            <span className={`text-xs font-mono text-emerald-400 transition-opacity duration-300 ${notesSaved ? 'opacity-100' : 'opacity-0'}`}>
-              ✓ saved
-            </span>
-          }
-        >
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes about this flight..."
-            rows={5}
-            maxLength={2000}
-            className="w-full bg-zinc-800/60 border border-zinc-700/60 rounded-xl p-4 text-sm text-zinc-300 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/30 placeholder-zinc-600 transition-all"
-          />
-          <p className="text-right text-xs font-mono text-zinc-700 mt-1.5">{notes.length}/2000</p>
-        </SectionCard>
+        {flight.notes && (
+          <SectionCard icon={<StickyNote className="h-4 w-4" />} title="Flight Notes">
+            <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{flight.notes}</p>
+          </SectionCard>
+        )}
 
         {/* Status Timeline */}
-        <SectionCard icon={<History className="h-4 w-4" />} title="Status Timeline">
-          {statusTimeline.length === 0 ? (
-            logsDiscardedDueToAge ? (
-              <p className="text-amber-300 text-xs font-mono bg-amber-600/10 border border-amber-500/20 rounded-xl p-3">
-                Flight older than 365 days — status logs discarded by retention policy.
-              </p>
-            ) : (
-              <p className="text-zinc-600 text-sm">No status changes recorded.</p>
-            )
-          ) : (
+        {statusTimeline.length > 0 && (
+          <SectionCard icon={<History className="h-4 w-4" />} title="Status Timeline">
             <div className="overflow-x-auto pb-1">
               <div className="flex items-start gap-0 min-w-max">
                 {statusTimeline.map((item, index) => (
@@ -704,8 +496,12 @@ export default function MyFlightDetail() {
                 ))}
               </div>
             </div>
-          )}
-        </SectionCard>
+          </SectionCard>
+        )}
+
+        <p className="flex items-center gap-2 text-xs text-zinc-700 font-mono px-1">
+          Shared via PFControl
+        </p>
       </div>
     </div>
   );

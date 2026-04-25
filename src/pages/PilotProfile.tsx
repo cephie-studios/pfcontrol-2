@@ -27,10 +27,12 @@ import {
 } from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
 import { fetchPilotProfile } from '../utils/fetch/pilot';
+import { parseCallsign } from '../utils/callsignParser';
 import { getCurrentUser } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import { fetchBackgrounds, fetchUserRanks } from '../utils/fetch/data';
-import type { PilotProfile, Role } from '../types/pilot';
+import { useData } from '../hooks/data/useData';
+import type { PilotProfile, Role, FeaturedFlight } from '../types/pilot';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import Navbar from '../components/Navbar';
@@ -788,7 +790,78 @@ export default function PilotProfile() {
             )}
           </>
         )}
+
+        {/* Featured Flights */}
+        {profile.featuredFlights && profile.featuredFlights.length > 0 && (
+          <div className="mt-8 pb-10">
+            <div className="flex items-center gap-3 mb-5">
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+              <h2 className="text-xl font-bold text-white tracking-tight">Featured Flights</h2>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-400/20 font-mono">
+                {profile.featuredFlights.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {profile.featuredFlights.map((featured: FeaturedFlight) => (
+                <FeaturedFlightCard key={featured.id} flight={featured} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function FeaturedFlightCard({ flight }: { flight: FeaturedFlight }) {
+  const { airlines } = useData();
+  const coverSnap = flight.snap_images?.[0];
+  const spoken = parseCallsign(flight.callsign || '', airlines);
+
+  const formattedDate = flight.created_at
+    ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <a
+      href={`/flight/${flight.id}`}
+      className="block rounded-2xl overflow-hidden border border-zinc-700/60 hover:border-zinc-500/60 transition-colors group relative"
+    >
+      {coverSnap ? (
+        <div className="aspect-video relative">
+          <img
+            src={coverSnap.url}
+            alt={flight.callsign}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-linear-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <p className="font-black text-white font-mono text-base leading-tight truncate">{spoken}</p>
+            {flight.departure && flight.arrival && (
+              <p className="text-zinc-400 font-mono text-sm mt-0.5">
+                {flight.departure} → {flight.arrival}
+              </p>
+            )}
+            {formattedDate && (
+              <p className="text-zinc-500 text-xs mt-1">{formattedDate}</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 bg-zinc-900/80 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-bold text-white font-mono truncate">{spoken}</p>
+            {flight.departure && flight.arrival && (
+              <p className="text-zinc-500 font-mono text-sm mt-0.5">
+                {flight.departure} → {flight.arrival}
+              </p>
+            )}
+            {formattedDate && (
+              <p className="text-zinc-500 text-xs mt-1">{formattedDate}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </a>
   );
 }

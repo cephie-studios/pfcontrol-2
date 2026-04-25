@@ -9,6 +9,7 @@ import {
   Map,
   PlaneTakeoff,
   PlusCircle,
+  Camera,
 } from 'lucide-react';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
@@ -32,6 +33,7 @@ import ChartDrawer from '../components/tools/ChartDrawer';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import Modal from '../components/common/Modal';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
+import { uploadSnapImage } from '../utils/fetch/flights';
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -68,6 +70,9 @@ export default function ACARS() {
   );
   const [showChartsDrawer, setShowChartsDrawer] = useState(false);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+
+  const [snapUploading, setSnapUploading] = useState(false);
+  const snapInputRef = useRef<HTMLInputElement>(null);
 
   const socketRef = useRef<ReturnType<typeof createFlightsSocket> | null>(null);
   const initializedRef = useRef(false);
@@ -512,6 +517,40 @@ NOTES:
     </span>
   );
 
+  const handleSnapUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !flightId) return;
+    setSnapUploading(true);
+    try {
+      await uploadSnapImage(flightId, file);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `snap-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          station: 'SYSTEM',
+          text: '[CEPHIE SNAP] Photo uploaded successfully — ',
+          type: 'Success' as AcarsMessage['type'],
+          link: { text: 'View It Here', url: `/my-flights/${flightId}` },
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `snap-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          station: 'SYSTEM',
+          text: '[CEPHIE SNAP] Upload failed — try again',
+          type: 'warning' as AcarsMessage['type'],
+        },
+      ]);
+    } finally {
+      setSnapUploading(false);
+      if (snapInputRef.current) snapInputRef.current.value = '';
+    }
+  };
+
   const acarsSettings = settings?.acars;
 
   const minSidebar = 10,
@@ -620,15 +659,46 @@ NOTES:
 
       <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50 py-8 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 pt-12">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <PlaneTakeoff className="h-8 w-8 text-blue-500" />
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                {flight?.callsign
-                  ? formattedCallsign || flight.callsign
-                  : 'ACARS Terminal'}
-              </h1>
-            </div>
+            <h1 className="text-2xl font-bold text-white">
+              {flight?.callsign
+                ? formattedCallsign || flight.callsign
+                : 'ACARS Terminal'}
+            </h1>
+            {flightId && (
+              <div className="relative group ml-2">
+                <input
+                  ref={snapInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleSnapUpload}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => snapInputRef.current?.click()}
+                  disabled={snapUploading}
+                  className="gap-2 bg-purple-600 hover:bg-purple-500 border-purple-500 text-white"
+                >
+                  {snapUploading ? (
+                    <span className="h-3.5 w-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {snapUploading ? 'Uploading…' : 'Flight Photo'}
+                  </span>
+                </Button>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+                  <div className="relative p-px rounded-lg bg-linear-to-r from-zinc-500 to-zinc-700">
+                    <div className="px-3 py-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
+                      <span className="text-xs font-medium text-white">Upload a picture of your flight</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3 mt-4 md:mt-0">
             <Button
@@ -769,13 +839,14 @@ NOTES:
           {mobileTab === 'terminal' && (
             <AcarsTerminal
               flightCallsign={flight?.callsign}
+              flightId={flightId}
               messages={messages}
               getMessageColor={getMessageColor}
               renderMessageText={renderMessageText}
               messagesEndRef={messagesEndRef}
               handleRequestPDC={handleRequestPDC}
               pdcRequested={pdcRequested}
-            />
+              />
           )}
           {mobileTab === 'notes' && (
             <AcarsNotePanel
