@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarClock,
-  Plane,
   Route,
   History,
   MessageSquareText,
@@ -27,47 +26,6 @@ interface AvailableImage {
   path: string;
   extension: string;
 }
-
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
-    case 'CLEARED':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'TAXI':
-    case 'TAXI_ORIG':
-    case 'TAXI_ARRV':
-      return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
-    case 'DEPARTED':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'STUP':
-      return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
-    case 'PUSH':
-      return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-    case 'RWY':
-    case 'RWY_ORIG':
-      return 'bg-red-500/20 text-red-400 border border-red-500/30';
-    case 'RWY_ARRV':
-      return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
-    case 'DEPA':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'ENROUTE':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'APP':
-      return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
-    case 'GATE':
-      return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-    default:
-      return 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30';
-  }
-};
-
-const getDisplayStatus = (status?: string) => {
-  if (!status) return 'PENDING';
-  if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
-  if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
-  return status;
-};
 
 const Field = ({ label, value }: { label: string; value: string }) => (
   <div>
@@ -147,7 +105,8 @@ export default function MyFlightDetail() {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') return filename;
+      if (!filename || filename === 'random' || filename === 'favorites')
+        return filename;
       if (filename.startsWith('https://api.cephie.app/')) return filename;
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
@@ -160,9 +119,14 @@ export default function MyFlightDetail() {
     } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== 'random' && favImageUrl !== 'favorites') {
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
@@ -260,13 +224,19 @@ export default function MyFlightDetail() {
         <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6 space-y-5">
           <div className="flex items-center gap-3">
             <Route className="h-4 w-4 text-gray-500 shrink-0" />
-            <span className="font-mono text-lg font-bold text-white">{flight.departure || '----'}</span>
+            <span className="font-mono text-lg font-bold text-white">
+              {flight.departure || '----'}
+            </span>
             <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
-            <span className="font-mono text-lg font-bold text-white">{flight.arrival || '----'}</span>
+            <span className="font-mono text-lg font-bold text-white">
+              {flight.arrival || '----'}
+            </span>
             {flight.route && (
               <>
                 <span className="text-gray-700">·</span>
-                <span className="text-gray-400 text-sm truncate">{flight.route}</span>
+                <span className="text-gray-400 text-sm truncate">
+                  {flight.route}
+                </span>
               </>
             )}
           </div>
@@ -279,7 +249,10 @@ export default function MyFlightDetail() {
             <Field label="Runway" value={flight.runway || 'N/A'} />
             <Field label="SID" value={flight.sid || 'N/A'} />
             <Field label="STAR" value={flight.star || 'N/A'} />
-            <Field label="Stand / Gate" value={`${flight.stand || 'N/A'} / ${flight.gate || 'N/A'}`} />
+            <Field
+              label="Stand / Gate"
+              value={`${flight.stand || 'N/A'} / ${flight.gate || 'N/A'}`}
+            />
             <Field label="Cruising FL" value={flight.cruisingFL || 'N/A'} />
             <Field label="Cleared FL" value={flight.clearedFL || 'N/A'} />
             <Field label="Squawk" value={flight.squawk || 'N/A'} />
@@ -290,12 +263,20 @@ export default function MyFlightDetail() {
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
               <span className="text-gray-500">Created:</span>
-              <span>{flight.created_at ? new Date(flight.created_at).toLocaleString() : 'N/A'}</span>
+              <span>
+                {flight.created_at
+                  ? new Date(flight.created_at).toLocaleString()
+                  : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
               <span className="text-gray-500">Updated:</span>
-              <span>{flight.updated_at ? new Date(flight.updated_at).toLocaleString() : 'N/A'}</span>
+              <span>
+                {flight.updated_at
+                  ? new Date(flight.updated_at).toLocaleString()
+                  : 'N/A'}
+              </span>
             </div>
           </div>
 
@@ -315,16 +296,21 @@ export default function MyFlightDetail() {
             <div className="p-2">
               <History className="h-5 w-5 text-blue-400 pt-0.5" />
             </div>
-            <h2 className="text-lg font-semibold text-blue-400">Status Timeline</h2>
+            <h2 className="text-lg font-semibold text-blue-400">
+              Status Timeline
+            </h2>
           </div>
 
           {statusTimeline.length === 0 ? (
             logsDiscardedDueToAge ? (
               <p className="text-amber-400 text-sm bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3">
-                This flight is older than 365 days. Status/action logs were discarded by retention policy.
+                This flight is older than 90 days. Status/action logs were
+                discarded by retention policy.
               </p>
             ) : (
-              <p className="text-gray-500 text-sm">No status-change logs available for this flight.</p>
+              <p className="text-gray-500 text-sm">
+                No status-change logs available for this flight.
+              </p>
             )
           ) : (
             <div className="overflow-x-auto pb-1">
@@ -332,7 +318,9 @@ export default function MyFlightDetail() {
                 {statusTimeline.map((item, index) => (
                   <div key={item.id} className="flex items-center gap-2">
                     <div className="p-3 bg-gray-900/40 border border-gray-800 rounded-2xl text-sm min-w-44">
-                      <div className="text-gray-200 font-medium mb-1">{item.label}</div>
+                      <div className="text-gray-200 font-medium mb-1">
+                        {item.label}
+                      </div>
                       <div className="flex items-center gap-1.5 text-gray-500 text-xs">
                         <CalendarClock className="h-3 w-3 shrink-0" />
                         {new Date(item.at).toLocaleString()}
