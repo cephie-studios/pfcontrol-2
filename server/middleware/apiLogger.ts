@@ -25,7 +25,6 @@ export interface ApiLogEntry {
 
 const EXCLUDED_PATHS = [
   '/health',
-  '/sockets/',
   '/api/data/metar',
   '/api/data/airports',
   '/api/data/airlines',
