@@ -3,6 +3,7 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { mainDb } from '../db/connection.js';
 import type { Server } from 'http';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface VoiceUser {
   userId: string;
@@ -22,6 +23,10 @@ const voiceUsers = new Map<string, Map<string, VoiceUser>>();
 export function setupVoiceChatWebsocket(httpServer: Server) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/voice-chat',
+    allowRequest: createHandshakeRateLimiter({
+      scope: 'voice-chat',
+      maxAttempts: 500,
+    }),
     cors: {
       origin:
         process.env.NODE_ENV === 'production'

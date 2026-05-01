@@ -8,6 +8,7 @@ import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { sanitizeMessage } from '../utils/sanitization.js';
 import type { Server } from 'http';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 const activeChatUsers = new Map<string, Set<string>>();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
@@ -54,6 +55,10 @@ export function setupChatWebsocket(
 
   const io = new SocketServer(httpServer, {
     path: '/sockets/chat',
+    allowRequest: createHandshakeRateLimiter({
+      scope: 'chat',
+      maxAttempts: 500,
+    }),
     cors: {
       origin: [
         'http://localhost:5173',

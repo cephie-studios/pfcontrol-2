@@ -21,6 +21,7 @@ import { logFlightAction } from '../db/flightLogs.js';
 import type { Server as HTTPServer } from 'http';
 import type { SessionUsersServer } from './sessionUsersWebsocket.js';
 import type { Flight } from '../utils/flightUtils.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 let io: SocketServer;
 const activeOverviewClients = new Set<string>();
@@ -32,6 +33,7 @@ export function setupOverviewWebsocket(
 ) {
   io = new SocketServer(httpServer, {
     path: '/sockets/overview',
+    allowRequest: createHandshakeRateLimiter({ scope: 'overview' }),
     cors: {
       origin: [
         'http://localhost:5173',

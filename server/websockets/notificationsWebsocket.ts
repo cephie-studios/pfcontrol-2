@@ -1,11 +1,13 @@
 import { Server as SocketServer } from 'socket.io';
 import type { Server } from 'http';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 let notificationsIO: SocketServer | null = null;
 
 export function setupNotificationsWebsocket(httpServer: Server) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/notifications',
+    allowRequest: createHandshakeRateLimiter({ scope: 'notifications' }),
     cors: {
       origin: [
         'http://localhost:5173',

@@ -27,6 +27,7 @@ import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
 import { isEventController } from '../middleware/flightAccess.js';
 import { broadcastFlightUpdate } from './overviewWebsocket.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface FlightUpdateData {
   flightId: string | number;
@@ -83,6 +84,7 @@ function getSocketClientIp(socket: Socket): string {
 export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     path: '/sockets/flights',
+    allowRequest: createHandshakeRateLimiter({ scope: 'flights' }),
     cors: {
       origin: [
         'http://localhost:5173',

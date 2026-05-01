@@ -19,6 +19,7 @@ import {
   sanitizeFlightLevel,
 } from '../utils/sanitization.js';
 import { mainDb } from '../db/connection.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface ArrivalUpdateData {
   flightId: string | number;
@@ -29,6 +30,7 @@ let io: SocketServer;
 export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
   io = new SocketServer(httpServer, {
     path: '/sockets/arrivals',
+    allowRequest: createHandshakeRateLimiter({ scope: 'arrivals' }),
     cors: {
       origin: [
         'http://localhost:5173',
