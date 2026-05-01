@@ -9,6 +9,7 @@ import {
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
 import type { Server } from 'http';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 const activeGlobalChatUsers = new Set<string>();
 const connectedGlobalChatUsers = new Map<
@@ -84,6 +85,10 @@ export function setupGlobalChatWebsocket(
 
   const io = new SocketServer(httpServer, {
     path: '/sockets/global-chat',
+    allowRequest: createHandshakeRateLimiter({
+      scope: 'global-chat',
+      maxAttempts: 500,
+    }),
     cors: {
       origin: [
         'http://localhost:5173',

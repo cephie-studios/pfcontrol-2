@@ -5,6 +5,7 @@ import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getOverviewIO } from './overviewWebsocket.js';
 import type { SessionUsersServer } from './sessionUsersWebsocket.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface SectorController {
   id: string;
@@ -135,6 +136,7 @@ export function setupSectorControllerWebsocket(
 ) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/sector-controller',
+    allowRequest: createHandshakeRateLimiter({ scope: 'sector-controller' }),
     cors: {
       origin: [
         'http://localhost:5173',

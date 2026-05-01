@@ -123,6 +123,16 @@ export default function Footer() {
                 <FaYoutube className="h-5 w-5 md:h-6 md:w-6" />
               </a>
             </div>
+
+            <div className="mt-8">
+              <iframe
+                src="https://status.cephie.app/badge?theme=dark"
+                width="250"
+                height="30"
+                frameBorder="0"
+                scrolling="no"
+              ></iframe>
+            </div>
           </div>
 
           <div className="hidden md:block md:col-span-2" />

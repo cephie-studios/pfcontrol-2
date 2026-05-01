@@ -9,6 +9,7 @@ import { incrementStat } from '../utils/statisticsCache.js';
 import { getOverviewIO } from './overviewWebsocket.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { redisConnection } from '../db/connection.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface SessionUser {
   id: string;
@@ -266,6 +267,7 @@ async function generateAutoATIS(
 export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/session-users',
+    allowRequest: createHandshakeRateLimiter({ scope: 'session-users' }),
     cors: {
       origin: [
         'http://localhost:5173',
