@@ -84,7 +84,19 @@ router.get('/:icao', async (req, res) => {
     }
 
     if (Array.isArray(data) && data.length > 0) {
-      res.json(data[0]);
+      const metar = data[0];
+
+      // Parse rawOb as a fallback to recover the missing fields.
+      if ((metar.wdir == null || metar.wspd == null) && metar.rawOb) {
+        const windMatch = metar.rawOb.match(/\b(\d{3})(\d{2,3})(?:G(\d{2,3}))?K(?:T)?\b/);
+        if (windMatch) {
+          if (metar.wdir == null) metar.wdir = parseInt(windMatch[1], 10);
+          if (metar.wspd == null) metar.wspd = parseInt(windMatch[2], 10);
+          if (metar.wgst == null && windMatch[3]) metar.wgst = parseInt(windMatch[3], 10);
+        }
+      }
+
+      res.json(metar);
     } else {
       console.warn(`No data in response array for ${icao}`);
       res.status(404).json({
