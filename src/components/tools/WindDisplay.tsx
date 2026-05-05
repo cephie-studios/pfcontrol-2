@@ -253,7 +253,10 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
   const windDirection = metarData.wdir;
   const windSpeed = metarData.wspd;
   const windGust = metarData.wgst;
-  const formattedDirection = windDirection.toString().padStart(3, '0') + '°';
+  const formattedDirection =
+    windDirection != null
+      ? windDirection.toString().padStart(3, '0') + '°'
+      : 'VRB';
   const gustInfo = windGust ? `G${windGust}` : '';
   const windColors = getWindSeverityColor(windSpeed, windGust);
   const pressureDisplay = formatPressure(metarData.altim);
