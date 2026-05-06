@@ -207,7 +207,7 @@ export interface ChatReport {
   reported_user_id: string;
   message: string;
   reason: string;
-  timestamp: string;
+  created_at: string;
   status?: 'pending' | 'resolved';
   avatar?: string;
   reported_username?: string;
@@ -809,4 +809,72 @@ export async function fetchControllerDailyRatingStats(
   days: number = 30
 ): Promise<DailyRatingStats[]> {
   return makeAdminRequest(`/ratings/daily?days=${days}`);
+}
+
+export interface VpnException {
+  id: number;
+  user_id: string;
+  username: string;
+  added_by: string;
+  added_by_username: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  avatar?: string | null;
+}
+
+export interface VpnGateResponse {
+  enabled: boolean;
+  exceptions: VpnException[];
+  pagination: Pagination;
+}
+
+export async function fetchVpnGate(
+  page: number = 1,
+  limit: number = 50,
+  search: string = ''
+): Promise<VpnGateResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...(search && { search }),
+  });
+  return makeAdminRequest(`/bans/vpn-gate?${params.toString()}`);
+}
+
+export async function toggleVpnGate(enabled: boolean): Promise<{ success: boolean; enabled: boolean }> {
+  return makeAdminRequest('/bans/vpn-gate/toggle', {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function addVpnException({
+  userId,
+  notes,
+}: {
+  userId: string;
+  notes?: string;
+}): Promise<{ success: boolean; exception: VpnException }> {
+  return makeAdminRequest('/bans/vpn-gate/exceptions', {
+    method: 'POST',
+    body: JSON.stringify({ userId, notes }),
+  });
+}
+
+export async function removeVpnException(userId: string): Promise<{ success: boolean }> {
+  return makeAdminRequest(`/bans/vpn-gate/exceptions/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export interface IpLocationResult {
+  country?: string;
+  country_code?: string;
+  city?: string;
+  region?: string;
+}
+
+export async function fetchIpLocation(ip: string): Promise<IpLocationResult> {
+  return makeAdminRequest(`/bans/ip-location/${encodeURIComponent(ip)}`);
 }

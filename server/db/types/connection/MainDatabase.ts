@@ -19,6 +19,8 @@ import { ControllerRatingsTable } from './main/ControllerRatingsTable';
 import { FlightsTable } from './main/FlightsTable';
 import { SessionChatTable } from './main/SessionChatTable';
 import { GlobalChatTable } from './main/GlobalChatTable';
+import { VpnExceptionsTable } from './main/VpnExceptionsTable';
+import { VpnGateSettingsTable } from './main/VpnGateSettingsTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -42,4 +44,6 @@ export interface MainDatabase {
   flights: FlightsTable;
   session_chat: SessionChatTable;
   global_chat: GlobalChatTable;
+  vpn_exceptions: VpnExceptionsTable;
+  vpn_gate_settings: VpnGateSettingsTable;
 }

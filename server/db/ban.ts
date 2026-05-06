@@ -1,5 +1,7 @@
-import { mainDb } from './connection.js';
+import { mainDb, redisConnection } from './connection.js';
 import { sql } from 'kysely';
+
+const BAN_CACHE_TTL = 60; // seconds
 
 export async function banUser({
   userId,
@@ -34,6 +36,10 @@ export async function banUser({
       active: true,
     })
     .execute();
+
+  if (userId) {
+    await redisConnection.setex(`ban:${userId}`, BAN_CACHE_TTL, '1');
+  }
 }
 
 export async function unbanUser(userIdOrIp: string): Promise<void> {
@@ -45,6 +51,8 @@ export async function unbanUser(userIdOrIp: string): Promise<void> {
     )
     .where('active', '=', true)
     .execute();
+
+  await redisConnection.del(`ban:${userIdOrIp}`);
 }
 
 export async function isUserBanned(userId: string) {
@@ -77,9 +85,24 @@ export async function getAllBans(page = 1, limit = 50) {
   const offset = (page - 1) * limit;
 
   const bans = await mainDb
-    .selectFrom('bans')
-    .selectAll()
-    .orderBy('banned_at', 'desc')
+    .selectFrom('bans as b')
+    .leftJoin('users as mod', 'b.banned_by', 'mod.id')
+    .leftJoin('users as target', 'b.user_id', 'target.id')
+    .select([
+      'b.id',
+      'b.user_id',
+      'b.ip_address',
+      'b.username',
+      'b.reason',
+      'b.banned_by',
+      'b.banned_at',
+      'b.expires_at',
+      'b.active',
+      'mod.username as banned_by_username',
+      'mod.avatar as banned_by_avatar',
+      'target.username as target_username',
+    ])
+    .orderBy('b.banned_at', 'desc')
     .limit(limit)
     .offset(offset)
     .execute();

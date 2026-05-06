@@ -13,7 +13,8 @@ interface AccessDeniedProps {
     | 'banned'
     | 'tester-required'
     | 'pilot-not-found'
-    | 'flight-not-found';
+    | 'flight-not-found'
+    | 'vpn-blocked';
 }
 
 export default function AccessDenied({
@@ -36,6 +37,11 @@ export default function AccessDenied({
     displayDescription =
       displayDescription ||
       'Your account has been banned. Please contact support for more information.';
+  } else if (errorType === 'vpn-blocked') {
+    displayMessage = displayMessage || 'VPN Detected';
+    displayDescription =
+      displayDescription ||
+      'Access is blocked for VPN/proxy users. Please disable your VPN and login again, or contact support for an exception.';
   } else if (errorType === 'tester-required') {
     displayMessage = displayMessage || 'Tester Access Required';
     displayDescription =
@@ -61,25 +67,29 @@ export default function AccessDenied({
       ? 'from-black via-zinc-900 to-yellow-700'
       : errorType === 'banned'
         ? 'from-black via-zinc-900 to-red-900'
-        : errorType === 'tester-required'
-          ? 'from-black via-zinc-900 to-cyan-900'
-          : errorType === 'pilot-not-found'
-            ? 'from-black via-zinc-900 to-blue-900'
-            : errorType === 'flight-not-found'
+        : errorType === 'vpn-blocked'
+          ? 'from-black via-zinc-900 to-orange-900'
+          : errorType === 'tester-required'
+            ? 'from-black via-zinc-900 to-cyan-900'
+            : errorType === 'pilot-not-found'
               ? 'from-black via-zinc-900 to-blue-900'
-              : 'from-black via-zinc-900 to-red-950';
+              : errorType === 'flight-not-found'
+                ? 'from-black via-zinc-900 to-blue-900'
+                : 'from-black via-zinc-900 to-red-950';
   const textGradient =
     errorType === 'invalid-session'
       ? 'from-yellow-400 to-yellow-700'
       : errorType === 'banned'
         ? 'from-red-400 to-red-700'
-        : errorType === 'tester-required'
-          ? 'from-cyan-400 to-cyan-700'
-          : errorType === 'pilot-not-found'
-            ? 'from-blue-400 to-blue-700'
-            : errorType === 'flight-not-found'
+        : errorType === 'vpn-blocked'
+          ? 'from-orange-400 to-orange-700'
+          : errorType === 'tester-required'
+            ? 'from-cyan-400 to-cyan-700'
+            : errorType === 'pilot-not-found'
               ? 'from-blue-400 to-blue-700'
-              : 'from-red-400 to-red-900';
+              : errorType === 'flight-not-found'
+                ? 'from-blue-400 to-blue-700'
+                : 'from-red-400 to-red-900';
 
   return (
     <div
@@ -115,7 +125,9 @@ export default function AccessDenied({
               className={`inline-flex items-center px-8 py-4 rounded-full ${
                 errorType === 'invalid-session'
                   ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800'
-                  : 'bg-[#b63030] hover:bg-[#8f3939]'
+                  : errorType === 'vpn-blocked'
+                    ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800'
+                    : 'bg-[#b63030] hover:bg-[#8f3939]'
               } text-white text-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl`}
             >
               <FaDiscord className="mr-3 h-6 w-6 group-hover:-translate-x-1 transition-transform duration-300" />

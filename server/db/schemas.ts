@@ -473,4 +473,30 @@ export async function createMainTables() {
     .on('global_chat')
     .column('sent_at')
     .execute();
+
+  // vpn_exceptions
+  await mainDb.schema
+    .createTable('vpn_exceptions')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade').unique().notNull()
+    )
+    .addColumn('username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('added_by', 'varchar(255)', (col) => col.notNull())
+    .addColumn('added_by_username', 'varchar(255)', (col) => col.notNull())
+    .addColumn('notes', 'text')
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .execute();
+
+  // vpn_gate_settings
+  await mainDb.schema
+    .createTable('vpn_gate_settings')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('setting_key', 'varchar(255)', (col) => col.unique().notNull())
+    .addColumn('setting_value', 'boolean', (col) => col.notNull())
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .execute();
 }
