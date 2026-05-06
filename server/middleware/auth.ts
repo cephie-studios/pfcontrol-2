@@ -3,7 +3,9 @@ import { getUserById } from '../db/users.js';
 import { isAdmin } from './admin.js';
 import { Request, Response, NextFunction } from 'express';
 import { JwtPayload } from '../types/JwtPayload.js';
-import { isUserBanned } from '../db/ban.js';
+import { isUserBanned, isIpBanned } from '../db/ban.js';
+import { getClientIp } from '../utils/getIpAddress.js';
+import { isIpVpn } from '../utils/detectVPN.js';
 import { isVpnException, isVpnGateEnabled } from '../db/vpnExceptions.js';
 import { redisConnection } from '../db/connection.js';
 
@@ -69,7 +71,7 @@ export default async function requireAuth(
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Ban check with Redis cache
+    // User ID ban check with Redis cache
     const banCacheKey = `ban:${decoded.userId}`;
     let isBanned: boolean;
     const cachedBan = await redisConnection.get(banCacheKey);
@@ -85,12 +87,34 @@ export default async function requireAuth(
       return res.status(403).json({ error: 'Account is banned' });
     }
 
-    // VPN gate check
+    // IP ban check with Redis cache
+    const clientIpRaw = getClientIp(req);
+    const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
+    if (clientIp) {
+      const ipBanCacheKey = `ban:ip:${clientIp}`;
+      let isIpBannedResult: boolean;
+      const cachedIpBan = await redisConnection.get(ipBanCacheKey);
+      if (cachedIpBan !== null) {
+        isIpBannedResult = cachedIpBan === '1';
+      } else {
+        const ipBanRecord = await isIpBanned(clientIp);
+        isIpBannedResult = !!ipBanRecord;
+        await redisConnection.setex(ipBanCacheKey, BAN_CACHE_TTL, isIpBannedResult ? '1' : '0');
+      }
+      if (isIpBannedResult) {
+        return res.status(403).json({ error: 'Account is banned' });
+      }
+    }
+
+    // VPN gate check — block if stored flag OR current IP is detected as VPN
     const gateEnabled = await isVpnGateEnabled();
-    if (gateEnabled && user.is_vpn) {
-      const hasException = await isVpnException(decoded.userId);
-      if (!hasException) {
-        return res.status(403).json({ error: 'VPN access blocked' });
+    if (gateEnabled) {
+      const currentIpVpn = clientIp ? await isIpVpn(clientIp) : false;
+      if (user.is_vpn || currentIpVpn) {
+        const hasException = await isVpnException(decoded.userId);
+        if (!hasException) {
+          return res.status(403).json({ error: 'VPN access blocked' });
+        }
       }
     }
 
