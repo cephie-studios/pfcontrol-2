@@ -2,7 +2,7 @@ import express from 'express';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { getAllUsers, syncUserSessionCounts } from '../../db/admin.js';
-import { getUserById } from '../../db/users.js';
+import { getUserById, setUserVpnFlag } from '../../db/users.js';
 import { logAdminAction } from '../../db/audit.js';
 import { isAdmin } from '../../middleware/admin.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
@@ -89,5 +89,48 @@ router.post(
     }
   }
 );
+
+// POST: /api/admin/users/:userId/set-vpn — set is_vpn flag and invalidate user cache
+router.post('/:userId/set-vpn', async (req, res) => {
+  try {
+    if (!req.user?.userId || !isAdmin(req.user.userId)) {
+      return res.status(403).json({ error: 'Access denied - insufficient permissions' });
+    }
+
+    const { userId } = req.params;
+    const { isVpn } = req.body;
+    if (typeof isVpn !== 'boolean') {
+      return res.status(400).json({ error: 'isVpn must be a boolean' });
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await setUserVpnFlag(userId, isVpn);
+
+    try {
+      const ip = getClientIp(req);
+      await logAdminAction({
+        adminId: req.user.userId,
+        adminUsername: req.user.username || 'Unknown',
+        actionType: 'VPN_FLAG_SET',
+        targetUserId: userId,
+        targetUsername: user.username,
+        ipAddress: ip,
+        userAgent: req.get('User-Agent'),
+        details: { isVpn },
+      });
+    } catch (auditErr) {
+      console.error('[audit] Failed to log VPN_FLAG_SET for user', userId, auditErr);
+    }
+
+    res.json({ success: true, userId, isVpn });
+  } catch (error) {
+    console.error('Error setting VPN flag:', error);
+    res.status(500).json({ error: 'Failed to set VPN flag' });
+  }
+});
 
 export default router;

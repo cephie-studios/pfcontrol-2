@@ -540,7 +540,11 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         }
       });
     } catch (error) {
-      console.error('Error in websocket connection:', error);
+      const msg = error instanceof Error ? error.message : '';
+      if (!msg.startsWith('Invalid') && !msg.endsWith('is required')) {
+        console.error('Error in websocket connection:', error);
+      }
+      socket.disconnect(true);
     }
   });
 

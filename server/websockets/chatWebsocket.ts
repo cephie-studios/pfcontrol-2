@@ -264,7 +264,6 @@ export function setupChatWebsocket(
         }
       });
     } catch {
-      console.error('Invalid session or access ID');
       socket.disconnect(true);
     }
   });

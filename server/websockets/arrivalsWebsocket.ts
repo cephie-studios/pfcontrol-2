@@ -192,8 +192,7 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
           }
         }
       );
-    } catch (error) {
-      console.error('Invalid session or access ID:', (error as Error).message);
+    } catch {
       socket.disconnect(true);
     }
   });

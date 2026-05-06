@@ -1,22 +1,21 @@
 import { Request } from 'express';
 
-export function getClientIp(req: Request) {
-  if (req.headers['cf-connecting-ip']) {
-    return req.headers['cf-connecting-ip'];
-  }
+const TRUST_PROXY = process.env.TRUST_PROXY_HEADERS === 'true';
 
-  if (req.headers['x-forwarded-for']) {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (Array.isArray(forwarded)) {
-      return forwarded[0].trim();
+export function getClientIp(req: Request): string {
+  if (TRUST_PROXY) {
+    const cfIp = req.headers['cf-connecting-ip'];
+    if (cfIp) {
+      const ip = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+      if (ip) return ip;
     }
-    return forwarded.split(',')[0].trim();
+
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+      if (ip) return ip.trim();
+    }
   }
 
-  return (
-    req.ip ||
-    req.connection.remoteAddress ||
-    req.socket.remoteAddress ||
-    'unknown'
-  );
+  return req.socket.remoteAddress || req.ip || 'unknown';
 }

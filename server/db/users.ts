@@ -578,6 +578,20 @@ export async function updateUserStatistics(
   await invalidateUserCache(userId);
 }
 
+export async function setUserVpnFlag(userId: string, isVpn: boolean) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error('User not found');
+
+  await mainDb
+    .updateTable('users')
+    .set({ is_vpn: isVpn, updated_at: sql`NOW()` })
+    .where('id', '=', userId)
+    .execute();
+
+  await invalidateUserCache(userId);
+  await invalidateUsernameCache(user.username);
+}
+
 export async function deleteUser(userId: string) {
   const user = await getUserById(userId);
   if (!user) throw new Error('User not found');

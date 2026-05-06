@@ -6,14 +6,15 @@ import { redisConnection } from '../db/connection.js';
 const PROXYCHECK_API_KEY = process.env.PROXYCHECK_API_KEY;
 const VPN_IP_CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
 
-const PRIVATE_PREFIXES = ['10.', '192.168.', '172.16.', '172.31.', 'fc00::', 'fe80::'];
-
 function isPrivateIp(ip: string): boolean {
-  return (
-    ip === '127.0.0.1' ||
-    ip === '::1' ||
-    PRIVATE_PREFIXES.some((p) => ip.startsWith(p))
-  );
+  if (ip === '127.0.0.1' || ip === '::1') return true;
+  if (ip.startsWith('10.') || ip.startsWith('192.168.')) return true;
+  if (ip.startsWith('fc00::') || ip.startsWith('fe80::')) return true;
+  if (ip.startsWith('172.')) {
+    const second = parseInt(ip.split('.')[1], 10);
+    if (second >= 16 && second <= 31) return true;
+  }
+  return false;
 }
 
 async function queryProxycheck(ip: string): Promise<boolean> {
@@ -61,9 +62,7 @@ export async function isIpVpn(ip: string): Promise<boolean> {
  * Use this for per-request checks to avoid hitting the external API on every call.
  */
 export async function isVpnRequest(req: Request): Promise<boolean> {
-  const clientIpRaw = getClientIp(req);
-  const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
-  return isIpVpn(clientIp);
+  return isIpVpn(getClientIp(req));
 }
 
 /**
@@ -71,8 +70,7 @@ export async function isVpnRequest(req: Request): Promise<boolean> {
  * Result is stored as is_vpn in the user record.
  */
 export async function detectVPN(req: Request): Promise<boolean> {
-  const clientIpRaw = getClientIp(req);
-  const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
+  const clientIp = getClientIp(req);
 
   if (isPrivateIp(clientIp)) return false;
 

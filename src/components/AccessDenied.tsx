@@ -5,8 +5,6 @@ import { Link } from 'react-router-dom';
 interface AccessDeniedProps {
   message?: string;
   description?: string;
-  sessionId?: string;
-  accessId?: string;
   errorType?:
     | 'access-denied'
     | 'invalid-session'
@@ -20,8 +18,6 @@ interface AccessDeniedProps {
 export default function AccessDenied({
   message,
   description,
-  sessionId,
-  accessId,
   errorType = 'access-denied',
 }: AccessDeniedProps) {
   let displayMessage = message;
@@ -41,7 +37,7 @@ export default function AccessDenied({
     displayMessage = displayMessage || 'VPN Detected';
     displayDescription =
       displayDescription ||
-      'Access is blocked for VPN/proxy users. Please disable your VPN and login again, or contact support for an exception.';
+      'Access is blocked for VPN/proxy users. Please disable your VPN and sign in again, or contact support for an exception.';
   } else if (errorType === 'tester-required') {
     displayMessage = displayMessage || 'Tester Access Required';
     displayDescription =
@@ -95,7 +91,7 @@ export default function AccessDenied({
     <div
       className={`min-h-screen bg-gradient-to-b ${bgGradient} text-white flex flex-col`}
     >
-      <Navbar sessionId={sessionId} accessId={accessId} />
+      <Navbar />
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
           <h1
@@ -108,7 +104,21 @@ export default function AccessDenied({
               : '403'}
           </h1>
           <p className="text-2xl mb-4 text-gray-300">{displayMessage}</p>
-          <p className="text-lg mb-8 text-gray-400">{displayDescription}</p>
+          <p className="text-lg mb-4 text-gray-400">{displayDescription}</p>
+          {errorType === 'vpn-blocked' && (
+            <p className="text-sm mb-8 text-gray-500">
+              To learn more about our VPN policy, please see{' '}
+              <a
+                href="https://cephie.app/legal"
+                className="underline text-blue-400 hover:text-blue-300"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                our privacy policy
+              </a>
+              . If you have any questions, create a ticket in our support server.
+            </p>
+          )}
           {errorType === 'tester-required' ||
           errorType === 'pilot-not-found' ||
           errorType === 'flight-not-found' ? (

@@ -1,7 +1,7 @@
 import { mainDb, redisConnection } from './connection.js';
 import { sql } from 'kysely';
 
-const BAN_CACHE_TTL = 60; // seconds
+export const BAN_CACHE_TTL = 60; // seconds
 
 export async function banUser({
   userId,
@@ -106,6 +106,7 @@ export async function getAllBans(page = 1, limit = 50) {
       'mod.avatar as banned_by_avatar',
       'target.username as target_username',
     ])
+    .where('b.active', '=', true)
     .orderBy('b.banned_at', 'desc')
     .limit(limit)
     .offset(offset)
@@ -114,6 +115,7 @@ export async function getAllBans(page = 1, limit = 50) {
   const [{ count }] = await mainDb
     .selectFrom('bans')
     .select(({ fn }) => [fn.countAll().as('count')])
+    .where('active', '=', true)
     .execute();
 
   const total = Number(count);
