@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { redisConnection } from '../db/connection.js';
 
 const PROXYCHECK_API_KEY = process.env.PROXYCHECK_API_KEY;
-const VPN_IP_CACHE_TTL = 3600; // 1 hour
+const VPN_IP_CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
 
 const PRIVATE_PREFIXES = ['10.', '192.168.', '172.16.', '172.31.', 'fc00::', 'fe80::'];
 
@@ -16,8 +16,21 @@ function isPrivateIp(ip: string): boolean {
   );
 }
 
+async function queryProxycheck(ip: string): Promise<boolean> {
+  if (!PROXYCHECK_API_KEY) return false;
+  try {
+    const url = `https://proxycheck.io/v2/${ip}?key=${PROXYCHECK_API_KEY}&vpn=1&port=1&risk=1`;
+    const { data } = await axios.get(url, { timeout: 5000 });
+    const info = data[ip];
+    return info?.proxy === 'yes' || info?.vpn === 'yes' || Number(info?.risk) > 0;
+  } catch (err) {
+    console.error('VPN check error, allowing request:', err);
+    return false;
+  }
+}
+
 /**
- * Checks if an IP is a VPN/proxy, with Redis caching (TTL 1 hour).
+ * Checks if an IP is a VPN/proxy, with Redis caching (TTL 30 days).
  * Returns false for private IPs or if PROXYCHECK_API_KEY is not set.
  */
 export async function isIpVpn(ip: string): Promise<boolean> {
@@ -25,23 +38,43 @@ export async function isIpVpn(ip: string): Promise<boolean> {
   if (!PROXYCHECK_API_KEY) return false;
 
   const cacheKey = `vpn:ip:${ip}`;
-  const cached = await redisConnection.get(cacheKey);
-  if (cached !== null) return cached === '1';
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached !== null) return cached === '1';
+  } catch {
+    // Redis unavailable — fall through to live check
+  }
+
+  const isVpn = await queryProxycheck(ip);
 
   try {
-    const url = `https://proxycheck.io/v2/${ip}?key=${PROXYCHECK_API_KEY}&vpn=1&port=1&risk=1`;
-    const { data } = await axios.get(url, { timeout: 5000 });
-    const info = data[ip];
-    const isVpn = !!(info?.proxy === 'yes' || info?.vpn === 'yes' || Number(info?.risk) > 0);
     await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
-    return isVpn;
   } catch {
-    return false;
+    // Redis unavailable — skip caching
   }
+
+  return isVpn;
 }
 
-export async function detectVPN(req: Request): Promise<boolean> {
+/**
+ * Detects VPN for the request IP with Redis caching.
+ * Use this for per-request checks to avoid hitting the external API on every call.
+ */
+export async function isVpnRequest(req: Request): Promise<boolean> {
   const clientIpRaw = getClientIp(req);
   const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
   return isIpVpn(clientIp);
+}
+
+/**
+ * One-shot VPN detection for the login flow (no caching).
+ * Result is stored as is_vpn in the user record.
+ */
+export async function detectVPN(req: Request): Promise<boolean> {
+  const clientIpRaw = getClientIp(req);
+  const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
+
+  if (isPrivateIp(clientIp)) return false;
+
+  return queryProxycheck(clientIp);
 }

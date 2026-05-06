@@ -42,6 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, []);
 
+  useEffect(() => {
+    const handler = () => refreshUser();
+    window.addEventListener('auth:forbidden', handler);
+    return () => window.removeEventListener('auth:forbidden', handler);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{

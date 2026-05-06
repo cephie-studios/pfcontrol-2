@@ -1,9 +1,10 @@
+import { apiFetch } from '../apiFetch.js';
 import type { Flight } from '../../types/flight';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchFlights(sessionId: string): Promise<Flight[]> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/${sessionId}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/${sessionId}`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch flights');
@@ -14,7 +15,7 @@ export async function addFlight(
   sessionId: string,
   flight: Partial<Flight>
 ): Promise<Flight> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/${sessionId}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/${sessionId}`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -25,7 +26,7 @@ export async function addFlight(
 }
 
 export async function fetchMyFlights(): Promise<Flight[]> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/me/list`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/list`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch your flights');
@@ -37,7 +38,7 @@ export async function claimSubmittedFlight(
   flightId: string,
   acarsToken: string
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/claim`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/claim`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -50,7 +51,7 @@ export async function claimSubmittedFlight(
 }
 
 export async function fetchMyFlightById(flightId: string): Promise<Flight> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch flight');
@@ -73,7 +74,7 @@ export interface MyFlightLogsResponse {
 export async function fetchMyFlightLogs(
   flightId: string
 ): Promise<MyFlightLogsResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch flight logs');
@@ -85,7 +86,7 @@ export async function updateFlight(
   flightId: string | number,
   updates: Partial<Flight>
 ): Promise<Flight> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/flights/${sessionId}/${flightId}`,
     {
       method: 'PUT',
@@ -102,7 +103,7 @@ export async function deleteFlight(
   sessionId: string,
   flightId: string | number
 ): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/flights/${sessionId}/${flightId}`,
     {
       method: 'DELETE',

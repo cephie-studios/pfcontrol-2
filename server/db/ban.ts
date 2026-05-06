@@ -40,6 +40,9 @@ export async function banUser({
   if (userId) {
     await redisConnection.setex(`ban:${userId}`, BAN_CACHE_TTL, '1');
   }
+  if (ip) {
+    await redisConnection.setex(`ban:ip:${ip}`, BAN_CACHE_TTL, '1');
+  }
 }
 
 export async function unbanUser(userIdOrIp: string): Promise<void> {

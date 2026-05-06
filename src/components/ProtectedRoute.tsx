@@ -72,6 +72,9 @@ export default function ProtectedRoute({
   if (user && user.isBanned) {
     return <AccessDenied errorType="banned" />;
   }
+  if (user && user.isVpnBlocked) {
+    return <AccessDenied errorType="vpn-blocked" />;
+  }
   if (requireAdmin && user && !user.isAdmin) {
     return <AccessDenied message="Administrator Access Required" />;
   }

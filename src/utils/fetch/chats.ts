@@ -1,7 +1,8 @@
+import { apiFetch } from '../apiFetch.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchChatMessages(sessionId: string) {
-  const res = await fetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch chat messages');
@@ -9,7 +10,7 @@ export async function fetchChatMessages(sessionId: string) {
 }
 
 export async function sendChatMessage(sessionId: string, message: string) {
-  const res = await fetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -20,7 +21,7 @@ export async function sendChatMessage(sessionId: string, message: string) {
 }
 
 export async function deleteChatMessage(sessionId: string, messageId: number) {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/chats/${sessionId}/${messageId}`,
     {
       method: 'DELETE',
@@ -36,7 +37,7 @@ export async function reportChatMessage(
   messageId: number,
   reason: string
 ) {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`,
     {
       method: 'POST',
@@ -50,7 +51,7 @@ export async function reportChatMessage(
 }
 
 export async function fetchGlobalChatMessages() {
-  const res = await fetch(`${API_BASE_URL}/api/chats/global/messages`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/chats/global/messages`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch global chat messages');
@@ -61,7 +62,7 @@ export async function reportGlobalChatMessage(
   messageId: number,
   reason: string
 ) {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/chats/global/${messageId}/report`,
     {
       method: 'POST',

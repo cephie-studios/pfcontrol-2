@@ -10,10 +10,10 @@ import {
   updateTutorialStatus,
 } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
-import { detectVPN } from '../utils/detectVPN.js';
+import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
 import { isAdmin } from '../middleware/admin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
-import { isUserBanned } from '../db/ban.js';
+import { isUserBanned, isIpBanned } from '../db/ban.js';
 import { isTester } from '../db/testers.js';
 import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
@@ -620,11 +620,14 @@ router.get('/me', requireAuthSoft, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const banRecord = await isUserBanned(req.user.userId);
+    const clientIp = getClientIp(req);
+    const ip = Array.isArray(clientIp) ? clientIp[0] : clientIp;
+    const banRecord = await isUserBanned(req.user.userId) ?? await isIpBanned(ip);
 
     const vpnGateEnabled = await isVpnGateEnabled();
+    const isCurrentlyVpn = !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
     const isVpnBlocked =
-      vpnGateEnabled && !!user.is_vpn && !(await isVpnException(req.user.userId));
+      vpnGateEnabled && isCurrentlyVpn && !(await isVpnException(req.user.userId));
 
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
