@@ -24,11 +24,13 @@ vi.mock('../../../server/db/connection.js', () => ({
       // dual-mode select: supports .execute() directly (count query)
       // or .orderBy().limit().offset().execute() (list query)
       const inner = {
+        where:   vi.fn(),
         orderBy: vi.fn(),
         limit:   vi.fn(),
         offset:  vi.fn(),
         execute: mocks.countExecute,
       };
+      inner.where.mockReturnValue(inner);
       inner.orderBy.mockReturnValue(inner);
       inner.limit.mockReturnValue(inner);
       inner.offset.mockReturnValue({ execute: mocks.listExecute });
