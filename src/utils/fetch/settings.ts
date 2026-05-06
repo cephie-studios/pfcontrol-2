@@ -1,9 +1,10 @@
+import { apiFetch } from '../apiFetch.js';
 import type { Settings } from '../../types/settings';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchUserSettings(): Promise<Settings> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/auth/me`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch settings');
@@ -14,7 +15,7 @@ export async function fetchUserSettings(): Promise<Settings> {
 export async function updateUserSettings(
   settings: Partial<Settings>
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/auth/me`, {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

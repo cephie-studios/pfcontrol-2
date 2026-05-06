@@ -1,3 +1,4 @@
+import { apiFetch } from '../apiFetch.js';
 import type { SessionInfo } from '../../types/session';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -9,7 +10,7 @@ export async function fetchSession(
   const url = new URL(`${API_BASE_URL}/api/sessions/${sessionId}`);
   url.searchParams.append('accessId', accessId);
 
-  const res = await fetch(url.toString(), {
+  const res = await apiFetch(url.toString(), {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch session');
@@ -17,7 +18,7 @@ export async function fetchSession(
 }
 
 export async function fetchMySessions(): Promise<SessionInfo[]> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/mine`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/sessions/mine`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch user sessions');
@@ -25,7 +26,7 @@ export async function fetchMySessions(): Promise<SessionInfo[]> {
 }
 
 export async function fetchAllSessions(): Promise<SessionInfo[]> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/sessions/`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch sessions');
@@ -39,7 +40,7 @@ export async function createSession(data: {
   activeRunway?: string | null;
   isTutorial?: boolean;
 }): Promise<SessionInfo> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/create`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/sessions/create`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -57,7 +58,7 @@ export async function updateSession(
   const url = new URL(`${API_BASE_URL}/api/sessions/${sessionId}`);
   url.searchParams.append('accessId', accessId);
 
-  const res = await fetch(url.toString(), {
+  const res = await apiFetch(url.toString(), {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -71,7 +72,7 @@ export async function updateSessionName(
   sessionId: string,
   name: string
 ): Promise<{ customName: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/update-name`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/sessions/update-name`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -84,7 +85,7 @@ export async function updateSessionName(
 export async function deleteSession(
   sessionId: string
 ): Promise<{ message: string; sessionId: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/delete`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/sessions/delete`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -100,7 +101,7 @@ export async function deleteOldestSession(): Promise<{
   airportIcao: string;
   createdAt: string;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/sessions/delete-oldest`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/sessions/delete-oldest`, {
     method: 'POST',
     credentials: 'include',
     headers: {

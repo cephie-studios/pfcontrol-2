@@ -1,3 +1,4 @@
+import { apiFetch } from '../apiFetch.js';
 import type { Settings } from '../../types/settings';
 import type { Feedback, FeedbackStats } from './feedback';
 
@@ -325,7 +326,7 @@ export interface DailyRatingStats {
 }
 
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
-  const response = await fetch(`${API_BASE_URL}/api/admin${endpoint}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/admin${endpoint}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
@@ -459,7 +460,7 @@ export async function fetchAuditLogs(
     ),
   });
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/api/admin/audit-logs?${params}`,
     {
       credentials: 'include',
@@ -617,7 +618,7 @@ export async function fetchChatReports(
   });
   if (filterReporter) params.append('reporter', filterReporter);
 
-  const res = await fetch(`${API_BASE_URL}/api/admin/chat-reports?${params}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports?${params}`, {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch chat reports');
@@ -628,7 +629,7 @@ export async function updateChatReportStatus(
   reportId: number,
   status: 'pending' | 'resolved'
 ): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
     {
       method: 'PATCH',
@@ -641,7 +642,7 @@ export async function updateChatReportStatus(
 }
 
 export async function deleteChatReport(reportId: number): Promise<void> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
     {
       method: 'DELETE',
@@ -674,7 +675,7 @@ export async function fetchFlightLogs(
     ),
   });
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/api/admin/flight-logs?${params}`,
     {
       credentials: 'include',
@@ -691,7 +692,7 @@ export async function fetchFlightLogs(
 export async function revealFlightLogIP(
   logId: number
 ): Promise<{ logId: number; ip_address: string }> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`,
     {
       method: 'POST',
@@ -743,7 +744,7 @@ export async function fetchApiLogs(
     ),
   });
 
-  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs?${params}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs?${params}`, {
     credentials: 'include',
   });
 
@@ -755,7 +756,7 @@ export async function fetchApiLogs(
 }
 
 export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`,
     {
       credentials: 'include',
@@ -770,7 +771,7 @@ export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
 }
 
 export async function fetchApiLogById(id: number): Promise<ApiLog> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/${id}`, {
     credentials: 'include',
   });
 
@@ -790,7 +791,7 @@ export async function fetchApiLogStats24h(): Promise<
     other: number;
   }>
 > {
-  const response = await fetch(`${API_BASE_URL}/api/admin/api-logs/stats-24h`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/stats-24h`, {
     credentials: 'include',
   });
 

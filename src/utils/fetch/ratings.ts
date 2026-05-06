@@ -1,5 +1,6 @@
+import { apiFetch } from '../apiFetch.js';
 export async function submitControllerRating(controllerId: string, rating: number, flightId?: string) {
-  const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/ratings`, {
+  const response = await apiFetch(`${import.meta.env.VITE_SERVER_URL}/api/ratings`, {
     method: 'POST',
     credentials: 'include',
     headers: {

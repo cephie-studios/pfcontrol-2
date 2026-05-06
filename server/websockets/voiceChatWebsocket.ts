@@ -242,7 +242,10 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       });
 
     } catch (err) {
-      console.error('[VoiceChat] Connection processing error:', err);
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.startsWith('Invalid') && !msg.endsWith('is required')) {
+        console.error('[VoiceChat] Connection processing error:', err);
+      }
       socket.disconnect(true);
     }
   });

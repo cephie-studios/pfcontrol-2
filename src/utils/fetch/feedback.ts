@@ -1,3 +1,4 @@
+import { apiFetch } from '../apiFetch.js';
 export interface Feedback {
   id: number;
   user_id: string;
@@ -25,7 +26,7 @@ export async function submitFeedback(
   rating: number,
   comment?: string
 ): Promise<Feedback> {
-  const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/feedback`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -40,7 +41,7 @@ export async function submitFeedback(
 }
 
 export async function fetchFeedback(): Promise<Feedback[]> {
-  const res = await fetch(`${API_BASE_URL}/api/admin/feedback`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback`, {
     credentials: 'include',
   });
 
@@ -52,7 +53,7 @@ export async function fetchFeedback(): Promise<Feedback[]> {
 }
 
 export async function fetchFeedbackStats(): Promise<FeedbackStats> {
-  const res = await fetch(`${API_BASE_URL}/api/admin/feedback/stats`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback/stats`, {
     credentials: 'include',
   });
 
@@ -64,7 +65,7 @@ export async function fetchFeedbackStats(): Promise<FeedbackStats> {
 }
 
 export async function deleteFeedback(id: number): Promise<Feedback> {
-  const res = await fetch(`${API_BASE_URL}/api/admin/feedback/${id}`, {
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback/${id}`, {
     method: 'DELETE',
     credentials: 'include',
   });

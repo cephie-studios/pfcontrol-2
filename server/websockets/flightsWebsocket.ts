@@ -160,8 +160,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
       socket.data.role = role;
       socket.join(validSessionId);
-    } catch (error) {
-      console.error('Invalid session or access ID:', (error as Error).message);
+    } catch {
       socket.disconnect(true);
       return;
     }

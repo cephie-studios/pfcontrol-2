@@ -10,10 +10,11 @@ import {
   updateTutorialStatus,
 } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
-import { detectVPN } from '../utils/detectVPN.js';
+import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
 import { isAdmin } from '../middleware/admin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
-import { isUserBanned } from '../db/ban.js';
+import { isUserBanned, isIpBanned, BAN_CACHE_TTL } from '../db/ban.js';
+import { redisConnection } from '../db/connection.js';
 import { isTester } from '../db/testers.js';
 import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
@@ -114,8 +115,7 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
 
     const discordUser = userResponse.data;
 
-    let ipAddress = getClientIp(req);
-    if (Array.isArray(ipAddress)) ipAddress = ipAddress[0] || '';
+    const ipAddress = getClientIp(req);
     const isVpn = await detectVPN(req);
 
     const existingUser = await getUserById(discordUser.id);
@@ -620,11 +620,31 @@ router.get('/me', requireAuthSoft, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const banRecord = await isUserBanned(req.user.userId);
+    const ip = getClientIp(req);
+    const validIp = ip && ip !== 'unknown' ? ip : null;
+
+    const banCacheKey = `ban:${req.user.userId}`;
+    let isBanned: boolean;
+    try {
+      const cachedBan = await redisConnection.get(banCacheKey);
+      if (cachedBan === '1') {
+        isBanned = true;
+      } else {
+        const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
+        isBanned = !!banRecord;
+        if (isBanned) {
+          await redisConnection.setex(banCacheKey, BAN_CACHE_TTL, '1');
+        }
+      }
+    } catch {
+      const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
+      isBanned = !!banRecord;
+    }
 
     const vpnGateEnabled = await isVpnGateEnabled();
+    const isCurrentlyVpn = !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
     const isVpnBlocked =
-      vpnGateEnabled && !!user.is_vpn && !(await isVpnException(req.user.userId));
+      vpnGateEnabled && isCurrentlyVpn && !(await isVpnException(req.user.userId));
 
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
@@ -642,7 +662,7 @@ router.get('/me', requireAuthSoft, async (req, res) => {
       lastLogin: user.lastLogin,
       totalSessionsCreated: user.totalSessionsCreated || 0,
       isAdmin: isAdmin(req.user.userId),
-      isBanned: !!banRecord,
+      isBanned,
       isVpnBlocked,
       isTester: await isTester(req.user.userId),
       roleId: user.roleId,

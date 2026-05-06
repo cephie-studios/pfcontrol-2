@@ -1,3 +1,4 @@
+import { apiFetch } from '../apiFetch.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
 
 export interface UpdateModal {
@@ -12,7 +13,7 @@ export interface UpdateModal {
 }
 
 export async function fetchActiveUpdateModal(): Promise<UpdateModal | null> {
-  const response = await fetch(`${API_BASE_URL}/api/update-modal/active`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/update-modal/active`, {
     credentials: 'include',
   });
 

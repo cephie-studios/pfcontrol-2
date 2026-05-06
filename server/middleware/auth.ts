@@ -3,14 +3,13 @@ import { getUserById } from '../db/users.js';
 import { isAdmin } from './admin.js';
 import { Request, Response, NextFunction } from 'express';
 import { JwtPayload } from '../types/JwtPayload.js';
-import { isUserBanned, isIpBanned } from '../db/ban.js';
+import { isUserBanned, isIpBanned, BAN_CACHE_TTL } from '../db/ban.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { isIpVpn } from '../utils/detectVPN.js';
 import { isVpnException, isVpnGateEnabled } from '../db/vpnExceptions.js';
 import { redisConnection } from '../db/connection.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const BAN_CACHE_TTL = 60; // seconds
 
 /**
  * Validates JWT and populates req.user without enforcing ban or VPN gate.
@@ -71,46 +70,47 @@ export default async function requireAuth(
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // User ID ban check with Redis cache
+    // Extract client IP once — used for both IP ban and VPN checks
+    const ip = getClientIp(req);
+
+    // User ID ban check — only cache confirmed bans ('1') to avoid race with banUser
     const banCacheKey = `ban:${decoded.userId}`;
     let isBanned: boolean;
     const cachedBan = await redisConnection.get(banCacheKey);
-    if (cachedBan !== null) {
-      isBanned = cachedBan === '1';
+    if (cachedBan === '1') {
+      isBanned = true;
     } else {
       const banRecord = await isUserBanned(decoded.userId);
       isBanned = !!banRecord;
-      await redisConnection.setex(banCacheKey, BAN_CACHE_TTL, isBanned ? '1' : '0');
+      if (isBanned) {
+        await redisConnection.setex(banCacheKey, BAN_CACHE_TTL, '1');
+      }
+    }
+
+    // IP ban check — only cache confirmed bans ('1')
+    const validIp = ip && ip !== 'unknown' ? ip : null;
+    if (!isBanned && validIp) {
+      const ipBanCacheKey = `ban:ip:${validIp}`;
+      const cachedIpBan = await redisConnection.get(ipBanCacheKey);
+      if (cachedIpBan === '1') {
+        isBanned = true;
+      } else {
+        const ipBanRecord = await isIpBanned(validIp);
+        isBanned = !!ipBanRecord;
+        if (isBanned) {
+          await redisConnection.setex(ipBanCacheKey, BAN_CACHE_TTL, '1');
+        }
+      }
     }
 
     if (isBanned) {
       return res.status(403).json({ error: 'Account is banned' });
     }
 
-    // IP ban check with Redis cache
-    const clientIpRaw = getClientIp(req);
-    const clientIp = Array.isArray(clientIpRaw) ? clientIpRaw[0] : clientIpRaw;
-    if (clientIp) {
-      const ipBanCacheKey = `ban:ip:${clientIp}`;
-      let isIpBannedResult: boolean;
-      const cachedIpBan = await redisConnection.get(ipBanCacheKey);
-      if (cachedIpBan !== null) {
-        isIpBannedResult = cachedIpBan === '1';
-      } else {
-        const ipBanRecord = await isIpBanned(clientIp);
-        isIpBannedResult = !!ipBanRecord;
-        await redisConnection.setex(ipBanCacheKey, BAN_CACHE_TTL, isIpBannedResult ? '1' : '0');
-      }
-      if (isIpBannedResult) {
-        return res.status(403).json({ error: 'Account is banned' });
-      }
-    }
-
     // VPN gate check — block if stored flag OR current IP is detected as VPN
     const gateEnabled = await isVpnGateEnabled();
     if (gateEnabled) {
-      const currentIpVpn = clientIp ? await isIpVpn(clientIp) : false;
-      if (user.is_vpn || currentIpVpn) {
+      if (user.is_vpn || (validIp && await isIpVpn(validIp))) {
         const hasException = await isVpnException(decoded.userId);
         if (!hasException) {
           return res.status(403).json({ error: 'VPN access blocked' });
