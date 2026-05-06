@@ -10,6 +10,7 @@ export interface User {
   totalSessionsCreated: number;
   isAdmin: boolean;
   isBanned: boolean;
+  isVpnBlocked: boolean;
   isTester: boolean;
   roleId?: number;
   roleName?: string;

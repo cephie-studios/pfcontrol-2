@@ -591,8 +591,8 @@ function ArrivalsTable({
                     {/* Time column */}
                     <td className="py-2 px-4 column-time">
                       <span>
-                        {flight.timestamp
-                          ? new Date(flight.timestamp).toLocaleTimeString(
+                        {(flight.timestamp || flight.created_at)
+                          ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
                               'en-GB',
                               {
                                 hour: '2-digit',
@@ -600,7 +600,7 @@ function ArrivalsTable({
                                 timeZone: 'UTC',
                               }
                             )
-                          : '-'}
+                          : '--'}
                       </span>
                     </td>
                     {arrivalsColumns.callsign !== false && (

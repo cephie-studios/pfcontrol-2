@@ -15,9 +15,10 @@ import { isAdmin } from '../middleware/admin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
 import { isUserBanned } from '../db/ban.js';
 import { isTester } from '../db/testers.js';
+import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
-import requireAuth from '../middleware/auth.js';
+import requireAuth, { requireAuthSoft } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -611,7 +612,7 @@ router.put('/tutorial', requireAuth, async (req, res) => {
 });
 
 // GET: /api/auth/me - get current user info
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', requireAuthSoft, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const user = await getUserById(req.user.userId);
@@ -620,6 +621,10 @@ router.get('/me', requireAuth, async (req, res) => {
     }
 
     const banRecord = await isUserBanned(req.user.userId);
+
+    const vpnGateEnabled = await isVpnGateEnabled();
+    const isVpnBlocked =
+      vpnGateEnabled && !!user.is_vpn && !(await isVpnException(req.user.userId));
 
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
@@ -638,6 +643,7 @@ router.get('/me', requireAuth, async (req, res) => {
       totalSessionsCreated: user.totalSessionsCreated || 0,
       isAdmin: isAdmin(req.user.userId),
       isBanned: !!banRecord,
+      isVpnBlocked,
       isTester: await isTester(req.user.userId),
       roleId: user.roleId,
       roleName: user.roleName,

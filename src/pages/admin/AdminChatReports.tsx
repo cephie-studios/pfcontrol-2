@@ -309,7 +309,7 @@ export default function AdminChatReports() {
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-zinc-300">
-                                {formatTimestamp(report.timestamp)}
+                                {formatTimestamp(report.created_at)}
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center space-x-3">
@@ -438,7 +438,7 @@ export default function AdminChatReports() {
                               {report.status || 'pending'}
                             </span>
                             <p className="text-zinc-400 text-xs">
-                              {formatTimestamp(report.timestamp)}
+                              {formatTimestamp(report.created_at)}
                             </p>
                           </div>
 
@@ -563,7 +563,7 @@ export default function AdminChatReports() {
                 </p>
                 <p>
                   <strong>Timestamp:</strong>{' '}
-                  {formatTimestamp(selectedReport.timestamp)}
+                  {formatTimestamp(selectedReport.created_at)}
                 </p>
                 <div className="flex space-x-2">
                   <Button

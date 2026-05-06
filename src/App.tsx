@@ -151,6 +151,8 @@ export default function App() {
 
       {user && user.isBanned ? (
         <AccessDenied errorType="banned" />
+      ) : user && user.isVpnBlocked ? (
+        <AccessDenied errorType="vpn-blocked" />
       ) : (
         <Routes>
           <Route path="/" element={<Home />} />
