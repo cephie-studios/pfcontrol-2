@@ -53,6 +53,7 @@ export async function unbanUser(userIdOrIp: string): Promise<void> {
     .execute();
 
   await redisConnection.del(`ban:${userIdOrIp}`);
+  await redisConnection.del(`ban:ip:${userIdOrIp}`);
 }
 
 export async function isUserBanned(userId: string) {
