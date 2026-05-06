@@ -21,24 +21,36 @@ vi.mock('../../../server/db/connection.js', () => ({
       })),
     })),
     selectFrom: vi.fn(() => {
-      const chain: any = {};
-      chain.leftJoin         = vi.fn(() => chain);
-      chain.selectAll        = vi.fn(() => chain);
-      chain.where            = vi.fn(() => chain);
-      chain.orderBy          = vi.fn(() => chain);
-      chain.limit            = vi.fn(() => chain);
-      chain.offset           = vi.fn(() => ({ execute: mocks.listExecute }));
-      chain.executeTakeFirst = mocks.findExecute;
       // dual-mode select: supports .execute() directly (count query)
       // or .orderBy().limit().offset().execute() (list query)
-      chain.select = vi.fn(() => {
-        const inner: any = {};
-        inner.orderBy = vi.fn(() => inner);
-        inner.limit   = vi.fn(() => inner);
-        inner.offset  = vi.fn(() => ({ execute: mocks.listExecute }));
-        inner.execute = mocks.countExecute;
-        return inner;
-      });
+      const inner = {
+        where:   vi.fn(),
+        orderBy: vi.fn(),
+        limit:   vi.fn(),
+        offset:  vi.fn(),
+        execute: mocks.countExecute,
+      };
+      inner.where.mockReturnValue(inner);
+      inner.orderBy.mockReturnValue(inner);
+      inner.limit.mockReturnValue(inner);
+      inner.offset.mockReturnValue({ execute: mocks.listExecute });
+
+      const chain = {
+        leftJoin:         vi.fn(),
+        selectAll:        vi.fn(),
+        where:            vi.fn(),
+        orderBy:          vi.fn(),
+        limit:            vi.fn(),
+        offset:           vi.fn(),
+        executeTakeFirst: mocks.findExecute,
+        select:           vi.fn().mockReturnValue(inner),
+      };
+      chain.leftJoin.mockReturnValue(chain);
+      chain.selectAll.mockReturnValue(chain);
+      chain.where.mockReturnValue(chain);
+      chain.orderBy.mockReturnValue(chain);
+      chain.limit.mockReturnValue(chain);
+      chain.offset.mockReturnValue({ execute: mocks.listExecute });
       return chain;
     }),
   },
