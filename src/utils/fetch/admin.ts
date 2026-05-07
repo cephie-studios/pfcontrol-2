@@ -236,7 +236,7 @@ export interface FlightLog {
   old_data: object | null;
   new_data: object | null;
   ip_address: string | null;
-  timestamp: string;
+  created_at: string;
 }
 
 export interface FlightLogsResponse {
@@ -262,7 +262,7 @@ export interface ApiLog {
   request_body: string | null;
   response_body: string | null;
   error_message: string | null;
-  timestamp: string;
+  created_at: string;
 }
 
 export interface ApiLogsResponse {

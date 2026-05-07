@@ -25,6 +25,7 @@ import {
 import type { Server as HTTPServer } from 'http';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
+import { getUserById } from '../db/users.js';
 import { isEventController } from '../middleware/flightAccess.js';
 import { broadcastFlightUpdate } from './overviewWebsocket.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
@@ -194,7 +195,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             sessionId,
             action: 'add',
             flightId: flight.id,
-            newData: sanitizedFlight,
+            newData: {
+              ...sanitizedFlight,
+              flight_owner_user_id: userId || null,
+              flight_owner_username: (socket.handshake.query.username as string) || null,
+            },
             ipAddress: getSocketClientIp(socket),
           });
         } catch {
@@ -290,10 +295,14 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
             const {
               acars_token: _,
-              user_id: __,
+              user_id: flightOwnerUserId,
               ip_address: ___,
               ...oldSanitized
             } = oldFlight || {};
+
+            const flightOwner = flightOwnerUserId
+              ? await getUserById(flightOwnerUserId)
+              : null;
 
             const changedData: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(updates)) {
@@ -307,7 +316,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
               sessionId,
               action: 'update',
               flightId: flightId as string,
-              oldData: oldSanitized,
+              oldData: {
+                ...oldSanitized,
+                flight_owner_user_id: flightOwnerUserId || null,
+                flight_owner_username: flightOwner?.username || null,
+              },
               newData: changedData,
               ipAddress: getSocketClientIp(socket),
             });
@@ -348,8 +361,12 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           .where('session_id', '=', sessionId)
           .where('id', '=', flightId as string)
           .executeTakeFirst();
-        const { acars_token, user_id, ip_address, ...sanitizedOldData } =
+        const { acars_token, user_id: flightOwnerUserId, ip_address, ...sanitizedOldData } =
           flightToDelete || {};
+
+        const flightOwner = flightOwnerUserId
+          ? await getUserById(flightOwnerUserId)
+          : null;
 
         await deleteFlight(sessionId, flightId as string);
         io.to(sessionId).emit('flightDeleted', { flightId });
@@ -360,7 +377,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           sessionId,
           action: 'delete',
           flightId: flightId as string,
-          oldData: sanitizedOldData,
+          oldData: {
+            ...sanitizedOldData,
+            flight_owner_user_id: flightOwnerUserId || null,
+            flight_owner_username: flightOwner?.username || null,
+          },
           ipAddress: getSocketClientIp(socket),
         });
       } catch {
