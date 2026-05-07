@@ -735,7 +735,7 @@ export default function AdminFlightLogs() {
                             Flight Owner
                           </h3>
                           <p className="text-white">
-                            {owner.username || owner.userId || 'Unknown'}
+                            {owner.username || owner.userId || 'Anonymous (public submit)'}
                           </p>
                           {owner.userId && (
                             <p className="text-xs text-zinc-500">{owner.userId}</p>

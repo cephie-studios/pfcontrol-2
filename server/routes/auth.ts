@@ -8,6 +8,7 @@ import {
   updateRobloxAccount,
   unlinkRobloxAccount,
   updateTutorialStatus,
+  updateUserFingerprint,
 } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
@@ -713,6 +714,34 @@ router.put('/me', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error updating user settings:', error);
     res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// POST: /api/auth/fingerprint - store browser fingerprint and check against ban list
+router.post('/fingerprint', requireAuth, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { visitorId } = req.body;
+  if (!visitorId || typeof visitorId !== 'string' || visitorId.length < 8 || visitorId.length > 255) {
+    return res.status(400).json({ error: 'Invalid visitorId' });
+  }
+
+  try {
+    await updateUserFingerprint(req.user.userId, visitorId);
+
+    const fpToken = jwt.sign({ visitorId }, JWT_SECRET as string, { expiresIn: '7d' });
+    res.cookie('fp_token', fpToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d, matches JWT
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error processing fingerprint:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

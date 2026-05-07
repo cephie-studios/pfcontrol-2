@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import {
   addFlight,
@@ -107,9 +108,21 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   io.on('connection', async (socket: Socket) => {
     const sessionId = socket.handshake.query.sessionId as string;
     const accessId = socket.handshake.query.accessId as string;
-    const userId = socket.handshake.query.userId as string;
     const isEventControllerFlag =
       socket.handshake.query.isEventController === 'true';
+
+    let userId = socket.handshake.query.userId as string;
+    try {
+      const cookieHeader = socket.handshake.headers.cookie ?? '';
+      const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
+      if (match) {
+        const JWT_SECRET = process.env.JWT_SECRET;
+        const decoded = jwt.verify(match[1], JWT_SECRET as string) as { userId: string };
+        if (decoded.userId) userId = decoded.userId;
+      }
+    } catch {
+      // Cookie absent or invalid — fall back to query param
+    }
 
     try {
       const validSessionId = validateSessionId(sessionId);

@@ -27,4 +27,6 @@ export interface UsersTable {
   role_id?: number;
   tutorial_completed?: boolean;
   statistics?: unknown;
+  fingerprint_id?: string | null;
+  ip_hash?: string | null;
 }

@@ -10,6 +10,7 @@ export async function banUser({
   reason,
   bannedBy,
   expiresAt,
+  fingerprintId,
 }: {
   userId?: string;
   ip?: string;
@@ -17,6 +18,7 @@ export async function banUser({
   reason: string;
   bannedBy: string;
   expiresAt?: string;
+  fingerprintId?: string | null;
 }): Promise<void> {
   if (!userId && !ip) {
     throw new Error('Either userId or ip must be provided');
@@ -34,6 +36,7 @@ export async function banUser({
       banned_by: bannedBy,
       expires_at: expiresAtValue as Date | undefined,
       active: true,
+      fingerprint_id: fingerprintId || undefined,
     })
     .execute();
 
@@ -43,9 +46,44 @@ export async function banUser({
   if (ip) {
     await redisConnection.setex(`ban:ip:${ip}`, BAN_CACHE_TTL, '1');
   }
+  if (fingerprintId) {
+    await redisConnection.setex(`ban:fp:${fingerprintId}`, BAN_CACHE_TTL, '1');
+  }
+}
+
+export async function isFingerprintBanned(fingerprintId: string): Promise<boolean> {
+  const cacheKey = `ban:fp:${fingerprintId}`;
+  const cached = await redisConnection.get(cacheKey);
+  if (cached === '1') return true;
+
+  const result = await mainDb
+    .selectFrom('bans')
+    .select('id')
+    .where('fingerprint_id', '=', fingerprintId)
+    .where('active', '=', true)
+    .where(({ or, eb }) =>
+      or([eb('expires_at', 'is', null), eb('expires_at', '>', new Date())])
+    )
+    .executeTakeFirst();
+
+  const banned = !!result;
+  if (banned) {
+    await redisConnection.setex(cacheKey, BAN_CACHE_TTL, '1');
+  }
+  return banned;
 }
 
 export async function unbanUser(userIdOrIp: string): Promise<void> {
+  // Fetch fingerprint_id before deactivating so we can clear its cache
+  const bans = await mainDb
+    .selectFrom('bans')
+    .select('fingerprint_id')
+    .where(({ or, eb }) =>
+      or([eb('user_id', '=', userIdOrIp), eb('ip_address', '=', userIdOrIp)])
+    )
+    .where('active', '=', true)
+    .execute();
+
   await mainDb
     .updateTable('bans')
     .set({ active: false })
@@ -57,6 +95,12 @@ export async function unbanUser(userIdOrIp: string): Promise<void> {
 
   await redisConnection.del(`ban:${userIdOrIp}`);
   await redisConnection.del(`ban:ip:${userIdOrIp}`);
+
+  for (const ban of bans) {
+    if (ban.fingerprint_id) {
+      await redisConnection.del(`ban:fp:${ban.fingerprint_id}`);
+    }
+  }
 }
 
 export async function isUserBanned(userId: string) {

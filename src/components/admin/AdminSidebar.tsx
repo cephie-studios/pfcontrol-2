@@ -19,6 +19,7 @@ import {
   Star,
   HeartPulse,
   ThumbsUp,
+  GitMerge,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/auth/useAuth';
@@ -224,6 +225,13 @@ export default function AdminSidebar({
           path: '/admin/audit',
           textColor: 'orange-400',
           permission: 'audit',
+        },
+        {
+          icon: GitMerge,
+          label: 'Alt Detection',
+          path: '/admin/alts',
+          textColor: 'amber-400',
+          permission: 'admin',
         },
       ].filter((item) => hasPermission(item.permission)),
     },

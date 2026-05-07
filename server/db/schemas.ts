@@ -60,6 +60,22 @@ export async function createMainTables() {
     )
     .addColumn('tutorial_completed', 'boolean', (col) => col.defaultTo(false))
     .addColumn('statistics', 'jsonb')
+    .addColumn('fingerprint_id', 'varchar(255)')
+    .addColumn('ip_hash', 'varchar(64)')
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_users_fingerprint_id')
+    .ifNotExists()
+    .on('users')
+    .column('fingerprint_id')
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_users_ip_hash')
+    .ifNotExists()
+    .on('users')
+    .column('ip_hash')
     .execute();
 
   // sessions
@@ -145,6 +161,7 @@ export async function createMainTables() {
     .addColumn('banned_at', 'timestamptz', (col) => col.defaultTo('now()'))
     .addColumn('expires_at', 'timestamptz')
     .addColumn('active', 'boolean', (col) => col.defaultTo(true))
+    .addColumn('fingerprint_id', 'varchar(255)')
     .execute();
 
   await mainDb.schema

@@ -76,3 +76,53 @@ export async function detectVPN(req: Request): Promise<boolean> {
 
   return queryProxycheck(clientIp);
 }
+
+const TOR_EXIT_LIST_URL = 'https://check.torproject.org/torbulkexitlist';
+const TOR_CACHE_KEY = 'tor:exit-nodes';
+const TOR_CACHE_TTL = 60 * 60; // 1 hour
+
+export async function isTorExitNode(ip: string): Promise<boolean> {
+  if (isPrivateIp(ip)) return false;
+
+  try {
+    // If IP is in the set it's a Tor exit node
+    const isMember = await redisConnection.sismember(TOR_CACHE_KEY, ip);
+    if (isMember === 1) return true;
+
+    // If the set exists and is populated, IP is not a Tor exit node
+    const size = await redisConnection.scard(TOR_CACHE_KEY);
+    if (size > 0) return false;
+  } catch {
+    // Redis unavailable — fall through to live fetch
+  }
+
+  try {
+    const response = await axios.get<string>(TOR_EXIT_LIST_URL, {
+      timeout: 5000,
+      responseType: 'text',
+    });
+    const ips = response.data
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#'));
+
+    if (ips.length > 0) {
+      try {
+        const pipeline = redisConnection.pipeline();
+        pipeline.del(TOR_CACHE_KEY);
+        for (const exitIp of ips) {
+          pipeline.sadd(TOR_CACHE_KEY, exitIp);
+        }
+        pipeline.expire(TOR_CACHE_KEY, TOR_CACHE_TTL);
+        await pipeline.exec();
+      } catch {
+        // Redis unavailable — skip caching
+      }
+      return ips.includes(ip);
+    }
+  } catch (err) {
+    console.error('Tor exit node list fetch failed, allowing request:', err);
+  }
+
+  return false;
+}

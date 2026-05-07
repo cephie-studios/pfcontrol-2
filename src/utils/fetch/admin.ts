@@ -879,3 +879,61 @@ export interface IpLocationResult {
 export async function fetchIpLocation(ip: string): Promise<IpLocationResult> {
   return makeAdminRequest(`/bans/ip-location/${encodeURIComponent(ip)}`);
 }
+
+// ─── Alt Detection ────────────────────────────────────────────────────────────
+
+export interface AltClusterBan {
+  active: boolean;
+  reason: string | null;
+  expires_at: string | null;
+  banned_at: string | null;
+}
+
+export interface ClusterMember {
+  id: string;
+  username: string;
+  avatar: string | null;
+  discriminator: string | null;
+  created_at: string;
+  discord_created_at: string;
+  discord_account_age_days: number;
+  last_login: string | null;
+  is_vpn: boolean;
+  fingerprint_id: string | null;
+  ip_hash: string | null;
+  ban: AltClusterBan | null;
+}
+
+export interface AltCluster {
+  id: string;
+  members: ClusterMember[];
+  member_count: number;
+  signals: {
+    shared_fingerprint: boolean;
+    shared_ip: boolean;
+    has_banned_member: boolean;
+    young_account_joined_after_ban: boolean;
+    vpn_overlap: boolean;
+  };
+  score: number;
+  score_label: 'low' | 'medium' | 'high' | 'critical';
+  detected_at: string;
+}
+
+export interface AltClustersResponse {
+  clusters: AltCluster[];
+  stats: {
+    total_clusters: number;
+    total_flagged_accounts: number;
+    scan_duration_ms: number;
+  };
+}
+
+export async function fetchAltClusters(
+  options: { minScore?: number } = {}
+): Promise<AltClustersResponse> {
+  const params = new URLSearchParams();
+  if (options.minScore != null) params.set('minScore', String(options.minScore));
+  const qs = params.toString();
+  return makeAdminRequest(`/alts${qs ? '?' + qs : ''}`);
+}

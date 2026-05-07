@@ -54,6 +54,12 @@ router.post('/ban', async (req, res) => {
       .status(401)
       .json({ error: 'Unauthorized: user not found in request' });
   }
+  let fingerprintId: string | null = null;
+  if (userId) {
+    const targetUser = await getUserById(userId);
+    fingerprintId = targetUser?.fingerprint_id ?? null;
+  }
+
   await banUser({
     userId,
     ip,
@@ -61,6 +67,7 @@ router.post('/ban', async (req, res) => {
     reason,
     bannedBy: req.user.userId,
     expiresAt,
+    fingerprintId,
   });
 
   await logAdminAction({

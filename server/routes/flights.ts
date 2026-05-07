@@ -1,5 +1,5 @@
 import express from 'express';
-import requireAuth from '../middleware/auth.js';
+import requireAuth, { optionalAuth } from '../middleware/auth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
   getFlightsBySession,
@@ -180,7 +180,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
+router.post('/:sessionId', flightCreationLimiter, optionalAuth, async (req, res) => {
   try {
     if (req.body.callsign) {
       try {

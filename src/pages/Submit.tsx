@@ -58,7 +58,7 @@ export default function Submit() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
@@ -161,7 +161,7 @@ export default function Submit() {
   }, []);
 
   useEffect(() => {
-    if (!sessionId || !accessId || !initialLoadComplete) return;
+    if (!sessionId || !accessId || !initialLoadComplete || authLoading) return;
 
     const socket = createFlightsSocket(
       sessionId,
@@ -190,7 +190,7 @@ export default function Submit() {
     return () => {
       socket.socket.disconnect();
     };
-  }, [sessionId, accessId, initialLoadComplete]);
+  }, [sessionId, accessId, initialLoadComplete, authLoading, user?.userId, user?.username, session?.createdBy]);
 
   const backgroundImage = useMemo(() => {
     const selectedImage = settings?.backgroundImage?.selectedImage;

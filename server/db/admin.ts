@@ -2,7 +2,7 @@ import { mainDb } from './connection.js';
 import { cleanupOldStatistics } from './statistics.js';
 import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
-import { decrypt } from '../utils/encryption.js';
+import { decrypt, hashIp } from '../utils/encryption.js';
 import { getAdminIds, isAdmin } from '../middleware/admin.js';
 import { getActiveUsersForSession } from '../websockets/sessionUsersWebsocket.js';
 import { getUserRoles } from './roles.js';
@@ -271,7 +271,8 @@ export async function getAllUsers(
           ])
         );
       } else if (isIpSearch) {
-        query = query.where('u.ip_address', 'is not', null);
+        const ipHash = hashIp(trimmedSearch);
+        query = query.where('u.ip_hash', '=', ipHash);
       }
 
       if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
@@ -291,9 +292,7 @@ export async function getAllUsers(
       }
 
       let rows;
-      if (isIpSearch) {
-        rows = await query.execute();
-      } else if (filterAdmin === 'cached') {
+      if (filterAdmin === 'cached') {
         try {
           let cursor = '0';
           const cachedUserIds: string[] = [];
@@ -432,21 +431,12 @@ export async function getAllUsers(
         };
       });
 
-      let usersAfterIpFilter = usersWithAdminStatus;
-      if (isIpSearch) {
-        const lowerSearch = trimmedSearch.toLowerCase();
-        usersAfterIpFilter = usersWithAdminStatus.filter((u) => {
-          if (!u.ip_address) return false;
-          return String(u.ip_address).toLowerCase().includes(lowerSearch);
-        });
-      }
-
       let usersWithCacheStatus;
       if (filterAdmin === 'cached') {
-        usersWithCacheStatus = usersAfterIpFilter.map(user => ({ ...user, cached: true }));
+        usersWithCacheStatus = usersWithAdminStatus.map(user => ({ ...user, cached: true }));
       } else {
         usersWithCacheStatus = await Promise.all(
-          usersAfterIpFilter.map(async (user) => {
+          usersWithAdminStatus.map(async (user) => {
             const isCached = await redisConnection.exists(`user:${user.id}`);
             return { ...user, cached: isCached === 1 };
           })
@@ -457,9 +447,6 @@ export async function getAllUsers(
         filteredUsers = usersWithCacheStatus;
         totalUsers = filteredUsers.length;
         filteredUsers = filteredUsers.slice(offset, offset + limit);
-      } else if (isIpSearch) {
-        totalUsers = usersWithCacheStatus.length;
-        filteredUsers = usersWithCacheStatus.slice(offset, offset + limit);
       } else {
         filteredUsers = usersWithCacheStatus;
       }
