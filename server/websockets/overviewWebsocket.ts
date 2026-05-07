@@ -168,7 +168,7 @@ export function setupOverviewWebsocket(
               : null;
 
             const { user_id: _uid, ip_address: _ip, acars_token: _at, ...oldSanitized } = oldFlight || {};
-            const { user_id: _uid2, ip_address: _ip2, acars_token: _at2, ...newSanitized } = updatedFlight || {};
+            const newSanitized = updatedFlight ?? {};
 
             await logFlightAction({
               userId: socket.data.userId || 'unknown',
