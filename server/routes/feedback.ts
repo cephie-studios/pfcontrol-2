@@ -1,7 +1,7 @@
 import express from 'express';
 import { addFeedback } from '../db/feedback.js';
 import requireAuth from '../middleware/auth.js';
-import posthog from '../utils/posthog.js';
+import { capture } from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post('/', requireAuth, async (req, res) => {
       comment: comment?.trim() || undefined,
     });
 
-    posthog.capture({ distinctId: req.user!.userId, event: 'feedback_submitted', properties: { rating: Number(rating), has_comment: !!comment?.trim() } });
+    capture(req, { distinctId: req.user!.userId, event: 'feedback_submitted', properties: { rating: Number(rating), has_comment: !!comment?.trim() } });
 
     res.json(feedback);
   } catch (error) {

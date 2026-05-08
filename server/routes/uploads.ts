@@ -2,7 +2,7 @@ import { getUserById, updateUserSettings } from '../db/users.js';
 import express from 'express';
 import multer from 'multer';
 import requireAuth from '../middleware/auth.js';
-import posthog from '../utils/posthog.js';
+import { capture } from '../utils/posthog.js';
 import { requirePermission } from '../middleware/rolePermissions.js';
 import FormData from 'form-data';
 import axios from 'axios';
@@ -135,7 +135,7 @@ router.post(
       };
       await updateUserSettings(userId, updatedSettings);
 
-      posthog.capture({ distinctId: userId, event: 'background_uploaded' });
+      capture(req, { distinctId: userId, event: 'background_uploaded' });
 
       res.json({
         message: 'Background image uploaded successfully',
@@ -195,7 +195,7 @@ router.delete(
       };
       await updateUserSettings(userId, updatedSettings);
 
-      posthog.capture({ distinctId: userId, event: 'background_deleted' });
+      capture(req, { distinctId: userId, event: 'background_deleted' });
 
       res.json({ message: 'Background image deleted successfully' });
     } catch (error) {

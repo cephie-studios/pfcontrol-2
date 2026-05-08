@@ -1,7 +1,7 @@
 import { PostHog } from 'posthog-node';
 import type { Request } from 'express';
 
-const noop = { capture: () => {}, shutdown: async () => {} } as unknown as PostHog;
+const noop = { capture: () => {}, identify: () => {}, shutdown: async () => {} } as unknown as PostHog;
 
 const client: PostHog = process.env.POSTHOG_API_KEY
   ? new PostHog(process.env.POSTHOG_API_KEY, { host: process.env.POSTHOG_HOST })

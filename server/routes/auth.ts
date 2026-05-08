@@ -21,7 +21,7 @@ import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
 import requireAuth, { requireAuthSoft } from '../middleware/auth.js';
-import posthog from '../utils/posthog.js';
+import posthog, { capture } from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -137,10 +137,26 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     await recordLogin();
     if (isNewUser) {
       await recordNewUser();
-      posthog.capture({ distinctId: discordUser.id, event: 'user_signed_up', properties: { username: discordUser.username } });
+      capture(req, {
+        distinctId: discordUser.id,
+        event: 'user_signed_up',
+        properties: {
+          username: discordUser.username,
+          $set_once: { created_at: new Date().toISOString() },
+        },
+      });
     }
 
-    posthog.capture({ distinctId: discordUser.id, event: 'user_logged_in', properties: { username: discordUser.username, is_vpn: isVpn } });
+    posthog.identify({
+      distinctId: discordUser.id,
+      properties: {
+        username: discordUser.username,
+        discord_id: discordUser.id,
+        is_admin: isAdmin(discordUser.id),
+        is_vpn: isVpn,
+      },
+    });
+    capture(req, { distinctId: discordUser.id, event: 'user_logged_in', properties: { username: discordUser.username, is_vpn: isVpn } });
 
     const payload = {
       userId: discordUser.id,
@@ -244,7 +260,15 @@ router.get('/roblox/callback', authLimiter, async (req, res) => {
       refreshToken: refresh_token,
     });
 
-    posthog.capture({ distinctId: userId, event: 'roblox_linked', properties: { roblox_username: robloxUser.preferred_username || robloxUser.name } });
+    posthog.identify({
+      distinctId: userId,
+      properties: {
+        has_roblox: true,
+        roblox_username: robloxUser.preferred_username || robloxUser.name,
+        roblox_user_id: robloxUser.sub,
+      },
+    });
+    capture(req, { distinctId: userId, event: 'roblox_linked', properties: { roblox_username: robloxUser.preferred_username || robloxUser.name } });
 
     res.redirect(FRONTEND_URL + '/settings?roblox_linked=true');
   } catch (error) {
@@ -258,7 +282,8 @@ router.post('/roblox/unlink', requireAuth, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkRobloxAccount(req.user.userId);
-    posthog.capture({ distinctId: req.user.userId, event: 'roblox_unlinked' });
+    posthog.identify({ distinctId: req.user.userId, properties: { has_roblox: false, roblox_username: null, roblox_user_id: null } });
+    capture(req, { distinctId: req.user.userId, event: 'roblox_unlinked' });
     res.json({ success: true, message: 'Roblox account unlinked' });
   } catch (error) {
     console.error('Error unlinking Roblox:', error);
@@ -430,7 +455,16 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
       ratingLong: ratingLong || undefined,
     });
 
-    posthog.capture({ distinctId: userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
+    posthog.identify({
+      distinctId: userId,
+      properties: {
+        has_vatsim: true,
+        vatsim_cid: cid,
+        vatsim_rating: fallbackShort,
+        vatsim_rating_long: ratingLong,
+      },
+    });
+    capture(req, { distinctId: userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
 
     res.redirect(FRONTEND_URL + '/settings?vatsim_linked=true');
   } catch (error) {
@@ -568,7 +602,16 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
       ratingShort: fallbackShort || undefined,
       ratingLong: ratingLong2 || undefined,
     });
-    posthog.capture({ distinctId: req.user.userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
+    posthog.identify({
+      distinctId: req.user.userId,
+      properties: {
+        has_vatsim: true,
+        vatsim_cid: cid,
+        vatsim_rating: fallbackShort,
+        vatsim_rating_long: ratingLong2,
+      },
+    });
+    capture(req, { distinctId: req.user.userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
     res.json({
       success: true,
       vatsimCid: cid,
@@ -596,7 +639,8 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     const { unlinkVatsimAccount } = await import('../db/users.js');
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkVatsimAccount(req.user.userId);
-    posthog.capture({ distinctId: req.user.userId, event: 'vatsim_unlinked' });
+    posthog.identify({ distinctId: req.user.userId, properties: { has_vatsim: false, vatsim_cid: null, vatsim_rating: null, vatsim_rating_long: null } });
+    capture(req, { distinctId: req.user.userId, event: 'vatsim_unlinked' });
     res.cookie('vatsim_force', '1', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -617,7 +661,10 @@ router.put('/tutorial', requireAuth, async (req, res) => {
     const { completed } = req.body;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await updateTutorialStatus(req.user.userId, completed);
-    if (completed) posthog.capture({ distinctId: req.user.userId, event: 'tutorial_completed' });
+    if (completed) {
+      posthog.identify({ distinctId: req.user.userId, properties: { tutorial_completed: true } });
+      capture(req, { distinctId: req.user.userId, event: 'tutorial_completed' });
+    }
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to update tutorial status' });
@@ -790,7 +837,7 @@ router.put('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    posthog.capture({ distinctId: req.user.userId, event: 'settings_updated' });
+    capture(req, { distinctId: req.user.userId, event: 'settings_updated' });
 
     res.json({
       userId: req.user.userId,
@@ -844,7 +891,7 @@ router.post('/logout', (req, res) => {
   if (token && JWT_SECRET) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string };
-      if (decoded?.userId) posthog.capture({ distinctId: decoded.userId, event: 'user_logged_out' });
+      if (decoded?.userId) capture(req, { distinctId: decoded.userId, event: 'user_logged_out' });
     } catch { /* invalid token, skip */ }
   }
   res.clearCookie('auth_token', {
@@ -882,7 +929,7 @@ router.delete('/delete-account', requireAuth, async (req, res) => {
     const { deleteUser } = await import('../db/users.js');
     await deleteUser(userId);
 
-    posthog.capture({ distinctId: userId, event: 'account_deleted' });
+    capture(req, { distinctId: userId, event: 'account_deleted' });
 
     res.clearCookie('auth_token', {
       httpOnly: true,

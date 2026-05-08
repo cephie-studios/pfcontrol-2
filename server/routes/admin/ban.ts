@@ -1,5 +1,5 @@
 import express from 'express';
-import posthog from '../../utils/posthog.js';
+import { capture } from '../../utils/posthog.js';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { banUser, unbanUser, getAllBans } from '../../db/ban.js';
@@ -91,7 +91,7 @@ router.post('/ban', async (req, res) => {
     },
   });
 
-  posthog.capture({ distinctId: req.user.userId, event: 'admin_user_banned', properties: { target_user_id: userId, target_ip: ip, reason, expires_at: expiresAt } });
+  capture(req,{ distinctId: req.user.userId, event: 'admin_user_banned', properties: { target_user_id: userId, target_ip: ip, reason, expires_at: expiresAt } });
 
   res.json({ success: true });
 });
@@ -135,7 +135,7 @@ router.post('/unban', async (req, res) => {
     },
   });
 
-  posthog.capture({ distinctId: req.user.userId, event: 'admin_user_unbanned', properties: { target: userIdOrIp } });
+  capture(req,{ distinctId: req.user.userId, event: 'admin_user_unbanned', properties: { target: userIdOrIp } });
 
   res.json({ success: true });
 });
@@ -172,7 +172,7 @@ router.post('/vpn-gate/toggle', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized: user not found in request' });
   }
   await updateVpnGateSetting('vpn_gate_enabled', enabled);
-  posthog.capture({ distinctId: req.user.userId, event: 'admin_vpn_gate_toggled', properties: { enabled } });
+  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_gate_toggled', properties: { enabled } });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',
@@ -209,7 +209,7 @@ router.post('/vpn-gate/exceptions', async (req, res) => {
     req.user.username || 'Unknown',
     notes || ''
   );
-  posthog.capture({ distinctId: req.user.userId, event: 'admin_vpn_exception_added', properties: { target_user_id: userId, target_username: resolvedUsername } });
+  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_exception_added', properties: { target_user_id: userId, target_username: resolvedUsername } });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',
@@ -232,7 +232,7 @@ router.delete('/vpn-gate/exceptions/:userId', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized: user not found in request' });
   }
   const removed = await removeVpnException(userId);
-  posthog.capture({ distinctId: req.user.userId, event: 'admin_vpn_exception_removed', properties: { target_user_id: userId } });
+  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_exception_removed', properties: { target_user_id: userId } });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',
