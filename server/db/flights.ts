@@ -28,11 +28,6 @@ function createUTCDate(): Date {
   );
 }
 
-export interface SnapImage {
-  cephie_id: string;
-  url: string;
-}
-
 export interface ClientFlight {
   id: string;
   session_id: string;
@@ -61,11 +56,6 @@ export interface ClientFlight {
   wtc?: string;
   hidden?: boolean;
   pdc_remarks?: string;
-  notes?: string;
-  acars_token?: string;
-  snap_images?: SnapImage[];
-  featured_on_profile?: boolean;
-  isPFATC?: boolean;
   user?: {
     id: string;
     discord_username: string;
@@ -203,28 +193,12 @@ export async function getFlightsByUser(userId: string) {
   try {
     const flights = await mainDb
       .selectFrom('flights')
-      .leftJoin('sessions', 'sessions.session_id', 'flights.session_id')
-      .select([
-        'flights.id', 'flights.session_id', 'flights.user_id', 'flights.ip_address',
-        'flights.callsign', 'flights.aircraft', 'flights.flight_type',
-        'flights.departure', 'flights.arrival', 'flights.alternate', 'flights.route',
-        'flights.sid', 'flights.star', 'flights.runway',
-        'flights.clearedfl', 'flights.cruisingfl',
-        'flights.stand', 'flights.gate', 'flights.remark',
-        'flights.flight_plan_time', 'flights.status', 'flights.clearance',
-        'flights.position', 'flights.squawk', 'flights.wtc', 'flights.hidden',
-        'flights.acars_token', 'flights.pdc_remarks', 'flights.notes',
-        'flights.created_at', 'flights.updated_at',
-        'sessions.is_pfatc',
-      ])
-      .where('flights.user_id', '=', userId)
-      .orderBy('flights.created_at', 'desc')
+      .selectAll()
+      .where('user_id', '=', userId)
+      .orderBy('created_at', 'desc')
       .execute();
 
-    return flights.map((flight) => ({
-      ...sanitizeFlightForOwner(flight as unknown as FlightsTable),
-      isPFATC: flight.is_pfatc ?? false,
-    }));
+    return flights.map((flight) => sanitizeFlightForClient(flight));
   } catch (error) {
     console.error(`Error fetching flights for user ${userId}:`, error);
     return [];
@@ -241,7 +215,7 @@ export async function getFlightByIdForUser(userId: string, flightId: string) {
       .where('user_id', '=', userId)
       .executeTakeFirst();
 
-    return flight ? sanitizeFlightForOwner(flight) : null;
+    return flight ? sanitizeFlightForClient(flight) : null;
   } catch (error) {
     console.error(`Error fetching flight ${flightId} for user ${userId}:`, error);
     return null;
@@ -254,7 +228,7 @@ export async function getFlightLogsForUser(userId: string, flightId: string) {
 
     const ownedFlight = await mainDb
       .selectFrom('flights')
-      .select(['id', 'created_at', 'user_id'])
+      .select(['id', 'created_at'])
       .where('id', '=', validFlightId)
       .where('user_id', '=', userId)
       .executeTakeFirst();
@@ -272,36 +246,20 @@ export async function getFlightLogsForUser(userId: string, flightId: string) {
 
     const logs = await mainDb
       .selectFrom('flight_logs')
-      .leftJoin('users', 'users.id', 'flight_logs.user_id')
-      .select([
-        'flight_logs.id',
-        'flight_logs.action',
-        'flight_logs.old_data',
-        'flight_logs.new_data',
-        'flight_logs.created_at',
-        'flight_logs.username',
-        'flight_logs.user_id',
-        'users.avatar as user_avatar_hash',
-      ])
-      .where('flight_logs.flight_id', '=', validFlightId)
-      .orderBy('flight_logs.created_at', 'desc')
+      .selectAll()
+      .where('flight_id', '=', validFlightId)
+      .orderBy('created_at', 'desc')
       .execute();
 
     return {
-      logs: logs.map((log) => ({
-        id: log.id,
-        action: log.action,
-        old_data: log.old_data,
-        new_data: log.new_data,
-        created_at: log.created_at,
-        username: log.username,
-        user_id: log.user_id,
-        avatar_url: log.user_avatar_hash
-          ? `https://cdn.discordapp.com/avatars/${log.user_id}/${log.user_avatar_hash}.png`
-          : null,
+      logs: logs.map((log: FlightLogsTable) => ({
+      id: log.id,
+      action: log.action,
+      old_data: log.old_data,
+      new_data: log.new_data,
+      created_at: log.created_at,
       })),
       logsDiscardedDueToAge,
-      pilotUserId: ownedFlight.user_id,
     };
   } catch (error) {
     console.error(
@@ -558,20 +516,6 @@ export async function getFlightById(sessionId: string, flightId: string) {
   );
 }
 
-export async function getPublicFlightById(flightId: string) {
-  const validFlightId = validateFlightId(flightId);
-
-  const flight = (await mainDb
-    .selectFrom('flights')
-    .selectAll()
-    .where('id', '=', validFlightId)
-    .executeTakeFirst()) ?? null;
-
-  // Only expose flights that have been submitted (have an acars_token)
-  if (!flight?.acars_token) return null;
-  return flight;
-}
-
 export async function updateFlight(
   sessionId: string,
   flightId: string,
@@ -625,133 +569,4 @@ export async function deleteFlight(sessionId: string, flightId: string) {
     .where('session_id', '=', validSessionId)
     .where('id', '=', validFlightId)
     .execute();
-}
-
-export async function updateFlightNotes(userId: string, flightId: string, notes: string) {
-  const validFlightId = validateFlightId(flightId);
-  await mainDb
-    .updateTable('flights')
-    .set({ notes, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .execute();
-}
-
-export async function addSnapImage(
-  userId: string,
-  flightId: string,
-  cephieId: string,
-  url: string
-): Promise<{ ok: boolean; snap_images?: Array<{ cephie_id: string; url: string }> }> {
-  const validFlightId = validateFlightId(flightId);
-
-  const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'snap_images'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .executeTakeFirst();
-
-  if (!flight) return { ok: false };
-
-  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
-  const updated = [...existing, { cephie_id: cephieId, url }];
-
-  await mainDb
-    .updateTable('flights')
-    .set({ snap_images: JSON.stringify(updated), updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .execute();
-
-  return { ok: true, snap_images: updated };
-}
-
-export async function deleteSnapImage(
-  userId: string,
-  flightId: string,
-  cephieId: string
-): Promise<{ ok: boolean; cephie_id?: string }> {
-  const validFlightId = validateFlightId(flightId);
-
-  const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'snap_images'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .executeTakeFirst();
-
-  if (!flight) return { ok: false };
-
-  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
-  const target = existing.find((img) => img.cephie_id === cephieId);
-  if (!target) return { ok: false };
-
-  const updated = existing.filter((img) => img.cephie_id !== cephieId);
-
-  await mainDb
-    .updateTable('flights')
-    .set({ snap_images: JSON.stringify(updated), updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .execute();
-
-  return { ok: true, cephie_id: cephieId };
-}
-
-export async function toggleFeaturedOnProfile(
-  userId: string,
-  flightId: string
-): Promise<{ ok: boolean; featured?: boolean }> {
-  const validFlightId = validateFlightId(flightId);
-
-  const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'featured_on_profile'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .executeTakeFirst();
-
-  if (!flight) return { ok: false };
-
-  const newValue = !flight.featured_on_profile;
-
-  await mainDb
-    .updateTable('flights')
-    .set({ featured_on_profile: newValue, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
-    .execute();
-
-  return { ok: true, featured: newValue };
-}
-
-export async function getFeaturedFlightsByUser(userId: string) {
-  try {
-    const flights = await mainDb
-      .selectFrom('flights')
-      .select([
-        'id', 'session_id', 'callsign', 'departure', 'arrival',
-        'aircraft', 'status', 'snap_images', 'featured_on_profile',
-        'created_at', 'acars_token',
-      ])
-      .where('user_id', '=', userId)
-      .where('featured_on_profile', '=', true)
-      .orderBy('created_at', 'desc')
-      .execute();
-
-    return flights.map((f) => ({
-      id: f.id,
-      callsign: f.callsign,
-      departure: f.departure,
-      arrival: f.arrival,
-      aircraft: f.aircraft,
-      status: f.status,
-      snap_images: (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [],
-      created_at: f.created_at,
-    }));
-  } catch (error) {
-    console.error(`Error fetching featured flights for user ${userId}:`, error);
-    return [];
-  }
 }

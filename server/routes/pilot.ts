@@ -3,7 +3,6 @@ import { getUserByUsername } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
-import { getFeaturedFlightsByUser } from '../db/flights.js';
 
 const router = express.Router();
 
@@ -61,8 +60,6 @@ router.get('/:username', async (req, res) => {
         ratingStats = await getControllerRatingStats(userResult.id);
     }
 
-    const featuredFlights = await getFeaturedFlightsByUser(userResult.id);
-
     const profile = {
       user: {
         id: userResult.id,
@@ -95,7 +92,6 @@ router.get('/:username', async (req, res) => {
           : null,
       },
       privacySettings,
-      featuredFlights,
     };
 
     res.json(profile);

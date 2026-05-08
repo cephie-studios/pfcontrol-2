@@ -1,5 +1,4 @@
 import { mainDb } from './connection.js';
-import { sql } from 'kysely';
 
 export async function createMainTables() {
   // app_settings
@@ -517,9 +516,4 @@ export async function createMainTables() {
     .addColumn('setting_value', 'boolean', (col) => col.notNull())
     .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
     .execute();
-
-  // Additive column migrations (safe to run on existing tables)
-  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS notes TEXT`.execute(mainDb);
-  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS snap_images JSONB DEFAULT '[]'`.execute(mainDb);
-  await sql`ALTER TABLE flights ADD COLUMN IF NOT EXISTS featured_on_profile BOOLEAN DEFAULT false`.execute(mainDb);
 }
