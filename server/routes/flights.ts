@@ -22,7 +22,7 @@ import {
   acarsValidationLimiter,
 } from '../middleware/rateLimiting.js';
 import { validateCallsign } from '../utils/validation.js';
-import posthog from '../utils/posthog.js';
+import { capture } from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -127,7 +127,7 @@ router.post('/claim', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Unable to claim flight' });
     }
 
-    posthog.capture({ distinctId: req.user.userId, event: 'flight_claimed', properties: { session_id: sessionId, flight_id: flightId } });
+    capture(req, { distinctId: req.user.userId, event: 'flight_claimed', properties: { session_id: sessionId, flight_id: flightId } });
 
     res.json({ success: true });
   } catch {
@@ -205,7 +205,7 @@ router.post('/:sessionId', flightCreationLimiter, optionalAuth, async (req, res)
 
     const submittingUserId = req.user?.userId;
     if (submittingUserId) {
-      posthog.capture({ distinctId: submittingUserId, event: 'flight_added', properties: { session_id: req.params.sessionId, callsign: req.body.callsign } });
+      capture(req, { distinctId: submittingUserId, event: 'flight_added', properties: { session_id: req.params.sessionId, callsign: req.body.callsign } });
     }
 
     const sanitizedFlight = flight
@@ -256,7 +256,7 @@ router.put(
 
       broadcastFlightEvent(req.params.sessionId, 'flightUpdated', flight);
 
-      if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'flight_updated', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
+      if (req.user?.userId) capture(req, { distinctId: req.user.userId, event: 'flight_updated', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
 
       res.json(flight);
     } catch {
@@ -278,7 +278,7 @@ router.delete(
         flightId: req.params.flightId,
       });
 
-      if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'flight_deleted', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
+      if (req.user?.userId) capture(req, { distinctId: req.user.userId, event: 'flight_deleted', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
 
       res.json({ success: true });
     } catch {

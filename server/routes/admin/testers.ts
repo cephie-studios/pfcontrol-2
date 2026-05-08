@@ -1,5 +1,5 @@
 import express from 'express';
-import posthog from '../../utils/posthog.js';
+import { capture } from '../../utils/posthog.js';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { logAdminAction } from '../../db/audit.js';
 import {
@@ -136,7 +136,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    posthog.capture({ distinctId: req.user.userId, event: 'admin_tester_added', properties: { target_user_id: userId, target_username: user.username } });
+    capture(req,{ distinctId: req.user.userId, event: 'admin_tester_added', properties: { target_user_id: userId, target_username: user.username } });
     res.json(tester);
   } catch (error) {
     console.error('Error adding tester:', error);
@@ -187,7 +187,7 @@ router.delete('/:userId', async (req, res) => {
       }
     }
 
-    if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'admin_tester_removed', properties: { target_user_id: userId, target_username: user?.username || removedTester.username } });
+    if (req.user?.userId) capture(req,{ distinctId: req.user.userId, event: 'admin_tester_removed', properties: { target_user_id: userId, target_username: user?.username || removedTester.username } });
     res.json({ message: 'Tester removed successfully', tester: removedTester });
   } catch (error) {
     console.error('Error removing tester:', error);
@@ -209,7 +209,7 @@ router.put('/settings', async (req, res) => {
       tester_gate_enabled
     );
 
-    if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'admin_tester_gate_toggled', properties: { enabled: tester_gate_enabled } });
+    if (req.user?.userId) capture(req,{ distinctId: req.user.userId, event: 'admin_tester_gate_toggled', properties: { enabled: tester_gate_enabled } });
 
     if (req.user?.userId) {
       try {
