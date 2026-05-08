@@ -458,10 +458,10 @@ export default function AdminApiLogs() {
                             >
                               <td className="px-6 py-4">
                                 <div className="text-sm text-white">
-                                  {formatTimeAgo(log.timestamp)}
+                                  {formatTimeAgo(log.created_at)}
                                 </div>
                                 <div className="text-xs text-zinc-500">
-                                  {formatDateTime(log.timestamp)}
+                                  {formatDateTime(log.created_at)}
                                 </div>
                               </td>
                               <td className="px-6 py-4">
@@ -553,7 +553,7 @@ export default function AdminApiLogs() {
                             </p>
                             <p>
                               <strong>Time:</strong>{' '}
-                              {formatTimeAgo(log.timestamp)}
+                              {formatTimeAgo(log.created_at)}
                             </p>
                           </div>
 
@@ -643,7 +643,7 @@ export default function AdminApiLogs() {
                     Timestamp
                   </h3>
                   <p className="text-white">
-                    {formatDateTime(selectedLog.timestamp)}
+                    {formatDateTime(selectedLog.created_at)}
                   </p>
                 </div>
                 <div className="bg-zinc-800 rounded-lg p-4">

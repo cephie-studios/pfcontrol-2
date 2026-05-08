@@ -21,7 +21,6 @@ import {
   removeVpnException,
   fetchIpLocation,
   type VpnException,
-  type IpLocationResult,
 } from '../../utils/fetch/admin';
 import Navbar from '../../components/Navbar';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -507,7 +506,7 @@ export default function AdminBan() {
                             {ex.notes && <p className="text-zinc-400 text-sm mt-1">{ex.notes}</p>}
                             <p className="text-zinc-500 text-xs mt-1">
                               Added by {ex.added_by_username}
-                              {ex.created_at && ` · ${new Date(ex.created_at).toLocaleDateString()}`}
+                              {ex.updated_at && ` · ${new Date(ex.updated_at).toLocaleDateString()}`}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => handleRemoveException(ex.user_id)}>

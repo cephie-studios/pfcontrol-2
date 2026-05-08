@@ -1,6 +1,7 @@
 import express from 'express';
 import { addControllerRating } from '../db/ratings.js';
 import requireAuth from '../middleware/auth.js';
+import posthog from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -24,6 +25,8 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     await addControllerRating(controllerId, pilotId, Number(rating), flightId);
+
+    posthog.capture({ distinctId: pilotId, event: 'controller_rated', properties: { controller_id: controllerId, rating: Number(rating), flight_id: flightId } });
 
     res.json({ success: true });
   } catch (error) {

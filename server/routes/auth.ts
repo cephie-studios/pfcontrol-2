@@ -8,6 +8,7 @@ import {
   updateRobloxAccount,
   unlinkRobloxAccount,
   updateTutorialStatus,
+  updateUserFingerprint,
 } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
@@ -20,6 +21,7 @@ import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
 import requireAuth, { requireAuthSoft } from '../middleware/auth.js';
+import posthog from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -135,7 +137,10 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     await recordLogin();
     if (isNewUser) {
       await recordNewUser();
+      posthog.capture({ distinctId: discordUser.id, event: 'user_signed_up', properties: { username: discordUser.username } });
     }
+
+    posthog.capture({ distinctId: discordUser.id, event: 'user_logged_in', properties: { username: discordUser.username, is_vpn: isVpn } });
 
     const payload = {
       userId: discordUser.id,
@@ -239,6 +244,8 @@ router.get('/roblox/callback', authLimiter, async (req, res) => {
       refreshToken: refresh_token,
     });
 
+    posthog.capture({ distinctId: userId, event: 'roblox_linked', properties: { roblox_username: robloxUser.preferred_username || robloxUser.name } });
+
     res.redirect(FRONTEND_URL + '/settings?roblox_linked=true');
   } catch (error) {
     console.error('Roblox auth error:', error);
@@ -251,6 +258,7 @@ router.post('/roblox/unlink', requireAuth, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkRobloxAccount(req.user.userId);
+    posthog.capture({ distinctId: req.user.userId, event: 'roblox_unlinked' });
     res.json({ success: true, message: 'Roblox account unlinked' });
   } catch (error) {
     console.error('Error unlinking Roblox:', error);
@@ -422,6 +430,8 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
       ratingLong: ratingLong || undefined,
     });
 
+    posthog.capture({ distinctId: userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
+
     res.redirect(FRONTEND_URL + '/settings?vatsim_linked=true');
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -558,6 +568,7 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
       ratingShort: fallbackShort || undefined,
       ratingLong: ratingLong2 || undefined,
     });
+    posthog.capture({ distinctId: req.user.userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
     res.json({
       success: true,
       vatsimCid: cid,
@@ -585,6 +596,7 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     const { unlinkVatsimAccount } = await import('../db/users.js');
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkVatsimAccount(req.user.userId);
+    posthog.capture({ distinctId: req.user.userId, event: 'vatsim_unlinked' });
     res.cookie('vatsim_force', '1', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -605,6 +617,7 @@ router.put('/tutorial', requireAuth, async (req, res) => {
     const { completed } = req.body;
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await updateTutorialStatus(req.user.userId, completed);
+    if (completed) posthog.capture({ distinctId: req.user.userId, event: 'tutorial_completed' });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to update tutorial status' });
@@ -613,6 +626,7 @@ router.put('/tutorial', requireAuth, async (req, res) => {
 
 // GET: /api/auth/me - get current user info
 router.get('/me', requireAuthSoft, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const user = await getUserById(req.user.userId);
@@ -623,28 +637,106 @@ router.get('/me', requireAuthSoft, async (req, res) => {
     const ip = getClientIp(req);
     const validIp = ip && ip !== 'unknown' ? ip : null;
 
-    const banCacheKey = `ban:${req.user.userId}`;
-    let isBanned: boolean;
+    let isBanned = false;
     try {
-      const cachedBan = await redisConnection.get(banCacheKey);
-      if (cachedBan === '1') {
+      const userBanCacheKey = `ban:${req.user.userId}`;
+      const cachedUserBan = await redisConnection.get(userBanCacheKey);
+      if (cachedUserBan === '1') {
         isBanned = true;
       } else {
-        const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
-        isBanned = !!banRecord;
-        if (isBanned) {
-          await redisConnection.setex(banCacheKey, BAN_CACHE_TTL, '1');
+        const userBanRecord = await isUserBanned(req.user.userId);
+        if (userBanRecord) {
+          isBanned = true;
+          await redisConnection.setex(userBanCacheKey, BAN_CACHE_TTL, '1');
+        } else if (validIp) {
+          const ipBanCacheKey = `ban:ip:${validIp}`;
+          const cachedIpBan = await redisConnection.get(ipBanCacheKey);
+          if (cachedIpBan === '1') {
+            isBanned = true;
+          } else {
+            const ipBanRecord = await isIpBanned(validIp);
+            if (ipBanRecord) {
+              isBanned = true;
+              await redisConnection.setex(ipBanCacheKey, BAN_CACHE_TTL, '1');
+            }
+          }
         }
       }
     } catch {
-      const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
-      isBanned = !!banRecord;
+      const userBanRecord = await isUserBanned(req.user.userId);
+      if (userBanRecord) {
+        isBanned = true;
+      } else if (validIp) {
+        const ipBanRecord = await isIpBanned(validIp);
+        isBanned = !!ipBanRecord;
+      }
+    }
+
+    // Return immediately for banned users — skip VPN checks and rank queries
+    // so the response isn't delayed by external API calls.
+    if (isBanned) {
+      return res.json({
+        userId: req.user.userId,
+        username: req.user.username,
+        discriminator: req.user.discriminator,
+        avatar: req.user.avatar
+          ? `https://cdn.discordapp.com/avatars/${req.user.userId}/${req.user.avatar}.png`
+          : null,
+        settings: user.settings || {},
+        lastLogin: user.lastLogin,
+        totalSessionsCreated: user.totalSessionsCreated || 0,
+        isAdmin: isAdmin(req.user.userId),
+        isBanned: true,
+        isVpnBlocked: false,
+        isTester: false,
+        roleId: user.roleId,
+        roleName: user.roleName,
+        rolePermissions: user.role_permissions || {},
+        robloxUserId: user.roblox_user_id,
+        robloxUsername: user.roblox_username,
+        vatsimCid: user.vatsim_cid,
+        vatsimRatingId: user.vatsim_rating_id,
+        vatsimRatingShort: user.vatsim_rating_short,
+        vatsimRatingLong: user.vatsim_rating_long,
+        statistics: user.statistics || {},
+        ranks: {},
+      });
     }
 
     const vpnGateEnabled = await isVpnGateEnabled();
     const isCurrentlyVpn = !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
     const isVpnBlocked =
       vpnGateEnabled && isCurrentlyVpn && !(await isVpnException(req.user.userId));
+
+    // Return immediately for VPN-blocked users — skip rank queries.
+    if (isVpnBlocked) {
+      return res.json({
+        userId: req.user.userId,
+        username: req.user.username,
+        discriminator: req.user.discriminator,
+        avatar: req.user.avatar
+          ? `https://cdn.discordapp.com/avatars/${req.user.userId}/${req.user.avatar}.png`
+          : null,
+        settings: user.settings || {},
+        lastLogin: user.lastLogin,
+        totalSessionsCreated: user.totalSessionsCreated || 0,
+        isAdmin: isAdmin(req.user.userId),
+        isBanned: false,
+        isVpnBlocked: true,
+        isTester: false,
+        roleId: user.roleId,
+        roleName: user.roleName,
+        rolePermissions: user.role_permissions || {},
+        robloxUserId: user.roblox_user_id,
+        robloxUsername: user.roblox_username,
+        vatsimCid: user.vatsim_cid,
+        vatsimRatingId: user.vatsim_rating_id,
+        vatsimRatingShort: user.vatsim_rating_short,
+        vatsimRatingLong: user.vatsim_rating_long,
+        statistics: user.statistics || {},
+        ranks: {},
+      });
+    }
 
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
@@ -698,6 +790,8 @@ router.put('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    posthog.capture({ distinctId: req.user.userId, event: 'settings_updated' });
+
     res.json({
       userId: req.user.userId,
       username: req.user.username,
@@ -716,8 +810,43 @@ router.put('/me', requireAuth, async (req, res) => {
   }
 });
 
+// POST: /api/auth/fingerprint - store browser fingerprint and check against ban list
+router.post('/fingerprint', requireAuthSoft, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { visitorId } = req.body;
+  if (!visitorId || typeof visitorId !== 'string' || visitorId.length < 8 || visitorId.length > 255) {
+    return res.status(400).json({ error: 'Invalid visitorId' });
+  }
+
+  try {
+    await updateUserFingerprint(req.user.userId, visitorId);
+
+    const fpToken = jwt.sign({ visitorId }, JWT_SECRET as string, { expiresIn: '7d' });
+    res.cookie('fp_token', fpToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d, matches JWT
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error processing fingerprint:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // POST: /api/auth/logout - log out user
 router.post('/logout', (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (token && JWT_SECRET) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string };
+      if (decoded?.userId) posthog.capture({ distinctId: decoded.userId, event: 'user_logged_out' });
+    } catch { /* invalid token, skip */ }
+  }
   res.clearCookie('auth_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -752,6 +881,8 @@ router.delete('/delete-account', requireAuth, async (req, res) => {
 
     const { deleteUser } = await import('../db/users.js');
     await deleteUser(userId);
+
+    posthog.capture({ distinctId: userId, event: 'account_deleted' });
 
     res.clearCookie('auth_token', {
       httpOnly: true,

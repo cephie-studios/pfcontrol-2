@@ -1,5 +1,5 @@
 import express from 'express';
-import requireAuth from '../middleware/auth.js';
+import requireAuth, { optionalAuth } from '../middleware/auth.js';
 import { requireFlightAccess } from '../middleware/flightAccess.js';
 import {
   getFlightsBySession,
@@ -22,6 +22,7 @@ import {
   acarsValidationLimiter,
 } from '../middleware/rateLimiting.js';
 import { validateCallsign } from '../utils/validation.js';
+import posthog from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -126,6 +127,8 @@ router.post('/claim', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Unable to claim flight' });
     }
 
+    posthog.capture({ distinctId: req.user.userId, event: 'flight_claimed', properties: { session_id: sessionId, flight_id: flightId } });
+
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to claim flight' });
@@ -180,7 +183,7 @@ router.get('/:sessionId', requireAuth, async (req, res) => {
 });
 
 // POST: /api/flights/:sessionId - add a flight to a session (for submit page and external access)
-router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
+router.post('/:sessionId', flightCreationLimiter, optionalAuth, async (req, res) => {
   try {
     if (req.body.callsign) {
       try {
@@ -199,6 +202,11 @@ router.post('/:sessionId', flightCreationLimiter, async (req, res) => {
     const flight = await addFlight(req.params.sessionId, flightData);
 
     await recordNewFlight();
+
+    const submittingUserId = req.user?.userId;
+    if (submittingUserId) {
+      posthog.capture({ distinctId: submittingUserId, event: 'flight_added', properties: { session_id: req.params.sessionId, callsign: req.body.callsign } });
+    }
 
     const sanitizedFlight = flight
       ? Object.fromEntries(
@@ -248,6 +256,8 @@ router.put(
 
       broadcastFlightEvent(req.params.sessionId, 'flightUpdated', flight);
 
+      if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'flight_updated', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
+
       res.json(flight);
     } catch {
       res.status(500).json({ error: 'Failed to update flight' });
@@ -267,6 +277,8 @@ router.delete(
       broadcastFlightEvent(req.params.sessionId, 'flightDeleted', {
         flightId: req.params.flightId,
       });
+
+      if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'flight_deleted', properties: { session_id: req.params.sessionId, flight_id: req.params.flightId } });
 
       res.json({ success: true });
     } catch {

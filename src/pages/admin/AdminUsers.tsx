@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Users,
   Search,
@@ -48,8 +48,9 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('search') ?? '');
   const [filterAdmin, setFilterAdmin] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -75,14 +76,15 @@ export default function AdminUsers() {
     { value: 'cached', label: 'Cached Users Only' },
   ];
 
-  // Debounce search input
+  // Debounce search input and sync to URL
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
+      setSearchParams(search ? { search } : {}, { replace: true });
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, setSearchParams]);
 
   const fetchData = useCallback(async () => {
     try {

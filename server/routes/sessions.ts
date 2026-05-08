@@ -23,6 +23,7 @@ import { encrypt, decrypt } from '../utils/encryption.js';
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
 import requireAuth from '../middleware/auth.js';
+import posthog from '../utils/posthog.js';
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
@@ -109,6 +110,8 @@ router.post(
       await addSessionToUser(createdBy, sessionId);
 
       await recordNewSession();
+
+      posthog.capture({ distinctId: createdBy, event: 'session_created', properties: { session_id: sessionId, airport_icao: airportIcao, is_pfatc: isPFATC, is_tutorial: isTutorial } });
 
       res.status(201).json({
         sessionId,
@@ -294,6 +297,7 @@ router.post(
       if (!updatedSession) {
         return res.status(404).json({ error: 'Session not found' });
       }
+      if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'session_renamed', properties: { session_id: sessionId } });
       res.json({ customName: updatedSession.custom_name });
     } catch (error) {
       console.error('Error updating session name:', error);
@@ -330,6 +334,7 @@ router.post('/delete', requireAuth, async (req: Request, res: Response) => {
 
     await deleteSession(sessionId);
     await removeSessionFromUser(session.created_by, sessionId);
+    posthog.capture({ distinctId: user.userId, event: 'session_deleted', properties: { session_id: sessionId, airport_icao: session.airport_icao } });
     res.json({ message: 'Session deleted successfully', sessionId });
   } catch (error) {
     console.error('Error deleting session:', error);
@@ -372,6 +377,8 @@ router.post(
       }
 
       await deleteSession(oldestSession.session_id);
+
+      posthog.capture({ distinctId: userId, event: 'session_deleted', properties: { session_id: oldestSession.session_id, airport_icao: oldestSession.airport_icao, auto_deleted: true } });
 
       res.json({
         message: 'Oldest session deleted successfully',

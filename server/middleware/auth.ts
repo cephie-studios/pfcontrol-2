@@ -49,6 +49,36 @@ export async function requireAuthSoft(
   }
 }
 
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  const token = req.cookies.auth_token;
+  if (!token) return next();
+
+  try {
+    if (!JWT_SECRET) return next();
+    const decoded = jwt.verify(token, JWT_SECRET as string) as JwtPayload;
+    const user = await getUserById(decoded.userId);
+    if (user) {
+      req.user = {
+        userId: decoded.userId,
+        username: decoded.username,
+        discriminator: decoded.discriminator,
+        avatar: decoded.avatar,
+        isAdmin: isAdmin(decoded.userId),
+        iat: decoded.iat,
+        exp: decoded.exp,
+      };
+    }
+  } catch {
+    // Invalid or expired token — proceed as anonymous
+  }
+
+  next();
+}
+
 export default async function requireAuth(
   req: Request,
   res: Response,
@@ -70,10 +100,8 @@ export default async function requireAuth(
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Extract client IP once — used for both IP ban and VPN checks
     const ip = getClientIp(req);
 
-    // User ID ban check — only cache confirmed bans ('1') to avoid race with banUser
     const banCacheKey = `ban:${decoded.userId}`;
     let isBanned: boolean;
     const cachedBan = await redisConnection.get(banCacheKey);
@@ -87,7 +115,7 @@ export default async function requireAuth(
       }
     }
 
-    // IP ban check — only cache confirmed bans ('1')
+
     const validIp = ip && ip !== 'unknown' ? ip : null;
     if (!isBanned && validIp) {
       const ipBanCacheKey = `ban:ip:${validIp}`;
@@ -106,6 +134,7 @@ export default async function requireAuth(
     if (isBanned) {
       return res.status(403).json({ error: 'Account is banned' });
     }
+
 
     // VPN gate check — block if stored flag OR current IP is detected as VPN
     const gateEnabled = await isVpnGateEnabled();

@@ -9,12 +9,21 @@ dotenv.config({ path: envFile });
 
 const ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY;
 const ALGORITHM = 'aes-256-gcm';
+const IP_HASH_SECRET = process.env.IP_HASH_SECRET;
 
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 128) {
   throw new Error('DB_ENCRYPTION_KEY must be 128 characters long');
 }
 
+if (!IP_HASH_SECRET) {
+  throw new Error('IP_HASH_SECRET env var is required');
+}
+
 const key = Buffer.from(ENCRYPTION_KEY, 'utf8').subarray(0, 32);
+
+export function hashIp(plaintextIp: string): string {
+  return crypto.createHmac('sha256', IP_HASH_SECRET!).update(plaintextIp).digest('hex');
+}
 
 export function encrypt(text: unknown) {
   if (!text) return null;

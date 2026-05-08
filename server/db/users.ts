@@ -1,4 +1,4 @@
-import { encrypt, decrypt } from '../utils/encryption.js';
+import { encrypt, decrypt, hashIp } from '../utils/encryption.js';
 import type { Settings } from './types/Settings.js';
 import { mainDb } from './connection.js';
 import { sql } from 'kysely';
@@ -324,6 +324,7 @@ export async function createOrUpdateUser(userData: {
   const encryptedIP = encrypt(ipAddress);
   const encryptedSettings = encrypt(defaultSettings);
   const encryptedSessions = encrypt([]);
+  const ipHash = ipAddress ? hashIp(ipAddress) : null;
 
   await mainDb
     .insertInto('users')
@@ -335,6 +336,7 @@ export async function createOrUpdateUser(userData: {
       access_token: JSON.stringify(encryptedAccessToken),
       refresh_token: JSON.stringify(encryptedRefreshToken),
       ip_address: JSON.stringify(encryptedIP),
+      ip_hash: ipHash,
       is_vpn: isVpn,
       settings: JSON.stringify(encryptedSettings),
       last_login: sql`NOW()`,
@@ -350,6 +352,7 @@ export async function createOrUpdateUser(userData: {
         refresh_token: JSON.stringify(encryptedRefreshToken),
         last_login: sql`NOW()`,
         ip_address: JSON.stringify(encryptedIP),
+        ip_hash: ipHash,
         is_vpn: isVpn,
         updated_at: sql`NOW()`,
       })
@@ -572,6 +575,16 @@ export async function updateUserStatistics(
       statistics: JSON.stringify(mergedStats),
       updated_at: sql`NOW()`,
     })
+    .where('id', '=', userId)
+    .execute();
+
+  await invalidateUserCache(userId);
+}
+
+export async function updateUserFingerprint(userId: string, fingerprintId: string) {
+  await mainDb
+    .updateTable('users')
+    .set({ fingerprint_id: fingerprintId, updated_at: sql`NOW()` })
     .where('id', '=', userId)
     .execute();
 

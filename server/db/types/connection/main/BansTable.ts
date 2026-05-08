@@ -8,4 +8,5 @@ export interface BansTable {
   banned_at?: Date;
   expires_at?: Date;
   active?: boolean;
+  fingerprint_id?: string | null;
 }

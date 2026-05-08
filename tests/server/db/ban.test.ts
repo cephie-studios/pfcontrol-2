@@ -152,6 +152,8 @@ describe('unbanUser', () => {
   beforeEach(() => {
     mocks.updateExecute.mockClear();
     mocks.updateExecute.mockResolvedValue(undefined);
+    mocks.countExecute.mockClear();
+    mocks.countExecute.mockResolvedValue([]);
     vi.mocked(redisConnection.del).mockClear();
     vi.mocked(redisConnection.del).mockResolvedValue(1);
   });

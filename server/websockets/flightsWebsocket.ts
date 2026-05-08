@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import {
   addFlight,
@@ -25,6 +26,7 @@ import {
 import type { Server as HTTPServer } from 'http';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
+import { getUserById } from '../db/users.js';
 import { isEventController } from '../middleware/flightAccess.js';
 import { broadcastFlightUpdate } from './overviewWebsocket.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
@@ -106,9 +108,21 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   io.on('connection', async (socket: Socket) => {
     const sessionId = socket.handshake.query.sessionId as string;
     const accessId = socket.handshake.query.accessId as string;
-    const userId = socket.handshake.query.userId as string;
     const isEventControllerFlag =
       socket.handshake.query.isEventController === 'true';
+
+    let userId = socket.handshake.query.userId as string;
+    try {
+      const cookieHeader = socket.handshake.headers.cookie ?? '';
+      const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
+      if (match) {
+        const JWT_SECRET = process.env.JWT_SECRET;
+        const decoded = jwt.verify(match[1], JWT_SECRET as string) as { userId: string };
+        if (decoded.userId) userId = decoded.userId;
+      }
+    } catch {
+      // Cookie absent or invalid — fall back to query param
+    }
 
     try {
       const validSessionId = validateSessionId(sessionId);
@@ -194,7 +208,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             sessionId,
             action: 'add',
             flightId: flight.id,
-            newData: sanitizedFlight,
+            newData: {
+              ...sanitizedFlight,
+              flight_owner_user_id: userId || null,
+              flight_owner_username: (socket.handshake.query.username as string) || null,
+            },
             ipAddress: getSocketClientIp(socket),
           });
         } catch {
@@ -290,10 +308,14 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
             const {
               acars_token: _,
-              user_id: __,
+              user_id: flightOwnerUserId,
               ip_address: ___,
               ...oldSanitized
             } = oldFlight || {};
+
+            const flightOwner = flightOwnerUserId
+              ? await getUserById(flightOwnerUserId)
+              : null;
 
             const changedData: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(updates)) {
@@ -307,7 +329,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
               sessionId,
               action: 'update',
               flightId: flightId as string,
-              oldData: oldSanitized,
+              oldData: {
+                ...oldSanitized,
+                flight_owner_user_id: flightOwnerUserId || null,
+                flight_owner_username: flightOwner?.username || null,
+              },
               newData: changedData,
               ipAddress: getSocketClientIp(socket),
             });
@@ -348,8 +374,12 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           .where('session_id', '=', sessionId)
           .where('id', '=', flightId as string)
           .executeTakeFirst();
-        const { acars_token, user_id, ip_address, ...sanitizedOldData } =
+        const { acars_token, user_id: flightOwnerUserId, ip_address, ...sanitizedOldData } =
           flightToDelete || {};
+
+        const flightOwner = flightOwnerUserId
+          ? await getUserById(flightOwnerUserId)
+          : null;
 
         await deleteFlight(sessionId, flightId as string);
         io.to(sessionId).emit('flightDeleted', { flightId });
@@ -360,7 +390,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           sessionId,
           action: 'delete',
           flightId: flightId as string,
-          oldData: sanitizedOldData,
+          oldData: {
+            ...sanitizedOldData,
+            flight_owner_user_id: flightOwnerUserId || null,
+            flight_owner_username: flightOwner?.username || null,
+          },
           ipAddress: getSocketClientIp(socket),
         });
       } catch {

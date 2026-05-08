@@ -163,14 +163,25 @@ export function setupOverviewWebsocket(
 
             await broadcastToArrivalSessions(updatedFlight);
 
+            const flightOwner = oldFlight?.user_id
+              ? await getUserById(oldFlight.user_id)
+              : null;
+
+            const { user_id: _uid, ip_address: _ip, acars_token: _at, ...oldSanitized } = oldFlight || {};
+            const newSanitized = updatedFlight ?? {};
+
             await logFlightAction({
               userId: socket.data.userId || 'unknown',
               username: socket.data.username || 'unknown',
               sessionId: validSessionId,
               action: 'update',
               flightId: flightId as string,
-              oldData: oldFlight,
-              newData: updatedFlight,
+              oldData: {
+                ...oldSanitized,
+                flight_owner_user_id: oldFlight?.user_id || null,
+                flight_owner_username: flightOwner?.username || null,
+              },
+              newData: newSanitized,
               ipAddress: socket.handshake.address,
             });
 

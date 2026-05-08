@@ -39,6 +39,7 @@ const AdminFlightLogs = lazy(() => import('./pages/admin/AdminFlightLogs'));
 const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
 const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
 const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
+const AdminAltDetection = lazy(() => import('./pages/admin/AdminAltDetection'));
 
 import {
   fetchActiveUpdateModal,
@@ -325,6 +326,14 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="admin">
                           <AdminRatings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="alts"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminAltDetection />
                         </ProtectedRoute>
                       }
                     />
