@@ -30,66 +30,6 @@ async function queryProxycheck(ip: string): Promise<boolean> {
   }
 }
 
-const inflightChecks = new Map<string, Promise<boolean>>();
-
-/**
- * Checks if an IP is a VPN/proxy, with Redis caching (TTL 30 days).
- * Returns false for private IPs or if PROXYCHECK_API_KEY is not set.
- * Deduplicates concurrent checks for the same IP so only one proxycheck
- * call is made even if many requests arrive before Redis is populated.
- */
-export async function isIpVpn(ip: string): Promise<boolean> {
-  if (isPrivateIp(ip)) return false;
-  if (!PROXYCHECK_API_KEY) return false;
-
-  const cacheKey = `vpn:ip:${ip}`;
-  try {
-    const cached = await redisConnection.get(cacheKey);
-    if (cached !== null) return cached === '1';
-  } catch {
-    // Redis unavailable — fall through to live check
-  }
-
-  const existing = inflightChecks.get(ip);
-  if (existing) return existing;
-
-  const promise = queryProxycheck(ip)
-    .then(async (isVpn) => {
-      try {
-        await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
-      } catch {
-        // Redis unavailable — skip caching
-      }
-      return isVpn;
-    })
-    .finally(() => {
-      inflightChecks.delete(ip);
-    });
-
-  inflightChecks.set(ip, promise);
-  return promise;
-}
-
-/**
- * Detects VPN for the request IP with Redis caching.
- * Use this for per-request checks to avoid hitting the external API on every call.
- */
-export async function isVpnRequest(req: Request): Promise<boolean> {
-  return isIpVpn(getClientIp(req));
-}
-
-/**
- * One-shot VPN detection for the login flow (no caching).
- * Result is stored as is_vpn in the user record.
- */
-export async function detectVPN(req: Request): Promise<boolean> {
-  const clientIp = getClientIp(req);
-
-  if (isPrivateIp(clientIp)) return false;
-
-  return queryProxycheck(clientIp);
-}
-
 const TOR_EXIT_LIST_URL = 'https://check.torproject.org/torbulkexitlist';
 const TOR_CACHE_KEY = 'tor:exit-nodes';
 const TOR_CACHE_TTL = 60 * 60; // 1 hour
@@ -138,4 +78,68 @@ export async function isTorExitNode(ip: string): Promise<boolean> {
   }
 
   return false;
+}
+
+const inflightChecks = new Map<string, Promise<boolean>>();
+
+/**
+ * Checks if an IP is a VPN/proxy/Tor exit node, with Redis caching (TTL 30 days).
+ * Tor is checked first via the cached exit node list. If not Tor, falls through to
+ * proxycheck. Deduplicates concurrent proxycheck calls for the same IP.
+ */
+export async function isIpVpn(ip: string): Promise<boolean> {
+  if (isPrivateIp(ip)) return false;
+
+  if (await isTorExitNode(ip)) return true;
+
+  if (!PROXYCHECK_API_KEY) return false;
+
+  const cacheKey = `vpn:ip:${ip}`;
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached !== null) return cached === '1';
+  } catch {
+    // Redis unavailable — fall through to live check
+  }
+
+  const existing = inflightChecks.get(ip);
+  if (existing) return existing;
+
+  const promise = queryProxycheck(ip)
+    .then(async (isVpn) => {
+      try {
+        await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
+      } catch {
+        // Redis unavailable — skip caching
+      }
+      return isVpn;
+    })
+    .finally(() => {
+      inflightChecks.delete(ip);
+    });
+
+  inflightChecks.set(ip, promise);
+  return promise;
+}
+
+/**
+ * Detects VPN/Tor for the request IP with Redis caching.
+ * Use this for per-request checks to avoid hitting the external API on every call.
+ */
+export async function isVpnRequest(req: Request): Promise<boolean> {
+  return isIpVpn(getClientIp(req));
+}
+
+/**
+ * One-shot VPN/Tor detection for the login flow (no proxycheck caching).
+ * Result is stored as is_vpn in the user record.
+ */
+export async function detectVPN(req: Request): Promise<boolean> {
+  const clientIp = getClientIp(req);
+
+  if (isPrivateIp(clientIp)) return false;
+
+  if (await isTorExitNode(clientIp)) return true;
+
+  return queryProxycheck(clientIp);
 }
