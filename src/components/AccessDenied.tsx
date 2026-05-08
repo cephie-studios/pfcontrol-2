@@ -109,12 +109,12 @@ export default function AccessDenied({
             <p className="text-sm mb-8 text-gray-500">
               To learn more about our VPN policy, please see{' '}
               <a
-                href="https://cephie.app/legal/vpn-policy"
+                href="https://cephie.app/legal"
                 className="underline text-blue-400 hover:text-blue-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                our policy
+                our privacy policy
               </a>
               . If you have any questions, create a ticket in our support server.
             </p>

@@ -719,7 +719,7 @@ router.put('/me', requireAuth, async (req, res) => {
 });
 
 // POST: /api/auth/fingerprint - store browser fingerprint and check against ban list
-router.post('/fingerprint', requireAuth, async (req, res) => {
+router.post('/fingerprint', requireAuthSoft, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { visitorId } = req.body;
