@@ -8,11 +8,17 @@
  * Generic 403s (e.g. "you don't own this session") are intentionally ignored
  * so they don't trigger a spurious user refresh.
  */
+import { posthog } from './posthog';
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
-  const res = await fetch(input, init);
+  const headers = new Headers(init?.headers);
+  const sessionId = posthog.get_session_id?.();
+  if (sessionId) headers.set('x-posthog-session-id', sessionId);
+
+  const res = await fetch(input, { ...init, headers });
 
   if (res.status === 403) {
     // Clone so the caller can still consume the original response body.
