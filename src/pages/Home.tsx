@@ -21,6 +21,8 @@ import Joyride, {
   type CallBackProps,
   STATUS,
 } from 'react-joyride-react19-compat';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
+import { posthog } from '../utils/posthog';
 import Modal from '../components/common/Modal';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';
@@ -71,19 +73,23 @@ export default function Home() {
   useEffect(() => {
     if (user && !user.settings?.tutorialCompleted && !startTutorial) {
       setShowTutorialPrompt(true);
+      posthog.capture('tutorial_prompt_shown');
     }
   }, [user, startTutorial]);
 
   const handleTutorialChoice = (start: boolean) => {
     setShowTutorialPrompt(false);
     if (start) {
+      posthog.capture('tutorial_prompt_accepted');
       window.location.href = '/?tutorial=true';
     } else {
+      posthog.capture('tutorial_prompt_declined');
       updateTutorialStatus(true);
     }
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
+    trackTutorialEvent('home', data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);

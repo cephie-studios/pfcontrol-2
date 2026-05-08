@@ -24,6 +24,7 @@ import Joyride, {
   type CallBackProps,
   STATUS,
 } from 'react-joyride-react19-compat';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
 import BackgroundImageSettings from '../components/Settings/BackgroundImageSettings';
 import SoundSettings from '../components/Settings/SoundSettings';
 import LayoutSettings from '../components/Settings/LayoutSettings';
@@ -285,6 +286,7 @@ export default function Settings() {
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
+    trackTutorialEvent('settings', data);
     const { status } = data;
     if (status === STATUS.FINISHED) {
       setShowTutorialCompleteModal(true);

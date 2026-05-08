@@ -23,6 +23,7 @@ import AccessDenied from './components/AccessDenied';
 import Loader from './components/common/Loader';
 import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
 import CanaryModal from './components/modals/CanaryModal';
+import PostHogPageView from './components/PostHogPageView';
 
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
@@ -134,6 +135,7 @@ export default function App() {
 
   return (
     <Router>
+      <PostHogPageView />
       <CanaryModal />
 
       {activeModal &&
