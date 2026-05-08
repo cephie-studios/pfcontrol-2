@@ -625,28 +625,106 @@ router.get('/me', requireAuthSoft, async (req, res) => {
     const ip = getClientIp(req);
     const validIp = ip && ip !== 'unknown' ? ip : null;
 
-    const banCacheKey = `ban:${req.user.userId}`;
-    let isBanned: boolean;
+    let isBanned = false;
     try {
-      const cachedBan = await redisConnection.get(banCacheKey);
-      if (cachedBan === '1') {
+      const userBanCacheKey = `ban:${req.user.userId}`;
+      const cachedUserBan = await redisConnection.get(userBanCacheKey);
+      if (cachedUserBan === '1') {
         isBanned = true;
       } else {
-        const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
-        isBanned = !!banRecord;
-        if (isBanned) {
-          await redisConnection.setex(banCacheKey, BAN_CACHE_TTL, '1');
+        const userBanRecord = await isUserBanned(req.user.userId);
+        if (userBanRecord) {
+          isBanned = true;
+          await redisConnection.setex(userBanCacheKey, BAN_CACHE_TTL, '1');
+        } else if (validIp) {
+          const ipBanCacheKey = `ban:ip:${validIp}`;
+          const cachedIpBan = await redisConnection.get(ipBanCacheKey);
+          if (cachedIpBan === '1') {
+            isBanned = true;
+          } else {
+            const ipBanRecord = await isIpBanned(validIp);
+            if (ipBanRecord) {
+              isBanned = true;
+              await redisConnection.setex(ipBanCacheKey, BAN_CACHE_TTL, '1');
+            }
+          }
         }
       }
     } catch {
-      const banRecord = (await isUserBanned(req.user.userId)) || (validIp ? await isIpBanned(validIp) : null);
-      isBanned = !!banRecord;
+      const userBanRecord = await isUserBanned(req.user.userId);
+      if (userBanRecord) {
+        isBanned = true;
+      } else if (validIp) {
+        const ipBanRecord = await isIpBanned(validIp);
+        isBanned = !!ipBanRecord;
+      }
+    }
+
+    // Return immediately for banned users — skip VPN checks and rank queries
+    // so the response isn't delayed by external API calls.
+    if (isBanned) {
+      return res.json({
+        userId: req.user.userId,
+        username: req.user.username,
+        discriminator: req.user.discriminator,
+        avatar: req.user.avatar
+          ? `https://cdn.discordapp.com/avatars/${req.user.userId}/${req.user.avatar}.png`
+          : null,
+        settings: user.settings || {},
+        lastLogin: user.lastLogin,
+        totalSessionsCreated: user.totalSessionsCreated || 0,
+        isAdmin: isAdmin(req.user.userId),
+        isBanned: true,
+        isVpnBlocked: false,
+        isTester: false,
+        roleId: user.roleId,
+        roleName: user.roleName,
+        rolePermissions: user.role_permissions || {},
+        robloxUserId: user.roblox_user_id,
+        robloxUsername: user.roblox_username,
+        vatsimCid: user.vatsim_cid,
+        vatsimRatingId: user.vatsim_rating_id,
+        vatsimRatingShort: user.vatsim_rating_short,
+        vatsimRatingLong: user.vatsim_rating_long,
+        statistics: user.statistics || {},
+        ranks: {},
+      });
     }
 
     const vpnGateEnabled = await isVpnGateEnabled();
     const isCurrentlyVpn = !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
     const isVpnBlocked =
       vpnGateEnabled && isCurrentlyVpn && !(await isVpnException(req.user.userId));
+
+    // Return immediately for VPN-blocked users — skip rank queries.
+    if (isVpnBlocked) {
+      return res.json({
+        userId: req.user.userId,
+        username: req.user.username,
+        discriminator: req.user.discriminator,
+        avatar: req.user.avatar
+          ? `https://cdn.discordapp.com/avatars/${req.user.userId}/${req.user.avatar}.png`
+          : null,
+        settings: user.settings || {},
+        lastLogin: user.lastLogin,
+        totalSessionsCreated: user.totalSessionsCreated || 0,
+        isAdmin: isAdmin(req.user.userId),
+        isBanned: false,
+        isVpnBlocked: true,
+        isTester: false,
+        roleId: user.roleId,
+        roleName: user.roleName,
+        rolePermissions: user.role_permissions || {},
+        robloxUserId: user.roblox_user_id,
+        robloxUsername: user.roblox_username,
+        vatsimCid: user.vatsim_cid,
+        vatsimRatingId: user.vatsim_rating_id,
+        vatsimRatingShort: user.vatsim_rating_short,
+        vatsimRatingLong: user.vatsim_rating_long,
+        statistics: user.statistics || {},
+        ranks: {},
+      });
+    }
 
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
