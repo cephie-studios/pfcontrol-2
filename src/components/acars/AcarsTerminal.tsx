@@ -21,14 +21,20 @@ export default function AcarsTerminal({
   handleRequestPDC,
   pdcRequested,
 }: TerminalProps) {
+
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700 flex items-center gap-2">
-        <TerminalIcon className="w-5 h-5 text-green-500" />
-        <span className="text-sm font-mono text-zinc-300">
+      {/* Top toolbar */}
+      <div className="bg-linear-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700 flex items-center gap-2">
+        <TerminalIcon className="w-5 h-5 text-green-500 shrink-0" />
+        <span className="text-sm font-mono text-zinc-300 truncate">
           {flightCallsign ? `${flightCallsign} ACARS` : 'ACARS Terminal'}
         </span>
+
+
       </div>
+
+      {/* Message area */}
       <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5 bg-black">
         {messages.map((msg) => (
           <div key={msg.id} className={getMessageColor(msg.type)}>
@@ -49,6 +55,8 @@ export default function AcarsTerminal({
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Bottom action bar */}
       <div className="bg-zinc-900 border-t border-zinc-800 p-3">
         <div className="flex gap-2">
           <Button
@@ -58,7 +66,7 @@ export default function AcarsTerminal({
             className={`text-left py-2 px-3 transition-colors items-start rounded-xl border-[0.5px] ${
               pdcRequested
                 ? 'bg-purple-600/20 border-purple-500 text-purple-200 hover:bg-purple-600/20 hover:border-purple-500 hover:text-purple-200 pointer-events-none'
-                : 'text-purple-600 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border-purple-700 hover:bg-purple-800/90 hover:border-purple-600 hover:text-purple-200'
+                : 'text-purple-600 bg-linear-to-br from-zinc-800/50 to-zinc-900/50 border-purple-700 hover:bg-purple-800/90 hover:border-purple-600 hover:text-purple-200'
             }`}
             disabled={pdcRequested}
           >
