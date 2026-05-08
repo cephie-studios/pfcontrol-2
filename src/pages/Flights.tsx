@@ -26,6 +26,8 @@ import Joyride, {
   type CallBackProps,
   STATUS,
 } from 'react-joyride-react19-compat';
+import { usePostHog } from '@posthog/react';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
 import Navbar from '../components/Navbar';
 import Toolbar from '../components/tools/Toolbar';
 import DepartureTable from '../components/tables/DepartureTable';
@@ -65,6 +67,7 @@ export default function Flights() {
   const accessId = searchParams.get('accessId') ?? undefined;
   const startTutorial = searchParams.get('tutorial') === 'true';
   const isMobile = useMediaQuery({ maxWidth: 1000 });
+  const posthog = usePostHog();
 
   const [accessError, setAccessError] = useState<string | null>(null);
   const [validatingAccess, setValidatingAccess] = useState(true);
@@ -916,7 +919,17 @@ export default function Flights() {
     }
   };
 
+  useEffect(() => {
+    if (!session) return;
+    posthog?.group('session', session.sessionId, {
+      airport_icao: session.airportIcao,
+      is_pfatc: session.isPFATC,
+    });
+    return () => { posthog?.resetGroups(); };
+  }, [session?.sessionId, posthog]);
+
   const handleJoyrideCallback = (data: CallBackProps) => {
+    trackTutorialEvent('flights', data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);

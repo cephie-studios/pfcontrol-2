@@ -13,6 +13,7 @@ import Joyride, {
   type CallBackProps,
   STATUS,
 } from 'react-joyride-react19-compat';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
 import Navbar from '../components/Navbar';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import RunwayDropdown from '../components/dropdowns/RunwayDropdown';
@@ -233,6 +234,7 @@ export default function Create() {
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
+    trackTutorialEvent('create', data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);
