@@ -104,11 +104,12 @@ app.use(
   })
 );
 
-app.get('/{*any}', (req, res) => {
+app.get('/{*any}', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
 });
 
 const server = http.createServer(app);
+server.setMaxListeners(25);
 
 // Redis pub/sub adapter to join sessions locally that are connected to different server instances e.g. production
 const pubClient = new Redis(process.env.REDIS_URL!);
