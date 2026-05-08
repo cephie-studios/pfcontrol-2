@@ -8,6 +8,7 @@ import {
 } from '../db/chats.js';
 import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 import requireAuth from '../middleware/auth.js';
+import posthog from '../utils/posthog.js';
 import { mainDb } from '../db/connection.js';
 import { decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
@@ -30,6 +31,7 @@ router.post('/global/:messageId/report', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid message ID' });
     }
     await reportGlobalChatMessage(messageId, user.userId, reason);
+    posthog.capture({ distinctId: user.userId, event: 'chat_message_reported', properties: { message_id: messageId, type: 'global' } });
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Global chat report error:', error);
@@ -154,6 +156,7 @@ router.post(
         avatar: user.avatar ?? '',
         message,
       });
+      posthog.capture({ distinctId: user.userId, event: 'chat_message_sent', properties: { session_id: req.params.sessionId } });
       res.status(201).json(chatMsg);
     } catch {
       res.status(500).json({ error: 'Failed to send message' });
@@ -208,6 +211,7 @@ router.post('/:sessionId/:messageId/report', requireAuth, async (req, res) => {
       user.userId,
       reason
     );
+    posthog.capture({ distinctId: user.userId, event: 'chat_message_reported', properties: { session_id: req.params.sessionId, message_id: messageId, type: 'session' } });
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Report error:', error);

@@ -2,6 +2,7 @@ import express from 'express';
 import requireAuth from '../middleware/auth.js';
 import { updateSession } from '../db/sessions.js';
 import { encrypt } from '../utils/encryption.js';
+import posthog from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -144,6 +145,8 @@ router.post('/generate', requireAuth, async (req, res) => {
     if (!updatedSession) {
       throw new Error('Failed to update session with ATIS data');
     }
+
+    if (req.user?.userId) posthog.capture({ distinctId: req.user.userId, event: 'atis_generated', properties: { session_id: sessionId, icao, ident } });
 
     res.json({
       text: generatedAtis,
