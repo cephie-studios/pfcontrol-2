@@ -30,9 +30,13 @@ async function queryProxycheck(ip: string): Promise<boolean> {
   }
 }
 
+const inflightChecks = new Map<string, Promise<boolean>>();
+
 /**
  * Checks if an IP is a VPN/proxy, with Redis caching (TTL 30 days).
  * Returns false for private IPs or if PROXYCHECK_API_KEY is not set.
+ * Deduplicates concurrent checks for the same IP so only one proxycheck
+ * call is made even if many requests arrive before Redis is populated.
  */
 export async function isIpVpn(ip: string): Promise<boolean> {
   if (isPrivateIp(ip)) return false;
@@ -46,15 +50,24 @@ export async function isIpVpn(ip: string): Promise<boolean> {
     // Redis unavailable — fall through to live check
   }
 
-  const isVpn = await queryProxycheck(ip);
+  const existing = inflightChecks.get(ip);
+  if (existing) return existing;
 
-  try {
-    await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
-  } catch {
-    // Redis unavailable — skip caching
-  }
+  const promise = queryProxycheck(ip)
+    .then(async (isVpn) => {
+      try {
+        await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
+      } catch {
+        // Redis unavailable — skip caching
+      }
+      return isVpn;
+    })
+    .finally(() => {
+      inflightChecks.delete(ip);
+    });
 
-  return isVpn;
+  inflightChecks.set(ip, promise);
+  return promise;
 }
 
 /**

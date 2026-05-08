@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentUser, logout as apiLogout } from '../../utils/fetch/auth';
 import { AuthContext } from './useAuth';
 import { useFingerprint } from './useFingerprint';
@@ -7,10 +7,13 @@ import type { User } from '../../types/user';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isRefreshing = useRef(false);
 
   useFingerprint(user?.userId);
 
   const refreshUser = async () => {
+    if (isRefreshing.current) return;
+    isRefreshing.current = true;
     setIsLoading(true);
     try {
       const currentUser = await getCurrentUser();
@@ -23,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     } finally {
       setIsLoading(false);
+      isRefreshing.current = false;
     }
   };
 

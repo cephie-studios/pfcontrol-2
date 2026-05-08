@@ -614,6 +614,7 @@ router.put('/tutorial', requireAuth, async (req, res) => {
 
 // GET: /api/auth/me - get current user info
 router.get('/me', requireAuthSoft, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const user = await getUserById(req.user.userId);
