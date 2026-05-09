@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import {
   Workflow,
   Calendar,
@@ -12,20 +12,16 @@ import {
   X,
   PlaneTakeoff,
   FolderOpen,
-} from 'lucide-react';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useSettings } from '../hooks/settings/useSettings';
-import {
-  fetchMySessions,
-  updateSessionName,
-  deleteSession,
-} from '../utils/fetch/sessions';
-import type { SessionInfo } from '../types/session';
-import { fetchFlights } from '../utils/fetch/flights';
-import { fetchBackgrounds } from '../utils/fetch/data';
-import Button from '../components/common/Button';
-import Loader from '../components/common/Loader';
-import TextInput from '../components/common/TextInput';
+} from "lucide-react";
+import { useAuth } from "../hooks/auth/useAuth";
+import { useSettings } from "../hooks/settings/useSettings";
+import { fetchMySessions, updateSessionName, deleteSession } from "../utils/fetch/sessions";
+import type { SessionInfo } from "../types/session";
+import { fetchFlights } from "../utils/fetch/flights";
+import { fetchBackgrounds } from "../utils/fetch/data";
+import Button from "../components/common/Button";
+import Loader from "../components/common/Loader";
+import TextInput from "../components/common/TextInput";
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -40,9 +36,9 @@ export default function Sessions() {
   const { settings } = useSettings();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [editingName, setEditingName] = useState<string | null>(null);
-  const [editNameValue, setEditNameValue] = useState('');
+  const [editNameValue, setEditNameValue] = useState("");
   const [savingName, setSavingName] = useState<string | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
@@ -66,11 +62,11 @@ export default function Sessions() {
             } catch {
               return { ...session, flightCount: 0 };
             }
-          })
+          }),
         );
         setSessions(sessionsWithCounts);
       })
-      .catch(() => setError('Failed to load sessions.'))
+      .catch(() => setError("Failed to load sessions."))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -80,7 +76,7 @@ export default function Sessions() {
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error('Error loading available images:', error);
+        console.error("Error loading available images:", error);
       }
     };
     loadImages();
@@ -91,37 +87,32 @@ export default function Sessions() {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
+      if (!filename || filename === "random" || filename === "favorites") {
         return filename;
       }
-      if (filename.startsWith('https://api.cephie.app/')) {
+      if (filename.startsWith("https://api.cephie.app/")) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === 'random') {
+    if (selectedImage === "random") {
       if (availableImages.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
       }
-    } else if (selectedImage === 'favorites') {
+    } else if (selectedImage === "favorites") {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
+        if (favImageUrl && favImageUrl !== "random" && favImageUrl !== "favorites") {
           bgImage = `url(${favImageUrl})`;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
         bgImage = `url(${imageUrl})`;
       }
     }
@@ -141,28 +132,25 @@ export default function Sessions() {
 
   const startEditingName = (sessionId: string, currentName: string) => {
     setEditingName(sessionId);
-    setEditNameValue(currentName || '');
+    setEditNameValue(currentName || "");
   };
 
   const saveSessionName = async (sessionId: string) => {
     if (!editNameValue.trim()) {
       setEditingName(null);
-      setEditNameValue('');
+      setEditNameValue("");
       return;
     }
     setSavingName(sessionId);
     try {
-      const { customName } = await updateSessionName(
-        sessionId,
-        editNameValue.trim()
-      );
+      const { customName } = await updateSessionName(sessionId, editNameValue.trim());
       setSessions((prev) =>
-        prev.map((s) => (s.sessionId === sessionId ? { ...s, customName } : s))
+        prev.map((s) => (s.sessionId === sessionId ? { ...s, customName } : s)),
       );
       setEditingName(null);
-      setEditNameValue('');
+      setEditNameValue("");
     } catch {
-      setError('Failed to update session name.');
+      setError("Failed to update session name.");
     } finally {
       setSavingName(null);
     }
@@ -177,12 +165,10 @@ export default function Sessions() {
     setDeleteInProgress(sessionToDelete);
     try {
       await deleteSession(sessionToDelete);
-      setSessions((prev) =>
-        prev.filter((s) => s.sessionId !== sessionToDelete)
-      );
+      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionToDelete));
       setSessionToDelete(null);
     } catch {
-      setError('Failed to delete session.');
+      setError("Failed to delete session.");
     } finally {
       setDeleteInProgress(null);
     }
@@ -204,9 +190,7 @@ export default function Sessions() {
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
           <AlertTriangle className="h-8 w-8 text-yellow-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Not logged in</h2>
-          <p className="text-gray-400 mb-6">
-            Please log in to view your sessions.
-          </p>
+          <p className="text-gray-400 mb-6">Please log in to view your sessions.</p>
           <Link
             to="/"
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full transition-all"
@@ -233,11 +217,11 @@ export default function Sessions() {
             className="absolute inset-0"
             style={{
               backgroundImage,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
               opacity: customLoaded ? 1 : 0,
-              transition: 'opacity 0.5s ease-in-out',
+              transition: "opacity 0.5s ease-in-out",
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
@@ -253,17 +237,17 @@ export default function Sessions() {
               <FolderOpen className="h-5 w-5 text-blue-400" />
               <span className="text-blue-400 text-sm font-semibold tracking-wider whitespace-nowrap">
                 {sessions.length}/{maxSessions} SESSION
-                {sessions.length === 1 ? '' : 'S'}
+                {sessions.length === 1 ? "" : "S"}
               </span>
             </div>
 
             <Button
-              onClick={() => (window.location.href = '/create')}
+              onClick={() => (window.location.href = "/create")}
               size="md"
               disabled={sessions.length >= maxSessions}
               className={`
                 whitespace-nowrap w-full sm:w-auto
-                ${sessions.length >= maxSessions ? 'opacity-50 cursor-not-allowed' : ''}
+                ${sessions.length >= maxSessions ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
               Create New Session
@@ -286,15 +270,11 @@ export default function Sessions() {
               <div className="p-4 bg-yellow-900/20 border-2 border-red-600/30 rounded-xl">
                 <div className="flex items-center">
                   <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-                  <span className="text-red-400 font-medium">
-                    Session limit reached
-                  </span>
+                  <span className="text-red-400 font-medium">Session limit reached</span>
                 </div>
                 <p className="text-red-200 mt-1">
-                  You have reached the maximum of {maxSessions} sessions.{' '}
-                  <span className="italic">
-                    Delete an old session to create a new one.
-                  </span>
+                  You have reached the maximum of {maxSessions} sessions.{" "}
+                  <span className="italic">Delete an old session to create a new one.</span>
                 </p>
               </div>
             )}
@@ -305,9 +285,7 @@ export default function Sessions() {
                   <Workflow className="h-12 w-12 text-blue-400" />
                 </div>
                 <h2 className="text-xl font-semibold mb-2">No sessions yet</h2>
-                <p className="text-gray-400 mb-6">
-                  You haven't created any sessions yet.
-                </p>
+                <p className="text-gray-400 mb-6">You haven't created any sessions yet.</p>
                 <Link
                   to="/create"
                   className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full transition-all"
@@ -331,18 +309,16 @@ export default function Sessions() {
                         <span className="font-medium truncate text-md">
                           {session.customName
                             ? session.customName
-                            : `${session.airportIcao || 'Unknown'} Session`}
+                            : `${session.airportIcao || "Unknown"} Session`}
                         </span>
-                        {session.isLegacy && (
-                          <Info className="h-4 w-4 text-yellow-400 ml-2" />
-                        )}
+                        {session.isLegacy && <Info className="h-4 w-4 text-yellow-400 ml-2" />}
                       </div>
                       <div className="space-y-2 text-sm text-gray-300">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                           {session.createdAt
                             ? new Date(session.createdAt).toLocaleString()
-                            : 'Date unavailable'}
+                            : "Date unavailable"}
                         </div>
                         {session.activeRunway && (
                           <div className="flex items-center">
@@ -351,19 +327,22 @@ export default function Sessions() {
                           </div>
                         )}
                         <div className="flex items-center">
-                          {session.isPFATC ? (
+                          {session.isAdvancedATC ? (
                             <>
                               <Workflow className="h-4 w-4 mr-2 text-blue-400" />
                               <span className="text-blue-400 font-medium">
-                                PFATC Session
+                                Advanced ATC Session
                               </span>
+                            </>
+                          ) : session.isPFATC ? (
+                            <>
+                              <Workflow className="h-4 w-4 mr-2 text-blue-400" />
+                              <span className="text-blue-400 font-medium">PFATC Session</span>
                             </>
                           ) : (
                             <>
                               <Workflow className="h-4 w-4 mr-2 text-green-400" />
-                              <span className="text-green-400 font-medium">
-                                Standard Session
-                              </span>
+                              <span className="text-green-400 font-medium">Standard Session</span>
                             </>
                           )}
                         </div>
@@ -378,10 +357,7 @@ export default function Sessions() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          startEditingName(
-                            session.sessionId,
-                            session.customName || ''
-                          )
+                          startEditingName(session.sessionId, session.customName || "")
                         }
                       >
                         <Pencil className="h-4 w-4" />
@@ -423,39 +399,31 @@ export default function Sessions() {
             </div>
 
             <div className="mb-6">
-              {sessions.find((s) => s.sessionId === sessionToDelete)
-                ?.isLegacy && (
+              {sessions.find((s) => s.sessionId === sessionToDelete)?.isLegacy && (
                 <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
                   <div className="flex items-center mb-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                    <span className="text-yellow-400 font-medium">
-                      Legacy Session
-                    </span>
+                    <span className="text-yellow-400 font-medium">Legacy Session</span>
                   </div>
                   <p className="text-sm text-yellow-200">
-                    This session uses old encryption. Deleting it is recommended
-                    for security.
+                    This session uses old encryption. Deleting it is recommended for security.
                   </p>
                 </div>
               )}
               <p className="text-gray-300 mb-2">
-                Are you sure you want to delete this session? This action cannot
-                be undone.
+                Are you sure you want to delete this session? This action cannot be undone.
               </p>
               <p className="text-sm text-gray-400">
-                Session:{' '}
+                Session:{" "}
                 <span className="font-medium">
-                  {sessions.find((s) => s.sessionId === sessionToDelete)
-                    ?.customName ||
+                  {sessions.find((s) => s.sessionId === sessionToDelete)?.customName ||
                     `${
-                      sessions.find((s) => s.sessionId === sessionToDelete)
-                        ?.airportIcao || 'Unknown'
+                      sessions.find((s) => s.sessionId === sessionToDelete)?.airportIcao ||
+                      "Unknown"
                     } Session`}
                 </span>
               </p>
-              <p className="text-sm text-gray-500 font-mono">
-                ID: {sessionToDelete}
-              </p>
+              <p className="text-sm text-gray-500 font-mono">ID: {sessionToDelete}</p>
             </div>
 
             <div className="flex justify-end space-x-3">
@@ -477,7 +445,7 @@ export default function Sessions() {
                     Deleting...
                   </>
                 ) : (
-                  'Delete Session'
+                  "Delete Session"
                 )}
               </Button>
             </div>
@@ -504,8 +472,7 @@ export default function Sessions() {
             </div>
             <div className="mb-6">
               <p className="text-gray-300 mb-4">
-                Change the name for this session. This helps you identify it
-                more easily.
+                Change the name for this session. This helps you identify it more easily.
               </p>
               <TextInput
                 value={editNameValue}
@@ -514,8 +481,8 @@ export default function Sessions() {
                 disabled={savingName === editingName}
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveSessionName(editingName);
-                  if (e.key === 'Escape') setEditingName(null);
+                  if (e.key === "Enter") saveSessionName(editingName);
+                  if (e.key === "Escape") setEditingName(null);
                 }}
               />
             </div>
@@ -538,7 +505,7 @@ export default function Sessions() {
                     Saving...
                   </>
                 ) : (
-                  'Save Name'
+                  "Save Name"
                 )}
               </Button>
             </div>

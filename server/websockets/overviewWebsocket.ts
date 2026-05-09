@@ -1,65 +1,58 @@
-import { Server as SocketServer } from 'socket.io';
-import { getAllSessions } from '../db/sessions.js';
-import {
-  getFlightsBySessionWithTime,
-  updateFlight,
-  getFlightById,
-} from '../db/flights.js';
-import { decrypt } from '../utils/encryption.js';
-import { getUserById } from '../db/users.js';
-import { validateFlightId, validateSessionId } from '../utils/validation.js';
+import { Server as SocketServer } from "socket.io";
+import { getAllSessions } from "../db/sessions.js";
+import { getFlightsBySessionWithTime, updateFlight, getFlightById } from "../db/flights.js";
+import { decrypt } from "../utils/encryption.js";
+import { getUserById } from "../db/users.js";
+import { validateFlightId, validateSessionId } from "../utils/validation.js";
 import {
   sanitizeCallsign,
   sanitizeString,
   sanitizeSquawk,
   sanitizeFlightLevel,
   sanitizeRunway,
-} from '../utils/sanitization.js';
-import { isEventController } from '../middleware/flightAccess.js';
-import { incrementStat } from '../utils/statisticsCache.js';
-import { logFlightAction } from '../db/flightLogs.js';
-import type { Server as HTTPServer } from 'http';
-import type { SessionUsersServer } from './sessionUsersWebsocket.js';
-import type { Flight } from '../utils/flightUtils.js';
-import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+} from "../utils/sanitization.js";
+import { isEventController } from "../middleware/flightAccess.js";
+import { incrementStat } from "../utils/statisticsCache.js";
+import { logFlightAction } from "../db/flightLogs.js";
+import type { Server as HTTPServer } from "http";
+import type { SessionUsersServer } from "./sessionUsersWebsocket.js";
+import type { Flight } from "../utils/flightUtils.js";
+import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
+import { isAdvancedNetworkSession, getNetworkKind } from "../utils/advancedNetworkSession.js";
 
 let io: SocketServer;
 const activeOverviewClients = new Set<string>();
 const eventControllerClients = new Set<string>();
 
-export function setupOverviewWebsocket(
-  httpServer: HTTPServer,
-  sessionUsersIO: SessionUsersServer
-) {
+export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: SessionUsersServer) {
   io = new SocketServer(httpServer, {
-    path: '/sockets/overview',
-    allowRequest: createHandshakeRateLimiter({ scope: 'overview' }),
+    path: "/sockets/overview",
+    allowRequest: createHandshakeRateLimiter({ scope: "overview" }),
     cors: {
       origin: [
-        'http://localhost:5173',
-        'http://localhost:9901',
-        'https://pfcontrol.com',
-        'https://canary.pfcontrol.com',
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
       ],
       credentials: true,
     },
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     allowEIO3: true,
     perMessageDeflate: {
       threshold: 1024,
     },
   });
 
-  io.engine.on('connection_error', (err) => {
-    console.error('[Overview Socket] Engine connection error:', err);
+  io.engine.on("connection_error", (err) => {
+    console.error("[Overview Socket] Engine connection error:", err);
   });
 
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     activeOverviewClients.add(socket.id);
 
     const userId = socket.handshake.query.userId as string;
-    const isEventControllerFlag =
-      socket.handshake.query.isEventController === 'true';
+    const isEventControllerFlag = socket.handshake.query.isEventController === "true";
 
     if (isEventControllerFlag && userId) {
       const hasEventControllerRole = await isEventController(userId);
@@ -67,21 +60,20 @@ export function setupOverviewWebsocket(
         eventControllerClients.add(socket.id);
         socket.data.isEventController = true;
         socket.data.userId = userId;
-        socket.data.username =
-          (socket.handshake.query.username as string) || 'Unknown';
+        socket.data.username = (socket.handshake.query.username as string) || "Unknown";
       }
     }
 
     try {
       const overviewData = await getOverviewData(sessionUsersIO);
-      socket.emit('overviewData', overviewData);
+      socket.emit("overviewData", overviewData);
     } catch (error) {
-      console.error('[Overview Socket] Error sending initial data:', error);
-      socket.emit('overviewError', { error: 'Failed to fetch overview data' });
+      console.error("[Overview Socket] Error sending initial data:", error);
+      socket.emit("overviewError", { error: "Failed to fetch overview data" });
     }
 
     socket.on(
-      'updateFlight',
+      "updateFlight",
       async ({
         sessionId,
         flightId,
@@ -92,10 +84,10 @@ export function setupOverviewWebsocket(
         updates: Record<string, unknown>;
       }) => {
         if (!socket.data.isEventController) {
-          socket.emit('flightError', {
-            action: 'update',
+          socket.emit("flightError", {
+            action: "update",
             flightId,
-            error: 'Not authorized',
+            error: "Not authorized",
           });
           return;
         }
@@ -104,77 +96,71 @@ export function setupOverviewWebsocket(
           const validSessionId = validateSessionId(sessionId);
           validateFlightId(flightId);
 
-          if (Object.prototype.hasOwnProperty.call(updates, 'hidden')) {
+          if (Object.prototype.hasOwnProperty.call(updates, "hidden")) {
             return;
           }
 
-          if (updates.callsign && typeof updates.callsign === 'string')
+          if (updates.callsign && typeof updates.callsign === "string")
             updates.callsign = sanitizeCallsign(updates.callsign);
-          if (updates.remark && typeof updates.remark === 'string')
+          if (updates.remark && typeof updates.remark === "string")
             updates.remark = sanitizeString(updates.remark, 500);
-          if (updates.squawk && typeof updates.squawk === 'string')
+          if (updates.squawk && typeof updates.squawk === "string")
             updates.squawk = sanitizeSquawk(updates.squawk);
-          if (updates.clearedFL && typeof updates.clearedFL === 'string')
+          if (updates.clearedFL && typeof updates.clearedFL === "string")
             updates.clearedFL = sanitizeFlightLevel(updates.clearedFL);
-          if (updates.cruisingFL && typeof updates.cruisingFL === 'string')
+          if (updates.cruisingFL && typeof updates.cruisingFL === "string")
             updates.cruisingFL = sanitizeFlightLevel(updates.cruisingFL);
-          if (updates.runway && typeof updates.runway === 'string')
+          if (updates.runway && typeof updates.runway === "string")
             updates.runway = sanitizeRunway(updates.runway);
-          if (updates.stand && typeof updates.stand === 'string')
+          if (updates.stand && typeof updates.stand === "string")
             updates.stand = sanitizeString(updates.stand, 8);
-          if (updates.gate && typeof updates.gate === 'string')
+          if (updates.gate && typeof updates.gate === "string")
             updates.gate = sanitizeString(updates.gate, 8);
-          if (updates.sid && typeof updates.sid === 'string')
+          if (updates.sid && typeof updates.sid === "string")
             updates.sid = sanitizeString(updates.sid, 16);
-          if (updates.star && typeof updates.star === 'string')
+          if (updates.star && typeof updates.star === "string")
             updates.star = sanitizeString(updates.star, 16);
 
           if (updates.clearance !== undefined) {
-            if (typeof updates.clearance === 'string') {
-              updates.clearance = updates.clearance.toLowerCase() === 'true';
+            if (typeof updates.clearance === "string") {
+              updates.clearance = updates.clearance.toLowerCase() === "true";
             }
           }
 
-          const oldFlight = await getFlightById(
-            validSessionId,
-            flightId as string
-          );
+          const oldFlight = await getFlightById(validSessionId, flightId as string);
 
-          const updatedFlight = await updateFlight(
-            validSessionId,
-            flightId as string,
-            updates
-          );
+          const updatedFlight = await updateFlight(validSessionId, flightId as string, updates);
 
           if (updatedFlight) {
-            socket.emit('flightUpdateAck', { flightId, updates });
+            socket.emit("flightUpdateAck", { flightId, updates });
 
-            io.emit('flightUpdated', {
+            io.emit("flightUpdated", {
               sessionId: validSessionId,
               flight: updatedFlight,
             });
 
-            const flightsIO = (
-              await import('./flightsWebsocket.js')
-            ).getFlightsIO();
+            const flightsIO = (await import("./flightsWebsocket.js")).getFlightsIO();
             if (flightsIO) {
-              flightsIO.to(validSessionId).emit('flightUpdated', updatedFlight);
+              flightsIO.to(validSessionId).emit("flightUpdated", updatedFlight);
             }
 
-            await broadcastToArrivalSessions(updatedFlight);
+            await broadcastToArrivalSessions(updatedFlight, validSessionId);
 
-            const flightOwner = oldFlight?.user_id
-              ? await getUserById(oldFlight.user_id)
-              : null;
+            const flightOwner = oldFlight?.user_id ? await getUserById(oldFlight.user_id) : null;
 
-            const { user_id: _uid, ip_address: _ip, acars_token: _at, ...oldSanitized } = oldFlight || {};
+            const {
+              user_id: _uid,
+              ip_address: _ip,
+              acars_token: _at,
+              ...oldSanitized
+            } = oldFlight || {};
             const newSanitized = updatedFlight ?? {};
 
             await logFlightAction({
-              userId: socket.data.userId || 'unknown',
-              username: socket.data.username || 'unknown',
+              userId: socket.data.userId || "unknown",
+              username: socket.data.username || "unknown",
               sessionId: validSessionId,
-              action: 'update',
+              action: "update",
               flightId: flightId as string,
               oldData: {
                 ...oldSanitized,
@@ -186,37 +172,31 @@ export function setupOverviewWebsocket(
             });
 
             if (socket.data.userId) {
-              incrementStat(
-                socket.data.userId,
-                'total_flight_edits',
-                1,
-                'total_edit_actions'
-              );
+              incrementStat(socket.data.userId, "total_flight_edits", 1, "total_edit_actions");
             }
 
             // Removed redundant overviewData broadcast - already sent every 30s
           } else {
-            socket.emit('flightError', {
-              action: 'update',
+            socket.emit("flightError", {
+              action: "update",
               flightId,
-              error: 'Flight not found',
+              error: "Flight not found",
             });
           }
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          console.error('Error updating flight via overview socket:', error);
-          socket.emit('flightError', {
-            action: 'update',
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error("Error updating flight via overview socket:", error);
+          socket.emit("flightError", {
+            action: "update",
             flightId,
-            error: errorMessage || 'Failed to update flight',
+            error: errorMessage || "Failed to update flight",
           });
         }
-      }
+      },
     );
 
     socket.on(
-      'contactMe',
+      "contactMe",
       async ({
         sessionId,
         flightId,
@@ -231,10 +211,10 @@ export function setupOverviewWebsocket(
         position?: string;
       }) => {
         if (!socket.data.isEventController) {
-          socket.emit('flightError', {
-            action: 'contactMe',
+          socket.emit("flightError", {
+            action: "contactMe",
             flightId,
-            error: 'Not authorized',
+            error: "Not authorized",
           });
           return;
         }
@@ -245,13 +225,11 @@ export function setupOverviewWebsocket(
 
           const sanitizedMessage = message
             ? sanitizeString(message, 200)
-            : 'CONTACT CONTROLLER ON FREQUENCY';
+            : "CONTACT CONTROLLER ON FREQUENCY";
 
-          const flightsIO = (
-            await import('./flightsWebsocket.js')
-          ).getFlightsIO();
+          const flightsIO = (await import("./flightsWebsocket.js")).getFlightsIO();
           if (flightsIO) {
-            flightsIO.to(validSessionId).emit('contactMe', {
+            flightsIO.to(validSessionId).emit("contactMe", {
               flightId,
               message: sanitizedMessage,
               station: station ? sanitizeString(station, 50) : undefined,
@@ -260,28 +238,23 @@ export function setupOverviewWebsocket(
             });
           }
         } catch (error) {
-          console.error('Error sending contact message:', error);
-          socket.emit('flightError', {
-            action: 'contactMe',
+          console.error("Error sending contact message:", error);
+          socket.emit("flightError", {
+            action: "contactMe",
             flightId,
-            error: 'Failed to send contact message',
+            error: "Failed to send contact message",
           });
         }
-      }
+      },
     );
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       activeOverviewClients.delete(socket.id);
       eventControllerClients.delete(socket.id);
     });
 
-    socket.on('error', (error) => {
-      console.error(
-        '[Overview Socket] Socket error for',
-        socket.id,
-        ':',
-        error
-      );
+    socket.on("error", (error) => {
+      console.error("[Overview Socket] Socket error for", socket.id, ":", error);
     });
   });
 
@@ -289,16 +262,16 @@ export function setupOverviewWebsocket(
     if (activeOverviewClients.size > 0) {
       try {
         const overviewData = await getOverviewData(sessionUsersIO);
-        io.emit('overviewData', overviewData);
+        io.emit("overviewData", overviewData);
       } catch (error) {
-        console.error('Error broadcasting overview data:', error);
+        console.error("Error broadcasting overview data:", error);
       }
     }
   }, 30000); // Changed from 5s to 30s to reduce bandwidth usage
 
   // Cleanup on shutdown
-  process.on('SIGTERM', () => {
-    console.log('[Overview] Cleaning up intervals...');
+  process.on("SIGTERM", () => {
+    console.log("[Overview] Cleaning up intervals...");
     clearInterval(overviewBroadcastInterval);
     activeOverviewClients.clear();
     eventControllerClients.clear();
@@ -307,63 +280,58 @@ export function setupOverviewWebsocket(
   return io;
 }
 
-async function broadcastToArrivalSessions(flight: Flight): Promise<void> {
+async function broadcastToArrivalSessions(flight: Flight, sourceSessionId: string): Promise<void> {
   try {
     if (!flight.arrival) return;
 
     const allSessions = await getAllSessions();
+    const sourceSession = allSessions.find((s) => s.session_id === sourceSessionId);
+    const networkKind = sourceSession ? getNetworkKind(sourceSession) : null;
+    if (!networkKind) return;
+
     const arrivalSessions = allSessions.filter(
       (session) =>
-        session.is_pfatc &&
-        typeof flight.arrival === 'string' &&
-        session.airport_icao === flight.arrival.toUpperCase()
+        getNetworkKind(session) === networkKind &&
+        typeof flight.arrival === "string" &&
+        session.airport_icao === flight.arrival.toUpperCase(),
     );
 
-    const arrivalsIO = (await import('./arrivalsWebsocket.js')).getArrivalsIO();
+    const arrivalsIO = (await import("./arrivalsWebsocket.js")).getArrivalsIO();
     if (arrivalsIO) {
       for (const session of arrivalSessions) {
-        arrivalsIO.to(session.session_id).emit('arrivalUpdated', flight);
+        arrivalsIO.to(session.session_id).emit("arrivalUpdated", flight);
       }
     }
   } catch (error) {
-    console.error('Error broadcasting to arrival sessions:', error);
+    console.error("Error broadcasting to arrival sessions:", error);
   }
 }
 
 export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
   try {
-    const { getActiveSectorControllers } = await import(
-      './sectorControllerWebsocket.js'
-    );
+    const { getActiveSectorControllers } = await import("./sectorControllerWebsocket.js");
     const sectorControllers = await getActiveSectorControllers();
 
     const allSessions = await getAllSessions();
-    const pfatcSessions = allSessions.filter((session) => session.is_pfatc);
+    const networkSessions = allSessions.filter((session) => isAdvancedNetworkSession(session));
     const activeSessions = [];
 
-    for (const session of pfatcSessions) {
-      const sessionUsers = await sessionUsersIO.getActiveUsersForSession(
-        session.session_id
-      );
+    for (const session of networkSessions) {
+      const sessionUsers = await sessionUsersIO.getActiveUsersForSession(session.session_id);
       const isActive = sessionUsers && sessionUsers.length > 0;
 
       if (isActive) {
         try {
-          const flights = await getFlightsBySessionWithTime(
-            session.session_id,
-            1
-          );
+          const flights = await getFlightsBySessionWithTime(session.session_id, 1);
 
           let atisData = null;
           if (session.atis) {
             try {
               const encryptedAtis =
-                typeof session.atis === 'string'
-                  ? JSON.parse(session.atis)
-                  : session.atis;
+                typeof session.atis === "string" ? JSON.parse(session.atis) : session.atis;
               atisData = decrypt(encryptedAtis);
             } catch (err) {
-              console.error('Error decrypting ATIS:', err);
+              console.error("Error decrypting ATIS:", err);
             }
           }
 
@@ -376,34 +344,28 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
               if (user.id) {
                 try {
                   const userData = await getUserById(user.id);
-                  hasVatsimRating =
-                    userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
+                  hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
 
                   if (userData?.avatar) {
                     avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
                   }
 
                   if (user.roles) {
-                    isEventController = user.roles.some(
-                      (role) => role.name === 'Event Controller'
-                    );
+                    isEventController = user.roles.some((role) => role.name === "Event Controller");
                   }
                 } catch (err) {
-                  console.error(
-                    'Error fetching user data for controller badges:',
-                    err
-                  );
+                  console.error("Error fetching user data for controller badges:", err);
                 }
               }
 
               return {
-                username: user.username || 'Unknown',
-                role: user.position || 'APP',
+                username: user.username || "Unknown",
+                role: user.position || "APP",
                 avatar,
                 hasVatsimRating,
                 isEventController,
               };
-            })
+            }),
           );
 
           activeSessions.push({
@@ -413,6 +375,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
             createdAt: session.created_at,
             createdBy: session.created_by,
             isPFATC: session.is_pfatc,
+            isAdvancedATC: Boolean(session.is_advanced_atc),
             activeUsers: sessionUsers.length,
             controllers: controllers,
             atis: atisData,
@@ -420,10 +383,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
             flightCount: flights ? flights.length : 0,
           });
         } catch (error) {
-          console.error(
-            `Error fetching flights for session ${session.session_id}:`,
-            error
-          );
+          console.error(`Error fetching flights for session ${session.session_id}:`, error);
 
           const controllers = await Promise.all(
             sessionUsers.map(async (user) => {
@@ -441,13 +401,13 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
               }
 
               return {
-                username: user.username || 'Unknown',
-                role: user.position || 'APP',
+                username: user.username || "Unknown",
+                role: user.position || "APP",
                 avatar,
                 hasVatsimRating: false,
                 isEventController: false,
               };
-            })
+            }),
           );
 
           activeSessions.push({
@@ -457,6 +417,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
             createdAt: session.created_at,
             createdBy: session.created_by,
             isPFATC: session.is_pfatc,
+            isAdvancedATC: Boolean(session.is_advanced_atc),
             activeUsers: sessionUsers.length,
             controllers: controllers,
             atis: null,
@@ -474,8 +435,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
 
       try {
         const userData = await getUserById(sectorController.id);
-        hasVatsimRating =
-          userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
+        hasVatsimRating = userData?.vatsim_rating_id && userData.vatsim_rating_id > 1;
 
         if (userData?.avatar && !avatar) {
           avatar = `https://cdn.discordapp.com/avatars/${sectorController.id}/${userData.avatar}.png`;
@@ -483,16 +443,16 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
 
         if (sectorController.roles) {
           isEventController = sectorController.roles.some(
-            (role) => role.name === 'Event Controller'
+            (role) => role.name === "Event Controller",
           );
         }
       } catch (err) {
-        console.error('Error fetching user data for sector controller:', err);
+        console.error("Error fetching user data for sector controller:", err);
       }
 
       const controllerData = {
-        username: sectorController.username || 'Unknown',
-        role: 'CTR',
+        username: sectorController.username || "Unknown",
+        role: "CTR",
         avatar,
         hasVatsimRating,
         isEventController,
@@ -505,6 +465,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
         createdAt: new Date(sectorController.joinedAt).toISOString(),
         createdBy: sectorController.id,
         isPFATC: true,
+        isAdvancedATC: false,
         activeUsers: 1,
         controllers: [controllerData],
         atis: null,
@@ -513,7 +474,7 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
       });
     }
 
-    type ArrivalFlight = (typeof activeSessions)[number]['flights'][number] & {
+    type ArrivalFlight = (typeof activeSessions)[number]["flights"][number] & {
       sessionId: string;
       departureAirport: string;
     };
@@ -538,15 +499,12 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
     return {
       activeSessions,
       totalActiveSessions: activeSessions.length,
-      totalFlights: activeSessions.reduce(
-        (sum, session) => sum + session.flightCount,
-        0
-      ),
+      totalFlights: activeSessions.reduce((sum, session) => sum + session.flightCount, 0),
       arrivalsByAirport,
       lastUpdated: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error in getOverviewData:', error);
+    console.error("Error in getOverviewData:", error);
     throw error;
   }
 }
@@ -561,10 +519,10 @@ export function hasOverviewClients() {
 
 export function broadcastFlightUpdate(sessionId: string, flight: Flight) {
   if (!io) {
-    console.error('Overview IO not initialized');
+    console.error("Overview IO not initialized");
     return;
   }
-  io.emit('flightUpdated', {
+  io.emit("flightUpdated", {
     sessionId,
     flight,
   });

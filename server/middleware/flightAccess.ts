@@ -1,44 +1,40 @@
-import { Request, Response, NextFunction } from 'express';
-import { mainDb } from '../db/connection.js';
-import { getUserRoles } from '../db/roles.js';
+import { Request, Response, NextFunction } from "express";
+import { mainDb } from "../db/connection.js";
+import { getUserRoles } from "../db/roles.js";
+import { isAdvancedNetworkSession } from "../utils/advancedNetworkSession.js";
 
-export async function requireFlightAccess(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function requireFlightAccess(req: Request, res: Response, next: NextFunction) {
   try {
     const { sessionId } = req.params;
     const userId = req.user?.userId;
 
     if (!sessionId || !userId) {
       return res.status(400).json({
-        error: 'Session ID and authentication are required',
+        error: "Session ID and authentication are required",
       });
     }
 
     const session = await mainDb
-      .selectFrom('sessions')
-      .select(['session_id', 'access_id', 'created_by', 'is_pfatc'])
-      .where('session_id', '=', sessionId)
+      .selectFrom("sessions")
+      .select(["session_id", "access_id", "created_by", "is_pfatc", "is_advanced_atc"])
+      .where("session_id", "=", sessionId)
       .executeTakeFirst();
 
     if (!session) {
       return res.status(404).json({
-        error: 'Session not found',
+        error: "Session not found",
       });
     }
 
     const userRoles = await getUserRoles(userId);
     const hasEventControllerRole = userRoles.some(
-      (role) =>
-        role.name === 'event_controller' || role.name === 'Event Controller'
+      (role) => role.name === "event_controller" || role.name === "Event Controller",
     );
 
     if (hasEventControllerRole) {
-      if (!session.is_pfatc) {
+      if (!isAdvancedNetworkSession(session)) {
         return res.status(403).json({
-          error: 'Event controllers can only modify PFATC sessions',
+          error: "Event controllers can only modify PFATC or Advanced ATC network sessions",
         });
       }
       return next();
@@ -54,12 +50,12 @@ export async function requireFlightAccess(
     }
 
     return res.status(403).json({
-      error: 'Not authorized to modify flights in this session',
+      error: "Not authorized to modify flights in this session",
     });
   } catch (error) {
-    console.error('Flight access validation error:', error);
+    console.error("Flight access validation error:", error);
     return res.status(500).json({
-      error: 'Failed to verify flight access permissions',
+      error: "Failed to verify flight access permissions",
     });
   }
 }
@@ -68,11 +64,10 @@ export async function isEventController(userId: string): Promise<boolean> {
   try {
     const userRoles = await getUserRoles(userId);
     return userRoles.some(
-      (role) =>
-        role.name === 'event_controller' || role.name === 'Event Controller'
+      (role) => role.name === "event_controller" || role.name === "Event Controller",
     );
   } catch (error) {
-    console.error('Error checking event controller status:', error);
+    console.error("Error checking event controller status:", error);
     return false;
   }
 }
@@ -80,13 +75,13 @@ export async function isEventController(userId: string): Promise<boolean> {
 export async function canModifySession(
   userId: string,
   sessionId: string,
-  accessId?: string
+  accessId?: string,
 ): Promise<boolean> {
   try {
     const session = await mainDb
-      .selectFrom('sessions')
-      .select(['session_id', 'access_id', 'created_by', 'is_pfatc'])
-      .where('session_id', '=', sessionId)
+      .selectFrom("sessions")
+      .select(["session_id", "access_id", "created_by", "is_pfatc", "is_advanced_atc"])
+      .where("session_id", "=", sessionId)
       .executeTakeFirst();
 
     if (!session) {
@@ -94,7 +89,7 @@ export async function canModifySession(
     }
 
     const hasEventControllerRole = await isEventController(userId);
-    if (hasEventControllerRole && session.is_pfatc) {
+    if (hasEventControllerRole && isAdvancedNetworkSession(session)) {
       return true;
     }
 
@@ -108,7 +103,7 @@ export async function canModifySession(
 
     return false;
   } catch (error) {
-    console.error('Error checking session modification permissions:', error);
+    console.error("Error checking session modification permissions:", error);
     return false;
   }
 }

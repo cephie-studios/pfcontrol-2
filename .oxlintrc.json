@@ -123,6 +123,13 @@
         "sampleRate": "readonly",
         "WorkletGlobalScope": "readonly"
       }
+    },
+    {
+      "files": ["server/**/*.ts"],
+      "env": {
+        "node": true,
+        "es2020": true
+      }
     }
   ]
 }

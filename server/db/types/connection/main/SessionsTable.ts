@@ -6,6 +6,7 @@ export interface SessionsTable {
   created_at?: Date;
   created_by: string;
   is_pfatc?: boolean;
+  is_advanced_atc?: boolean;
   flight_strips?: unknown;
   atis?: unknown;
   custom_name?: string;

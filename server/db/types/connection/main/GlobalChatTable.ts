@@ -10,4 +10,5 @@ export interface GlobalChatTable {
   user_mentions?: unknown;
   sent_at?: Date;
   deleted_at?: Date | null;
+  network_kind?: string;
 }

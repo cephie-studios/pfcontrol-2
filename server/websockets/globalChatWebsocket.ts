@@ -1,28 +1,34 @@
-import { Server as SocketServer } from 'socket.io';
-import { mainDb } from '../db/connection.js';
-import { reportGlobalChatMessage } from '../db/chats.js';
-import { sanitizeMessage } from '../utils/sanitization.js';
-import {
-  containsHateSpeech,
-  getHateSpeechReason,
-} from '../utils/hateSpeechFilter.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import { sql } from 'kysely';
-import type { Server } from 'http';
-import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { Server as SocketServer } from "socket.io";
+import { mainDb } from "../db/connection.js";
+import { reportGlobalChatMessage } from "../db/chats.js";
+import { sanitizeMessage } from "../utils/sanitization.js";
+import { containsHateSpeech, getHateSpeechReason } from "../utils/hateSpeechFilter.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { sql } from "kysely";
+import type { Server } from "http";
+import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
 
-const activeGlobalChatUsers = new Set<string>();
+const activeGlobalChatUsers = new Map<string, Set<string>>([
+  ["pfatc", new Set()],
+  ["aatc", new Set()],
+]);
 const connectedGlobalChatUsers = new Map<
   string,
-  {
-    id: string;
-    username: string;
-    avatar: string | null;
-    station: string | null;
-    position: string | null;
-    lastSeen: number;
-  }
->();
+  Map<
+    string,
+    {
+      id: string;
+      username: string;
+      avatar: string | null;
+      station: string | null;
+      position: string | null;
+      lastSeen: number;
+    }
+  >
+>([
+  ["pfatc", new Map()],
+  ["aatc", new Map()],
+]);
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
 
 // Cleanup inactive users from connectedGlobalChatUsers
@@ -30,14 +36,16 @@ const cleanupInactiveGlobalUsers = () => {
   const now = Date.now();
   const INACTIVE_THRESHOLD = 5 * 60 * 1000;
   let removedCount = 0;
-  
-  for (const [userId, userData] of connectedGlobalChatUsers.entries()) {
-    if (now - userData.lastSeen > INACTIVE_THRESHOLD) {
-      connectedGlobalChatUsers.delete(userId);
-      removedCount++;
+
+  for (const networkMap of connectedGlobalChatUsers.values()) {
+    for (const [userId, userData] of networkMap.entries()) {
+      if (now - userData.lastSeen > INACTIVE_THRESHOLD) {
+        networkMap.delete(userId);
+        removedCount++;
+      }
     }
   }
-  
+
   if (removedCount > 0) {
     console.log(`[GlobalChat] Cleaned up ${removedCount} inactive users`);
   }
@@ -47,7 +55,7 @@ const globalChatCleanupInterval = setInterval(cleanupInactiveGlobalUsers, 2 * 60
 
 interface SessionUsersWebsocketIO {
   getActiveUsersForSession?(
-    sessionId: string
+    sessionId: string,
   ): Promise<Array<{ id: string; username: string; position?: string }>>;
   sendMentionToUser(userId: string, mentionData: MentionData): void;
 }
@@ -79,22 +87,22 @@ interface GlobalChatMessage {
 
 export function setupGlobalChatWebsocket(
   httpServer: Server,
-  sessionUsersWebsocketIO: SessionUsersWebsocketIO
+  sessionUsersWebsocketIO: SessionUsersWebsocketIO,
 ) {
   sessionUsersIO = sessionUsersWebsocketIO;
 
   const io = new SocketServer(httpServer, {
-    path: '/sockets/global-chat',
+    path: "/sockets/global-chat",
     allowRequest: createHandshakeRateLimiter({
-      scope: 'global-chat',
+      scope: "global-chat",
       maxAttempts: 500,
     }),
     cors: {
       origin: [
-        'http://localhost:5173',
-        'http://localhost:9901',
-        'https://pfcontrol.com',
-        'https://canary.pfcontrol.com',
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
       ],
       credentials: true,
     },
@@ -107,25 +115,21 @@ export function setupGlobalChatWebsocket(
     async () => {
       try {
         await mainDb
-          .updateTable('global_chat')
+          .updateTable("global_chat")
           .set({ deleted_at: sql`(NOW() AT TIME ZONE 'UTC')` })
           .where((eb) =>
-            eb(
-              sql`sent_at`,
-              '<',
-              sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`
-            )
+            eb(sql`sent_at`, "<", sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`),
           )
-          .where('deleted_at', 'is', null)
+          .where("deleted_at", "is", null)
           .execute();
       } catch (error) {
-        console.error('[Global Chat] Error cleaning old messages:', error);
+        console.error("[Global Chat] Error cleaning old messages:", error);
       }
     },
-    5 * 60 * 1000
+    5 * 60 * 1000,
   );
 
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     const userId = Array.isArray(socket.handshake.query.userId)
       ? socket.handshake.query.userId[0]
       : socket.handshake.query.userId;
@@ -138,6 +142,12 @@ export function setupGlobalChatWebsocket(
       ? socket.handshake.query.position[0]
       : socket.handshake.query.position;
 
+    const rawNetworkKind = Array.isArray(socket.handshake.query.networkKind)
+      ? socket.handshake.query.networkKind[0]
+      : socket.handshake.query.networkKind;
+    const networkKind: "pfatc" | "aatc" = rawNetworkKind === "aatc" ? "aatc" : "pfatc";
+    const roomName = networkKind === "aatc" ? "aatc-chat" : "global-chat";
+
     if (!userId) {
       socket.disconnect(true);
       return;
@@ -145,29 +155,31 @@ export function setupGlobalChatWebsocket(
 
     try {
       const user = await mainDb
-        .selectFrom('users')
-        .select(['username'])
-        .where('id', '=', userId)
+        .selectFrom("users")
+        .select(["username"])
+        .where("id", "=", userId)
         .executeTakeFirst();
-      socket.data.username = user?.username || 'Unknown';
+      socket.data.username = user?.username || "Unknown";
     } catch (error) {
-      console.error('[Global Chat] Error fetching username:', error);
-      socket.data.username = 'Unknown';
+      console.error("[Global Chat] Error fetching username:", error);
+      socket.data.username = "Unknown";
     }
 
     socket.data.userId = userId;
     socket.data.station = station;
     socket.data.position = position;
+    socket.data.networkKind = networkKind;
+    socket.data.roomName = roomName;
 
-    socket.join('global-chat');
+    socket.join(roomName);
     socket.join(`user-${userId}`);
 
-    if (station && !connectedGlobalChatUsers.has(userId)) {
+    if (station && !connectedGlobalChatUsers.get(networkKind)!.has(userId)) {
       try {
         const user = await mainDb
-          .selectFrom('users')
-          .select(['username', 'avatar'])
-          .where('id', '=', userId)
+          .selectFrom("users")
+          .select(["username", "avatar"])
+          .where("id", "=", userId)
           .executeTakeFirst();
 
         let avatarUrl = null;
@@ -175,7 +187,8 @@ export function setupGlobalChatWebsocket(
           avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${user.avatar}.png`;
         }
 
-        connectedGlobalChatUsers.set(userId, {
+        const networkMap = connectedGlobalChatUsers.get(networkKind)!;
+        networkMap.set(userId, {
           id: userId,
           username: socket.data.username,
           avatar: avatarUrl,
@@ -184,46 +197,44 @@ export function setupGlobalChatWebsocket(
           lastSeen: Date.now(),
         });
 
-        io.to('global-chat').emit(
-          'connectedGlobalChatUsers',
-          Array.from(connectedGlobalChatUsers.values())
-        );
+        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
       } catch (error) {
-        console.error('[Global Chat] Error fetching user data:', error);
-        connectedGlobalChatUsers.set(userId, {
+        console.error("[Global Chat] Error fetching user data:", error);
+        const networkMap = connectedGlobalChatUsers.get(networkKind)!;
+        networkMap.set(userId, {
           id: userId,
-          username: 'Unknown',
+          username: "Unknown",
           avatar: null,
           station: station,
           position: position || null,
           lastSeen: Date.now(),
         });
-        io.to('global-chat').emit(
-          'connectedGlobalChatUsers',
-          Array.from(connectedGlobalChatUsers.values())
-        );
+        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
       }
     }
 
-    socket.on('globalTyping', ({ username }: { username: string }) => {
-      socket.broadcast.emit('globalUserTyping', { userId, username: socket.data.username });
+    socket.on("globalTyping", ({ username }: { username: string }) => {
+      socket.broadcast
+        .to(roomName)
+        .emit("globalUserTyping", { userId, username: socket.data.username });
     });
 
-    socket.on('globalChatMessage', async ({ user, message }) => {
+    socket.on("globalChatMessage", async ({ user, message }) => {
       if (!message || message.length > 500 || user.userId !== socket.data.userId) return;
 
       const sanitizedMessage = sanitizeMessage(message, 500);
       if (!sanitizedMessage) return;
 
       if (socket.data.station) {
-        const existingUser = connectedGlobalChatUsers.get(user.userId);
+        const existingUser = connectedGlobalChatUsers.get(networkKind)!.get(user.userId);
 
         let avatarUrl = user.avatar;
-        if (user.avatar && !user.avatar.startsWith('http')) {
+        if (user.avatar && !user.avatar.startsWith("http")) {
           avatarUrl = `https://cdn.discordapp.com/avatars/${user.userId}/${user.avatar}.png`;
         }
 
-        connectedGlobalChatUsers.set(user.userId, {
+        const networkMap = connectedGlobalChatUsers.get(networkKind)!;
+        networkMap.set(user.userId, {
           id: user.userId,
           username: socket.data.username,
           avatar: avatarUrl || existingUser?.avatar || null,
@@ -231,10 +242,7 @@ export function setupGlobalChatWebsocket(
           position: socket.data.position || null,
           lastSeen: Date.now(),
         });
-        io.to('global-chat').emit(
-          'connectedGlobalChatUsers',
-          Array.from(connectedGlobalChatUsers.values())
-        );
+        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
       }
 
       const parsedAirportMentions = parseAirportMentions(sanitizedMessage);
@@ -242,19 +250,17 @@ export function setupGlobalChatWebsocket(
 
       const hasHateSpeech = containsHateSpeech(sanitizedMessage);
       const automodded = hasHateSpeech;
-      const automodReason = hasHateSpeech
-        ? getHateSpeechReason(sanitizedMessage)
-        : undefined;
+      const automodReason = hasHateSpeech ? getHateSpeechReason(sanitizedMessage) : undefined;
 
       const encryptedMsg = encrypt(sanitizedMessage);
       if (!encryptedMsg) {
-        socket.emit('chatError', { message: 'Failed to encrypt message' });
+        socket.emit("chatError", { message: "Failed to encrypt message" });
         return;
       }
 
       try {
         const result = await mainDb
-          .insertInto('global_chat')
+          .insertInto("global_chat")
           .values({
             id: sql`DEFAULT`,
             user_id: user.userId,
@@ -264,46 +270,41 @@ export function setupGlobalChatWebsocket(
             position: socket.data.position ?? undefined,
             message: JSON.stringify(encryptedMsg),
             airport_mentions:
-              parsedAirportMentions.length > 0
-                ? JSON.stringify(parsedAirportMentions)
-                : undefined,
+              parsedAirportMentions.length > 0 ? JSON.stringify(parsedAirportMentions) : undefined,
             user_mentions:
-              parsedUserMentions.length > 0
-                ? JSON.stringify(parsedUserMentions)
-                : undefined,
+              parsedUserMentions.length > 0 ? JSON.stringify(parsedUserMentions) : undefined,
             sent_at: sql`NOW()`,
+            network_kind: networkKind,
           })
           .returning([
-            'id',
-            'user_id',
-            'username',
-            'avatar',
-            'station',
-            'position',
-            'message',
-            'airport_mentions',
-            'user_mentions',
-            'sent_at',
+            "id",
+            "user_id",
+            "username",
+            "avatar",
+            "station",
+            "position",
+            "message",
+            "airport_mentions",
+            "user_mentions",
+            "sent_at",
           ])
           .executeTakeFirst();
 
         if (!result) {
-          socket.emit('chatError', { message: 'Failed to send message' });
+          socket.emit("chatError", { message: "Failed to send message" });
           return;
         }
 
-        let decryptedMessage = '';
+        let decryptedMessage = "";
         try {
           if (result.message) {
             const encryptedData =
-              typeof result.message === 'string'
-                ? JSON.parse(result.message)
-                : result.message;
-            decryptedMessage = decrypt(encryptedData) || '';
+              typeof result.message === "string" ? JSON.parse(result.message) : result.message;
+            decryptedMessage = decrypt(encryptedData) || "";
           }
         } catch (e) {
-          console.error('[Global Chat] Error decrypting message:', e);
-          decryptedMessage = '';
+          console.error("[Global Chat] Error decrypting message:", e);
+          decryptedMessage = "";
         }
 
         let airportMentions = null;
@@ -313,13 +314,13 @@ export function setupGlobalChatWebsocket(
           if (Array.isArray(result.airport_mentions)) {
             airportMentions = result.airport_mentions;
           } else if (
-            typeof result.airport_mentions === 'string' &&
+            typeof result.airport_mentions === "string" &&
             result.airport_mentions.trim()
           ) {
             try {
               airportMentions = JSON.parse(result.airport_mentions);
             } catch (e) {
-              console.error('[Global Chat] Error parsing airport mentions:', e);
+              console.error("[Global Chat] Error parsing airport mentions:", e);
               airportMentions = null;
             }
           }
@@ -328,14 +329,11 @@ export function setupGlobalChatWebsocket(
         if (result.user_mentions) {
           if (Array.isArray(result.user_mentions)) {
             userMentions = result.user_mentions;
-          } else if (
-            typeof result.user_mentions === 'string' &&
-            result.user_mentions.trim()
-          ) {
+          } else if (typeof result.user_mentions === "string" && result.user_mentions.trim()) {
             try {
               userMentions = JSON.parse(result.user_mentions);
             } catch (e) {
-              console.error('[Global Chat] Error parsing user mentions:', e);
+              console.error("[Global Chat] Error parsing user mentions:", e);
               userMentions = null;
             }
           }
@@ -369,139 +367,139 @@ export function setupGlobalChatWebsocket(
           automodded,
         };
 
-        io.to('global-chat').emit('globalChatMessage', formattedMsg);
+        io.to(roomName).emit("globalChatMessage", formattedMsg);
 
         if (automodded) {
-          socket.emit('messageAutomodded', {
+          socket.emit("messageAutomodded", {
             messageId: chatMsg.id,
-            reason: automodReason || 'Content violation detected',
+            reason: automodReason || "Content violation detected",
           });
 
           try {
             await reportGlobalChatMessage(
               chatMsg.id,
-              'automod',
-              automodReason || 'Content violation detected'
+              "automod",
+              automodReason || "Content violation detected",
             );
           } catch (error) {
-            console.error(
-              '[Global Chat] Error reporting automodded message:',
-              error
-            );
+            console.error("[Global Chat] Error reporting automodded message:", error);
           }
         }
 
         if (userMentions && userMentions.length > 0) {
           try {
             const users = await mainDb
-              .selectFrom('users')
-              .select(['id', 'username'])
-              .where('username', 'in', userMentions)
+              .selectFrom("users")
+              .select(["id", "username"])
+              .where("username", "in", userMentions)
               .execute();
 
             for (const mentionedUser of users) {
-              io.to(`user-${mentionedUser.id}`).emit('globalChatMention', {
-                messageId: String(chatMsg.id),
-                mentionedUserId: mentionedUser.id,
-                mentionerUsername: user.username || 'Unknown',
-                message: chatMsg.message,
-                timestamp: chatMsg.sent_at.toISOString(),
-              });
+              io.to(roomName)
+                .to(`user-${mentionedUser.id}`)
+                .emit("globalChatMention", {
+                  messageId: String(chatMsg.id),
+                  mentionedUserId: mentionedUser.id,
+                  mentionerUsername: user.username || "Unknown",
+                  message: chatMsg.message,
+                  timestamp: chatMsg.sent_at.toISOString(),
+                });
             }
           } catch (error) {
-            console.error('[Global Chat] Error sending user mentions:', error);
+            console.error("[Global Chat] Error sending user mentions:", error);
           }
         }
 
         if (airportMentions && airportMentions.length > 0) {
           for (const airport of airportMentions) {
-            io.to('global-chat').emit('airportMention', {
+            io.to(roomName).emit("airportMention", {
               airport: airport.toUpperCase(),
               messageId: String(chatMsg.id),
-              mentionerUsername: user.username || 'Unknown',
+              mentionerUsername: user.username || "Unknown",
               message: chatMsg.message,
               timestamp: chatMsg.sent_at.toISOString(),
             });
           }
         }
       } catch (error) {
-        console.error('[Global Chat] Error adding message:', error);
-        socket.emit('chatError', { message: 'Failed to send message' });
+        console.error("[Global Chat] Error adding message:", error);
+        socket.emit("chatError", { message: "Failed to send message" });
       }
     });
 
-    socket.on('deleteGlobalMessage', async ({ messageId, userId }) => {
+    socket.on("deleteGlobalMessage", async ({ messageId, userId }) => {
       try {
         const result = await mainDb
-          .updateTable('global_chat')
+          .updateTable("global_chat")
           .set({ deleted_at: sql`NOW()` })
-          .where('id', '=', messageId)
-          .where('user_id', '=', userId)
-          .where('deleted_at', 'is', null)
+          .where("id", "=", messageId)
+          .where("user_id", "=", userId)
+          .where("deleted_at", "is", null)
           .executeTakeFirst();
 
         if (result.numUpdatedRows > 0) {
-          io.to('global-chat').emit('globalMessageDeleted', { messageId });
+          io.to(roomName).emit("globalMessageDeleted", { messageId });
         } else {
-          socket.emit('deleteError', {
+          socket.emit("deleteError", {
             messageId,
-            error: 'Cannot delete this message',
+            error: "Cannot delete this message",
           });
         }
       } catch (error) {
-        console.error('[Global Chat] Error deleting message:', error);
-        socket.emit('deleteError', {
+        console.error("[Global Chat] Error deleting message:", error);
+        socket.emit("deleteError", {
           messageId,
-          error: 'Failed to delete message',
+          error: "Failed to delete message",
         });
       }
     });
 
-    socket.on('globalChatOpened', () => {
+    socket.on("globalChatOpened", () => {
       const userId = socket.data.userId;
+      const nk: string = socket.data.networkKind || "pfatc";
       if (userId) {
-        activeGlobalChatUsers.add(userId);
-        io.to('global-chat').emit(
-          'activeGlobalChatUsers',
-          Array.from(activeGlobalChatUsers)
+        activeGlobalChatUsers.get(nk)!.add(userId);
+        io.to(socket.data.roomName).emit(
+          "activeGlobalChatUsers",
+          Array.from(activeGlobalChatUsers.get(nk)!),
         );
       }
     });
 
-    socket.on('globalChatClosed', () => {
+    socket.on("globalChatClosed", () => {
       const userId = socket.data.userId;
+      const nk: string = socket.data.networkKind || "pfatc";
       if (userId) {
-        activeGlobalChatUsers.delete(userId);
-        io.to('global-chat').emit(
-          'activeGlobalChatUsers',
-          Array.from(activeGlobalChatUsers)
+        activeGlobalChatUsers.get(nk)!.delete(userId);
+        io.to(socket.data.roomName).emit(
+          "activeGlobalChatUsers",
+          Array.from(activeGlobalChatUsers.get(nk)!),
         );
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       const userId = socket.data.userId;
+      const nk: string = socket.data.networkKind || "pfatc";
+      const room: string = socket.data.roomName || "global-chat";
       if (userId) {
-        activeGlobalChatUsers.delete(userId);
-        connectedGlobalChatUsers.delete(userId);
-        io.to('global-chat').emit(
-          'activeGlobalChatUsers',
-          Array.from(activeGlobalChatUsers)
-        );
-        io.to('global-chat').emit(
-          'connectedGlobalChatUsers',
-          Array.from(connectedGlobalChatUsers.values())
+        activeGlobalChatUsers.get(nk)!.delete(userId);
+        connectedGlobalChatUsers.get(nk)!.delete(userId);
+        io.to(room).emit("activeGlobalChatUsers", Array.from(activeGlobalChatUsers.get(nk)!));
+        io.to(room).emit(
+          "connectedGlobalChatUsers",
+          Array.from(connectedGlobalChatUsers.get(nk)!.values()),
         );
       }
     });
   });
 
   // Cleanup on shutdown
-  process.on('SIGTERM', () => {
-    console.log('[GlobalChat] Cleaning up intervals...');
+  process.on("SIGTERM", () => {
+    console.log("[GlobalChat] Cleaning up intervals...");
     clearInterval(globalChatCleanupInterval);
-    connectedGlobalChatUsers.clear();
-    activeGlobalChatUsers.clear();
+    for (const m of connectedGlobalChatUsers.values()) m.clear();
+    for (const s of activeGlobalChatUsers.values()) s.clear();
   });
 
   return io;
