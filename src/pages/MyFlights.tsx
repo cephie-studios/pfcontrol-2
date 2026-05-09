@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Plane, Route, Search } from 'lucide-react';
+import { ArrowRight, Calendar, Camera, Check, ExternalLink, MoreVertical, Plane, Route, Search, Share2, Star, Workflow } from 'lucide-react';
 import { claimSubmittedFlight, fetchMyFlights } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
@@ -16,46 +16,217 @@ interface AvailableImage {
   extension: string;
 }
 
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
-    case 'CLEARED':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'TAXI':
-    case 'TAXI_ORIG':
-    case 'TAXI_ARRV':
-      return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
-    case 'DEPARTED':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'STUP':
-      return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
-    case 'PUSH':
-      return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-    case 'RWY':
-    case 'RWY_ORIG':
-      return 'bg-red-500/20 text-red-400 border border-red-500/30';
-    case 'RWY_ARRV':
-      return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
-    case 'DEPA':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'ENROUTE':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'APP':
-      return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
-    case 'GATE':
-      return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-    default:
-      return 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30';
-  }
-};
+function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-const getDisplayStatus = (status?: string) => {
-  if (!status) return 'PENDING';
-  if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
-  if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
-  return status;
-};
+  const coverSnap = flight.snap_images?.[0];
+  const hasCover = !!coverSnap;
+
+  const acarsUrl = flight.acars_token
+    ? `${window.location.origin}/acars/${flight.session_id}/${flight.id}?acars_token=${flight.acars_token}`
+    : null;
+
+  const publicFlightUrl = flight.acars_token
+    ? `${window.location.origin}/flight/${flight.id}`
+    : null;
+
+  const callsign = flight.callsign?.toUpperCase() || 'Unknown';
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!publicFlightUrl) return;
+    await navigator.clipboard.writeText(publicFlightUrl);
+    setCopied(true);
+    setMenuOpen(false);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenAcars = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (acarsUrl) window.open(acarsUrl, '_blank');
+    setMenuOpen(false);
+  };
+
+  const toggleMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen((v) => !v);
+  };
+
+  const dropdown = menuOpen && (
+    <div className="absolute top-8 right-0 z-30 w-38 bg-zinc-450 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden animate-in slide-in-from-top-1 duration-150">
+      <div className="p-1.5">
+        <button onClick={handleShare} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <Share2 className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Share flight</span>
+        </button>
+        <button onClick={handleOpenAcars} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <ExternalLink className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Open ACARS</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  if (hasCover) {
+    // Photo card — image fills background, info overlaid at bottom
+    return (
+      <div className={`relative ${large ? 'col-span-2' : ''}`}>
+        <Link
+          to={`/my-flights/${flight.id}`}
+          className="block rounded-3xl overflow-hidden aspect-video relative group border-2 border-gray-700 hover:border-blue-600/50 transition-colors"
+        >
+          <img
+            src={coverSnap!.url}
+            alt={flight.callsign}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent" />
+
+          {/* Top-left: snap count */}
+          {(flight.snap_images?.length ?? 0) > 1 && (
+            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white border border-white/10 backdrop-blur-sm">
+              <Camera className="h-2.5 w-2.5" />
+              {flight.snap_images!.length}
+            </div>
+          )}
+
+          {/* Top-right: featured star */}
+          {flight.featured_on_profile && (
+            <div className="absolute top-3 right-3">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400 drop-shadow" />
+            </div>
+          )}
+
+          {/* Info overlay at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <p className="font-bold text-white text-lg font-mono leading-tight truncate drop-shadow">
+              {callsign}
+            </p>
+            {flight.departure && flight.arrival && (
+              <div className="flex items-center gap-1.5 text-zinc-300 font-mono text-sm mt-0.5">
+                <span>{flight.departure}</span>
+                <ArrowRight className="h-3 w-3 text-zinc-500 shrink-0" />
+                <span>{flight.arrival}</span>
+              </div>
+            )}
+            {flight.aircraft && (
+              <p className="text-xs text-zinc-400 mt-0.5">{flight.aircraft}</p>
+            )}
+            {flight.isPFATC && (
+              <div className="flex items-center mt-1">
+                <Workflow className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+                <span className="text-blue-400 text-xs font-medium">PFATC Session</span>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* 3-dot menu for photo cards */}
+        {acarsUrl && (
+          <div className="absolute top-3 right-10" ref={menuRef}>
+            <button
+              onClick={toggleMenu}
+              className="p-1.5 rounded-lg text-white/70 border border-white/20 hover:text-white hover:border-white/50 hover:bg-black/40 transition-colors backdrop-blur-sm"
+              aria-label="Flight options"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-4" />}
+            </button>
+            {dropdown}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Standard info card (no photo)
+  return (
+    <div className="relative">
+      <Link
+        to={`/my-flights/${flight.id}`}
+        className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block h-full"
+      >
+        {/* Header */}
+        <div className="flex items-center mb-3">
+          <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
+          <span className="font-medium truncate text-md">{callsign}</span>
+          {flight.featured_on_profile && (
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />
+          )}
+        </div>
+
+        {/* Details */}
+        <div className="space-y-2 text-sm text-gray-300">
+          <div className="flex items-center">
+            <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            <span className="font-mono font-medium text-white">{flight.departure || '----'}</span>
+            <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
+            <span className="font-mono font-medium text-white">{flight.arrival || '----'}</span>
+          </div>
+          <div className="flex items-center">
+            <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            {flight.aircraft || 'Unknown aircraft'}
+          </div>
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            {flight.created_at
+              ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Unknown date'}
+          </div>
+          <div className="flex items-center">
+            {flight.isPFATC ? (
+              <>
+                <Workflow className="h-4 w-4 mr-2 text-blue-400" />
+                <span className="text-blue-400 font-medium">PFATC Session</span>
+              </>
+            ) : (
+              <>
+                <Workflow className="h-4 w-4 mr-2 text-green-400" />
+                <span className="text-green-400 font-medium">Standard Session</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {flight.notes && (
+          <p className="mt-3 text-xs text-gray-500 italic truncate border-t border-gray-700/40 pt-2">
+            {flight.notes}
+          </p>
+        )}
+      </Link>
+
+      {/* 3-dot menu */}
+      {acarsUrl && (
+        <div className="absolute top-4 right-4" ref={menuRef}>
+          <button
+            onClick={toggleMenu}
+            className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+            aria-label="Flight options"
+          >
+            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
+          </button>
+          {dropdown}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MyFlights() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -193,7 +364,7 @@ export default function MyFlights() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -226,7 +397,6 @@ export default function MyFlights() {
               className="w-full bg-gray-900/70 backdrop-blur-md border-2 border-blue-600 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
             />
           </div>
-    
 
           {loading ? (
             <Loader />
@@ -253,45 +423,7 @@ export default function MyFlights() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredFlights.map((flight) => (
-                <Link
-                  key={String(flight.id)}
-                  to={`/my-flights/${flight.id}`}
-                  className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-lg font-semibold text-blue-300 truncate">
-                      {flight.callsign || 'Unknown Callsign'}
-                    </p>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-semibold ${getStatusClass(
-                        flight.status || 'PENDING'
-                      )}`}
-                    >
-                      {getDisplayStatus(flight.status)}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-gray-300">
-                    <div className="flex items-center">
-                      <Route className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="flex items-center gap-1">
-                        <span className="font-mono">{flight.departure || '----'}</span>
-                        <ArrowRight className="h-4 w-4 text-zinc-500" />
-                        <span className="font-mono">{flight.arrival || '----'}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <Plane className="h-4 w-4 mr-2 text-gray-500" />
-                      {flight.aircraft || 'Unknown aircraft'}
-                    </div>
-                    <div className="flex items-center">
-                      <CalendarClock className="h-4 w-4 mr-2 text-gray-500" />
-                      {flight.created_at
-                        ? new Date(flight.created_at).toLocaleString()
-                        : 'Unknown date'}
-                    </div>
-                  </div>
-                </Link>
+                <FlightCard key={String(flight.id)} flight={flight} />
               ))}
             </div>
           )}

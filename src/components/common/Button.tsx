@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
-  onClick?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   variant?:
     | 'primary'
     | 'secondary'

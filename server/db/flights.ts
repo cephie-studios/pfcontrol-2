@@ -570,3 +570,133 @@ export async function deleteFlight(sessionId: string, flightId: string) {
     .where('id', '=', validFlightId)
     .execute();
 }
+
+export async function updateFlightNotes(userId: string, flightId: string, notes: string) {
+  const validFlightId = validateFlightId(flightId);
+  await mainDb
+    .updateTable('flights')
+    .set({ notes, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .execute();
+}
+
+export async function addSnapImage(
+  userId: string,
+  flightId: string,
+  cephieId: string,
+  url: string
+): Promise<{ ok: boolean; snap_images?: Array<{ cephie_id: string; url: string }> }> {
+  const validFlightId = validateFlightId(flightId);
+
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['id', 'user_id', 'snap_images'])
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+
+  if (!flight) return { ok: false };
+
+  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
+  const updated = [...existing, { cephie_id: cephieId, url }];
+
+  await mainDb
+    .updateTable('flights')
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .execute();
+
+  return { ok: true, snap_images: updated };
+}
+
+export async function deleteSnapImage(
+  userId: string,
+  flightId: string,
+  cephieId: string
+): Promise<{ ok: boolean; cephie_id?: string }> {
+  const validFlightId = validateFlightId(flightId);
+
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['id', 'user_id', 'snap_images'])
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+
+  if (!flight) return { ok: false };
+
+  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
+  const target = existing.find((img) => img.cephie_id === cephieId);
+  if (!target) return { ok: false };
+
+  const updated = existing.filter((img) => img.cephie_id !== cephieId);
+
+  await mainDb
+    .updateTable('flights')
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .execute();
+
+  return { ok: true, cephie_id: cephieId };
+}
+
+export async function toggleFeaturedOnProfile(
+  userId: string,
+  flightId: string
+): Promise<{ ok: boolean; featured?: boolean }> {
+  const validFlightId = validateFlightId(flightId);
+
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['id', 'user_id', 'featured_on_profile'])
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+
+  if (!flight) return { ok: false };
+
+  const newValue = !flight.featured_on_profile;
+
+  await mainDb
+    .updateTable('flights')
+    .set({ featured_on_profile: newValue, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .execute();
+
+  return { ok: true, featured: newValue };
+}
+
+export async function getFeaturedFlightsByUser(userId: string) {
+
+  try {
+    const flights = await mainDb
+      .selectFrom('flights')
+      .select([
+        'id', 'session_id', 'callsign', 'departure', 'arrival',
+        'aircraft', 'status', 'snap_images', 'featured_on_profile',
+        'created_at', 'acars_token',
+      ])
+      .where('user_id', '=', userId)
+      .where('featured_on_profile', '=', true)
+      .orderBy('created_at', 'desc')
+      .execute();
+
+    return flights.map((f) => ({
+      id: f.id,
+      callsign: f.callsign,
+      departure: f.departure,
+      arrival: f.arrival,
+      aircraft: f.aircraft,
+      status: f.status,
+      snap_images: (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [],
+      created_at: f.created_at,
+    }));
+  } catch (error) {
+    console.error(`Error fetching featured flights for user ${userId}:`, error);
+    return [];
+  }
+}

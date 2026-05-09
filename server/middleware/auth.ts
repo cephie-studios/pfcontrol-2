@@ -49,36 +49,6 @@ export async function requireAuthSoft(
   }
 }
 
-export async function optionalAuth(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-) {
-  const token = req.cookies.auth_token;
-  if (!token) return next();
-
-  try {
-    if (!JWT_SECRET) return next();
-    const decoded = jwt.verify(token, JWT_SECRET as string) as JwtPayload;
-    const user = await getUserById(decoded.userId);
-    if (user) {
-      req.user = {
-        userId: decoded.userId,
-        username: decoded.username,
-        discriminator: decoded.discriminator,
-        avatar: decoded.avatar,
-        isAdmin: isAdmin(decoded.userId),
-        iat: decoded.iat,
-        exp: decoded.exp,
-      };
-    }
-  } catch {
-    // Invalid or expired token — proceed as anonymous
-  }
-
-  next();
-}
-
 export default async function requireAuth(
   req: Request,
   res: Response,

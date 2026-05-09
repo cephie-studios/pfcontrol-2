@@ -161,7 +161,7 @@ export default function MyFlightDetail() {
 
   if (error || !flight) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div className="min-h-screen bg-zinc-950 text-white">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700 text-red-200 text-sm">
@@ -173,7 +173,7 @@ export default function MyFlightDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
 
       <div className="relative w-full h-72 md:h-80 overflow-hidden">
@@ -194,7 +194,7 @@ export default function MyFlightDetail() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/30 via-zinc-950/60 to-zinc-950" />
         </div>
         <div className="relative h-full flex flex-col items-center justify-center px-6 text-center gap-3">
           <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
