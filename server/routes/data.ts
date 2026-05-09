@@ -1,17 +1,18 @@
-import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { getTesterSettings } from '../db/testers.js';
-import { getActiveNotifications } from '../db/notifications.js';
-import { mainDb, redisConnection } from '../db/connection.js';
-import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
-import { getUserById } from '../db/users.js';
-import { getFlightLogsCount } from '../db/flightLogs.js';
-import { getWaypointData } from '../utils/getData.js';
-import { findPath } from '../utils/findRoute.js';
-import { sql } from 'kysely';
-import { applyPublicCache } from '../utils/httpCache.js';
+import express from "express";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { getTesterSettings } from "../db/testers.js";
+import { getActiveNotifications } from "../db/notifications.js";
+import { mainDb, redisConnection } from "../db/connection.js";
+import { getTopUsers, STATS_KEYS, getUserRank } from "../db/leaderboard.js";
+import { getUserById } from "../db/users.js";
+import { getFlightLogsCount } from "../db/flightLogs.js";
+import { getWaypointData } from "../utils/getData.js";
+import { findPath } from "../utils/findRoute.js";
+import { sql } from "kysely";
+import { applyPublicCache } from "../utils/httpCache.js";
+import { resolveAviationMetar } from "../utils/metarAviationWeather.js";
 import {
   DATA_STATIC_BROWSER_SEC,
   DATA_STATIC_EDGE_SEC,
@@ -21,29 +22,20 @@ import {
   HOMEPAGE_STATS_REDIS_SEC,
   LEADERBOARD_BROWSER_SEC,
   LEADERBOARD_EDGE_SEC,
-} from '../utils/cacheTtl.js';
+} from "../utils/cacheTtl.js";
 
-import dotenv from 'dotenv';
-const envFile =
-  process.env.NODE_ENV === 'production'
-    ? '.env.production'
-    : '.env.development';
+import dotenv from "dotenv";
+const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
 dotenv.config({ path: envFile });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
-const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
-const airlinesPath = path.join(__dirname, '..', 'data', 'airlineData.json');
-const waypointsPath = path.join(__dirname, '..', 'data', 'waypointData.json');
-const backgroundsPath = path.join(
-  process.cwd(),
-  'public',
-  'assets',
-  'app',
-  'backgrounds'
-);
+const airportsPath = path.join(__dirname, "..", "data", "airportData.json");
+const aircraftPath = path.join(__dirname, "..", "data", "aircraftData.json");
+const airlinesPath = path.join(__dirname, "..", "data", "airlineData.json");
+const waypointsPath = path.join(__dirname, "..", "data", "waypointData.json");
+const backgroundsPath = path.join(process.cwd(), "public", "assets", "app", "backgrounds");
 
 if (
   !fs.existsSync(airportsPath) ||
@@ -84,8 +76,8 @@ interface Airport {
 const router = express.Router();
 
 // GET: /api/data/airports
-router.get('/airports', async (req, res) => {
-  const cacheKey = 'data:airports';
+router.get("/airports", async (req, res) => {
+  const cacheKey = "data:airports";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -98,30 +90,22 @@ router.get('/airports', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for airports:', error.message);
+      console.warn("[Redis] Failed to read cache for airports:", error.message);
     }
   }
 
   try {
     if (!fs.existsSync(airportsPath)) {
-      return res.status(404).json({ error: 'Airport data not found' });
+      return res.status(404).json({ error: "Airport data not found" });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(data),
-        'EX',
-        DATA_STATIC_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(
-          '[Redis] Failed to set cache for airports:',
-          error.message
-        );
+        console.warn("[Redis] Failed to set cache for airports:", error.message);
       }
     }
 
@@ -131,17 +115,17 @@ router.get('/airports', async (req, res) => {
     });
     res.json(data);
   } catch (error) {
-    console.error('Error reading airport data:', error);
+    console.error("Error reading airport data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airport data',
+      error: "Internal server error",
+      message: "Error reading airport data",
     });
   }
 });
 
 // GET: /api/data/aircrafts
-router.get('/aircrafts', async (req, res) => {
-  const cacheKey = 'data:aircrafts';
+router.get("/aircrafts", async (req, res) => {
+  const cacheKey = "data:aircrafts";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -154,33 +138,22 @@ router.get('/aircrafts', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(
-        '[Redis] Failed to read cache for aircrafts:',
-        error.message
-      );
+      console.warn("[Redis] Failed to read cache for aircrafts:", error.message);
     }
   }
 
   try {
     if (!fs.existsSync(aircraftPath)) {
-      return res.status(404).json({ error: 'Aircraft data not found' });
+      return res.status(404).json({ error: "Aircraft data not found" });
     }
 
-    const data = JSON.parse(fs.readFileSync(aircraftPath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(data),
-        'EX',
-        DATA_STATIC_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(
-          '[Redis] Failed to set cache for aircrafts:',
-          error.message
-        );
+        console.warn("[Redis] Failed to set cache for aircrafts:", error.message);
       }
     }
 
@@ -190,17 +163,17 @@ router.get('/aircrafts', async (req, res) => {
     });
     res.json(data);
   } catch (error) {
-    console.error('Error reading aircraft data:', error);
+    console.error("Error reading aircraft data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading aircraft data',
+      error: "Internal server error",
+      message: "Error reading aircraft data",
     });
   }
 });
 
 // GET: /api/data/airlines
-router.get('/airlines', async (req, res) => {
-  const cacheKey = 'data:airlines';
+router.get("/airlines", async (req, res) => {
+  const cacheKey = "data:airlines";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -213,30 +186,22 @@ router.get('/airlines', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for airlines:', error.message);
+      console.warn("[Redis] Failed to read cache for airlines:", error.message);
     }
   }
 
   try {
     if (!fs.existsSync(airlinesPath)) {
-      return res.status(404).json({ error: 'Airline data not found' });
+      return res.status(404).json({ error: "Airline data not found" });
     }
 
-    const data = JSON.parse(fs.readFileSync(airlinesPath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(data),
-        'EX',
-        DATA_STATIC_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(
-          '[Redis] Failed to set cache for airlines:',
-          error.message
-        );
+        console.warn("[Redis] Failed to set cache for airlines:", error.message);
       }
     }
 
@@ -246,17 +211,17 @@ router.get('/airlines', async (req, res) => {
     });
     res.json(data);
   } catch (error) {
-    console.error('Error reading airline data:', error);
+    console.error("Error reading airline data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airline data',
+      error: "Internal server error",
+      message: "Error reading airline data",
     });
   }
 });
 
 // GET: /api/data/frequencies
-router.get('/frequencies', async (req, res) => {
-  const cacheKey = 'data:frequencies';
+router.get("/frequencies", async (req, res) => {
+  const cacheKey = "data:frequencies";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -269,28 +234,25 @@ router.get('/frequencies', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(
-        '[Redis] Failed to read cache for frequencies:',
-        error.message
-      );
+      console.warn("[Redis] Failed to read cache for frequencies:", error.message);
     }
   }
 
   try {
     if (!fs.existsSync(airportsPath)) {
-      return res.status(404).json({ error: 'Airport data not found' });
+      return res.status(404).json({ error: "Airport data not found" });
     }
 
-    const freqOrder = ['APP', 'TWR', 'GND', 'DEL'];
+    const freqOrder = ["APP", "TWR", "GND", "DEL"];
     const freqMapping = {
-      clearanceDelivery: 'DEL',
-      departure: 'DEP',
-      ground: 'GND',
-      tower: 'TWR',
-      approach: 'APP',
+      clearanceDelivery: "DEL",
+      departure: "DEP",
+      ground: "GND",
+      tower: "TWR",
+      approach: "APP",
     };
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
     const frequencies = data.map((airport: Airport) => {
       const allFreqs = airport.allFrequencies || {};
       const displayFreqs = freqOrder
@@ -304,7 +266,7 @@ router.get('/frequencies', async (req, res) => {
               }
             }
           }
-          return freq && freq.toLowerCase() !== 'n/a' ? { type, freq } : null;
+          return freq && freq.toLowerCase() !== "n/a" ? { type, freq } : null;
         })
         .filter(Boolean);
 
@@ -315,15 +277,12 @@ router.get('/frequencies', async (req, res) => {
             !usedTypes.has(key) &&
             !Object.keys(freqMapping).includes(key) &&
             value &&
-            value.toLowerCase() !== 'n/a'
+            value.toLowerCase() !== "n/a",
         )
         .slice(0, 4 - displayFreqs.length)
         .map(([type, freq]) => ({ type: type.toUpperCase(), freq }));
 
-      const allDisplayFreqs = [
-        ...displayFreqs.filter(Boolean),
-        ...remainingFreqs,
-      ].slice(0, 4);
+      const allDisplayFreqs = [...displayFreqs.filter(Boolean), ...remainingFreqs].slice(0, 4);
 
       return {
         icao: airport.icao,
@@ -333,18 +292,10 @@ router.get('/frequencies', async (req, res) => {
     });
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(frequencies),
-        'EX',
-        DATA_STATIC_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(frequencies), "EX", DATA_STATIC_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(
-          '[Redis] Failed to set cache for frequencies:',
-          error.message
-        );
+        console.warn("[Redis] Failed to set cache for frequencies:", error.message);
       }
     }
 
@@ -354,31 +305,23 @@ router.get('/frequencies', async (req, res) => {
     });
     res.json(frequencies);
   } catch (error) {
-    console.error('Error reading airport frequencies:', error);
+    console.error("Error reading airport frequencies:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airport frequencies',
+      error: "Internal server error",
+      message: "Error reading airport frequencies",
     });
   }
 });
 
 // GET: /api/data/backgrounds
-router.get('/backgrounds', (req, res) => {
+router.get("/backgrounds", (req, res) => {
   try {
     if (!fs.existsSync(backgroundsPath)) {
-      return res.status(404).json({ error: 'Backgrounds directory not found' });
+      return res.status(404).json({ error: "Backgrounds directory not found" });
     }
 
     const files = fs.readdirSync(backgroundsPath);
-    const imageExtensions = [
-      '.jpg',
-      '.jpeg',
-      '.png',
-      '.gif',
-      '.bmp',
-      '.webp',
-      '.svg',
-    ];
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"];
 
     const backgroundImages = files
       .filter((file) => {
@@ -394,25 +337,25 @@ router.get('/backgrounds', (req, res) => {
     applyPublicCache(res, { browserMaxAge: 120, edgeMaxAge: 3600 });
     res.json(backgroundImages);
   } catch (error) {
-    console.error('Error reading background images:', error);
+    console.error("Error reading background images:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading background images',
+      error: "Internal server error",
+      message: "Error reading background images",
     });
   }
 });
 
 // GET: /api/data/airports/:icao/runways
-router.get('/airports/:icao/runways', (req, res) => {
+router.get("/airports/:icao/runways", (req, res) => {
   try {
     if (!fs.existsSync(airportsPath)) {
-      return res.status(404).json({ error: 'Airport data not found' });
+      return res.status(404).json({ error: "Airport data not found" });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
-      return res.status(404).json({ error: 'Airport not found' });
+      return res.status(404).json({ error: "Airport not found" });
     }
     applyPublicCache(res, {
       browserMaxAge: DATA_STATIC_BROWSER_SEC,
@@ -420,25 +363,25 @@ router.get('/airports/:icao/runways', (req, res) => {
     });
     res.json(airport.runways || []);
   } catch (error) {
-    console.error('Error reading airport data:', error);
+    console.error("Error reading airport data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airport data',
+      error: "Internal server error",
+      message: "Error reading airport data",
     });
   }
 });
 
 // GET: /api/data/airports/:icao/sids
-router.get('/airports/:icao/sids', (req, res) => {
+router.get("/airports/:icao/sids", (req, res) => {
   try {
     if (!fs.existsSync(airportsPath)) {
-      return res.status(404).json({ error: 'Airport data not found' });
+      return res.status(404).json({ error: "Airport data not found" });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
-      return res.status(404).json({ error: 'Airport not found' });
+      return res.status(404).json({ error: "Airport not found" });
     }
     applyPublicCache(res, {
       browserMaxAge: DATA_STATIC_BROWSER_SEC,
@@ -446,25 +389,25 @@ router.get('/airports/:icao/sids', (req, res) => {
     });
     res.json(airport.sids || []);
   } catch (error) {
-    console.error('Error reading airport data:', error);
+    console.error("Error reading airport data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airport data',
+      error: "Internal server error",
+      message: "Error reading airport data",
     });
   }
 });
 
 // GET: /api/data/airports/:icao/stars
-router.get('/airports/:icao/stars', (req, res) => {
+router.get("/airports/:icao/stars", (req, res) => {
   try {
     if (!fs.existsSync(airportsPath)) {
-      return res.status(404).json({ error: 'Airport data not found' });
+      return res.status(404).json({ error: "Airport data not found" });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
-      return res.status(404).json({ error: 'Airport not found' });
+      return res.status(404).json({ error: "Airport not found" });
     }
     applyPublicCache(res, {
       browserMaxAge: DATA_STATIC_BROWSER_SEC,
@@ -472,17 +415,17 @@ router.get('/airports/:icao/stars', (req, res) => {
     });
     res.json(airport.stars || []);
   } catch (error) {
-    console.error('Error reading airport data:', error);
+    console.error("Error reading airport data:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error reading airport data',
+      error: "Internal server error",
+      message: "Error reading airport data",
     });
   }
 });
 
 // GET: /api/data/statistics
-router.get('/statistics', async (req, res) => {
-  const cacheKey = 'homepage:stats';
+router.get("/statistics", async (req, res) => {
+  const cacheKey = "homepage:stats";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -495,10 +438,7 @@ router.get('/statistics', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(
-        '[Redis] Failed to read cache for homepage stats:',
-        error.message
-      );
+      console.warn("[Redis] Failed to read cache for homepage stats:", error.message);
     }
   }
 
@@ -506,21 +446,21 @@ router.get('/statistics', async (req, res) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const sessionsCreated = await mainDb
-      .selectFrom('sessions')
-      .select(({ fn }) => fn.countAll().as('count'))
-      .where('created_at', '>=', thirtyDaysAgo)
+      .selectFrom("sessions")
+      .select(({ fn }) => fn.countAll().as("count"))
+      .where("created_at", ">=", thirtyDaysAgo)
       .executeTakeFirst();
 
     const registeredUsers = await mainDb
-      .selectFrom('users')
-      .select(({ fn }) => fn.countAll().as('count'))
+      .selectFrom("users")
+      .select(({ fn }) => fn.countAll().as("count"))
       .executeTakeFirst();
 
     const flightLogsCount = await getFlightLogsCount();
 
     const flightCountRow = await mainDb
-      .selectFrom('flights')
-      .select(sql`count(*)`.as('count'))
+      .selectFrom("flights")
+      .select(sql`count(*)`.as("count"))
       .executeTakeFirst();
     const flightsLogged = parseInt(flightCountRow?.count as string, 10) || 0;
 
@@ -532,18 +472,10 @@ router.get('/statistics', async (req, res) => {
     };
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(result),
-        'EX',
-        HOMEPAGE_STATS_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", HOMEPAGE_STATS_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(
-          '[Redis] Failed to set cache for homepage stats:',
-          error.message
-        );
+        console.warn("[Redis] Failed to set cache for homepage stats:", error.message);
       }
     }
 
@@ -553,40 +485,40 @@ router.get('/statistics', async (req, res) => {
     });
     res.json(result);
   } catch (error) {
-    console.error('Error fetching statistics:', error);
+    console.error("Error fetching statistics:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch statistics',
+      error: "Internal server error",
+      message: "Failed to fetch statistics",
     });
   }
 });
 
 // GET: /api/data/settings
-router.get('/settings', async (req, res) => {
+router.get("/settings", async (req, res) => {
   try {
     const settings = await getTesterSettings();
     applyPublicCache(res, { browserMaxAge: 30, edgeMaxAge: 120 });
     res.json(settings);
   } catch (error) {
-    console.error('Error fetching tester settings:', error);
-    res.status(500).json({ error: 'Failed to fetch tester settings' });
+    console.error("Error fetching tester settings:", error);
+    res.status(500).json({ error: "Failed to fetch tester settings" });
   }
 });
 
 // GET: /api/data/notifications/active
-router.get('/notifications/active', async (req, res) => {
+router.get("/notifications/active", async (req, res) => {
   try {
     const notifications = await getActiveNotifications();
     applyPublicCache(res, { browserMaxAge: 0, edgeMaxAge: 30 });
     res.json(notifications);
   } catch (error) {
-    console.error('Error fetching active notifications:', error);
-    res.status(500).json({ error: 'Failed to fetch active notifications' });
+    console.error("Error fetching active notifications:", error);
+    res.status(500).json({ error: "Failed to fetch active notifications" });
   }
 });
 
 // GET: /api/data/leaderboard - Fetch top users for each stat (public)
-router.get('/leaderboard', async (req, res) => {
+router.get("/leaderboard", async (req, res) => {
   try {
     const leaderboard: Record<
       string,
@@ -626,23 +558,23 @@ router.get('/leaderboard', async (req, res) => {
     });
     res.json(leaderboard);
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    console.error("Error fetching leaderboard:", error);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
   }
 });
 
 // GET: /api/data/ranks/:userId - Fetch leaderboard ranks for a specific user
-router.get('/ranks/:userId', async (req, res) => {
+router.get("/ranks/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
     if (!userId) {
-      return res.status(400).json({ error: 'Missing userId parameter' });
+      return res.status(400).json({ error: "Missing userId parameter" });
     }
 
     const user = await getUserById(userId);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const ranks: Record<string, number | null> = {};
@@ -653,21 +585,21 @@ router.get('/ranks/:userId', async (req, res) => {
     applyPublicCache(res, { browserMaxAge: 60, edgeMaxAge: 300 });
     res.json(ranks);
   } catch (error) {
-    console.error('Error fetching user ranks:', error);
-    res.status(500).json({ error: 'Failed to fetch user ranks' });
+    console.error("Error fetching user ranks:", error);
+    res.status(500).json({ error: "Failed to fetch user ranks" });
   }
 });
 
 // GET: /api/data/tester-settings - get tester gate settings
-router.get('/tester-settings', async (req, res) => {
+router.get("/tester-settings", async (req, res) => {
   try {
-    const host = req.get('host') || req.get('x-forwarded-host') || '';
+    const host = req.get("host") || req.get("x-forwarded-host") || "";
 
-    if (host === 'pfcontrol.com') {
+    if (host === "pfcontrol.com") {
       applyPublicCache(res, {
         browserMaxAge: 0,
         edgeMaxAge: 120,
-        vary: 'Host',
+        vary: "Host",
       });
       return res.json({ tester_gate_enabled: false });
     }
@@ -676,23 +608,21 @@ router.get('/tester-settings', async (req, res) => {
     applyPublicCache(res, {
       browserMaxAge: 0,
       edgeMaxAge: 120,
-      vary: 'Host',
+      vary: "Host",
     });
     res.json(settings);
   } catch (error) {
-    console.error('Error fetching tester settings:', error);
-    res.status(500).json({ error: 'Failed to fetch tester settings' });
+    console.error("Error fetching tester settings:", error);
+    res.status(500).json({ error: "Failed to fetch tester settings" });
   }
 });
 
-router.get('/findRoute', async (req, res) => {
-  const from = typeof req.query.from === 'string' ? req.query.from : '';
-  const to = typeof req.query.to === 'string' ? req.query.to : '';
+router.get("/findRoute", async (req, res) => {
+  const from = typeof req.query.from === "string" ? req.query.from : "";
+  const to = typeof req.query.to === "string" ? req.query.to : "";
 
   if (!from || !to) {
-    return res
-      .status(400)
-      .json({ error: 'Missing required query parameters: from, to' });
+    return res.status(400).json({ error: "Missing required query parameters: from, to" });
   }
 
   const cacheKey = `route:${from}:${to}`;
@@ -708,13 +638,13 @@ router.get('/findRoute', async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for route:', error.message);
+      console.warn("[Redis] Failed to read cache for route:", error.message);
     }
   }
 
   try {
     if (!fs.existsSync(waypointsPath)) {
-      return res.status(404).json({ error: 'Waypoint data not found' });
+      return res.status(404).json({ error: "Waypoint data not found" });
     }
 
     const waypointData = getWaypointData();
@@ -724,21 +654,16 @@ router.get('/findRoute', async (req, res) => {
     const { path, distance, success } = findPath(from, to, allPoints);
 
     if (!success) {
-      return res.status(404).json({ error: 'Route not found' });
+      return res.status(404).json({ error: "Route not found" });
     }
 
     const routeData = { path, distance };
 
     try {
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(routeData),
-        'EX',
-        DATA_STATIC_REDIS_SEC
-      );
+      await redisConnection.set(cacheKey, JSON.stringify(routeData), "EX", DATA_STATIC_REDIS_SEC);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn('[Redis] Failed to set cache for route:', error.message);
+        console.warn("[Redis] Failed to set cache for route:", error.message);
       }
     }
 
@@ -748,32 +673,32 @@ router.get('/findRoute', async (req, res) => {
     });
     res.json(routeData);
   } catch (error) {
-    console.error('Error finding route:', error);
+    console.error("Error finding route:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Error finding route',
+      error: "Internal server error",
+      message: "Error finding route",
     });
   }
 });
 
 // GET: /api/data/airports/:icao/status - Get airport status with active controller, flights, runway, and METAR
-router.get('/airports/:icao/status', async (req, res) => {
+router.get("/airports/:icao/status", async (req, res) => {
   try {
     const icao = req.params.icao.toUpperCase();
 
     const sessions = await mainDb
-      .selectFrom('sessions')
-      .select(['session_id', 'created_by', 'active_runway', 'created_at'])
-      .where('airport_icao', '=', icao)
-      .where('is_pfatc', '=', true)
-      .orderBy('created_at', 'desc')
+      .selectFrom("sessions")
+      .select(["session_id", "created_by", "active_runway", "created_at"])
+      .where("airport_icao", "=", icao)
+      .where((eb) => eb.or([eb("is_pfatc", "=", true), eb("is_advanced_atc", "=", true)]))
+      .orderBy("created_at", "desc")
       .limit(10)
       .execute();
 
     if (sessions.length === 0) {
       return res.status(404).json({
-        error: 'No active PFATC session found',
-        message: `No PFATC controller is currently online at ${icao}`,
+        error: "No network session found",
+        message: `No PFATC or Advanced ATC controller is currently online at ${icao}`,
       });
     }
 
@@ -783,9 +708,9 @@ router.get('/airports/:icao/status', async (req, res) => {
 
     for (const session of sessions) {
       const sessionController = await mainDb
-        .selectFrom('users')
-        .select(['id', 'username', 'avatar'])
-        .where('id', '=', session.created_by)
+        .selectFrom("users")
+        .select(["id", "username", "avatar"])
+        .where("id", "=", session.created_by)
         .executeTakeFirst();
 
       if (!sessionController) {
@@ -795,9 +720,9 @@ router.get('/airports/:icao/status', async (req, res) => {
       let sessionFlightCount = 0;
       try {
         const result = await mainDb
-          .selectFrom('flights')
-          .select(sql`count(*)`.as('count'))
-          .where('session_id', '=', session.session_id)
+          .selectFrom("flights")
+          .select(sql`count(*)`.as("count"))
+          .where("session_id", "=", session.session_id)
           .executeTakeFirst();
         sessionFlightCount = parseInt(result?.count as string, 10) || 0;
       } catch {
@@ -814,34 +739,15 @@ router.get('/airports/:icao/status', async (req, res) => {
 
     if (!validSession || !controller) {
       return res.status(404).json({
-        error: 'No active PFATC session found',
-        message: `No PFATC controller with active flights is currently online at ${icao}`,
+        error: "No active network session found",
+        message: `No PFATC or Advanced ATC controller with active flights is currently online at ${icao}`,
       });
     }
 
-    let metar = null;
-    try {
-      const metarResponse = await fetch(
-        `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`,
-        {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
-        }
-      );
-
-      if (metarResponse.ok) {
-        const metarText = await metarResponse.text();
-        if (metarText && metarText.trim() !== '') {
-          const metarData = JSON.parse(metarText);
-          if (Array.isArray(metarData) && metarData.length > 0) {
-            metar = metarData[0];
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching METAR:', error);
+    let metar: Record<string, unknown> | null = null;
+    const metarResult = await resolveAviationMetar(icao);
+    if (metarResult.ok) {
+      metar = metarResult.body;
     }
 
     applyPublicCache(res, { browserMaxAge: 0, edgeMaxAge: 15 });
@@ -861,10 +767,10 @@ router.get('/airports/:icao/status', async (req, res) => {
       metar,
     });
   } catch (error) {
-    console.error('Error fetching airport status:', error);
+    console.error("Error fetching airport status:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch airport status',
+      error: "Internal server error",
+      message: "Failed to fetch airport status",
     });
   }
 });
