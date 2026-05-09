@@ -1,19 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  ArrowRight,
-  Camera,
-  Calendar,
-  Check,
-  ExternalLink,
-  MoreVertical,
-  Plane,
-  Route,
-  Workflow,
-  Search,
-  Share2,
-  Star,
-} from 'lucide-react';
+import { ArrowRight, Calendar, Camera, Check, ExternalLink, MoreVertical, Plane, Route, Search, Share2, Star, Workflow } from 'lucide-react';
 import { claimSubmittedFlight, fetchMyFlights } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
@@ -28,7 +15,6 @@ interface AvailableImage {
   path: string;
   extension: string;
 }
-
 
 function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -256,9 +242,15 @@ export default function MyFlights() {
   const claimToken = searchParams.get('claimToken');
 
   useEffect(() => {
-    fetchBackgrounds()
-      .then(setAvailableImages)
-      .catch((err) => console.error('Error loading images:', err));
+    const loadImages = async () => {
+      try {
+        const data = await fetchBackgrounds();
+        setAvailableImages(data);
+      } catch (fetchError) {
+        console.error('Error loading available images:', fetchError);
+      }
+    };
+    loadImages();
   }, []);
 
   useEffect(() => {
@@ -274,6 +266,7 @@ export default function MyFlights() {
             return next;
           });
         }
+
         const result = await fetchMyFlights();
         setFlights(result);
       } catch {
@@ -282,6 +275,7 @@ export default function MyFlights() {
         setLoading(false);
       }
     };
+
     loadFlights();
   }, [claimSessionId, claimFlightId, claimToken, setSearchParams]);
 
@@ -295,18 +289,17 @@ export default function MyFlights() {
     );
   }, [flights, query]);
 
-  const totalSnaps = useMemo(
-    () => flights.reduce((acc, f) => acc + (f.snap_images?.length ?? 0), 0),
-    [flights]
-  );
-
   const backgroundImage = useMemo(() => {
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') return filename;
-      if (filename.startsWith('https://api.cephie.app/')) return filename;
+      if (!filename || filename === 'random' || filename === 'favorites') {
+        return filename;
+      }
+      if (filename.startsWith('https://api.cephie.app/')) {
+        return filename;
+      }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
@@ -318,9 +311,14 @@ export default function MyFlights() {
     } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== 'random' && favImageUrl !== 'favorites') {
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
@@ -332,7 +330,11 @@ export default function MyFlights() {
     }
 
     return bgImage;
-  }, [settings?.backgroundImage?.selectedImage, settings?.backgroundImage?.favorites, availableImages]);
+  }, [
+    settings?.backgroundImage?.selectedImage,
+    settings?.backgroundImage?.favorites,
+    availableImages,
+  ]);
 
   useEffect(() => {
     if (backgroundImage !== 'url("/assets/images/hero.webp")') {
@@ -340,22 +342,17 @@ export default function MyFlights() {
     }
   }, [backgroundImage]);
 
-  // Bento grid layout: first photo flight spans 2 cols
-  const bentoFlights = useMemo(() => {
-    const withPhoto = filteredFlights.filter((f) => (f.snap_images?.length ?? 0) > 0);
-    const withoutPhoto = filteredFlights.filter((f) => !(f.snap_images?.length ?? 0));
-    // interleave: lead with photo flights, then info cards
-    return [...withPhoto, ...withoutPhoto];
-  }, [filteredFlights]);
-
   return (
     <div className="min-h-screen bg-gray-950 text-white relative">
       <Navbar />
 
-      {/* Hero banner */}
       <div className="relative w-full h-80 md:h-96 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+          <img
+            src="/assets/images/hero.webp"
+            alt="Banner"
+            className="object-cover w-full h-full scale-110"
+          />
           <div
             className="absolute inset-0"
             style={{
@@ -367,59 +364,55 @@ export default function MyFlights() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
         </div>
 
-        <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10 gap-3">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center drop-shadow-lg">
+        <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
             MY FLIGHTS
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <div className="flex items-center justify-center gap-2 px-5 py-2 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
-              <Plane className="h-4 w-4 text-blue-400" />
-              <span className="text-blue-400 text-sm font-semibold tracking-wider">
-                {flights.length} FLIGHT{flights.length === 1 ? '' : 'S'}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4">
+            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg h-12 sm:h-auto">
+              <Plane className="h-5 w-5 text-blue-400" />
+              <span className="text-blue-400 text-sm font-semibold tracking-wider whitespace-nowrap">
+                {filteredFlights.length} FLIGHT
+                {filteredFlights.length === 1 ? '' : 'S'}
               </span>
             </div>
-            {totalSnaps > 0 && (
-              <div className="flex items-center justify-center gap-2 px-5 py-2 bg-purple-600/20 backdrop-blur-md border border-purple-500/30 rounded-full shadow-lg">
-                <Camera className="h-4 w-4 text-purple-400" />
-                <span className="text-purple-400 text-sm font-semibold tracking-wider">
-                  {totalSnaps} SNAP{totalSnaps === 1 ? '' : 'S'}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
         <div className="p-6 space-y-6">
-          {/* Search */}
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-950 rounded-full p-1 z-10 flex items-center justify-center">
+              <Search className="h-5 w-5 text-blue-500" />
+            </span>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search callsign, airport, aircraft..."
-              className="w-full pl-11 pr-4 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 hover:border-zinc-600"
+              className="w-full bg-gray-900/70 backdrop-blur-md border-2 border-blue-600 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
             />
           </div>
 
-          {/* Content */}
           {loading ? (
             <Loader />
           ) : error ? (
-            <div className="p-4 bg-red-900/30 border border-red-700/50 rounded-2xl text-red-300 text-sm">
+            <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">
               {error}
             </div>
-          ) : bentoFlights.length === 0 ? (
-            <div className="p-10 text-center bg-gray-800/50 border-2 border-gray-700 rounded-3xl">
+          ) : filteredFlights.length === 0 ? (
+            <div className="p-8 text-center bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-3xl">
               <div className="inline-block p-4 bg-blue-600/20 rounded-full mb-4">
                 <Plane className="h-12 w-12 text-blue-400" />
               </div>
               <h2 className="text-xl font-semibold mb-2">No flights yet</h2>
-              <p className="text-gray-400 mb-6">Submit a flight plan and it will show up here.</p>
+              <p className="text-gray-400 mb-6">
+                Submit a flight plan and it will show up here.
+              </p>
               <Link
                 to="/create"
                 className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full transition-all"
@@ -428,20 +421,10 @@ export default function MyFlights() {
               </Link>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {bentoFlights.map((flight, index) => {
-                const hasPhoto = (flight.snap_images?.length ?? 0) > 0;
-                // First photo flight gets large (2-col) treatment
-                const isLarge = hasPhoto && index === 0 && bentoFlights.length > 1;
-                return (
-                  <div
-                    key={String(flight.id)}
-                    className={isLarge ? 'sm:col-span-2' : ''}
-                  >
-                    <FlightCard flight={flight} large={isLarge} />
-                  </div>
-                );
-              })}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredFlights.map((flight) => (
+                <FlightCard key={String(flight.id)} flight={flight} />
+              ))}
             </div>
           )}
         </div>
