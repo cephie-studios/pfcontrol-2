@@ -659,7 +659,7 @@ export async function addSnapImage(
 
   await mainDb
     .updateTable('flights')
-    .set({ snap_images: JSON.stringify(updated), updated_at: createUTCDate() })
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
     .where('id', '=', validFlightId)
     .where('user_id', '=', userId)
     .execute();
@@ -691,7 +691,7 @@ export async function deleteSnapImage(
 
   await mainDb
     .updateTable('flights')
-    .set({ snap_images: JSON.stringify(updated), updated_at: createUTCDate() })
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
     .where('id', '=', validFlightId)
     .where('user_id', '=', userId)
     .execute();

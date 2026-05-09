@@ -82,6 +82,21 @@ function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean
     setMenuOpen((v) => !v);
   };
 
+  const dropdown = menuOpen && (
+    <div className="absolute top-8 right-0 z-30 w-38 bg-zinc-450 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden animate-in slide-in-from-top-1 duration-150">
+      <div className="p-1.5">
+        <button onClick={handleShare} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <Share2 className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Share flight</span>
+        </button>
+        <button onClick={handleOpenAcars} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <ExternalLink className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Open ACARS</span>
+        </button>
+      </div>
+    </div>
+  );
+
   if (hasCover) {
     // Photo card — image fills background, info overlaid at bottom
     return (
@@ -119,14 +134,14 @@ function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean
               {callsign}
             </p>
             {flight.departure && flight.arrival && (
-              <div className="flex items-center gap-1.5 text-gray-300 font-mono text-sm mt-0.5">
+              <div className="flex items-center gap-1.5 text-zinc-300 font-mono text-sm mt-0.5">
                 <span>{flight.departure}</span>
-                <ArrowRight className="h-3 w-3 text-gray-500 shrink-0" />
+                <ArrowRight className="h-3 w-3 text-zinc-500 shrink-0" />
                 <span>{flight.arrival}</span>
               </div>
             )}
             {flight.aircraft && (
-              <p className="text-xs text-gray-400 mt-0.5">{flight.aircraft}</p>
+              <p className="text-xs text-zinc-400 mt-0.5">{flight.aircraft}</p>
             )}
             {flight.isPFATC && (
               <div className="flex items-center mt-1">
@@ -142,38 +157,26 @@ function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean
           <div className="absolute top-3 right-10" ref={menuRef}>
             <button
               onClick={toggleMenu}
-              className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-black/40 transition-colors backdrop-blur-sm"
+              className="p-1.5 rounded-lg text-white/70 border border-white/20 hover:text-white hover:border-white/50 hover:bg-black/40 transition-colors backdrop-blur-sm"
               aria-label="Flight options"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-4" />}
             </button>
-
-            {menuOpen && (
-              <div className="absolute top-8 right-0 z-30 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl shadow-black/40 py-1 min-w-40">
-                <button onClick={handleShare} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors">
-                  <Share2 className="h-3.5 w-3.5 text-gray-400" />
-                  Share flight
-                </button>
-                <button onClick={handleOpenAcars} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors">
-                  <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
-                  Open ACARS
-                </button>
-              </div>
-            )}
+            {dropdown}
           </div>
         )}
       </div>
     );
   }
 
-  // Standard info card (no photo) — matches Sessions card structure exactly
+  // Standard info card (no photo)
   return (
     <div className="relative">
       <Link
         to={`/my-flights/${flight.id}`}
         className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block h-full"
       >
-        {/* Header — icon + callsign, like Sessions icon + name */}
+        {/* Header */}
         <div className="flex items-center mb-3">
           <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
           <span className="font-medium truncate text-md">{callsign}</span>
@@ -227,24 +230,12 @@ function FlightCard({ flight, large = false }: { flight: Flight; large?: boolean
         <div className="absolute top-4 right-4" ref={menuRef}>
           <button
             onClick={toggleMenu}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 transition-colors"
+            className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
             aria-label="Flight options"
           >
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-4" />}
+            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
           </button>
-
-          {menuOpen && (
-            <div className="absolute top-8 right-0 z-30 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl shadow-black/40 py-1 min-w-40">
-              <button onClick={handleShare} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors">
-                <Share2 className="h-3.5 w-3.5 text-gray-400" />
-                Share flight
-              </button>
-              <button onClick={handleOpenAcars} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors">
-                <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
-                Open ACARS
-              </button>
-            </div>
-          )}
+          {dropdown}
         </div>
       )}
     </div>

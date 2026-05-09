@@ -189,7 +189,7 @@ export default function PublicFlightView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
         <Navbar /><Loader />
       </div>
     );
@@ -197,7 +197,7 @@ export default function PublicFlightView() {
 
   if (error || !flight) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div className="min-h-screen bg-zinc-950 text-white">
         <Navbar />
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700/50 text-red-300 text-sm">
@@ -212,7 +212,7 @@ export default function PublicFlightView() {
   const hasSpokenName = formattedCallsign !== (flight.callsign || '').toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar />
 
       {/* Lightbox */}
@@ -251,7 +251,7 @@ export default function PublicFlightView() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-gray-950/30 via-gray-950/60 to-gray-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/30 via-zinc-950/60 to-zinc-950" />
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-end pb-8 px-6 text-center gap-3">
