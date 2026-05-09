@@ -1,4 +1,4 @@
-export type Position = 'ALL' | 'DEL' | 'GND' | 'TWR' | 'APP';
+export type Position = "ALL" | "DEL" | "GND" | "TWR" | "APP";
 
 export interface SessionInfo {
   sessionId: string;
@@ -7,6 +7,7 @@ export interface SessionInfo {
   createdAt: string;
   createdBy: string;
   isPFATC: boolean;
+  isAdvancedATC?: boolean;
   activeRunway?: string;
   customName?: string;
   isLegacy: boolean;

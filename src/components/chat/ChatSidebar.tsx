@@ -1,49 +1,43 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   fetchChatMessages,
   reportChatMessage,
   fetchGlobalChatMessages,
   reportGlobalChatMessage,
-} from '../../utils/fetch/chats';
+  fetchAATCChatMessages,
+  reportAATCChatMessage,
+} from "../../utils/fetch/chats";
 import {
   isUserInActiveChat,
   handleMentionSuggestions,
   handleGlobalMentionSuggestions,
   insertMentionIntoText,
   isAtBottom,
-} from '../../utils/chats';
-import { useAuth } from '../../hooks/auth/useAuth';
-import { useData } from '../../hooks/data/useData';
-import { createChatSocket } from '../../sockets/chatSocket';
+} from "../../utils/chats";
+import { useAuth } from "../../hooks/auth/useAuth";
+import { useData } from "../../hooks/data/useData";
+import { createChatSocket } from "../../sockets/chatSocket";
 import {
   createGlobalChatSocket,
   type GlobalChatMessage,
   type ConnectedGlobalChatUser,
-} from '../../sockets/globalChatSocket';
-import {
-  X,
-  Flag,
-  MessageCircle,
-  Radio,
-  Wifi,
-  WifiOff,
-  Phone,
-} from 'lucide-react';
-import type { ChatMessage, ChatMention } from '../../types/chats';
-import type { SessionUser } from '../../types/session';
-import type { ToastType } from '../common/Toast';
+} from "../../sockets/globalChatSocket";
+import { X, Flag, MessageCircle, Radio, Wifi, WifiOff, Phone } from "lucide-react";
+import type { ChatMessage, ChatMention } from "../../types/chats";
+import type { SessionUser } from "../../types/session";
+import type { ToastType } from "../common/Toast";
 import {
   createVoiceChatSocket,
   type VoiceUser,
   type VoiceConnectionState,
-} from '../../sockets/voiceChatSocket';
-import Button from '../common/Button';
-import Loader from '../common/Loader';
-import Modal from '../common/Modal';
-import Toast from '../common/Toast';
-import VoiceChat from './VoiceChat';
-import { ChatMessageRow, type ChatListMessage } from './ChatMessageRow';
-import { ChatTextComposer } from './ChatTextComposer';
+} from "../../sockets/voiceChatSocket";
+import Button from "../common/Button";
+import Loader from "../common/Loader";
+import Modal from "../common/Modal";
+import Toast from "../common/Toast";
+import VoiceChat from "./VoiceChat";
+import { ChatMessageRow, type ChatListMessage } from "./ChatMessageRow";
+import { ChatTextComposer } from "./ChatTextComposer";
 
 interface ChatSidebarProps {
   sessionId: string;
@@ -55,6 +49,7 @@ interface ChatSidebarProps {
   station?: string;
   position?: string;
   isPFATC?: boolean;
+  isAdvancedATC?: boolean;
   unreadSessionCount?: number;
   unreadGlobalCount?: number;
   onVoiceStateChange?: (_inVoice: boolean) => void;
@@ -70,6 +65,7 @@ export default function ChatSidebar({
   station,
   position,
   isPFATC = false,
+  isAdvancedATC = false,
   unreadSessionCount = 0,
   unreadGlobalCount = 0,
   onVoiceStateChange,
@@ -78,27 +74,21 @@ export default function ChatSidebar({
   const { airports } = useData();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [hoveredMessage, setHoveredMessage] = useState<number | null>(null);
   const [activeChatUsers, setActiveChatUsers] = useState<string[]>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionSuggestions, setMentionSuggestions] = useState<SessionUser[]>(
-    []
-  );
+  const [mentionSuggestions, setMentionSuggestions] = useState<SessionUser[]>([]);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [reportingMessageId, setReportingMessageId] = useState<number | null>(
-    null
-  );
+  const [reportReason, setReportReason] = useState("");
+  const [reportingMessageId, setReportingMessageId] = useState<number | null>(null);
   const [reportingGlobalMessage, setReportingGlobalMessage] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: ToastType;
   } | null>(null);
-  const [automoddedMessages, setAutomoddedMessages] = useState<
-    Map<number, string>
-  >(new Map());
+  const [automoddedMessages, setAutomoddedMessages] = useState<Map<number, string>>(new Map());
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
@@ -107,30 +97,24 @@ export default function ChatSidebar({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isAtBottomRef = useRef(true);
 
-  const [activeTab, setActiveTab] = useState<'session' | 'voice' | 'pfatc'>(
-    sessionId ? 'session' : 'pfatc'
+  const [activeTab, setActiveTab] = useState<"session" | "voice" | "pfatc" | "aatc">(
+    sessionId ? "session" : isAdvancedATC ? "aatc" : "pfatc",
   );
   const [globalMessages, setGlobalMessages] = useState<GlobalChatMessage[]>([]);
   const [globalLoading, setGlobalLoading] = useState(false);
-  const [globalInput, setGlobalInput] = useState('');
+  const [globalInput, setGlobalInput] = useState("");
   const [connectedGlobalChatUsers, setConnectedGlobalChatUsers] = useState<
     ConnectedGlobalChatUser[]
   >([]);
   const [showGlobalSuggestions, setShowGlobalSuggestions] = useState(false);
   const [globalSuggestions, setGlobalSuggestions] = useState<
     Array<{
-      type: 'user' | 'airport';
-      data:
-        | SessionUser
-        | { icao: string; name: string }
-        | ConnectedGlobalChatUser;
+      type: "user" | "airport";
+      data: SessionUser | { icao: string; name: string } | ConnectedGlobalChatUser;
     }>
   >([]);
-  const [selectedGlobalSuggestionIndex, setSelectedGlobalSuggestionIndex] =
-    useState(-1);
-  const globalSocketRef = useRef<ReturnType<
-    typeof createGlobalChatSocket
-  > | null>(null);
+  const [selectedGlobalSuggestionIndex, setSelectedGlobalSuggestionIndex] = useState(-1);
+  const globalSocketRef = useRef<ReturnType<typeof createGlobalChatSocket> | null>(null);
   const globalPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
   const globalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const onMentionReceivedRef = useRef(onMentionReceived);
@@ -145,13 +129,9 @@ export default function ChatSidebar({
   const [isInVoice, setIsInVoice] = useState(false);
   const [voiceDevices, setVoiceDevices] = useState<MediaDeviceInfo[]>([]);
 
-  const voiceSocketRef = useRef<ReturnType<
-    typeof createVoiceChatSocket
-  > | null>(null);
+  const voiceSocketRef = useRef<ReturnType<typeof createVoiceChatSocket> | null>(null);
 
-  const [, setUnreadSessionMentions] = useState<
-    ChatMention[]
-  >([]);
+  const [, setUnreadSessionMentions] = useState<ChatMention[]>([]);
   const [, setUnreadGlobalMentions] = useState<ChatMention[]>([]);
 
   // userId -> username for people currently typing
@@ -164,13 +144,15 @@ export default function ChatSidebar({
   const lastSessionTypingEmit = useRef(0);
   const lastGlobalTypingEmit = useRef(0);
   const [userVolumes, setUserVolumes] = useState<Map<string, number>>(() => {
-    const storedVolumes = localStorage.getItem('userVolumes');
+    const storedVolumes = localStorage.getItem("userVolumes");
     return storedVolumes ? new Map(JSON.parse(storedVolumes)) : new Map();
   });
   // Ref so the voice socket always reads the latest volumes without needing
   // to be recreated when the map changes.
   const userVolumesRef = useRef(userVolumes);
-  useEffect(() => { userVolumesRef.current = userVolumes; }, [userVolumes]);
+  useEffect(() => {
+    userVolumesRef.current = userVolumes;
+  }, [userVolumes]);
 
   useEffect(() => {
     onVoiceStateChange?.(isInVoice);
@@ -179,8 +161,7 @@ export default function ChatSidebar({
   const getConnectionIcon = () => {
     if (connectionState.connecting)
       return <Wifi className="w-4 h-4 animate-pulse text-yellow-400" />;
-    if (connectionState.connected)
-      return <Wifi className="w-4 h-4 text-green-400" />;
+    if (connectionState.connected) return <Wifi className="w-4 h-4 text-green-400" />;
     return <WifiOff className="w-4 h-4 text-red-400" />;
   };
 
@@ -190,13 +171,13 @@ export default function ChatSidebar({
 
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [open]);
 
@@ -225,15 +206,11 @@ export default function ChatSidebar({
           });
         },
         (data: { messageId: number; error: string }) => {
-          if (
-            pendingDeleteRef.current &&
-            pendingDeleteRef.current.id === data.messageId
-          ) {
+          if (pendingDeleteRef.current && pendingDeleteRef.current.id === data.messageId) {
             setMessages((prev) => {
               const newMessages = [...prev, pendingDeleteRef.current!];
               return newMessages.sort(
-                (a, b) =>
-                  new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime()
+                (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
               );
             });
             pendingDeleteRef.current = null;
@@ -243,7 +220,7 @@ export default function ChatSidebar({
           setActiveChatUsers(users);
         },
         (mention: ChatMention) => {
-          if (!open || activeTab !== 'session') {
+          if (!open || activeTab !== "session") {
             if (mention.mentionedUserId === user.userId && onMentionReceived) {
               onMentionReceived(mention);
             }
@@ -252,7 +229,7 @@ export default function ChatSidebar({
         (data: { messageId: number; reason?: string }) => {
           setAutomoddedMessages((prev) => {
             const newMap = new Map(prev);
-            newMap.set(data.messageId, data.reason || 'Hate speech detected');
+            newMap.set(data.messageId, data.reason || "Hate speech detected");
             return newMap;
           });
         },
@@ -269,13 +246,13 @@ export default function ChatSidebar({
                 return next;
               });
               sessionTypingTimeouts.current.delete(typingId);
-            }, 3000)
+            }, 3000),
           );
-        }
+        },
       );
 
       if (open) {
-        socketRef.current.socket.emit('chatOpened');
+        socketRef.current.socket.emit("chatOpened");
       }
     }
 
@@ -291,9 +268,9 @@ export default function ChatSidebar({
     if (!socketRef.current) return;
 
     if (open) {
-      socketRef.current.socket.emit('chatOpened');
+      socketRef.current.socket.emit("chatOpened");
     } else {
-      socketRef.current.socket.emit('chatClosed');
+      socketRef.current.socket.emit("chatClosed");
     }
   }, [open]);
 
@@ -309,8 +286,8 @@ export default function ChatSidebar({
         setMessagesLoaded(true);
       })
       .catch((error) => {
-        console.error('Failed to fetch chat messages:', error);
-        setErrorMessage('Failed to load chat messages');
+        console.error("Failed to fetch chat messages:", error);
+        setErrorMessage("Failed to load chat messages");
         setMessages([]);
         setLoading(false);
         setMessagesLoaded(true);
@@ -318,7 +295,9 @@ export default function ChatSidebar({
   }, [sessionId, open, messagesLoaded]);
 
   useEffect(() => {
-    if (!user || !isPFATC) return;
+    if (!user || (!isPFATC && !isAdvancedATC)) return;
+    const networkKind: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
+    const globalTabId: "pfatc" | "aatc" = networkKind;
 
     if (!globalSocketRef.current) {
       globalSocketRef.current = createGlobalChatSocket(
@@ -334,9 +313,7 @@ export default function ChatSidebar({
           });
         },
         (data: { messageId: number }) => {
-          setGlobalMessages((prev) =>
-            prev.filter((m) => m.id !== data.messageId)
-          );
+          setGlobalMessages((prev) => prev.filter((m) => m.id !== data.messageId));
         },
         (data: { messageId: number; error: string }) => {
           if (
@@ -346,8 +323,7 @@ export default function ChatSidebar({
             setGlobalMessages((prev) => {
               const newMessages = [...prev, globalPendingDeleteRef.current!];
               return newMessages.sort(
-                (a, b) =>
-                  new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime()
+                (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
               );
             });
             globalPendingDeleteRef.current = null;
@@ -362,24 +338,21 @@ export default function ChatSidebar({
           });
         },
         (mention) => {
-          if (!open || activeTab !== 'pfatc') {
-            if (
-              user && mention.mentionedUserId === user.userId &&
-              onMentionReceivedRef.current
-            ) {
+          if (!open || activeTab !== globalTabId) {
+            if (user && mention.mentionedUserId === user.userId && onMentionReceivedRef.current) {
               onMentionReceivedRef.current({
                 messageId: parseInt(mention.messageId, 10),
                 mentionedUserId: mention.mentionedUserId,
                 mentionerUsername: mention.mentionerUsername,
                 message: mention.message,
                 timestamp: mention.timestamp,
-                sessionId: 'global-chat',
+                sessionId: "global-chat",
               });
             }
           }
         },
         (mention) => {
-          if (!open || activeTab !== 'pfatc') {
+          if (!open || activeTab !== globalTabId) {
             if (
               mention.airport &&
               station &&
@@ -392,7 +365,7 @@ export default function ChatSidebar({
                 mentionerUsername: mention.mentionerUsername,
                 message: mention.message,
                 timestamp: mention.timestamp,
-                sessionId: 'global-chat',
+                sessionId: "global-chat",
               });
             }
           }
@@ -413,62 +386,64 @@ export default function ChatSidebar({
                 return next;
               });
               globalTypingTimeouts.current.delete(typingId);
-            }, 3000)
+            }, 3000),
           );
-        }
+        },
+        networkKind,
       );
 
-      if (open && activeTab === 'pfatc') {
-        globalSocketRef.current.socket.emit('globalChatOpened');
+      if (open && activeTab === globalTabId) {
+        globalSocketRef.current.socket.emit("globalChatOpened");
       }
     }
-    
+
     return () => {
       if (globalSocketRef.current) {
         globalSocketRef.current.socket.disconnect();
         globalSocketRef.current = null;
       }
     };
-  }, [user, station, position, isPFATC, open, activeTab]);
+  }, [user, station, position, isPFATC, isAdvancedATC, open, activeTab]);
 
   useEffect(() => {
     if (!globalSocketRef.current) return;
-
-    if (open && activeTab === 'pfatc') {
-      globalSocketRef.current.socket.emit('globalChatOpened');
+    const globalTabId: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
+    if (open && activeTab === globalTabId) {
+      globalSocketRef.current.socket.emit("globalChatOpened");
     } else {
-      globalSocketRef.current.socket.emit('globalChatClosed');
+      globalSocketRef.current.socket.emit("globalChatClosed");
     }
-  }, [open, activeTab]);
+  }, [open, activeTab, isAdvancedATC]);
 
   useEffect(() => {
-    if (!open || activeTab !== 'pfatc' || globalMessages.length > 0) return;
+    const globalTabId: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
+    if (!open || activeTab !== globalTabId || globalMessages.length > 0) return;
 
     setGlobalLoading(true);
-    fetchGlobalChatMessages()
+    const fetchFn = isAdvancedATC ? fetchAATCChatMessages : fetchGlobalChatMessages;
+    fetchFn()
       .then((fetchedMessages) => {
         setGlobalMessages(fetchedMessages);
         setGlobalLoading(false);
       })
       .catch((error) => {
-        console.error('Failed to fetch global chat messages:', error);
+        console.error("Failed to fetch global chat messages:", error);
         setGlobalMessages([]);
         setGlobalLoading(false);
       });
-  }, [open, activeTab, globalMessages.length]);
+  }, [open, activeTab, isAdvancedATC, globalMessages.length]);
 
-  const isGlobalChat = activeTab === 'pfatc';
-  const textMessages: ChatListMessage[] = isGlobalChat
-    ? globalMessages
-    : messages;
+  const isGlobalChat = activeTab === "pfatc" || activeTab === "aatc";
+  const textMessages: ChatListMessage[] = isGlobalChat ? globalMessages : messages;
   const textLoading = isGlobalChat ? globalLoading : loading;
   const showTextChat =
-    (sessionId && activeTab === 'session') ||
-    (isPFATC && activeTab === 'pfatc');
+    (sessionId && activeTab === "session") ||
+    (isPFATC && activeTab === "pfatc") ||
+    (isAdvancedATC && activeTab === "aatc");
 
   useEffect(() => {
     if (chatEndRef.current && isAtBottomRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [textMessages]);
 
@@ -481,12 +456,7 @@ export default function ChatSidebar({
     setInput(value);
 
     const cursorPos = textareaRef.current?.selectionStart || 0;
-    const result = handleMentionSuggestions(
-      value,
-      cursorPos,
-      sessionUsers,
-      user?.userId
-    );
+    const result = handleMentionSuggestions(value, cursorPos, sessionUsers, user?.userId);
 
     setMentionSuggestions(result.suggestions);
     setShowMentionSuggestions(result.shouldShow);
@@ -512,38 +482,29 @@ export default function ChatSidebar({
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(
-          result.newCursorPos,
-          result.newCursorPos
-        );
+        textareaRef.current.setSelectionRange(result.newCursorPos, result.newCursorPos);
       }
     }, 0);
   };
 
   const sendMessage = () => {
-    if (!input.trim() || !socketRef.current || input.trim().length > 500)
-      return;
-    socketRef.current.socket.emit('chatMessage', {
+    if (!input.trim() || !socketRef.current || input.trim().length > 500) return;
+    socketRef.current.socket.emit("chatMessage", {
       sessionId,
       user,
       message: input.trim(),
     });
-    setInput('');
+    setInput("");
     lastSessionTypingEmit.current = 0;
   };
 
   const sendGlobalMessage = () => {
-    if (
-      !globalInput.trim() ||
-      !globalSocketRef.current ||
-      globalInput.trim().length > 500
-    )
-      return;
-    globalSocketRef.current.socket.emit('globalChatMessage', {
+    if (!globalInput.trim() || !globalSocketRef.current || globalInput.trim().length > 500) return;
+    globalSocketRef.current.socket.emit("globalChatMessage", {
       user,
       message: globalInput.trim(),
     });
-    setGlobalInput('');
+    setGlobalInput("");
     lastGlobalTypingEmit.current = 0;
   };
 
@@ -580,7 +541,7 @@ export default function ChatSidebar({
       globalMessages,
       connectedGlobalChatUsers,
       sessionUsers,
-      user?.userId
+      user?.userId,
     );
 
     setGlobalSuggestions(result.suggestions);
@@ -607,43 +568,32 @@ export default function ChatSidebar({
     setTimeout(() => {
       if (globalTextareaRef.current) {
         globalTextareaRef.current.focus();
-        globalTextareaRef.current.setSelectionRange(
-          result.newCursorPos,
-          result.newCursorPos
-        );
+        globalTextareaRef.current.setSelectionRange(result.newCursorPos, result.newCursorPos);
       }
     }, 0);
   };
 
-  const handleComposerKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>
-  ) => {
-    if (activeTab === 'pfatc') {
-      const hasSuggestions =
-        showGlobalSuggestions && globalSuggestions.length > 0;
+  const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (activeTab === "pfatc" || activeTab === "aatc") {
+      const hasSuggestions = showGlobalSuggestions && globalSuggestions.length > 0;
 
       if (hasSuggestions) {
-        if (e.key === 'ArrowDown') {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedGlobalSuggestionIndex((prev) => (prev + 1) % globalSuggestions.length);
+        } else if (e.key === "ArrowUp") {
           e.preventDefault();
           setSelectedGlobalSuggestionIndex(
-            (prev) => (prev + 1) % globalSuggestions.length
+            (prev) => (prev - 1 + globalSuggestions.length) % globalSuggestions.length,
           );
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSelectedGlobalSuggestionIndex(
-            (prev) =>
-              (prev - 1 + globalSuggestions.length) %
-              globalSuggestions.length
-          );
-        } else if (e.key === 'Enter' && !e.shiftKey) {
+        } else if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           if (
             selectedGlobalSuggestionIndex >= 0 &&
             selectedGlobalSuggestionIndex < globalSuggestions.length
           ) {
-            const suggestion =
-              globalSuggestions[selectedGlobalSuggestionIndex];
-            if (suggestion.type === 'airport') {
+            const suggestion = globalSuggestions[selectedGlobalSuggestionIndex];
+            if (suggestion.type === "airport") {
               const airport = suggestion.data as {
                 icao: string;
                 name: string;
@@ -654,45 +604,41 @@ export default function ChatSidebar({
               insertGlobalMention(u.username);
             }
           }
-        } else if (e.key === 'Escape') {
+        } else if (e.key === "Escape") {
           setShowGlobalSuggestions(false);
           setSelectedGlobalSuggestionIndex(-1);
         }
-      } else if (e.key === 'Enter' && !e.shiftKey) {
+      } else if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendGlobalMessage();
       }
       return;
     }
 
-    if (activeTab === 'session') {
+    if (activeTab === "session") {
       if (showMentionSuggestions) {
-        if (e.key === 'ArrowDown') {
+        if (e.key === "ArrowDown") {
           e.preventDefault();
-          setSelectedSuggestionIndex(
-            (prev) => (prev + 1) % mentionSuggestions.length
-          );
-        } else if (e.key === 'ArrowUp') {
+          setSelectedSuggestionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+        } else if (e.key === "ArrowUp") {
           e.preventDefault();
           setSelectedSuggestionIndex((prev) =>
-            prev === 0 ? mentionSuggestions.length - 1 : prev - 1
+            prev === 0 ? mentionSuggestions.length - 1 : prev - 1,
           );
-        } else if (e.key === 'Enter') {
+        } else if (e.key === "Enter") {
           e.preventDefault();
           if (selectedSuggestionIndex >= 0) {
-            insertMention(
-              mentionSuggestions[selectedSuggestionIndex].username
-            );
+            insertMention(mentionSuggestions[selectedSuggestionIndex].username);
           }
-        } else if (e.key === 'Escape') {
+        } else if (e.key === "Escape") {
           setShowMentionSuggestions(false);
           setSelectedSuggestionIndex(-1);
         }
       } else {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           sendMessage();
-        } else if (e.key === 'Escape') {
+        } else if (e.key === "Escape") {
           setShowMentionSuggestions(false);
         }
       }
@@ -715,29 +661,29 @@ export default function ChatSidebar({
 
     try {
       if (reportingGlobalMessage) {
-        await reportGlobalChatMessage(reportingMessageId, reportReason.trim());
+        if (isAdvancedATC) {
+          await reportAATCChatMessage(reportingMessageId, reportReason.trim());
+        } else {
+          await reportGlobalChatMessage(reportingMessageId, reportReason.trim());
+        }
       } else {
-        await reportChatMessage(
-          sessionId,
-          reportingMessageId,
-          reportReason.trim()
-        );
+        await reportChatMessage(sessionId, reportingMessageId, reportReason.trim());
       }
-      setToast({ message: 'Message reported successfully.', type: 'success' });
+      setToast({ message: "Message reported successfully.", type: "success" });
       setShowReportModal(false);
-      setReportReason('');
+      setReportReason("");
       setReportingMessageId(null);
       setReportingGlobalMessage(false);
     } catch {
-      setToast({ message: 'Failed to report message.', type: 'error' });
+      setToast({ message: "Failed to report message.", type: "error" });
     }
   }
 
   useEffect(() => {
     if (open) {
-      if (activeTab === 'session') {
+      if (activeTab === "session") {
         setUnreadSessionMentions([]);
-      } else if (activeTab === 'pfatc') {
+      } else if (activeTab === "pfatc" || activeTab === "aatc") {
         setUnreadGlobalMentions([]);
       }
     }
@@ -785,10 +731,13 @@ export default function ChatSidebar({
     );
 
     if (voiceSocketRef.current) {
-      voiceSocketRef.current.socket.emit('get-voice-users');
-      voiceSocketRef.current.socket.on('user-left-voice', ({ userId: leftId }: { userId: string }) => {
-        setVoiceUsers((prev) => prev.filter((u) => u.userId !== leftId));
-      });
+      voiceSocketRef.current.socket.emit("get-voice-users");
+      voiceSocketRef.current.socket.on(
+        "user-left-voice",
+        ({ userId: leftId }: { userId: string }) => {
+          setVoiceUsers((prev) => prev.filter((u) => u.userId !== leftId));
+        },
+      );
     }
 
     return () => {
@@ -807,79 +756,72 @@ export default function ChatSidebar({
 
   useEffect(() => {
     if (open && voiceSocketRef.current) {
-      voiceSocketRef.current.socket.emit('get-voice-users');
+      voiceSocketRef.current.socket.emit("get-voice-users");
     }
   }, [open]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(
-        'userVolumes',
-        JSON.stringify(Array.from(userVolumes.entries()))
-      );
+      localStorage.setItem("userVolumes", JSON.stringify(Array.from(userVolumes.entries())));
     } catch (error) {
-      console.warn('Failed to save user volumes to localStorage:', error);
+      console.warn("Failed to save user volumes to localStorage:", error);
     }
   }, [userVolumes]);
 
-  type SidebarTabId = 'session' | 'voice' | 'pfatc';
+  type SidebarTabId = "session" | "voice" | "pfatc" | "aatc";
 
   const sidebarTabs = useMemo(() => {
     const items: SidebarTabId[] = [];
     if (sessionId) {
-      items.push('session', 'voice');
+      items.push("session", "voice");
     }
-    if (isPFATC) items.push('pfatc');
+    if (isPFATC) items.push("pfatc");
+    if (isAdvancedATC) items.push("aatc");
     return items;
-  }, [sessionId, isPFATC]);
+  }, [sessionId, isPFATC, isAdvancedATC]);
 
-  const activeTabIndex = Math.max(
-    0,
-    sidebarTabs.indexOf(activeTab as SidebarTabId)
-  );
+  const activeTabIndex = Math.max(0, sidebarTabs.indexOf(activeTab as SidebarTabId));
   const tabCount = sidebarTabs.length;
 
   return (
     <div
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
-        open ? 'translate-x-[] shadow-2xl shadow-black/90' : 'translate-x-full'
+        open ? "translate-x-[] shadow-2xl shadow-black/90" : "translate-x-full"
       } rounded-l-3xl border-l-2 border-blue-800 flex flex-col`}
       style={{ zIndex: 10000 }}
     >
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
         <div className="flex items-center gap-3">
           <span className="font-extrabold text-xl text-blue-300">
-            {isPFATC && sessionId
-              ? activeTab === 'session'
-                ? 'Session Chat'
-                : activeTab === 'voice'
-                  ? 'Voice Chat'
-                  : 'PFATC Chat'
+            {(isPFATC || isAdvancedATC) && sessionId
+              ? activeTab === "session"
+                ? "Session Chat"
+                : activeTab === "voice"
+                  ? "Voice Chat"
+                  : isAdvancedATC
+                    ? "AATC Chat"
+                    : "PFATC Chat"
               : sessionId
-                ? activeTab === 'voice'
-                  ? 'Voice Chat'
-                  : 'Session Chat'
-                : 'PFATC Chat'}
+                ? activeTab === "voice"
+                  ? "Voice Chat"
+                  : "Session Chat"
+                : isAdvancedATC
+                  ? "AATC Chat"
+                  : "PFATC Chat"}
           </span>
         </div>
-        <button
-          onClick={() => onClose()}
-          className="p-1 rounded-full hover:bg-gray-700"
-        >
+        <button onClick={() => onClose()} className="p-1 rounded-full hover:bg-gray-700">
           <X className="h-5 w-5 text-gray-400" />
         </button>
       </div>
 
-      {(isPFATC || sessionId) && tabCount > 0 && (
+      {(isPFATC || isAdvancedATC || sessionId) && tabCount > 0 && (
         <div className="border-b border-blue-800 bg-zinc-900 px-4 pb-3 pt-2">
           <div className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60">
             <div
               className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
               style={{
-                width:
-                  tabCount > 0
-                    ? `calc((100% - 0.5rem) / ${tabCount})`
-                    : undefined,
+                width: tabCount > 0 ? `calc((100% - 0.5rem) / ${tabCount})` : undefined,
                 left:
                   tabCount > 0
                     ? `calc(0.25rem + ${activeTabIndex} * ((100% - 0.5rem) / ${tabCount}))`
@@ -895,40 +837,49 @@ export default function ChatSidebar({
                   type="button"
                   onClick={() => setActiveTab(tabId)}
                   className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
-                    isActive
-                      ? 'text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                    isActive ? "text-white" : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  {tabId === 'session' && (
+                  {tabId === "session" && (
                     <>
                       <MessageCircle className="h-4 w-4 shrink-0" />
                       <span>Session</span>
-                      {unreadSessionCount > 0 && activeTab !== 'session' && (
+                      {unreadSessionCount > 0 && activeTab !== "session" && (
                         <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
                           {unreadSessionCount}
                         </span>
                       )}
                     </>
                   )}
-                  {tabId === 'voice' && (
+                  {tabId === "voice" && (
                     <>
                       <Phone className="h-4 w-4 shrink-0" />
                       <span>Voice</span>
                       <span
                         className={`flex h-5 min-w-5 items-center justify-center rounded-full pl-px text-xs text-white ${
-                          isInVoice ? 'border border-green-500' : 'bg-zinc-700/90'
+                          isInVoice ? "border border-green-500" : "bg-zinc-700/90"
                         }`}
                       >
                         {voiceUsers.length}
                       </span>
                     </>
                   )}
-                  {tabId === 'pfatc' && (
+                  {tabId === "pfatc" && (
                     <>
                       <Radio className="h-4 w-4 shrink-0" />
                       <span>PFATC</span>
-                      {unreadGlobalCount > 0 && activeTab !== 'pfatc' && (
+                      {unreadGlobalCount > 0 && activeTab !== "pfatc" && (
+                        <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                          {unreadGlobalCount}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {tabId === "aatc" && (
+                    <>
+                      <Radio className="h-4 w-4 shrink-0" />
+                      <span>AATC</span>
+                      {unreadGlobalCount > 0 && activeTab !== "aatc" && (
                         <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
                           {unreadGlobalCount}
                         </span>
@@ -942,22 +893,20 @@ export default function ChatSidebar({
         </div>
       )}
 
-      {activeTab !== 'voice' && (
+      {activeTab !== "voice" && (
         <div className="px-5 py-2 border-b border-blue-800 bg-zinc-900">
           <div className="flex flex-wrap gap-1">
             <>
-              {activeTab === 'session' ? (
+              {activeTab === "session" ? (
                 sessionUsers.map((sessionUser) => (
                   <img
                     key={sessionUser.id}
-                    src={
-                      sessionUser.avatar || '/assets/app/default/avatar.webp'
-                    }
+                    src={sessionUser.avatar || "/assets/app/default/avatar.webp"}
                     alt={sessionUser.username}
                     className={`w-8 h-8 rounded-full border-2 ${
                       isUserInActiveChat(sessionUser.id, activeChatUsers)
-                        ? 'border-green-500'
-                        : 'border-gray-500'
+                        ? "border-green-500"
+                        : "border-gray-500"
                     }`}
                     title={sessionUser.username}
                   />
@@ -967,21 +916,17 @@ export default function ChatSidebar({
                   {connectedGlobalChatUsers.map((globalUser) => (
                     <img
                       key={globalUser.id}
-                      src={
-                        globalUser.avatar || '/assets/app/default/avatar.webp'
-                      }
+                      src={globalUser.avatar || "/assets/app/default/avatar.webp"}
                       alt={globalUser.username}
                       className="w-8 h-8 rounded-full border-2 border-blue-500 shadow-sm"
-                      title={`${globalUser.username} - ${globalUser.station || 'No Station'}`}
+                      title={`${globalUser.username} - ${globalUser.station || "No Station"}`}
                       onError={(e) => {
-                        e.currentTarget.src = '/assets/app/default/avatar.webp';
+                        e.currentTarget.src = "/assets/app/default/avatar.webp";
                       }}
                     />
                   ))}
                   {connectedGlobalChatUsers.length === 0 && (
-                    <div className="text-xs text-zinc-400">
-                      No controllers online
-                    </div>
+                    <div className="text-xs text-zinc-400">No controllers online</div>
                   )}
                 </div>
               )}
@@ -995,7 +940,7 @@ export default function ChatSidebar({
         <div className="flex-1 flex flex-col min-h-0 relative">
           <div
             className={`flex-1 min-h-0 overflow-y-auto px-5 pt-4 pb-36 ${
-              isGlobalChat ? 'space-y-2' : 'space-y-4'
+              isGlobalChat ? "space-y-2" : "space-y-4"
             }`}
             onScroll={handleScroll}
           >
@@ -1025,12 +970,8 @@ export default function ChatSidebar({
                     station={station}
                     hoveredId={hoveredMessage}
                     onHover={setHoveredMessage}
-                    onReport={
-                      isGlobalChat ? handleGlobalReport : handleReport
-                    }
-                    onDelete={
-                      isGlobalChat ? handleGlobalDelete : handleDelete
-                    }
+                    onReport={isGlobalChat ? handleGlobalReport : handleReport}
+                    onDelete={isGlobalChat ? handleGlobalDelete : handleDelete}
                     automodReason={automoddedMessages.get(msg.id)}
                   />
                 );
@@ -1041,26 +982,18 @@ export default function ChatSidebar({
 
           <ChatTextComposer
             isGlobalChat={isGlobalChat}
-            textareaRef={
-              isGlobalChat ? globalTextareaRef : textareaRef
-            }
+            textareaRef={isGlobalChat ? globalTextareaRef : textareaRef}
             value={isGlobalChat ? globalInput : input}
-            onChange={
-              isGlobalChat ? handleGlobalInputChange : handleInputChange
-            }
+            onChange={isGlobalChat ? handleGlobalInputChange : handleInputChange}
             onKeyDown={handleComposerKeyDown}
             onSend={isGlobalChat ? sendGlobalMessage : sendMessage}
-            sendDisabled={
-              isGlobalChat ? !globalInput.trim() : !input.trim()
-            }
+            sendDisabled={isGlobalChat ? !globalInput.trim() : !input.trim()}
             placeholder={
               isGlobalChat
-                ? 'Type a message... Use @ICAO or @username for mentions'
-                : 'Type a message... Use @ to mention users'
+                ? "Type a message... Use @ICAO or @username for mentions"
+                : "Type a message... Use @ to mention users"
             }
-            ariaLabel={
-              isGlobalChat ? 'Type a global message' : 'Type a message'
-            }
+            ariaLabel={isGlobalChat ? "Type a global message" : "Type a message"}
             showMentionSuggestions={showMentionSuggestions}
             mentionSuggestions={mentionSuggestions}
             selectedSuggestionIndex={selectedSuggestionIndex}
@@ -1076,7 +1009,7 @@ export default function ChatSidebar({
       )}
 
       {/* Voice Chat Content */}
-      {sessionId && activeTab === 'voice' && (
+      {sessionId && activeTab === "voice" && (
         <div className="flex-1 flex flex-col min-h-0">
           <VoiceChat
             open={open}
@@ -1102,13 +1035,11 @@ export default function ChatSidebar({
                 {connectionState.connected
                   ? `${voiceUsers.length} in voice chat`
                   : connectionState.connecting
-                    ? 'Connecting...'
-                    : 'Voice chat offline'}
+                    ? "Connecting..."
+                    : "Voice chat offline"}
               </span>
               {connectionState.error && (
-                <span className="text-xs text-red-400 truncate">
-                  {connectionState.error}
-                </span>
+                <span className="text-xs text-red-400 truncate">{connectionState.error}</span>
               )}
             </div>
           </div>
@@ -1137,13 +1068,7 @@ export default function ChatSidebar({
         />
       </Modal>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <style>{`
         .volume-slider::-webkit-slider-thumb {

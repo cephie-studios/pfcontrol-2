@@ -1,4 +1,4 @@
-import type { Flight } from './flight';
+import type { Flight } from "./flight";
 
 export interface OverviewSession {
   sessionId: string;
@@ -7,6 +7,7 @@ export interface OverviewSession {
   createdAt: string;
   createdBy: string;
   isPFATC: boolean;
+  isAdvancedATC?: boolean;
   activeUsers: number;
   flights: Flight[];
   flightCount: number;
@@ -16,9 +17,6 @@ export interface OverviewData {
   activeSessions: OverviewSession[];
   totalActiveSessions: number;
   totalFlights: number;
-  arrivalsByAirport: Record<
-    string,
-    (Flight & { sessionId: string; departureAirport: string })[]
-  >;
+  arrivalsByAirport: Record<string, (Flight & { sessionId: string; departureAirport: string })[]>;
   lastUpdated: string;
 }

@@ -1,8 +1,8 @@
-import { apiFetch } from '../apiFetch.js';
-import type { Settings } from '../../types/settings';
-import type { Feedback, FeedbackStats } from './feedback';
+import { apiFetch } from "../apiFetch.js";
+import type { Settings } from "../../types/settings";
+import type { Feedback, FeedbackStats } from "./feedback";
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL || "";
 
 export interface DailyStats {
   date: string;
@@ -87,6 +87,7 @@ export interface AdminSession {
   created_at: string;
   created_by: string;
   is_pfatc: boolean;
+  is_advanced_atc?: boolean;
   flight_count: number;
   username: string;
   discriminator: string;
@@ -166,7 +167,7 @@ export interface Pagination {
 
 export interface Notification {
   id: number;
-  type: 'info' | 'warning' | 'success' | 'error';
+  type: "info" | "warning" | "success" | "error";
   text: string;
   show: boolean;
   custom_color?: string | null;
@@ -209,7 +210,7 @@ export interface ChatReport {
   message: string;
   reason: string;
   created_at: string;
-  status?: 'pending' | 'resolved';
+  status?: "pending" | "resolved";
   avatar?: string;
   reported_username?: string;
   reporter_username?: string;
@@ -231,7 +232,7 @@ export interface FlightLog {
   user_id: string;
   username: string;
   session_id: string;
-  action: 'add' | 'update' | 'delete';
+  action: "add" | "update" | "delete";
   flight_id: string;
   old_data: object | null;
   new_data: object | null;
@@ -327,9 +328,9 @@ export interface DailyRatingStats {
 
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
   const response = await apiFetch(`${API_BASE_URL}/api/admin${endpoint}`, {
-    credentials: 'include',
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options?.headers,
     },
     ...options,
@@ -337,10 +338,10 @@ async function makeAdminRequest(endpoint: string, options?: RequestInit) {
 
   if (!response.ok) {
     if (response.status === 403) {
-      throw new Error('Admin access required');
+      throw new Error("Admin access required");
     }
     if (response.status === 401) {
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
@@ -348,17 +349,15 @@ async function makeAdminRequest(endpoint: string, options?: RequestInit) {
   return response.json();
 }
 
-export async function fetchAdminStatistics(
-  days: number = 30
-): Promise<AdminStats> {
+export async function fetchAdminStatistics(days: number = 30): Promise<AdminStats> {
   return makeAdminRequest(`/statistics?days=${days}`);
 }
 
 export async function fetchAdminUsers(
   page: number = 1,
   limit: number = 50,
-  search: string = '',
-  filterAdmin: string = 'all'
+  search: string = "",
+  filterAdmin: string = "all",
 ): Promise<AdminUsersResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -382,27 +381,27 @@ export interface AdminSessionsResponse {
 export async function fetchAdminSessions(
   page: number = 1,
   limit: number = 100,
-  search: string = ''
+  search: string = "",
 ): Promise<AdminSessionsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
   });
-  if (search) params.append('search', search);
+  if (search) params.append("search", search);
   return makeAdminRequest(`/sessions?${params.toString()}`);
 }
 
 export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
   return makeAdminRequest(`/users/${userId}/reveal-ip`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
 export async function revealAuditLogIP(
-  logId: number
+  logId: number,
 ): Promise<{ logId: number; ip_address: string }> {
   return makeAdminRequest(`/audit-logs/${logId}/reveal-ip`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
@@ -419,22 +418,22 @@ export async function banUser({
   reason: string;
   expiresAt?: string;
 }) {
-  return makeAdminRequest('/bans/ban', {
-    method: 'POST',
+  return makeAdminRequest("/bans/ban", {
+    method: "POST",
     body: JSON.stringify({ userId, ip, username, reason, expiresAt }),
   });
 }
 
 export async function unbanUser(userIdOrIp: string) {
-  return makeAdminRequest('/bans/unban', {
-    method: 'POST',
+  return makeAdminRequest("/bans/unban", {
+    method: "POST",
     body: JSON.stringify({ userIdOrIp }),
   });
 }
 
 export async function fetchAllBans(
   page: number = 1,
-  limit: number = 50
+  limit: number = 50,
 ): Promise<{ bans: Ban[]; pagination: Pagination }> {
   return makeAdminRequest(`/bans?page=${page}&limit=${limit}`);
 }
@@ -448,58 +447,53 @@ export async function fetchAuditLogs(
     targetUserId?: string;
     dateFrom?: string;
     dateTo?: string;
-  } = {}
+  } = {},
 ): Promise<AuditLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(
-        ([, value]) => value != null && value !== ''
-      )
+      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
     ),
   });
 
-  const response = await apiFetch(
-    `${API_BASE_URL}/api/admin/audit-logs?${params}`,
-    {
-      credentials: 'include',
-    }
-  );
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/audit-logs?${params}`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch audit logs');
+    throw new Error("Failed to fetch audit logs");
   }
 
   return response.json();
 }
 
 export async function deleteAdminSession(
-  sessionId: string
+  sessionId: string,
 ): Promise<{ message: string; sessionId: string }> {
   return makeAdminRequest(`/sessions/${sessionId}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
 export async function logSessionJoin(
-  sessionId: string
+  sessionId: string,
 ): Promise<{ message: string; sessionId: string }> {
   return makeAdminRequest(`/sessions/${sessionId}/join`, {
-    method: 'POST',
+    method: "POST",
   });
 }
 
 export async function fetchNotifications(): Promise<Notification[]> {
-  const response = await makeAdminRequest('/notifications');
+  const response = await makeAdminRequest("/notifications");
   return response;
 }
 
 export async function addNotification(
-  notification: Omit<Notification, 'id' | 'created_at' | 'updated_at'>
+  notification: Omit<Notification, "id" | "created_at" | "updated_at">,
 ): Promise<Notification> {
-  const response = await makeAdminRequest('/notifications', {
-    method: 'POST',
+  const response = await makeAdminRequest("/notifications", {
+    method: "POST",
     body: JSON.stringify(notification),
   });
   return response;
@@ -507,10 +501,10 @@ export async function addNotification(
 
 export async function updateNotification(
   id: number,
-  notification: Partial<Omit<Notification, 'id' | 'created_at' | 'updated_at'>>
+  notification: Partial<Omit<Notification, "id" | "created_at" | "updated_at">>,
 ): Promise<Notification> {
   const response = await makeAdminRequest(`/notifications/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(notification),
   });
   return response;
@@ -518,12 +512,12 @@ export async function updateNotification(
 
 export async function deleteNotification(id: number): Promise<void> {
   await makeAdminRequest(`/notifications/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
 export async function fetchRoles(): Promise<Role[]> {
-  return makeAdminRequest('/roles');
+  return makeAdminRequest("/roles");
 }
 
 export async function createRole(roleData: {
@@ -534,8 +528,8 @@ export async function createRole(roleData: {
   icon?: string;
   priority?: number;
 }): Promise<Role> {
-  return makeAdminRequest('/roles', {
-    method: 'POST',
+  return makeAdminRequest("/roles", {
+    method: "POST",
     body: JSON.stringify(roleData),
   });
 }
@@ -549,60 +543,54 @@ export async function updateRole(
     color?: string;
     icon?: string;
     priority?: number;
-  }
+  },
 ): Promise<Role> {
   return makeAdminRequest(`/roles/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(roleData),
   });
 }
 
 export async function updateRolePriorities(
-  rolePriorities: Array<{ id: number; priority: number }>
+  rolePriorities: Array<{ id: number; priority: number }>,
 ): Promise<boolean> {
-  return makeAdminRequest('/roles/priorities', {
-    method: 'PUT',
+  return makeAdminRequest("/roles/priorities", {
+    method: "PUT",
     body: JSON.stringify({ rolePriorities }),
   });
 }
 
 export async function deleteRole(id: number): Promise<void> {
   return makeAdminRequest(`/roles/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
-export async function assignRoleToUser(
-  userId: string,
-  roleId: number
-): Promise<void> {
+export async function assignRoleToUser(userId: string, roleId: number): Promise<void> {
   return makeAdminRequest(`/roles/assign`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ userId, roleId }),
   });
 }
 
-export async function removeRoleFromUser(
-  userId: string,
-  roleId: number
-): Promise<void> {
+export async function removeRoleFromUser(userId: string, roleId: number): Promise<void> {
   return makeAdminRequest(`/roles/remove`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ userId, roleId }),
   });
 }
 
 export async function fetchUsersWithRoles(): Promise<UserWithRole[]> {
-  return makeAdminRequest('/roles/users');
+  return makeAdminRequest("/roles/users");
 }
 
 export async function fetchAppVersion(): Promise<AppVersion> {
-  return makeAdminRequest('/version');
+  return makeAdminRequest("/version");
 }
 
 export async function updateAppVersion(version: string): Promise<AppVersion> {
-  return makeAdminRequest('/version', {
-    method: 'PUT',
+  return makeAdminRequest("/version", {
+    method: "PUT",
     body: JSON.stringify({ version }),
   });
 }
@@ -610,46 +598,40 @@ export async function updateAppVersion(version: string): Promise<AppVersion> {
 export async function fetchChatReports(
   page = 1,
   limit = 50,
-  filterReporter?: string
+  filterReporter?: string,
 ): Promise<ChatReportsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
   });
-  if (filterReporter) params.append('reporter', filterReporter);
+  if (filterReporter) params.append("reporter", filterReporter);
 
   const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports?${params}`, {
-    credentials: 'include',
+    credentials: "include",
   });
-  if (!res.ok) throw new Error('Failed to fetch chat reports');
+  if (!res.ok) throw new Error("Failed to fetch chat reports");
   return res.json();
 }
 
 export async function updateChatReportStatus(
   reportId: number,
-  status: 'pending' | 'resolved'
+  status: "pending" | "resolved",
 ): Promise<void> {
-  const res = await apiFetch(
-    `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
-    {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    }
-  );
-  if (!res.ok) throw new Error('Failed to update report status');
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Failed to update report status");
 }
 
 export async function deleteChatReport(reportId: number): Promise<void> {
-  const res = await apiFetch(
-    `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
-    {
-      method: 'DELETE',
-      credentials: 'include',
-    }
-  );
-  if (!res.ok) throw new Error('Failed to delete report');
+  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete report");
 }
 
 export async function fetchFlightLogs(
@@ -663,61 +645,53 @@ export async function fetchFlightLogs(
     flightId?: string;
     date?: string;
     text?: string;
-  } = {}
+  } = {},
 ): Promise<FlightLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(
-        ([, value]) => value != null && value !== ''
-      )
+      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
     ),
   });
 
-  const response = await apiFetch(
-    `${API_BASE_URL}/api/admin/flight-logs?${params}`,
-    {
-      credentials: 'include',
-    }
-  );
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/flight-logs?${params}`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch flight logs');
+    throw new Error("Failed to fetch flight logs");
   }
 
   return response.json();
 }
 
 export async function revealFlightLogIP(
-  logId: number
+  logId: number,
 ): Promise<{ logId: number; ip_address: string }> {
-  const response = await apiFetch(
-    `${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`,
-    {
-      method: 'POST',
-      credentials: 'include',
-    }
-  );
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`, {
+    method: "POST",
+    credentials: "include",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to reveal flight log IP');
+    throw new Error("Failed to reveal flight log IP");
   }
 
   return response.json();
 }
 
 export async function fetchFeedback(): Promise<Feedback[]> {
-  return makeAdminRequest('/feedback');
+  return makeAdminRequest("/feedback");
 }
 
 export async function fetchFeedbackStats(): Promise<FeedbackStats> {
-  return makeAdminRequest('/feedback/stats');
+  return makeAdminRequest("/feedback/stats");
 }
 
 export async function deleteFeedback(id: number): Promise<Feedback> {
   return makeAdminRequest(`/feedback/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
@@ -732,39 +706,34 @@ export async function fetchApiLogs(
     dateFrom?: string;
     dateTo?: string;
     search?: string;
-  } = {}
+  } = {},
 ): Promise<ApiLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(
-        ([, value]) => value != null && value !== ''
-      )
+      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
     ),
   });
 
   const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs?${params}`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API logs');
+    throw new Error("Failed to fetch API logs");
   }
 
   return response.json();
 }
 
 export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
-  const response = await apiFetch(
-    `${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`,
-    {
-      credentials: 'include',
-    }
-  );
+  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`, {
+    credentials: "include",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log stats');
+    throw new Error("Failed to fetch API log stats");
   }
 
   return response.json();
@@ -772,11 +741,11 @@ export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
 
 export async function fetchApiLogById(id: number): Promise<ApiLog> {
   const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/${id}`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log');
+    throw new Error("Failed to fetch API log");
   }
 
   return response.json();
@@ -792,22 +761,22 @@ export async function fetchApiLogStats24h(): Promise<
   }>
 > {
   const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/stats-24h`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log stats for last 24 hours');
+    throw new Error("Failed to fetch API log stats for last 24 hours");
   }
 
   return response.json();
 }
 
 export async function fetchControllerRatingStats(): Promise<ControllerRatingStats> {
-  return makeAdminRequest('/ratings/stats');
+  return makeAdminRequest("/ratings/stats");
 }
 
 export async function fetchControllerDailyRatingStats(
-  days: number = 30
+  days: number = 30,
 ): Promise<DailyRatingStats[]> {
   return makeAdminRequest(`/ratings/daily?days=${days}`);
 }
@@ -833,7 +802,7 @@ export interface VpnGateResponse {
 export async function fetchVpnGate(
   page: number = 1,
   limit: number = 50,
-  search: string = ''
+  search: string = "",
 ): Promise<VpnGateResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -843,9 +812,11 @@ export async function fetchVpnGate(
   return makeAdminRequest(`/bans/vpn-gate?${params.toString()}`);
 }
 
-export async function toggleVpnGate(enabled: boolean): Promise<{ success: boolean; enabled: boolean }> {
-  return makeAdminRequest('/bans/vpn-gate/toggle', {
-    method: 'POST',
+export async function toggleVpnGate(
+  enabled: boolean,
+): Promise<{ success: boolean; enabled: boolean }> {
+  return makeAdminRequest("/bans/vpn-gate/toggle", {
+    method: "POST",
     body: JSON.stringify({ enabled }),
   });
 }
@@ -857,15 +828,15 @@ export async function addVpnException({
   userId: string;
   notes?: string;
 }): Promise<{ success: boolean; exception: VpnException }> {
-  return makeAdminRequest('/bans/vpn-gate/exceptions', {
-    method: 'POST',
+  return makeAdminRequest("/bans/vpn-gate/exceptions", {
+    method: "POST",
     body: JSON.stringify({ userId, notes }),
   });
 }
 
 export async function removeVpnException(userId: string): Promise<{ success: boolean }> {
   return makeAdminRequest(`/bans/vpn-gate/exceptions/${encodeURIComponent(userId)}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
@@ -916,7 +887,7 @@ export interface AltCluster {
     vpn_overlap: boolean;
   };
   score: number;
-  score_label: 'low' | 'medium' | 'high' | 'critical';
+  score_label: "low" | "medium" | "high" | "critical";
   detected_at: string;
 }
 
@@ -930,10 +901,10 @@ export interface AltClustersResponse {
 }
 
 export async function fetchAltClusters(
-  options: { minScore?: number } = {}
+  options: { minScore?: number } = {},
 ): Promise<AltClustersResponse> {
   const params = new URLSearchParams();
-  if (options.minScore != null) params.set('minScore', String(options.minScore));
+  if (options.minScore != null) params.set("minScore", String(options.minScore));
   const qs = params.toString();
-  return makeAdminRequest(`/alts${qs ? '?' + qs : ''}`);
+  return makeAdminRequest(`/alts${qs ? "?" + qs : ""}`);
 }

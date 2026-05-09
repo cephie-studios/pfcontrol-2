@@ -1,74 +1,73 @@
-import express from 'express';
+import express from "express";
 import {
   addChatMessage,
   getChatMessages,
   deleteChatMessage,
   reportChatMessage,
   reportGlobalChatMessage,
-} from '../db/chats.js';
-import { chatMessageLimiter } from '../middleware/rateLimiting.js';
-import requireAuth from '../middleware/auth.js';
-import { capture } from '../utils/posthog.js';
-import { mainDb } from '../db/connection.js';
-import { decrypt } from '../utils/encryption.js';
-import { sql } from 'kysely';
+} from "../db/chats.js";
+import { chatMessageLimiter } from "../middleware/rateLimiting.js";
+import requireAuth from "../middleware/auth.js";
+import { capture } from "../utils/posthog.js";
+import { mainDb } from "../db/connection.js";
+import { decrypt } from "../utils/encryption.js";
+import { sql } from "kysely";
 
 const router = express.Router();
 
 // POST: /api/chats/global/:messageId/report - Report a global chat message
-router.post('/global/:messageId/report', requireAuth, async (req, res) => {
+router.post("/global/:messageId/report", requireAuth, async (req, res) => {
   try {
     const { reason } = req.body;
-    if (typeof reason !== 'string' || reason.length > 500) {
-      return res.status(400).json({ error: 'Invalid or too long reason' });
+    if (typeof reason !== "string" || reason.length > 500) {
+      return res.status(400).json({ error: "Invalid or too long reason" });
     }
     const user = req.user;
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     const messageId = Number(req.params.messageId);
     if (isNaN(messageId)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+      return res.status(400).json({ error: "Invalid message ID" });
     }
     await reportGlobalChatMessage(messageId, user.userId, reason);
-    capture(req, { distinctId: user.userId, event: 'chat_message_reported', properties: { message_id: messageId, type: 'global' } });
+    capture(req, {
+      distinctId: user.userId,
+      event: "chat_message_reported",
+      properties: { message_id: messageId, type: "global" },
+    });
     res.status(201).json({ success: true });
   } catch (error) {
-    console.error('Global chat report error:', error);
-    res.status(500).json({ error: 'Failed to report message' });
+    console.error("Global chat report error:", error);
+    res.status(500).json({ error: "Failed to report message" });
   }
 });
 
 // GET: /api/chats/global - Get global chat messages (last 30 minutes)
-router.get('/global/messages', requireAuth, async (req, res) => {
+router.get("/global/messages", requireAuth, async (req, res) => {
   try {
     const messages = await mainDb
-      .selectFrom('global_chat')
+      .selectFrom("global_chat")
       .selectAll()
+      .where("network_kind", "=", "pfatc")
       .where((eb) =>
-        eb(
-          sql`sent_at`,
-          '>=',
-          sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`
-        )
+        eb(sql`sent_at`, ">=", sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`),
       )
-      .where('deleted_at', 'is', null)
-      .orderBy('sent_at', 'asc')
+      .where("deleted_at", "is", null)
+      .orderBy("sent_at", "asc")
       .execute();
 
     const formattedMessages = messages.map((msg) => {
-      let decryptedMessage = '';
+      let decryptedMessage = "";
       try {
         if (msg.message) {
           const encryptedData =
-            typeof msg.message === 'string'
-              ? JSON.parse(msg.message)
-              : msg.message;
-          decryptedMessage = decrypt(encryptedData) || '';
+            typeof msg.message === "string" ? JSON.parse(msg.message) : msg.message;
+          decryptedMessage = decrypt(encryptedData) || "";
         }
       } catch (e) {
-        console.error('[Global Chat] Error decrypting message:', e);
-        decryptedMessage = '';
+        console.error("[Global Chat] Error decrypting message:", e);
+        decryptedMessage = "";
       }
 
       let airportMentions = null;
@@ -77,10 +76,7 @@ router.get('/global/messages', requireAuth, async (req, res) => {
       if (msg.airport_mentions) {
         if (Array.isArray(msg.airport_mentions)) {
           airportMentions = msg.airport_mentions;
-        } else if (
-          typeof msg.airport_mentions === 'string' &&
-          msg.airport_mentions.trim()
-        ) {
+        } else if (typeof msg.airport_mentions === "string" && msg.airport_mentions.trim()) {
           try {
             airportMentions = JSON.parse(msg.airport_mentions);
           } catch (e) {
@@ -92,10 +88,7 @@ router.get('/global/messages', requireAuth, async (req, res) => {
       if (msg.user_mentions) {
         if (Array.isArray(msg.user_mentions)) {
           userMentions = msg.user_mentions;
-        } else if (
-          typeof msg.user_mentions === 'string' &&
-          msg.user_mentions.trim()
-        ) {
+        } else if (typeof msg.user_mentions === "string" && msg.user_mentions.trim()) {
           try {
             userMentions = JSON.parse(msg.user_mentions);
           } catch (e) {
@@ -120,102 +113,192 @@ router.get('/global/messages', requireAuth, async (req, res) => {
 
     res.json(formattedMessages);
   } catch (error) {
-    console.error('Error fetching global chat messages:', error);
-    res.status(500).json({ error: 'Failed to fetch global chat messages' });
+    console.error("Error fetching global chat messages:", error);
+    res.status(500).json({ error: "Failed to fetch global chat messages" });
   }
 });
 
 // GET: /api/chats/:sessionId
-router.get('/:sessionId', requireAuth, async (req, res) => {
+router.get("/:sessionId", requireAuth, async (req, res) => {
   try {
     const messages = await getChatMessages(req.params.sessionId);
     res.json(messages);
   } catch {
-    res.status(500).json({ error: 'Failed to fetch chat messages' });
+    res.status(500).json({ error: "Failed to fetch chat messages" });
   }
 });
 
 // POST: /api/chats/:sessionId
-router.post(
-  '/:sessionId',
-  chatMessageLimiter,
-  requireAuth,
-  async (req, res) => {
-    try {
-      const { message } = req.body;
-      if (typeof message !== 'string' || message.length > 500) {
-        return res.status(400).json({ error: 'Message too long' });
-      }
-      const user = req.user;
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      const chatMsg = await addChatMessage(req.params.sessionId, {
-        userId: user.userId,
-        username: user.username,
-        avatar: user.avatar ?? '',
-        message,
-      });
-      capture(req, { distinctId: user.userId, event: 'chat_message_sent', properties: { session_id: req.params.sessionId } });
-      res.status(201).json(chatMsg);
-    } catch {
-      res.status(500).json({ error: 'Failed to send message' });
+router.post("/:sessionId", chatMessageLimiter, requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (typeof message !== "string" || message.length > 500) {
+      return res.status(400).json({ error: "Message too long" });
     }
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const chatMsg = await addChatMessage(req.params.sessionId, {
+      userId: user.userId,
+      username: user.username,
+      avatar: user.avatar ?? "",
+      message,
+    });
+    capture(req, {
+      distinctId: user.userId,
+      event: "chat_message_sent",
+      properties: { session_id: req.params.sessionId },
+    });
+    res.status(201).json(chatMsg);
+  } catch {
+    res.status(500).json({ error: "Failed to send message" });
   }
-);
+});
 
 // DELETE: /api/chats/:sessionId/:messageId
-router.delete('/:sessionId/:messageId', requireAuth, async (req, res) => {
+router.delete("/:sessionId/:messageId", requireAuth, async (req, res) => {
   try {
     const user = req.user;
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     const messageId = Number(req.params.messageId);
     if (isNaN(messageId)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+      return res.status(400).json({ error: "Invalid message ID" });
     }
-    const success = await deleteChatMessage(
-      req.params.sessionId,
-      messageId,
-      user.userId
-    );
+    const success = await deleteChatMessage(req.params.sessionId, messageId, user.userId);
     if (success) {
       res.json({ success: true });
     } else {
-      res.status(403).json({ error: 'Cannot delete this message' });
+      res.status(403).json({ error: "Cannot delete this message" });
     }
   } catch {
-    res.status(500).json({ error: 'Failed to delete message' });
+    res.status(500).json({ error: "Failed to delete message" });
   }
 });
 
 // POST: /api/chats/:sessionId/:messageId/report
-router.post('/:sessionId/:messageId/report', requireAuth, async (req, res) => {
+router.post("/:sessionId/:messageId/report", requireAuth, async (req, res) => {
   try {
     const { reason } = req.body;
-    if (typeof reason !== 'string' || reason.length > 500) {
-      return res.status(400).json({ error: 'Invalid or too long reason' });
+    if (typeof reason !== "string" || reason.length > 500) {
+      return res.status(400).json({ error: "Invalid or too long reason" });
     }
     const user = req.user;
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     const messageId = Number(req.params.messageId);
     if (isNaN(messageId)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+      return res.status(400).json({ error: "Invalid message ID" });
     }
-    await reportChatMessage(
-      req.params.sessionId,
-      messageId,
-      user.userId,
-      reason
-    );
-    capture(req, { distinctId: user.userId, event: 'chat_message_reported', properties: { session_id: req.params.sessionId, message_id: messageId, type: 'session' } });
+    await reportChatMessage(req.params.sessionId, messageId, user.userId, reason);
+    capture(req, {
+      distinctId: user.userId,
+      event: "chat_message_reported",
+      properties: { session_id: req.params.sessionId, message_id: messageId, type: "session" },
+    });
     res.status(201).json({ success: true });
   } catch (error) {
-    console.error('Report error:', error);
-    res.status(500).json({ error: 'Failed to report message' });
+    console.error("Report error:", error);
+    res.status(500).json({ error: "Failed to report message" });
+  }
+});
+
+// GET: /api/chats/aatc/messages - Fetch AATC global chat messages (last 30 minutes)
+router.get("/aatc/messages", requireAuth, async (req, res) => {
+  try {
+    const messages = await mainDb
+      .selectFrom("global_chat")
+      .selectAll()
+      .where("network_kind", "=", "aatc")
+      .where((eb) =>
+        eb(sql`sent_at`, ">=", sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`),
+      )
+      .where("deleted_at", "is", null)
+      .orderBy("sent_at", "asc")
+      .execute();
+
+    const formattedMessages = messages.map((msg) => {
+      let decryptedMessage = "";
+      try {
+        if (msg.message) {
+          const encryptedData =
+            typeof msg.message === "string" ? JSON.parse(msg.message) : msg.message;
+          decryptedMessage = decrypt(encryptedData) || "";
+        }
+      } catch {
+        decryptedMessage = "";
+      }
+
+      let airportMentions = null;
+      let userMentions = null;
+      if (msg.airport_mentions) {
+        airportMentions = Array.isArray(msg.airport_mentions)
+          ? msg.airport_mentions
+          : (() => {
+              try {
+                return JSON.parse(msg.airport_mentions as string);
+              } catch {
+                return null;
+              }
+            })();
+      }
+      if (msg.user_mentions) {
+        userMentions = Array.isArray(msg.user_mentions)
+          ? msg.user_mentions
+          : (() => {
+              try {
+                return JSON.parse(msg.user_mentions as string);
+              } catch {
+                return null;
+              }
+            })();
+      }
+
+      return {
+        id: msg.id,
+        userId: msg.user_id,
+        username: msg.username,
+        avatar: msg.avatar,
+        station: msg.station,
+        position: msg.position,
+        message: decryptedMessage,
+        airportMentions,
+        userMentions,
+        sent_at: msg.sent_at,
+      };
+    });
+
+    res.json(formattedMessages);
+  } catch (error) {
+    console.error("Error fetching AATC chat messages:", error);
+    res.status(500).json({ error: "Failed to fetch AATC chat messages" });
+  }
+});
+
+// POST: /api/chats/aatc/:messageId/report - Report an AATC global chat message
+router.post("/aatc/:messageId/report", requireAuth, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    if (typeof reason !== "string" || reason.length > 500) {
+      return res.status(400).json({ error: "Invalid or too long reason" });
+    }
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const messageId = Number(req.params.messageId);
+    if (isNaN(messageId)) return res.status(400).json({ error: "Invalid message ID" });
+    await reportGlobalChatMessage(messageId, user.userId, reason);
+    capture(req, {
+      distinctId: user.userId,
+      event: "chat_message_reported",
+      properties: { message_id: messageId, type: "aatc-global" },
+    });
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error("AATC chat report error:", error);
+    res.status(500).json({ error: "Failed to report message" });
   }
 });
 
