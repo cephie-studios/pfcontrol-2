@@ -26,6 +26,7 @@ import { addFlight } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';
 import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
+import { fetchPilotCallsign } from '../utils/fetch/pilot';
 import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
@@ -88,6 +89,8 @@ export default function Submit() {
     typeof createFlightsSocket
   > | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isCallsignPrefilled, setIsCallsignPrefilled] = useState(false);
+  const [isAircraftPrefilled, setIsAircraftPrefilled] = useState(false);
 
   useEffect(() => {
     if (success && submittedFlight && !user) {
@@ -147,6 +150,26 @@ export default function Submit() {
       })
       .finally(() => setLoading(false));
   }, [sessionId, initialLoadComplete]);
+
+  useEffect(() => {
+    if (!user || user.robloxUsername === null || !initialLoadComplete) return;
+
+    fetchPilotCallsign()
+      .then((data) => {
+        if (data && data.callsign) {
+          setForm((f) => ({
+            ...f,
+            callsign: data.callsign || f.callsign,
+            aircraft_type: data.model || f.aircraft_type,
+          }));
+          if (data.callsign) setIsCallsignPrefilled(true);
+          if (data.model) setIsAircraftPrefilled(true);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching pilot callsign:', err);
+      });
+  }, [user, initialLoadComplete]);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -247,6 +270,11 @@ export default function Submit() {
 
   const handleChange = (name: string) => (value: string) => {
     setForm((f) => ({ ...f, [name]: value }));
+    if (name === 'callsign') {
+      setIsCallsignPrefilled(false);
+    } else if (name === 'aircraft_type') {
+      setIsAircraftPrefilled(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -601,6 +629,7 @@ export default function Submit() {
                     <CallsignInput
                       value={form.callsign}
                       onChange={handleChange('callsign')}
+                      isPrefilled={isCallsignPrefilled}
                       required
                       placeholder="e.g. DLH123"
                       maxLength={16}
@@ -614,6 +643,7 @@ export default function Submit() {
                     <AircraftDropdown
                       value={form.aircraft_type}
                       onChange={handleChange('aircraft_type')}
+                      isPrefilled={isAircraftPrefilled}
                     />
                   </div>
                   <div>

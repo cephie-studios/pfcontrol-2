@@ -3,6 +3,9 @@ import { getUserByUsername } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
+import { trafficScraper } from '../utils/trafficScraper.js';
+import requireAuth from '../middleware/auth.js';
+import { getAirlineData } from '../utils/getData.js';
 
 const router = express.Router();
 
@@ -98,6 +101,72 @@ router.get('/:username', async (req, res) => {
   } catch (error) {
     console.error('Error fetching pilot profile:', error);
     res.status(500).json({ error: 'Failed to fetch pilot profile' });
+  }
+});
+
+// GET: /api/pilot/callsign - Get current callsign for logged in user
+router.get('/callsign/data', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = await mainDb
+      .selectFrom('users')
+      .select(['roblox_username'])
+      .where('id', '=', req.user.userId)
+      .executeTakeFirst();
+
+    if (!user || !user.roblox_username) {
+      return res.status(404).json({ error: 'Roblox account not connected' });
+    }
+
+    const trafficData = trafficScraper.getCallsignForUser(user.roblox_username);
+
+    if (!trafficData) {
+      return res.status(404).json({ error: 'No active flight found for this user' });
+    }
+
+    let airlineName = null;
+    let convertedCallsign = trafficData.callsign;
+    
+    if (trafficData.callsign) {
+      const airlineData = getAirlineData();
+      interface Airline {
+        icao: string;
+        callsign: string;
+      }
+
+      const sortedAirlines = [...airlineData].sort((a, b) => b.callsign.length - a.callsign.length);
+      
+      const upperCallsign = trafficData.callsign.toUpperCase();
+      const match = sortedAirlines.find((a: Airline) => upperCallsign.startsWith(a.callsign.toUpperCase()));
+
+      if (match) {
+        airlineName = match.callsign;
+        const remaining = upperCallsign.substring(match.callsign.length).trim();
+        convertedCallsign = `${match.icao}${remaining}`;
+      } else {
+        const icaoMatch = trafficData.callsign.match(/^([A-Z]{3})/);
+        if (icaoMatch) {
+          const icao = icaoMatch[1];
+          const airline = airlineData.find((a: Airline) => a.icao === icao);
+          if (airline) {
+            airlineName = airline.callsign;
+          }
+        }
+      }
+    }
+
+    res.json({
+      ...trafficData,
+      callsign: convertedCallsign,
+      originalCallsign: trafficData.callsign,
+      airlineName,
+    });
+  } catch (error) {
+    console.error('Error fetching pilot callsign:', error);
+    res.status(500).json({ error: 'Failed to fetch pilot callsign' });
   }
 });
 
