@@ -27,9 +27,6 @@ export interface FlightsTable {
   hidden?: boolean;
   acars_token?: string;
   pdc_remarks?: string;
-  notes?: string;
-  snap_images?: object;
-  featured_on_profile?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }
