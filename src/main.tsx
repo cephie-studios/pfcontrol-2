@@ -8,6 +8,7 @@ import { SettingsProvider } from './hooks/settings/SettingsProvider.tsx';
 
 const posthogOptions = {
   api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
+  ui_host: 'https://us.posthog.com',
   defaults: '2026-01-30',
   persistence: 'memory' as const,
 } as const;
