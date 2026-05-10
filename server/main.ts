@@ -1,56 +1,51 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import apiRoutes from './routes/index.js';
-import dotenv from 'dotenv';
-import http from 'http';
-import chalk from 'chalk';
-import Redis from 'ioredis';
-import { createAdapter } from '@socket.io/redis-adapter';
+import path from "path";
+import { fileURLToPath } from "url";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import apiRoutes from "./routes/index.js";
+import dotenv from "dotenv";
+import http from "http";
+import chalk from "chalk";
+import Redis from "ioredis";
+import { createAdapter } from "@socket.io/redis-adapter";
 
-import { setupSessionUsersWebsocket } from './websockets/sessionUsersWebsocket.js';
-import { setupChatWebsocket } from './websockets/chatWebsocket.js';
-import { setupGlobalChatWebsocket } from './websockets/globalChatWebsocket.js';
-import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
-import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
-import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
-import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
-import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
-import { setupNotificationsWebsocket } from './websockets/notificationsWebsocket.js';
+import { setupSessionUsersWebsocket } from "./websockets/sessionUsersWebsocket.js";
+import { setupChatWebsocket } from "./websockets/chatWebsocket.js";
+import { setupGlobalChatWebsocket } from "./websockets/globalChatWebsocket.js";
+import { setupFlightsWebsocket } from "./websockets/flightsWebsocket.js";
+import { setupOverviewWebsocket } from "./websockets/overviewWebsocket.js";
+import { setupArrivalsWebsocket } from "./websockets/arrivalsWebsocket.js";
+import { setupSectorControllerWebsocket } from "./websockets/sectorControllerWebsocket.js";
+import { setupVoiceChatWebsocket } from "./websockets/voiceChatWebsocket.js";
+import { setupNotificationsWebsocket } from "./websockets/notificationsWebsocket.js";
 
-import { startStatsFlushing } from './utils/statisticsCache.js';
-import { updateLeaderboard } from './db/leaderboard.js';
-import { startFlightLogsCleanup } from './db/flightLogs.js';
-import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
-import { getAppVersion } from './db/version.js';
+import { startStatsFlushing } from "./utils/statisticsCache.js";
+import { updateLeaderboard } from "./db/leaderboard.js";
+import { startFlightLogsCleanup } from "./db/flightLogs.js";
+import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
+import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
+import { getAppVersion } from "./db/version.js";
+import posthogClient from "./utils/posthog.js";
+import { setupExpressErrorHandler } from "posthog-node";
 
 dotenv.config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
+  path: process.env.NODE_ENV === "production" ? ".env.production" : ".env.development",
 });
-console.log(chalk.bgBlue('NODE_ENV:'), process.env.NODE_ENV);
+console.log(chalk.bgBlue("NODE_ENV:"), process.env.NODE_ENV);
 const requiredEnv = [
-  'DISCORD_CLIENT_ID',
-  'DISCORD_CLIENT_SECRET',
-  'DISCORD_REDIRECT_URI',
-  'FRONTEND_URL',
-  'JWT_SECRET',
-  'POSTGRES_DB_URL',
-  'REDIS_URL',
-  'PORT',
+  "DISCORD_CLIENT_ID",
+  "DISCORD_CLIENT_SECRET",
+  "DISCORD_REDIRECT_URI",
+  "FRONTEND_URL",
+  "JWT_SECRET",
+  "POSTGRES_DB_URL",
+  "REDIS_URL",
+  "PORT",
 ];
-const missingEnv = requiredEnv.filter(
-  (key) => !process.env[key] || process.env[key] === ''
-);
+const missingEnv = requiredEnv.filter((key) => !process.env[key] || process.env[key] === "");
 if (missingEnv.length > 0) {
-  console.error(
-    'Missing required environment variables:',
-    missingEnv.join(', ')
-  );
+  console.error("Missing required environment variables:", missingEnv.join(", "));
   process.exit(1);
 }
 
@@ -61,52 +56,51 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 app.use(
   cors({
     origin:
-      process.env.NODE_ENV === 'production'
-        ? [
-            'https://pfcontrol.com',
-            'https://canary.pfcontrol.com',
-          ]
-        : ['http://localhost:9901', 'http://localhost:5173'],
+      process.env.NODE_ENV === "production"
+        ? ["https://pfcontrol.com", "https://canary.pfcontrol.com"]
+        : ["http://localhost:9901", "http://localhost:5173"],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-      'Access-Control-Allow-Credentials',
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "Access-Control-Allow-Credentials",
     ],
-  })
+  }),
 );
 app.use(cookieParser());
 app.use(express.json());
 
 app.use(apiLogger());
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', environment: process.env.NODE_ENV });
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", environment: process.env.NODE_ENV });
 });
 
-app.use('/api', apiRoutes);
+app.use("/api", apiRoutes);
 
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(
-  express.static(path.join(__dirname, '..', '..', 'dist'), {
+  express.static(path.join(__dirname, "..", "..", "dist"), {
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.js'))
-        res.setHeader('Content-Type', 'application/javascript');
+      if (filePath.endsWith(".js")) res.setHeader("Content-Type", "application/javascript");
     },
-  })
+  }),
 );
 
-app.get('/{*any}', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+app.get("/{*any}", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "..", "dist", "index.html"));
 });
+
+setupExpressErrorHandler(posthogClient, app);
+app.use(httpErrorHandler);
 
 const server = http.createServer(app);
 server.setMaxListeners(25);
@@ -133,10 +127,7 @@ overviewIO.adapter(createAdapter(pubClient, subClient));
 const arrivalsIO = setupArrivalsWebsocket(server);
 arrivalsIO.adapter(createAdapter(pubClient, subClient));
 
-const sectorControllerIO = setupSectorControllerWebsocket(
-  server,
-  sessionUsersIO
-);
+const sectorControllerIO = setupSectorControllerWebsocket(server, sessionUsersIO);
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 
 const voiceChatIO = setupVoiceChatWebsocket(server);
@@ -154,7 +145,7 @@ setInterval(
   () => {
     cleanupOldApiLogs(1);
   },
-  60 * 60 * 1000
+  60 * 60 * 1000,
 );
 
 server.listen(PORT, () => {

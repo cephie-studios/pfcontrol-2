@@ -73,9 +73,9 @@ const adminSessionKindStyles: Record<
     iconClass: "text-blue-500",
   },
   advanced_atc: {
-    hover: "hover:border-blue-500/50",
-    iconBg: "bg-blue-500/20",
-    iconClass: "text-blue-500",
+    hover: "hover:border-purple-500/50",
+    iconBg: "bg-purple-500/20",
+    iconClass: "text-purple-500",
   },
   standard: {
     hover: "hover:border-green-500/50",

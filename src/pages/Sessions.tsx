@@ -20,7 +20,6 @@ import type { SessionInfo } from "../types/session";
 import { fetchFlights } from "../utils/fetch/flights";
 import { fetchBackgrounds } from "../utils/fetch/data";
 import Button from "../components/common/Button";
-import Loader from "../components/common/Loader";
 import TextInput from "../components/common/TextInput";
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -176,9 +175,62 @@ export default function Sessions() {
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 text-white relative">
         <Navbar />
-        <Loader />
+        <div className="relative w-full h-80 md:h-96 overflow-hidden">
+          <div className="absolute inset-0">
+            <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                opacity: customLoaded ? 1 : 0,
+                transition: "opacity 0.5s ease-in-out",
+              }}
+            />
+            <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+          </div>
+          <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
+              MY SESSIONS
+            </h1>
+            <div className="flex gap-3 animate-pulse">
+              <div className="h-10 w-36 rounded-full bg-gray-700/60" />
+              <div className="h-10 w-40 rounded-full bg-gray-700/60" />
+            </div>
+          </div>
+        </div>
+        <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
+          <div className="p-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse">
+                  <div className="flex items-center mb-3 gap-2">
+                    <div className="h-5 w-5 rounded bg-gray-700 shrink-0" />
+                    <div className="h-4 w-36 rounded-full bg-gray-700" />
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+                      <div className="h-3.5 w-44 rounded-full bg-gray-700" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+                      <div className="h-3.5 w-28 rounded-full bg-gray-700" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+                      <div className="h-3.5 w-20 rounded-full bg-gray-700" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -224,7 +276,7 @@ export default function Sessions() {
               transition: "opacity 0.5s ease-in-out",
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -329,8 +381,8 @@ export default function Sessions() {
                         <div className="flex items-center">
                           {session.isAdvancedATC ? (
                             <>
-                              <Workflow className="h-4 w-4 mr-2 text-blue-400" />
-                              <span className="text-blue-400 font-medium">
+                              <Workflow className="h-4 w-4 mr-2 text-purple-400" />
+                              <span className="text-purple-400 font-medium">
                                 Advanced ATC Session
                               </span>
                             </>

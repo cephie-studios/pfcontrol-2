@@ -24,7 +24,7 @@
     "@socket.io/redis-adapter": "^8.3.0",
     "@tailwindcss/vite": "^4.2.2",
     "@uiw/react-md-editor": "^4.0.8",
-    "axios": "^1.12.2",
+    "axios": "^1.16.0",
     "chalk": "^5.6.2",
     "chart.js": "^4.5.0",
     "concurrently": "^9.2.1",
