@@ -1,6 +1,6 @@
-import { mainDb } from './connection.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import { sql } from 'kysely';
+import { mainDb } from "./connection.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { sql } from "kysely";
 
 const FLIGHT_LOG_RETENTION_DAYS = 90;
 
@@ -8,7 +8,7 @@ export interface FlightLogData {
   userId: string;
   username: string;
   sessionId: string;
-  action: 'add' | 'update' | 'delete';
+  action: "add" | "update" | "delete";
   flightId: string;
   oldData?: object | null;
   newData?: object | null;
@@ -18,12 +18,12 @@ export interface FlightLogData {
 export async function getFlightLogsCount(): Promise<number> {
   try {
     const row = await mainDb
-      .selectFrom('flight_logs')
-      .select(({ fn }) => fn.countAll().as('count'))
+      .selectFrom("flight_logs")
+      .select(({ fn }) => fn.countAll().as("count"))
       .executeTakeFirst();
     return Number(row?.count) || 0;
   } catch (error) {
-    console.error('Error counting flight logs:', error);
+    console.error("Error counting flight logs:", error);
     throw error;
   }
 }
@@ -43,7 +43,7 @@ export async function logFlightAction(logData: FlightLogData) {
   try {
     const encryptedIP = ipAddress ? JSON.stringify(encrypt(ipAddress)) : null;
     await mainDb
-      .insertInto('flight_logs')
+      .insertInto("flight_logs")
       .values({
         id: sql`DEFAULT`,
         user_id: userId,
@@ -58,26 +58,20 @@ export async function logFlightAction(logData: FlightLogData) {
       })
       .execute();
   } catch (error) {
-    console.error('Error logging flight action:', error);
+    console.error("Error logging flight action:", error);
   }
 }
 
-export async function cleanupOldFlightLogs(
-  daysToKeep = FLIGHT_LOG_RETENTION_DAYS
-) {
+export async function cleanupOldFlightLogs(daysToKeep = FLIGHT_LOG_RETENTION_DAYS) {
   try {
     const result = await mainDb
-      .deleteFrom('flight_logs')
-      .where(
-        'created_at',
-        '<',
-        new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
-      )
+      .deleteFrom("flight_logs")
+      .where("created_at", "<", new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000))
       .executeTakeFirst();
 
     return Number(result?.numDeletedRows ?? 0);
   } catch (error) {
-    console.error('Error cleaning up flight logs:', error);
+    console.error("Error cleaning up flight logs:", error);
     throw error;
   }
 }
@@ -91,7 +85,7 @@ export function startFlightLogsCleanup() {
     try {
       await cleanupOldFlightLogs(FLIGHT_LOG_RETENTION_DAYS);
     } catch (error) {
-      console.error('Initial flight logs cleanup failed:', error);
+      console.error("Initial flight logs cleanup failed:", error);
     }
   }, 60 * 1000);
 
@@ -99,7 +93,7 @@ export function startFlightLogsCleanup() {
     try {
       await cleanupOldFlightLogs(FLIGHT_LOG_RETENTION_DAYS);
     } catch (error) {
-      console.error('Scheduled flight logs cleanup failed:', error);
+      console.error("Scheduled flight logs cleanup failed:", error);
     }
   }, CLEANUP_INTERVAL);
 }
@@ -114,23 +108,19 @@ export function stopFlightLogsCleanup() {
 export interface FlightLogFilters {
   general?: string;
   user?: string;
-  action?: 'add' | 'update' | 'delete';
+  action?: "add" | "update" | "delete";
   session?: string;
   flightId?: string;
   date?: string;
   text?: string;
 }
 
-export async function getFlightLogs(
-  page = 1,
-  limit = 50,
-  filters: FlightLogFilters = {}
-) {
+export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilters = {}) {
   try {
     let query = mainDb
-      .selectFrom('flight_logs')
+      .selectFrom("flight_logs")
       .selectAll()
-      .orderBy('created_at', 'desc')
+      .orderBy("created_at", "desc")
       .limit(limit)
       .offset((page - 1) * limit);
 
@@ -138,27 +128,27 @@ export async function getFlightLogs(
       const searchPattern = `%${filters.general}%`;
       query = query.where((eb) =>
         eb.or([
-          eb('username', 'ilike', searchPattern),
-          eb('session_id', 'ilike', searchPattern),
-          eb('flight_id', 'ilike', searchPattern),
-          eb('user_id', 'ilike', searchPattern),
-          eb(sql`old_data::text`, 'ilike', searchPattern),
-          eb(sql`new_data::text`, 'ilike', searchPattern),
-        ])
+          eb("username", "ilike", searchPattern),
+          eb("session_id", "ilike", searchPattern),
+          eb("flight_id", "ilike", searchPattern),
+          eb("user_id", "ilike", searchPattern),
+          eb(sql`old_data::text`, "ilike", searchPattern),
+          eb(sql`new_data::text`, "ilike", searchPattern),
+        ]),
       );
     }
 
     if (filters.user) {
-      query = query.where('username', 'ilike', `%${filters.user}%`);
+      query = query.where("username", "ilike", `%${filters.user}%`);
     }
     if (filters.action) {
-      query = query.where('action', '=', filters.action);
+      query = query.where("action", "=", filters.action);
     }
     if (filters.session) {
-      query = query.where('session_id', '=', filters.session);
+      query = query.where("session_id", "=", filters.session);
     }
     if (filters.flightId) {
-      query = query.where('flight_id', '=', filters.flightId);
+      query = query.where("flight_id", "=", filters.flightId);
     }
     if (filters.date) {
       const startOfDay = new Date(filters.date);
@@ -166,47 +156,45 @@ export async function getFlightLogs(
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      query = query.where('created_at', '>=', startOfDay);
-      query = query.where('created_at', '<=', endOfDay);
+      query = query.where("created_at", ">=", startOfDay);
+      query = query.where("created_at", "<=", endOfDay);
     }
     if (filters.text) {
       const searchPattern = `%${filters.text}%`;
       query = query.where((eb) =>
         eb.or([
-          eb(sql`old_data::text`, 'ilike', searchPattern),
-          eb(sql`new_data::text`, 'ilike', searchPattern),
-        ])
+          eb(sql`old_data::text`, "ilike", searchPattern),
+          eb(sql`new_data::text`, "ilike", searchPattern),
+        ]),
       );
     }
 
-    let countQuery = mainDb
-      .selectFrom('flight_logs')
-      .select((eb) => eb.fn.count('id').as('count'));
+    let countQuery = mainDb.selectFrom("flight_logs").select((eb) => eb.fn.count("id").as("count"));
 
     if (filters.general) {
       const searchPattern = `%${filters.general}%`;
       countQuery = countQuery.where((eb) =>
         eb.or([
-          eb('username', 'ilike', searchPattern),
-          eb('session_id', 'ilike', searchPattern),
-          eb('flight_id', 'ilike', searchPattern),
-          eb('user_id', 'ilike', searchPattern),
-          eb(sql`old_data::text`, 'ilike', searchPattern),
-          eb(sql`new_data::text`, 'ilike', searchPattern),
-        ])
+          eb("username", "ilike", searchPattern),
+          eb("session_id", "ilike", searchPattern),
+          eb("flight_id", "ilike", searchPattern),
+          eb("user_id", "ilike", searchPattern),
+          eb(sql`old_data::text`, "ilike", searchPattern),
+          eb(sql`new_data::text`, "ilike", searchPattern),
+        ]),
       );
     }
     if (filters.user) {
-      countQuery = countQuery.where('username', 'ilike', `%${filters.user}%`);
+      countQuery = countQuery.where("username", "ilike", `%${filters.user}%`);
     }
     if (filters.action) {
-      countQuery = countQuery.where('action', '=', filters.action);
+      countQuery = countQuery.where("action", "=", filters.action);
     }
     if (filters.session) {
-      countQuery = countQuery.where('session_id', '=', filters.session);
+      countQuery = countQuery.where("session_id", "=", filters.session);
     }
     if (filters.flightId) {
-      countQuery = countQuery.where('flight_id', '=', filters.flightId);
+      countQuery = countQuery.where("flight_id", "=", filters.flightId);
     }
     if (filters.date) {
       const startOfDay = new Date(filters.date);
@@ -214,16 +202,16 @@ export async function getFlightLogs(
       const endOfDay = new Date(filters.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      countQuery = countQuery.where('created_at', '>=', startOfDay);
-      countQuery = countQuery.where('created_at', '<=', endOfDay);
+      countQuery = countQuery.where("created_at", ">=", startOfDay);
+      countQuery = countQuery.where("created_at", "<=", endOfDay);
     }
     if (filters.text) {
       const searchPattern = `%${filters.text}%`;
       countQuery = countQuery.where((eb) =>
         eb.or([
-          eb(sql`old_data::text`, 'ilike', searchPattern),
-          eb(sql`new_data::text`, 'ilike', searchPattern),
-        ])
+          eb(sql`old_data::text`, "ilike", searchPattern),
+          eb(sql`new_data::text`, "ilike", searchPattern),
+        ]),
       );
     }
 
@@ -235,9 +223,7 @@ export async function getFlightLogs(
         ...log,
         ip_address: log.ip_address
           ? decrypt(
-              typeof log.ip_address === 'string'
-                ? JSON.parse(log.ip_address)
-                : log.ip_address
+              typeof log.ip_address === "string" ? JSON.parse(log.ip_address) : log.ip_address,
             )
           : null,
       })),
@@ -249,17 +235,75 @@ export async function getFlightLogs(
       },
     };
   } catch (error) {
-    console.error('Error fetching flight logs:', error);
+    console.error("Error fetching flight logs:", error);
     throw error;
   }
+}
+
+export async function listDeveloperFlightLogsMetadata(
+  ownerUserId: string,
+  opts: { sessionId?: string; page?: number; limit?: number },
+) {
+  const page = Math.max(1, opts.page ?? 1);
+  const limit = Math.min(100, Math.max(1, opts.limit ?? 50));
+  const offset = (page - 1) * limit;
+
+  let base = mainDb
+    .selectFrom("flight_logs")
+    .innerJoin("sessions", "sessions.session_id", "flight_logs.session_id")
+    .where("sessions.created_by", "=", ownerUserId);
+
+  if (opts.sessionId) {
+    base = base.where("flight_logs.session_id", "=", opts.sessionId);
+  }
+
+  const rows = await base
+    .select([
+      "flight_logs.id",
+      "flight_logs.session_id",
+      "flight_logs.flight_id",
+      "flight_logs.action",
+      "flight_logs.created_at",
+    ])
+    .orderBy("flight_logs.created_at", "desc")
+    .limit(limit)
+    .offset(offset)
+    .execute();
+
+  let countQ = mainDb
+    .selectFrom("flight_logs")
+    .innerJoin("sessions", "sessions.session_id", "flight_logs.session_id")
+    .where("sessions.created_by", "=", ownerUserId);
+  if (opts.sessionId) {
+    countQ = countQ.where("flight_logs.session_id", "=", opts.sessionId);
+  }
+  const totalRow = await countQ
+    .select((eb) => eb.fn.count<number>("flight_logs.id").as("count"))
+    .executeTakeFirst();
+
+  return {
+    logs: rows.map((r) => ({
+      id: String(r.id),
+      sessionId: r.session_id,
+      flightId: r.flight_id,
+      action: r.action,
+      createdAt: r.created_at,
+    })),
+    pagination: {
+      page,
+      limit,
+      total: Number(totalRow?.count ?? 0),
+      pages: Math.ceil(Number(totalRow?.count ?? 0) / limit) || 1,
+    },
+  };
 }
 
 export async function getFlightLogById(logId: string | number) {
   try {
     const log = await mainDb
-      .selectFrom('flight_logs')
+      .selectFrom("flight_logs")
       .selectAll()
-      .where('id', '=', Number(logId))
+      .where("id", "=", Number(logId))
       .executeTakeFirst();
 
     if (!log) return null;
@@ -267,15 +311,11 @@ export async function getFlightLogById(logId: string | number) {
     return {
       ...log,
       ip_address: log.ip_address
-        ? decrypt(
-            typeof log.ip_address === 'string'
-              ? JSON.parse(log.ip_address)
-              : log.ip_address
-          )
+        ? decrypt(typeof log.ip_address === "string" ? JSON.parse(log.ip_address) : log.ip_address)
         : null,
     };
   } catch (error) {
-    console.error('Error fetching flight log by ID:', error);
+    console.error("Error fetching flight log by ID:", error);
     throw error;
   }
 }

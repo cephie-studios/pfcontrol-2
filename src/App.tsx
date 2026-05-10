@@ -1,52 +1,53 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { useAuth } from './hooks/auth/useAuth';
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { useAuth } from "./hooks/auth/useAuth";
 
-import Home from './pages/Home';
-import Create from './pages/Create';
-import Sessions from './pages/Sessions';
-import Submit from './pages/Submit';
-import Flights from './pages/Flights';
-import MyFlights from './pages/MyFlights';
-import MyFlightDetail from './pages/MyFlightDetail';
-import Settings from './pages/Settings';
-import PFATCFlights from './pages/PFATCFlights';
-import ACARS from './pages/ACARS';
-import PilotProfile from './pages/PilotProfile';
+import Home from "./pages/Home";
+import Create from "./pages/Create";
+import Sessions from "./pages/Sessions";
+import Submit from "./pages/Submit";
+import Flights from "./pages/Flights";
+import MyFlights from "./pages/MyFlights";
+import MyFlightDetail from "./pages/MyFlightDetail";
+import Settings from "./pages/Settings";
+import PFATCFlights from "./pages/PFATCFlights";
+import ACARS from "./pages/ACARS";
+import PilotProfile from "./pages/PilotProfile";
 
-import Login from './pages/Login';
-import VatsimCallback from './pages/VatsimCallback';
-import NotFound from './pages/NotFound';
+import Login from "./pages/Login";
+import VatsimCallback from "./pages/VatsimCallback";
+import NotFound from "./pages/NotFound";
 
-import ProtectedRoute from './components/ProtectedRoute';
-import AccessDenied from './components/AccessDenied';
-import Loader from './components/common/Loader';
-import UpdateOverviewModal from './components/modals/UpdateOverviewModal';
-import CanaryModal from './components/modals/CanaryModal';
-import PostHogPageView from './components/PostHogPageView';
+import ProtectedRoute from "./components/ProtectedRoute";
+import AccessDenied from "./components/AccessDenied";
+import Loader from "./components/common/Loader";
+import UpdateOverviewModal from "./components/modals/UpdateOverviewModal";
+import CanaryModal from "./components/modals/CanaryModal";
+import PostHogPageView from "./components/PostHogPageView";
 
-const Admin = lazy(() => import('./pages/Admin'));
-const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
-const AdminAudit = lazy(() => import('./pages/admin/AdminAudit'));
-const AdminBan = lazy(() => import('./pages/admin/AdminBan'));
-const AdminSessions = lazy(() => import('./pages/admin/AdminSessions'));
-const AdminTesters = lazy(() => import('./pages/admin/AdminTesters'));
-const AdminNotifications = lazy(
-  () => import('./pages/admin/AdminNotifications')
-);
-const AdminRoles = lazy(() => import('./pages/admin/AdminRoles'));
-const AdminChatReports = lazy(() => import('./pages/admin/AdminChatReports'));
-const AdminFlightLogs = lazy(() => import('./pages/admin/AdminFlightLogs'));
-const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
-const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
-const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
-const AdminAltDetection = lazy(() => import('./pages/admin/AdminAltDetection'));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
+const AdminBan = lazy(() => import("./pages/admin/AdminBan"));
+const AdminSessions = lazy(() => import("./pages/admin/AdminSessions"));
+const AdminTesters = lazy(() => import("./pages/admin/AdminTesters"));
+const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const AdminRoles = lazy(() => import("./pages/admin/AdminRoles"));
+const AdminChatReports = lazy(() => import("./pages/admin/AdminChatReports"));
+const AdminFlightLogs = lazy(() => import("./pages/admin/AdminFlightLogs"));
+const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
+const AdminApiLogs = lazy(() => import("./pages/admin/AdminApiLogs"));
+const AdminRatings = lazy(() => import("./pages/admin/AdminRatings"));
+const AdminAltDetection = lazy(() => import("./pages/admin/AdminAltDetection"));
+const AdminDevelopers = lazy(() => import("./pages/admin/AdminDevelopers"));
+const DeveloperLayout = lazy(() => import("./pages/developers/DeveloperLayout"));
+const DeveloperOverview = lazy(() => import("./pages/developers/Overview"));
+const DeveloperConsole = lazy(() => import("./pages/developers/Console"));
+const DeveloperKeys = lazy(() => import("./pages/developers/Keys"));
+const DeveloperDocs = lazy(() => import("./pages/developers/Docs"));
 
-import {
-  fetchActiveUpdateModal,
-  type UpdateModal,
-} from './utils/fetch/updateModal';
-import { getTesterSettings } from './utils/fetch/data';
+import { fetchActiveUpdateModal, type UpdateModal } from "./utils/fetch/updateModal";
+import { getTesterSettings } from "./utils/fetch/data";
 
 export default function App() {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function App() {
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
 
   const shouldBypassTesterGate = () => {
-    return window.location.hostname === 'pfcontrol.com';
+    return window.location.hostname === "pfcontrol.com";
   };
 
   useEffect(() => {
@@ -64,9 +65,7 @@ export default function App() {
         .then((modal) => {
           if (modal) {
             try {
-              const seenModals = JSON.parse(
-                localStorage.getItem('seenUpdateModals') || '[]'
-              );
+              const seenModals = JSON.parse(localStorage.getItem("seenUpdateModals") || "[]");
               const hasSeenThisModal = seenModals.includes(modal.id);
 
               if (!hasSeenThisModal) {
@@ -74,14 +73,14 @@ export default function App() {
                 setShowUpdateModal(true);
               }
             } catch (error) {
-              console.warn('localStorage not available, showing modal:', error);
+              console.warn("localStorage not available, showing modal:", error);
               setActiveModal(modal);
               setShowUpdateModal(true);
             }
           }
         })
         .catch((error) => {
-          console.error('Error fetching active update modal:', error);
+          console.error("Error fetching active update modal:", error);
         });
     }
   }, [user]);
@@ -100,14 +99,11 @@ export default function App() {
         if (settings) {
           setTesterGateEnabled(settings.tester_gate_enabled);
         } else {
-          console.error(
-            'Failed to fetch tester settings or invalid response:',
-            settings
-          );
+          console.error("Failed to fetch tester settings or invalid response:", settings);
           setTesterGateEnabled(true);
         }
       } catch (error) {
-        console.error('Error fetching tester settings:', error);
+        console.error("Error fetching tester settings:", error);
         setTesterGateEnabled(true);
       }
     };
@@ -120,15 +116,13 @@ export default function App() {
 
     if (activeModal) {
       try {
-        const seenModals = JSON.parse(
-          localStorage.getItem('seenUpdateModals') || '[]'
-        );
+        const seenModals = JSON.parse(localStorage.getItem("seenUpdateModals") || "[]");
         if (!seenModals.includes(activeModal.id)) {
           seenModals.push(activeModal.id);
-          localStorage.setItem('seenUpdateModals', JSON.stringify(seenModals));
+          localStorage.setItem("seenUpdateModals", JSON.stringify(seenModals));
         }
       } catch (error) {
-        console.warn('Could not save to localStorage:', error);
+        console.warn("Could not save to localStorage:", error);
       }
     }
   };
@@ -198,6 +192,27 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/developers"
+            element={
+              <ProtectedRoute requireTester={false}>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                      <Loader />
+                    </div>
+                  }
+                >
+                  <DeveloperLayout />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DeveloperOverview />} />
+            <Route path="console" element={<DeveloperConsole />} />
+            <Route path="keys" element={<DeveloperKeys />} />
+            <Route path="docs" element={<DeveloperDocs />} />
+          </Route>
           <Route
             path="/my-flights"
             element={
@@ -336,6 +351,14 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="admin">
                           <AdminAltDetection />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="developers"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminDevelopers />
                         </ProtectedRoute>
                       }
                     />

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface CheckboxProps {
   checked: boolean;
@@ -6,6 +6,8 @@ interface CheckboxProps {
   label: ReactNode;
   className?: string;
   checkedClass?: string;
+  /** Unchecked + non-flashing box (border / background). */
+  uncheckedClass?: string;
   flashing?: boolean;
   id?: string;
   disabled?: boolean;
@@ -15,17 +17,15 @@ export default function Checkbox({
   checked,
   onChange,
   label,
-  className = '',
-  checkedClass = 'bg-blue-600 border-blue-600',
+  className = "",
+  checkedClass = "bg-blue-600 border-blue-600",
+  uncheckedClass = "bg-transparent border-gray-400",
   flashing = false,
   id,
   disabled = false,
 }: CheckboxProps) {
   return (
-    <label
-      id={id}
-      className={`checkbox flex items-center space-x-3 cursor-pointer ${className}`}
-    >
+    <label id={id} className={`checkbox flex items-center space-x-3 cursor-pointer ${className}`}>
       <div className="relative w-6 h-6">
         <input
           type="checkbox"
@@ -37,13 +37,13 @@ export default function Checkbox({
 
         <div
           className={
-            'w-6 h-6 border-2 rounded-md transition-colors flex items-center justify-center pointer-events-none ' +
+            "w-6 h-6 border-2 rounded-md transition-colors flex items-center justify-center pointer-events-none " +
             (checked
               ? checkedClass
               : flashing
-                ? 'bg-green-500 border-green-500 animate-pulse'
-                : 'bg-transparent border-gray-400') +
-            (disabled ? ' opacity-50 cursor-not-allowed' : '')
+                ? "bg-green-500 border-green-500 animate-pulse"
+                : uncheckedClass) +
+            (disabled ? " opacity-50 cursor-not-allowed" : "")
           }
         >
           {checked && (

@@ -513,6 +513,125 @@ export async function createMainTables() {
     .addColumn("setting_value", "boolean", (col) => col.notNull())
     .addColumn("updated_at", "timestamptz", (col) => col.defaultTo("now()"))
     .execute();
+
+  // developer_applications
+  await mainDb.schema
+    .createTable("developer_applications")
+    .ifNotExists()
+    .addColumn("id", "serial", (col) => col.primaryKey())
+    .addColumn("user_id", "varchar(255)", (col) =>
+      col.notNull().references("users.id").onDelete("cascade"),
+    )
+    .addColumn("who_text", "text", (col) => col.notNull())
+    .addColumn("why_text", "text", (col) => col.notNull())
+    .addColumn("requested_scopes", "jsonb", (col) => col.notNull())
+    .addColumn("status", "varchar(32)", (col) => col.notNull().defaultTo("pending"))
+    .addColumn("reviewed_by", "varchar(255)")
+    .addColumn("reviewed_at", "timestamptz")
+    .addColumn("reviewer_note", "text")
+    .addColumn("approved_scopes", "jsonb")
+    .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .addColumn("updated_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_applications_user_id")
+    .ifNotExists()
+    .on("developer_applications")
+    .column("user_id")
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_applications_status")
+    .ifNotExists()
+    .on("developer_applications")
+    .column("status")
+    .execute();
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_developer_applications_one_pending
+    ON developer_applications (user_id)
+    WHERE status = 'pending'
+  `.execute(mainDb);
+
+  // developer_profiles
+  await mainDb.schema
+    .createTable("developer_profiles")
+    .ifNotExists()
+    .addColumn("user_id", "varchar(255)", (col) =>
+      col.primaryKey().references("users.id").onDelete("cascade"),
+    )
+    .addColumn("approved_scopes", "jsonb", (col) => col.notNull())
+    .addColumn("status", "varchar(32)", (col) => col.notNull().defaultTo("active"))
+    .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .addColumn("updated_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .execute();
+
+  // developer_api_keys
+  await mainDb.schema
+    .createTable("developer_api_keys")
+    .ifNotExists()
+    .addColumn("id", "bigserial", (col) => col.primaryKey())
+    .addColumn("user_id", "varchar(255)", (col) =>
+      col.notNull().references("users.id").onDelete("cascade"),
+    )
+    .addColumn("name", "varchar(255)", (col) => col.notNull())
+    .addColumn("prefix", "varchar(64)", (col) => col.notNull())
+    .addColumn("secret_hash", "varchar(64)", (col) => col.notNull())
+    .addColumn("scopes", "jsonb", (col) => col.notNull())
+    .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .addColumn("last_used_at", "timestamptz")
+    .addColumn("revoked_at", "timestamptz")
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_api_keys_user_id")
+    .ifNotExists()
+    .on("developer_api_keys")
+    .column("user_id")
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_api_keys_secret_hash")
+    .ifNotExists()
+    .on("developer_api_keys")
+    .column("secret_hash")
+    .execute();
+
+  // developer_api_usage
+  await mainDb.schema
+    .createTable("developer_api_usage")
+    .ifNotExists()
+    .addColumn("id", "bigserial", (col) => col.primaryKey())
+    .addColumn("key_id", "bigint", (col) =>
+      col.notNull().references("developer_api_keys.id").onDelete("cascade"),
+    )
+    .addColumn("user_id", "varchar(255)", (col) =>
+      col.notNull().references("users.id").onDelete("cascade"),
+    )
+    .addColumn("scope_id", "varchar(128)", (col) => col.notNull())
+    .addColumn("method", "varchar(10)", (col) => col.notNull())
+    .addColumn("path", "text", (col) => col.notNull())
+    .addColumn("status_code", "integer", (col) => col.notNull())
+    .addColumn("duration_ms", "integer", (col) => col.notNull())
+    .addColumn("ip_hash", "varchar(64)")
+    .addColumn("client_ip", "varchar(128)")
+    .addColumn("created_at", "timestamptz", (col) => col.notNull().defaultTo("now()"))
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_api_usage_key_created")
+    .ifNotExists()
+    .on("developer_api_usage")
+    .columns(["key_id", "created_at"])
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_developer_api_usage_user_created")
+    .ifNotExists()
+    .on("developer_api_usage")
+    .columns(["user_id", "created_at"])
+    .execute();
 }
 
 export async function ensureSessionsAdvancedAtcColumn() {
@@ -548,5 +667,78 @@ export async function ensureGlobalChatNetworkKindColumn() {
   await sql`
     ALTER TABLE global_chat
     ADD COLUMN IF NOT EXISTS network_kind varchar(20) NOT NULL DEFAULT 'pfatc'
+  `.execute(mainDb);
+}
+
+export async function ensureSessionsDeveloperApiKeyColumn() {
+  await sql`
+    ALTER TABLE sessions
+    ADD COLUMN IF NOT EXISTS developer_api_key_id bigint
+    REFERENCES developer_api_keys(id) ON DELETE SET NULL
+  `.execute(mainDb);
+
+  await mainDb.schema
+    .createIndex("idx_sessions_developer_api_key_id")
+    .ifNotExists()
+    .on("sessions")
+    .column("developer_api_key_id")
+    .execute();
+}
+
+export async function ensureDeveloperApiPolicyColumns() {
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS admin_notice_seq integer NOT NULL DEFAULT 0
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS notice_dismissed_seq integer NOT NULL DEFAULT 0
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS admin_notice_detail text
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS default_rate_limit_per_minute integer
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS status varchar(16) NOT NULL DEFAULT 'active'
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS requested_scopes jsonb
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS rate_limit_per_minute integer
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS reviewed_by varchar(255)
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS reviewed_at timestamptz
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_keys
+    ADD COLUMN IF NOT EXISTS reviewer_note text
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE developer_api_keys
+    ALTER COLUMN secret_hash DROP NOT NULL
+  `.execute(mainDb);
+
+  await sql`
+    UPDATE developer_api_keys SET status = 'active' WHERE status IS NULL OR status = ''
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE developer_api_usage
+    ADD COLUMN IF NOT EXISTS client_ip varchar(128)
   `.execute(mainDb);
 }

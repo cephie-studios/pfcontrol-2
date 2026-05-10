@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Users,
@@ -20,16 +20,17 @@ import {
   HeartPulse,
   ThumbsUp,
   GitMerge,
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/auth/useAuth';
+  Code2,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/auth/useAuth";
 
 interface AdminSidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
 }
 
-const SIDEBAR_STORAGE_KEY = 'admin-sidebar-collapsed';
+const SIDEBAR_STORAGE_KEY = "admin-sidebar-collapsed";
 
 export default function AdminSidebar({
   collapsed: initialCollapsed = false,
@@ -46,7 +47,7 @@ export default function AdminSidebar({
         return JSON.parse(stored);
       }
     } catch (error) {
-      console.warn('Failed to read sidebar state from localStorage:', error);
+      console.warn("Failed to read sidebar state from localStorage:", error);
     }
     return initialCollapsed;
   };
@@ -74,7 +75,7 @@ export default function AdminSidebar({
     try {
       localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(newCollapsed));
     } catch (error) {
-      console.warn('Failed to save sidebar state to localStorage:', error);
+      console.warn("Failed to save sidebar state to localStorage:", error);
     }
 
     onToggle?.();
@@ -83,26 +84,25 @@ export default function AdminSidebar({
   const hasPermission = (permission: string) => {
     if (user?.isAdmin) return true;
     const perms = (user?.rolePermissions ?? {}) as Record<string, unknown>;
-    const checkVal = (v: unknown) =>
-      v === true || v === 'true' || v === '1' || v === 1;
+    const checkVal = (v: unknown) => v === true || v === "true" || v === "1" || v === 1;
 
     if (checkVal(perms[permission])) return true;
 
     const aliases: Record<string, string[]> = {
-      admin: ['admin', 'overview'],
-      users: ['users', 'user_management'],
-      sessions: ['sessions', 'session_management'],
-      notifications: ['notifications', 'update_notifications', 'update_modals'],
-      update_modals: ['update_modals', 'update_notifications'],
-      feedback: ['feedback', 'user_feedback'],
-      chat_reports: ['chat_reports', 'chatReports', 'reports'],
-      audit: ['audit', 'api_logs', 'flight_logs', 'audit_logs'],
-      api_logs: ['api_logs', 'audit', 'audit_logs'],
-      flight_logs: ['flight_logs', 'audit', 'flightArchive', 'flight_logs'],
-      bans: ['bans', 'ban_management'],
-      testers: ['testers', 'tester_management'],
-      roles: ['roles', 'role_management'],
-      event_controller: ['event_controller', 'events', 'event_manager'],
+      admin: ["admin", "overview"],
+      users: ["users", "user_management"],
+      sessions: ["sessions", "session_management"],
+      notifications: ["notifications", "update_notifications", "update_modals"],
+      update_modals: ["update_modals", "update_notifications"],
+      feedback: ["feedback", "user_feedback"],
+      chat_reports: ["chat_reports", "chatReports", "reports"],
+      audit: ["audit", "api_logs", "flight_logs", "audit_logs"],
+      api_logs: ["api_logs", "audit", "audit_logs"],
+      flight_logs: ["flight_logs", "audit", "flightArchive", "flight_logs"],
+      bans: ["bans", "ban_management"],
+      testers: ["testers", "tester_management"],
+      roles: ["roles", "role_management"],
+      event_controller: ["event_controller", "events", "event_manager"],
     };
 
     const mapped = aliases[permission] ?? [];
@@ -115,123 +115,130 @@ export default function AdminSidebar({
 
   const sections = [
     {
-      title: 'General',
+      title: "General",
       icon: LayoutDashboard,
       collapsed: generalCollapsed,
       setCollapsed: setGeneralCollapsed,
       items: [
         {
           icon: BarChart3,
-          label: 'Overview',
-          path: '/admin',
-          permission: 'admin',
+          label: "Overview",
+          path: "/admin",
+          permission: "admin",
         },
         {
           icon: Users,
-          label: 'Users',
-          path: '/admin/users',
-          textColor: 'green-400',
-          permission: 'users',
+          label: "Users",
+          path: "/admin/users",
+          textColor: "green-400",
+          permission: "users",
         },
         {
           icon: Database,
-          label: 'Sessions',
-          path: '/admin/sessions',
-          textColor: 'yellow-400',
-          permission: 'sessions',
+          label: "Sessions",
+          path: "/admin/sessions",
+          textColor: "yellow-400",
+          permission: "sessions",
         },
         {
           icon: Bell,
-          label: 'Notifications',
-          path: '/admin/notifications',
-          textColor: 'cyan-400',
-          permission: 'notifications',
+          label: "Notifications",
+          path: "/admin/notifications",
+          textColor: "cyan-400",
+          permission: "notifications",
         },
         {
           icon: Star,
-          label: 'Feedback',
-          path: '/admin/feedback',
-          textColor: 'yellow-400',
-          permission: 'admin',
+          label: "Feedback",
+          path: "/admin/feedback",
+          textColor: "yellow-400",
+          permission: "admin",
         },
         {
           icon: ThumbsUp,
-          label: 'Ratings',
-          path: '/admin/ratings',
-          textColor: 'indigo-400',
-          permission: 'admin',
+          label: "Ratings",
+          path: "/admin/ratings",
+          textColor: "indigo-400",
+          permission: "admin",
         },
       ].filter((item) => hasPermission(item.permission)),
     },
     {
-      title: 'Moderation',
+      title: "Moderation",
       icon: LockKeyhole,
       collapsed: moderationCollapsed,
       setCollapsed: setModerationCollapsed,
       items: [
         {
           icon: MessageCircleWarning,
-          label: 'Chat Reports',
-          path: '/admin/chat-reports',
-          textColor: 'red-400',
-          permission: 'chat_reports',
+          label: "Chat Reports",
+          path: "/admin/chat-reports",
+          textColor: "red-400",
+          permission: "chat_reports",
         },
         {
           icon: NotebookPen,
-          label: 'Flight Archive',
-          path: '/admin/flight-logs',
-          textColor: 'rose-400',
-          permission: 'audit',
+          label: "Flight Archive",
+          path: "/admin/flight-logs",
+          textColor: "rose-400",
+          permission: "audit",
         },
         {
           icon: Ban,
-          label: 'Bans',
-          path: '/admin/bans',
-          textColor: 'red-400',
-          permission: 'bans',
+          label: "Bans",
+          path: "/admin/bans",
+          textColor: "red-400",
+          permission: "bans",
         },
       ],
     },
     {
-      title: 'Security',
+      title: "Security",
       icon: Shield,
       collapsed: usersCollapsed,
       setCollapsed: setUsersCollapsed,
       items: [
         {
           icon: HeartPulse,
-          label: 'API Logs',
-          path: '/admin/api-logs',
-          textColor: 'blue-400',
-          permission: 'audit',
+          label: "API Logs",
+          path: "/admin/api-logs",
+          textColor: "blue-400",
+          permission: "audit",
+        },
+        {
+          icon: Code2,
+          label: "Developers",
+          path: "/admin/developers",
+          textColor: "cyan-400",
+          permission: "admin",
         },
         {
           icon: ShieldCheck,
-          label: 'Testers',
-          path: '/admin/testers',
-          textColor: 'purple-400',
-          permission: 'testers',
+          label: "Testers",
+          path: "/admin/testers",
+          textColor: "purple-400",
+          permission: "testers",
         },
         {
           icon: ShieldUser,
-          label: 'Roles',
-          path: '/admin/roles',
-          textColor: 'rose-400',
-          permission: 'roles',
+          label: "Roles",
+          path: "/admin/roles",
+          textColor: "rose-400",
+          permission: "roles",
         },
         {
           icon: ShieldAlert,
-          label: 'Audit Log',
-          path: '/admin/audit',
-          textColor: 'orange-400',
-          permission: 'audit',
+          label: "Audit Log",
+          path: "/admin/audit",
+          textColor: "orange-400",
+          permission: "audit",
         },
         {
           icon: GitMerge,
-          label: 'Alt Detection',
-          path: '/admin/alts',
-          textColor: 'amber-400',
-          permission: 'admin',
+          label: "Alt Detection",
+          path: "/admin/alts",
+          textColor: "amber-400",
+          permission: "admin",
         },
       ].filter((item) => hasPermission(item.permission)),
     },
@@ -242,7 +249,7 @@ export default function AdminSidebar({
   return (
     <div
       className={`bg-black border-r border-zinc-700/50 transition-all duration-300 h-screen z-[40] ${
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? "w-16" : "w-64"
       } flex flex-col overflow-y-auto`}
     >
       {/* Header */}
@@ -255,7 +262,7 @@ export default function AdminSidebar({
               </div>
               <div
                 className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
-                  showText ? 'w-auto opacity-100' : 'w-0 opacity-0'
+                  showText ? "w-auto opacity-100" : "w-0 opacity-0"
                 }`}
               >
                 <h2 className="text-white font-semibold">Admin Panel</h2>
@@ -266,11 +273,7 @@ export default function AdminSidebar({
             onClick={handleToggle}
             className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
           >
-            {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -291,8 +294,8 @@ export default function AdminSidebar({
                     flex items-center justify-center px-3 py-3 rounded-xl transition-all duration-200
                     ${
                       isActive
-                        ? 'text-blue-400'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                        ? "text-blue-400"
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                     }
                   `}
                   title={item.label}
@@ -324,9 +327,7 @@ export default function AdminSidebar({
                   </button>
                   <div
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      section.collapsed
-                        ? 'max-h-0 opacity-0'
-                        : 'max-h-96 opacity-100'
+                      section.collapsed ? "max-h-0 opacity-0" : "max-h-96 opacity-100"
                     }`}
                   >
                     <div className="space-y-1 ml-2">
@@ -342,8 +343,8 @@ export default function AdminSidebar({
                               flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
                               ${
                                 isActive
-                                  ? `text-${item.textColor || 'blue-400'}`
-                                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                                  ? `text-${item.textColor || "blue-400"}`
+                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                               }
                             `}
                           >
