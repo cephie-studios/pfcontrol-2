@@ -1,4 +1,9 @@
 import { PostHog } from "posthog-node";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
+import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { logs, type AnyValueMap } from "@opentelemetry/api-logs";
 import type { Request } from "express";
 
 const noop = {
@@ -72,5 +77,48 @@ export function captureRequestException(
     $request_path: req.path,
   });
 }
+
+// --- OpenTelemetry logging to PostHog ---
+
+type LogLevel = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
+
+let _otelLogger: ReturnType<typeof logs.getLogger> | null = null;
+
+export function initTelemetry() {
+  if (!process.env.POSTHOG_API_KEY) return;
+
+  const host = process.env.POSTHOG_HOST || "https://us.i.posthog.com";
+
+  const sdk = new NodeSDK({
+    resource: resourceFromAttributes({
+      "service.name": process.env.SERVICE_NAME || "pfcontrol",
+    }),
+    logRecordProcessor: new BatchLogRecordProcessor(
+      new OTLPLogExporter({
+        url: `${host}/i/v1/logs`,
+        headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
+      })
+    ),
+  });
+
+  sdk.start();
+  process.on("SIGTERM", () => { sdk.shutdown(); });
+  process.on("SIGINT",  () => { sdk.shutdown(); });
+
+  _otelLogger = logs.getLogger("pfcontrol");
+}
+
+function emitLog(level: LogLevel, message: string, attributes?: AnyValueMap) {
+  _otelLogger?.emit({ severityText: level, body: message, attributes });
+}
+
+export const logger = {
+  trace: (msg: string, attrs?: AnyValueMap) => emitLog("TRACE", msg, attrs),
+  debug: (msg: string, attrs?: AnyValueMap) => emitLog("DEBUG", msg, attrs),
+  info:  (msg: string, attrs?: AnyValueMap) => emitLog("INFO",  msg, attrs),
+  warn:  (msg: string, attrs?: AnyValueMap) => emitLog("WARN",  msg, attrs),
+  error: (msg: string, attrs?: AnyValueMap) => emitLog("ERROR", msg, attrs),
+  fatal: (msg: string, attrs?: AnyValueMap) => emitLog("FATAL", msg, attrs),
+};
 
 export default client;

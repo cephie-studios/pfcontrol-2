@@ -3,6 +3,7 @@ import { mainDb } from "../db/connection.js";
 import { getClientIp } from "../utils/getIpAddress.js";
 import { JwtPayloadClient } from "../types/JwtPayload.js";
 import { sql } from "kysely";
+import { logger } from "../utils/posthog.js";
 
 interface RequestWithUser extends Request {
   user?: JwtPayloadClient;
@@ -168,6 +169,16 @@ export function apiLogger() {
         };
 
         setImmediate(() => logApiCall(logEntry));
+
+        if (res.statusCode >= 500) {
+          logger.error("API 5xx response", {
+            method: req.method,
+            path: req.originalUrl,
+            status_code: res.statusCode,
+            response_time: responseTime,
+            user_id: req.user?.userId ?? null,
+          });
+        }
       } catch (error) {
         console.error("Error creating API log entry:", error);
       }
