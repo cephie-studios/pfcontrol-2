@@ -1,5 +1,6 @@
 import express from "express";
 import requireAuth from "../middleware/auth.js";
+import { verifyDeveloperNotificationUnsubscribeToken } from "../developer/developerNotificationUnsubscribeToken.js";
 import {
   buildNewDeveloperKeyCredentials,
   newPendingDeveloperKeyPrefix,
@@ -17,6 +18,7 @@ import {
   dismissDeveloperAdminNotice,
   getDeveloperProfile,
   getLatestDeveloperApplication,
+  updateDeveloperNotificationEmail,
   insertPendingDeveloperApiKey,
   listDeveloperKeysForUser,
   revokeDeveloperApiKey,
@@ -38,14 +40,99 @@ router.get("/docs", (_req, res) => {
   res.json(buildDeveloperApiPublicSpec());
 });
 
+const FRONTEND_BASE = (process.env.FRONTEND_URL ?? "").replace(/\/$/, "");
+
+router.get("/notification-unsubscribe", async (req, res) => {
+  const redirect = (query: string) => {
+    const base = FRONTEND_BASE || "";
+    res.redirect(302, `${base}/developers?notifyEmailRemoved=${query}`);
+  };
+  try {
+    const token = typeof req.query.token === "string" ? req.query.token : "";
+    if (!token) {
+      redirect("invalid");
+      return;
+    }
+    const parsed = verifyDeveloperNotificationUnsubscribeToken(token);
+    if (!parsed) {
+      redirect("invalid");
+      return;
+    }
+    const profile = await getDeveloperProfile(parsed.userId);
+    if (!profile) {
+      redirect("invalid");
+      return;
+    }
+    const current = (profile.notification_email ?? "").trim().toLowerCase();
+    if (!current || current !== parsed.email) {
+      redirect("stale");
+      return;
+    }
+    const row = await updateDeveloperNotificationEmail(parsed.userId, null);
+    if (!row) {
+      redirect("invalid");
+      return;
+    }
+    redirect("1");
+  } catch (e) {
+    console.error("[developer/notification-unsubscribe]", e);
+    redirect("invalid");
+  }
+});
+
 router.use(requireAuth);
 
 const WHO_LEN = { min: 2, max: 2000 };
 const WHY_LEN = { min: 10, max: 4000 };
 const KEY_NAME_LEN = { min: 1, max: 120 };
+const NOTIFICATION_EMAIL_MAX = 320;
+
+function isValidNotificationEmail(s: string): boolean {
+  const t = s.trim();
+  if (t.length < 3 || t.length > NOTIFICATION_EMAIL_MAX) return false;
+  if (/\s/.test(t)) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
 
 router.get("/catalog", (_req, res) => {
   res.json({ scopes: DEVELOPER_SCOPE_CATALOG });
+});
+
+router.patch("/profile/notification-email", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const userId = req.user.userId;
+    const profile = await getDeveloperProfile(userId);
+    if (!profile || profile.status !== "active") {
+      return res.status(403).json({ error: "Developer access not active" });
+    }
+    const { email } = req.body ?? {};
+    let next: string | null;
+    if (email === undefined || email === null) {
+      next = null;
+    } else if (typeof email !== "string") {
+      return res.status(400).json({ error: "email must be a string or null" });
+    } else {
+      const t = email.trim();
+      if (t.length === 0) {
+        next = null;
+      } else if (!isValidNotificationEmail(t)) {
+        return res.status(400).json({ error: "email invalid" });
+      } else {
+        next = t;
+      }
+    }
+    const row = await updateDeveloperNotificationEmail(userId, next);
+    if (!row) return res.status(404).json({ error: "Developer profile not found" });
+    const saved =
+      typeof row.notification_email === "string" && row.notification_email.trim()
+        ? row.notification_email.trim()
+        : null;
+    res.json({ ok: true, notificationEmail: saved });
+  } catch (e) {
+    console.error("[developer/profile notification-email]", e);
+    res.status(500).json({ error: "Failed to update notification email" });
+  }
 });
 
 router.post("/notice/dismiss", async (req, res) => {
@@ -85,6 +172,10 @@ router.get("/application", async (req, res) => {
             noticeDismissedSeq: Number(profile.notice_dismissed_seq ?? 0),
             adminNoticeDetail:
               typeof profile.admin_notice_detail === "string" ? profile.admin_notice_detail : null,
+            notificationEmail:
+              typeof profile.notification_email === "string" && profile.notification_email.trim()
+                ? profile.notification_email.trim()
+                : null,
           }
         : null,
       latestApplication: latestApplication

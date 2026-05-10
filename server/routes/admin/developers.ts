@@ -27,8 +27,16 @@ import {
 } from "../../developer/scopeRegistry.js";
 import { mainDb } from "../../db/connection.js";
 import { getDeveloperApiDefaultRateLimitPerMinute } from "../../middleware/developerExtApi.js";
+import { sendDeveloperAdminNoticeEmail } from "../../developer/sendDeveloperAdminNoticeEmail.js";
 
 const SCOPE_LABEL = new Map(DEVELOPER_SCOPE_CATALOG.map((s) => [s.id, s.label]));
+
+async function notifyDeveloperInAppAndEmail(userId: string, detail: string): Promise<void> {
+  await bumpDeveloperAdminNoticeSeq(userId, detail);
+  void sendDeveloperAdminNoticeEmail(userId, detail).catch((err) => {
+    console.error("[developer admin notice email]", err);
+  });
+}
 
 function labelScopes(ids: string[]): string {
   if (ids.length === 0) return "(none)";
@@ -233,7 +241,7 @@ router.post(
         rateLimitValue: rpmInput === undefined ? null : rpmInput,
         reviewerNote,
       });
-      await bumpDeveloperAdminNoticeSeq(app.user_id, notice);
+      await notifyDeveloperInAppAndEmail(app.user_id, notice);
       res.json({ ok: true, userId: app.user_id, approvedScopes: approved });
     } catch (e) {
       console.error("[admin/developers approve]", e);
@@ -333,7 +341,7 @@ router.patch(
       const prevScopes = prior ? normalizeScopes(prior.approved_scopes) : [];
       const row = await updateDeveloperProfileApprovedScopes(userId, approvedScopes);
       if (!row) return res.status(404).json({ error: "Developer profile not found" });
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         `An administrator updated your allowed API scopes. ${scopeListChange(prevScopes, approvedScopes)}`,
       );
@@ -431,7 +439,7 @@ router.post(
       }
       let approveDetail = `An administrator approved your API key "${key.name}" with scopes: ${labelScopes(approvedScopes)}.`;
       if (rpm != null) approveDetail += ` Rate limit: ${formatRpm(rpm)}.`;
-      await bumpDeveloperAdminNoticeSeq(userId, approveDetail);
+      await notifyDeveloperInAppAndEmail(userId, approveDetail);
       res.json({
         ok: true,
         id: String(row.id),
@@ -460,7 +468,7 @@ router.post(
         reviewerNote: typeof req.body?.note === "string" ? req.body.note : null,
       });
       if (!row) return res.status(400).json({ error: "Key not found or not pending" });
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         `An administrator rejected your pending API key "${row.name}".`,
       );
@@ -516,7 +524,7 @@ router.patch(
       if (!row) return res.status(500).json({ error: "Failed to update key" });
       const nextScopes = normalizeScopes(row.scopes);
       const nextRpm = (row.rate_limit_per_minute ?? null) as number | null;
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         noticeKeyScopesAndRate(key.name, prevScopes, nextScopes, prevRpm, nextRpm),
       );
@@ -541,7 +549,7 @@ router.post(
       const { userId, keyId } = req.params;
       const row = await revokeDeveloperApiKey(keyId, userId);
       if (!row) return res.status(404).json({ error: "Key not found or already revoked" });
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         `An administrator revoked your API key "${row.name}".`,
       );
@@ -561,7 +569,7 @@ router.post(
       const { userId } = req.params;
       const row = await setDeveloperProfileStatus(userId, "suspended");
       if (!row) return res.status(404).json({ error: "Developer profile not found" });
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         "An administrator suspended your developer account. Your API keys no longer work until access is restored.",
       );
@@ -581,7 +589,7 @@ router.post(
       const { userId } = req.params;
       const row = await setDeveloperProfileStatus(userId, "active");
       if (!row) return res.status(404).json({ error: "Developer profile not found" });
-      await bumpDeveloperAdminNoticeSeq(
+      await notifyDeveloperInAppAndEmail(
         userId,
         "An administrator reactivated your developer account. Your keys work again according to their current status.",
       );
