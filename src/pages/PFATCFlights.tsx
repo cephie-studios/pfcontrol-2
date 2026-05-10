@@ -44,7 +44,6 @@ import AircraftDropdown from "../components/dropdowns/AircraftDropdown";
 import AltitudeDropdown from "../components/dropdowns/AltitudeDropdown";
 import SidDropdown from "../components/dropdowns/SidDropdown";
 import StarDropdown from "../components/dropdowns/StarDropdown";
-import Loader from "../components/common/Loader";
 import ErrorScreen from "../components/common/ErrorScreen";
 import FlightDetailsModal from "../components/tools/FlightDetailModal";
 
@@ -1009,11 +1008,84 @@ export default function PFATCFlights() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-gray-950 text-white relative">
         <Navbar />
-        <div className="pt-16 flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <Loader />
+        {/* Hero with user's banner */}
+        <div className="relative w-full h-80 md:h-96 overflow-hidden">
+          <div className="absolute inset-0">
+            <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                opacity: customLoaded ? 1 : 0,
+                transition: "opacity 0.5s ease-in-out",
+              }}
+            />
+            <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+          </div>
+          <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center">
+              NETWORKS OVERVIEW
+            </h1>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-6 animate-pulse">
+              <div className="h-10 w-40 rounded-full bg-gray-700/60" />
+              <div className="h-10 w-32 rounded-full bg-gray-700/60" />
+            </div>
+          </div>
+        </div>
+        {/* Content skeleton */}
+        <div className="container mx-auto max-w-[85%] px-4 pb-8 -mt-24 md:-mt-8 relative z-10">
+          <div className="p-6 space-y-6">
+            {/* Table skeleton */}
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl overflow-hidden animate-pulse">
+              {/* Header row */}
+              <div className="bg-zinc-800 px-6 py-4 flex gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-4 rounded-full bg-zinc-700" style={{ width: `${[60, 80, 60, 70, 70, 80, 50, 50][i]}px` }} />
+                ))}
+              </div>
+              {/* Body rows */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="border-t border-zinc-700/50 px-6 py-4 flex gap-6 items-center">
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <div key={j} className="h-3.5 rounded-full bg-zinc-700/60" style={{ width: `${[60, 80, 60, 70, 70, 80, 50, 50][j]}px` }} />
+                  ))}
+                </div>
+              ))}
+            </div>
+            {/* Airport cards skeleton */}
+            <div>
+              <div className="h-7 w-36 rounded-full bg-gray-700 mb-4 animate-pulse" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-6 animate-pulse">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-9 w-9 rounded-lg bg-zinc-700" />
+                      <div className="space-y-1.5">
+                        <div className="h-5 w-16 rounded-full bg-zinc-700" />
+                        <div className="h-3 w-12 rounded-full bg-zinc-700" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-8 rounded-xl bg-zinc-700/60" />
+                      <div className="h-8 rounded-xl bg-zinc-700/60" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      {Array.from({ length: 3 }).map((_, j) => (
+                        <div key={j} className="space-y-1 flex flex-col items-center">
+                          <div className="h-5 w-8 rounded-full bg-zinc-700" />
+                          <div className="h-3 w-16 rounded-full bg-zinc-700" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1302,6 +1374,11 @@ export default function PFATCFlights() {
                             </td>
                             <td className="px-3 py-4">
                               <div className="flex items-center gap-2">
+                                {flight.sessionIsAdvancedATC ? (
+                                  <span title="Advanced ATC" className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                                ) : flight.sessionIsPFATC ? (
+                                  <span title="PFATC Network" className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                                ) : null}
                                 {flight.flight_type && (
                                   <span
                                     className={`text-xs font-bold ${getFlightTypeColor(flight.flight_type)}`}

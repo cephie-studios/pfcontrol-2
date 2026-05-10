@@ -488,10 +488,10 @@ export default function Navbar({
                     </a>
                   )}
                   <a
-                    href="/pfatc"
+                    href="/overview"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    PFATC Flights
+                    Network Flights
                   </a>
                 </div>
               )}
