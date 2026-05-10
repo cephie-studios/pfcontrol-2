@@ -27,12 +27,13 @@ import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
 import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
 import { getAppVersion } from "./db/version.js";
 import { cleanupOldDeveloperUsage } from "./db/developer.js";
-import posthogClient from "./utils/posthog.js";
+import posthogClient, { initTelemetry } from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
 
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.production" : ".env.development",
 });
+initTelemetry();
 console.log(chalk.bgBlue("NODE_ENV:"), process.env.NODE_ENV);
 const requiredEnv = [
   "DISCORD_CLIENT_ID",

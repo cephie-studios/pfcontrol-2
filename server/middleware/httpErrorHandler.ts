@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { logger } from "../utils/posthog.js";
 
 function getHttpStatus(err: unknown): number {
   if (!err || typeof err !== "object") return 500;
@@ -31,6 +32,15 @@ export function httpErrorHandler(
 
   const status = getHttpStatus(err);
   const isProd = process.env.NODE_ENV === "production";
+
+  if (status >= 500) {
+    logger.error("Unhandled server error", {
+      status,
+      method: req.method,
+      path: req.originalUrl,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   if (req.originalUrl.startsWith("/api")) {
     const clientSafe =
