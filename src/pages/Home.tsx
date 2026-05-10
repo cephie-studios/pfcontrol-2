@@ -318,7 +318,7 @@ export default function Home() {
               Sessions Created
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.sessionsCreated.toLocaleString('de-DE')}
+              {stats.sessionsCreated.toLocaleString()}
             </div>
             <p className="text-gray-400">Last 30 days</p>
           </div>
@@ -331,7 +331,7 @@ export default function Home() {
               Registered Users
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.registeredUsers.toLocaleString('de-DE')}
+              {stats.registeredUsers.toLocaleString()}
             </div>
             <p className="text-gray-400">All time</p>
           </div>
@@ -344,7 +344,7 @@ export default function Home() {
               Flights Logged
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.flightsLogged.toLocaleString('de-DE')}
+              {stats.flightsLogged.toLocaleString()}
             </div>
             <p className="text-gray-400">Last 30 days</p>
           </div>

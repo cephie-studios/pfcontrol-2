@@ -428,11 +428,12 @@ NOTES:
       flight &&
       user &&
       session.createdBy !== user.userId &&
-      (settings?.acars?.autoRedirectToAcars ?? true)
+      (settings?.acars?.autoRedirectToAcars ?? true) &&
+      !localStorage.getItem(`rating_dismissed_${flightId}`)
     ) {
       setShowRating(true);
     }
-  }, [session, flight, user, settings?.acars?.autoRedirectToAcars]);
+  }, [session, flight, user, settings?.acars?.autoRedirectToAcars, flightId]);
 
   const addPDCMessage = (text: string) => {
     const message: AcarsMessage = {
@@ -674,7 +675,10 @@ NOTES:
           <ControllerRatingPopup
             controllerId={session.createdBy}
             flightId={flightId}
-            onClose={() => setShowRating(false)}
+            onClose={() => {
+              localStorage.setItem(`rating_dismissed_${flightId}`, '1');
+              setShowRating(false);
+            }}
             isInline={true}
           />
         </div>

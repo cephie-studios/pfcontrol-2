@@ -2,11 +2,12 @@ import express from 'express';
 import { addControllerRating } from '../db/ratings.js';
 import requireAuth from '../middleware/auth.js';
 import { capture } from '../utils/posthog.js';
+import { generalApiLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
 
 // POST: /api/ratings - Submit controller rating
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, generalApiLimiter, async (req, res) => {
   try {
     const { controllerId, rating, flightId } = req.body;
 

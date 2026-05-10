@@ -73,7 +73,7 @@ export default function Login() {
           <div className="flex items-center gap-1.5 px-6 py-2 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
             <Users className="h-4 w-4 text-blue-400" />
             <span className="text-blue-400 text-sm font-semibold tracking-wider">
-              {stats.registeredUsers.toLocaleString('de-DE')} REGISTERED USERS
+              {stats.registeredUsers.toLocaleString()} REGISTERED USERS
             </span>
           </div>
         </div>
