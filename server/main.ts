@@ -26,6 +26,7 @@ import { startFlightLogsCleanup } from "./db/flightLogs.js";
 import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
 import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
 import { getAppVersion } from "./db/version.js";
+import { cleanupOldDeveloperUsage } from "./db/developer.js";
 import posthogClient from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
 
