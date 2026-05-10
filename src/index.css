@@ -95,3 +95,16 @@ button {
     align-items: flex-start;
   }
 }
+
+@keyframes dev-refresh-spin-once {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dev-refresh-spin-once {
+  animation: dev-refresh-spin-once 0.65s ease-out forwards;
+}

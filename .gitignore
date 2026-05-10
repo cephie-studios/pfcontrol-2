@@ -13,6 +13,7 @@ lerna-debug.log*
 !.env.vite.development
 /scripts/*
 !/scripts/verify-node-modules.mjs
+!/scripts/generate-developer-api-docs.ts
 node_modules
 dist
 dist-ssr
@@ -23,6 +24,8 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+.cursor
+.claude
 .DS_Store
 *.suo
 *.ntvs*

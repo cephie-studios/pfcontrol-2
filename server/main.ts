@@ -26,6 +26,7 @@ import { startFlightLogsCleanup } from "./db/flightLogs.js";
 import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
 import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
 import { getAppVersion } from "./db/version.js";
+import { cleanupOldDeveloperUsage } from "./db/developer.js";
 import posthogClient from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
 
@@ -68,6 +69,7 @@ app.use(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
+      "X-Api-Key",
       "X-Requested-With",
       "Accept",
       "Origin",
@@ -75,6 +77,22 @@ app.use(
     ],
   }),
 );
+
+const developerApiCorsOrigins = (process.env.DEVELOPER_API_CORS_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (developerApiCorsOrigins.length > 0) {
+  app.use(
+    "/api/ext",
+    cors({
+      origin: developerApiCorsOrigins,
+      credentials: false,
+      methods: ["GET", "HEAD", "OPTIONS"],
+      allowedHeaders: ["Authorization", "X-Api-Key", "Content-Type", "Accept"],
+    }),
+  );
+}
 app.use(cookieParser());
 app.use(express.json());
 
@@ -146,6 +164,17 @@ setInterval(
     cleanupOldApiLogs(1);
   },
   60 * 60 * 1000,
+);
+
+setInterval(
+  () => {
+    void cleanupOldDeveloperUsage(
+      Number(process.env.DEVELOPER_API_USAGE_RETENTION_DAYS) > 0
+        ? Number(process.env.DEVELOPER_API_USAGE_RETENTION_DAYS)
+        : 90,
+    );
+  },
+  24 * 60 * 60 * 1000,
 );
 
 server.listen(PORT, () => {

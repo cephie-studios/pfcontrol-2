@@ -11,4 +11,5 @@ export interface SessionsTable {
   atis?: unknown;
   custom_name?: string;
   refreshed_at?: Date;
+  developer_api_key_id?: string | null;
 }
