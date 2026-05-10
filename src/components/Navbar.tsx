@@ -472,7 +472,7 @@ export default function Navbar({ sessionId, accessId, mobileSidebarOpen }: Navba
                     href="/overview"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    PFATC Flights
+                    Network Flights
                   </a>
                 </div>
               )}
