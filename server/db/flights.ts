@@ -11,7 +11,6 @@ import crypto from "crypto";
 import { sql } from "kysely";
 import { incrementStat } from "../utils/statisticsCache.js";
 import type { FlightsTable } from "./types/connection/main/FlightsTable.js";
-import type { FlightLogsTable } from "./types/connection/main/FlightLogsTable.js";
 
 function createUTCDate(): Date {
   const now = new Date();
@@ -459,7 +458,7 @@ export interface AddFlightData {
 export async function addFlight(sessionId: string, flightData: AddFlightData) {
   const validSessionId = validateSessionId(sessionId);
 
-  flightData.id = await generateRandomId();
+  flightData.id = generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
   flightData.wtc = await getWakeTurbulence(flightData.aircraft || flightData.aircraft_type || "");
   if (!flightData.flight_plan_time) {
@@ -663,7 +662,7 @@ export async function addSnapImage(
 
   await mainDb
     .updateTable('flights')
-    .set({ snap_images: updated as unknown as Array<{ cephie_id: string; url: string }>, updated_at: createUTCDate() })
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
     .where('id', '=', validFlightId)
     .where('user_id', '=', userId)
     .execute();
@@ -695,7 +694,7 @@ export async function deleteSnapImage(
 
   await mainDb
     .updateTable('flights')
-    .set({ snap_images: updated as unknown as Array<{ cephie_id: string; url: string }>, updated_at: createUTCDate() })
+    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
     .where('id', '=', validFlightId)
     .where('user_id', '=', userId)
     .execute();
