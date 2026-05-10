@@ -16,6 +16,7 @@ export interface DeveloperApplicationState {
     adminNoticeSeq: number;
     noticeDismissedSeq: number;
     adminNoticeDetail?: string | null;
+    notificationEmail?: string | null;
   } | null;
   latestApplication: {
     id: number;
@@ -63,6 +64,22 @@ export async function fetchDeveloperApplication(): Promise<DeveloperApplicationS
   });
   if (!res.ok) throw new Error("Failed to load application");
   return res.json();
+}
+
+export async function patchDeveloperNotificationEmail(
+  email: string | null,
+): Promise<{ notificationEmail: string | null }> {
+  const res = await apiFetch(`${API_BASE_URL}/api/developer/profile/notification-email`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || "Failed to save email");
+  }
+  return res.json() as Promise<{ notificationEmail: string | null }>;
 }
 
 export async function submitDeveloperApplication(input: {

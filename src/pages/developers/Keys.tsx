@@ -32,7 +32,8 @@ export default function DeveloperKeys() {
     setNewKeyScopes,
     createdSecret,
     setCreatedSecret,
-    copied,
+    secretCopied,
+    curlCopied,
     approvedScopes,
     handleCreateKey,
     handleRevoke,
@@ -125,17 +126,17 @@ export default function DeveloperKeys() {
             After you close this message, you cannot open this page again to copy the same secret.
             Copy it now and store it in a password manager or other safe place.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <code className="flex min-h-10 w-full items-center text-xs sm:text-sm break-all rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-zinc-200 ring-1 ring-zinc-700/40 sm:flex-1 sm:min-w-0 sm:py-0">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <code className="flex min-h-10 w-full items-center overflow-x-auto text-xs sm:text-sm break-all rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-zinc-200 ring-1 ring-zinc-700/40 sm:flex-1 sm:min-w-0 sm:whitespace-nowrap sm:break-normal sm:py-0">
               {createdSecret}
             </code>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-stretch">
               <button
                 type="button"
                 onClick={() => void copySecret()}
-                className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:flex-none sm:min-w-22"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:h-auto sm:flex-none sm:min-w-22"
               >
-                {copied ? (
+                {secretCopied ? (
                   <Check className="w-4 h-4 shrink-0" />
                 ) : (
                   <Copy className="w-4 h-4 shrink-0" />
@@ -147,11 +148,15 @@ export default function DeveloperKeys() {
                 disabled={!curlSample}
                 onClick={() => void copyCurlExample()}
                 title={curlSample?.command}
-                className="inline-flex min-h-10 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-700 px-2 py-1.5 text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:min-w-22 sm:px-3"
+                className="inline-flex min-h-10 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-700 px-2 py-1.5 text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:flex-none sm:min-w-22 sm:px-3"
               >
                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <Terminal className="h-4 w-4 shrink-0" />
-                  Sample curl
+                  {curlCopied ? (
+                    <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <Terminal className="h-4 w-4 shrink-0" />
+                  )}
+                  {curlCopied ? "Copied" : "Sample curl"}
                 </span>
                 {curlSample ? (
                   <span className="max-w-full truncate text-center text-[10px] leading-tight text-zinc-500">

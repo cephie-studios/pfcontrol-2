@@ -20,6 +20,7 @@ import {
   createDeveloperKey,
   deleteDeveloperKey,
   dismissDeveloperAdminNotice,
+  patchDeveloperNotificationEmail,
   revokeDeveloperKey,
   rotateDeveloperKey,
   type DeveloperApplicationState,
@@ -63,7 +64,8 @@ type DeveloperPortalContextValue = {
   createdSecret: string | null;
   setCreatedSecret: (s: string | null) => void;
   keyBusy: boolean;
-  copied: boolean;
+  secretCopied: boolean;
+  curlCopied: boolean;
   loadApplication: () => Promise<void>;
   loadDashboard: () => Promise<void>;
   refresh: () => void;
@@ -87,6 +89,9 @@ type DeveloperPortalContextValue = {
   dismissAdminNotice: () => Promise<void>;
   infoMessage: string | null;
   setInfoMessage: (s: string | null) => void;
+  notificationEmail: string | null;
+  notificationEmailSaving: boolean;
+  saveNotificationEmail: (email: string | null) => Promise<void>;
 };
 
 const DeveloperPortalContext = createContext<DeveloperPortalContextValue | null>(null);
@@ -122,8 +127,10 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
   const [curlExampleScopes, setCurlExampleScopes] = useState<string[]>([]);
   const [keyBusy, setKeyBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [secretCopied, setSecretCopied] = useState(false);
+  const [curlCopied, setCurlCopied] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [notificationEmailSaving, setNotificationEmailSaving] = useState(false);
 
   const loadApplication = useCallback(async () => {
     setLoading(true);
@@ -207,6 +214,27 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
     if (typeof d === "string" && d.trim().length > 0) return d.trim();
     return null;
   }, [showAdminNotice, appState?.profile?.adminNoticeDetail]);
+
+  const notificationEmail = useMemo(() => {
+    const v = appState?.profile?.notificationEmail;
+    return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
+  }, [appState?.profile?.notificationEmail]);
+
+  const saveNotificationEmail = useCallback(
+    async (email: string | null) => {
+      setNotificationEmailSaving(true);
+      setError(null);
+      try {
+        await patchDeveloperNotificationEmail(email);
+        await loadApplication();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to save email");
+      } finally {
+        setNotificationEmailSaving(false);
+      }
+    },
+    [loadApplication],
+  );
 
   const dismissAdminNotice = useCallback(async () => {
     setError(null);
@@ -365,8 +393,9 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   const copySecret = useCallback(async () => {
     if (!createdSecret) return;
     await navigator.clipboard.writeText(createdSecret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCurlCopied(false);
+    setSecretCopied(true);
+    setTimeout(() => setSecretCopied(false), 2000);
   }, [createdSecret]);
 
   const curlSample = useMemo((): SampleCurlResult | null => {
@@ -375,14 +404,19 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   }, [createdSecret, curlExampleScopes]);
 
   useEffect(() => {
-    if (!createdSecret) setCurlExampleScopes([]);
+    if (!createdSecret) {
+      setCurlExampleScopes([]);
+      setSecretCopied(false);
+      setCurlCopied(false);
+    }
   }, [createdSecret]);
 
   const copyCurlExample = useCallback(async () => {
     if (!createdSecret || !curlSample) return;
     await navigator.clipboard.writeText(curlSample.command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setSecretCopied(false);
+    setCurlCopied(true);
+    setTimeout(() => setCurlCopied(false), 2000);
   }, [createdSecret, curlSample]);
 
   const refresh = useCallback(() => {
@@ -422,7 +456,8 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       createdSecret,
       setCreatedSecret,
       keyBusy,
-      copied,
+      secretCopied,
+      curlCopied,
       loadApplication,
       loadDashboard,
       refresh,
@@ -442,6 +477,9 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       dismissAdminNotice,
       infoMessage,
       setInfoMessage,
+      notificationEmail,
+      notificationEmailSaving,
+      saveNotificationEmail,
     }),
     [
       loading,
@@ -467,7 +505,8 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       newKeyScopes,
       createdSecret,
       keyBusy,
-      copied,
+      secretCopied,
+      curlCopied,
       loadApplication,
       loadDashboard,
       refresh,
@@ -485,6 +524,9 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       adminNoticeDetail,
       dismissAdminNotice,
       infoMessage,
+      notificationEmail,
+      notificationEmailSaving,
+      saveNotificationEmail,
     ],
   );
 

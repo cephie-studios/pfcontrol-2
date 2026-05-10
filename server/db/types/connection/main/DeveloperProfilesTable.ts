@@ -6,6 +6,7 @@ export interface DeveloperProfilesTable {
   notice_dismissed_seq: number;
   admin_notice_detail: string | null;
   default_rate_limit_per_minute: number | null;
+  notification_email: string | null;
   created_at: Date;
   updated_at: Date;
 }

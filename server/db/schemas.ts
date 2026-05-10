@@ -702,6 +702,10 @@ export async function ensureDeveloperApiPolicyColumns() {
     ALTER TABLE developer_profiles
     ADD COLUMN IF NOT EXISTS default_rate_limit_per_minute integer
   `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS notification_email varchar(320)
+  `.execute(mainDb);
 
   await sql`
     ALTER TABLE developer_api_keys

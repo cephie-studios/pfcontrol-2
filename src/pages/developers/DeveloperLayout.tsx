@@ -1,14 +1,39 @@
-import { Suspense, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Suspense, useEffect, useState } from "react";
+import { Outlet, useSearchParams } from "react-router-dom";
 import { Code2, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import DeveloperSubnav from "./DeveloperSubnav";
 import { API_EXT_BASE } from "./constants";
 import { DeveloperPortalProvider, useDeveloperPortal } from "./developerPortalContext";
 
+const notifyRemovedBannerClass =
+  "mb-6 flex items-start gap-2 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-100 text-sm ring-1 ring-emerald-900/30";
+const notifyWarnBannerClass =
+  "mb-6 flex items-start gap-2 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-100 text-sm ring-1 ring-amber-900/25";
+
 function DeveloperShell() {
-  const { error, loading, dashLoading, refresh } = useDeveloperPortal();
+  const { error, loading, dashLoading, refresh, loadApplication } = useDeveloperPortal();
   const [refreshSpinOnce, setRefreshSpinOnce] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [notifyEmailBanner, setNotifyEmailBanner] = useState<
+    "removed" | "invalid" | "stale" | null
+  >(null);
+
+  useEffect(() => {
+    const v = searchParams.get("notifyEmailRemoved");
+    if (v === null) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("notifyEmailRemoved");
+    setSearchParams(next, { replace: true });
+    if (v === "1") {
+      setNotifyEmailBanner("removed");
+      void loadApplication();
+    } else if (v === "stale") {
+      setNotifyEmailBanner("stale");
+    } else {
+      setNotifyEmailBanner("invalid");
+    }
+  }, [searchParams, setSearchParams, loadApplication]);
 
   const handleRefresh = () => {
     setRefreshSpinOnce(true);
@@ -50,6 +75,51 @@ function DeveloperShell() {
           </div>
 
           <DeveloperSubnav />
+
+          {notifyEmailBanner === "removed" && (
+            <div className={notifyRemovedBannerClass}>
+              <span className="flex-1 min-w-0 leading-relaxed">
+                Your notification email was removed. You won&apos;t receive developer update emails
+                anymore.
+              </span>
+              <button
+                type="button"
+                onClick={() => setNotifyEmailBanner(null)}
+                className="ml-auto shrink-0 text-xs font-semibold text-emerald-200/90 hover:text-emerald-50 underline underline-offset-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          {notifyEmailBanner === "stale" && (
+            <div className={notifyWarnBannerClass}>
+              <span className="flex-1 min-w-0 leading-relaxed">
+                That unsubscribe link is no longer valid, or your notification address was already
+                cleared.
+              </span>
+              <button
+                type="button"
+                onClick={() => setNotifyEmailBanner(null)}
+                className="ml-auto shrink-0 text-xs font-semibold text-amber-200/90 hover:text-amber-50 underline underline-offset-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          {notifyEmailBanner === "invalid" && (
+            <div className={notifyWarnBannerClass}>
+              <span className="flex-1 min-w-0 leading-relaxed">
+                This unsubscribe link is invalid or has expired.
+              </span>
+              <button
+                type="button"
+                onClick={() => setNotifyEmailBanner(null)}
+                className="ml-auto shrink-0 text-xs font-semibold text-amber-200/90 hover:text-amber-50 underline underline-offset-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 flex items-start gap-2 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-red-200 text-sm">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Loader2,
@@ -10,6 +10,7 @@ import {
   X,
   Clock,
   Sparkles,
+  Mail,
 } from "lucide-react";
 import DeveloperAccessRequestForm from "../../components/developers/DeveloperAccessRequestForm";
 import { cardClass, statusBadgeClass } from "./constants";
@@ -68,7 +69,15 @@ export default function DeveloperOverview() {
     scopeExpansionSubmitting,
     submitScopeExpansionRequest,
     setError,
+    notificationEmail,
+    notificationEmailSaving,
+    saveNotificationEmail,
   } = useDeveloperPortal();
+
+  const [emailDraft, setEmailDraft] = useState("");
+  useEffect(() => {
+    setEmailDraft(notificationEmail ?? "");
+  }, [notificationEmail]);
 
   const [scopeRequestOpen, setScopeRequestOpen] = useState(false);
   const [rqWho, setRqWho] = useState("");
@@ -190,6 +199,7 @@ export default function DeveloperOverview() {
         <p className="text-zinc-400 text-sm sm:text-base max-w-2xl">
           You&apos;re all set. Jump into usage, keys, or the live API reference whenever you like.
         </p>
+
         {catalogForNewScopes.length > 0 && !scopeRequestOpen && (
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -255,6 +265,52 @@ export default function DeveloperOverview() {
               Routes, parameters, and curl examples.
             </p>
           </Link>
+        </div>
+
+        <div className={`${cardClass()} w-full`}>
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 shrink-0">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-100">Email alerts</h2>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  (Optional) We&apos;ll email you when an administrator updates your scopes, API
+                  keys, rate limits, or account status (same summary as the in-portal notice).
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                <label className="flex-1 min-w-0">
+                  <span className="sr-only">Notification email</span>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={emailDraft}
+                    onChange={(e) => setEmailDraft(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={notificationEmailSaving}
+                    className="w-full rounded-xl border border-zinc-700/90 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-violet-500/70 focus:ring-1 focus:ring-violet-500/35 disabled:opacity-50"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={
+                    notificationEmailSaving ||
+                    (emailDraft.trim() === "" && notificationEmail === null) ||
+                    (emailDraft.trim() !== "" && emailDraft.trim() === (notificationEmail ?? ""))
+                  }
+                  onClick={() => {
+                    setError(null);
+                    void saveNotificationEmail(emailDraft.trim() || null);
+                  }}
+                  className="inline-flex justify-center items-center gap-2 shrink-0 px-6 py-2.5 rounded-xl border border-violet-600/50 bg-violet-950/40 text-violet-100 text-sm font-semibold hover:bg-violet-900/45 hover:border-violet-500/55 transition-colors disabled:opacity-40 disabled:pointer-events-none ring-1 ring-violet-900/25"
+                >
+                  {notificationEmailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {scopeRequestOpen && (

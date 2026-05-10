@@ -157,6 +157,18 @@ export async function setDeveloperProfileStatus(userId: string, status: "active"
     .executeTakeFirst();
 }
 
+export async function updateDeveloperNotificationEmail(userId: string, email: string | null) {
+  return mainDb
+    .updateTable("developer_profiles")
+    .set({
+      notification_email: email,
+      updated_at: new Date(),
+    })
+    .where("user_id", "=", userId)
+    .returningAll()
+    .executeTakeFirst();
+}
+
 export async function listDeveloperApplications(filters: {
   status?: string;
   page: number;
