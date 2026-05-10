@@ -1136,7 +1136,7 @@ export default function PFATCFlights() {
         {/* Hero Content */}
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center">
-            PFATC OVERVIEW
+            NETWORKS OVERVIEW
           </h1>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-6">

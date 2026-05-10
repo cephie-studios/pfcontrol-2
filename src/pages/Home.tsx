@@ -234,7 +234,7 @@ export default function Home() {
                 id="pfatc-flights-btn"
               >
                 <TowerControl className="mr-2 h-5 w-5" />
-                See PFATC Flights
+                See Network Flights
               </Button>
             </div>
           </div>
