@@ -24,8 +24,10 @@ import { startStatsFlushing } from "./utils/statisticsCache.js";
 import { updateLeaderboard } from "./db/leaderboard.js";
 import { startFlightLogsCleanup } from "./db/flightLogs.js";
 import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
+import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
 import { getAppVersion } from "./db/version.js";
-import { cleanupOldDeveloperUsage } from "./db/developer.js";
+import posthogClient from "./utils/posthog.js";
+import { setupExpressErrorHandler } from "posthog-node";
 
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.production" : ".env.development",
@@ -113,6 +115,9 @@ app.use(
 app.get("/{*any}", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "..", "dist", "index.html"));
 });
+
+setupExpressErrorHandler(posthogClient, app);
+app.use(httpErrorHandler);
 
 const server = http.createServer(app);
 server.setMaxListeners(25);

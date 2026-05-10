@@ -1,18 +1,19 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { useState, useEffect, lazy, Suspense } from "react";
-import { useAuth } from "./hooks/auth/useAuth";
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useAuth } from './hooks/auth/useAuth';
 
-import Home from "./pages/Home";
-import Create from "./pages/Create";
-import Sessions from "./pages/Sessions";
-import Submit from "./pages/Submit";
-import Flights from "./pages/Flights";
-import MyFlights from "./pages/MyFlights";
-import MyFlightDetail from "./pages/MyFlightDetail";
-import Settings from "./pages/Settings";
-import PFATCFlights from "./pages/PFATCFlights";
-import ACARS from "./pages/ACARS";
-import PilotProfile from "./pages/PilotProfile";
+import Home from './pages/Home';
+import Create from './pages/Create';
+import Sessions from './pages/Sessions';
+import Submit from './pages/Submit';
+import Flights from './pages/Flights';
+import MyFlights from './pages/MyFlights';
+import MyFlightDetail from './pages/MyFlightDetail';
+import Settings from './pages/Settings';
+import PFATCFlights from './pages/PFATCFlights';
+import ACARS from './pages/ACARS';
+import PilotProfile from './pages/PilotProfile';
+import PublicFlightView from './pages/PublicFlightView';
 
 import Login from "./pages/Login";
 import VatsimCallback from "./pages/VatsimCallback";
@@ -153,11 +154,13 @@ export default function App() {
       ) : (
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/pfatc" element={<PFATCFlights />} />
+          <Route path="/pfatc" element={<Navigate to="/overview" replace/> } />
+          <Route path="/overview" element={<PFATCFlights />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
           <Route path="/submit/:sessionId" element={<Submit />} />
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
+          <Route path="flight/:flightId" element={<PublicFlightView />} />
           <Route path="/user/:username" element={<PilotProfile />} />
 
           <Route

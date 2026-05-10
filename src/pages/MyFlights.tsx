@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Plane, Route, Search } from 'lucide-react';
-import { claimSubmittedFlight, fetchMyFlights } from '../utils/fetch/flights';
+import { ArrowRight, Calendar, Check, ExternalLink, MoreVertical, Plane, Route, Search, Share2, Star, Workflow } from 'lucide-react';
+import { claimSubmittedFlight, fetchMyFlights, toggleFeaturedOnProfile } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
-import Loader from '../components/common/Loader';
 import { useSettings } from '../hooks/settings/useSettings';
 import { fetchBackgrounds } from '../utils/fetch/data';
 
@@ -16,46 +15,294 @@ interface AvailableImage {
   extension: string;
 }
 
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
-    case 'CLEARED':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'TAXI':
-    case 'TAXI_ORIG':
-    case 'TAXI_ARRV':
-      return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
-    case 'DEPARTED':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'STUP':
-      return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
-    case 'PUSH':
-      return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-    case 'RWY':
-    case 'RWY_ORIG':
-      return 'bg-red-500/20 text-red-400 border border-red-500/30';
-    case 'RWY_ARRV':
-      return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
-    case 'DEPA':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    case 'ENROUTE':
-      return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
-    case 'APP':
-      return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
-    case 'GATE':
-      return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-    default:
-      return 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30';
-  }
-};
+const FlightCardSkeleton = () => (
+  <div className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse">
+    <div className="flex items-center mb-3 gap-2">
+      <div className="h-5 w-5 rounded-full bg-gray-700 shrink-0" />
+      <div className="h-4 w-28 rounded-full bg-gray-700" />
+    </div>
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+        <div className="h-3.5 w-36 rounded-full bg-gray-700" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+        <div className="h-3.5 w-32 rounded-full bg-gray-700" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+        <div className="h-3.5 w-24 rounded-full bg-gray-700" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
+        <div className="h-3.5 w-28 rounded-full bg-gray-700" />
+      </div>
+    </div>
+  </div>
+);
 
-const getDisplayStatus = (status?: string) => {
-  if (!status) return 'PENDING';
-  if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
-  if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
-  return status;
-};
+function FlightCard({
+  flight,
+  featuredCount,
+  onFeaturedToggle,
+}: {
+  flight: Flight;
+  featuredCount: number;
+  onFeaturedToggle: (id: string, featured: boolean) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [featured, setFeatured] = useState(flight.featured_on_profile ?? false);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const coverSnap = flight.snap_images?.[0];
+  const hasCover = !!coverSnap;
+
+  const acarsUrl = flight.acars_token
+    ? `${window.location.origin}/acars/${flight.session_id}/${flight.id}?acars_token=${flight.acars_token}`
+    : null;
+
+  const publicFlightUrl = flight.acars_token
+    ? `${window.location.origin}/flight/${flight.id}`
+    : null;
+
+  const callsign = flight.callsign?.toUpperCase() || 'Unknown';
+  const atCap = !featured && featuredCount >= 3;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!publicFlightUrl) return;
+    await navigator.clipboard.writeText(publicFlightUrl);
+    setCopied(true);
+    setMenuOpen(false);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenAcars = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (acarsUrl) window.open(acarsUrl, '_blank');
+    setMenuOpen(false);
+  };
+
+  const handleToggleFeatured = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (featuredLoading || atCap) return;
+    setFeaturedLoading(true);
+    try {
+      const result = await toggleFeaturedOnProfile(String(flight.id));
+      setFeatured(result.featured);
+      onFeaturedToggle(String(flight.id), result.featured);
+    } catch {
+      // cap or network error
+    } finally {
+      setFeaturedLoading(false);
+      setMenuOpen(false);
+    }
+  };
+
+  const toggleMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen((v) => !v);
+  };
+
+  const dropdown = menuOpen && (
+    <div className="absolute top-8 right-0 z-30 w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden animate-in slide-in-from-top-1 duration-150">
+      <div className="p-1.5">
+        <button
+          onClick={handleToggleFeatured}
+          disabled={featuredLoading || atCap}
+          className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl transition-colors duration-150 text-sm ${
+            atCap
+              ? 'text-zinc-600 cursor-not-allowed'
+              : featured
+              ? 'text-amber-400 hover:bg-amber-600/20'
+              : 'text-zinc-400 hover:bg-blue-800 hover:text-zinc-50'
+          }`}
+        >
+          <Star className={`h-4 w-4 shrink-0 ${featured ? 'fill-amber-400' : ''}`} />
+          <span className="font-medium">
+            {featured ? 'Unfeature' : atCap ? 'Max 3 featured' : 'Feature flight'}
+          </span>
+        </button>
+        <button onClick={handleShare} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <Share2 className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Share flight</span>
+        </button>
+        <button onClick={handleOpenAcars} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+          <ExternalLink className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Open ACARS</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  if (hasCover) {
+    return (
+      <div className="relative">
+        <Link
+          to={`/my-flights/${flight.id}`}
+          className="relative overflow-hidden border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all block h-full"
+        >
+          {/* Background image + overlay */}
+          <img
+            src={coverSnap!.url}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gray-900/70" />
+
+          {/* Same content as standard card, positioned above the overlay */}
+          <div className="relative">
+            <div className="flex items-center mb-3">
+              <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
+              <span className="font-medium truncate text-md">{callsign}</span>
+              {featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />}
+            </div>
+            <div className="space-y-2 text-sm text-gray-300">
+              <div className="flex items-center">
+                <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                <span className="font-mono font-medium text-white">{flight.departure || '----'}</span>
+                <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
+                <span className="font-mono font-medium text-white">{flight.arrival || '----'}</span>
+              </div>
+              <div className="flex items-center">
+                <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                {flight.aircraft || 'Unknown aircraft'}
+              </div>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                {flight.created_at
+                  ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Unknown date'}
+              </div>
+              <div className="flex items-center">
+                {flight.isAdvancedATC ? (
+                  <>
+                    <Workflow className="h-4 w-4 mr-2 text-purple-400" />
+                    <span className="text-purple-400 font-medium">Advanced ATC Session</span>
+                  </>
+                ) : flight.isPFATC ? (
+                  <>
+                    <Workflow className="h-4 w-4 mr-2 text-blue-400" />
+                    <span className="text-blue-400 font-medium">PFATC Session</span>
+                  </>
+                ) : (
+                  <>
+                    <Workflow className="h-4 w-4 mr-2 text-green-400" />
+                    <span className="text-green-400 font-medium">Standard Session</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <div className="absolute top-4 right-4 flex items-center gap-2" ref={menuRef}>
+{acarsUrl && (
+            <>
+              <button
+                onClick={toggleMenu}
+                className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                aria-label="Flight options"
+              >
+                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
+              </button>
+              {dropdown}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Standard info card (no photo)
+  return (
+    <div className="relative">
+      <Link
+        to={`/my-flights/${flight.id}`}
+        className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block h-full"
+      >
+        {/* Header */}
+        <div className="flex items-center mb-3">
+          <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
+          <span className="font-medium truncate text-md">{callsign}</span>
+          {featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />}
+        </div>
+
+        {/* Details */}
+        <div className="space-y-2 text-sm text-gray-300">
+          <div className="flex items-center">
+            <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            <span className="font-mono font-medium text-white">{flight.departure || '----'}</span>
+            <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
+            <span className="font-mono font-medium text-white">{flight.arrival || '----'}</span>
+          </div>
+          <div className="flex items-center">
+            <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            {flight.aircraft || 'Unknown aircraft'}
+          </div>
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            {flight.created_at
+              ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Unknown date'}
+          </div>
+          <div className="flex items-center">
+            {flight.isAdvancedATC ? (
+              <>
+                <Workflow className="h-4 w-4 mr-2 text-purple-400" />
+                <span className="text-purple-400 font-medium">Advanced ATC Session</span>
+              </>
+            ) : flight.isPFATC ? (
+              <>
+                <Workflow className="h-4 w-4 mr-2 text-blue-400" />
+                <span className="text-blue-400 font-medium">PFATC Session</span>
+              </>
+            ) : (
+              <>
+                <Workflow className="h-4 w-4 mr-2 text-green-400" />
+                <span className="text-green-400 font-medium">Standard Session</span>
+              </>
+            )}
+          </div>
+        </div>
+
+      </Link>
+
+      {/* 3-dot menu */}
+      {acarsUrl && (
+        <div className="absolute top-4 right-4" ref={menuRef}>
+          <button
+            onClick={toggleMenu}
+            className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+            aria-label="Flight options"
+          >
+            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
+          </button>
+          {dropdown}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MyFlights() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -107,6 +354,17 @@ export default function MyFlights() {
 
     loadFlights();
   }, [claimSessionId, claimFlightId, claimToken, setSearchParams]);
+
+  const featuredCount = useMemo(
+    () => flights.filter((f) => f.featured_on_profile).length,
+    [flights]
+  );
+
+  const handleFeaturedToggle = (id: string, newFeatured: boolean) => {
+    setFlights((prev) =>
+      prev.map((f) => (String(f.id) === id ? { ...f, featured_on_profile: newFeatured } : f))
+    );
+  };
 
   const filteredFlights = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -193,7 +451,7 @@ export default function MyFlights() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -215,21 +473,24 @@ export default function MyFlights() {
 
       <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
         <div className="p-6 space-y-6">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-950 rounded-full p-1 z-10 flex items-center justify-center">
-              <Search className="h-5 w-5 text-blue-500" />
+          <div className="relative group">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full p-1 z-10 flex items-center justify-center">
+              <Search className="h-5 w-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
             </span>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search callsign, airport, aircraft..."
-              className="w-full bg-gray-900/70 backdrop-blur-md border-2 border-blue-600 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+              className="w-full bg-gray-900/70 backdrop-blur-md border-2 border-gray-800 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all"
             />
           </div>
-    
 
           {loading ? (
-            <Loader />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <FlightCardSkeleton key={i} />
+              ))}
+            </div>
           ) : error ? (
             <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">
               {error}
@@ -253,45 +514,12 @@ export default function MyFlights() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredFlights.map((flight) => (
-                <Link
+                <FlightCard
                   key={String(flight.id)}
-                  to={`/my-flights/${flight.id}`}
-                  className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-lg font-semibold text-blue-300 truncate">
-                      {flight.callsign || 'Unknown Callsign'}
-                    </p>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-semibold ${getStatusClass(
-                        flight.status || 'PENDING'
-                      )}`}
-                    >
-                      {getDisplayStatus(flight.status)}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-gray-300">
-                    <div className="flex items-center">
-                      <Route className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="flex items-center gap-1">
-                        <span className="font-mono">{flight.departure || '----'}</span>
-                        <ArrowRight className="h-4 w-4 text-zinc-500" />
-                        <span className="font-mono">{flight.arrival || '----'}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <Plane className="h-4 w-4 mr-2 text-gray-500" />
-                      {flight.aircraft || 'Unknown aircraft'}
-                    </div>
-                    <div className="flex items-center">
-                      <CalendarClock className="h-4 w-4 mr-2 text-gray-500" />
-                      {flight.created_at
-                        ? new Date(flight.created_at).toLocaleString()
-                        : 'Unknown date'}
-                    </div>
-                  </div>
-                </Link>
+                  flight={flight}
+                  featuredCount={featuredCount}
+                  onFeaturedToggle={handleFeaturedToggle}
+                />
               ))}
             </div>
           )}

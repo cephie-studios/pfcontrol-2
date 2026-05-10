@@ -42,4 +42,16 @@ export interface PilotProfile {
     displayLinkedAccountsOnProfile: boolean;
     displayBackgroundOnProfile: boolean;
   };
+  featuredFlights?: FeaturedFlight[];
+}
+
+export interface FeaturedFlight {
+  id: string;
+  callsign?: string;
+  departure?: string;
+  arrival?: string;
+  aircraft?: string;
+  status?: string;
+  snap_images: Array<{ cephie_id: string; url: string }>;
+  created_at?: string;
 }

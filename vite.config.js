@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    sourcemap: "hidden",
+  },
   staged: {
     "*.{js,jsx,ts,tsx}": "vp check --fix",
   },
