@@ -10,16 +10,16 @@ import {
   ShieldX,
   ChevronDown,
   ChevronUp,
-  HelpCircle
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
-import { linkify } from '../utils/linkify';
-import { useAuth } from '../hooks/auth/useAuth';
-import type { Notification as AdminNotification } from '../utils/fetch/admin';
-import CustomUserButton from './tools/UserButton';
-import Button from './common/Button';
-import FeedbackBanner from './tools/FeedbackBanner';
+  HelpCircle,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNotifications } from "../hooks/useNotifications";
+import { linkify } from "../utils/linkify";
+import { useAuth } from "../hooks/auth/useAuth";
+import type { Notification as AdminNotification } from "../utils/fetch/admin";
+import CustomUserButton from "./tools/UserButton";
+import Button from "./common/Button";
+import FeedbackBanner from "./tools/FeedbackBanner";
 
 type NavbarProps = {
   sessionId?: string;
@@ -27,14 +27,10 @@ type NavbarProps = {
   mobileSidebarOpen?: boolean;
 };
 
-type NotificationType = 'info' | 'warning' | 'success' | 'error';
+type NotificationType = "info" | "warning" | "success" | "error";
 type AppNotification = AdminNotification & { custom_icon?: React.ReactNode };
 
-export default function Navbar({
-  sessionId,
-  accessId,
-  mobileSidebarOpen,
-}: NavbarProps) {
+export default function Navbar({ sessionId, accessId, mobileSidebarOpen }: NavbarProps) {
   const { user } = useAuth();
   const {
     notifications: filteredNotifications,
@@ -45,9 +41,7 @@ export default function Navbar({
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [utcTime, setUtcTime] = useState<string>(
-    new Date().toISOString().slice(11, 19)
-  );
+  const [utcTime, setUtcTime] = useState<string>(new Date().toISOString().slice(11, 19));
   const [isCompact, setIsCompact] = useState<boolean>(window.innerWidth < 950);
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
   const [isScrolled, setIsScrolled] = useState<boolean>(window.scrollY > 0);
@@ -56,20 +50,19 @@ export default function Navbar({
 
   useEffect(() => {
     const checkFeedbackCookies = () => {
-      const cookies = document.cookie.split(';').reduce(
+      const cookies = document.cookie.split(";").reduce(
         (acc, cookie) => {
-          const [key, value] = cookie.trim().split('=');
+          const [key, value] = cookie.trim().split("=");
           acc[key] = value;
           return acc;
         },
-        {} as Record<string, string>
+        {} as Record<string, string>,
       );
 
-      const feedbackSubmitted = cookies['feedback_submitted'] === 'true';
-      const feedbackDismissed = cookies['feedback_dismissed'] === 'true';
+      const feedbackSubmitted = cookies["feedback_submitted"] === "true";
+      const feedbackDismissed = cookies["feedback_dismissed"] === "true";
       const hasNotifications = filteredNotifications.length > 0;
-      const shouldShow =
-        !hasNotifications && !feedbackSubmitted && !feedbackDismissed;
+      const shouldShow = !hasNotifications && !feedbackSubmitted && !feedbackDismissed;
 
       setShowFeedbackBanner(shouldShow);
     };
@@ -82,39 +75,36 @@ export default function Navbar({
       setIsCompact(window.innerWidth < 950);
       setIsMobile(window.innerWidth < 768);
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: Event) => {
-      if (
-        isMenuOpen &&
-        !(event.target as HTMLElement).closest('.mobile-menu-container')
-      ) {
+      if (isMenuOpen && !(event.target as HTMLElement).closest(".mobile-menu-container")) {
         setIsMenuOpen(false);
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setIsMenuOpen(false);
       }
     };
 
     if (isMenuOpen) {
-      document.addEventListener('click', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("click", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
     };
   }, [isMenuOpen]);
 
@@ -133,22 +123,20 @@ export default function Navbar({
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 0);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const shouldShowBackdrop = isMobile && mobileSidebarOpen;
   const showBackdrop = shouldShowBackdrop || isScrolled;
 
-  const navZIndex = mobileSidebarOpen && isMobile ? 'z-30' : 'z-[9999]';
+  const navZIndex = mobileSidebarOpen && isMobile ? "z-30" : "z-[9999]";
 
   const navClass = [
     `fixed top-0 w-full ${navZIndex} transition-all duration-150 ease-in-out`,
-    showBackdrop
-      ? 'bg-black/30 backdrop-blur-md border-white/10'
-      : 'bg-transparent border-none',
-  ].join(' ');
+    showBackdrop ? "bg-black/30 backdrop-blur-md border-white/10" : "bg-transparent border-none",
+  ].join(" ");
 
   const submitLink = `${window.location.origin}/submit/${sessionId}`;
   const viewLink = `${window.location.origin}/view/${sessionId}?accessId=${accessId}`;
@@ -160,38 +148,38 @@ export default function Navbar({
       setTimeout(() => setCopied(null), 2000);
     } catch {
       try {
-        const textArea = document.createElement('textarea');
+        const textArea = document.createElement("textarea");
         textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        const successful = document.execCommand('copy');
+        const successful = document.execCommand("copy");
         document.body.removeChild(textArea);
 
         if (successful) {
           setCopied(text);
           setTimeout(() => setCopied(null), 2000);
         } else {
-          console.error('Fallback copy method failed');
+          console.error("Fallback copy method failed");
         }
       } catch (fallbackError) {
-        console.error('Failed to copy text to clipboard', fallbackError);
+        console.error("Failed to copy text to clipboard", fallbackError);
       }
     }
   };
 
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
-      case 'info':
+      case "info":
         return <Info className="h-4 w-4" />;
-      case 'warning':
+      case "warning":
         return <AlertTriangle className="h-4 w-4" />;
-      case 'success':
+      case "success":
         return <CheckCircle className="h-4 w-4" />;
-      case 'error':
+      case "error":
         return <ShieldX className="h-4 w-4" />;
       default:
         return <Bell className="h-4 w-4" />;
@@ -207,30 +195,30 @@ export default function Navbar({
     }
 
     switch (notification.type) {
-      case 'info':
+      case "info":
         return {
-          backgroundColor: 'rgba(59, 130, 246, 0.7)',
-          borderColor: 'rgba(96, 165, 250, 0.5)',
+          backgroundColor: "rgba(59, 130, 246, 0.7)",
+          borderColor: "rgba(96, 165, 250, 0.5)",
         };
-      case 'warning':
+      case "warning":
         return {
-          backgroundColor: 'rgba(245, 158, 11, 0.7)',
-          borderColor: 'rgba(251, 191, 36, 0.5)',
+          backgroundColor: "rgba(245, 158, 11, 0.7)",
+          borderColor: "rgba(251, 191, 36, 0.5)",
         };
-      case 'success':
+      case "success":
         return {
-          backgroundColor: 'rgba(16, 185, 129, 0.7)',
-          borderColor: 'rgba(52, 211, 153, 0.5)',
+          backgroundColor: "rgba(16, 185, 129, 0.7)",
+          borderColor: "rgba(52, 211, 153, 0.5)",
         };
-      case 'error':
+      case "error":
         return {
-          backgroundColor: 'rgba(239, 68, 68, 0.7)',
-          borderColor: 'rgba(248, 113, 113, 0.5)',
+          backgroundColor: "rgba(239, 68, 68, 0.7)",
+          borderColor: "rgba(248, 113, 113, 0.5)",
         };
       default:
         return {
-          backgroundColor: 'rgba(107, 114, 128, 0.7)',
-          borderColor: 'rgba(156, 163, 175, 0.5)',
+          backgroundColor: "rgba(107, 114, 128, 0.7)",
+          borderColor: "rgba(156, 163, 175, 0.5)",
         };
     }
   };
@@ -248,26 +236,26 @@ export default function Navbar({
                 style={{
                   backgroundColor: currentNotification.custom_color
                     ? `${currentNotification.custom_color}B3`
-                    : currentNotification.type === 'info'
-                      ? 'rgba(59, 130, 246, 0.7)'
-                      : currentNotification.type === 'warning'
-                        ? 'rgba(245, 158, 11, 0.7)'
-                        : currentNotification.type === 'success'
-                          ? 'rgba(16, 185, 129, 0.7)'
-                          : currentNotification.type === 'error'
-                            ? 'rgba(239, 68, 68, 0.7)'
-                            : 'rgba(107, 114, 128, 0.7)',
+                    : currentNotification.type === "info"
+                      ? "rgba(59, 130, 246, 0.7)"
+                      : currentNotification.type === "warning"
+                        ? "rgba(245, 158, 11, 0.7)"
+                        : currentNotification.type === "success"
+                          ? "rgba(16, 185, 129, 0.7)"
+                          : currentNotification.type === "error"
+                            ? "rgba(239, 68, 68, 0.7)"
+                            : "rgba(107, 114, 128, 0.7)",
                   borderColor: currentNotification.custom_color
                     ? `${currentNotification.custom_color}80`
-                    : currentNotification.type === 'info'
-                      ? 'rgba(96, 165, 250, 0.5)'
-                      : currentNotification.type === 'warning'
-                        ? 'rgba(251, 191, 36, 0.5)'
-                        : currentNotification.type === 'success'
-                          ? 'rgba(52, 211, 153, 0.5)'
-                          : currentNotification.type === 'error'
-                            ? 'rgba(248, 113, 113, 0.5)'
-                            : 'rgba(156, 163, 175, 0.5)',
+                    : currentNotification.type === "info"
+                      ? "rgba(96, 165, 250, 0.5)"
+                      : currentNotification.type === "warning"
+                        ? "rgba(251, 191, 36, 0.5)"
+                        : currentNotification.type === "success"
+                          ? "rgba(52, 211, 153, 0.5)"
+                          : currentNotification.type === "error"
+                            ? "rgba(248, 113, 113, 0.5)"
+                            : "rgba(156, 163, 175, 0.5)",
                 }}
               >
                 {showAllNotifications ? (
@@ -282,25 +270,21 @@ export default function Navbar({
               <div
                 className="transition-all duration-300 ease-in-out overflow-hidden"
                 style={{
-                  maxHeight: showAllNotifications ? '300px' : 'auto',
+                  maxHeight: showAllNotifications ? "300px" : "auto",
                 }}
               >
-                <div className={showAllNotifications ? 'space-y-2' : ''}>
+                <div className={showAllNotifications ? "space-y-2" : ""}>
                   {filteredNotifications.map((notification, index) => (
                     <div
                       key={index}
                       className={`backdrop-blur-lg border rounded-2xl px-3 py-2 ${
-                        showAllNotifications ||
-                        index === currentNotificationIndex
-                          ? ''
-                          : 'hidden'
+                        showAllNotifications || index === currentNotificationIndex ? "" : "hidden"
                       }`}
                       style={getNotificationStyle(notification)}
                     >
                       <div className="flex items-start space-x-2">
                         <div className="flex-shrink-0 mt-0.5">
-                          {notification.custom_icon ||
-                            getNotificationIcon(notification.type)}
+                          {notification.custom_icon || getNotificationIcon(notification.type)}
                         </div>
                         <p className="text-sm font-medium text-white leading-tight flex-1 overflow-wrap-anywhere break-words">
                           {linkify(notification.text)}
@@ -330,15 +314,15 @@ export default function Navbar({
                 <TowerControl className="h-8 w-8 text-blue-400" />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                   PFControl
-                  {window.location.hostname === 'canary.pfcontrol.com' && (
+                  {window.location.hostname === "canary.pfcontrol.com" && (
                     <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
-                      {' '}
+                      {" "}
                       Canary
                     </span>
                   )}
-                  {window.location.hostname === 'localhost' && (
+                  {window.location.hostname === "localhost" && (
                     <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent italic text-md">
-                      {' '}
+                      {" "}
                       Developers
                     </span>
                   )}
@@ -357,10 +341,7 @@ export default function Navbar({
                   >
                     <div className="flex items-center space-x-2 transition-transform duration-300">
                       {isCompact ? (
-                        <HelpCircle
-                          className="h-4 w-4"
-                          aria-label="Support"
-                        />
+                        <HelpCircle className="h-4 w-4" aria-label="Support" />
                       ) : (
                         <>
                           <HelpCircle className="h-4 w-4" />
@@ -381,8 +362,8 @@ export default function Navbar({
                     variant="primary"
                     className={`relative overflow-hidden transition-all duration-300 ${
                       copied === submitLink
-                        ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600'
-                        : ''
+                        ? "bg-emerald-600 hover:bg-emerald-600 border-emerald-600"
+                        : ""
                     }`}
                     size="sm"
                     onClick={() => handleCopy(submitLink)}
@@ -390,13 +371,13 @@ export default function Navbar({
                   >
                     <div
                       className={`flex items-center space-x-2 transition-transform duration-300 ${
-                        copied === submitLink ? 'scale-105' : ''
+                        copied === submitLink ? "scale-105" : ""
                       }`}
                     >
                       {isCompact ? (
                         <Copy
                           className={`h-4 w-4 transition-transform duration-300 ${
-                            copied === submitLink ? 'rotate-12' : ''
+                            copied === submitLink ? "rotate-12" : ""
                           }`}
                           aria-label="Copy Submit Link"
                         />
@@ -404,11 +385,11 @@ export default function Navbar({
                         <>
                           <Copy
                             className={`h-4 w-4 transition-transform duration-300 ${
-                              copied === submitLink ? 'rotate-12' : ''
+                              copied === submitLink ? "rotate-12" : ""
                             }`}
                           />
                           <span className="font-medium">
-                            {copied === submitLink ? 'Copied!' : 'Submit Link'}
+                            {copied === submitLink ? "Copied!" : "Submit Link"}
                           </span>
                         </>
                       )}
@@ -423,8 +404,8 @@ export default function Navbar({
                     variant="danger"
                     className={`relative overflow-hidden transition-all duration-300 ${
                       copied === viewLink
-                        ? '!bg-emerald-600 hover:!bg-emerald-600 !border-emerald-600'
-                        : ''
+                        ? "!bg-emerald-600 hover:!bg-emerald-600 !border-emerald-600"
+                        : ""
                     }`}
                     size="sm"
                     onClick={() => handleCopy(viewLink)}
@@ -432,13 +413,13 @@ export default function Navbar({
                   >
                     <div
                       className={`flex items-center space-x-2 transition-transform duration-300 ${
-                        copied === viewLink ? 'scale-105' : ''
+                        copied === viewLink ? "scale-105" : ""
                       }`}
                     >
                       {isCompact ? (
                         <Copy
                           className={`h-4 w-4 transition-transform duration-300 ${
-                            copied === viewLink ? 'rotate-12' : ''
+                            copied === viewLink ? "rotate-12" : ""
                           }`}
                           aria-label="Copy View Link"
                         />
@@ -446,11 +427,11 @@ export default function Navbar({
                         <>
                           <Copy
                             className={`h-4 w-4 transition-transform duration-300 ${
-                              copied === viewLink ? 'rotate-12' : ''
+                              copied === viewLink ? "rotate-12" : ""
                             }`}
                           />
                           <span className="font-medium">
-                            {copied === viewLink ? 'Copied!' : 'View Link'}
+                            {copied === viewLink ? "Copied!" : "View Link"}
                           </span>
                         </>
                       )}
@@ -491,7 +472,7 @@ export default function Navbar({
                     href="/overview"
                     className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
                   >
-                    Network Flights
+                    PFATC Flights
                   </a>
                 </div>
               )}
@@ -517,11 +498,7 @@ export default function Navbar({
                   className="text-white hover:text-blue-400 transition-colors duration-300 p-2 rounded-lg hover:bg-white/10"
                   aria-label="Toggle menu"
                 >
-                  {isMenuOpen ? (
-                    <X className="h-6 w-6" />
-                  ) : (
-                    <Menu className="h-6 w-6" />
-                  )}
+                  {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
               )}
             </div>
@@ -537,8 +514,8 @@ export default function Navbar({
                             transform transition-all duration-300 ease-out origin-top-right
                             ${
                               isMenuOpen
-                                ? 'opacity-100 scale-100 translate-y-0'
-                                : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+                                ? "opacity-100 scale-100 translate-y-0"
+                                : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
                             }
                         `}
             >
@@ -566,24 +543,21 @@ export default function Navbar({
             <div
               className="transition-all duration-300 ease-in-out overflow-hidden"
               style={{
-                maxHeight: showAllNotifications ? '300px' : '60px',
+                maxHeight: showAllNotifications ? "300px" : "60px",
               }}
             >
-              <div className={showAllNotifications ? 'space-y-2' : ''}>
+              <div className={showAllNotifications ? "space-y-2" : ""}>
                 {filteredNotifications.map((notification, index) => (
                   <div
                     key={index}
                     className={`backdrop-blur-lg border rounded-full px-4 py-3 max-w-full transition-all duration-300 ease-in-out ${
-                      showAllNotifications || index === currentNotificationIndex
-                        ? ''
-                        : 'hidden'
+                      showAllNotifications || index === currentNotificationIndex ? "" : "hidden"
                     }`}
                     style={getNotificationStyle(notification)}
                   >
                     <div className="flex items-start space-x-2">
                       <div className="flex-shrink-0 mt-[1px]">
-                        {notification.custom_icon ||
-                          getNotificationIcon(notification.type)}
+                        {notification.custom_icon || getNotificationIcon(notification.type)}
                       </div>
                       <p className="text-sm font-medium text-white leading-tight flex-1">
                         {linkify(notification.text)}
@@ -608,26 +582,26 @@ export default function Navbar({
                 style={{
                   backgroundColor: currentNotification.custom_color
                     ? `${currentNotification.custom_color}B3`
-                    : currentNotification.type === 'info'
-                      ? 'rgba(59, 130, 246, 0.7)'
-                      : currentNotification.type === 'warning'
-                        ? 'rgba(245, 158, 11, 0.7)'
-                        : currentNotification.type === 'success'
-                          ? 'rgba(16, 185, 129, 0.7)'
-                          : currentNotification.type === 'error'
-                            ? 'rgba(239, 68, 68, 0.7)'
-                            : 'rgba(107, 114, 128, 0.7)',
+                    : currentNotification.type === "info"
+                      ? "rgba(59, 130, 246, 0.7)"
+                      : currentNotification.type === "warning"
+                        ? "rgba(245, 158, 11, 0.7)"
+                        : currentNotification.type === "success"
+                          ? "rgba(16, 185, 129, 0.7)"
+                          : currentNotification.type === "error"
+                            ? "rgba(239, 68, 68, 0.7)"
+                            : "rgba(107, 114, 128, 0.7)",
                   borderColor: currentNotification.custom_color
                     ? `${currentNotification.custom_color}80`
-                    : currentNotification.type === 'info'
-                      ? 'rgba(96, 165, 250, 0.5)'
-                      : currentNotification.type === 'warning'
-                        ? 'rgba(251, 191, 36, 0.5)'
-                        : currentNotification.type === 'success'
-                          ? 'rgba(52, 211, 153, 0.5)'
-                          : currentNotification.type === 'error'
-                            ? 'rgba(248, 113, 113, 0.5)'
-                            : 'rgba(156, 163, 175, 0.5)',
+                    : currentNotification.type === "info"
+                      ? "rgba(96, 165, 250, 0.5)"
+                      : currentNotification.type === "warning"
+                        ? "rgba(251, 191, 36, 0.5)"
+                        : currentNotification.type === "success"
+                          ? "rgba(52, 211, 153, 0.5)"
+                          : currentNotification.type === "error"
+                            ? "rgba(248, 113, 113, 0.5)"
+                            : "rgba(156, 163, 175, 0.5)",
                 }}
               >
                 {showAllNotifications ? (
@@ -642,10 +616,7 @@ export default function Navbar({
       )}
 
       {user && (
-        <FeedbackBanner
-          isOpen={showFeedbackBanner}
-          onClose={() => setShowFeedbackBanner(false)}
-        />
+        <FeedbackBanner isOpen={showFeedbackBanner} onClose={() => setShowFeedbackBanner(false)} />
       )}
     </>
   );
