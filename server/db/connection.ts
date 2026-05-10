@@ -4,6 +4,8 @@ import {
   ensureSessionsAdvancedAtcColumn,
   ensureSessionsNetworkFlagsExclusiveConstraint,
   ensureGlobalChatNetworkKindColumn,
+  ensureSessionsDeveloperApiKeyColumn,
+  ensureDeveloperApiPolicyColumns,
 } from "./schemas.js";
 import pg from "pg";
 import Redis from "ioredis";
@@ -57,6 +59,8 @@ try {
   await ensureSessionsAdvancedAtcColumn();
   await ensureSessionsNetworkFlagsExclusiveConstraint();
   await ensureGlobalChatNetworkKindColumn();
+  await ensureSessionsDeveloperApiKeyColumn();
+  await ensureDeveloperApiPolicyColumns();
   console.log("[Database] Tables initialized successfully");
 } catch (err) {
   console.error("Failed to create tables:", err);

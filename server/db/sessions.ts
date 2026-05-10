@@ -1,3 +1,4 @@
+import { sql } from "kysely";
 import { mainDb } from "./connection.js";
 import { addFlight } from "./flights.js";
 import { validateSessionId } from "../utils/validation.js";
@@ -16,6 +17,7 @@ interface CreateSessionParams {
   createdBy: string;
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
+  developerApiKeyId?: string | null;
 }
 
 export async function createSession({
@@ -27,6 +29,7 @@ export async function createSession({
   isPFATC,
   isAdvancedATC,
   isTutorial,
+  developerApiKeyId,
 }: CreateSessionParams & { isTutorial?: boolean }) {
   const validSessionId = validateSessionId(sessionId);
 
@@ -41,19 +44,18 @@ export async function createSession({
   assertExclusiveSessionNetworkFlags(isPfatc, isAdvancedAtc);
 
   try {
-    await mainDb
-      .insertInto("sessions")
-      .values({
-        session_id: validSessionId,
-        access_id: accessId,
-        active_runway: activeRunway,
-        airport_icao: airportIcao.toUpperCase(),
-        created_by: createdBy,
-        is_pfatc: isPfatc,
-        is_advanced_atc: isAdvancedAtc,
-        atis: JSON.stringify(encryptedAtis),
-      })
-      .execute();
+    const baseValues = {
+      session_id: validSessionId,
+      access_id: accessId,
+      active_runway: activeRunway,
+      airport_icao: airportIcao.toUpperCase(),
+      created_by: createdBy,
+      is_pfatc: isPfatc,
+      is_advanced_atc: isAdvancedAtc,
+      atis: JSON.stringify(encryptedAtis),
+      ...(developerApiKeyId ? { developer_api_key_id: developerApiKeyId } : {}),
+    };
+    await mainDb.insertInto("sessions").values(baseValues).execute();
   } catch (e) {
     if (isPostgresCheckViolation(e)) {
       throw new ExclusiveSessionNetworkFlagsError();
@@ -106,6 +108,26 @@ export async function getSessionsByUser(userId: string) {
       "is_advanced_atc",
       "custom_name",
       "refreshed_at",
+    ])
+    .where("created_by", "=", userId)
+    .orderBy("created_at", "desc")
+    .execute();
+}
+
+export async function listDeveloperSessionSummariesForUser(userId: string) {
+  return mainDb
+    .selectFrom("sessions")
+    .select([
+      "session_id",
+      "active_runway",
+      "airport_icao",
+      "created_at",
+      "created_by",
+      "is_pfatc",
+      "is_advanced_atc",
+      "custom_name",
+      "refreshed_at",
+      "developer_api_key_id",
     ])
     .where("created_by", "=", userId)
     .orderBy("created_at", "desc")
@@ -208,4 +230,100 @@ export async function deleteSession(sessionId: string) {
 
 export async function getAllSessions() {
   return await mainDb.selectFrom("sessions").selectAll().orderBy("created_at", "desc").execute();
+}
+
+export type DeveloperPublicNetworkKind = "pfatc" | "aatc";
+
+export type PublicNetworkSessionDeveloperRow = {
+  session_id: string;
+  airport_icao: string;
+  active_runway?: string | null;
+  custom_name?: string | null;
+  created_at?: Date | null;
+  refreshed_at?: Date | null;
+  created_by: string;
+  flight_count: number;
+  username: string;
+  avatar?: string | null;
+};
+
+export async function listPublicNetworkSessionsForDeveloperApi(opts: {
+  kind: DeveloperPublicNetworkKind;
+  airportIcao?: string | null;
+  limit: number;
+  offset: number;
+}): Promise<PublicNetworkSessionDeveloperRow[]> {
+  const limit = Math.min(100, Math.max(1, opts.limit));
+  const offset = Math.max(0, opts.offset);
+  const icao =
+    opts.airportIcao && typeof opts.airportIcao === "string"
+      ? opts.airportIcao.trim().toUpperCase()
+      : null;
+
+  let q = mainDb
+    .selectFrom("sessions as s")
+    .innerJoin("users as u", "u.id", "s.created_by")
+    .select([
+      "s.session_id",
+      "s.airport_icao",
+      "s.active_runway",
+      "s.custom_name",
+      "s.created_at",
+      "s.refreshed_at",
+      "s.created_by",
+      sql<number>`coalesce((select count(*)::int from flights f where f.session_id = s.session_id), 0)`.as(
+        "flight_count",
+      ),
+      "u.username",
+      "u.avatar",
+    ]);
+  if (opts.kind === "pfatc") {
+    q = q.where("s.is_pfatc", "=", true);
+  } else {
+    q = q.where("s.is_advanced_atc", "=", true);
+  }
+
+  if (icao && /^[A-Z]{4}$/.test(icao)) {
+    q = q.where("s.airport_icao", "=", icao);
+  }
+
+  return await q
+    .orderBy(sql`s.refreshed_at desc nulls last`)
+    .orderBy("s.created_at", "desc")
+    .limit(limit)
+    .offset(offset)
+    .execute();
+}
+
+export async function getPublicNetworkSessionForDeveloperApi(
+  sessionId: string,
+  kind: DeveloperPublicNetworkKind,
+): Promise<PublicNetworkSessionDeveloperRow | null> {
+  const valid = validateSessionId(sessionId);
+  let q = mainDb
+    .selectFrom("sessions as s")
+    .innerJoin("users as u", "u.id", "s.created_by")
+    .select([
+      "s.session_id",
+      "s.airport_icao",
+      "s.active_runway",
+      "s.custom_name",
+      "s.created_at",
+      "s.refreshed_at",
+      "s.created_by",
+      sql<number>`coalesce((select count(*)::int from flights f where f.session_id = s.session_id), 0)`.as(
+        "flight_count",
+      ),
+      "u.username",
+      "u.avatar",
+    ])
+    .where("s.session_id", "=", valid);
+  if (kind === "pfatc") {
+    q = q.where("s.is_pfatc", "=", true);
+  } else {
+    q = q.where("s.is_advanced_atc", "=", true);
+  }
+
+  const row = await q.executeTakeFirst();
+  return row ?? null;
 }
