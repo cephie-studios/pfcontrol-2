@@ -19,6 +19,7 @@ interface CombinedFlightsTableProps {
   onToggleClearance: (flightId: string | number, checked: boolean) => void;
   flashingPDCIds: Set<string>;
   setFlashingPDCIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  arrivalsLoading?: boolean;
 }
 
 export default function CombinedFlightsTable({
@@ -32,6 +33,7 @@ export default function CombinedFlightsTable({
   onToggleClearance,
   flashingPDCIds,
   setFlashingPDCIds,
+  arrivalsLoading,
 }: CombinedFlightsTableProps) {
   return (
     <div className="space-y-12 mt-8">
@@ -61,6 +63,7 @@ export default function CombinedFlightsTable({
           onFlightDelete={onFlightDelete}
           onFlightChange={onFlightChange}
           backgroundStyle={backgroundStyle}
+          loading={arrivalsLoading}
         />
       </div>
     </div>

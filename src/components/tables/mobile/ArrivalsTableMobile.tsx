@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { EyeOff, Eye, Route, Trash2 } from 'lucide-react';
+import { EyeOff, Eye, Route } from 'lucide-react';
 import type { Flight } from '../../../types/flight';
 import type { ArrivalsTableColumnSettings } from '../../../types/settings';
 import TextInput from '../../common/TextInput';
@@ -15,7 +15,6 @@ interface ArrivalsTableMobileProps {
     flightId: string | number,
     updates: Partial<Flight>
   ) => void;
-  onFlightDelete: (flightId: string | number) => void;
   backgroundStyle?: React.CSSProperties;
   arrivalsColumns?: ArrivalsTableColumnSettings;
 }
@@ -23,7 +22,6 @@ interface ArrivalsTableMobileProps {
 export default function ArrivalsTableMobile({
   flights,
   onFlightChange,
-  onFlightDelete,
   backgroundStyle,
   arrivalsColumns = {
     time: true,
@@ -175,10 +173,6 @@ export default function ArrivalsTableMobile({
     }
   };
 
-  const handleDeleteFlight = async (flightId: string | number) => {
-    onFlightDelete(flightId);
-  };
-
   const visibleFlights = showHidden
     ? orderedFlights
     : orderedFlights.filter((flight) => !flight.hidden);
@@ -284,12 +278,6 @@ export default function ArrivalsTableMobile({
                         )}
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDeleteFlight(flight.id)}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
                   </div>
                 </div>
 

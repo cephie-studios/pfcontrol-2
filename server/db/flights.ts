@@ -436,6 +436,98 @@ export async function getFlightsBySessionWithTime(sessionId: string, hoursBack =
   }
 }
 
+export interface ExternalArrivalFlight extends ClientFlight {
+  sourceSessionId: string;
+  sourceAirport: string;
+  isExternal: true;
+}
+
+export async function getExternalArrivalFlights(
+  airportIcao: string,
+  networkKind: "pfatc" | "advanced_atc" | null,
+): Promise<ExternalArrivalFlight[]> {
+  if (!networkKind) return [];
+  if (!airportIcao || airportIcao.length !== 4 || !/^[A-Z]{4}$/i.test(airportIcao)) {
+    throw new Error("Invalid ICAO airport code");
+  }
+  try {
+    const sinceDateUTC = createUTCDate();
+    sinceDateUTC.setUTCHours(sinceDateUTC.getUTCHours() - 2);
+    const sinceIso = sinceDateUTC.toISOString();
+    const icao = airportIcao.toUpperCase();
+
+    let query = mainDb
+      .selectFrom("flights as f")
+      .innerJoin("sessions as s", "s.session_id", "f.session_id")
+      .selectAll("f")
+      .select([
+        sql<string>`s.session_id`.as("source_session_id"),
+        sql<string>`s.airport_icao`.as("source_airport"),
+      ])
+      .where("f.arrival", "=", icao)
+      .where("s.airport_icao", "!=", icao)
+      .where((eb) =>
+        eb.or([
+          eb("f.flight_plan_time", ">=", sinceIso),
+          eb("f.updated_at", ">=", sql<Date>`${sinceIso}`),
+          eb("f.created_at", ">=", sql<Date>`${sinceIso}`),
+        ]),
+      );
+
+    if (networkKind === "pfatc") {
+      query = query.where("s.is_pfatc", "=", true);
+    } else {
+      query = query.where("s.is_advanced_atc", "=", true);
+    }
+
+    const flights = await query.execute();
+
+    const userIds = [
+      ...new Set(
+        flights.map((f) => f.user_id).filter((id): id is string => typeof id === "string"),
+      ),
+    ];
+
+    const usersMap = new Map<
+      string,
+      { id: string; discord_username: string; discord_avatar_url: string | null }
+    >();
+
+    if (userIds.length > 0) {
+      try {
+        const users = await mainDb
+          .selectFrom("users")
+          .select(["id", "username as discord_username", "avatar as discord_avatar_url"])
+          .where("id", "in", userIds)
+          .execute();
+
+        users.forEach((user) => {
+          usersMap.set(user.id, {
+            id: user.id,
+            discord_username: user.discord_username,
+            discord_avatar_url: user.discord_avatar_url
+              ? `https://cdn.discordapp.com/avatars/${user.id}/${user.discord_avatar_url}.png`
+              : null,
+          });
+        });
+      } catch (userError) {
+        console.error("Error fetching user data for external arrivals:", userError);
+      }
+    }
+
+    return flights.map((f): ExternalArrivalFlight => ({
+      ...sanitizeFlightForClient(f),
+      user: f.user_id ? usersMap.get(f.user_id) : undefined,
+      sourceSessionId: f.source_session_id,
+      sourceAirport: f.source_airport,
+      isExternal: true,
+    }));
+  } catch (error) {
+    console.error("Error fetching external arrival flights:", error);
+    return [];
+  }
+}
+
 export interface AddFlightData {
   id?: string;
   user_id?: string;

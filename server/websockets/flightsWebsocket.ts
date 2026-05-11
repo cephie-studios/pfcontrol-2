@@ -8,7 +8,7 @@ import {
   type ClientFlight,
 } from "../db/flights.js";
 import { validateSessionAccess } from "../middleware/sessionAccess.js";
-import { updateSession, getAllSessions } from "../db/sessions.js";
+import { updateSession, getSessionsByAirportAndNetwork } from "../db/sessions.js";
 import { getArrivalsIO } from "./arrivalsWebsocket.js";
 import { mainDb } from "../db/connection.js";
 import { validateSessionId, validateAccessId, validateFlightId } from "../utils/validation.js";
@@ -532,18 +532,15 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   return io;
 }
 
-async function broadcastToArrivalSessions(
+export async function broadcastToArrivalSessions(
   flight: ClientFlight,
   networkKind: ReturnType<typeof getNetworkKind>,
 ): Promise<void> {
   if (!networkKind || !flight.arrival) return;
   try {
-    const allSessions = await getAllSessions();
-    const arrivalSessions = allSessions.filter(
-      (session) =>
-        getNetworkKind(session) === networkKind &&
-        typeof flight.arrival === "string" &&
-        session.airport_icao === flight.arrival.toUpperCase(),
+    const arrivalSessions = await getSessionsByAirportAndNetwork(
+      flight.arrival,
+      networkKind,
     );
 
     const arrivalsIO = getArrivalsIO();

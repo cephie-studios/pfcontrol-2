@@ -1,8 +1,8 @@
 import { Server as SocketServer, Socket } from "socket.io";
 import type { Server as HttpServer } from "http";
-import { updateFlight, getFlightsBySessionWithTime, type ClientFlight } from "../db/flights.js";
+import { updateFlight, getExternalArrivalFlights, type ClientFlight } from "../db/flights.js";
 import { validateSessionAccess } from "../middleware/sessionAccess.js";
-import { getSessionById, getAllSessions } from "../db/sessions.js";
+import { getSessionById, getSessionsByAirportAndNetwork } from "../db/sessions.js";
 import { getFlightsIO } from "./flightsWebsocket.js";
 import { validateSessionId, validateAccessId, validateFlightId } from "../utils/validation.js";
 import { sanitizeString, sanitizeSquawk, sanitizeFlightLevel } from "../utils/sanitization.js";
@@ -62,7 +62,7 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
       socket.join(sessionId);
 
       try {
-        const externalArrivals = await getExternalArrivals(
+        const externalArrivals = await getExternalArrivalFlights(
           session.airport_icao,
           socket.data.networkKind,
         );
@@ -198,63 +198,19 @@ async function broadcastToOtherArrivalSessions(
   excludeSessionId: string,
   networkKind: NetworkKind | null,
 ): Promise<void> {
-  if (!networkKind) return;
+  if (!networkKind || !flight.arrival) return;
   try {
-    const allSessions = await getAllSessions();
-    const arrivalSessions = allSessions.filter(
-      (session) =>
-        getNetworkKind(session) === networkKind &&
-        session.session_id !== excludeSessionId &&
-        session.airport_icao === flight.arrival?.toUpperCase(),
-    );
-
+    const arrivalSessions = await getSessionsByAirportAndNetwork(flight.arrival, networkKind);
     for (const session of arrivalSessions) {
-      io.to(session.session_id).emit("arrivalUpdated", flight);
+      if (session.session_id !== excludeSessionId) {
+        io.to(session.session_id).emit("arrivalUpdated", flight);
+      }
     }
   } catch (error) {
     console.error("Error broadcasting to other arrival sessions:", error);
   }
 }
 
-async function getExternalArrivals(
-  airportIcao: string,
-  networkKind: NetworkKind | null,
-): Promise<ClientFlight[]> {
-  if (!networkKind) return [];
-  try {
-    const allSessions = await getAllSessions();
-    const networkSessions = allSessions.filter(
-      (session) => getNetworkKind(session) === networkKind && session.airport_icao !== airportIcao,
-    );
-
-    const externalArrivals: ClientFlight[] = [];
-
-    for (const session of networkSessions) {
-      try {
-        const flights = await getFlightsBySessionWithTime(session.session_id, 2);
-        const arrivalsToThisAirport = flights.filter(
-          (flight) => flight.arrival?.toUpperCase() === airportIcao.toUpperCase(),
-        );
-
-        const enrichedFlights = arrivalsToThisAirport.map((flight) => ({
-          ...flight,
-          sourceSessionId: session.session_id,
-          sourceAirport: session.airport_icao,
-          isExternal: true,
-        }));
-
-        externalArrivals.push(...enrichedFlights);
-      } catch (error) {
-        console.error(`Error fetching flights for session ${session.session_id}:`, error);
-      }
-    }
-
-    return externalArrivals as ClientFlight[];
-  } catch (error) {
-    console.error("Error fetching external arrivals:", error);
-    return [];
-  }
-}
 
 export function getArrivalsIO(): SocketServer | undefined {
   return io;

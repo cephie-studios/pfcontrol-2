@@ -232,6 +232,22 @@ export async function getAllSessions() {
   return await mainDb.selectFrom("sessions").selectAll().orderBy("created_at", "desc").execute();
 }
 
+export async function getSessionsByAirportAndNetwork(
+  airportIcao: string,
+  networkKind: "pfatc" | "advanced_atc",
+) {
+  const query = mainDb
+    .selectFrom("sessions")
+    .selectAll()
+    .where("airport_icao", "=", airportIcao.toUpperCase());
+
+  if (networkKind === "pfatc") {
+    return query.where("is_pfatc", "=", true).execute();
+  } else {
+    return query.where("is_advanced_atc", "=", true).execute();
+  }
+}
+
 export type DeveloperPublicNetworkKind = "pfatc" | "aatc";
 
 export type PublicNetworkSessionDeveloperRow = {

@@ -6,7 +6,6 @@ import {
   Eye,
   Route,
   GripVertical,
-  Trash2,
   RefreshCw,
   Menu,
 } from 'lucide-react';
@@ -21,7 +20,6 @@ import StatusDropdown from '../dropdowns/StatusDropdown';
 import Button from '../common/Button';
 import ArrivalsTableMobile from './mobile/ArrivalsTableMobile';
 import RouteModal from '../tools/RouteModal';
-import ConfirmationDialog from '../common/ConfirmationDialog';
 
 interface ArrivalsTableProps {
   flights: Flight[];
@@ -32,6 +30,7 @@ interface ArrivalsTableProps {
   onFlightDelete: (flightId: string | number) => void;
   backgroundStyle?: React.CSSProperties;
   arrivalsColumns?: ArrivalsTableColumnSettings;
+  loading?: boolean;
 }
 
 function ArrivalsTable({
@@ -39,6 +38,7 @@ function ArrivalsTable({
   onFlightChange,
   onFlightDelete,
   backgroundStyle,
+  loading = false,
   arrivalsColumns = {
     time: true,
     callsign: true,
@@ -62,10 +62,6 @@ function ArrivalsTable({
   const [showHidden, setShowHidden] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [flightToDelete, setFlightToDelete] = useState<string | number | null>(
-    null
-  );
   const [openDropdownId, setOpenDropdownId] = useState<string | number | null>(
     null
   );
@@ -271,24 +267,6 @@ function ArrivalsTable({
     }
   };
 
-  const handleDeleteClick = (flightId: string | number) => {
-    setFlightToDelete(flightId);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (flightToDelete !== null) {
-      onFlightDelete(flightToDelete);
-      setFlightToDelete(null);
-    }
-    setDeleteConfirmOpen(false);
-  };
-
-  const handleCancelDelete = () => {
-    setFlightToDelete(null);
-    setDeleteConfirmOpen(false);
-  };
-
   const debouncedHandleSquawkChange = useCallback(
     (flightId: string | number, squawk: string) => {
       setSquawkValues((prev) => ({ ...prev, [flightId]: squawk }));
@@ -386,13 +364,32 @@ function ArrivalsTable({
 
   const hasHiddenFlights = orderedFlights.some((flight) => flight.hidden);
 
+  const colSpan = useMemo(() => {
+    return (
+      3 +
+      (arrivalsColumns.callsign !== false ? 1 : 0) +
+      (arrivalsColumns.gate !== false ? 1 : 0) +
+      (arrivalsColumns.aircraft !== false ? 1 : 0) +
+      (arrivalsColumns.wakeTurbulence !== false ? 1 : 0) +
+      (arrivalsColumns.flightType !== false ? 1 : 0) +
+      (arrivalsColumns.departure !== false ? 1 : 0) +
+      (arrivalsColumns.runway !== false ? 1 : 0) +
+      (arrivalsColumns.star !== false ? 1 : 0) +
+      (arrivalsColumns.rfl !== false ? 1 : 0) +
+      (arrivalsColumns.cfl !== false ? 1 : 0) +
+      (arrivalsColumns.route !== false ? 1 : 0) +
+      (arrivalsColumns.squawk !== false ? 1 : 0) +
+      (arrivalsColumns.status !== false ? 1 : 0) +
+      (arrivalsColumns.remark !== false ? 1 : 0)
+    );
+  }, [arrivalsColumns]);
+
   if (isMobile) {
     return (
       <>
         <ArrivalsTableMobile
           flights={orderedFlights}
           onFlightChange={onFlightChange}
-          onFlightDelete={onFlightDelete}
           backgroundStyle={backgroundStyle}
           arrivalsColumns={arrivalsColumns}
         />
@@ -426,7 +423,7 @@ function ArrivalsTable({
         </div>
       )}
 
-      {visibleFlights.length === 0 ? (
+      {!loading && visibleFlights.length === 0 ? (
         <div className="mt-24 px-4 py-6 text-center text-gray-400">
           No arrivals found.
         </div>
@@ -560,7 +557,14 @@ function ArrivalsTable({
               </tr>
             </thead>
             <tbody>
-              {visibleFlights.map((flight, index) => {
+              {loading ? (
+                <tr>
+                  <td colSpan={colSpan} className="py-16 text-center">
+                    <div className="inline-block w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </td>
+                </tr>
+              ) : null}
+              {!loading && visibleFlights.map((flight, index) => {
                 const isDragging = draggedFlightId === flight.id;
                 const isDragOver = dragOverIndex === index;
 
@@ -800,10 +804,11 @@ function ArrivalsTable({
                           <>
                             <div
                               className="fixed inset-0"
+                              style={{ zIndex: 9997 }}
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div
-                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1"
+                              className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
                               style={{
                                 zIndex: 9998,
                                 top: (() => {
@@ -818,42 +823,33 @@ function ArrivalsTable({
                                   const btn = buttonRefs.current[flight.id];
                                   if (btn) {
                                     const rect = btn.getBoundingClientRect();
-                                    return `${rect.right - 160}px`;
+                                    return `${rect.right - 176}px`;
                                   }
                                   return '0px';
                                 })(),
                               }}
                             >
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => {
-                                  if (flight.hidden) {
-                                    handleUnhideFlight(flight.id);
-                                  } else {
-                                    handleHideFlight(flight.id);
-                                  }
-                                  setOpenDropdownId(null);
-                                }}
-                              >
-                                {flight.hidden ? (
-                                  <Eye className="w-4 h-4" />
-                                ) : (
-                                  <EyeOff className="w-4 h-4" />
-                                )}
-                                {flight.hidden ? 'Unhide' : 'Hide'}
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => {
-                                  handleDeleteClick(flight.id);
-                                  setOpenDropdownId(null);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </button>
+                              <div className="p-1.5">
+                                <button
+                                  type="button"
+                                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                  onClick={() => {
+                                    if (flight.hidden) {
+                                      handleUnhideFlight(flight.id);
+                                    } else {
+                                      handleHideFlight(flight.id);
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  {flight.hidden ? (
+                                    <Eye className="w-4 h-4 shrink-0" />
+                                  ) : (
+                                    <EyeOff className="w-4 h-4 shrink-0" />
+                                  )}
+                                  <span className="font-medium">{flight.hidden ? 'Unhide' : 'Hide'}</span>
+                                </button>
+                              </div>
                             </div>
                           </>,
                           document.body
@@ -874,16 +870,6 @@ function ArrivalsTable({
         onFlightChange={onFlightChange}
       />
 
-      <ConfirmationDialog
-        isOpen={deleteConfirmOpen}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        title="Delete Flight Plan"
-        description="This will delete the flight plan for all controllers and is not recommended if you are handing the strip off. It's recommended to hide it instead."
-        confirmText="Delete Anyway"
-        cancelText="Cancel"
-        variant="danger"
-      />
     </div>
   );
 }
