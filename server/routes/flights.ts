@@ -21,7 +21,9 @@ import {
   deleteSnapImage,
   toggleFeaturedOnProfile,
 } from '../db/flights.js';
-import { broadcastFlightEvent } from '../websockets/flightsWebsocket.js';
+import { broadcastFlightEvent, broadcastToArrivalSessions } from '../websockets/flightsWebsocket.js';
+import { getSessionById } from '../db/sessions.js';
+import { getNetworkKind } from '../utils/advancedNetworkSession.js';
 import { recordNewFlight } from '../db/statistics.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { mainDb } from '../db/connection.js';
@@ -370,7 +372,18 @@ router.post('/:sessionId', flightCreationLimiter, optionalAuth, async (req, res)
       'flightAdded',
       sanitizedFlight
     );
+
     res.status(201).json(flight);
+
+    getSessionById(req.params.sessionId).then((session) => {
+      if (session) {
+        broadcastToArrivalSessions(flight, getNetworkKind(session)).catch((err) => {
+          console.error('Failed to broadcast to arrival sessions:', err);
+        });
+      }
+    }).catch((err) => {
+      console.error('Failed to fetch session for arrival broadcast:', err);
+    });
   } catch (err) {
     console.error('Failed to add flight:', err);
     res.status(500).json({ error: 'Failed to add flight' });

@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 export const sessionCreationLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 3,
   message: { error: 'Too many sessions created. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -10,7 +10,7 @@ export const sessionCreationLimiter = rateLimit({
 
 export const flightCreationLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 30,
+  max: 3,
   message: { error: 'Too many flights submitted. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -36,7 +36,7 @@ export const generalApiLimiter = rateLimit({
 
 export const chatMessageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 60,
+  max: 30,
   message: { error: 'Too many messages. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,

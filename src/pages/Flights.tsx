@@ -86,6 +86,7 @@ export default function Flights() {
   const { airports } = useData();
   const [currentView, setCurrentView] = useState<"departures" | "arrivals">("departures");
   const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
+  const [arrivalsLoading, setArrivalsLoading] = useState(true);
   const [localHiddenFlights, setLocalHiddenFlights] = useState<Set<string | number>>(new Set());
   const [position, setPosition] = useState<Position>("ALL");
   const [fieldEditingStates, setFieldEditingStates] = useState<FieldEditingState[]>([]);
@@ -358,7 +359,13 @@ export default function Flights() {
       accessId,
       // onArrivalUpdated
       (flight: Flight) => {
-        setExternalArrivals((prev) => prev.map((f) => (f.id === flight.id ? flight : f)));
+        setExternalArrivals((prev) => {
+          const index = prev.findIndex((f) => f.id === flight.id);
+          if (index === -1) return [...prev, flight];
+          const next = [...prev];
+          next[index] = flight;
+          return next;
+        });
       },
       // onArrivalError
       (error) => {
@@ -367,6 +374,7 @@ export default function Flights() {
       // onInitialExternalArrivals
       (flights: Flight[]) => {
         setExternalArrivals(flights);
+        setArrivalsLoading(false);
       },
     );
     setArrivalsSocket(socket);
@@ -375,6 +383,20 @@ export default function Flights() {
       socket.socket.disconnect();
     };
   }, [sessionId, accessId, initialLoadComplete, session]);
+
+  // For sessions without advanced network features, arrivals come from own flights (already loaded)
+  useEffect(() => {
+    if (initialLoadComplete && session && !hasAdvancedNetworkFeatures(session)) {
+      setArrivalsLoading(false);
+    }
+  }, [initialLoadComplete, session]);
+
+  // Fallback: if initialExternalArrivals never fires (e.g. socket error), stop the spinner after 10s
+  useEffect(() => {
+    if (!arrivalsLoading) return;
+    const t = setTimeout(() => setArrivalsLoading(false), 10000);
+    return () => clearTimeout(t);
+  }, [arrivalsLoading]);
 
   useEffect(() => {
     if (!sessionId || !accessId || !user) return;
@@ -950,6 +972,7 @@ export default function Flights() {
                   onToggleClearance={handleToggleClearance}
                   flashingPDCIds={flashingPDCIds}
                   setFlashingPDCIds={setFlashingPDCIds}
+                  arrivalsLoading={arrivalsLoading}
                 />
                 <div className="flex justify-center gap-4 mt-4 pb-6">
                   <Button
@@ -1040,6 +1063,7 @@ export default function Flights() {
                       backgroundStyle={backgroundStyle}
                       arrivalsColumns={arrivalsColumns}
                       onFlightDelete={handleFlightDelete}
+                      loading={arrivalsLoading}
                     />
                     <div className="flex justify-center mt-4 mb-6">
                       <Button

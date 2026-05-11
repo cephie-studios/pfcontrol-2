@@ -1067,10 +1067,11 @@ function DepartureTable({
                           <>
                             <div
                               className="fixed inset-0"
+                              style={{ zIndex: 9997 }}
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div
-                              className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
+                              className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
                               style={{
                                 zIndex: 9998,
                                 top: (() => {
@@ -1085,42 +1086,44 @@ function DepartureTable({
                                   const btn = buttonRefs.current[flight.id];
                                   if (btn) {
                                     const rect = btn.getBoundingClientRect();
-                                    return `${rect.right - 160}px`;
+                                    return `${rect.right - 176}px`;
                                   }
                                   return '0px';
                                 })(),
                               }}
                             >
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => {
-                                  if (flight.hidden) {
-                                    handleUnhideFlight(flight.id);
-                                  } else {
-                                    handleHideFlight(flight.id);
-                                  }
-                                  setOpenDropdownId(null);
-                                }}
-                              >
-                                {flight.hidden ? (
-                                  <Eye className="w-4 h-4" />
-                                ) : (
-                                  <EyeOff className="w-4 h-4" />
-                                )}
-                                {flight.hidden ? 'Unhide' : 'Hide'}
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                onClick={() => {
-                                  handleDeleteClick(flight.id);
-                                  setOpenDropdownId(null);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </button>
+                              <div className="p-1.5">
+                                <button
+                                  type="button"
+                                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                  onClick={() => {
+                                    if (flight.hidden) {
+                                      handleUnhideFlight(flight.id);
+                                    } else {
+                                      handleHideFlight(flight.id);
+                                    }
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  {flight.hidden ? (
+                                    <Eye className="w-4 h-4 shrink-0" />
+                                  ) : (
+                                    <EyeOff className="w-4 h-4 shrink-0" />
+                                  )}
+                                  <span className="font-medium">{flight.hidden ? 'Unhide' : 'Hide'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-red-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                  onClick={() => {
+                                    handleDeleteClick(flight.id);
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 shrink-0" />
+                                  <span className="font-medium">Delete</span>
+                                </button>
+                              </div>
                             </div>
                           </>,
                           document.body
