@@ -26,6 +26,7 @@ import { getUserById } from "../db/users.js";
 import { isEventController } from "../middleware/flightAccess.js";
 import { broadcastFlightUpdate } from "./overviewWebsocket.js";
 import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
+import { SOCKET_IO_ALLOWED_ORIGINS } from "../utils/deployedFrontendOrigins.js";
 import { getNetworkKind } from "../utils/advancedNetworkSession.js";
 
 interface FlightUpdateData {
@@ -85,12 +86,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     path: "/sockets/flights",
     allowRequest: createHandshakeRateLimiter({ scope: "flights" }),
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:9901",
-        "https://pfcontrol.com",
-        "https://canary.pfcontrol.com",
-      ],
+      origin: [...SOCKET_IO_ALLOWED_ORIGINS],
       credentials: true,
     },
     pingTimeout: 10000,
@@ -538,10 +534,7 @@ export async function broadcastToArrivalSessions(
 ): Promise<void> {
   if (!networkKind || !flight.arrival) return;
   try {
-    const arrivalSessions = await getSessionsByAirportAndNetwork(
-      flight.arrival,
-      networkKind,
-    );
+    const arrivalSessions = await getSessionsByAirportAndNetwork(flight.arrival, networkKind);
 
     const arrivalsIO = getArrivalsIO();
     if (arrivalsIO) {

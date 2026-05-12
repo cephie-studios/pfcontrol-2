@@ -23,6 +23,7 @@ dotenv.config({
 });
 
 import type { MainDatabase } from "./types/connection/MainDatabase.js";
+import { prefixKey } from "../utils/cacheTtl.js";
 
 function getSSLConfig(connectionString: string) {
   const url = new URL(connectionString);
@@ -65,6 +66,14 @@ try {
   await ensureDeveloperApiPolicyColumns();
   await ensureAppSettingsChannelColumn();
   await syncVersionFromFile();
+  try {
+    await redisConnection.del(prefixKey("app:version"));
+  } catch (err) {
+    console.warn(
+      "[Version] Failed to clear Redis app version cache:",
+      err instanceof Error ? err.message : err,
+    );
+  }
   console.log("[Database] Tables initialized successfully");
 } catch (err) {
   console.error("Failed to create tables:", err);

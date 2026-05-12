@@ -7,6 +7,7 @@ import { encrypt, decrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 import type { Server } from "http";
 import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
+import { SOCKET_IO_ALLOWED_ORIGINS } from "../utils/deployedFrontendOrigins.js";
 
 const activeGlobalChatUsers = new Map<string, Set<string>>([
   ["pfatc", new Set()],
@@ -98,12 +99,7 @@ export function setupGlobalChatWebsocket(
       maxAttempts: 500,
     }),
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:9901",
-        "https://pfcontrol.com",
-        "https://canary.pfcontrol.com",
-      ],
+      origin: [...SOCKET_IO_ALLOWED_ORIGINS],
       credentials: true,
     },
     perMessageDeflate: {

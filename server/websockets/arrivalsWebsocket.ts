@@ -8,6 +8,7 @@ import { validateSessionId, validateAccessId, validateFlightId } from "../utils/
 import { sanitizeString, sanitizeSquawk, sanitizeFlightLevel } from "../utils/sanitization.js";
 import { mainDb } from "../db/connection.js";
 import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
+import { SOCKET_IO_ALLOWED_ORIGINS } from "../utils/deployedFrontendOrigins.js";
 import {
   isAdvancedNetworkSession,
   getNetworkKind,
@@ -25,12 +26,7 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
     path: "/sockets/arrivals",
     allowRequest: createHandshakeRateLimiter({ scope: "arrivals" }),
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:9901",
-        "https://pfcontrol.com",
-        "https://canary.pfcontrol.com",
-      ],
+      origin: [...SOCKET_IO_ALLOWED_ORIGINS],
       credentials: true,
     },
     perMessageDeflate: {
@@ -210,7 +206,6 @@ async function broadcastToOtherArrivalSessions(
     console.error("Error broadcasting to other arrival sessions:", error);
   }
 }
-
 
 export function getArrivalsIO(): SocketServer | undefined {
   return io;
