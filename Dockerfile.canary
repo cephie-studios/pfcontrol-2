@@ -53,6 +53,7 @@ COPY --from=builder --chown=nodeuser:nodejs /app/public ./public
 COPY --from=builder --chown=nodeuser:nodejs /app/server/dist ./server/dist
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/data
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/dist/data
+COPY --from=builder --chown=nodeuser:nodejs /app/VERSION ./VERSION
 
 # Create logs directory
 RUN mkdir -p logs && chown nodeuser:nodejs logs
