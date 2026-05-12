@@ -154,18 +154,18 @@
         "MTCA": "POKEG1W"
       },
       "26": {
-        "EGKK": "BETIR2C",
-        "LCLK": "ANTEX2C",
-        "LCPH": "ANTEX2C",
-        "LCRA": "ANTEX2C",
-        "GCLP": "BETIR2C",
-        "EFKT": "BETIR2C",
-        "LEMH": "BETIR2C",
-        "EGHI": "BETIR2C",
-        "MDST": "POKEG2C",
-        "MDAB": "POKEG2C",
-        "MDCR": "POKEG2C",
-        "MTCA": "POKEG2C"
+        "EGKK": "BETIR1C",
+        "LCLK": "ANTEX1C",
+        "LCPH": "ANTEX1C",
+        "LCRA": "ANTEX1C",
+        "GCLP": "BETIR1C",
+        "EFKT": "BETIR1C",
+        "LEMH": "BETIR1C",
+        "EGHI": "BETIR1C",
+        "MDST": "POKEG1C",
+        "MDAB": "POKEG1C",
+        "MDCR": "POKEG1C",
+        "MTCA": "POKEG1C"
       },
       "27": {
         "EGKK": "BETIR2C",
