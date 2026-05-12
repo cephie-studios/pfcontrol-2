@@ -156,10 +156,14 @@ voiceChatIO.adapter(createAdapter(pubClient, subClient));
 const notificationsIO = setupNotificationsWebsocket(server);
 notificationsIO.adapter(createAdapter(pubClient, subClient));
 
-const versionFile = readFileSync(new URL("../../VERSION", import.meta.url), "utf-8").trim();
-updateAppVersion(versionFile, "system").catch((err) =>
-  console.warn("[version] Failed to sync VERSION file on startup:", err),
-);
+try {
+  const versionFile = readFileSync(new URL("../../VERSION", import.meta.url), "utf-8").trim();
+  updateAppVersion(versionFile, "system").catch((err) =>
+    console.warn("[version] Failed to sync version on startup:", err),
+  );
+} catch {
+  console.warn("[version] VERSION file not found, skipping sync");
+}
 startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();
