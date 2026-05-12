@@ -23,10 +23,9 @@
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@opentelemetry/api-logs": "^0.217.0",
-    "@opentelemetry/exporter-logs-otlp-http": "^0.217.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
     "@opentelemetry/resources": "^2.7.1",
     "@opentelemetry/sdk-logs": "^0.217.0",
-    "@opentelemetry/sdk-node": "^0.217.0",
     "@posthog/react": "^1.9.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "@tailwindcss/vite": "^4.2.2",

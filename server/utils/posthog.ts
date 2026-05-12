@@ -1,7 +1,6 @@
 import { PostHog } from "posthog-node";
-import { NodeSDK } from "@opentelemetry/sdk-node";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
+import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { logs, type AnyValueMap } from "@opentelemetry/api-logs";
 import type { Request } from "express";
@@ -89,21 +88,27 @@ export function initTelemetry() {
 
   const host = process.env.POSTHOG_HOST || "https://us.i.posthog.com";
 
-  const sdk = new NodeSDK({
+  const loggerProvider = new LoggerProvider({
     resource: resourceFromAttributes({
       "service.name": process.env.SERVICE_NAME || "pfcontrol",
     }),
-    logRecordProcessor: new BatchLogRecordProcessor(
+  });
+  loggerProvider.addLogRecordProcessor(
+    new BatchLogRecordProcessor(
       new OTLPLogExporter({
         url: `${host}/i/v1/logs`,
         headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
-      })
+      }),
     ),
-  });
+  );
+  loggerProvider.register();
 
-  sdk.start();
-  process.on("SIGTERM", () => { sdk.shutdown(); });
-  process.on("SIGINT",  () => { sdk.shutdown(); });
+  process.on("SIGTERM", () => {
+    loggerProvider.shutdown();
+  });
+  process.on("SIGINT", () => {
+    loggerProvider.shutdown();
+  });
 
   _otelLogger = logs.getLogger("pfcontrol");
 }
@@ -115,8 +120,8 @@ function emitLog(level: LogLevel, message: string, attributes?: AnyValueMap) {
 export const logger = {
   trace: (msg: string, attrs?: AnyValueMap) => emitLog("TRACE", msg, attrs),
   debug: (msg: string, attrs?: AnyValueMap) => emitLog("DEBUG", msg, attrs),
-  info:  (msg: string, attrs?: AnyValueMap) => emitLog("INFO",  msg, attrs),
-  warn:  (msg: string, attrs?: AnyValueMap) => emitLog("WARN",  msg, attrs),
+  info: (msg: string, attrs?: AnyValueMap) => emitLog("INFO", msg, attrs),
+  warn: (msg: string, attrs?: AnyValueMap) => emitLog("WARN", msg, attrs),
   error: (msg: string, attrs?: AnyValueMap) => emitLog("ERROR", msg, attrs),
   fatal: (msg: string, attrs?: AnyValueMap) => emitLog("FATAL", msg, attrs),
 };
