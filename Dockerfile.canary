@@ -45,6 +45,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # Set NODE_ENV explicitly
 ENV NODE_ENV=production
+ENV DEPLOYMENT=canary
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nodeuser:nodejs /app/dist ./dist

@@ -1,3 +1,6 @@
+export const DEPLOYMENT = process.env.DEPLOYMENT ?? "development";
+
+export const prefixKey = (key: string) => `${DEPLOYMENT}:${key}`;
 
 export const DATA_STATIC_REDIS_SEC = 12 * 60 * 60;
 export const DATA_STATIC_BROWSER_SEC = 60 * 60;

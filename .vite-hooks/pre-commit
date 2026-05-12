@@ -1,1 +1,4 @@
+if [ -t 1 ]; then
+  npm run precommit
+fi
 vp staged

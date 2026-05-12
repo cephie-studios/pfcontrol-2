@@ -22,6 +22,7 @@ import {
   HOMEPAGE_STATS_REDIS_SEC,
   LEADERBOARD_BROWSER_SEC,
   LEADERBOARD_EDGE_SEC,
+  prefixKey,
 } from "../utils/cacheTtl.js";
 
 import dotenv from "dotenv";
@@ -77,7 +78,7 @@ const router = express.Router();
 
 // GET: /api/data/airports
 router.get("/airports", async (req, res) => {
-  const cacheKey = "data:airports";
+  const cacheKey = prefixKey("data:airports");
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -125,7 +126,7 @@ router.get("/airports", async (req, res) => {
 
 // GET: /api/data/aircrafts
 router.get("/aircrafts", async (req, res) => {
-  const cacheKey = "data:aircrafts";
+  const cacheKey = prefixKey("data:aircrafts");
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -173,7 +174,7 @@ router.get("/aircrafts", async (req, res) => {
 
 // GET: /api/data/airlines
 router.get("/airlines", async (req, res) => {
-  const cacheKey = "data:airlines";
+  const cacheKey = prefixKey("data:airlines");
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -221,7 +222,7 @@ router.get("/airlines", async (req, res) => {
 
 // GET: /api/data/frequencies
 router.get("/frequencies", async (req, res) => {
-  const cacheKey = "data:frequencies";
+  const cacheKey = prefixKey("data:frequencies");
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -625,7 +626,7 @@ router.get("/findRoute", async (req, res) => {
     return res.status(400).json({ error: "Missing required query parameters: from, to" });
   }
 
-  const cacheKey = `route:${from}:${to}`;
+  const cacheKey = prefixKey(`route:${from}:${to}`);
 
   try {
     const cachedRoute = await redisConnection.get(cacheKey);
