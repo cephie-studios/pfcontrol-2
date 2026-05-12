@@ -6,6 +6,8 @@ import {
   ensureGlobalChatNetworkKindColumn,
   ensureSessionsDeveloperApiKeyColumn,
   ensureDeveloperApiPolicyColumns,
+  ensureAppSettingsChannelColumn,
+  syncVersionFromFile,
 } from "./schemas.js";
 import pg from "pg";
 import Redis from "ioredis";
@@ -61,6 +63,8 @@ try {
   await ensureGlobalChatNetworkKindColumn();
   await ensureSessionsDeveloperApiKeyColumn();
   await ensureDeveloperApiPolicyColumns();
+  await ensureAppSettingsChannelColumn();
+  await syncVersionFromFile();
   console.log("[Database] Tables initialized successfully");
 } catch (err) {
   console.error("Failed to create tables:", err);

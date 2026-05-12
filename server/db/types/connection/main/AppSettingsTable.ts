@@ -3,4 +3,5 @@ export interface AppSettingsTable {
   version: string;
   updated_at: Date;
   updated_by: string;
+  channel: string;
 }
