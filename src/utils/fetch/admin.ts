@@ -588,13 +588,6 @@ export async function fetchAppVersion(): Promise<AppVersion> {
   return makeAdminRequest("/version");
 }
 
-export async function updateAppVersion(version: string): Promise<AppVersion> {
-  return makeAdminRequest("/version", {
-    method: "PUT",
-    body: JSON.stringify({ version }),
-  });
-}
-
 export async function fetchChatReports(
   page = 1,
   limit = 50,

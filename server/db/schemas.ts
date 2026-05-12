@@ -1,5 +1,12 @@
 import { sql } from "kysely";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { mainDb } from "./connection.js";
+import { DEPLOYMENT } from "../utils/cacheTtl.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function createMainTables() {
   // app_settings
@@ -10,6 +17,7 @@ export async function createMainTables() {
     .addColumn("version", "varchar(50)", (col) => col.notNull())
     .addColumn("updated_at", "timestamptz", (col) => col.notNull())
     .addColumn("updated_by", "varchar(255)", (col) => col.notNull())
+    .addColumn("channel", "varchar(50)", (col) => col.notNull().defaultTo("production"))
     .execute();
 
   // roles (must be created before users)
@@ -745,4 +753,54 @@ export async function ensureDeveloperApiPolicyColumns() {
     ALTER TABLE developer_api_usage
     ADD COLUMN IF NOT EXISTS client_ip varchar(128)
   `.execute(mainDb);
+}
+
+export async function ensureAppSettingsChannelColumn() {
+  await sql`
+    ALTER TABLE app_settings
+    ADD COLUMN IF NOT EXISTS channel varchar(50) NOT NULL DEFAULT 'production'
+  `.execute(mainDb);
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_app_settings_channel ON app_settings (channel)
+  `.execute(mainDb);
+
+  // Seed the canary row from the production row if it doesn't exist yet
+  await sql`
+    INSERT INTO app_settings (version, channel, updated_at, updated_by)
+    SELECT version, 'canary', now(), 'system'
+    FROM app_settings
+    WHERE channel = 'production'
+    ON CONFLICT (channel) DO NOTHING
+  `.execute(mainDb);
+}
+
+export async function syncVersionFromFile() {
+  const versionPath = path.join(__dirname, "..", "..", "VERSION");
+  let fileVersion: string;
+  try {
+    fileVersion = fs.readFileSync(versionPath, "utf8").trim();
+  } catch {
+    console.warn("[Version] VERSION file not found, skipping sync");
+    return;
+  }
+
+  await mainDb
+    .insertInto("app_settings")
+    .values({
+      version: fileVersion,
+      channel: DEPLOYMENT,
+      updated_at: new Date(),
+      updated_by: "system",
+    })
+    .onConflict((oc) =>
+      oc.column("channel").doUpdateSet({
+        version: fileVersion,
+        updated_at: new Date(),
+        updated_by: "system",
+      }),
+    )
+    .execute();
+
+  console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${fileVersion}`);
 }

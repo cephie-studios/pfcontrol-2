@@ -1,6 +1,9 @@
+import { Generated } from "kysely";
+
 export interface AppSettingsTable {
-  id: number;
+  id: Generated<number>;
   version: string;
   updated_at: Date;
   updated_by: string;
+  channel: string;
 }

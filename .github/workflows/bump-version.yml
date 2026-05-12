@@ -1,0 +1,71 @@
+name: bump-version
+
+on:
+  push:
+    branches:
+      - main
+      - canary
+    paths-ignore:
+      - 'README.md'
+      - 'VERSION'
+  release:
+    types: [published]
+
+jobs:
+  bump:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.VERSION_BUMP_PAT }}
+          fetch-depth: 0
+
+      - name: Read and bump version
+        id: version
+        run: |
+          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          IFS='.' read -r V1 V2 MINOR PATCH <<< "$CURRENT"
+
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="$V1.$V2.$MINOR.$PATCH"
+          echo "$NEW_VERSION" > VERSION
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumped $CURRENT -> $NEW_VERSION (trigger: ${{ github.event_name }})"
+
+      - name: Commit and tag version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Trigger Dokploy deploy (canary)
+        if: github.ref_name == 'canary'
+        run: |
+          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "pfcontrol-canary-sazn1m"}'
+
+      - name: Trigger Dokploy deploy (main)
+        if: github.ref_name == 'main'
+        run: |
+          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "pfcontrol-app-d1qjjy"}'
