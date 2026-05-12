@@ -1,4 +1,3 @@
-import { getWaypointData } from "./getData";
 
 interface NavPoint {
   name: string;
@@ -11,6 +10,11 @@ interface Node {
   point: NavPoint;
   cost: number;
   parent: Node | null;
+}
+
+export function extractFixFromProcedure(procedure: string): string | null {
+  const match = procedure.match(/^([A-Z]{2,5})\d[A-Z]{1,2}$/);
+  return match ? match[1] : null;
 }
 
 function getDist(p1: NavPoint, p2: NavPoint): number {
@@ -104,16 +108,30 @@ function findPath(
   startName: string,
   endName: string,
   allPoints: NavPoint[],
-  maxDist: number = 25,
-  minDist: number = 8,
-  turnPenalty: number = 2
+  maxDist: number = 35,
+  minDist: number = 7,
+  turnPenalty: number = 2,
+  startFix?: string,
+  endFix?: string
 ) {
-  const start = allPoints.find(p => p.name === startName && p.type === 'AIRPORT');
-  const end = allPoints.find(p => p.name === endName && p.type === 'AIRPORT');
+  const startAirport = allPoints.find(p => p.name === startName && p.type === 'AIRPORT');
+  const endAirport = allPoints.find(p => p.name === endName && p.type === 'AIRPORT');
 
-  if (!start || !end) {
+  if (!startAirport || !endAirport) {
     return { path: [], distance: 0, success: false };
   }
+
+  // Resolve actual start/end nav points for A* (fall back to airport if fix not found)
+  const start = startFix
+    ? (allPoints.find(p => p.name === startFix) ?? startAirport)
+    : startAirport;
+  const end = endFix
+    ? (allPoints.find(p => p.name === endFix) ?? endAirport)
+    : endAirport;
+
+  // When routing fix-to-fix we want the goal for neighbor filtering to be the end fix,
+  // but we still need to reach the destination airport.  We route fix → fix then stitch.
+  const usingFixes = startFix && endFix;
 
   const toCheck: Node[] = [{ point: start, cost: 0, parent: null }];
   const checked = new Set<string>();
@@ -130,8 +148,9 @@ function findPath(
     if (current.point.name === end.name) {
       const path = buildPath(current);
 
+      // Relax the waypoint minimum when routing between fixes
       const waypointCount = path.filter(p => p.type !== 'AIRPORT').length;
-      if (waypointCount < 2) {
+      if (!usingFixes && waypointCount < 2) {
         continue;
       }
 

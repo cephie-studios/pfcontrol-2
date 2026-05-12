@@ -85,6 +85,7 @@ export default function Submit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(null);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
   const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(
     null,
@@ -340,18 +341,19 @@ export default function Submit() {
 
     setError("");
     setIsGeneratingRoute(true);
+    setRouteFlParity(null);
 
     const minimumDelay = new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
       const [routeData] = await Promise.all([
-        fetchRoute(form.departure, form.arrival),
+        fetchRoute(form.departure, form.arrival, session?.activeRunway ?? undefined),
         minimumDelay,
       ]);
 
       if (routeData.success) {
-        const route = routeData.path.map((point: { name: string }) => point.name).join(", ");
-        setForm((f) => ({ ...f, route }));
+        setForm((f) => ({ ...f, route: routeData.route }));
+        setRouteFlParity(routeData.flParity ?? null);
       } else {
         setError("Failed to generate a route. Please try again.");
       }
@@ -649,6 +651,11 @@ export default function Submit() {
                       className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                       required
                     />
+                    {routeFlParity && (
+                      <p className="mt-1.5 ml-2 text-xs text-gray-400">
+                        Suggested: <span className="font-semibold text-blue-400">{routeFlParity === 'ODD' ? 'Odd FL (e.g. 050, 070, 110)' : 'Even FL (e.g. 060, 080, 120)'}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

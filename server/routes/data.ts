@@ -8,8 +8,8 @@ import { mainDb, redisConnection } from "../db/connection.js";
 import { getTopUsers, STATS_KEYS, getUserRank } from "../db/leaderboard.js";
 import { getUserById } from "../db/users.js";
 import { getFlightLogsCount } from "../db/flightLogs.js";
-import { getWaypointData } from "../utils/getData.js";
-import { findPath } from "../utils/findRoute.js";
+import { getWaypointData, getAirportData } from "../utils/getData.js";
+import { findPath, extractFixFromProcedure } from "../utils/findRoute.js";
 import { sql } from "kysely";
 import { applyPublicCache } from "../utils/httpCache.js";
 import { resolveAviationMetar } from "../utils/metarAviationWeather.js";
@@ -619,14 +619,17 @@ router.get("/tester-settings", async (req, res) => {
 });
 
 router.get("/findRoute", async (req, res) => {
-  const from = typeof req.query.from === "string" ? req.query.from : "";
-  const to = typeof req.query.to === "string" ? req.query.to : "";
+  const from = typeof req.query.from === "string" ? req.query.from.toUpperCase() : "";
+  const to = typeof req.query.to === "string" ? req.query.to.toUpperCase() : "";
+  // Normalize runway: strip trailing letter suffix so "26L" → "26", "08R" → "08"
+  const runwayRaw = typeof req.query.runway === "string" ? req.query.runway.toUpperCase() : "";
+  const runway = runwayRaw.replace(/[A-Z]+$/, "");
 
   if (!from || !to) {
     return res.status(400).json({ error: "Missing required query parameters: from, to" });
   }
 
-  const cacheKey = prefixKey(`route:${from}:${to}`);
+  const cacheKey = prefixKey(`routev2:${from}:${to}:${runway}`);
 
   try {
     const cachedRoute = await redisConnection.get(cacheKey);
@@ -649,16 +652,76 @@ router.get("/findRoute", async (req, res) => {
     }
 
     const waypointData = getWaypointData();
+    const airportData: Array<{
+      icao: string;
+      departures: Record<string, Record<string, string>>;
+      arrivals: Record<string, Record<string, string>>;
+    }> = getAirportData();
 
     const allPoints = [...waypointData];
 
-    const { path, distance, success } = findPath(from, to, allPoints);
+    // Look up SID and STAR from airport data (runway-agnostic: use first runway key)
+    const depAirport = airportData.find(a => a.icao === from);
+    const arrAirport = airportData.find(a => a.icao === to);
+
+    let sid: string | undefined;
+    let star: string | undefined;
+
+    if (depAirport?.departures) {
+      // Use the supplied runway if it matches a key, otherwise fall back to the first available
+      const runwayKey = (runway && depAirport.departures[runway])
+        ? runway
+        : Object.keys(depAirport.departures)[0];
+      if (runwayKey) {
+        const procedure = depAirport.departures[runwayKey][to];
+        if (procedure && procedure !== "RADAR VECTORS") sid = procedure;
+      }
+    }
+
+    if (arrAirport?.arrivals) {
+      const firstRunway = Object.keys(arrAirport.arrivals)[0];
+      if (firstRunway) {
+        const procedure = arrAirport.arrivals[firstRunway][from];
+        if (procedure && procedure !== "RADAR VECTORS") star = procedure;
+      }
+    }
+
+    // Extract exit/entry fixes from SID/STAR names (e.g. KATOK2T → KATOK)
+    const startFix = sid ? extractFixFromProcedure(sid) ?? undefined : undefined;
+    const endFix = star ? extractFixFromProcedure(star) ?? undefined : undefined;
+
+    const { path, distance, success } = findPath(from, to, allPoints, 35, 7, 2, startFix, endFix);
 
     if (!success) {
       return res.status(404).json({ error: "Route not found" });
     }
 
-    const routeData = { path, distance };
+    // Calculate bearing for odd/even FL recommendation
+    const depPoint = allPoints.find(p => p.name === from && p.type === "AIRPORT");
+    const arrPoint = allPoints.find(p => p.name === to && p.type === "AIRPORT");
+    let flParity: "ODD" | "EVEN" | undefined;
+    if (depPoint && arrPoint) {
+      const dx = arrPoint.x - depPoint.x;
+      const dy = depPoint.y - arrPoint.y; // y increases southward so invert
+      let bearing = Math.atan2(dx, dy) * (180 / Math.PI);
+      if (bearing < 0) bearing += 360;
+      flParity = bearing < 180 ? "ODD" : "EVEN";
+    }
+
+    // Build formatted route string: DEP SID ...waypoints... STAR ARR
+    const midWaypoints = path
+      .filter(p => p.type !== "AIRPORT")
+      .map(p => p.name);
+
+    const routeParts: string[] = [from];
+    if (sid) routeParts.push(sid);
+    routeParts.push(...midWaypoints);
+    if (star) routeParts.push(star);
+    routeParts.push(to);
+
+    const route = routeParts.join(" ");
+
+    const routeData = { path, distance, route, sid, star, flParity };
 
     try {
       await redisConnection.set(cacheKey, JSON.stringify(routeData), "EX", DATA_STATIC_REDIS_SEC);

@@ -12,49 +12,22 @@
       "DEL": "121.650"
     },
     "sids": [
-      "CHUMA2W",
-      "ETBOD2W",
-      "KATOK2W",
-      "MALVN2W",
-      "MELLA2W",
-      "PALAS2W",
-      "PIXAR2W",
-      "POKAK2W",
-      "RETAK2W",
-      "VESKA2W",
       "CHUMA2T",
       "ETBOD2T",
       "KATOK2T",
-      "MALVN2T",
-      "MELLA2T",
-      "PALAS2T",
       "PIXAR2T",
-      "POKAK2T",
-      "RETAK2T",
-      "VESKA2T",
       "CHUMA3T",
       "ETBOD3T",
       "KATOK3T",
-      "MALVN3T",
-      "MELLA3T",
-      "PALAS3T",
       "PIXAR3T",
-      "POKAK3T",
-      "RETAK3T",
-      "VESKA3T",
-      "CHUMA2Q",
-      "ETBOD2Q",
-      "KATOK2Q",
-      "MALVN2Q",
-      "MELLA2Q",
-      "PALAS2Q",
-      "PIXAR2Q",
-      "POKAK2Q",
-      "RETAK2Q",
-      "VESKA2Q",
       "RADAR VECTORS"
     ],
-    "runways": ["08", "09", "26", "27"],
+    "runways": [
+      "08",
+      "09",
+      "26",
+      "27"
+    ],
     "departures": {
       "08": {
         "LCLK": "KATOK2T",
@@ -114,14 +87,18 @@
       }
     },
     "stars": [
-      "ANTEX1W",
-      "BETIR1W",
       "POKEG1W",
+      "BETIR1W",
       "KATOK1W",
+      "ANTEX1W",
       "POKEG2C",
       "BETIR2C",
       "KATOK2C",
       "ANTEX2C",
+      "POKEG1C",
+      "BETIR1C",
+      "KATOK1C",
+      "ANTEX1C",
       "RADAR VECTORS"
     ],
     "arrivals": {
@@ -196,47 +173,50 @@
       "DEL": "121.955"
     },
     "sids": [
+      "BOGNA1X",
       "NOVMA1X",
-      "BOGNA 1X",
-      "HARDY 1X",
-      "IMVUR 1Z",
-      "RADAR VECTORS",
-      "SFD 1X",
-      "SFD 4Z",
-      "WIZAD 1X"
+      "WIZAD1X",
+      "RADAR VECTORS"
     ],
-    "runways": ["26L", "08R"],
+    "runways": [
+      "26L",
+      "08R"
+    ],
     "departures": {
       "26L": {
-        "LCLK": "SFD1X",
-        "LCPH": "SFD1X",
-        "LCRA": "SFD1X",
+        "LCLK": "WIZAD1X",
+        "LCPH": "WIZAD1X",
+        "LCRA": "WIZAD1X",
         "MDPC": "NOVMA1X",
         "MDST": "NOVMA1X",
-        "GCLP": "IMVUR1Z",
-        "EFKT": "SFD1X",
+        "GCLP": "NOVMA1X",
+        "EFKT": "WIZAD1X",
         "LEMH": "BOGNA1X",
-        "EGHI": "BOGNA1X",
-        "MDAB": "IMVUR1Z",
+        "EGHI": "RADAR VECTORS",
+        "MDAB": "NOVMA1X",
         "MDCR": "NOVMA1X",
         "MTCA": "NOVMA1X"
       },
       "08R": {
-        "LCLK": "SFD4Z",
-        "LCPH": "SFD4Z",
-        "LCRA": "SFD4Z",
-        "MDPC": "IMVURR1Z",
-        "MDST": "IMVURR1Z",
-        "GCLP": "IMVURR1Z",
-        "EFKT": "SFD4Z",
-        "LEMH": "BOGNAA1X",
-        "EGHI": "BOGNAA1X",
-        "MDAB": "IMVURR1Z",
-        "MDCR": "IMVUR1Z",
-        "MTCA": "IMVURR1Z"
+        "LCLK": "WIZAD1X",
+        "LCPH": "WIZAD1X",
+        "LCRA": "WIZAD1X",
+        "MDPC": "NOVMA1X",
+        "MDST": "NOVMA1X",
+        "GCLP": "NOVMA1X",
+        "EFKT": "WIZAD1X",
+        "LEMH": "BOGNA1X",
+        "EGHI": "RADAR VECTORS",
+        "MDAB": "NOVMA1X",
+        "MDCR": "NOVMA1X",
+        "MTCA": "NOVMA1X"
       }
     },
-    "stars": ["KUNAV1G", "VASUX1G", "RADAR VECTORS"],
+    "stars": [
+      "KUNAV1G",
+      "VASUX1G",
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "08R": {
         "MDPC": "VASUX1G",
@@ -291,7 +271,10 @@
       "RUDER1D",
       "RUDER1W"
     ],
-    "runways": ["04", "22"],
+    "runways": [
+      "04",
+      "22"
+    ],
     "departures": {
       "04": {
         "MDPC": "BONEK2W",
@@ -374,76 +357,73 @@
     },
     "picture": "",
     "sids": [
-      "ESERI1R",
-      "GENOS1R",
-      "NORDI1R",
-      "RIMEX1R",
-      "ESERI1W",
-      "GENOS1W",
-      "NORDI1W",
-      "RIMEX1W",
       "RADAR VECTORS"
     ],
-    "runways": ["11", "29"],
+    "runways": [
+      "11",
+      "29"
+    ],
     "departures": {
       "11": {
-        "MDPC": "GENOS1R",
-        "EGKK": "NORDI1R",
-        "LCLK": "NORDI1R",
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "GENOS1R",
-        "EFKT": "NORDI1R",
-        "LEMH": "GENOS1R",
-        "EGHI": "NORDI1R",
-        "MDST": "GENOS1R",
-        "MTCA": "GENOS1R",
-        "MDAB": "GENOS1R",
-        "MDCR": "GENOS1R"
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
       },
       "29": {
-        "MDPC": "GENOS1W",
-        "EGKK": "NORDI1W",
-        "LCLK": "NORDI1W",
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "GENOS1W",
-        "EFKT": "NORDI1W",
-        "LEMH": "GENOS1W",
-        "EGHI": "NORDI1W",
-        "MDST": "GENOS1W",
-        "MTCA": "GENOS1W",
-        "MDAB": "GENOS1W",
-        "MDCR": "GENOS1W"
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
       }
     },
-    "stars": ["NORDI1T", "TOBAL1T", "GIPRO1A", "NORDI1A"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "11": {
-        "MDPC": "TOBAL1T",
-        "EGKK": "TOBAL1T",
-        "LCLK": "NORDI1T",
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "TOBAL1T",
-        "EFKT": "NORDI1T",
-        "LEMH": "TOBAL1T",
-        "EGHI": "TOBAL1T",
-        "MDST": "TOBAL1T",
-        "MTCA": "TOBAL1T",
-        "MDAB": "TOBAL1T",
-        "MDCR": "TOBAL1T"
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
       },
       "29": {
-        "MDPC": "TOBAL1T",
-        "EGKK": "NORDI1A",
-        "LCLK": "GIPRO1A",
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "TOBAL1T",
-        "EFKT": "NORDI1A",
-        "LEMH": "TOBAL1T",
-        "EGHI": "NORDI1A",
-        "MDST": "TOBAL1T",
-        "MTCA": "TOBAL1T",
-        "MDAB": "TOBAL1T",
-        "MDCR": "TOBAL1T"
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
       }
     }
   },
@@ -459,8 +439,13 @@
       "DEL": "n/a"
     },
     "picture": "",
-    "sids": ["RADAR VECTORS"],
-    "runways": ["10", "28"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "10",
+      "28"
+    ],
     "departures": {
       "10": {
         "MDPC": "RADAR VECTORS",
@@ -491,7 +476,9 @@
         "MDCR": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "10": {
         "MDPC": "RADAR VECTORS",
@@ -544,7 +531,12 @@
       "ODEGI2B",
       "RADAR VECTORS"
     ],
-    "runways": ["03L", "03R", "21L", "21R"],
+    "runways": [
+      "03L",
+      "03R",
+      "21L",
+      "21R"
+    ],
     "departures": {
       "03L": {
         "MDPC": "ODEGI2A",
@@ -682,8 +674,13 @@
       "GND": "n/a",
       "DEL": "n/a"
     },
-    "sids": ["RADAR VECTORS"],
-    "runways": ["02", "20"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "02",
+      "20"
+    ],
     "departures": {
       "02": {
         "MDPC": "RADAR VECTORS",
@@ -714,7 +711,9 @@
         "MTCA": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "02": {
         "MDPC": "RADAR VECTORS",
@@ -748,8 +747,8 @@
   },
   {
     "icao": "EFKT",
-    "name": "Kittilä Airport",
-    "controlName": "Kittilä",
+    "name": "Kittil\u00c3\u00a4 Airport",
+    "controlName": "Kittil\u00c3\u00a4",
     "elevation": 124,
     "picture": "/images/destinations/efkt.png",
     "allFrequencies": {
@@ -758,8 +757,16 @@
       "GND": "n/a",
       "DEL": "n/a"
     },
-    "sids": ["KEFT2D", "RADAR VECTORS", "ROSE3C", "SPECA1A"],
-    "runways": ["16", "34"],
+    "sids": [
+      "KEFT2D",
+      "RADAR VECTORS",
+      "ROSE3C",
+      "SPECA1A"
+    ],
+    "runways": [
+      "16",
+      "34"
+    ],
     "departures": {
       "16": {
         "MDPC": "RADAR VECTORS",
@@ -790,7 +797,12 @@
         "MTCA": "ROSE3C"
       }
     },
-    "stars": ["KRDSH1A", "KIT2D", "KEFLA3C", "RADAR VECTORS"],
+    "stars": [
+      "KRDSH1A",
+      "KIT2D",
+      "KEFLA3C",
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "16": {
         "MDPC": "RADAR VECTORS",
@@ -834,8 +846,17 @@
       "GND": "121.755",
       "DEL": "n/a"
     },
-    "sids": ["AVI4D", "ISKAL1A", "MEROS3C", "RADAR VECTORS", "SARGO2B"],
-    "runways": ["01", "19"],
+    "sids": [
+      "AVI4D",
+      "ISKAL1A",
+      "MEROS3C",
+      "RADAR VECTORS",
+      "SARGO2B"
+    ],
+    "runways": [
+      "01",
+      "19"
+    ],
     "departures": {
       "01": {
         "MDPC": "AVI4D",
@@ -866,7 +887,9 @@
         "MTCA": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "01": {
         "MDPC": "RADAR VECTORS",
@@ -910,8 +933,13 @@
       "GND": "n/a",
       "DEL": "n/a"
     },
-    "sids": ["RADAR VECTORS"],
-    "runways": ["11", "29"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "11",
+      "29"
+    ],
     "departures": {
       "11": {
         "MDPC": "RADAR VECTORS",
@@ -941,12 +969,45 @@
         "MDCR": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS"
       }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "11": {
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "GCLP": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
+      },
+      "29": {
+        "MDPC": "RADAR VECTORS",
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "GCLP": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS"
+      }
     }
   },
   {
     "icao": "MDAB",
     "name": "Arroyo Barril Airport",
-    "controlName": "Samaná",
+    "controlName": "Saman\u00c3\u00a1",
     "elevation": 30,
     "picture": "/images/destinations/mdab.png",
     "allFrequencies": {
@@ -955,8 +1016,13 @@
       "GND": "n/a",
       "DEL": "n/a"
     },
-    "sids": ["RADAR VECTORS"],
-    "runways": ["11", "29"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "11",
+      "29"
+    ],
     "departures": {
       "11": {
         "MDPC": "RADAR VECTORS",
@@ -987,7 +1053,9 @@
         "MTCA": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "11": {
         "MDPC": "RADAR VECTORS",
@@ -1031,8 +1099,13 @@
       "GND": "n/a",
       "DEL": "n/a"
     },
-    "sids": ["RADAR VECTORS"],
-    "runways": ["08", "26"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "08",
+      "26"
+    ],
     "departures": {
       "08": {
         "MDPC": "RADAR VECTORS",
@@ -1063,7 +1136,9 @@
         "MDAB": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "08": {
         "MDPC": "RADAR VECTORS",
@@ -1107,8 +1182,13 @@
       "DEL": "n/a"
     },
     "picture": "/images/destinations/mdcr.png",
-    "sids": ["RADAR VECTORS"],
-    "runways": ["12", "30"],
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "12",
+      "30"
+    ],
     "departures": {
       "12": {
         "MDPC": "RADAR VECTORS",
@@ -1139,7 +1219,9 @@
         "MDAB": "RADAR VECTORS"
       }
     },
-    "stars": ["RADAR VECTORS"],
+    "stars": [
+      "RADAR VECTORS"
+    ],
     "arrivals": {
       "12": {
         "MDPC": "RADAR VECTORS",
