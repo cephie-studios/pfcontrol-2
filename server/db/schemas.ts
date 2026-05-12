@@ -773,14 +773,6 @@ export async function ensureAppSettingsChannelColumn() {
     WHERE channel = 'production'
     ON CONFLICT (channel) DO NOTHING
   `.execute(mainDb);
-
-  await sql`
-    INSERT INTO app_settings (version, channel, updated_at, updated_by)
-    SELECT version, 'preview', now(), 'system'
-    FROM app_settings
-    WHERE channel = 'production'
-    ON CONFLICT (channel) DO NOTHING
-  `.execute(mainDb);
 }
 
 export async function syncVersionFromFile() {

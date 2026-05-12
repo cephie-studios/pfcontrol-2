@@ -320,12 +320,6 @@ export default function Navbar({ sessionId, accessId, mobileSidebarOpen }: Navba
                       Canary
                     </span>
                   )}
-                  {window.location.hostname === "preview.pfcontrol.com" && (
-                    <span className="bg-gradient-to-r from-violet-300 to-fuchsia-500 bg-clip-text text-transparent italic text-md">
-                      {" "}
-                      Preview
-                    </span>
-                  )}
                   {window.location.hostname === "localhost" && (
                     <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent italic text-md">
                       {" "}

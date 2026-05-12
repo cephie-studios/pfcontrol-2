@@ -29,7 +29,6 @@ import { getAppVersion } from "./db/version.js";
 import { cleanupOldDeveloperUsage } from "./db/developer.js";
 import posthogClient, { initTelemetry } from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
-import { EXPRESS_PRODUCTION_CORS_ORIGINS } from "./utils/deployedFrontendOrigins.js";
 
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.production" : ".env.development",
@@ -64,7 +63,7 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? [...EXPRESS_PRODUCTION_CORS_ORIGINS]
+        ? ["https://pfcontrol.com", "https://canary.pfcontrol.com"]
         : ["http://localhost:9901", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

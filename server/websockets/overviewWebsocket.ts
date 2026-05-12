@@ -18,7 +18,6 @@ import type { Server as HTTPServer } from "http";
 import type { SessionUsersServer } from "./sessionUsersWebsocket.js";
 import type { Flight } from "../utils/flightUtils.js";
 import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
-import { SOCKET_IO_ALLOWED_ORIGINS } from "../utils/deployedFrontendOrigins.js";
 import { isAdvancedNetworkSession, getNetworkKind } from "../utils/advancedNetworkSession.js";
 
 let io: SocketServer;
@@ -30,7 +29,12 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
     path: "/sockets/overview",
     allowRequest: createHandshakeRateLimiter({ scope: "overview" }),
     cors: {
-      origin: [...SOCKET_IO_ALLOWED_ORIGINS],
+      origin: [
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
+      ],
       credentials: true,
     },
     transports: ["websocket", "polling"],
