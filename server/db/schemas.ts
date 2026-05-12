@@ -20,14 +20,6 @@ export async function createMainTables() {
     .addColumn("channel", "varchar(50)", (col) => col.notNull().defaultTo("production"))
     .execute();
 
-  await mainDb.schema
-    .createIndex("idx_app_settings_channel")
-    .unique()
-    .ifNotExists()
-    .on("app_settings")
-    .column("channel")
-    .execute();
-
   // roles (must be created before users)
   await mainDb.schema
     .createTable("roles")

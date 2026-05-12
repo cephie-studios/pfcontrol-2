@@ -1,7 +1,6 @@
 import express from "express";
-import { getAppVersion, updateAppVersion } from "../db/version.js";
+import { getAppVersion } from "../db/version.js";
 import { redisConnection } from "../db/connection.js";
-import requireAuth from "../middleware/auth.js";
 import { applyPublicCache } from "../utils/httpCache.js";
 import {
   APP_VERSION_BROWSER_SEC,
@@ -50,42 +49,6 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Error fetching app version:", error);
     res.status(500).json({ error: "Failed to fetch app version" });
-  }
-});
-
-// PUT: /api/version - Update app version (admin only)
-router.put("/", requireAuth, async (req, res) => {
-  try {
-    if (!req.user?.isAdmin) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
-    const { version } = req.body;
-    if (!version || typeof version !== "string") {
-      return res.status(400).json({ error: "Version is required and must be a string" });
-    }
-
-    const updatedVersion = await updateAppVersion(version, req.user.username || "Unknown Admin");
-
-    const cacheKey = prefixKey("app:version");
-    try {
-      await redisConnection.del(cacheKey);
-      await redisConnection.set(
-        cacheKey,
-        JSON.stringify(updatedVersion),
-        "EX",
-        APP_VERSION_REDIS_SEC,
-      );
-    } catch (error) {
-      if (error instanceof Error) {
-        console.warn("[Redis] Failed to update cache for app version:", error.message);
-      }
-    }
-
-    res.json(updatedVersion);
-  } catch (error) {
-    console.error("Error updating app version:", error);
-    res.status(500).json({ error: "Failed to update app version" });
   }
 });
 

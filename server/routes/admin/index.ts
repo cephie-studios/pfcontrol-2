@@ -3,9 +3,7 @@ import requireAuth from "../../middleware/auth.js";
 import { createAuditLogger } from "../../middleware/auditLogger.js";
 import { requirePermission } from "../../middleware/rolePermissions.js";
 import { getDailyStatistics, getTotalStatistics } from "../../db/admin.js";
-import { getAppVersion, updateAppVersion } from "../../db/version.js";
-import { redisConnection } from "../../db/connection.js";
-import { APP_VERSION_REDIS_SEC } from "../../utils/cacheTtl.js";
+import { getAppVersion } from "../../db/version.js";
 
 import usersRouter from "./users.js";
 import sessionsRouter from "./sessions.js";
@@ -76,53 +74,5 @@ router.get("/version", requirePermission("admin"), async (req, res) => {
     res.status(500).json({ error: "Failed to fetch app version" });
   }
 });
-
-// PUT: /api/admin/version - Update app version (admin only)
-router.put(
-  "/version",
-  requirePermission("admin"),
-  createAuditLogger("ADMIN_VERSION_UPDATED"),
-  async (req, res) => {
-    try {
-      const { version } = req.body;
-
-      if (!version || typeof version !== "string") {
-        return res.status(400).json({ error: "Version is required and must be a string" });
-      }
-
-      const versionRegex = /^\d+\.\d+\.\d+(\.\d+)?$/;
-      if (!versionRegex.test(version.trim())) {
-        return res.status(400).json({
-          error: "Invalid version format. Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH.BUILD",
-        });
-      }
-
-      const updatedVersion = await updateAppVersion(
-        version.trim(),
-        req.user?.username || "Unknown Admin",
-      );
-
-      const cacheKey = "app:version";
-      try {
-        await redisConnection.del(cacheKey);
-        await redisConnection.set(
-          cacheKey,
-          JSON.stringify(updatedVersion),
-          "EX",
-          APP_VERSION_REDIS_SEC,
-        );
-      } catch (error) {
-        if (error instanceof Error) {
-          console.warn("[Redis] Failed to update cache for app version:", error.message);
-        }
-      }
-
-      res.json(updatedVersion);
-    } catch (error) {
-      console.error("Error updating app version:", error);
-      res.status(500).json({ error: "Failed to update app version" });
-    }
-  },
-);
 
 export default router;
