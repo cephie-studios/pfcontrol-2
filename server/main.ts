@@ -25,7 +25,8 @@ import { updateLeaderboard } from "./db/leaderboard.js";
 import { startFlightLogsCleanup } from "./db/flightLogs.js";
 import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
 import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
-import { getAppVersion } from "./db/version.js";
+import { getAppVersion, updateAppVersion } from "./db/version.js";
+import { readFileSync } from "fs";
 import { cleanupOldDeveloperUsage } from "./db/developer.js";
 import posthogClient, { initTelemetry } from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
@@ -155,7 +156,10 @@ voiceChatIO.adapter(createAdapter(pubClient, subClient));
 const notificationsIO = setupNotificationsWebsocket(server);
 notificationsIO.adapter(createAdapter(pubClient, subClient));
 
-getAppVersion();
+const versionFile = readFileSync(new URL("../../VERSION", import.meta.url), "utf-8").trim();
+updateAppVersion(versionFile, "system").catch((err) =>
+  console.warn("[version] Failed to sync VERSION file on startup:", err),
+);
 startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();
