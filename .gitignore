@@ -11,6 +11,7 @@ lerna-debug.log*
 !.env.vite.production
 !.env.vite.canary
 !.env.vite.development
+!.env.vite.preview
 /scripts/*
 !/scripts/verify-node-modules.mjs
 !/scripts/generate-developer-api-docs.ts
