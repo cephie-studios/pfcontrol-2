@@ -60,7 +60,7 @@ jobs:
           curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"applicationId": "pfcontrol-canary-sazn1m"}'
+            -d '{"applicationId": "IIakyrrLChtjnjuKKVFiB"}'
 
       - name: Trigger Dokploy deploy (main)
         if: github.ref_name == 'main'
@@ -68,4 +68,4 @@ jobs:
           curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"applicationId": "pfcontrol-app-d1qjjy"}'
+            -d '{"applicationId": "C4Vzp1quDF4mKt2AQPjkU"}'
