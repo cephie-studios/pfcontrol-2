@@ -92,16 +92,16 @@ export function initTelemetry() {
     resource: resourceFromAttributes({
       "service.name": process.env.SERVICE_NAME || "pfcontrol",
     }),
+    processors: [
+      new BatchLogRecordProcessor(
+        new OTLPLogExporter({
+          url: `${host}/i/v1/logs`,
+          headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
+        }),
+      ),
+    ],
   });
-  loggerProvider.addLogRecordProcessor(
-    new BatchLogRecordProcessor(
-      new OTLPLogExporter({
-        url: `${host}/i/v1/logs`,
-        headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
-      }),
-    ),
-  );
-  loggerProvider.register();
+  logs.setGlobalLoggerProvider(loggerProvider);
 
   process.on("SIGTERM", () => {
     loggerProvider.shutdown();
