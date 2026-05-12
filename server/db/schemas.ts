@@ -21,7 +21,8 @@ export async function createMainTables() {
     .execute();
 
   await mainDb.schema
-    .createUniqueIndex("idx_app_settings_channel")
+    .createIndex("idx_app_settings_channel")
+    .unique()
     .ifNotExists()
     .on("app_settings")
     .column("channel")
