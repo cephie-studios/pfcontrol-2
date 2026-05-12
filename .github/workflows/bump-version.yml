@@ -56,8 +56,16 @@ jobs:
 
       - name: Trigger Dokploy deploy (canary)
         if: github.ref_name == 'canary'
-        run: curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_CANARY }}"
+        run: |
+          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "pfcontrol-canary-sazn1m"}'
 
       - name: Trigger Dokploy deploy (main)
         if: github.ref_name == 'main'
-        run: curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_MAIN }}"
+        run: |
+          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "pfcontrol-app-d1qjjy"}'
