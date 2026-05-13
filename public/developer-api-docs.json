@@ -1,6 +1,6 @@
 {
   "specVersion": 1,
-  "generatedAt": "2026-05-10T15:25:26.449Z",
+  "generatedAt": "2026-05-12T23:09:30.374Z",
   "title": "PFControl Developer API",
   "description": "HTTP JSON API under /api/ext/v1: static /data/... routes (mirrors the public data API), plus /sessions and /sessions/.../flights for session and flight access when granted. Join codes, client IPs, and ACARS tokens are never returned in developer API responses. Flight updates via PUT are only allowed for sessions created with the same API key. Each key is limited to its scopes.",
   "baseUrlTemplate": "/api/ext/v1",
