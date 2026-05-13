@@ -1,20 +1,19 @@
-/* Copyright (c) 2026 eele14. All Rights Reserved. */
-import jwt, { type JwtPayload } from 'jsonwebtoken';
+import jwt, { type JwtPayload } from "jsonwebtoken";
 
-const TOKEN_TYP = 'dev_notify_unsub';
+const TOKEN_TYP = "dev_notify_unsub";
 
 function apiOriginForEmailLinks(): string {
-  const explicit = process.env.PUBLIC_APP_URL?.trim().replace(/\/$/, '');
+  const explicit = process.env.PUBLIC_APP_URL?.trim().replace(/\/$/, "");
   if (explicit) return explicit;
 
-  const fe = process.env.FRONTEND_URL?.trim().replace(/\/$/, '');
-  const port = process.env.PORT?.trim() || '9901';
+  const fe = process.env.FRONTEND_URL?.trim().replace(/\/$/, "");
+  const port = process.env.PORT?.trim() || "9901";
 
   if (fe) {
     try {
       const u = new URL(fe);
-      const local = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
-      const vitePort = u.port === '5173' || u.port === '4173';
+      const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
+      const vitePort = u.port === "5173" || u.port === "4173";
       if (local && vitePort) {
         return `${u.protocol}//${u.hostname}:${port}`;
       }
@@ -27,18 +26,13 @@ function apiOriginForEmailLinks(): string {
   return `http://localhost:${port}`;
 }
 
-export function createDeveloperNotificationUnsubscribeToken(
-  userId: string,
-  email: string
-): string {
+export function createDeveloperNotificationUnsubscribeToken(userId: string, email: string): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not set');
+    throw new Error("JWT_SECRET is not set");
   }
   const em = email.trim().toLowerCase();
-  return jwt.sign({ typ: TOKEN_TYP, sub: userId, em }, secret, {
-    expiresIn: '180d',
-  });
+  return jwt.sign({ typ: TOKEN_TYP, sub: userId, em }, secret, { expiresIn: "180d" });
 }
 
 export function verifyDeveloperNotificationUnsubscribeToken(token: string): {
@@ -55,8 +49,8 @@ export function verifyDeveloperNotificationUnsubscribeToken(token: string): {
     };
     if (
       decoded.typ !== TOKEN_TYP ||
-      typeof decoded.sub !== 'string' ||
-      typeof decoded.em !== 'string'
+      typeof decoded.sub !== "string" ||
+      typeof decoded.em !== "string"
     ) {
       return null;
     }
@@ -66,10 +60,7 @@ export function verifyDeveloperNotificationUnsubscribeToken(token: string): {
   }
 }
 
-export function createDeveloperNotificationUnsubscribeUrl(
-  userId: string,
-  email: string
-): string {
+export function createDeveloperNotificationUnsubscribeUrl(userId: string, email: string): string {
   const t = createDeveloperNotificationUnsubscribeToken(userId, email);
   const origin = apiOriginForEmailLinks();
   return `${origin}/api/developer/notification-unsubscribe?token=${encodeURIComponent(t)}`;
