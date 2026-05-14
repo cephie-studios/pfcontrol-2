@@ -14,9 +14,11 @@
     "noEmit": false,
     "outDir": "./dist",
     "rootDir": "./",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

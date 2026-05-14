@@ -17,6 +17,7 @@ import ratingsRouter from './ratings.js';
 import developerRouter from './developer.js';
 import extV1Router from './ext/v1.js';
 import seoRouter from './seo.js';
+import ogImagesRouter from './ogImages.js';
 
 const router = express.Router();
 
@@ -37,5 +38,6 @@ router.use('/ratings', ratingsRouter);
 router.use('/developer', developerRouter);
 router.use('/ext/v1', extV1Router);
 router.use('/seo', seoRouter);
+router.use('/og', ogImagesRouter);
 
 export default router;

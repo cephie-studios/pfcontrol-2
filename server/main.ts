@@ -202,6 +202,17 @@ if (astroClientDir && existsSync(astroClientDir)) {
   );
 }
 
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (!req.path.startsWith('/_astro/')) return next();
+  res
+    .status(404)
+    .type('text/plain')
+    .send(
+      'Astro client chunk not found. Try a hard refresh (Ctrl+Shift+R) or clear site data for this host — your page may reference an old deploy.'
+    );
+});
+
 if (astroHandler) {
   app.use((req, res, next) => {
     if (req.query['tutorial'] === 'true') return next();
