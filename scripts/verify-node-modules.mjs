@@ -40,7 +40,11 @@ function inferOmitDev() {
   const declared = [...prodNames, ...optNames];
   const someDeclaredPresent = declared.some((n) => existsSync(packagePath(n)));
   if (!someDeclaredPresent) return false;
-  return devOnly.every((n) => !existsSync(packagePath(n)));
+
+  const missingTopLevel = devOnly.filter((n) => !existsSync(packagePath(n)));
+  if (missingTopLevel.length === 0) return false;
+  const ratioMissing = missingTopLevel.length / devOnly.length;
+  return ratioMissing >= 0.75;
 }
 
 const omit = omitListFromEnv();

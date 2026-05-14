@@ -52,6 +52,7 @@ COPY --chown=nodeuser:nodejs astro/package*.json ./astro/
 # Set NODE_ENV explicitly
 ENV NODE_ENV=production
 ENV DEPLOYMENT=canary
+ENV npm_config_omit=dev
 
 USER nodeuser
 
