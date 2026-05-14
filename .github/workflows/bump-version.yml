@@ -39,6 +39,11 @@ jobs:
             PATCH=$((PATCH + 1))
           fi
 
+          while git ls-remote --tags origin "refs/tags/v$V1.$V2.$MINOR.$PATCH" | grep -q .; do
+            echo "Tag v$V1.$V2.$MINOR.$PATCH already exists, incrementing patch..."
+            PATCH=$((PATCH + 1))
+          done
+
           NEW_VERSION="$V1.$V2.$MINOR.$PATCH"
           echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
