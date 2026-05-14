@@ -22,6 +22,9 @@ export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'middleware' }),
   integrations: [react()],
+  build: {
+    inlineStylesheets: 'always',
+  },
   vite: {
     plugins: [tailwindcss()],
     resolve: {
