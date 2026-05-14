@@ -13,6 +13,7 @@ interface Props {
   showFooter?: boolean;
   canonicalUrl?: string;
   ogImage?: string;
+  ogImageType?: string;
   ogType?: 'website' | 'profile' | 'article';
   structuredData?: object | object[];
   noindex?: boolean;
@@ -35,6 +36,7 @@ const {
   showFooter = true,
   canonicalUrl,
   ogImage = 'https://pfcontrol.com/assets/images/hero.webp',
+  ogImageType,
   ogType = 'website',
   structuredData,
   noindex = false,
@@ -100,6 +102,8 @@ const twitterDescEffective = twitterDescription ?? ogDescEffective;
     <meta property="og:title" content={ogTitleEffective} />
     <meta property="og:description" content={ogDescEffective} />
     <meta property="og:image" content={ogImage} />
+    <meta property="og:image:secure_url" content={ogImage} />
+    {ogImageType && <meta property="og:image:type" content={ogImageType} />}
     {
       ogImageWidth != null && ogImageHeight != null && (
         <>
