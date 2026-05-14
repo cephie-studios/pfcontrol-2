@@ -12,7 +12,7 @@ export const SPA_OG_TITLE =
   'PFControl v2 - Flight Strips for Project Flight & Roblox Aviation';
 
 export const SPA_OG_DESCRIPTION =
-  'The next-generation flight strip platform built for real-time coordination between air traffic controllers in Project Flight, PTFS, and Roblox aviation games with enterprise-level reliability.';
+  'The next-generation flight strip platform built for real-time coordination between air traffic controllers in Project Flight, PTFS, and Roblox aviation games with outstanding reliability.';
 
 export const SPA_TWITTER_TITLE =
   'PFControl v2 - Flight Strips for Project Flight & Roblox Aviation';

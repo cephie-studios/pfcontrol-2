@@ -1,6 +1,6 @@
 # PFControl v2
 
-PFControl is an open-source, real-time flight strip platform for air traffic controllers and pilots. It focuses on fast, collaborative session management with enterprise-level reliability. This repository contains both the frontend and backend for PFControl v2.
+PFControl is an open-source, real-time flight strip platform for air traffic controllers and pilots. It focuses on fast, collaborative session management with outstanding reliability. This repository contains both the frontend and backend for PFControl v2.
 
 We welcome contributions, bug reports, and feature requests. See the Contributing section below to get started.
 
@@ -21,21 +21,26 @@ Getting started with PFControl development is straightforward. We've set up Dock
    Download from [docker.com](https://www.docker.com/products/docker-desktop) and open it. Make sure it fully starts up.
 
 2. **Clone the repository**
+
    ```bash
    git clone https://github.com/cephie-studios/pfcontrol-2.git
    cd pfcontrol-2
    ```
 
 3. **Start PostgreSQL and Redis**
+
    ```bash
    docker-compose -f docker-compose.dev.yml up -d
    ```
+
    This starts local PostgreSQL and Redis containers in the background. First-time setup downloads the images and takes about 30 seconds.
 
 4. **Set up your environment file**
+
    ```bash
    cp .env.example .env.development
    ```
+
    This creates a `.env.development` file with localhost connection strings that point to the Docker containers.
 
 5. **Install dependencies and start the dev server**
@@ -47,11 +52,13 @@ Getting started with PFControl development is straightforward. We've set up Dock
 That's it! The frontend will be at [http://localhost:5173](http://localhost:5173) and the backend API at [http://localhost:9901](http://localhost:9901).
 
 **When you're done**, stop the databases with:
+
 ```bash
 docker-compose -f docker-compose.dev.yml down
 ```
 
 To reset your local database (fresh start), run:
+
 ```bash
 docker-compose -f docker-compose.dev.yml down -v
 docker-compose -f docker-compose.dev.yml up -d
