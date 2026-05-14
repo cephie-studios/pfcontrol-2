@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",
+    "@fontsource/inter": "^5.2.8",
     "@opentelemetry/api-logs": "^0.217.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
     "@opentelemetry/resources": "^2.7.1",
