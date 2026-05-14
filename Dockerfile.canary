@@ -1,5 +1,5 @@
 # Multi-stage build for PFControl v2
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -31,7 +31,7 @@ RUN cd astro && npx astro build
 RUN npm run generate:developer-docs && npm run build-only -- --mode production
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
