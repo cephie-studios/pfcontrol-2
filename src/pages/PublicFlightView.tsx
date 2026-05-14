@@ -48,8 +48,17 @@ const Field = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-export default function PublicFlightView() {
-  const { flightId } = useParams<{ flightId: string }>();
+interface PublicFlightViewProps {
+  standalone?: boolean;
+  flightIdOverride?: string;
+}
+
+export default function PublicFlightView({
+  standalone = true,
+  flightIdOverride,
+}: PublicFlightViewProps) {
+  const params = useParams<{ flightId: string }>();
+  const flightId = flightIdOverride ?? params.flightId;
   const { settings } = useSettings();
   const { airlines } = useData();
 
@@ -61,11 +70,15 @@ export default function PublicFlightView() {
   const [isPFATC, setIsPFATC] = useState(false);
   const [isAdvancedATC, setIsAdvancedATC] = useState(false);
   const [statusTimeline, setStatusTimeline] = useState<StatusEntry[]>([]);
-  const [controllers, setControllers] = useState<{ user_id: string; username: string; avatar_url: string | null }[]>([]);
+  const [controllers, setControllers] = useState<
+    { user_id: string; username: string; avatar_url: string | null }[]
+  >([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBackgrounds().then(setAvailableImages).catch(() => {});
+    fetchBackgrounds()
+      .then(setAvailableImages)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -80,46 +93,81 @@ export default function PublicFlightView() {
 
         fetch(`${API_BASE_URL}/api/sessions/${data.session_id}/submit`)
           .then((r) => (r.ok ? r.json() : null))
-          .then((info) => { if (info?.isPFATC) setIsPFATC(true); if (info?.isAdvancedATC) setIsAdvancedATC(true); })
+          .then((info) => {
+            if (info?.isPFATC) setIsPFATC(true);
+            if (info?.isAdvancedATC) setIsAdvancedATC(true);
+          })
           .catch(() => {});
 
-        fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, { credentials: 'include' })
+        fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
+          credentials: 'include',
+        })
           .then((r) => (r.ok ? r.json() : null))
           .then((logsData) => {
             if (!logsData?.logs) return;
             const pilotUserId: string | undefined = logsData.pilotUserId;
             const seen = new Set<string>();
-            const ctrlList: { user_id: string; username: string; avatar_url: string | null }[] = [];
+            const ctrlList: {
+              user_id: string;
+              username: string;
+              avatar_url: string | null;
+            }[] = [];
             for (const log of logsData.logs) {
-              if (log.action === 'update' && log.user_id !== pilotUserId && !seen.has(log.user_id)) {
+              if (
+                log.action === 'update' &&
+                log.user_id !== pilotUserId &&
+                !seen.has(log.user_id)
+              ) {
                 seen.add(log.user_id);
-                ctrlList.push({ user_id: log.user_id, username: log.username, avatar_url: log.avatar_url });
+                ctrlList.push({
+                  user_id: log.user_id,
+                  username: log.username,
+                  avatar_url: log.avatar_url,
+                });
               }
             }
             setControllers(ctrlList);
 
             const timeline: StatusEntry[] = logsData.logs
-              .map((log: { id: number; action: string; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }) => {
-                const oldStatus = (log.old_data?.status as string | undefined) ?? null;
-                const newStatus = (log.new_data?.status as string | undefined) ?? null;
-                if (log.action === 'add' && newStatus) {
-                  return { id: log.id, label: `Created as ${newStatus}`, at: log.created_at };
+              .map(
+                (log: {
+                  id: number;
+                  action: string;
+                  old_data: Record<string, unknown> | null;
+                  new_data: Record<string, unknown> | null;
+                  created_at: string;
+                }) => {
+                  const oldStatus =
+                    (log.old_data?.status as string | undefined) ?? null;
+                  const newStatus =
+                    (log.new_data?.status as string | undefined) ?? null;
+                  if (log.action === 'add' && newStatus) {
+                    return {
+                      id: log.id,
+                      label: `Created as ${newStatus}`,
+                      at: log.created_at,
+                    };
+                  }
+                  if (
+                    log.action === 'update' &&
+                    oldStatus !== newStatus &&
+                    newStatus
+                  ) {
+                    return {
+                      id: log.id,
+                      label: (
+                        <span className="flex items-center gap-1.5">
+                          <span>{oldStatus || 'N/A'}</span>
+                          <ArrowRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                          <span className="text-blue-300">{newStatus}</span>
+                        </span>
+                      ),
+                      at: log.created_at,
+                    };
+                  }
+                  return null;
                 }
-                if (log.action === 'update' && oldStatus !== newStatus && newStatus) {
-                  return {
-                    id: log.id,
-                    label: (
-                      <span className="flex items-center gap-1.5">
-                        <span>{oldStatus || 'N/A'}</span>
-                        <ArrowRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                        <span className="text-blue-300">{newStatus}</span>
-                      </span>
-                    ),
-                    at: log.created_at,
-                  };
-                }
-                return null;
-              })
+              )
               .filter(Boolean)
               .reverse() as StatusEntry[];
             setStatusTimeline(timeline);
@@ -137,7 +185,8 @@ export default function PublicFlightView() {
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/images/hero.webp")';
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') return filename;
+      if (!filename || filename === 'random' || filename === 'favorites')
+        return filename;
       if (filename.startsWith('https://api.cephie.app/')) return filename;
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
@@ -151,17 +200,25 @@ export default function PublicFlightView() {
       if (favorites.length > 0) {
         const fav = favorites[Math.floor(Math.random() * favorites.length)];
         const url = getImageUrl(fav);
-        if (url && url !== 'random' && url !== 'favorites') bgImage = `url(${url})`;
+        if (url && url !== 'random' && url !== 'favorites')
+          bgImage = `url(${url})`;
       }
     } else if (selectedImage) {
       const url = getImageUrl(selectedImage);
-      if (url && url !== 'random' && url !== 'favorites') bgImage = `url(${url})`;
+      if (url && url !== 'random' && url !== 'favorites')
+        bgImage = `url(${url})`;
     }
     return bgImage;
-  }, [settings?.backgroundImage?.selectedImage, settings?.backgroundImage?.favorites, availableImages, snaps]);
+  }, [
+    settings?.backgroundImage?.selectedImage,
+    settings?.backgroundImage?.favorites,
+    availableImages,
+    snaps,
+  ]);
 
   useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")') setCustomLoaded(true);
+    if (backgroundImage !== 'url("/assets/images/hero.webp")')
+      setCustomLoaded(true);
   }, [backgroundImage]);
 
   const acarsUrl =
@@ -172,7 +229,8 @@ export default function PublicFlightView() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <Navbar /><Loader />
+        {standalone && <Navbar />}
+        <Loader />
       </div>
     );
   }
@@ -180,7 +238,7 @@ export default function PublicFlightView() {
   if (error || !flight) {
     return (
       <div className="min-h-screen bg-gray-950 text-white">
-        <Navbar />
+        {standalone && <Navbar />}
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700 text-red-200 text-sm">
             {error || 'Flight not found.'}
@@ -191,14 +249,18 @@ export default function PublicFlightView() {
   }
 
   const formattedCallsign = parseCallsign(flight.callsign || '', airlines);
-  const hasSpokenName = formattedCallsign !== (flight.callsign || '').toUpperCase();
+  const hasSpokenName =
+    formattedCallsign !== (flight.callsign || '').toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <Navbar />
+      {standalone && <Navbar />}
 
       {lightboxSrc && (
-        <div className="fixed inset-0 z-10000 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxSrc(null)}>
+        <div
+          className="fixed inset-0 z-10000 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
           <button
             className="absolute top-4 right-4 p-2 rounded-full bg-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-700/80 transition-colors"
             onClick={() => setLightboxSrc(null)}
@@ -217,7 +279,11 @@ export default function PublicFlightView() {
       {/* Hero */}
       <div className="relative w-full h-72 md:h-80 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+          <img
+            src="/assets/images/hero.webp"
+            alt="Banner"
+            className="object-cover w-full h-full scale-110"
+          />
           <div
             className="absolute inset-0"
             style={{
@@ -236,11 +302,17 @@ export default function PublicFlightView() {
           <div>
             {hasSpokenName ? (
               <>
-                <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg leading-tight">{formattedCallsign}</h1>
-                <p className="text-sm font-mono text-zinc-400 mt-1">({flight.callsign?.toUpperCase()})</p>
+                <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
+                  {formattedCallsign}
+                </h1>
+                <p className="text-sm font-mono text-zinc-400 mt-1">
+                  ({flight.callsign?.toUpperCase()})
+                </p>
               </>
             ) : (
-              <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">{flight.callsign || 'Unknown Callsign'}</h1>
+              <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
+                {flight.callsign || 'Unknown Callsign'}
+              </h1>
             )}
           </div>
 
@@ -257,9 +329,13 @@ export default function PublicFlightView() {
                 {getDisplayStatus(flight.status)}
               </span>
               {isAdvancedATC ? (
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-purple-700 text-purple-100 border border-purple-600">Advanced ATC</span>
+                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-purple-700 text-purple-100 border border-purple-600">
+                  Advanced ATC
+                </span>
               ) : isPFATC ? (
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-indigo-700 text-indigo-100 border border-indigo-600">PFATC</span>
+                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-indigo-700 text-indigo-100 border border-indigo-600">
+                  PFATC
+                </span>
               ) : null}
             </div>
           </div>
@@ -280,7 +356,6 @@ export default function PublicFlightView() {
 
       {/* Content */}
       <div className="container mx-auto max-w-5xl px-4 pb-10 -mt-4 relative z-10 space-y-4">
-
         {/* Photos */}
         {snaps.length > 0 && (
           <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
@@ -295,7 +370,11 @@ export default function PublicFlightView() {
                   className="rounded-xl overflow-hidden aspect-video bg-gray-900/40 cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setLightboxSrc(snap.url)}
                 >
-                  <img src={snap.url} alt="Snap" className="w-full h-full object-cover" />
+                  <img
+                    src={snap.url}
+                    alt="Snap"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ))}
             </div>
@@ -307,13 +386,19 @@ export default function PublicFlightView() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <Route className="h-4 w-4 text-gray-500 shrink-0" />
-              <span className="font-mono text-lg font-bold text-white">{flight.departure || '----'}</span>
+              <span className="font-mono text-lg font-bold text-white">
+                {flight.departure || '----'}
+              </span>
               <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
-              <span className="font-mono text-lg font-bold text-white">{flight.arrival || '----'}</span>
+              <span className="font-mono text-lg font-bold text-white">
+                {flight.arrival || '----'}
+              </span>
               {flight.route && (
                 <>
                   <span className="text-gray-700">·</span>
-                  <span className="text-gray-400 text-sm truncate">{flight.route}</span>
+                  <span className="text-gray-400 text-sm truncate">
+                    {flight.route}
+                  </span>
                 </>
               )}
             </div>
@@ -325,11 +410,15 @@ export default function PublicFlightView() {
                     <div key={c.user_id} className="relative group">
                       <Link to={`/user/${c.username}`}>
                         <img
-                          src={c.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`}
+                          src={
+                            c.avatar_url ??
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`
+                          }
                           alt={c.username}
                           className="h-6 w-6 rounded-full bg-gray-700 ring-1 ring-gray-600 group-hover:ring-blue-500 transition-all"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`;
+                            (e.target as HTMLImageElement).src =
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`;
                           }}
                         />
                       </Link>
@@ -344,7 +433,12 @@ export default function PublicFlightView() {
             <Field label="Aircraft" value={flight.aircraft || 'N/A'} />
             <Field label="Flight Type" value={flight.flight_type || 'N/A'} />
             <Field label="Runway" value={flight.runway || 'N/A'} />
-            <Field label="Stand / Gate" value={[flight.stand, flight.gate].filter(Boolean).join(' / ') || 'N/A'} />
+            <Field
+              label="Stand / Gate"
+              value={
+                [flight.stand, flight.gate].filter(Boolean).join(' / ') || 'N/A'
+              }
+            />
             <Field label="SID" value={flight.sid || 'N/A'} />
             <Field label="STAR" value={flight.star || 'N/A'} />
             <Field label="Cruising FL" value={flight.cruisingFL || 'N/A'} />
@@ -357,12 +451,20 @@ export default function PublicFlightView() {
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
               <span className="text-gray-500">Created:</span>
-              <span>{flight.created_at ? new Date(flight.created_at).toLocaleString() : 'N/A'}</span>
+              <span>
+                {flight.created_at
+                  ? new Date(flight.created_at).toLocaleString()
+                  : 'N/A'}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
               <span className="text-gray-500">Updated:</span>
-              <span>{flight.updated_at ? new Date(flight.updated_at).toLocaleString() : 'N/A'}</span>
+              <span>
+                {flight.updated_at
+                  ? new Date(flight.updated_at).toLocaleString()
+                  : 'N/A'}
+              </span>
             </div>
           </div>
 
@@ -382,9 +484,13 @@ export default function PublicFlightView() {
           <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <StickyNote className="h-5 w-5 text-blue-400" />
-              <h2 className="text-lg font-semibold text-blue-400">Flight Notes</h2>
+              <h2 className="text-lg font-semibold text-blue-400">
+                Flight Notes
+              </h2>
             </div>
-            <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed font-mono">{flight.notes}</p>
+            <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed font-mono">
+              {flight.notes}
+            </p>
           </div>
         )}
 
@@ -393,14 +499,18 @@ export default function PublicFlightView() {
           <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <History className="h-5 w-5 text-blue-400" />
-              <h2 className="text-lg font-semibold text-blue-400">Status Timeline</h2>
+              <h2 className="text-lg font-semibold text-blue-400">
+                Status Timeline
+              </h2>
             </div>
             <div className="overflow-x-auto pb-1">
               <div className="flex items-center gap-2 min-w-max">
                 {statusTimeline.map((item, index) => (
                   <div key={item.id} className="flex items-center gap-2">
                     <div className="p-3 bg-gray-900/40 border border-gray-800 rounded-2xl text-sm min-w-44">
-                      <div className="text-gray-200 font-medium mb-1">{item.label}</div>
+                      <div className="text-gray-200 font-medium mb-1">
+                        {item.label}
+                      </div>
                       <div className="flex items-center gap-1.5 text-gray-500 text-xs">
                         <CalendarClock className="h-3 w-3 shrink-0" />
                         {new Date(item.at).toLocaleString()}
@@ -416,7 +526,9 @@ export default function PublicFlightView() {
           </div>
         )}
 
-        <p className="text-xs text-gray-700 font-mono px-1">Shared via PFControl</p>
+        <p className="text-xs text-gray-700 font-mono px-1">
+          Shared via PFControl
+        </p>
       </div>
     </div>
   );

@@ -16,3 +16,6 @@ dist
 .parcel-cache
 .DS_Store
 Thumbs.db
+astro/dist
+astro/.astro
+astro/node_modules

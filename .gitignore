@@ -20,6 +20,10 @@ dist
 dist-ssr
 *.local
 
+astro/dist
+astro/.astro
+astro/node_modules
+
 .vite
 
 .vscode/*
