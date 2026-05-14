@@ -50,9 +50,37 @@ export default function CustomUserButton({
   };
 
   if (isLoading) {
+    if (isMobile) {
+      return (
+        <div className={`w-full ${className}`}>
+          <div className="flex items-center space-x-3 px-3.5 py-3">
+            <div className="w-9 h-9 rounded-full bg-zinc-700 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 w-28 rounded-full bg-zinc-700 animate-pulse" />
+              <div className="h-2.5 w-16 rounded-full bg-zinc-800 animate-pulse" />
+            </div>
+          </div>
+          <div className="p-1.5 border-t border-zinc-800/80 space-y-1">
+            {[80, 72, 64, 68].map((w, i) => (
+              <div key={i} className="flex items-center space-x-2.5 px-3 py-2.5">
+                <div className="w-4 h-4 rounded bg-zinc-800 animate-pulse shrink-0" />
+                <div
+                  className={`h-3 rounded-full bg-zinc-800 animate-pulse`}
+                  style={{ width: `${w}%` }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className={`${isMobile ? "w-full" : ""} ${className}`}>
-        <div className="bg-zinc-700 animate-pulse rounded-full px-4 py-2 h-10"></div>
+      <div
+        className={`flex items-center space-x-2.5 px-1.5 py-1.5 rounded-full bg-zinc-800/60 backdrop-blur-sm border border-zinc-700/50 ${className}`}
+      >
+        <div className="w-7 h-7 rounded-full bg-zinc-700 animate-pulse shrink-0" />
+        <div className="hidden md:block h-4 w-32 rounded-full bg-zinc-700 animate-pulse -mt-0.5 mr-2" />
       </div>
     );
   }
