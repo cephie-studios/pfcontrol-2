@@ -31,13 +31,17 @@ import Navbar from '../components/Navbar';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
+interface HomeProps {
+  standalone?: boolean;
+}
+
 interface AvailableImage {
   filename: string;
   path: string;
   extension: string;
 }
 
-export default function Home() {
+export default function Home({ standalone = true }: HomeProps) {
   const [stats, setStats] = useState({
     sessionsCreated: 0,
     registeredUsers: 0,
@@ -186,7 +190,7 @@ export default function Home() {
 
   return (
     <div>
-      <Navbar />
+      {standalone && <Navbar />}
       {/* Hero Section */}
       <section className="relative bg-[url('/assets/images/hero.webp')] bg-cover bg-center text-white min-h-[90vh] flex items-center px-4">
         <div
@@ -663,7 +667,7 @@ export default function Home() {
         </div>
       )}
 
-      <Footer />
+      {standalone && <Footer />}
     </div>
   );
 }

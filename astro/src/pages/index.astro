@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeContent from '@app/islands/HomeContent';
+import {
+  SPA_DEFAULT_TITLE,
+  SPA_META_DESCRIPTION,
+  SPA_OG_DESCRIPTION,
+  SPA_OG_TITLE,
+  SPA_SITE_URL,
+  SPA_TWITTER_DESCRIPTION,
+  SPA_TWITTER_TITLE,
+  SPA_WEBSITE_SEARCH_LD,
+  SPA_WEB_APPLICATION_LD,
+} from '../lib/spaSeo';
+
+const structuredData = [SPA_WEB_APPLICATION_LD, SPA_WEBSITE_SEARCH_LD];
+---
+
+<BaseLayout
+  title={SPA_DEFAULT_TITLE}
+  description={SPA_META_DESCRIPTION}
+  ogTitle={SPA_OG_TITLE}
+  ogDescription={SPA_OG_DESCRIPTION}
+  twitterTitle={SPA_TWITTER_TITLE}
+  twitterDescription={SPA_TWITTER_DESCRIPTION}
+  canonicalUrl={`${SPA_SITE_URL}/`}
+  structuredData={structuredData}
+>
+  <HomeContent client:only="react" />
+</BaseLayout>

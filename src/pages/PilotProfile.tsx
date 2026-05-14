@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   User,
@@ -74,8 +74,17 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function PilotProfile() {
-  const { username } = useParams<{ username: string }>();
+interface PilotProfileProps {
+  standalone?: boolean;
+  usernameOverride?: string;
+}
+
+export default function PilotProfile({
+  standalone = true,
+  usernameOverride,
+}: PilotProfileProps) {
+  const params = useParams<{ username: string }>();
+  const username = usernameOverride ?? params.username;
   const { user } = useAuth();
   const [profile, setProfile] = useState<PilotProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStatistics | null>(null);
@@ -96,36 +105,16 @@ export default function PilotProfile() {
     window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim?force=1`;
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, [username]);
-
-  useEffect(() => {
-    if (isCurrentUser) {
-      fetchUserStats();
+  const fetchUserStats = useCallback(async () => {
+    try {
+      const userData = await getCurrentUser();
+      setUserStats(userData.statistics || {});
+    } catch {
+      // ignore
     }
-  }, [isCurrentUser]);
-
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
   }, []);
 
-  const handleShareProfile = () => {
-    const profileUrl = `${window.location.origin}/user/${username}`;
-    navigator.clipboard.writeText(profileUrl);
-    setShareClicked(true);
-    setTimeout(() => setShareClicked(false), 2000);
-  };
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const data = await fetchPilotProfile(username!);
       if (data) {
@@ -146,15 +135,35 @@ export default function PilotProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [username]);
 
-  const fetchUserStats = async () => {
-    try {
-      const userData = await getCurrentUser();
-      setUserStats(userData.statistics || {});
-    } catch {
-      // ignore
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (isCurrentUser) {
+      fetchUserStats();
     }
+  }, [isCurrentUser, fetchUserStats]);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const data = await fetchBackgrounds();
+        setAvailableImages(data);
+      } catch (error) {
+        console.error('Error loading available images:', error);
+      }
+    };
+    loadImages();
+  }, []);
+
+  const handleShareProfile = () => {
+    const profileUrl = `${window.location.origin}/user/${username}`;
+    navigator.clipboard.writeText(profileUrl);
+    setShareClicked(true);
+    setTimeout(() => setShareClicked(false), 2000);
   };
 
   const getBackgroundImage = () => {
@@ -269,6 +278,7 @@ export default function PilotProfile() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        {standalone && <Navbar />}
         <Loader />
       </div>
     );
@@ -315,7 +325,7 @@ export default function PilotProfile() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <Navbar />
+      {standalone && <Navbar />}
 
       <div
         className={`relative ${!backgroundImage ? 'bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50' : ''}`}
@@ -443,32 +453,35 @@ export default function PilotProfile() {
                       </span>
                     </div>
 
-                    {profile.user.rating && profile.user.rating.ratingCount > 0 && (
-                      <>
-                        <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-zinc-700 self-center" />
-                        <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
-                          <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`w-4 h-4 md:w-5 md:h-5 ${
-                                  star <=
-                                  Math.round(profile.user.rating!.averageRating)
-                                    ? 'fill-yellow-500 text-yellow-500'
-                                    : 'text-zinc-700'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-base md:text-lg font-medium text-zinc-300">
-                            {profile.user.rating.averageRating.toFixed(1)}{' '}
-                            <span className="text-zinc-500 font-normal">
-                              ({profile.user.rating.ratingCount})
+                    {profile.user.rating &&
+                      profile.user.rating.ratingCount > 0 && (
+                        <>
+                          <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-zinc-700 self-center" />
+                          <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-4 h-4 md:w-5 md:h-5 ${
+                                    star <=
+                                    Math.round(
+                                      profile.user.rating!.averageRating
+                                    )
+                                      ? 'fill-yellow-500 text-yellow-500'
+                                      : 'text-zinc-700'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-base md:text-lg font-medium text-zinc-300">
+                              {profile.user.rating.averageRating.toFixed(1)}{' '}
+                              <span className="text-zinc-500 font-normal">
+                                ({profile.user.rating.ratingCount})
+                              </span>
                             </span>
-                          </span>
-                        </div>
-                      </>
-                    )}
+                          </div>
+                        </>
+                      )}
                     {/* Roblox */}
                     {(isCurrentUser ||
                       profile.privacySettings
@@ -796,7 +809,9 @@ export default function PilotProfile() {
           <div className="mt-8 pb-10">
             <div className="flex items-center gap-3 mb-5">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-              <h2 className="text-xl font-bold text-white tracking-tight">Featured Flights</h2>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Featured Flights
+              </h2>
               <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-400/20 font-mono">
                 {profile.featuredFlights.length}
               </span>
@@ -819,7 +834,11 @@ function FeaturedFlightCard({ flight }: { flight: FeaturedFlight }) {
   const spoken = parseCallsign(flight.callsign || '', airlines);
 
   const formattedDate = flight.created_at
-    ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(flight.created_at).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
     : null;
 
   return (
@@ -836,7 +855,9 @@ function FeaturedFlightCard({ flight }: { flight: FeaturedFlight }) {
           />
           <div className="absolute inset-0 bg-linear-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4">
-            <p className="font-black text-white font-mono text-base leading-tight truncate">{spoken}</p>
+            <p className="font-black text-white font-mono text-base leading-tight truncate">
+              {spoken}
+            </p>
             {flight.departure && flight.arrival && (
               <p className="text-zinc-400 font-mono text-sm mt-0.5">
                 {flight.departure} → {flight.arrival}

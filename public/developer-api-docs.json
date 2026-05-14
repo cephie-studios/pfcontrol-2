@@ -1,6 +1,6 @@
 {
   "specVersion": 1,
-  "generatedAt": "2026-05-10T15:25:26.449Z",
+  "generatedAt": "2026-05-14T20:15:32.050Z",
   "title": "PFControl Developer API",
   "description": "HTTP JSON API under /api/ext/v1: static /data/... routes (mirrors the public data API), plus /sessions and /sessions/.../flights for session and flight access when granted. Join codes, client IPs, and ACARS tokens are never returned in developer API responses. Flight updates via PUT are only allowed for sessions created with the same API key. Each key is limited to its scopes.",
   "baseUrlTemplate": "/api/ext/v1",
@@ -32,7 +32,7 @@
       "summary": "GET /ratings/controllers/{controllerId}/stats — aggregate average and count only (no pilot rows).",
       "method": "GET",
       "pathTemplate": "/ratings/controllers/{controllerId}/stats",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/ratings/controllers/1234567/stats",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/ratings/controllers/1234567/stats",
       "pathParams": [
         {
           "name": "controllerId",
@@ -59,7 +59,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Aggregate rating count and average for a VATSIM controller id (no pilot identifiers).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/ratings/controllers/1234567/stats\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/ratings/controllers/1234567/stats\""
     },
     {
       "scopeId": "notifications.read",
@@ -68,7 +68,7 @@
       "summary": "GET /notifications/active — public announcement banners (no admin CRUD).",
       "method": "GET",
       "pathTemplate": "/notifications/active",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/notifications/active",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/notifications/active",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -88,7 +88,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Public active announcements (same fields as web homepage feed; no admin-only data).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/notifications/active\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/notifications/active\""
     },
     {
       "scopeId": "flight_logs.read",
@@ -97,7 +97,7 @@
       "summary": "GET /flight-logs — audit metadata for sessions you own; no IPs, no old/new JSON bodies.",
       "method": "GET",
       "pathTemplate": "/flight-logs",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/flight-logs",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/flight-logs",
       "queryParams": [
         {
           "name": "sessionId",
@@ -137,7 +137,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Sanitized flight change audit entries for sessions you own (id, timestamps, action, session/flight ids only; no IP, no old/new payload text).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/flight-logs\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/flight-logs\""
     },
     {
       "scopeId": "sessions.network_pfatc",
@@ -146,7 +146,7 @@
       "summary": "GET /sessions/network/pfatc — list PFATC network sessions worldwide (sanitized). Optional GET /sessions/network/pfatc/{sessionId} for one row. No access_id or ATIS.",
       "method": "GET",
       "pathTemplate": "/sessions/network/pfatc/{sessionId}",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/network/pfatc/sess_abc123",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/network/pfatc/sess_abc123",
       "pathParams": [
         {
           "name": "sessionId",
@@ -173,7 +173,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "One PFATC network session (sanitized): airport, runway, counts, controller public profile. Not limited to sessions you own.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/network/pfatc/sess_abc123\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/network/pfatc/sess_abc123\""
     },
     {
       "scopeId": "sessions.network_pfatc",
@@ -182,7 +182,7 @@
       "summary": "GET /sessions/network/pfatc — list PFATC network sessions worldwide (sanitized). Optional GET /sessions/network/pfatc/{sessionId} for one row. No access_id or ATIS.",
       "method": "GET",
       "pathTemplate": "/sessions/network/pfatc",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/network/pfatc",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/network/pfatc",
       "queryParams": [
         {
           "name": "airport",
@@ -222,7 +222,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of PFATC network sessions (sanitized; no access_id). Optional airport (ICAO), page, limit.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/network/pfatc\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/network/pfatc\""
     },
     {
       "scopeId": "sessions.network_aatc",
@@ -231,7 +231,7 @@
       "summary": "GET /sessions/network/aatc — list Advanced ATC (AATC) network sessions worldwide (sanitized). Optional GET /sessions/network/aatc/{sessionId}. No access_id or ATIS.",
       "method": "GET",
       "pathTemplate": "/sessions/network/aatc/{sessionId}",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/network/aatc/sess_abc123",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/network/aatc/sess_abc123",
       "pathParams": [
         {
           "name": "sessionId",
@@ -258,7 +258,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "One Advanced ATC (AATC) network session (sanitized). Not limited to sessions you own.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/network/aatc/sess_abc123\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/network/aatc/sess_abc123\""
     },
     {
       "scopeId": "sessions.network_aatc",
@@ -267,7 +267,7 @@
       "summary": "GET /sessions/network/aatc — list Advanced ATC (AATC) network sessions worldwide (sanitized). Optional GET /sessions/network/aatc/{sessionId}. No access_id or ATIS.",
       "method": "GET",
       "pathTemplate": "/sessions/network/aatc",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/network/aatc",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/network/aatc",
       "queryParams": [
         {
           "name": "airport",
@@ -307,7 +307,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of Advanced ATC (AATC) network sessions (sanitized; no access_id). Optional airport, page, limit.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/network/aatc\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/network/aatc\""
     },
     {
       "scopeId": "flights.read",
@@ -316,7 +316,7 @@
       "summary": "GET /sessions/:sessionId/flights/:flightId — one flight (sanitized).",
       "method": "GET",
       "pathTemplate": "/sessions/{sessionId}/flights/{flightId}",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000",
       "pathParams": [
         {
           "name": "sessionId",
@@ -348,7 +348,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Single flight JSON (no IP, ACARS token, or pilot Discord linkage).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000\""
     },
     {
       "scopeId": "flights.update",
@@ -357,7 +357,7 @@
       "summary": "PUT /sessions/:sessionId/flights/:flightId — update only for sessions created with this same API key.",
       "method": "PUT",
       "pathTemplate": "/sessions/{sessionId}/flights/{flightId}",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000",
       "pathParams": [
         {
           "name": "sessionId",
@@ -391,7 +391,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Updated flight JSON (sanitized). Only allowed for sessions created with this same API key.",
-      "exampleCurl": "curl -sS -X PUT -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"status\":\"ACTIVE\",\"runway\":\"27L\",\"squawk\":\"1234\"}' \"https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000\""
+      "exampleCurl": "curl -sS -X PUT -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"status\":\"ACTIVE\",\"runway\":\"27L\",\"squawk\":\"1234\"}' \"https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000\""
     },
     {
       "scopeId": "flights.list",
@@ -400,7 +400,7 @@
       "summary": "GET /sessions/:sessionId/flights — all flights in a session you own (sanitized).",
       "method": "GET",
       "pathTemplate": "/sessions/{sessionId}/flights",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights",
       "pathParams": [
         {
           "name": "sessionId",
@@ -427,7 +427,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of flights (sanitized; no IPs or ACARS tokens).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights\""
     },
     {
       "scopeId": "flights.create",
@@ -436,7 +436,7 @@
       "summary": "POST /sessions/:sessionId/flights — add a flight to a session you own.",
       "method": "POST",
       "pathTemplate": "/sessions/{sessionId}/flights",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights",
       "pathParams": [
         {
           "name": "sessionId",
@@ -465,7 +465,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Creates a flight; returns sanitized flight (no ACARS token in response).",
-      "exampleCurl": "curl -sS -X POST -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"callsign\":\"BAW123\",\"aircraft\":\"A320\",\"flight_type\":\"IFR\",\"departure\":\"EGLL\",\"arrival\":\"LFPG\"}' \"https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights\""
+      "exampleCurl": "curl -sS -X POST -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"callsign\":\"BAW123\",\"aircraft\":\"A320\",\"flight_type\":\"IFR\",\"departure\":\"EGLL\",\"arrival\":\"LFPG\"}' \"https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights\""
     },
     {
       "scopeId": "sessions.read",
@@ -474,7 +474,7 @@
       "summary": "GET /sessions/:sessionId — metadata for a session you own (no access_id).",
       "method": "GET",
       "pathTemplate": "/sessions/{sessionId}",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions/sess_abc123",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123",
       "pathParams": [
         {
           "name": "sessionId",
@@ -501,7 +501,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Session metadata without access_id (join codes are not exposed via developer API).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions/sess_abc123\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions/sess_abc123\""
     },
     {
       "scopeId": "sessions.list",
@@ -510,7 +510,7 @@
       "summary": "GET /sessions — sessions you created; join codes are never returned.",
       "method": "GET",
       "pathTemplate": "/sessions",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -530,7 +530,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of sessions you created (no access_id). Includes apiManaged when the session was created via the developer API.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/sessions\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/sessions\""
     },
     {
       "scopeId": "sessions.create",
@@ -539,7 +539,7 @@
       "summary": "POST /sessions — creates a session tied to this API key (API-managed for scoped updates).",
       "method": "POST",
       "pathTemplate": "/sessions",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/sessions",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/sessions",
       "requestBodySummary": "airportIcao (required), optional isPFATC, isAdvancedATC (mutually exclusive), activeRunway.",
       "requestBodyExampleJson": "{\"airportIcao\":\"EGLL\",\"isPFATC\":false,\"isAdvancedATC\":false,\"activeRunway\":\"27L\"}",
       "requestHeaders": [
@@ -561,7 +561,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "Creates a session tied to your user and this API key (API-managed). Returns session id and metadata without access_id.",
-      "exampleCurl": "curl -sS -X POST -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"airportIcao\":\"EGLL\",\"isPFATC\":false,\"isAdvancedATC\":false,\"activeRunway\":\"27L\"}' \"https://your-host.example.com/api/ext/v1/sessions\""
+      "exampleCurl": "curl -sS -X POST -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" -H \"Content-Type: application/json\" -d '{\"airportIcao\":\"EGLL\",\"isPFATC\":false,\"isAdvancedATC\":false,\"activeRunway\":\"27L\"}' \"https://pfcontrol.com/api/ext/v1/sessions\""
     },
     {
       "scopeId": "data.airports",
@@ -570,7 +570,7 @@
       "summary": "Full airport dataset (ICAO, runways metadata bundle, etc.).",
       "method": "GET",
       "pathTemplate": "/data/airports",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airports",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airports",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -590,7 +590,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of airport objects (static dataset).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airports\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airports\""
     },
     {
       "scopeId": "data.aircrafts",
@@ -599,7 +599,7 @@
       "summary": "Aircraft reference data.",
       "method": "GET",
       "pathTemplate": "/data/aircrafts",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/aircrafts",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/aircrafts",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -619,7 +619,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of aircraft reference records.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/aircrafts\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/aircrafts\""
     },
     {
       "scopeId": "data.airlines",
@@ -628,7 +628,7 @@
       "summary": "Airline reference data.",
       "method": "GET",
       "pathTemplate": "/data/airlines",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airlines",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airlines",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -648,7 +648,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of airline reference records.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airlines\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airlines\""
     },
     {
       "scopeId": "data.frequencies",
@@ -657,7 +657,7 @@
       "summary": "Per-airport frequency summaries derived from airport data.",
       "method": "GET",
       "pathTemplate": "/data/frequencies",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/frequencies",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/frequencies",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -677,7 +677,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of per-airport frequency summaries.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/frequencies\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/frequencies\""
     },
     {
       "scopeId": "data.backgrounds",
@@ -686,7 +686,7 @@
       "summary": "List of available session background images.",
       "method": "GET",
       "pathTemplate": "/data/backgrounds",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/backgrounds",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/backgrounds",
       "requestHeaders": [
         {
           "name": "Authorization",
@@ -706,7 +706,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of background image metadata (filename, path, extension).",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/backgrounds\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/backgrounds\""
     },
     {
       "scopeId": "data.find_route",
@@ -715,7 +715,7 @@
       "summary": "GET /data/findRoute?from=&to= — waypoint graph route between fixes.",
       "method": "GET",
       "pathTemplate": "/data/findRoute",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG",
       "queryParams": [
         {
           "name": "from",
@@ -749,7 +749,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON object with path (waypoint ids), distance, success.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG\""
     },
     {
       "scopeId": "data.airport_runways",
@@ -758,7 +758,7 @@
       "summary": "GET /data/airports/:icao/runways — runway list for one airport.",
       "method": "GET",
       "pathTemplate": "/data/airports/{icao}/runways",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airports/EGLL/runways",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/runways",
       "pathParams": [
         {
           "name": "icao",
@@ -785,7 +785,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of runway strings/objects for the airport.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airports/EGLL/runways\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airports/EGLL/runways\""
     },
     {
       "scopeId": "data.airport_sids",
@@ -794,7 +794,7 @@
       "summary": "GET /data/airports/:icao/sids — SID definitions.",
       "method": "GET",
       "pathTemplate": "/data/airports/{icao}/sids",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airports/EGLL/sids",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/sids",
       "pathParams": [
         {
           "name": "icao",
@@ -821,7 +821,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of SID definitions for the airport.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airports/EGLL/sids\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airports/EGLL/sids\""
     },
     {
       "scopeId": "data.airport_stars",
@@ -830,7 +830,7 @@
       "summary": "GET /data/airports/:icao/stars — STAR definitions.",
       "method": "GET",
       "pathTemplate": "/data/airports/{icao}/stars",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airports/EGLL/stars",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/stars",
       "pathParams": [
         {
           "name": "icao",
@@ -857,7 +857,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON array of STAR definitions for the airport.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airports/EGLL/stars\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airports/EGLL/stars\""
     },
     {
       "scopeId": "data.airport_status",
@@ -866,7 +866,7 @@
       "summary": "GET /data/airports/:icao/status — active PFATC session, METAR, etc.",
       "method": "GET",
       "pathTemplate": "/data/airports/{icao}/status",
-      "fullUrlExample": "https://your-host.example.com/api/ext/v1/data/airports/EGLL/status",
+      "fullUrlExample": "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/status",
       "pathParams": [
         {
           "name": "icao",
@@ -893,7 +893,7 @@
       ],
       "responseContentType": "application/json",
       "responseSummary": "JSON with active PFATC/Advanced session summary, controller, runway, flight count, METAR when available.",
-      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://your-host.example.com/api/ext/v1/data/airports/EGLL/status\""
+      "exampleCurl": "curl -sS -H \"Authorization: Bearer YOUR_PFC_LIVE_KEY\" -H \"Accept: application/json\" \"https://pfcontrol.com/api/ext/v1/data/airports/EGLL/status\""
     }
   ]
 }

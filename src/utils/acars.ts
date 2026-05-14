@@ -386,7 +386,7 @@ export const getChartsForAirport = (icao: string) => {
         type: 'Departure',
         credits: '© .hykka',
         procedures: [
-          'KATO3T',
+          'KATOK3T',
           'CHUM3T',
           'PIXA3T',
           'ETBO3T',
@@ -405,9 +405,9 @@ export const getChartsForAirport = (icao: string) => {
         credits: '© .hykka',
         procedures: [
           'KATO2T',
-          'CHUM3T',
-          'PIXA3T',
-          'ETBO3T',
+          'CHUM2T',
+          'PIXA2T',
+          'ETBO2T',
           'KATOK',
           'CHUMA',
           'PIXAR',

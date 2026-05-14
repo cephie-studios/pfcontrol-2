@@ -117,14 +117,20 @@ export async function fetchUserRanks(
   return response.json();
 }
 
-export async function fetchRoute(from: string, to: string): Promise<{
+export async function fetchRoute(from: string, to: string, runway?: string): Promise<{
   path: Array<{ name: string; x: number; y: number; type: string }>;
   distance: number;
+  route: string;
+  sid?: string;
+  star?: string;
+  flParity?: 'ODD' | 'EVEN';
   success: boolean;
 }> {
   try {
+    const params = new URLSearchParams({ from, to });
+    if (runway) params.set('runway', runway);
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/findRoute?from=${from}&to=${to}`
+      `${import.meta.env.VITE_SERVER_URL}/api/data/findRoute?${params}`
     );
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -133,6 +139,6 @@ export async function fetchRoute(from: string, to: string): Promise<{
     return { ...data, success: true };
   } catch (error) {
     console.error(`Error fetching route from ${from} to ${to}:`, error);
-    return { path: [], distance: 0, success: false };
+    return { path: [], distance: 0, route: '', success: false };
   }
 }

@@ -67,8 +67,47 @@ docker-compose -f docker-compose.dev.yml up -d
 ## Project structure
 
 - `src/` — frontend application (React + Vite + Tailwind CSS)
+  - `pages/` — React SPA pages (Home, PilotProfile, PublicFlightView, etc.)
+  - `islands/` — React island components wrapped for Astro SSR
+  - `components/` — reusable React components
+  - `hooks/` — custom React hooks (useAuth, useSettings, useData, etc.)
+- `astro/` — Astro SSR application (public SEO pages)
+  - `src/pages/` — public routes: `/`, `/flight/[flightId]`, `/user/[username]`
+  - `src/layouts/` — shared Astro layouts with SEO metadata
+  - `src/lib/` — utilities (API calls, SEO constants)
 - `server/` — backend (Express + TypeScript + Kysely)
 - `public/` — static assets
+
+## Architecture
+
+PFControl v2 is a hybrid frontend:
+
+- **React SPA** (`vite build` → `dist/`) — interactive UI, authenticated routes, admin panel
+  - Served on all routes as fallback
+  - Handles `/sessions`, `/flights`, `/settings`, `/admin`, `/developers`, etc.
+  - Development: `npm run dev` runs Vite on http://localhost:5173
+
+- **Astro SSR** (`npx astro build` → `astro/dist/`) — public SEO pages
+  - Server-side rendered on the Express backend
+  - Routes: `/` (homepage), `/flight/{id}` (public flight view), `/user/{username}` (pilot profile)
+  - Generates full JSON-LD structured data, OG tags, canonical URLs
+  - React islands (`client:only="react"`) hydrate interactive components
+  - Loaded by Express middleware before React SPA catch-all
+
+### Development workflow
+
+```bash
+npm run dev              # Runs Vite (React SPA) + nodemon backend
+npm run dev:astro       # Astro dev server (optional, for Astro-only work)
+npm run build:astro     # Build Astro SSR bundle
+npm run build           # Full production build (backend + Astro + React)
+```
+
+### Bypassing Astro routes
+
+- `/login`, `/sessions`, `/admin`, etc. automatically fall through to React (Astro doesn't handle these)
+- Add `?tutorial=true` query param to skip Astro and load React SPA directly
+- Authenticated pages are unreachable via Astro (no session context)
 
 ## Code of Conduct
 

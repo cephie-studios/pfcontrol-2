@@ -1,0 +1,124 @@
+---
+import '../styles/global.css';
+import { PublicNavbar, PublicFooter } from '@app/islands/PublicChrome';
+import {
+  SPA_DEFAULT_KEYWORDS,
+  SPA_GOOGLE_ADSENSE_ACCOUNT,
+  SPA_SITE_URL,
+} from '../lib/spaSeo';
+
+interface Props {
+  title: string;
+  description: string;
+  showFooter?: boolean;
+  canonicalUrl?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'profile' | 'article';
+  structuredData?: object | object[];
+  noindex?: boolean;
+  keywords?: string;
+  robots?: string;
+  ogProfileUsername?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  author?: string;
+}
+
+const {
+  title,
+  description,
+  showFooter = true,
+  canonicalUrl,
+  ogImage = 'https://pfcontrol.com/assets/images/hero.webp',
+  ogType = 'website',
+  structuredData,
+  noindex = false,
+  keywords,
+  robots,
+  ogProfileUsername,
+  ogTitle,
+  ogDescription,
+  twitterTitle,
+  twitterDescription,
+  author = 'Cephie Studios',
+} = Astro.props;
+
+const canonical = canonicalUrl ?? `${SPA_SITE_URL}${Astro.url.pathname}`;
+
+const structuredBlocks =
+  structuredData === undefined
+    ? []
+    : Array.isArray(structuredData)
+      ? structuredData
+      : [structuredData];
+
+const robotsContent = noindex
+  ? 'noindex, nofollow'
+  : (robots ?? 'index, follow');
+
+const keywordsContent = keywords ?? SPA_DEFAULT_KEYWORDS;
+
+const ogTitleEffective = ogTitle ?? title;
+const ogDescEffective = ogDescription ?? description;
+const twitterTitleEffective = twitterTitle ?? ogTitleEffective;
+const twitterDescEffective = twitterDescription ?? ogDescEffective;
+---
+
+<!doctype html>
+<html lang="en" data-pf-renderer="astro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <link
+      rel="sitemap"
+      type="application/xml"
+      title="Sitemap"
+      href="/sitemap.xml"
+    />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={keywordsContent} />
+    <meta name="robots" content={robotsContent} />
+    <meta name="googlebot" content={robotsContent} />
+    <meta name="google-adsense-account" content={SPA_GOOGLE_ADSENSE_ACCOUNT} />
+    <meta name="author" content={author} />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={ogTitleEffective} />
+    <meta property="og:description" content={ogDescEffective} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="PFControl" />
+    <meta property="og:locale" content="en_US" />
+    {
+      ogType === 'profile' && ogProfileUsername && (
+        <meta property="og:profile:username" content={ogProfileUsername} />
+      )
+    }
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={twitterTitleEffective} />
+    <meta name="twitter:description" content={twitterDescEffective} />
+    <meta name="twitter:image" content={ogImage} />
+
+    {
+      structuredBlocks.map((block) => (
+        <script type="application/ld+json" set:html={JSON.stringify(block)} />
+      ))
+    }
+
+    <link rel="preconnect" href="https://cdn.discordapp.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+  </head>
+  <body class="bg-black text-white antialiased">
+    <PublicNavbar client:only="react" />
+    <slot />
+    {showFooter && <PublicFooter client:only="react" />}
+  </body>
+</html>

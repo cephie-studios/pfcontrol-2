@@ -49,7 +49,7 @@ export interface DeveloperApiPublicSpec {
   endpoints: DeveloperApiDocEndpoint[];
 }
 
-const DEFAULT_BASE = "https://your-host.example.com/api/ext/v1";
+const DEFAULT_BASE = "https://pfcontrol.com/api/ext/v1";
 
 function catalogTitle(scopeId: string): string {
   const c = DEVELOPER_SCOPE_CATALOG.find((x) => x.id === scopeId);

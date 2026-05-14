@@ -15,15 +15,16 @@ export function useFingerprint(userId: string | undefined) {
 
     async function submitFingerprint() {
       try {
-        const apiBase = import.meta.env.VITE_SERVER_URL;
-        if (!apiBase) {
-          console.error('[useFingerprint] VITE_SERVER_URL is not defined');
-          return;
-        }
+        const apiBase = import.meta.env.VITE_SERVER_URL ?? '';
+        const base = apiBase.replace(/\/$/, '');
+        const url =
+          base === ''
+            ? '/api/auth/fingerprint'
+            : `${base}/api/auth/fingerprint`;
         const fp = await FingerprintJS.load();
         const result = await fp.get();
         if (cancelled) return;
-        await apiFetch(`${apiBase}/api/auth/fingerprint`, {
+        await apiFetch(url, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -35,6 +36,8 @@ export function useFingerprint(userId: string | undefined) {
     }
 
     submitFingerprint();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 }
