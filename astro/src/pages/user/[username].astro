@@ -168,7 +168,7 @@ const personNode: Record<string, unknown> = {
   image: {
     '@type': 'ImageObject',
     url: avatarUrl,
-    caption: `${user.username} — PFControl profile photo`,
+    caption: `${user.username} — PFControl Avatar`,
   },
   description: truncateMeta(personDescription, 4000),
   identifier: profileUrl,
@@ -184,10 +184,10 @@ const personNode: Record<string, unknown> = {
   ...(knowsAbout.length > 0 && { knowsAbout }),
   ...(sameAs.length > 1 && { sameAs: [...new Set(sameAs)] }),
   ...(user.is_admin && {
-    jobTitle: 'PFControl administrator',
+    jobTitle: 'PFControl Developer',
   }),
   ...(!user.is_admin && {
-    jobTitle: 'PFControl pilot & ATC community member',
+    jobTitle: 'PFControl Member',
   }),
 };
 
