@@ -11,6 +11,10 @@ COPY scripts ./scripts
 # Install ALL dependencies (including dev dependencies for build)
 RUN npm ci && npm cache clean --force
 
+# Pre-install Astro dependencies for better layer caching
+COPY astro/package*.json ./astro/
+RUN cd astro && npm install && npm cache clean --force
+
 # Copy source code
 COPY . .
 
@@ -20,8 +24,11 @@ COPY .env.vite.production .env.production
 # Build the backend (TypeScript compilation)
 RUN npm run build:server
 
-# Build the application (frontend)
-RUN npm run build
+# Build the Astro SSR frontend (public SEO pages)
+RUN cd astro && npx astro build
+
+# Generate developer API docs + build the React SPA
+RUN npm run generate:developer-docs && npm run build-only -- --mode production
 
 # Production stage
 FROM node:20-alpine AS production
@@ -54,6 +61,7 @@ COPY --from=builder --chown=nodeuser:nodejs /app/server/dist ./server/dist
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/data
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/dist/data
 COPY --from=builder --chown=nodeuser:nodejs /app/VERSION ./VERSION
+COPY --from=builder --chown=nodeuser:nodejs /app/astro/dist ./astro/dist
 
 # Create logs directory
 RUN mkdir -p logs && chown nodeuser:nodejs logs

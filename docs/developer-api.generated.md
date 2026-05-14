@@ -1,6 +1,6 @@
 # Developer API (generated)
 
-> Generated at **2026-05-12T23:09:30.374Z**. Do not edit by hand - run `npm run generate:developer-docs` or `npm run build`.
+> Generated at **2026-05-14T20:15:32.050Z**. Do not edit by hand - run `npm run generate:developer-docs` or `npm run build`.
 
 ## Overview
 
@@ -34,7 +34,7 @@ Per API key, per minute sliding window (Redis-backed). HTTP 429 with Retry-After
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/ratings/controllers/1234567/stats"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/ratings/controllers/1234567/stats"
 ```
 ### Active notifications
 **Scope:** `notifications.read`  
@@ -42,7 +42,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — Public active announcements (same fields as web homepage feed; no admin-only data).
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/notifications/active"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/notifications/active"
 ```
 ### Own session flight logs (metadata)
 **Scope:** `flight_logs.read`  
@@ -56,7 +56,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/flight-logs"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/flight-logs"
 ```
 ### PFATC sessions
 **Scope:** `sessions.network_pfatc`  
@@ -68,7 +68,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/network/pfatc/sess_abc123"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/network/pfatc/sess_abc123"
 ```
 ### PFATC sessions
 **Scope:** `sessions.network_pfatc`  
@@ -82,7 +82,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/network/pfatc"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/network/pfatc"
 ```
 ### AATC sessions
 **Scope:** `sessions.network_aatc`  
@@ -94,7 +94,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/network/aatc/sess_abc123"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/network/aatc/sess_abc123"
 ```
 ### AATC sessions
 **Scope:** `sessions.network_aatc`  
@@ -108,7 +108,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/network/aatc"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/network/aatc"
 ```
 ### Read flight
 **Scope:** `flights.read`  
@@ -121,7 +121,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000"
 ```
 ### Update flight
 **Scope:** `flights.update`  
@@ -139,7 +139,7 @@ Partial flight fields (same subset as web UI): callsign, aircraft, departure, ar
 ```
 **Example**
 ```bash
-curl -sS -X PUT -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"status":"ACTIVE","runway":"27L","squawk":"1234"}' "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000"
+curl -sS -X PUT -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"status":"ACTIVE","runway":"27L","squawk":"1234"}' "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000"
 ```
 ### List session flights
 **Scope:** `flights.list`  
@@ -151,7 +151,7 @@ curl -sS -X PUT -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: applica
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights"
 ```
 ### Create flight
 **Scope:** `flights.create`  
@@ -168,7 +168,7 @@ Flight fields (same as web submit): callsign, aircraft, flight_type, departure, 
 ```
 **Example**
 ```bash
-curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"callsign":"BAW123","aircraft":"A320","flight_type":"IFR","departure":"EGLL","arrival":"LFPG"}' "https://your-host.example.com/api/ext/v1/sessions/sess_abc123/flights"
+curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"callsign":"BAW123","aircraft":"A320","flight_type":"IFR","departure":"EGLL","arrival":"LFPG"}' "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123/flights"
 ```
 ### Read session
 **Scope:** `sessions.read`  
@@ -180,7 +180,7 @@ curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: applic
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions/sess_abc123"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions/sess_abc123"
 ```
 ### List my sessions
 **Scope:** `sessions.list`  
@@ -188,7 +188,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — JSON array of sessions you created (no access_id). Includes apiManaged when the session was created via the developer API.
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/sessions"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/sessions"
 ```
 ### Create session
 **Scope:** `sessions.create`  
@@ -201,7 +201,7 @@ airportIcao (required), optional isPFATC, isAdvancedATC (mutually exclusive), ac
 ```
 **Example**
 ```bash
-curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"airportIcao":"EGLL","isPFATC":false,"isAdvancedATC":false,"activeRunway":"27L"}' "https://your-host.example.com/api/ext/v1/sessions"
+curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"airportIcao":"EGLL","isPFATC":false,"isAdvancedATC":false,"activeRunway":"27L"}' "https://pfcontrol.com/api/ext/v1/sessions"
 ```
 ### Airport directory
 **Scope:** `data.airports`  
@@ -209,7 +209,7 @@ curl -sS -X POST -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: applic
 - **Response:** application/json — JSON array of airport objects (static dataset).
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airports"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airports"
 ```
 ### Aircraft types
 **Scope:** `data.aircrafts`  
@@ -217,7 +217,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — JSON array of aircraft reference records.
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/aircrafts"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/aircrafts"
 ```
 ### Airlines
 **Scope:** `data.airlines`  
@@ -225,7 +225,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — JSON array of airline reference records.
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airlines"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airlines"
 ```
 ### Frequencies summary
 **Scope:** `data.frequencies`  
@@ -233,7 +233,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — JSON array of per-airport frequency summaries.
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/frequencies"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/frequencies"
 ```
 ### Background assets
 **Scope:** `data.backgrounds`  
@@ -241,7 +241,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 - **Response:** application/json — JSON array of background image metadata (filename, path, extension).
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/backgrounds"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/backgrounds"
 ```
 ### Route finder
 **Scope:** `data.find_route`  
@@ -254,7 +254,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/findRoute?from=EGLL&to=LFPG"
 ```
 ### Airport runways
 **Scope:** `data.airport_runways`  
@@ -266,7 +266,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airports/EGLL/runways"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/runways"
 ```
 ### Airport SIDs
 **Scope:** `data.airport_sids`  
@@ -278,7 +278,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airports/EGLL/sids"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/sids"
 ```
 ### Airport STARs
 **Scope:** `data.airport_stars`  
@@ -290,7 +290,7 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airports/EGLL/stars"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/stars"
 ```
 ### Airport status
 **Scope:** `data.airport_status`  
@@ -302,5 +302,5 @@ curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/js
 
 **Example**
 ```bash
-curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://your-host.example.com/api/ext/v1/data/airports/EGLL/status"
+curl -sS -H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json" "https://pfcontrol.com/api/ext/v1/data/airports/EGLL/status"
 ```

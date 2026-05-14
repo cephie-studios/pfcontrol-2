@@ -1,9 +1,10 @@
 import io from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
-
 export function createNotificationsSocket(onUpdate: () => void) {
-  const socket = io(SOCKET_URL, {
+  const base =
+    import.meta.env.VITE_SERVER_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : '');
+  const socket = io(base, {
     withCredentials: true,
     path: '/sockets/notifications',
     transports: ['websocket', 'polling'],

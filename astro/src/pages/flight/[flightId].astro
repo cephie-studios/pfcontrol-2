@@ -1,0 +1,270 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchApi } from '../../lib/api';
+import FlightContent from '@app/islands/FlightContent';
+
+interface Flight {
+  id: string | number;
+  session_id: string;
+  callsign?: string;
+  aircraft?: string;
+  flight_type?: string;
+  departure?: string;
+  arrival?: string;
+  alternate?: string;
+  route?: string;
+  sid?: string;
+  star?: string;
+  runway?: string;
+  clearedFL?: string;
+  cruisingFL?: string;
+  stand?: string;
+  gate?: string;
+  remark?: string;
+  notes?: string;
+  timestamp?: string;
+  created_at?: string;
+  status?: string;
+  squawk?: string;
+  wtc?: string;
+  snap_images?: Array<{ cephie_id: string; url: string }>;
+  user?: { discord_username?: string; discord_avatar_url?: string };
+}
+
+const { flightId } = Astro.params;
+
+if (!flightId) {
+  return Astro.redirect('/');
+}
+
+const flight = await fetchApi<Flight>(
+  `/api/flights/public/${encodeURIComponent(flightId)}`
+);
+
+if (!flight) {
+  return new Response(null, { status: 404 });
+}
+
+function formatStatus(status?: string): string {
+  if (!status) return 'PENDING';
+  if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
+  if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
+  return status;
+}
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+const displayStatus = formatStatus(flight.status);
+const routeSummary =
+  flight.departure && flight.arrival
+    ? `${flight.departure} → ${flight.arrival}`
+    : (flight.departure ?? flight.arrival ?? 'Unknown Route');
+const flightUrl = `https://pfcontrol.com/flight/${flightId}`;
+const pilotName = flight.user?.discord_username;
+
+const pageTitle = flight.callsign
+  ? `${flight.callsign} — ${routeSummary} on PFControl`
+  : `Flight ${String(flightId).slice(0, 8)} — ${routeSummary} on PFControl`;
+
+function truncateMeta(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max - 1).trimEnd()}…`;
+}
+
+const remarkPlain = flight.remark
+  ? flight.remark
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  : '';
+
+const descParts: string[] = [
+  flight.callsign
+    ? `PFControl public flight ${flight.callsign} (${routeSummary}).`
+    : `PFControl public flight record (${routeSummary}).`,
+];
+if (flight.aircraft) descParts.push(`Aircraft ${flight.aircraft}.`);
+descParts.push(`Status ${displayStatus}.`);
+if (pilotName) descParts.push(`Pilot ${pilotName} on PFControl.`);
+if (remarkPlain) descParts.push(truncateMeta(remarkPlain, 120));
+if (flight.route) descParts.push(`Route string available on PFControl.`);
+descParts.push(`View full strip data at pfcontrol.com/flight/${flightId}.`);
+
+const pageDescription = truncateMeta(descParts.join(' '), 320);
+
+const keywordParts = [
+  'PFControl',
+  'PFControl flight',
+  'flight strip',
+  'VATSIM',
+  'ATC',
+  String(flightId),
+];
+if (flight.callsign) {
+  keywordParts.push(flight.callsign, `${flight.callsign} PFControl`);
+}
+if (flight.departure)
+  keywordParts.push(flight.departure, `airport ${flight.departure}`);
+if (flight.arrival)
+  keywordParts.push(flight.arrival, `airport ${flight.arrival}`);
+if (flight.aircraft) keywordParts.push(flight.aircraft);
+if (pilotName) keywordParts.push(pilotName, `${pilotName} PFControl`);
+const keywords = [...new Set(keywordParts)].join(', ');
+
+const ogImage =
+  flight.snap_images?.[0]?.url ??
+  'https://pfcontrol.com/assets/images/hero.webp';
+
+const performer = pilotName
+  ? {
+      '@type': 'Person',
+      name: pilotName,
+      url: `https://pfcontrol.com/user/${encodeURIComponent(pilotName)}`,
+      ...(flight.user?.discord_avatar_url && {
+        image: flight.user.discord_avatar_url,
+      }),
+    }
+  : undefined;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://pfcontrol.com/#website',
+      name: 'PFControl',
+      url: 'https://pfcontrol.com',
+    },
+    {
+      '@type': 'WebPage',
+      '@id': `${flightUrl}#webpage`,
+      url: flightUrl,
+      name: pageTitle,
+      description: pageDescription,
+      isPartOf: { '@id': 'https://pfcontrol.com/#website' },
+      primaryImageOfPage: { '@type': 'ImageObject', url: ogImage },
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'PFControl',
+          item: 'https://pfcontrol.com',
+        },
+        ...(pilotName
+          ? [
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: pilotName,
+                item: `https://pfcontrol.com/user/${encodeURIComponent(pilotName)}`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: flight.callsign ?? 'Flight',
+                item: flightUrl,
+              },
+            ]
+          : [
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: flight.callsign ?? 'Flight',
+                item: flightUrl,
+              },
+            ]),
+      ],
+    },
+    {
+      '@type': 'Event',
+      '@id': `${flightUrl}#event`,
+      name: pageTitle,
+      description: pageDescription,
+      url: flightUrl,
+      image: ogImage,
+      ...(flight.created_at && { startDate: flight.created_at }),
+      location: {
+        '@type': 'Place',
+        name: routeSummary,
+        ...(flight.departure && {
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: flight.departure,
+          },
+        }),
+      },
+      organizer: {
+        '@type': 'Organization',
+        name: 'PFControl',
+        url: 'https://pfcontrol.com',
+      },
+      ...(performer && { performer }),
+    },
+  ],
+};
+
+type FieldItem = { label: string; value: string | undefined | null };
+const fields: FieldItem[] = [
+  { label: 'Callsign', value: flight.callsign },
+  { label: 'Aircraft', value: flight.aircraft },
+  { label: 'Type', value: flight.flight_type },
+  { label: 'Departure', value: flight.departure },
+  { label: 'Arrival', value: flight.arrival },
+  { label: 'Alternate', value: flight.alternate },
+  { label: 'SID', value: flight.sid },
+  { label: 'STAR', value: flight.star },
+  { label: 'Runway', value: flight.runway },
+  { label: 'Cleared FL', value: flight.clearedFL },
+  { label: 'Cruise FL', value: flight.cruisingFL },
+  { label: 'Squawk', value: flight.squawk },
+  { label: 'WTC', value: flight.wtc },
+  { label: 'Stand', value: flight.stand },
+  { label: 'Gate', value: flight.gate },
+];
+const activeFields = fields.filter((f) => f.value);
+
+const statusColorMap: Record<string, string> = {
+  PENDING: 'text-gray-400 border-gray-700',
+  PUSHBACK: 'text-yellow-400 border-yellow-800',
+  TAXI: 'text-yellow-300 border-yellow-700',
+  TAKEOFF: 'text-green-400 border-green-800',
+  AIRBORNE: 'text-blue-400 border-blue-700',
+  RWY: 'text-orange-400 border-orange-800',
+  LANDED: 'text-green-300 border-green-700',
+  PARKED: 'text-gray-300 border-gray-600',
+};
+const statusClasses =
+  statusColorMap[displayStatus] ?? 'text-gray-400 border-gray-700';
+---
+
+<BaseLayout
+  showFooter={false}
+  title={pageTitle}
+  description={pageDescription}
+  ogImage={ogImage}
+  ogType="article"
+  canonicalUrl={flightUrl}
+  structuredData={structuredData}
+  keywords={keywords}
+>
+  <FlightContent flightId={flightId} client:only="react" />
+</BaseLayout>
