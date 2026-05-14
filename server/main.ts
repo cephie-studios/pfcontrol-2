@@ -178,6 +178,7 @@ app.use('/api', apiRoutes);
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(
   express.static(path.join(__dirname, '..', '..', 'dist'), {
+    index: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.js'))
         res.setHeader('Content-Type', 'application/javascript');
