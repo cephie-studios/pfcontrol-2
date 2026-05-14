@@ -52,6 +52,18 @@ function formatMemberSinceShort(dateStr: string): string {
   }
 }
 
+export async function fetchUrlAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || 'image/png';
+    const buf = Buffer.from(await res.arrayBuffer());
+    return `data:${contentType};base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchAvatarDataUrl(
   profile: PublicPilotProfile,
   frontendBase: string
@@ -61,22 +73,17 @@ export async function fetchAvatarDataUrl(
   const url = avatar
     ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=256`
     : `${base}/assets/app/default/avatar.webp`;
-  try {
-    const res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) throw new Error(String(res.status));
-    const contentType = res.headers.get('content-type') || 'image/png';
-    const buf = Buffer.from(await res.arrayBuffer());
-    return `data:${contentType};base64,${buf.toString('base64')}`;
-  } catch {
-    const transparent =
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-    return transparent;
-  }
+  const data = await fetchUrlAsDataUrl(url);
+  if (data) return data;
+  const transparent =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  return transparent;
 }
 
 export function buildProfileOgCardProps(
   profile: PublicPilotProfile,
-  avatarDataUrl: string
+  avatarDataUrl: string,
+  backgroundDataUrl: string | null
 ): ProfileOgCardProps {
   const { user, privacySettings } = profile;
   const plainBio = user.bio ? toPlainText(user.bio) : '';
@@ -140,15 +147,21 @@ export function buildProfileOgCardProps(
     linksLine,
     ratingLine,
     avatarDataUrl,
+    backgroundDataUrl,
   };
 }
 
 export async function renderPublicProfileOgPng(
   profile: PublicPilotProfile,
-  avatarDataUrl: string
+  avatarDataUrl: string,
+  backgroundDataUrl: string | null
 ): Promise<Buffer> {
   const fonts = await getInterFontsForSatori();
-  const props = buildProfileOgCardProps(profile, avatarDataUrl);
+  const props = buildProfileOgCardProps(
+    profile,
+    avatarDataUrl,
+    backgroundDataUrl
+  );
   const svg = await satori(createElement(ProfileOgCard, props), {
     width: OG_W,
     height: OG_H,

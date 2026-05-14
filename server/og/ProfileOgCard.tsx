@@ -8,10 +8,12 @@ export interface ProfileOgCardProps {
   linksLine: string | null;
   ratingLine: string | null;
   avatarDataUrl: string;
+  backgroundDataUrl: string | null;
 }
 
 const W = 1200;
 const H = 630;
+const BORDER_RADIUS = 15;
 
 export function ProfileOgCard({
   username,
@@ -23,19 +25,22 @@ export function ProfileOgCard({
   linksLine,
   ratingLine,
   avatarDataUrl,
+  backgroundDataUrl,
 }: ProfileOgCardProps) {
   const detailLines = [statsLine, linksLine, ratingLine].filter(
     Boolean
   ) as string[];
 
-  return (
+  const mainRow = (
     <div
       style={{
+        position: 'relative',
+        zIndex: 1,
         display: 'flex',
         flexDirection: 'row',
         width: `${W}px`,
         height: `${H}px`,
-        background: '#0c0c0e',
+        flex: 1,
         color: '#fafafa',
         fontFamily: 'Inter',
       }}
@@ -138,6 +143,60 @@ export function ProfileOgCard({
           }}
         />
       </div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        width: `${W}px`,
+        height: `${H}px`,
+        borderRadius: BORDER_RADIUS,
+        overflow: 'hidden',
+        backgroundColor: '#0c0c0e',
+      }}
+    >
+      {backgroundDataUrl ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: `${W}px`,
+            height: `${H}px`,
+            display: 'flex',
+          }}
+        >
+          <img
+            src={backgroundDataUrl}
+            width={W}
+            height={H}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: `${W}px`,
+              height: `${H}px`,
+              objectFit: 'cover',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: `${W}px`,
+              height: `${H}px`,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+            }}
+          />
+        </div>
+      ) : null}
+      {mainRow}
     </div>
   );
 }

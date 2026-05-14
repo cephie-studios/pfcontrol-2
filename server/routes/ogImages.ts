@@ -1,7 +1,9 @@
 import express from 'express';
 import { getPublicPilotProfile } from '../services/publicPilotProfile.js';
+import { resolveProfileBackgroundImageUrl } from '../og/profileBackground.js';
 import {
   fetchAvatarDataUrl,
+  fetchUrlAsDataUrl,
   renderPublicProfileOgPng,
 } from '../og/renderProfileOgPng.js';
 import {
@@ -31,9 +33,20 @@ router.get('/profile/:username', async (req, res) => {
       return;
     }
 
-    const frontendBase = process.env.FRONTEND_URL || 'https://pfcontrol.com';
+    const frontendBase =
+      (process.env.FRONTEND_URL || process.env.PUBLIC_SITE_URL || '')
+        .trim()
+        .replace(/\/$/, '') || 'https://pfcontrol.com';
     const avatarDataUrl = await fetchAvatarDataUrl(profile, frontendBase);
-    const png = await renderPublicProfileOgPng(profile, avatarDataUrl);
+    const bgUrl = resolveProfileBackgroundImageUrl(profile, frontendBase);
+    const backgroundDataUrl = bgUrl
+      ? ((await fetchUrlAsDataUrl(bgUrl)) ?? null)
+      : null;
+    const png = await renderPublicProfileOgPng(
+      profile,
+      avatarDataUrl,
+      backgroundDataUrl
+    );
     await setCachedProfileOgPng(cacheKey, png);
 
     res.setHeader('Content-Type', 'image/png');

@@ -11,7 +11,7 @@ const REDIS_TTL_SEC = Math.min(
   30 * 24 * 60 * 60
 );
 
-const REDIS_KEY_PREFIX = 'og:profile:png:v1:';
+const REDIS_KEY_PREFIX = 'og:profile:png:v2:';
 
 const HTTP_MAX_AGE_SEC = Math.min(
   REDIS_TTL_SEC,
@@ -74,6 +74,8 @@ export function profileOgFingerprint(profile: PublicPilotProfile): string {
   h.update(user.vatsim_cid ?? '');
   h.update('\n');
   h.update(user.vatsim_rating_short ?? '');
+  h.update('\n');
+  h.update(JSON.stringify(user.background_image ?? null));
   return h.digest('hex').slice(0, 32);
 }
 
