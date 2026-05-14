@@ -46,9 +46,11 @@ WORKDIR /app
 # Copy package files and postinstall script (required before npm ci)
 COPY package*.json ./
 COPY scripts ./scripts
+COPY astro/package*.json ./astro/
 
-# Install only production dependencies
+# Install only production dependencies (root app + Astro SSR runtime deps)
 RUN npm ci --omit=dev && npm cache clean --force
+RUN cd astro && npm ci --omit=dev && npm cache clean --force
 
 # Set NODE_ENV explicitly
 ENV NODE_ENV=production
@@ -64,7 +66,7 @@ COPY --from=builder --chown=nodeuser:nodejs /app/VERSION ./VERSION
 COPY --from=builder --chown=nodeuser:nodejs /app/astro/dist ./astro/dist
 
 # Create logs directory
-RUN mkdir -p logs && chown nodeuser:nodejs logs
+RUN mkdir -p logs && chown nodeuser:nodejs logs && chown -R nodeuser:nodejs /app/astro
 
 # Switch to non-root user
 USER nodeuser
