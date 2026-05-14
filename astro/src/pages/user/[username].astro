@@ -71,13 +71,15 @@ if (!profile) {
 
 const { user, privacySettings, featuredFlights } = profile;
 
+const siteOrigin = Astro.url.origin;
+
 function getDiscordAvatar(
   userId: string,
   avatarHash: string | null,
-  size: number
+  size: number,
+  assetOrigin: string
 ): string {
-  if (!avatarHash)
-    return `${SPA_SITE_URL}/assets/app/default/avatar.webp`;
+  if (!avatarHash) return `${assetOrigin}/assets/app/default/avatar.webp`;
   return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=${size}`;
 }
 
@@ -94,8 +96,8 @@ function formatMemberSince(dateStr: string): string {
 }
 
 const memberSince = formatMemberSince(user.member_since);
-const profileUrl = `${SPA_SITE_URL}/user/${user.username}`;
-const avatarUrl = getDiscordAvatar(user.id, user.avatar, 256);
+const profileUrl = `${siteOrigin}/user/${user.username}`;
+const avatarUrl = getDiscordAvatar(user.id, user.avatar, 256, siteOrigin);
 const rolesText =
   user.roles?.length > 0
     ? user.roles
@@ -117,7 +119,7 @@ const pageDescription = truncateMeta(
   200
 );
 
-const ogImagePng = `${SPA_SITE_URL}/api/og/profile/${encodeURIComponent(user.username)}`;
+const ogImagePng = `${siteOrigin}/api/og/profile/${encodeURIComponent(user.username)}`;
 
 const keywordParts = [
   'PFControl',
@@ -168,7 +170,7 @@ const personNode: Record<string, unknown> = {
     caption: `${user.username} — PFControl profile photo`,
   },
   description: truncateMeta(personDescription, 4000),
-  identifier: `${SPA_SITE_URL}/user/${user.username}`,
+  identifier: profileUrl,
   mainEntityOfPage: { '@id': `${profileUrl}#webpage` },
   memberOf: {
     '@type': 'Organization',
@@ -241,7 +243,7 @@ const structuredData = {
           '@type': 'ListItem',
           position: 1,
           name: 'PFControl',
-          item: SPA_SITE_URL,
+          item: siteOrigin,
         },
         {
           '@type': 'ListItem',
