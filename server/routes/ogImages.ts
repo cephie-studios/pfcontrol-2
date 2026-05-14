@@ -37,7 +37,7 @@ router.get('/profile/:username', async (req, res) => {
       (process.env.FRONTEND_URL || process.env.PUBLIC_SITE_URL || '')
         .trim()
         .replace(/\/$/, '') || 'https://pfcontrol.com';
-    const avatarDataUrl = await fetchAvatarDataUrl(profile, frontendBase);
+    const avatarDataUrl = await fetchAvatarDataUrl(profile);
     const bgUrl = resolveProfileBackgroundImageUrl(profile, frontendBase);
     const backgroundDataUrl = bgUrl
       ? ((await fetchUrlAsDataUrl(bgUrl)) ?? null)

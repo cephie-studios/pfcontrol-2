@@ -8,6 +8,26 @@ import { getInterFontsForSatori } from './loadInterFonts.js';
 const OG_W = 1200;
 const OG_H = 630;
 
+const TRANSPARENT_PNG_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+function toSatoriSafeRasterDataUrl(dataUrl: string | null): string | null {
+  if (!dataUrl) return null;
+  if (dataUrl.startsWith('data:image/webp')) return null;
+  if (dataUrl.startsWith('data:image/avif')) return null;
+  if (dataUrl.startsWith('data:image/svg+xml')) return null;
+  return dataUrl;
+}
+
+function discordDefaultAvatarUrl(userId: string): string {
+  try {
+    const idx = Number((BigInt(userId) >> 22n) % 6n);
+    return `https://cdn.discordapp.com/embed/avatars/${idx}.png`;
+  } catch {
+    return 'https://cdn.discordapp.com/embed/avatars/0.png';
+  }
+}
+
 function toPlainText(s: string): string {
   return s
     .replace(/<[^>]*>/g, ' ')
@@ -65,19 +85,16 @@ export async function fetchUrlAsDataUrl(url: string): Promise<string | null> {
 }
 
 export async function fetchAvatarDataUrl(
-  profile: PublicPilotProfile,
-  frontendBase: string
+  profile: PublicPilotProfile
 ): Promise<string> {
-  const base = frontendBase.replace(/\/$/, '');
   const { id, avatar } = profile.user;
   const url = avatar
     ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=256`
-    : `${base}/assets/app/default/avatar.webp`;
+    : discordDefaultAvatarUrl(id);
   const data = await fetchUrlAsDataUrl(url);
-  if (data) return data;
-  const transparent =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-  return transparent;
+  const safe = toSatoriSafeRasterDataUrl(data);
+  if (safe) return safe;
+  return TRANSPARENT_PNG_DATA_URL;
 }
 
 export function buildProfileOgCardProps(
@@ -157,11 +174,10 @@ export async function renderPublicProfileOgPng(
   backgroundDataUrl: string | null
 ): Promise<Buffer> {
   const fonts = await getInterFontsForSatori();
-  const props = buildProfileOgCardProps(
-    profile,
-    avatarDataUrl,
-    backgroundDataUrl
-  );
+  const safeAvatar =
+    toSatoriSafeRasterDataUrl(avatarDataUrl) ?? TRANSPARENT_PNG_DATA_URL;
+  const safeBackground = toSatoriSafeRasterDataUrl(backgroundDataUrl);
+  const props = buildProfileOgCardProps(profile, safeAvatar, safeBackground);
   const svg = await satori(createElement(ProfileOgCard, props), {
     width: OG_W,
     height: OG_H,
