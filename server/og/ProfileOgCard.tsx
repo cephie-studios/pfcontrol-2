@@ -98,8 +98,13 @@ export function ProfileOgCard({
             marginBottom: 8,
           }}
         >
-          {[rolesLine, `since ${memberSinceShort}`].filter(Boolean).join(' · ')}
-          {isAdmin ? ' · PFControl team' : ''}
+          {[
+            rolesLine,
+            `since ${memberSinceShort}`,
+            isAdmin ? 'PFControl team' : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </div>
         {detailLines.length > 0 ? (
           <div
