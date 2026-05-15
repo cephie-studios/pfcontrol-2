@@ -106,8 +106,9 @@ jobs:
       url: ${{ needs.resolve.outputs.environment_url }}
 
     steps:
-      - name: Configure Dokploy build version
+      - name: Configure Dokploy app version
         if: inputs.deploy_version != ''
+        continue-on-error: true
         env:
           DEPLOY_VERSION: ${{ inputs.deploy_version }}
         run: |
@@ -123,25 +124,27 @@ jobs:
           API_BASE="https://${{ secrets.DOKPLOY_HOST }}/api"
           AUTH=(-H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}")
 
-          CURRENT_ARGS=""
-          CURRENT_ENV=""
-          if APP_JSON=$(curl -fsS "${API_BASE}/application.one?applicationId=${APP_ID}" "${AUTH[@]}"); then
-            CURRENT_ARGS=$(echo "$APP_JSON" | jq -r '.buildArgs // empty')
-            CURRENT_ENV=$(echo "$APP_JSON" | jq -r '.env // empty')
-          fi
+          APP_JSON=$(curl -fsS "${API_BASE}/application.one?applicationId=${APP_ID}" "${AUTH[@]}")
 
-          NEW_ARGS=$(printf '%s\n' "$CURRENT_ARGS" | grep -v '^APP_VERSION=' | sed '/^$/d')
-          NEW_ARGS="${NEW_ARGS}"$'\n'"APP_VERSION=${DEPLOY_VERSION}"
+          CURRENT_ENV=$(echo "$APP_JSON" | jq -r '.env // ""')
+          NEW_ENV=$(printf '%s\n' "$CURRENT_ENV" | grep -v '^APP_VERSION=' | sed '/^$/d')
+          NEW_ENV="${NEW_ENV}"$'\n'"APP_VERSION=${DEPLOY_VERSION}"
+
+          PAYLOAD=$(echo "$APP_JSON" | jq \
+            --arg applicationId "$APP_ID" \
+            --arg env "$NEW_ENV" \
+            '{
+              applicationId: $applicationId,
+              env: $env,
+              buildArgs: (.buildArgs // ""),
+              buildSecrets: (.buildSecrets // ""),
+              createEnvFile: (.createEnvFile // true)
+            }')
 
           curl -fsS -X POST "${API_BASE}/application.saveEnvironment" \
             "${AUTH[@]}" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --arg applicationId "$APP_ID" \
-              --arg buildArgs "$NEW_ARGS" \
-              --arg env "$CURRENT_ENV" \
-              '{applicationId: $applicationId, buildArgs: $buildArgs}
-               + (if ($env | length) > 0 then {env: $env} else {} end)')"
+            -d "$PAYLOAD"
 
       - name: Trigger Dokploy deploy
         env:
