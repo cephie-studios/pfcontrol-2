@@ -49,10 +49,7 @@ export function buildSubmitOgCardProps(
 
   stats.push({
     label: 'Flights',
-    value:
-      flightsN === 1
-        ? '1 on board'
-        : `${flightsN.toLocaleString('en-US')} on board`,
+    value: flightsN.toLocaleString('en-US'),
   });
 
   if (controller) {

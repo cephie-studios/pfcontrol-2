@@ -193,10 +193,12 @@ export function SubmitOgCard({
             <div
               style={{
                 fontSize: 17,
-                fontWeight: 400,
-                color: '#71717a',
+                fontWeight: 500,
+                color: '#e8e8ed',
                 lineHeight: 1.4,
                 maxWidth: 680,
+                textShadow:
+                  '0 1px 2px rgba(0,0,0,0.75), 0 0 12px rgba(0,0,0,0.45)',
               }}
             >
               {atisSnippet}
