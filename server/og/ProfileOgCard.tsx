@@ -58,6 +58,7 @@ export function ProfileOgCard({
             left: 0,
             width: `${W}px`,
             height: `${H}px`,
+            display: 'flex',
           }}
         >
           <img
@@ -88,7 +89,6 @@ export function ProfileOgCard({
       <div
         style={{
           position: 'relative',
-          zIndex: 1,
           display: 'flex',
           flexDirection: 'row',
           width: `${W}px`,
