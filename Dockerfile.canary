@@ -33,6 +33,9 @@ RUN npm run generate:developer-docs && npm run build-only -- --mode production
 # Production stage
 FROM node:22-alpine AS production
 
+ARG APP_VERSION=2.0.0.0
+ENV APP_VERSION=${APP_VERSION}
+
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
@@ -52,6 +55,7 @@ COPY --chown=nodeuser:nodejs astro/package*.json ./astro/
 # Set NODE_ENV explicitly
 ENV NODE_ENV=production
 ENV DEPLOYMENT=canary
+ENV npm_config_omit=dev
 
 USER nodeuser
 
@@ -65,7 +69,6 @@ COPY --from=builder --chown=nodeuser:nodejs /app/public ./public
 COPY --from=builder --chown=nodeuser:nodejs /app/server/dist ./server/dist
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/data
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/dist/data
-COPY --from=builder --chown=nodeuser:nodejs /app/VERSION ./VERSION
 COPY --from=builder --chown=nodeuser:nodejs /app/astro/dist ./astro/dist
 
 RUN mkdir -p logs

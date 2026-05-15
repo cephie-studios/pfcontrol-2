@@ -7,29 +7,79 @@ on:
       - canary
     paths-ignore:
       - 'README.md'
-      - 'VERSION'
   release:
     types: [published]
 
 jobs:
   bump:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
 
     permissions:
       contents: write
 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      deploy_title: ${{ steps.deploy_meta.outputs.title }}
+      channel: ${{ steps.deploy_meta.outputs.channel }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.VERSION_BUMP_PAT }}
           fetch-depth: 0
 
-      - name: Read and bump version
+      - name: Capture deploy metadata
+        id: deploy_meta
+        run: |
+          CHANNEL="${GITHUB_REF#refs/heads/}"
+          if [[ "$CHANNEL" != "main" && "$CHANNEL" != "canary" ]]; then
+            git fetch origin main canary
+            SHA="${{ github.sha }}"
+            MAIN_HEAD=$(git rev-parse origin/main)
+            CANARY_HEAD=$(git rev-parse origin/canary)
+            if [[ "$SHA" == "$MAIN_HEAD" ]]; then
+              CHANNEL=main
+            elif [[ "$SHA" == "$CANARY_HEAD" ]]; then
+              CHANNEL=canary
+            elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
+              CHANNEL=canary
+            elif git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+              CHANNEL=main
+            else
+              echo "Could not resolve deploy channel" >&2
+              exit 1
+            fi
+          fi
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TITLE=$(jq -r '.head_commit.message // empty' "$GITHUB_EVENT_PATH" | head -n1)
+          else
+            TITLE="${{ github.event.release.name }}"
+            if [[ -z "$TITLE" ]]; then
+              TITLE="${{ github.event.release.tag_name }}"
+            fi
+          fi
+
+          {
+            echo "channel=$CHANNEL"
+            echo "title<<EOF"
+            echo "$TITLE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Compute next version from tags
         id: version
         run: |
-          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          git fetch --tags origin
+
+          LATEST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          if [[ -z "$LATEST_TAG" ]]; then
+            CURRENT="2.0.0.0"
+          else
+            CURRENT="${LATEST_TAG#v}"
+          fi
+
           IFS='.' read -r V1 V2 MINOR PATCH <<< "$CURRENT"
 
           if [[ "${{ github.event_name }}" == "release" ]]; then
@@ -45,32 +95,25 @@ jobs:
           done
 
           NEW_VERSION="$V1.$V2.$MINOR.$PATCH"
-          echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Bumped $CURRENT -> $NEW_VERSION (trigger: ${{ github.event_name }})"
 
-      - name: Commit and tag version bump
+      - name: Create release tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add VERSION
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
-          git tag "v${{ steps.version.outputs.version }}"
-          git push
+          git tag -a "v${{ steps.version.outputs.version }}" -m "v${{ steps.version.outputs.version }}" "${{ github.sha }}"
           git push origin "v${{ steps.version.outputs.version }}"
 
-      - name: Trigger Dokploy deploy (canary)
-        if: github.ref_name == 'canary'
-        run: |
-          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId": "IIakyrrLChtjnjuKKVFiB"}'
-
-      - name: Trigger Dokploy deploy (main)
-        if: github.ref_name == 'main'
-        run: |
-          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId": "C4Vzp1quDF4mKt2AQPjkU"}'
+  deploy:
+    needs: bump
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
+    with:
+      channel: ${{ needs.bump.outputs.channel }}
+      deploy_title: ${{ needs.bump.outputs.deploy_title }}
+      deploy_version: ${{ needs.bump.outputs.version }}
+      deploy_description: v${{ needs.bump.outputs.version }}

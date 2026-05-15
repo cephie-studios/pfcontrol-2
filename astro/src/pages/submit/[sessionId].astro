@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchApi } from '../../lib/api';
+import { getSiteOrigin } from '../../lib/siteOrigin';
+import { buildSubmitSessionSeo } from '../../lib/submitSeo';
+import SubmitSessionContent from '@app/islands/SubmitSessionContent';
+
+interface SubmitSessionPublic {
+  sessionId: string;
+  airportIcao: string;
+  activeRunway?: string;
+  isPFATC?: boolean;
+  isAdvancedATC?: boolean;
+  createdBy: string;
+  flightCount?: number;
+  atisLetter?: string;
+  atisText?: string;
+  controllerUsername?: string;
+}
+
+const { sessionId } = Astro.params;
+
+if (!sessionId) {
+  return Astro.redirect('/');
+}
+
+const session = await fetchApi<SubmitSessionPublic>(
+  `/api/sessions/${encodeURIComponent(sessionId)}/submit`
+);
+
+if (!session) {
+  return new Response(null, { status: 404 });
+}
+
+const siteOrigin = getSiteOrigin(Astro.request);
+const seo = buildSubmitSessionSeo(session, siteOrigin);
+---
+
+<BaseLayout
+  showFooter={false}
+  title={seo.pageTitle}
+  description={seo.pageDescription}
+  ogTitle={seo.ogTitle}
+  twitterTitle={seo.ogTitle}
+  ogDescription={seo.pageDescription}
+  twitterDescription={seo.pageDescription}
+  ogImage={seo.ogImage}
+  ogImageType="image/png"
+  ogImageWidth={1200}
+  ogImageHeight={630}
+  twitterCard="summary_large_image"
+  canonicalUrl={seo.pageUrl}
+  structuredData={seo.structuredData}
+  keywords={seo.keywords}
+>
+  <div class="min-h-screen bg-gray-950">
+    <SubmitSessionContent client:only="react" />
+  </div>
+</BaseLayout>

@@ -27,8 +27,6 @@ import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
 import { httpErrorHandler } from './middleware/httpErrorHandler.js';
-import { updateAppVersion } from './db/version.js';
-import { readFileSync } from 'fs';
 import { cleanupOldDeveloperUsage } from './db/developer.js';
 import posthogClient, { initTelemetry } from './utils/posthog.js';
 import { setupExpressErrorHandler } from 'posthog-node';
@@ -178,6 +176,7 @@ app.use('/api', apiRoutes);
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(
   express.static(path.join(__dirname, '..', '..', 'dist'), {
+    index: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.js'))
         res.setHeader('Content-Type', 'application/javascript');
@@ -200,6 +199,17 @@ if (astroClientDir && existsSync(astroClientDir)) {
     })
   );
 }
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (!req.path.startsWith('/_astro/')) return next();
+  res
+    .status(404)
+    .type('text/plain')
+    .send(
+      'Astro client chunk not found. Try a hard refresh (Ctrl+Shift+R) or clear site data for this host — your page may reference an old deploy.'
+    );
+});
 
 if (astroHandler) {
   app.use((req, res, next) => {
@@ -252,17 +262,6 @@ voiceChatIO.adapter(createAdapter(pubClient, subClient));
 const notificationsIO = setupNotificationsWebsocket(server);
 notificationsIO.adapter(createAdapter(pubClient, subClient));
 
-try {
-  const versionFile = readFileSync(
-    new URL('../../VERSION', import.meta.url),
-    'utf-8'
-  ).trim();
-  updateAppVersion(versionFile, 'system').catch((err) =>
-    console.warn('[version] Failed to sync version on startup:', err)
-  );
-} catch {
-  console.warn('[version] VERSION file not found, skipping sync');
-}
 startStatsFlushing();
 startFlightLogsCleanup();
 updateLeaderboard();

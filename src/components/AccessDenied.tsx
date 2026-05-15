@@ -3,6 +3,7 @@ import { FaDiscord } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 interface AccessDeniedProps {
+  standalone?: boolean;
   message?: string;
   description?: string;
   errorType?:
@@ -16,6 +17,7 @@ interface AccessDeniedProps {
 }
 
 export default function AccessDenied({
+  standalone = true,
   message,
   description,
   errorType = 'access-denied',
@@ -91,7 +93,7 @@ export default function AccessDenied({
     <div
       className={`min-h-screen bg-gradient-to-b ${bgGradient} text-white flex flex-col`}
     >
-      <Navbar />
+      {standalone && <Navbar />}
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
           <h1
@@ -116,7 +118,8 @@ export default function AccessDenied({
               >
                 our privacy policy
               </a>
-              . If you have any questions, create a ticket in our support server.
+              . If you have any questions, create a ticket in our support
+              server.
             </p>
           )}
           {errorType === 'tester-required' ||

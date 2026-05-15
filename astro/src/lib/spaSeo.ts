@@ -12,7 +12,7 @@ export const SPA_OG_TITLE =
   'PFControl v2 - Flight Strips for Project Flight & Roblox Aviation';
 
 export const SPA_OG_DESCRIPTION =
-  'The next-generation flight strip platform built for real-time coordination between air traffic controllers in Project Flight, PTFS, and Roblox aviation games with enterprise-level reliability.';
+  'The next-generation flight strip platform built for real-time coordination between air traffic controllers in Project Flight, PTFS, and Roblox aviation games with outstanding reliability.';
 
 export const SPA_TWITTER_TITLE =
   'PFControl v2 - Flight Strips for Project Flight & Roblox Aviation';
@@ -21,22 +21,6 @@ export const SPA_TWITTER_DESCRIPTION =
   'Professional flight strip platform for Project Flight, PTFS, and other Roblox aviation games. Real-time ATC coordination made easy.';
 
 export const SPA_GOOGLE_ADSENSE_ACCOUNT = 'ca-pub-3075420086521736';
-
-export const SPA_WEB_APPLICATION_LD = {
-  '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'PFControl v2',
-  description:
-    'Flight strip platform for Project Flight and Roblox aviation games',
-  url: `${SPA_SITE_URL}/`,
-  applicationCategory: 'Gaming, Aviation Simulation',
-  operatingSystem: 'Web Browser',
-  keywords: 'Project Flight, PTFS, Roblox aviation, flight strips, ATC',
-  author: {
-    '@type': 'Organization',
-    name: 'Cephie Studios',
-  },
-} as const;
 
 export const SPA_WEBSITE_SEARCH_LD = {
   '@context': 'https://schema.org',
@@ -51,3 +35,25 @@ export const SPA_WEBSITE_SEARCH_LD = {
     'query-input': 'required name=search_term_string',
   },
 } as const;
+
+export const SPA_WEB_APPLICATION_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'PFControl',
+  description: SPA_META_DESCRIPTION,
+  url: `${SPA_SITE_URL}/`,
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web',
+  inLanguage: 'en-US',
+  image: `${SPA_SITE_URL}/assets/images/hero.webp`,
+  keywords: SPA_DEFAULT_KEYWORDS,
+  author: {
+    '@type': 'Organization',
+    name: 'Cephie Studios',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Cephie Studios',
+    url: SPA_SITE_URL,
+  },
+};

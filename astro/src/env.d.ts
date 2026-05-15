@@ -1,5 +1,9 @@
 /// <reference types="astro/client" />
 
+interface ImportMetaEnv {
+  readonly PUBLIC_SITE_URL?: string;
+}
+
 declare module '@app/islands/HomeContent' {
   const HomeContent: () => import('react').JSX.Element;
   export default HomeContent;

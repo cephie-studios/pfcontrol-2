@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@source './**/*.{ts,tsx}';
+
 html,
 body {
   background-color: #1a1a1a;

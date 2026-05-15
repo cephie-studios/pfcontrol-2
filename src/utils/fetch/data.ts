@@ -3,6 +3,7 @@ import type { Aircraft } from '../../types/aircraft';
 import type { Airline } from '../../types/airlines';
 import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
+import { clientApiUrl } from '../clientApiBase';
 
 interface AvailableImage {
   filename: string;
@@ -97,7 +98,7 @@ export async function getTesterSettings(): Promise<TesterSettings> {
 
 export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
   const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/data/notifications/active`
+    clientApiUrl('/api/data/notifications/active')
   );
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);

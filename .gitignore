@@ -40,3 +40,6 @@ astro/node_modules
 .env.development
 .env.production
 .env.canary
+
+public/developer-api-docs.json
+docs/developer-api.generated.md

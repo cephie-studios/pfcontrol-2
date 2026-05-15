@@ -214,7 +214,7 @@ export default function Home({ standalone = true }: HomeProps) {
             </h1>
             <p className="text-base sm:text-xl text-white max-w-lg mx-auto md:mx-0 mb-8 sm:mb-10">
               The next-generation flight strip platform built for real-time
-              coordination between air traffic controllers with enterprise-level
+              coordination between air traffic controllers with outstanding
               reliability.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
