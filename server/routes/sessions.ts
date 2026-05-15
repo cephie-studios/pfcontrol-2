@@ -21,6 +21,7 @@ import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
+import { getPublicSubmitSession } from '../services/publicSubmitSession.js';
 import { Request, Response } from 'express';
 import { JwtPayloadClient } from '../types/JwtPayload.js';
 import requireAuth from '../middleware/auth.js';
@@ -200,54 +201,12 @@ router.get('/mine', requireAuth, async (req, res) => {
 router.get('/:sessionId/submit', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const session = await getSessionById(sessionId);
+    const session = await getPublicSubmitSession(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    const [flightCountRow, controller] = await Promise.all([
-      mainDb
-        .selectFrom('flights')
-        .select(sql`count(*)`.as('count'))
-        .where('session_id', '=', session.session_id)
-        .executeTakeFirst(),
-      mainDb
-        .selectFrom('users')
-        .select(['username'])
-        .where('id', '=', session.created_by)
-        .executeTakeFirst(),
-    ]);
-    const flightCount = parseInt(flightCountRow?.count as string, 10) || 0;
-
-    let atisLetter: string | undefined;
-    if (session.atis) {
-      try {
-        const parsed =
-          typeof session.atis === 'string'
-            ? JSON.parse(session.atis as string)
-            : session.atis;
-        const atis = decrypt(parsed);
-        const letter =
-          atis && typeof atis === 'object' && 'letter' in atis
-            ? String((atis as { letter?: unknown }).letter ?? '').trim()
-            : '';
-        if (letter) atisLetter = letter.slice(0, 1).toUpperCase();
-      } catch (atisErr) {
-        console.error('Error decrypting ATIS for public submit:', atisErr);
-      }
-    }
-
-    res.json({
-      sessionId: session.session_id,
-      airportIcao: session.airport_icao,
-      activeRunway: session.active_runway,
-      isPFATC: session.is_pfatc,
-      isAdvancedATC: session.is_advanced_atc,
-      createdBy: session.created_by,
-      flightCount,
-      atisLetter,
-      controllerUsername: controller?.username ?? undefined,
-    });
+    res.json(session);
   } catch (error) {
     console.error('Error fetching session for submit:', error);
     res.status(500).json({
