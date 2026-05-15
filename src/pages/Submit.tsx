@@ -38,23 +38,6 @@ import Modal from "../components/common/Modal";
 import { getDiscordLoginUrl } from "../utils/fetch/auth";
 import { hasAdvancedNetworkFeatures } from "../utils/sessionKind";
 import RouteMap from "../components/map/RouteMap";
-} from 'lucide-react';
-import { createFlightsSocket } from '../sockets/flightsSocket';
-import { addFlight } from '../utils/fetch/flights';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
-import type { Flight } from '../types/flight';
-import AirportDropdown from '../components/dropdowns/AirportDropdown';
-import Dropdown from '../components/common/Dropdown';
-import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
-import Loader from '../components/common/Loader';
-import AccessDenied from '../components/AccessDenied';
-import CallsignInput from '../components/common/CallsignInput';
-import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
-import Modal from '../components/common/Modal';
-import { getDiscordLoginUrl } from '../utils/fetch/auth';
-import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -125,15 +108,7 @@ export default function Submit({ standalone = true }: SubmitProps) {
   const [routeSid, setRouteSid] = useState<string | undefined>();
   const [routeStar, setRouteStar] = useState<string | undefined>();
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-  const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(
-    null,
-  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(
-    null
-  );
-  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-  const [flightsSocket, setFlightsSocket] = useState<ReturnType<
-    typeof createFlightsSocket
-  > | null>(null);
+  const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
