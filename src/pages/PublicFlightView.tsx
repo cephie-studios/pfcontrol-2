@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import RouteMap from '../components/map/RouteMap';
 import {
   ArrowRight,
   CalendarClock,
@@ -428,6 +429,18 @@ export default function PublicFlightView({
               </div>
             )}
           </div>
+
+          {flight.route && (
+            <div className="rounded-2xl overflow-hidden border border-gray-700/60" style={{ height: '280px' }}>
+              <RouteMap
+                route={flight.route}
+                departure={flight.departure}
+                arrival={flight.arrival}
+                sid={flight.sid}
+                star={flight.star}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
             <Field label="Aircraft" value={flight.aircraft || 'N/A'} />

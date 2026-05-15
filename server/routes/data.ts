@@ -36,6 +36,7 @@ const airportsPath = path.join(__dirname, "..", "data", "airportData.json");
 const aircraftPath = path.join(__dirname, "..", "data", "aircraftData.json");
 const airlinesPath = path.join(__dirname, "..", "data", "airlineData.json");
 const waypointsPath = path.join(__dirname, "..", "data", "waypointData.json");
+const islandsPath = path.join(__dirname, "..", "data", "islandData.json");
 const backgroundsPath = path.join(process.cwd(), "public", "assets", "app", "backgrounds");
 
 if (
@@ -216,6 +217,102 @@ router.get("/airlines", async (req, res) => {
     res.status(500).json({
       error: "Internal server error",
       message: "Error reading airline data",
+    });
+  }
+});
+
+// GET: /api/data/waypoints
+router.get("/waypoints", async (req, res) => {
+  const cacheKey = prefixKey("data:waypoints");
+
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      applyPublicCache(res, {
+        browserMaxAge: DATA_STATIC_BROWSER_SEC,
+        edgeMaxAge: DATA_STATIC_EDGE_SEC,
+      });
+      return res.json(JSON.parse(cached));
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn("[Redis] Failed to read cache for waypoints:", error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(waypointsPath)) {
+      return res.status(404).json({ error: "Waypoint data not found" });
+    }
+
+    const data = JSON.parse(fs.readFileSync(waypointsPath, "utf8"));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn("[Redis] Failed to set cache for waypoints:", error.message);
+      }
+    }
+
+    applyPublicCache(res, {
+      browserMaxAge: DATA_STATIC_BROWSER_SEC,
+      edgeMaxAge: DATA_STATIC_EDGE_SEC,
+    });
+    res.json(data);
+  } catch (error) {
+    console.error("Error reading waypoint data:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Error reading waypoint data",
+    });
+  }
+});
+
+// GET: /api/data/islands
+router.get("/islands", async (req, res) => {
+  const cacheKey = prefixKey("data:islands");
+
+  try {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      applyPublicCache(res, {
+        browserMaxAge: DATA_STATIC_BROWSER_SEC,
+        edgeMaxAge: DATA_STATIC_EDGE_SEC,
+      });
+      return res.json(JSON.parse(cached));
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.warn("[Redis] Failed to read cache for islands:", error.message);
+    }
+  }
+
+  try {
+    if (!fs.existsSync(islandsPath)) {
+      return res.status(404).json({ error: "Island data not found" });
+    }
+
+    const data = JSON.parse(fs.readFileSync(islandsPath, "utf8"));
+
+    try {
+      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn("[Redis] Failed to set cache for islands:", error.message);
+      }
+    }
+
+    applyPublicCache(res, {
+      browserMaxAge: DATA_STATIC_BROWSER_SEC,
+      edgeMaxAge: DATA_STATIC_EDGE_SEC,
+    });
+    res.json(data);
+  } catch (error) {
+    console.error("Error reading island data:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Error reading island data",
     });
   }
 });
@@ -654,6 +751,7 @@ router.get("/findRoute", async (req, res) => {
     const waypointData = getWaypointData();
     const airportData: Array<{
       icao: string;
+      runways: string[];
       departures: Record<string, Record<string, string>>;
       arrivals: Record<string, Record<string, string>>;
     }> = getAirportData();
@@ -666,6 +764,7 @@ router.get("/findRoute", async (req, res) => {
 
     let sid: string | undefined;
     let star: string | undefined;
+    let isRadarVectors = false;
 
     if (depAirport?.departures) {
       // Use the supplied runway if it matches a key, otherwise fall back to the first available
@@ -674,16 +773,52 @@ router.get("/findRoute", async (req, res) => {
         : Object.keys(depAirport.departures)[0];
       if (runwayKey) {
         const procedure = depAirport.departures[runwayKey][to];
-        if (procedure && procedure !== "RADAR VECTORS") sid = procedure;
+        if (procedure === "RADAR VECTORS") {
+          isRadarVectors = true;
+        } else if (procedure) {
+          sid = procedure;
+        }
       }
     }
 
     if (arrAirport?.arrivals) {
-      const firstRunway = Object.keys(arrAirport.arrivals)[0];
+      const firstRunway = arrAirport.runways?.[0] ?? Object.keys(arrAirport.arrivals)[0];
       if (firstRunway) {
         const procedure = arrAirport.arrivals[firstRunway][from];
         if (procedure && procedure !== "RADAR VECTORS") star = procedure;
       }
+    }
+
+    // Calculate bearing for odd/even FL recommendation (shared by both paths)
+    const depPoint = allPoints.find(p => p.name === from && p.type === "AIRPORT");
+    const arrPoint = allPoints.find(p => p.name === to && p.type === "AIRPORT");
+    let flParity: "ODD" | "EVEN" | undefined;
+    if (depPoint && arrPoint) {
+      const dx = arrPoint.x - depPoint.x;
+      const dy = depPoint.y - arrPoint.y; // y increases southward so invert
+      let bearing = Math.atan2(dx, dy) * (180 / Math.PI);
+      if (bearing < 0) bearing += 360;
+      flParity = bearing < 180 ? "ODD" : "EVEN";
+    }
+
+    // Radar vectors: skip pathfinding, return direct route
+    if (isRadarVectors) {
+      const path = [depPoint, arrPoint].filter(Boolean);
+      const routeData = { path, distance: 0, route: `${from} ${to}`, sid: undefined, star: undefined, flParity };
+
+      try {
+        await redisConnection.set(cacheKey, JSON.stringify(routeData), "EX", DATA_STATIC_REDIS_SEC);
+      } catch (error) {
+        if (error instanceof Error) {
+          console.warn("[Redis] Failed to set cache for route:", error.message);
+        }
+      }
+
+      applyPublicCache(res, {
+        browserMaxAge: DATA_STATIC_BROWSER_SEC,
+        edgeMaxAge: DATA_STATIC_EDGE_SEC,
+      });
+      return res.json(routeData);
     }
 
     // Extract exit/entry fixes from SID/STAR names (e.g. KATOK2T → KATOK)
@@ -694,18 +829,6 @@ router.get("/findRoute", async (req, res) => {
 
     if (!success) {
       return res.status(404).json({ error: "Route not found" });
-    }
-
-    // Calculate bearing for odd/even FL recommendation
-    const depPoint = allPoints.find(p => p.name === from && p.type === "AIRPORT");
-    const arrPoint = allPoints.find(p => p.name === to && p.type === "AIRPORT");
-    let flParity: "ODD" | "EVEN" | undefined;
-    if (depPoint && arrPoint) {
-      const dx = arrPoint.x - depPoint.x;
-      const dy = depPoint.y - arrPoint.y; // y increases southward so invert
-      let bearing = Math.atan2(dx, dy) * (180 / Math.PI);
-      if (bearing < 0) bearing += 360;
-      flParity = bearing < 180 ? "ODD" : "EVEN";
     }
 
     // Build formatted route string: DEP SID ...waypoints... STAR ARR
@@ -746,15 +869,24 @@ router.get("/findRoute", async (req, res) => {
 });
 
 // GET: /api/data/airports/:icao/status - Get airport status with active controller, flights, runway, and METAR
+// Query param: ?network=pfatc (default) | ?network=aatc
 router.get("/airports/:icao/status", async (req, res) => {
   try {
     const icao = req.params.icao.toUpperCase();
+    const network = typeof req.query.network === "string" ? req.query.network.toLowerCase() : "pfatc";
+
+    if (network !== "pfatc" && network !== "aatc") {
+      return res.status(400).json({ error: "Invalid network. Must be 'pfatc' or 'aatc'." });
+    }
+
+    const networkLabel = network === "aatc" ? "Advanced ATC" : "PFATC";
+    const networkCol = network === "aatc" ? "is_advanced_atc" : "is_pfatc";
 
     const sessions = await mainDb
       .selectFrom("sessions")
       .select(["session_id", "created_by", "active_runway", "created_at"])
       .where("airport_icao", "=", icao)
-      .where((eb) => eb.or([eb("is_pfatc", "=", true), eb("is_advanced_atc", "=", true)]))
+      .where(networkCol, "=", true)
       .orderBy("created_at", "desc")
       .limit(10)
       .execute();
@@ -762,7 +894,7 @@ router.get("/airports/:icao/status", async (req, res) => {
     if (sessions.length === 0) {
       return res.status(404).json({
         error: "No network session found",
-        message: `No PFATC or Advanced ATC controller is currently online at ${icao}`,
+        message: `No ${networkLabel} controller is currently online at ${icao}`,
       });
     }
 
@@ -804,7 +936,7 @@ router.get("/airports/:icao/status", async (req, res) => {
     if (!validSession || !controller) {
       return res.status(404).json({
         error: "No active network session found",
-        message: `No PFATC or Advanced ATC controller with active flights is currently online at ${icao}`,
+        message: `No ${networkLabel} controller with active flights is currently online at ${icao}`,
       });
     }
 

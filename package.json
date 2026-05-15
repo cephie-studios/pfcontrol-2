@@ -24,7 +24,12 @@
     "postinstall": "node scripts/verify-node-modules.mjs"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.3.2",
+    "@deck.gl/geo-layers": "^9.3.2",
+    "@deck.gl/layers": "^9.3.2",
+    "@deck.gl/react": "^9.3.2",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
+    "@math.gl/core": "^4.1.0",
     "@opentelemetry/api-logs": "^0.217.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
     "@opentelemetry/resources": "^2.7.1",
@@ -39,6 +44,7 @@
     "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "deck.gl": "^9.3.2",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
