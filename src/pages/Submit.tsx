@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
@@ -59,13 +59,28 @@ interface AvailableImage {
   extension: string;
 }
 
-export default function Submit() {
+interface SubmitProps {
+  standalone?: boolean;
+}
+
+export default function Submit({ standalone = true }: SubmitProps) {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
   const { user, isLoading: authLoading } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+
+  const goToPath = useCallback(
+    (path: string) => {
+      if (standalone) {
+        navigate(path);
+      } else {
+        window.location.href = path;
+      }
+    },
+    [navigate, standalone]
+  );
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,7 +127,7 @@ export default function Submit() {
       hasAdvancedNetworkFeatures(session) &&
       (settings?.acars?.autoRedirectToAcars ?? true)
     ) {
-      navigate(
+      goToPath(
         `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
       );
     }
@@ -123,25 +138,23 @@ export default function Submit() {
     session,
     settings?.acars?.autoRedirectToAcars,
     sessionId,
-    navigate,
+    goToPath,
     session?.createdBy,
     user?.userId,
   ]);
 
   useEffect(() => {
-    if (!sessionId || initialLoadComplete) return;
+    if (!sessionId) {
+      setLoading(false);
+      return;
+    }
+    if (initialLoadComplete) return;
 
     setLoading(true);
 
-    Promise.all([
-      fetch(
-        `${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`
-      ).then((res) => (res.ok ? res.json() : Promise.reject(res))),
-      fetch(`${import.meta.env.VITE_SERVER_URL}/api/data/settings`).then(
-        (res) => (res.ok ? res.json() : Promise.reject(res))
-      ),
-    ])
-      .then(([sessionData]) => {
+    fetch(`${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((sessionData) => {
         console.log('Session data loaded for submit:', sessionData);
         setSession(sessionData);
         setForm((f) => ({
@@ -385,20 +398,20 @@ export default function Submit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Navbar />
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        {standalone && <Navbar />}
         <Loader />
       </div>
     );
   }
 
   if (!sessionId || !session) {
-    return <AccessDenied errorType="invalid-session" />;
+    return <AccessDenied errorType="invalid-session" standalone={standalone} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white relative">
-      <Navbar />
+      {standalone && <Navbar />}
       <div className="relative w-full h-96 md:h-[32rem] overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -564,7 +577,7 @@ export default function Submit() {
                         setShowRating(false);
                         const acarsPath = `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`;
                         if (user) {
-                          navigate(acarsPath);
+                          goToPath(acarsPath);
                         } else {
                           window.location.href = getDiscordLoginUrl(acarsPath);
                         }

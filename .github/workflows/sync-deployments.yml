@@ -1,0 +1,94 @@
+name: sync-deployments
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_main:
+        description: 'Deploy latest tag on origin/main to pfcontrol.com'
+        type: boolean
+        default: true
+      deploy_canary:
+        description: 'Deploy latest tag on origin/canary to canary.pfcontrol.com'
+        type: boolean
+        default: true
+
+jobs:
+  resolve-main:
+    if: inputs.deploy_main
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      title: ${{ steps.meta.outputs.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve main release tag
+        id: meta
+        run: |
+          git fetch origin main --tags
+          TAG=$(git describe --tags --abbrev=0 origin/main)
+          VERSION="${TAG#v}"
+          TITLE=$(git log -1 --format=%s origin/main)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          {
+            echo "title<<EOF"
+            echo "$TITLE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "main @ $TAG ($VERSION): $TITLE"
+
+  resolve-canary:
+    if: inputs.deploy_canary
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      title: ${{ steps.meta.outputs.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve canary release tag
+        id: meta
+        run: |
+          git fetch origin canary --tags
+          TAG=$(git describe --tags --abbrev=0 origin/canary)
+          VERSION="${TAG#v}"
+          TITLE=$(git log -1 --format=%s origin/canary)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          {
+            echo "title<<EOF"
+            echo "$TITLE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "canary @ $TAG ($VERSION): $TITLE"
+
+  deploy-main:
+    needs: resolve-main
+    if: inputs.deploy_main
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
+    with:
+      channel: main
+      deploy_title: ${{ needs.resolve-main.outputs.title }}
+      deploy_version: ${{ needs.resolve-main.outputs.version }}
+      deploy_description: v${{ needs.resolve-main.outputs.version }} (sync)
+
+  deploy-canary:
+    needs: resolve-canary
+    if: inputs.deploy_canary
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
+    with:
+      channel: canary
+      deploy_title: ${{ needs.resolve-canary.outputs.title }}
+      deploy_version: ${{ needs.resolve-canary.outputs.version }}
+      deploy_description: v${{ needs.resolve-canary.outputs.version }} (sync)

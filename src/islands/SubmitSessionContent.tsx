@@ -1,27 +1,27 @@
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import './loadIslandStyles';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '../hooks/auth/AuthProvider';
 import { DataProvider } from '../hooks/data/DataProvider';
 import { SettingsProvider } from '../hooks/settings/SettingsProvider';
 import Submit from '../pages/Submit';
 import { PostHogProviderWrapper } from './PostHogProviderWrapper';
 
-interface Props {
-  sessionId: string;
-}
-
-export default function SubmitSessionContent({ sessionId }: Props) {
+export default function SubmitSessionContent() {
   return (
     <PostHogProviderWrapper>
       <AuthProvider>
-        <SettingsProvider>
-          <DataProvider>
-            <MemoryRouter initialEntries={[`/submit/${sessionId}`]}>
+        <DataProvider>
+          <SettingsProvider>
+            <BrowserRouter>
               <Routes>
-                <Route path="/submit/:sessionId" element={<Submit />} />
+                <Route
+                  path="/submit/:sessionId"
+                  element={<Submit standalone={false} />}
+                />
               </Routes>
-            </MemoryRouter>
-          </DataProvider>
-        </SettingsProvider>
+            </BrowserRouter>
+          </SettingsProvider>
+        </DataProvider>
       </AuthProvider>
     </PostHogProviderWrapper>
   );

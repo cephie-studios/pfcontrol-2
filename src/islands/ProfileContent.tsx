@@ -1,3 +1,4 @@
+import './loadIslandStyles';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../hooks/auth/AuthProvider';
 import { DataProvider } from '../hooks/data/DataProvider';

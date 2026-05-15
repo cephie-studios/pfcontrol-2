@@ -1,0 +1,84 @@
+name: deploy-release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*'
+
+concurrency:
+  group: deploy-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      title: ${{ steps.meta.outputs.title }}
+      deploy_main: ${{ steps.meta.outputs.deploy_main }}
+      deploy_canary: ${{ steps.meta.outputs.deploy_canary }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag targets
+        id: meta
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          TITLE=$(git log -1 --format=%s "$TAG")
+
+          git fetch origin main canary --tags
+
+          DEPLOY_MAIN=false
+          DEPLOY_CANARY=false
+          if [[ "$(git describe --tags --exact-match origin/main 2>/dev/null || true)" == "$TAG" ]]; then
+            DEPLOY_MAIN=true
+          fi
+          if [[ "$(git describe --tags --exact-match origin/canary 2>/dev/null || true)" == "$TAG" ]]; then
+            DEPLOY_CANARY=true
+          fi
+
+          if [[ "$DEPLOY_MAIN" != "true" && "$DEPLOY_CANARY" != "true" ]]; then
+            echo "Tag $TAG is not the current tip tag on main or canary; skipping."
+            exit 0
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "deploy_main=$DEPLOY_MAIN" >> "$GITHUB_OUTPUT"
+          echo "deploy_canary=$DEPLOY_CANARY" >> "$GITHUB_OUTPUT"
+          {
+            echo "title<<EOF"
+            echo "$TITLE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release $TAG -> main=$DEPLOY_MAIN canary=$DEPLOY_CANARY"
+
+  deploy-main:
+    needs: resolve
+    if: needs.resolve.outputs.deploy_main == 'true'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
+    with:
+      channel: main
+      deploy_title: ${{ needs.resolve.outputs.title }}
+      deploy_version: ${{ needs.resolve.outputs.version }}
+      deploy_description: v${{ needs.resolve.outputs.version }}
+
+  deploy-canary:
+    needs: resolve
+    if: needs.resolve.outputs.deploy_canary == 'true'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
+    with:
+      channel: canary
+      deploy_title: ${{ needs.resolve.outputs.title }}
+      deploy_version: ${{ needs.resolve.outputs.version }}
+      deploy_description: v${{ needs.resolve.outputs.version }}

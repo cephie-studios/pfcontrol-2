@@ -1,3 +1,4 @@
+import './loadIslandStyles';
 import { AuthProvider } from '../hooks/auth/AuthProvider';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';

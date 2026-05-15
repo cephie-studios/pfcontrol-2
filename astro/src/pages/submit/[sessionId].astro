@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchApi } from '../../lib/api';
-import { SPA_SITE_URL } from '../../lib/spaSeo';
+import { getSiteOrigin } from '../../lib/siteOrigin';
+import { buildSubmitSessionSeo } from '../../lib/submitSeo';
 import SubmitSessionContent from '@app/islands/SubmitSessionContent';
 
 interface SubmitSessionPublic {
@@ -13,6 +14,7 @@ interface SubmitSessionPublic {
   createdBy: string;
   flightCount?: number;
   atisLetter?: string;
+  atisText?: string;
   controllerUsername?: string;
 }
 
@@ -30,98 +32,28 @@ if (!session) {
   return new Response(null, { status: 404 });
 }
 
-function truncateMeta(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return `${s.slice(0, max - 1).trimEnd()}…`;
-}
-
-const networkLabel = session.isPFATC
-  ? 'PFATC'
-  : session.isAdvancedATC
-    ? 'Advanced ATC'
-    : 'ATC';
-
-const icao = session.airportIcao?.toUpperCase() ?? 'Unknown';
-const runway = session.activeRunway?.trim();
-const flightsN = typeof session.flightCount === 'number' ? session.flightCount : 0;
-const atis = session.atisLetter?.trim();
-const controller = session.controllerUsername?.trim();
-
-const pageTitle = truncateMeta(
-  `${icao} flight plan — ${networkLabel} session on PFControl`,
-  70
-);
-
-const descParts: string[] = [
-  `Submit your flight plan to ${networkLabel} at ${icao} on PFControl.`,
-];
-if (controller) descParts.push(`Controller ${controller}.`);
-if (runway) descParts.push(`Active runway ${runway}.`);
-if (atis) descParts.push(`Current ATIS ${atis}.`);
-descParts.push(`${flightsN} flight${flightsN === 1 ? '' : 's'} on the board.`);
-descParts.push(`Open pfcontrol.com/submit/${sessionId} to file.`);
-
-const pageDescription = truncateMeta(descParts.join(' '), 320);
-
-const keywordParts = [
-  'PFControl',
-  'flight plan',
-  'submit flight',
-  networkLabel,
-  icao,
-  'ATC',
-  String(sessionId),
-];
-if (controller) keywordParts.push(controller);
-const keywords = [...new Set(keywordParts)].join(', ');
-
-const pageUrl = `${SPA_SITE_URL}/submit/${encodeURIComponent(sessionId)}`;
-
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': `${SPA_SITE_URL}/#website`,
-      name: 'PFControl',
-      url: SPA_SITE_URL,
-    },
-    {
-      '@type': 'WebPage',
-      '@id': `${pageUrl}#webpage`,
-      url: pageUrl,
-      name: pageTitle,
-      description: pageDescription,
-      isPartOf: { '@id': `${SPA_SITE_URL}/#website` },
-      inLanguage: 'en',
-    },
-    {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'PFControl',
-          item: SPA_SITE_URL,
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: `Submit — ${icao}`,
-          item: pageUrl,
-        },
-      ],
-    },
-  ],
-};
+const siteOrigin = getSiteOrigin(Astro.request);
+const seo = buildSubmitSessionSeo(session, siteOrigin);
 ---
 
 <BaseLayout
-  title={pageTitle}
-  description={pageDescription}
-  canonicalUrl={pageUrl}
-  structuredData={structuredData}
-  keywords={keywords}
+  showFooter={false}
+  title={seo.pageTitle}
+  description={seo.pageDescription}
+  ogTitle={seo.ogTitle}
+  twitterTitle={seo.ogTitle}
+  ogDescription={seo.pageDescription}
+  twitterDescription={seo.pageDescription}
+  ogImage={seo.ogImage}
+  ogImageType="image/png"
+  ogImageWidth={1200}
+  ogImageHeight={630}
+  twitterCard="summary_large_image"
+  canonicalUrl={seo.pageUrl}
+  structuredData={seo.structuredData}
+  keywords={seo.keywords}
 >
-  <SubmitSessionContent sessionId={sessionId} client:only="react" />
+  <div class="min-h-screen bg-gray-950">
+    <SubmitSessionContent client:only="react" />
+  </div>
 </BaseLayout>
