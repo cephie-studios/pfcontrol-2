@@ -7,7 +7,6 @@ on:
       - canary
     paths-ignore:
       - 'README.md'
-      - 'VERSION'
   release:
     types: [published]
 
@@ -28,7 +27,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.VERSION_BUMP_PAT }}
           fetch-depth: 0
 
       - name: Capture deploy metadata
@@ -64,10 +62,18 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Read and bump version
+      - name: Compute next version from tags
         id: version
         run: |
-          CURRENT=$(cat VERSION | tr -d '[:space:]')
+          git fetch --tags origin
+
+          LATEST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          if [[ -z "$LATEST_TAG" ]]; then
+            CURRENT="2.0.0.0"
+          else
+            CURRENT="${LATEST_TAG#v}"
+          fi
+
           IFS='.' read -r V1 V2 MINOR PATCH <<< "$CURRENT"
 
           if [[ "${{ github.event_name }}" == "release" ]]; then
@@ -83,18 +89,14 @@ jobs:
           done
 
           NEW_VERSION="$V1.$V2.$MINOR.$PATCH"
-          echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Bumped $CURRENT -> $NEW_VERSION (trigger: ${{ github.event_name }})"
 
-      - name: Commit and tag version bump
+      - name: Create release tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add VERSION
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
-          git tag "v${{ steps.version.outputs.version }}"
-          git push
+          git tag -a "v${{ steps.version.outputs.version }}" -m "v${{ steps.version.outputs.version }}" "${{ github.sha }}"
           git push origin "v${{ steps.version.outputs.version }}"
 
   deploy:
@@ -107,4 +109,5 @@ jobs:
     with:
       channel: ${{ needs.bump.outputs.channel }}
       deploy_title: ${{ needs.bump.outputs.deploy_title }}
+      deploy_version: ${{ needs.bump.outputs.version }}
       deploy_description: v${{ needs.bump.outputs.version }}

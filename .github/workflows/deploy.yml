@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ''
+      deploy_version:
+        description: 'App version baked into the image (without v prefix)'
+        required: false
+        type: string
+        default: ''
       deploy_description:
         description: 'Dokploy deployment description (e.g. version tag)'
         required: false
@@ -26,6 +31,11 @@ on:
         default: ''
       deploy_title:
         description: 'Dokploy deployment title'
+        required: false
+        type: string
+        default: ''
+      deploy_version:
+        description: 'App version baked into the image (without v prefix)'
         required: false
         type: string
         default: ''
@@ -96,6 +106,43 @@ jobs:
       url: ${{ needs.resolve.outputs.environment_url }}
 
     steps:
+      - name: Configure Dokploy build version
+        if: inputs.deploy_version != ''
+        env:
+          DEPLOY_VERSION: ${{ inputs.deploy_version }}
+        run: |
+          case "${{ needs.resolve.outputs.channel }}" in
+            canary) APP_ID="IIakyrrLChtjnjuKKVFiB" ;;
+            main)   APP_ID="C4Vzp1quDF4mKt2AQPjkU" ;;
+            *)
+              echo "Unknown channel: ${{ needs.resolve.outputs.channel }}" >&2
+              exit 1
+              ;;
+          esac
+
+          API_BASE="https://${{ secrets.DOKPLOY_HOST }}/api"
+          AUTH=(-H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}")
+
+          CURRENT_ARGS=""
+          CURRENT_ENV=""
+          if APP_JSON=$(curl -fsS "${API_BASE}/application.one?applicationId=${APP_ID}" "${AUTH[@]}"); then
+            CURRENT_ARGS=$(echo "$APP_JSON" | jq -r '.buildArgs // empty')
+            CURRENT_ENV=$(echo "$APP_JSON" | jq -r '.env // empty')
+          fi
+
+          NEW_ARGS=$(printf '%s\n' "$CURRENT_ARGS" | grep -v '^APP_VERSION=' | sed '/^$/d')
+          NEW_ARGS="${NEW_ARGS}"$'\n'"APP_VERSION=${DEPLOY_VERSION}"
+
+          curl -fsS -X POST "${API_BASE}/application.saveEnvironment" \
+            "${AUTH[@]}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg applicationId "$APP_ID" \
+              --arg buildArgs "$NEW_ARGS" \
+              --arg env "$CURRENT_ENV" \
+              '{applicationId: $applicationId, buildArgs: $buildArgs}
+               + (if ($env | length) > 0 then {env: $env} else {} end)')"
+
       - name: Trigger Dokploy deploy
         env:
           DEPLOY_TITLE: ${{ inputs.deploy_title }}
