@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { mainDb } from './connection.js';
-import { DEPLOYMENT } from '../utils/cacheTtl.js';
+import type Redis from 'ioredis';
+import { DEPLOYMENT, prefixKey } from '../utils/cacheTtl.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -805,7 +806,7 @@ export async function ensureAppSettingsChannelColumn() {
   `.execute(mainDb);
 }
 
-export async function syncVersionFromEnv() {
+export async function syncVersionFromEnv(redis?: Redis) {
   const envVersion = process.env.APP_VERSION?.trim();
   if (!envVersion) {
     return;
@@ -828,12 +829,12 @@ export async function syncVersionFromEnv() {
     )
     .execute();
 
-  try {
-    const { redisConnection } = await import('./connection.js');
-    const { prefixKey } = await import('../utils/cacheTtl.js');
-    await redisConnection.del(prefixKey('app:version'));
-  } catch (error) {
-    console.warn('[Version] Failed to invalidate version cache:', error);
+  if (redis) {
+    try {
+      await redis.del(prefixKey('app:version'));
+    } catch (error) {
+      console.warn('[Version] Failed to invalidate version cache:', error);
+    }
   }
 
   console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${envVersion}`);
