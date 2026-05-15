@@ -1,9 +1,8 @@
 import io from 'socket.io-client';
+import { getClientApiBase } from '../utils/clientApiBase';
 
 export function createNotificationsSocket(onUpdate: () => void) {
-  const base =
-    import.meta.env.VITE_SERVER_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : '');
+  const base = getClientApiBase();
   const socket = io(base, {
     withCredentials: true,
     path: '/sockets/notifications',

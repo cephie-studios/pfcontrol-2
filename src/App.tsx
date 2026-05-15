@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
@@ -22,8 +22,7 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AccessDenied from "./components/AccessDenied";
 import Loader from "./components/common/Loader";
-import UpdateOverviewModal from "./components/modals/UpdateOverviewModal";
-import CanaryModal from "./components/modals/CanaryModal";
+import AppOverlays from "./components/AppOverlays";
 import PostHogPageView from "./components/PostHogPageView";
 
 const Admin = lazy(() => import("./pages/Admin"));
@@ -47,105 +46,13 @@ const DeveloperConsole = lazy(() => import("./pages/developers/Console"));
 const DeveloperKeys = lazy(() => import("./pages/developers/Keys"));
 const DeveloperDocs = lazy(() => import("./pages/developers/Docs"));
 
-import { fetchActiveUpdateModal, type UpdateModal } from "./utils/fetch/updateModal";
-import { getTesterSettings } from "./utils/fetch/data";
-
 export default function App() {
   const { user } = useAuth();
-  const [testerGateEnabled, setTesterGateEnabled] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
-
-  const shouldBypassTesterGate = () => {
-    return window.location.hostname === "pfcontrol.com";
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchActiveUpdateModal()
-        .then((modal) => {
-          if (modal) {
-            try {
-              const seenModals = JSON.parse(localStorage.getItem("seenUpdateModals") || "[]");
-              const hasSeenThisModal = seenModals.includes(modal.id);
-
-              if (!hasSeenThisModal) {
-                setActiveModal(modal);
-                setShowUpdateModal(true);
-              }
-            } catch (error) {
-              console.warn("localStorage not available, showing modal:", error);
-              setActiveModal(modal);
-              setShowUpdateModal(true);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching active update modal:", error);
-        });
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const checkGateStatus = async () => {
-      try {
-        // Bypass tester gate for pfcontrol.com
-        if (shouldBypassTesterGate()) {
-          setTesterGateEnabled(false);
-          return;
-        }
-
-        const settings = await getTesterSettings();
-
-        if (settings) {
-          setTesterGateEnabled(settings.tester_gate_enabled);
-        } else {
-          console.error("Failed to fetch tester settings or invalid response:", settings);
-          setTesterGateEnabled(true);
-        }
-      } catch (error) {
-        console.error("Error fetching tester settings:", error);
-        setTesterGateEnabled(true);
-      }
-    };
-
-    checkGateStatus().then();
-  }, []);
-
-  const handleCloseModal = () => {
-    setShowUpdateModal(false);
-
-    if (activeModal) {
-      try {
-        const seenModals = JSON.parse(localStorage.getItem("seenUpdateModals") || "[]");
-        if (!seenModals.includes(activeModal.id)) {
-          seenModals.push(activeModal.id);
-          localStorage.setItem("seenUpdateModals", JSON.stringify(seenModals));
-        }
-      } catch (error) {
-        console.warn("Could not save to localStorage:", error);
-      }
-    }
-  };
 
   return (
     <Router>
       <PostHogPageView />
-      <CanaryModal />
-
-      {activeModal &&
-        (!testerGateEnabled ||
-          shouldBypassTesterGate() ||
-          (testerGateEnabled && user?.isTester) ||
-          user?.isAdmin) && (
-          <UpdateOverviewModal
-            isOpen={showUpdateModal}
-            onClose={handleCloseModal}
-            title={activeModal.title}
-            content={activeModal.content}
-            bannerUrl={activeModal.banner_url}
-          />
-        )}
+      <AppOverlays />
 
       {user && user.isBanned ? (
         <AccessDenied errorType="banned" />

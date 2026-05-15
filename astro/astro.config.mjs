@@ -24,7 +24,12 @@ const posthogHost =
   rootViteEnv.VITE_POSTHOG_HOST ??
   process.env.VITE_POSTHOG_HOST ??
   'https://us.i.posthog.com';
-const astroClientApiBase = '';
+const astroClientApiBase =
+  mode === 'production'
+    ? ''
+    : (rootViteEnv.VITE_SERVER_URL ??
+      process.env.VITE_SERVER_URL ??
+      'http://localhost:9901');
 
 const SITE = 'https://pfcontrol.com';
 
