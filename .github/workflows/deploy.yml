@@ -36,18 +36,21 @@ on:
         default: ''
 
 jobs:
-  deploy:
+  resolve:
     runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.meta.outputs.channel }}
+      environment_url: ${{ steps.meta.outputs.environment_url }}
 
     steps:
       - name: Checkout repository
-        if: inputs.channel == '' && github.event_name == 'workflow_dispatch'
+        if: inputs.channel == ''
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Resolve deploy channel
-        id: channel
+        id: meta
         run: |
           CHANNEL="${{ inputs.channel }}"
           if [[ -z "$CHANNEL" ]]; then
@@ -71,19 +74,38 @@ jobs:
             echo "Invalid channel: $CHANNEL" >&2
             exit 1
           fi
-          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-          echo "Deploying to $CHANNEL"
 
+          case "$CHANNEL" in
+            main)   ENVIRONMENT_URL="https://pfcontrol.com" ;;
+            canary) ENVIRONMENT_URL="https://canary.pfcontrol.com" ;;
+          esac
+
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "environment_url=$ENVIRONMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "Deploying to $CHANNEL ($ENVIRONMENT_URL)"
+
+  deploy:
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    environment:
+      name: ${{ needs.resolve.outputs.channel }}
+      url: ${{ needs.resolve.outputs.environment_url }}
+
+    steps:
       - name: Trigger Dokploy deploy
         env:
           DEPLOY_TITLE: ${{ inputs.deploy_title }}
           DEPLOY_DESCRIPTION: ${{ inputs.deploy_description }}
         run: |
-          case "${{ steps.channel.outputs.channel }}" in
+          case "${{ needs.resolve.outputs.channel }}" in
             canary) APP_ID="IIakyrrLChtjnjuKKVFiB" ;;
             main)   APP_ID="C4Vzp1quDF4mKt2AQPjkU" ;;
             *)
-              echo "Unknown channel: ${{ steps.channel.outputs.channel }}" >&2
+              echo "Unknown channel: ${{ needs.resolve.outputs.channel }}" >&2
               exit 1
               ;;
           esac

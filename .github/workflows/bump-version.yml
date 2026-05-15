@@ -101,6 +101,9 @@ jobs:
     needs: bump
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
+    permissions:
+      contents: read
+      deployments: write
     with:
       channel: ${{ needs.bump.outputs.channel }}
       deploy_title: ${{ needs.bump.outputs.deploy_title }}
