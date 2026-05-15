@@ -20,23 +20,24 @@ import {
   Plane,
   HelpCircle,
   TowerControl,
-} from 'lucide-react';
-import { createFlightsSocket } from '../sockets/flightsSocket';
-import { addFlight } from '../utils/fetch/flights';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
-import type { Flight } from '../types/flight';
-import AirportDropdown from '../components/dropdowns/AirportDropdown';
-import Dropdown from '../components/common/Dropdown';
-import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
-import Loader from '../components/common/Loader';
-import AccessDenied from '../components/AccessDenied';
-import CallsignInput from '../components/common/CallsignInput';
-import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
-import Modal from '../components/common/Modal';
-import { getDiscordLoginUrl } from '../utils/fetch/auth';
-import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
+} from "lucide-react";
+import { createFlightsSocket } from "../sockets/flightsSocket";
+import { addFlight } from "../utils/fetch/flights";
+import { useAuth } from "../hooks/auth/useAuth";
+import { useSettings } from "../hooks/settings/useSettings";
+import { fetchBackgrounds, fetchRoute } from "../utils/fetch/data";
+import type { Flight } from "../types/flight";
+import AirportDropdown from "../components/dropdowns/AirportDropdown";
+import Dropdown from "../components/common/Dropdown";
+import AircraftDropdown from "../components/dropdowns/AircraftDropdown";
+import Loader from "../components/common/Loader";
+import AccessDenied from "../components/AccessDenied";
+import CallsignInput from "../components/common/CallsignInput";
+import ControllerRatingPopup from "../components/tools/ControllerRatingPopup";
+import Modal from "../components/common/Modal";
+import { getDiscordLoginUrl } from "../utils/fetch/auth";
+import { hasAdvancedNetworkFeatures } from "../utils/sessionKind";
+import RouteMap from "../components/map/RouteMap";
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -103,13 +104,11 @@ export default function Submit({ standalone = true }: SubmitProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
-  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(
-    null
-  );
+  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(null);
+  const [routeSid, setRouteSid] = useState<string | undefined>();
+  const [routeStar, setRouteStar] = useState<string | undefined>();
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-  const [flightsSocket, setFlightsSocket] = useState<ReturnType<
-    typeof createFlightsSocket
-  > | null>(null);
+  const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
@@ -385,6 +384,8 @@ export default function Submit({ standalone = true }: SubmitProps) {
       if (routeData.success) {
         setForm((f) => ({ ...f, route: routeData.route }));
         setRouteFlParity(routeData.flParity ?? null);
+        setRouteSid(routeData.sid);
+        setRouteStar(routeData.star);
       } else {
         setError('Failed to generate a route. Please try again.');
       }
@@ -740,7 +741,11 @@ export default function Submit({ standalone = true }: SubmitProps) {
                     type="text"
                     name="route"
                     value={form.route}
-                    onChange={(e) => handleChange('route')(e.target.value)}
+                    onChange={(e) => {
+                      handleChange("route")(e.target.value)
+                      setRouteSid(undefined)
+                      setRouteStar(undefined)
+                    }}
                     placeholder="e.g. HAZEL NOVMA LEDGO"
                     className="flex items-center w-full pl-6 pr-28 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                   />
@@ -760,6 +765,18 @@ export default function Submit({ standalone = true }: SubmitProps) {
                   </button>
                 </div>
               </div>
+              {form.route.trim() && (
+                <div className="rounded-2xl overflow-hidden border border-gray-700" style={{ height: '320px' }}>
+                  <RouteMap
+                    route={form.route}
+                    departure={form.departure}
+                    arrival={form.arrival}
+                    sid={routeSid}
+                    star={routeStar}
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
                   <StickyNote className="h-4 w-4 mr-2 text-gray-400" />

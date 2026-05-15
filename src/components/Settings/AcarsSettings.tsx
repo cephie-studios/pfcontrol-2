@@ -362,7 +362,7 @@ export default function AcarsSettings({
                       </p>
                       <p className="text-zinc-500 text-xs">
                         Automatically open ACARS after submitting flight plan
-                        (PFATC sessions only)
+                        (Network sessions only)
                       </p>
                     </div>
                   </div>

@@ -24,7 +24,12 @@
     "postinstall": "node scripts/verify-node-modules.mjs"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.3.2",
+    "@deck.gl/geo-layers": "^9.3.2",
+    "@deck.gl/layers": "^9.3.2",
+    "@deck.gl/react": "^9.3.2",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
+    "@math.gl/core": "^4.1.0",
     "@fontsource/inter": "^5.2.8",
     "@opentelemetry/api-logs": "^0.217.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.215.0",
@@ -41,6 +46,7 @@
     "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "deck.gl": "^9.3.2",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
@@ -81,6 +87,19 @@
       "react-dom": "$react-dom"
     },
     "@jridgewell/sourcemap-codec": "1.5.5"
+  },
+  "optionalDependencies": {
+    "@esbuild/linux-x64": "0.27.7",
+    "@img/sharp-libvips-linux-x64": "1.2.4",
+    "@img/sharp-linux-x64": "0.34.5",
+    "@oxfmt/binding-linux-x64-gnu": "0.46.0",
+    "@oxlint/binding-linux-x64-gnu": "1.61.0",
+    "@resvg/resvg-js-linux-x64-gnu": "2.6.2",
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.15",
+    "@rollup/rollup-linux-x64-gnu": "4.60.3",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
+    "@voidzero-dev/vite-plus-linux-x64-gnu": "0.1.20",
+    "lightningcss-linux-x64-gnu": "1.32.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

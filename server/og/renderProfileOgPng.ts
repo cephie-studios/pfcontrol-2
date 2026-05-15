@@ -1,7 +1,6 @@
 import { createElement } from 'react';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import sharp from 'sharp';
 import type { PublicPilotProfile } from '../services/publicPilotProfile.js';
 import {
   ProfileOgCard,
@@ -11,34 +10,13 @@ import {
 } from './ProfileOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
 import { loadOgLinkIcons } from './ogLinkIcons.js';
+import { toSatoriSafeDataUrl } from './toSatoriSafeDataUrl.js';
 
 const OG_W = 1200;
 const OG_H = 630;
 
 const TRANSPARENT_PNG_DATA_URL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-
-function dataUrlToBuffer(dataUrl: string): Buffer {
-  const comma = dataUrl.indexOf(',');
-  return Buffer.from(dataUrl.slice(comma + 1), 'base64');
-}
-
-export async function toSatoriSafeDataUrl(
-  dataUrl: string | null
-): Promise<string | null> {
-  if (!dataUrl) return null;
-  const needsConvert =
-    dataUrl.startsWith('data:image/webp') ||
-    dataUrl.startsWith('data:image/avif') ||
-    dataUrl.startsWith('data:image/svg+xml');
-  if (!needsConvert) return dataUrl;
-  try {
-    const pngBuf = await sharp(dataUrlToBuffer(dataUrl)).png().toBuffer();
-    return `data:image/png;base64,${pngBuf.toString('base64')}`;
-  } catch {
-    return null;
-  }
-}
 
 function discordDefaultAvatarUrl(userId: string): string {
   try {

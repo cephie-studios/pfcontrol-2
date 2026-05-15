@@ -1,10 +1,9 @@
 import { createElement } from 'react';
 import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
 import type { PublicSubmitSession } from '../services/publicSubmitSession.js';
 import { SubmitOgCard, type SubmitOgCardProps } from './SubmitOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
-import { toSatoriSafeDataUrl } from './renderProfileOgPng.js';
+import { toSatoriSafeDataUrl } from './toSatoriSafeDataUrl.js';
 
 const OG_W = 1200;
 const OG_H = 630;
@@ -86,6 +85,7 @@ export async function renderPublicSubmitOgPng(
     fonts,
   });
 
+  const { Resvg } = await import('@resvg/resvg-js');
   const resvg = new Resvg(svg, {
     fitTo: {
       mode: 'width',
