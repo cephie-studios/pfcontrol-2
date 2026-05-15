@@ -9,7 +9,7 @@
     "prod": "cross-env NODE_ENV=production node server/dist/main.js",
     "generate:developer-docs": "tsx scripts/generate-developer-api-docs.ts",
     "prepare": "node scripts/install-hooks.mjs",
-    "precommit": "npm audit --audit-level=high && npm run generate:developer-docs",
+    "precommit": "npm audit --audit-level=high",
     "build": "npm run build:server && npm run build:astro && npm run generate:developer-docs && vp build --mode production",
     "build:server": "tsc --project server/tsconfig.json",
     "build:astro": "cd astro && npm install && npx astro build",

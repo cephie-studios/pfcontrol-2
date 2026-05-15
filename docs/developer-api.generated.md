@@ -1,6 +1,6 @@
 # Developer API (generated)
 
-> Generated at **2026-05-14T20:15:32.050Z**. Do not edit by hand - run `npm run generate:developer-docs` or `npm run build`.
+> Generated at **2026-05-15T08:53:39.729Z**. Do not edit by hand - run `npm run generate:developer-docs` or `npm run build`.
 
 ## Overview
 
