@@ -25,6 +25,8 @@ export interface ProfileOgCardProps {
 const W = 1200;
 const H = 630;
 const BORDER_RADIUS = 25;
+const LINK_ICON_SIZE = 22;
+const VATSIM_ICON_SIZE = 26;
 
 export function ProfileOgCard({
   username,
@@ -231,8 +233,16 @@ export function ProfileOgCard({
                 >
                   <img
                     src={link.iconDataUrl}
-                    width={18}
-                    height={18}
+                    width={
+                      link.platform === 'vatsim'
+                        ? VATSIM_ICON_SIZE
+                        : LINK_ICON_SIZE
+                    }
+                    height={
+                      link.platform === 'vatsim'
+                        ? VATSIM_ICON_SIZE
+                        : LINK_ICON_SIZE
+                    }
                     style={{ objectFit: 'contain' }}
                   />
                   <span>{link.detail}</span>
@@ -250,8 +260,8 @@ export function ProfileOgCard({
                   {ratingIconDataUrl ? (
                     <img
                       src={ratingIconDataUrl}
-                      width={18}
-                      height={18}
+                      width={LINK_ICON_SIZE}
+                      height={LINK_ICON_SIZE}
                       style={{ objectFit: 'contain' }}
                     />
                   ) : null}

@@ -10,7 +10,7 @@ import {
   type ProfileOgCardProps,
 } from './ProfileOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
-import { getOgLinkIcons } from './ogLinkIcons.js';
+import { loadOgLinkIcons } from './ogLinkIcons.js';
 
 const OG_W = 1200;
 const OG_H = 630;
@@ -233,14 +233,11 @@ export async function renderPublicProfileOgPng(
   const safeAvatar =
     (await toSatoriSafeDataUrl(avatarDataUrl)) ?? TRANSPARENT_PNG_DATA_URL;
   const safeBackground = await toSatoriSafeDataUrl(backgroundDataUrl);
-  const rawIcons = getOgLinkIcons();
+  const rawIcons = await loadOgLinkIcons();
   const icons: OgLinkIcons = {
-    roblox:
-      (await toSatoriSafeDataUrl(rawIcons.roblox)) ?? rawIcons.roblox,
-    vatsim:
-      (await toSatoriSafeDataUrl(rawIcons.vatsim ?? rawIcons.roblox)) ??
-      rawIcons.roblox,
-    star: (await toSatoriSafeDataUrl(rawIcons.star)) ?? rawIcons.star,
+    roblox: rawIcons.roblox,
+    vatsim: rawIcons.vatsim,
+    star: rawIcons.star,
   };
   const props = buildProfileOgCardProps(
     profile,

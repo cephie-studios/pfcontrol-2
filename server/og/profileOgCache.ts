@@ -11,7 +11,7 @@ const REDIS_TTL_SEC = Math.min(
   30 * 24 * 60 * 60
 );
 
-const REDIS_KEY_PREFIX = 'og:profile:png:v6:';
+const REDIS_KEY_PREFIX = 'og:profile:png:v7:';
 
 const HTTP_MAX_AGE_SEC = Math.min(
   REDIS_TTL_SEC,
