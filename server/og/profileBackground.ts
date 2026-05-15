@@ -13,6 +13,10 @@ const IMAGE_EXT = new Set([
   '.svg',
 ]);
 
+export type ResolvedBackground =
+  | { kind: 'local'; filePath: string }
+  | { kind: 'remote'; url: string };
+
 function backgroundsDir(): string {
   return path.join(process.cwd(), 'public', 'assets', 'app', 'backgrounds');
 }
@@ -38,24 +42,33 @@ type BackgroundImageJson = {
   useCustomBackground?: boolean;
 };
 
-function resolveFilenameToUrl(
+function resolveFilename(
   filename: string,
   frontendBase: string
-): string | null {
+): ResolvedBackground | null {
   if (!filename || filename === 'random' || filename === 'favorites') {
     return null;
   }
   if (/^https?:\/\//i.test(filename)) {
-    return filename;
+    return { kind: 'remote', url: filename };
   }
-  const base = frontendBase.replace(/\/$/, '');
-  return `${base}/assets/app/backgrounds/${filename}`;
+
+  const localPath = path.join(backgroundsDir(), filename);
+  if (fs.existsSync(localPath)) {
+    return { kind: 'local', filePath: localPath };
+  }
+  // File not found locally — fall back to the hero image.
+  const heroPath = path.join(process.cwd(), 'public', 'assets', 'images', 'hero.webp');
+  if (fs.existsSync(heroPath)) {
+    return { kind: 'local', filePath: heroPath };
+  }
+  return null;
 }
 
-export function resolveProfileBackgroundImageUrl(
+export function resolveProfileBackground(
   profile: PublicPilotProfile,
   frontendBase: string
-): string | null {
+): ResolvedBackground | null {
   if (!profile.privacySettings.displayBackgroundOnProfile) {
     return null;
   }
@@ -72,7 +85,7 @@ export function resolveProfileBackgroundImageUrl(
     const files = listBackgroundFilenames();
     if (!files.length) return null;
     const pick = files[stableIndex(seed, files.length)]!;
-    return resolveFilenameToUrl(pick, frontendBase);
+    return resolveFilename(pick, frontendBase);
   }
 
   if (selected === 'favorites') {
@@ -84,8 +97,8 @@ export function resolveProfileBackgroundImageUrl(
     if (!favs.length) return null;
     const sorted = [...favs].sort();
     const pick = sorted[stableIndex(seed, sorted.length)]!;
-    return resolveFilenameToUrl(pick, frontendBase);
+    return resolveFilename(pick, frontendBase);
   }
 
-  return resolveFilenameToUrl(selected, frontendBase);
+  return resolveFilename(selected, frontendBase);
 }

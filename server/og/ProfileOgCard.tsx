@@ -22,7 +22,7 @@ export interface ProfileOgCardProps {
 
 const W = 1200;
 const H = 630;
-const BORDER_RADIUS = 15;
+const BORDER_RADIUS = 25;
 
 export function ProfileOgCard({
   username,

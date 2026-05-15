@@ -1,6 +1,7 @@
+import fs from 'node:fs';
 import express from 'express';
 import { getPublicPilotProfile } from '../services/publicPilotProfile.js';
-import { resolveProfileBackgroundImageUrl } from '../og/profileBackground.js';
+import { resolveProfileBackground } from '../og/profileBackground.js';
 import {
   fetchAvatarDataUrl,
   fetchUrlAsDataUrl,
@@ -38,10 +39,26 @@ router.get('/profile/:username', async (req, res) => {
         .trim()
         .replace(/\/$/, '') || 'https://pfcontrol.com';
     const avatarDataUrl = await fetchAvatarDataUrl(profile);
-    const bgUrl = resolveProfileBackgroundImageUrl(profile, frontendBase);
-    const backgroundDataUrl = bgUrl
-      ? ((await fetchUrlAsDataUrl(bgUrl)) ?? null)
-      : null;
+    const resolvedBg = resolveProfileBackground(profile, frontendBase);
+    let backgroundDataUrl: string | null = null;
+    if (resolvedBg) {
+      if (resolvedBg.kind === 'local') {
+        try {
+          const buf = fs.readFileSync(resolvedBg.filePath);
+          const ext = resolvedBg.filePath.split('.').pop()?.toLowerCase() ?? 'png';
+          const mime =
+            ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+            ext === 'webp' ? 'image/webp' :
+            ext === 'gif' ? 'image/gif' :
+            'image/png';
+          backgroundDataUrl = `data:${mime};base64,${buf.toString('base64')}`;
+        } catch {
+          backgroundDataUrl = null;
+        }
+      } else {
+        backgroundDataUrl = (await fetchUrlAsDataUrl(resolvedBg.url)) ?? null;
+      }
+    }
     const png = await renderPublicProfileOgPng(
       profile,
       avatarDataUrl,

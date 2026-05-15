@@ -112,13 +112,76 @@ function truncateMeta(s: string, max: number): string {
   return `${s.slice(0, max - 1).trimEnd()}…`;
 }
 
-const pageTitle = `${user.username} · PFControl profile`;
-const ogTitle = `${user.username} · PFControl`;
+function stripHtml(s: string): string {
+  return s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
-const pageDescription = truncateMeta(
-  `${user.username} on PFControl — pilot & ATC profile.`,
-  200
-);
+function getStat(stats: Record<string, unknown>, key: string): number | null {
+  const val = stats?.[key];
+  if (typeof val === 'number') return val;
+  if (typeof val === 'object' && val !== null) {
+    const nested = (val as Record<string, unknown>)['total'];
+    if (typeof nested === 'number') return nested;
+  }
+  return null;
+}
+
+function fmtTime(rawMins: number): string {
+  const mins = Math.floor(rawMins);
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+  }
+  return `${mins}m`;
+}
+
+const topRole = user.roles?.[0]?.name ?? null;
+const plainBio = user.bio ? stripHtml(user.bio) : '';
+const bioSnippet = plainBio ? truncateMeta(plainBio, 120) : null;
+
+const pageTitle = topRole
+  ? `${user.username} — ${topRole} · PFControl`
+  : `${user.username} · PFControl`;
+const ogTitle = pageTitle;
+
+const descParts: string[] = [];
+
+if (bioSnippet) {
+  descParts.push(`"${bioSnippet}"`);
+}
+
+const roleLine = topRole
+  ? user.is_admin
+    ? `${topRole} · PFControl Team`
+    : topRole
+  : user.is_admin
+  ? 'PFControl Team'
+  : null;
+if (roleLine) descParts.push(roleLine);
+
+if (privacySettings.displayPilotStatsOnProfile) {
+  const sessions = getStat(user.statistics, 'total_sessions_created');
+  const flights = getStat(user.statistics, 'total_flights_submitted');
+  const ctrlMins = getStat(user.statistics, 'total_time_controlling_minutes');
+  const statBits: string[] = [];
+  if (sessions != null) statBits.push(`${sessions.toLocaleString('en-US')} sessions`);
+  if (flights != null) statBits.push(`${flights.toLocaleString('en-US')} flights`);
+  if (ctrlMins != null) statBits.push(`${fmtTime(ctrlMins)} ATC`);
+  if (statBits.length > 0) descParts.push(statBits.join(' · '));
+}
+
+descParts.push(`Member since ${memberSince}`);
+
+if (
+  privacySettings.displayLinkedAccountsOnProfile &&
+  user.vatsim_cid &&
+  user.vatsim_rating_short
+) {
+  descParts.push(`VATSIM ${user.vatsim_rating_short}`);
+}
+
+const pageDescription = truncateMeta(descParts.join(' — '), 200);
 
 const ogImagePng = `${siteOrigin}/api/og/profile/${encodeURIComponent(user.username)}`;
 
@@ -155,9 +218,7 @@ if (privacySettings.displayLinkedAccountsOnProfile && user.vatsim_cid) {
 const knowsAbout: string[] = [...(user.roles?.map((r) => r.name) ?? [])];
 if (user.vatsim_rating_long) knowsAbout.push(user.vatsim_rating_long);
 
-const personDescription =
-  pageDescription ||
-  `${user.username} on PFControl. Member since ${memberSince}.`;
+const personDescription = pageDescription;
 
 const personNode: Record<string, unknown> = {
   '@type': 'Person',
