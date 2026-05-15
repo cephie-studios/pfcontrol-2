@@ -1,0 +1,49 @@
+name: deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve deploy channel
+        id: channel
+        run: |
+          git fetch origin main canary
+          SHA="${{ github.sha }}"
+          if git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+            CHANNEL=main
+          elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
+            CHANNEL=canary
+          else
+            echo "Tagged commit is not on origin/main or origin/canary" >&2
+            exit 1
+          fi
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${{ github.ref_name }} to $CHANNEL (commit $SHA)"
+
+      - name: Trigger Dokploy deploy (canary)
+        if: steps.channel.outputs.channel == 'canary'
+        run: |
+          curl -fsS -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "IIakyrrLChtjnjuKKVFiB"}'
+
+      - name: Trigger Dokploy deploy (main)
+        if: steps.channel.outputs.channel == 'main'
+        run: |
+          curl -fsS -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "C4Vzp1quDF4mKt2AQPjkU"}'

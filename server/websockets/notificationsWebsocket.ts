@@ -11,6 +11,7 @@ export function setupNotificationsWebsocket(httpServer: Server) {
     cors: {
       origin: [
         'http://localhost:5173',
+        'http://localhost:4321',
         'http://localhost:9901',
         'https://pfcontrol.com',
         'https://canary.pfcontrol.com',

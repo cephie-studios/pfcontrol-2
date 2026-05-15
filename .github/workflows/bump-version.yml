@@ -58,19 +58,3 @@ jobs:
           git tag "v${{ steps.version.outputs.version }}"
           git push
           git push origin "v${{ steps.version.outputs.version }}"
-
-      - name: Trigger Dokploy deploy (canary)
-        if: github.ref_name == 'canary'
-        run: |
-          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId": "IIakyrrLChtjnjuKKVFiB"}'
-
-      - name: Trigger Dokploy deploy (main)
-        if: github.ref_name == 'main'
-        run: |
-          curl -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId": "C4Vzp1quDF4mKt2AQPjkU"}'

@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchApi } from '../../lib/api';
+import { getSiteOrigin } from '../../lib/siteOrigin';
+import { SPA_SITE_URL } from '../../lib/spaSeo';
 import ProfileContent from '@app/islands/ProfileContent';
 
 interface Role {
@@ -70,35 +72,15 @@ if (!profile) {
 
 const { user, privacySettings, featuredFlights } = profile;
 
-type Statistics = Record<string, unknown>;
-
-function getStat(stats: Statistics, key: string): number | null {
-  const val = stats?.[key];
-  if (typeof val === 'number') return val;
-  if (typeof val === 'object' && val !== null) {
-    const nested = (val as Record<string, unknown>)['total'];
-    if (typeof nested === 'number') return nested;
-  }
-  return null;
-}
-
-function formatTimeControlling(rawMins: number | null): string {
-  if (rawMins === null) return '—';
-  const mins = Math.floor(rawMins);
-  if (mins >= 60) {
-    const h = Math.floor(mins / 60);
-    const rem = mins % 60;
-    return rem === 0 ? `${h}h` : `${h}h ${rem}min`;
-  }
-  return `${mins} min`;
-}
+const siteOrigin = getSiteOrigin(Astro.request);
 
 function getDiscordAvatar(
   userId: string,
   avatarHash: string | null,
-  size = 256
+  size: number,
+  assetOrigin: string
 ): string {
-  if (!avatarHash) return '/assets/app/default/avatar.webp';
+  if (!avatarHash) return `${assetOrigin}/assets/app/default/avatar.webp`;
   return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=${size}`;
 }
 
@@ -114,18 +96,9 @@ function formatMemberSince(dateStr: string): string {
   }
 }
 
-const avatarUrl = getDiscordAvatar(user.id, user.avatar);
 const memberSince = formatMemberSince(user.member_since);
-const profileUrl = `https://pfcontrol.com/user/${user.username}`;
-
-function toPlainText(s: string): string {
-  return s
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const plainBio = user.bio ? toPlainText(user.bio) : '';
+const profileUrl = `${siteOrigin}/user/${user.username}`;
+const avatarUrl = getDiscordAvatar(user.id, user.avatar, 256, siteOrigin);
 const rolesText =
   user.roles?.length > 0
     ? user.roles
@@ -134,63 +107,83 @@ const rolesText =
         .join(', ')
     : '';
 
-const sessionsN = privacySettings.displayPilotStatsOnProfile
-  ? getStat(user.statistics, 'total_sessions_created')
-  : null;
-const flightsN = privacySettings.displayPilotStatsOnProfile
-  ? getStat(user.statistics, 'total_flights_submitted')
-  : null;
-const ctrlMins = privacySettings.displayPilotStatsOnProfile
-  ? getStat(user.statistics, 'total_time_controlling_minutes')
-  : null;
-
-const statsBits: string[] = [];
-if (sessionsN != null)
-  statsBits.push(`${sessionsN.toLocaleString('en-US')} sessions created`);
-if (flightsN != null)
-  statsBits.push(`${flightsN.toLocaleString('en-US')} flights submitted`);
-if (ctrlMins != null)
-  statsBits.push(`${formatTimeControlling(ctrlMins)} controlling`);
-
-const statsSentence =
-  statsBits.length > 0 ? `Stats: ${statsBits.join('; ')}.` : '';
-
 function truncateMeta(s: string, max: number): string {
   if (s.length <= max) return s;
   return `${s.slice(0, max - 1).trimEnd()}…`;
 }
 
-const pageTitle = `${user.username} on PFControl — pilot & ATC profile`;
-
-const descParts: string[] = [
-  `${user.username} on PFControl — public pilot and air traffic control profile.`,
-];
-if (plainBio) descParts.push(plainBio);
-if (rolesText) descParts.push(`Roles: ${rolesText}.`);
-descParts.push(`Member since ${memberSince}.`);
-if (user.is_admin) descParts.push('PFControl platform team.');
-if (privacySettings.displayLinkedAccountsOnProfile) {
-  if (user.roblox_username) descParts.push(`Roblox: ${user.roblox_username}.`);
-  if (user.vatsim_cid)
-    descParts.push(
-      `VATSIM CID ${user.vatsim_cid}${user.vatsim_rating_short ? ` (${user.vatsim_rating_short})` : ''}.`
-    );
+function stripHtml(s: string): string {
+  return s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
-if (statsSentence) descParts.push(statsSentence);
+
+function getStat(stats: Record<string, unknown>, key: string): number | null {
+  const val = stats?.[key];
+  if (typeof val === 'number') return val;
+  if (typeof val === 'object' && val !== null) {
+    const nested = (val as Record<string, unknown>)['total'];
+    if (typeof nested === 'number') return nested;
+  }
+  return null;
+}
+
+function fmtTime(rawMins: number): string {
+  const mins = Math.floor(rawMins);
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem === 0 ? `${h}h` : `${h}h ${rem}m`;
+  }
+  return `${mins}m`;
+}
+
+const topRole = user.roles?.[0]?.name ?? null;
+const plainBio = user.bio ? stripHtml(user.bio) : '';
+const bioSnippet = plainBio ? truncateMeta(plainBio, 120) : null;
+
+const pageTitle = topRole
+  ? `${user.username} — ${topRole} · PFControl`
+  : `${user.username} · PFControl`;
+const ogTitle = pageTitle;
+
+const descParts: string[] = [];
+
+if (bioSnippet) {
+  descParts.push(`"${bioSnippet}"`);
+}
+
+const roleLine = topRole
+  ? user.is_admin
+    ? `${topRole} · PFControl Team`
+    : topRole
+  : user.is_admin
+  ? 'PFControl Team'
+  : null;
+if (roleLine) descParts.push(roleLine);
+
+if (privacySettings.displayPilotStatsOnProfile) {
+  const sessions = getStat(user.statistics, 'total_sessions_created');
+  const flights = getStat(user.statistics, 'total_flights_submitted');
+  const ctrlMins = getStat(user.statistics, 'total_time_controlling_minutes');
+  const statBits: string[] = [];
+  if (sessions != null) statBits.push(`${sessions.toLocaleString('en-US')} sessions`);
+  if (flights != null) statBits.push(`${flights.toLocaleString('en-US')} flights`);
+  if (ctrlMins != null) statBits.push(`${fmtTime(ctrlMins)} ATC`);
+  if (statBits.length > 0) descParts.push(statBits.join(' · '));
+}
+
+descParts.push(`Member since ${memberSince}`);
+
 if (
-  privacySettings.displayControllerRatingOnProfile &&
-  user.rating &&
-  user.rating.ratingCount > 0
+  privacySettings.displayLinkedAccountsOnProfile &&
+  user.vatsim_cid &&
+  user.vatsim_rating_short
 ) {
-  descParts.push(
-    `Controller rating ${user.rating.averageRating.toFixed(1)}/5 from ${user.rating.ratingCount} ${user.rating.ratingCount === 1 ? 'rating' : 'ratings'}.`
-  );
+  descParts.push(`VATSIM ${user.vatsim_rating_short}`);
 }
-descParts.push(
-  `Find ${user.username} on PFControl at pfcontrol.com/user/${user.username}.`
-);
 
-const pageDescription = truncateMeta(descParts.join(' '), 320);
+const pageDescription = truncateMeta(descParts.join(' — '), 200);
+
+const ogImagePng = `${siteOrigin}/api/og/profile/${encodeURIComponent(user.username)}`;
 
 const keywordParts = [
   'PFControl',
@@ -225,9 +218,7 @@ if (privacySettings.displayLinkedAccountsOnProfile && user.vatsim_cid) {
 const knowsAbout: string[] = [...(user.roles?.map((r) => r.name) ?? [])];
 if (user.vatsim_rating_long) knowsAbout.push(user.vatsim_rating_long);
 
-const personDescription =
-  plainBio ||
-  `${user.username} is a member of the PFControl flight strip and ATC community. Member since ${memberSince}.`;
+const personDescription = pageDescription;
 
 const personNode: Record<string, unknown> = {
   '@type': 'Person',
@@ -238,26 +229,26 @@ const personNode: Record<string, unknown> = {
   image: {
     '@type': 'ImageObject',
     url: avatarUrl,
-    caption: `${user.username} — PFControl profile photo`,
+    caption: `${user.username} — PFControl Avatar`,
   },
   description: truncateMeta(personDescription, 4000),
-  identifier: `https://pfcontrol.com/user/${user.username}`,
+  identifier: profileUrl,
   mainEntityOfPage: { '@id': `${profileUrl}#webpage` },
   memberOf: {
     '@type': 'Organization',
-    '@id': 'https://pfcontrol.com/#organization',
+    '@id': `${SPA_SITE_URL}/#organization`,
     name: 'PFControl',
-    url: 'https://pfcontrol.com',
+    url: SPA_SITE_URL,
     description:
       'Real-time flight strip platform for air traffic control simulation.',
   },
   ...(knowsAbout.length > 0 && { knowsAbout }),
   ...(sameAs.length > 1 && { sameAs: [...new Set(sameAs)] }),
   ...(user.is_admin && {
-    jobTitle: 'PFControl administrator',
+    jobTitle: 'PFControl Developer',
   }),
   ...(!user.is_admin && {
-    jobTitle: 'PFControl pilot & ATC community member',
+    jobTitle: 'PFControl Member',
   }),
 };
 
@@ -280,19 +271,19 @@ const structuredData = {
   '@graph': [
     {
       '@type': 'WebSite',
-      '@id': 'https://pfcontrol.com/#website',
+      '@id': `${SPA_SITE_URL}/#website`,
       name: 'PFControl',
-      url: 'https://pfcontrol.com',
-      publisher: { '@id': 'https://pfcontrol.com/#organization' },
+      url: SPA_SITE_URL,
+      publisher: { '@id': `${SPA_SITE_URL}/#organization` },
     },
     {
       '@type': 'Organization',
-      '@id': 'https://pfcontrol.com/#organization',
+      '@id': `${SPA_SITE_URL}/#organization`,
       name: 'PFControl',
-      url: 'https://pfcontrol.com',
+      url: SPA_SITE_URL,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://pfcontrol.com/favicon.svg',
+        url: `${SPA_SITE_URL}/favicon.svg`,
       },
     },
     {
@@ -301,9 +292,9 @@ const structuredData = {
       url: profileUrl,
       name: pageTitle,
       description: pageDescription,
-      isPartOf: { '@id': 'https://pfcontrol.com/#website' },
+      isPartOf: { '@id': `${SPA_SITE_URL}/#website` },
       about: { '@id': `${profileUrl}#person` },
-      primaryImageOfPage: { '@type': 'ImageObject', url: avatarUrl },
+      primaryImageOfPage: { '@type': 'ImageObject', url: ogImagePng },
       inLanguage: 'en',
       ...(rolesText && { keywords: rolesText }),
     },
@@ -314,7 +305,7 @@ const structuredData = {
           '@type': 'ListItem',
           position: 1,
           name: 'PFControl',
-          item: 'https://pfcontrol.com',
+          item: siteOrigin,
         },
         {
           '@type': 'ListItem',
@@ -336,7 +327,7 @@ const structuredData = {
               '@type': 'ListItem',
               position: i + 1,
               name: f.callsign ?? `Flight ${String(f.id).slice(0, 8)}`,
-              url: `https://pfcontrol.com/flight/${f.id}`,
+              url: `${SPA_SITE_URL}/flight/${f.id}`,
               ...(f.departure &&
                 f.arrival && {
                   description: `${f.departure} → ${f.arrival}${f.aircraft ? ` · ${f.aircraft}` : ''}`,
@@ -348,37 +339,20 @@ const structuredData = {
   ],
 };
 
-const pilotStats = privacySettings.displayPilotStatsOnProfile
-  ? ([
-      {
-        label: 'Sessions Created',
-        value: getStat(user.statistics, 'total_sessions_created'),
-      },
-      {
-        label: 'Flights Submitted',
-        value: getStat(user.statistics, 'total_flights_submitted'),
-      },
-      { label: 'Time Controlling', value: null as number | null },
-    ] as Array<{ label: string; value: number | null }>)
-  : [];
-
-if (privacySettings.displayPilotStatsOnProfile) {
-  const rawMins = getStat(user.statistics, 'total_time_controlling_minutes');
-  if (rawMins !== null) {
-    const mins = Math.floor(rawMins);
-    const h = Math.floor(mins / 60);
-    const rem = mins % 60;
-    pilotStats[2].value = rawMins;
-  }
-}
 ---
 
 <BaseLayout
   showFooter={false}
   title={pageTitle}
   description={pageDescription}
+  ogTitle={ogTitle}
+  twitterTitle={ogTitle}
   ogType="profile"
-  ogImage={avatarUrl}
+  ogImage={ogImagePng}
+  ogImageType="image/png"
+  ogImageWidth={1200}
+  ogImageHeight={630}
+  twitterCard="summary_large_image"
   ogProfileUsername={user.username}
   canonicalUrl={profileUrl}
   structuredData={structuredData}

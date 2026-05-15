@@ -90,7 +90,7 @@ export default function Footer() {
             </div>
             <p className="text-gray-400 text-sm max-w-xs">
               The next-generation flight strip platform built for real-time
-              coordination between air traffic controllers with enterprise-level
+              coordination between air traffic controllers with outstanding
               reliability.
             </p>
 
