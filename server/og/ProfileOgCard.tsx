@@ -1,12 +1,21 @@
+export interface OgStatItem {
+  value: string;
+  label: string;
+}
+
+export interface OgLinkItem {
+  platform: string;
+  detail: string;
+}
+
 export interface ProfileOgCardProps {
   username: string;
   bioSnippet: string | null;
-  rolesLine: string | null;
-  memberSinceShort: string;
-  isAdmin: boolean;
-  statsLine: string | null;
-  linksLine: string | null;
-  ratingLine: string | null;
+  metaLine: string | null;
+  teamBadge: string | null;
+  stats: OgStatItem[];
+  links: OgLinkItem[];
+  rating: { score: string; reviewCount: number } | null;
   avatarDataUrl: string;
   backgroundDataUrl: string | null;
 }
@@ -18,18 +27,15 @@ const BORDER_RADIUS = 15;
 export function ProfileOgCard({
   username,
   bioSnippet,
-  rolesLine,
-  memberSinceShort,
-  isAdmin,
-  statsLine,
-  linksLine,
-  ratingLine,
+  metaLine,
+  teamBadge,
+  stats,
+  links,
+  rating,
   avatarDataUrl,
   backgroundDataUrl,
 }: ProfileOgCardProps) {
-  const detailLines = [statsLine, linksLine, ratingLine].filter(
-    Boolean
-  ) as string[];
+  const metaParts = [metaLine, teamBadge].filter(Boolean) as string[];
 
   return (
     <div
@@ -98,77 +104,129 @@ export function ProfileOgCard({
             flexDirection: 'column',
             justifyContent: 'center',
             paddingLeft: 64,
-            paddingRight: 48,
-            paddingTop: 56,
-            paddingBottom: 56,
-            maxWidth: 760,
+            paddingRight: 40,
+            paddingTop: 48,
+            paddingBottom: 48,
+            maxWidth: 780,
           }}
         >
           <div
             style={{
-              fontSize: 22,
-              fontWeight: 400,
-              color: '#a1a1aa',
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              marginBottom: 12,
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#71717a',
+              marginBottom: 10,
             }}
           >
             PFControl
           </div>
           <div
             style={{
-              fontSize: 64,
+              fontSize: 56,
               fontWeight: 700,
               lineHeight: 1.05,
-              marginBottom: 20,
+              marginBottom: 14,
               color: '#ffffff',
             }}
           >
             {username}
           </div>
+          {metaParts.length > 0 ? (
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 400,
+                color: '#a1a1aa',
+                lineHeight: 1.4,
+                marginBottom: stats.length > 0 ? 28 : 16,
+              }}
+            >
+              {metaParts.join(' · ')}
+            </div>
+          ) : null}
+          {stats.length > 0 ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 36,
+                marginBottom: bioSnippet ? 22 : 0,
+              }}
+            >
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 42,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      color: '#ffffff',
+                    }}
+                  >
+                    {stat.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#a1a1aa',
+                      marginTop: 8,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {bioSnippet ? (
             <div
               style={{
-                fontSize: 26,
+                fontSize: 17,
                 fontWeight: 400,
-                color: '#d4d4d8',
-                lineHeight: 1.35,
-                marginBottom: 20,
+                color: '#71717a',
+                lineHeight: 1.4,
+                marginBottom: links.length > 0 || rating ? 14 : 0,
+                maxWidth: 680,
               }}
             >
               {bioSnippet}
             </div>
           ) : null}
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 400,
-              color: '#a1a1aa',
-              lineHeight: 1.4,
-              marginBottom: 8,
-            }}
-          >
-            {[
-              rolesLine,
-              `since ${memberSinceShort}`,
-              isAdmin ? 'PFControl team' : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </div>
-          {detailLines.length > 0 ? (
+          {(links.length > 0 || rating) && (
             <div
               style={{
-                fontSize: 22,
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 20,
+                fontSize: 15,
                 fontWeight: 400,
-                color: '#71717a',
-                lineHeight: 1.45,
+                color: '#52525b',
+                lineHeight: 1.4,
               }}
             >
-              {detailLines.join(' · ')}
+              {links.map((link) => (
+                <span key={`${link.platform}-${link.detail}`}>
+                  {link.platform}: {link.detail}
+                </span>
+              ))}
+              {rating ? (
+                <span>
+                  Controller Rating {rating.score}/5 ({rating.reviewCount}{' '}
+                  {rating.reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
+              ) : null}
             </div>
-          ) : null}
+          )}
         </div>
         <div
           style={{

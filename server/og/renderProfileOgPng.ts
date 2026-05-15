@@ -3,7 +3,12 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import sharp from 'sharp';
 import type { PublicPilotProfile } from '../services/publicPilotProfile.js';
-import { ProfileOgCard, type ProfileOgCardProps } from './ProfileOgCard.js';
+import {
+  ProfileOgCard,
+  type OgLinkItem,
+  type OgStatItem,
+  type ProfileOgCardProps,
+} from './ProfileOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
 
 const OG_W = 1200;
@@ -76,15 +81,29 @@ function formatTimeControlling(rawMins: number | null): string {
   return `${mins}m`;
 }
 
-function formatMemberSinceShort(dateStr: string): string {
+function formatMemberSinceLabel(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
+    const formatted = new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'long',
       year: 'numeric',
     });
+    return `Member since ${formatted}`;
   } catch {
-    return dateStr;
+    return `Member since ${dateStr}`;
   }
+}
+
+function buildMetaLine(
+  roles: PublicPilotProfile['user']['roles'],
+  memberSinceLabel: string
+): string | null {
+  const roleNames =
+    roles
+      ?.map((r) => r.name)
+      .filter(Boolean)
+      .join(', ') ?? '';
+  const parts = [roleNames || null, memberSinceLabel].filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 export async function fetchUrlAsDataUrl(url: string): Promise<string | null> {
@@ -119,14 +138,9 @@ export function buildProfileOgCardProps(
 ): ProfileOgCardProps {
   const { user, privacySettings } = profile;
   const plainBio = user.bio ? toPlainText(user.bio) : '';
-  const bioSnippet = plainBio ? truncate(plainBio, 140) : null;
-  const rolesText =
-    user.roles?.length > 0
-      ? user.roles
-          .map((r) => r.name)
-          .filter(Boolean)
-          .join(', ')
-      : null;
+  const bioSnippet = plainBio ? truncate(plainBio, 100) : null;
+  const memberSinceLabel = formatMemberSinceLabel(user.member_since);
+  const metaLine = buildMetaLine(user.roles, memberSinceLabel);
 
   const sessionsN = privacySettings.displayPilotStatsOnProfile
     ? getStat(user.statistics, 'total_sessions_created')
@@ -138,46 +152,59 @@ export function buildProfileOgCardProps(
     ? getStat(user.statistics, 'total_time_controlling_minutes')
     : null;
 
-  const statsBits: string[] = [];
-  if (sessionsN != null)
-    statsBits.push(`${sessionsN.toLocaleString('en-US')} sessions`);
-  if (flightsN != null)
-    statsBits.push(`${flightsN.toLocaleString('en-US')} flights`);
-  if (ctrlMins != null)
-    statsBits.push(`${formatTimeControlling(ctrlMins)} ATC`);
-  const statsLine = statsBits.length > 0 ? statsBits.join(' · ') : null;
+  const stats: OgStatItem[] = [];
+  if (sessionsN != null) {
+    stats.push({
+      value: sessionsN.toLocaleString('en-US'),
+      label: 'Sessions',
+    });
+  }
+  if (flightsN != null) {
+    stats.push({
+      value: flightsN.toLocaleString('en-US'),
+      label: 'Flights',
+    });
+  }
+  if (ctrlMins != null) {
+    stats.push({
+      value: formatTimeControlling(ctrlMins),
+      label: 'ATC Time',
+    });
+  }
 
-  const linkBits: string[] = [];
+  const links: OgLinkItem[] = [];
   if (privacySettings.displayLinkedAccountsOnProfile) {
-    if (user.roblox_username) linkBits.push(`Roblox ${user.roblox_username}`);
+    if (user.roblox_username) {
+      links.push({ platform: 'Roblox', detail: user.roblox_username });
+    }
     if (user.vatsim_cid) {
-      linkBits.push(
-        user.vatsim_rating_short
-          ? `VATSIM ${user.vatsim_rating_short}`
-          : `VATSIM ${user.vatsim_cid}`
-      );
+      links.push({
+        platform: 'VATSIM',
+        detail: user.vatsim_rating_short ?? user.vatsim_cid,
+      });
     }
   }
-  const linksLine = linkBits.length > 0 ? linkBits.join(' · ') : null;
 
-  let ratingLine: string | null = null;
+  let rating: ProfileOgCardProps['rating'] = null;
   if (
     privacySettings.displayControllerRatingOnProfile &&
     user.rating &&
     user.rating.ratingCount > 0
   ) {
-    ratingLine = `Controller ${user.rating.averageRating.toFixed(1)}/5 · ${user.rating.ratingCount} reviews`;
+    rating = {
+      score: user.rating.averageRating.toFixed(1),
+      reviewCount: user.rating.ratingCount,
+    };
   }
 
   return {
     username: user.username,
     bioSnippet,
-    rolesLine: rolesText,
-    memberSinceShort: formatMemberSinceShort(user.member_since),
-    isAdmin: user.is_admin,
-    statsLine,
-    linksLine,
-    ratingLine,
+    metaLine,
+    teamBadge: user.is_admin ? 'PFControl Team' : null,
+    stats,
+    links,
+    rating,
     avatarDataUrl,
     backgroundDataUrl,
   };
