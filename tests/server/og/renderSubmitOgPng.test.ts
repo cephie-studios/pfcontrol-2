@@ -6,7 +6,6 @@ const icons = {
   runway: 'data:image/png;base64,runway',
   atis: 'data:image/png;base64,atis',
   flights: 'data:image/png;base64,flights',
-  controller: 'data:image/png;base64,controller',
 };
 
 const session: PublicSubmitSession = {

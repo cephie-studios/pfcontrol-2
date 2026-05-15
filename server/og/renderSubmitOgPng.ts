@@ -68,7 +68,6 @@ export function buildSubmitOgCardProps(
 
   if (controller) {
     details.push({
-      iconDataUrl: icons.controller,
       label: 'Controller',
       value: controller,
     });

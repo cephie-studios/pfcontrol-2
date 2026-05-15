@@ -1,5 +1,5 @@
 export interface SubmitOgDetailItem {
-  iconDataUrl: string;
+  iconDataUrl?: string | null;
   label: string;
   value: string;
 }
@@ -16,6 +16,95 @@ export interface SubmitOgCardProps {
 const W = 1200;
 const H = 630;
 const CARD_RADIUS = 28;
+const ICON_COL_W = 56;
+const TILE_ICON_IMG = 48;
+
+function StatTile({
+  item,
+  spanFullRow,
+}: {
+  item: SubmitOgDetailItem;
+  spanFullRow?: boolean;
+}) {
+  const hasIcon = Boolean(item.iconDataUrl?.trim());
+
+  return (
+    <div
+      style={{
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexGrow: 1,
+        flexShrink: 1,
+        flexBasis: spanFullRow ? '100%' : 0,
+        minWidth: 0,
+        minHeight: 128,
+        paddingLeft: 22,
+        paddingRight: 22,
+        paddingTop: 20,
+        paddingBottom: 20,
+        gap: 18,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+      }}
+    >
+      <div
+        style={{
+          width: ICON_COL_W,
+          height: TILE_ICON_IMG,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {hasIcon ? (
+          <img
+            src={item.iconDataUrl!}
+            width={TILE_ICON_IMG}
+            height={TILE_ICON_IMG}
+            style={{ objectFit: 'contain' }}
+          />
+        ) : null}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#a1a1aa',
+            marginBottom: 8,
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {item.label}
+        </div>
+        <div
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            color: '#ffffff',
+            lineHeight: 1.15,
+            wordBreak: 'break-word',
+          }}
+        >
+          {item.value}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function SubmitOgCard({
   airportIcao,
@@ -26,6 +115,11 @@ export function SubmitOgCard({
   backgroundDataUrl,
 }: SubmitOgCardProps) {
   const badgeLetter = atisLetter ?? airportIcao.slice(0, 1);
+
+  const detailRows: SubmitOgDetailItem[][] = [];
+  for (let i = 0; i < details.length; i += 2) {
+    detailRows.push(details.slice(i, i + 2));
+  }
 
   return (
     <div
@@ -92,7 +186,7 @@ export function SubmitOgCard({
             display: 'flex',
             flexDirection: 'row',
             width: '100%',
-            maxWidth: 1040,
+            maxWidth: 1080,
             borderRadius: CARD_RADIUS,
             backgroundColor: 'rgba(12, 12, 14, 0.82)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -107,28 +201,18 @@ export function SubmitOgCard({
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              paddingLeft: 52,
-              paddingRight: 36,
-              paddingTop: 44,
-              paddingBottom: 44,
+              paddingLeft: 48,
+              paddingRight: 32,
+              paddingTop: 40,
+              paddingBottom: 40,
             }}
           >
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#71717a',
-                marginBottom: 10,
-              }}
-            >
-              PFControl · Submit flight plan
-            </div>
             <div
               style={{
                 fontSize: 64,
                 fontWeight: 700,
                 lineHeight: 1,
-                marginBottom: 12,
+                marginBottom: 16,
                 color: '#ffffff',
               }}
             >
@@ -138,7 +222,7 @@ export function SubmitOgCard({
               style={{
                 display: 'flex',
                 flexDirection: 'row',
-                marginBottom: 28,
+                marginBottom: 32,
               }}
             >
               <div
@@ -162,63 +246,29 @@ export function SubmitOgCard({
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
+                flexDirection: 'column',
                 gap: 20,
                 marginBottom: atisSnippet ? 24 : 0,
               }}
             >
-              {details.map((item) => (
+              {detailRows.map((pair, rowIdx) => (
                 <div
-                  key={item.label}
+                  key={rowIdx}
                   style={{
                     display: 'flex',
                     flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    minWidth: 180,
-                    paddingLeft: 14,
-                    paddingRight: 16,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    borderRadius: 16,
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    flexWrap: 'wrap',
+                    gap: 28,
+                    width: '100%',
                   }}
                 >
-                  <img
-                    src={item.iconDataUrl}
-                    width={32}
-                    height={32}
-                    style={{ objectFit: 'contain' }}
-                  />
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: '#a1a1aa',
-                        marginBottom: 2,
-                      }}
-                    >
-                      {item.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color: '#ffffff',
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      {item.value}
-                    </div>
-                  </div>
+                  {pair.map((item, colIdx) => (
+                    <StatTile
+                      key={`${rowIdx}-${colIdx}-${item.label}`}
+                      item={item}
+                      spanFullRow={pair.length === 1}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
