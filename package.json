@@ -88,6 +88,9 @@
     },
     "@jridgewell/sourcemap-codec": "1.5.5"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.60.3"
+  },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/cookie-parser": "^1.4.9",

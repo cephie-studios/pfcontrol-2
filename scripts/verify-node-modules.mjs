@@ -62,9 +62,14 @@ const deps = omitDev
       ...(pkg.optionalDependencies ?? {}),
     };
 
+const optionalOnly = new Set(Object.keys(pkg.optionalDependencies ?? {}));
+
 for (const name of Object.keys(deps)) {
   const pkgDir = packagePath(name);
   if (!existsSync(pkgDir)) {
+    if (optionalOnly.has(name)) {
+      continue;
+    }
     console.error(
       `verify-node-modules: missing installed package "${name}" (expected ${pkgDir})`
     );
