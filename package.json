@@ -89,6 +89,8 @@
     "@jridgewell/sourcemap-codec": "1.5.5"
   },
   "optionalDependencies": {
+    "@img/sharp-libvips-linux-x64": "1.2.4",
+    "@img/sharp-linux-x64": "0.34.5",
     "@resvg/resvg-js-linux-x64-gnu": "2.6.2",
     "@rollup/rollup-linux-x64-gnu": "4.60.3"
   },
