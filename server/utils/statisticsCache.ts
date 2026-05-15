@@ -29,6 +29,9 @@ export async function incrementStat(
 
 async function flushStats() {
   try {
+    if (typeof redisConnection.keys !== 'function') {
+      return;
+    }
     const keys = await redisConnection.keys(`${STATS_KEY_PREFIX}*`);
     for (const key of keys) {
       const match = key.match(/^stats_cache:([a-zA-Z0-9]+)$/);
@@ -76,21 +79,22 @@ export function startStatsFlushing() {
   console.log('[StatsCache] Started stats flushing');
 }
 
-// Flush on shutdown
-process.on('SIGINT', async () => {
-  console.log('[StatsCache] Flushing stats before shutdown...');
-  if (flushInterval) {
-    clearInterval(flushInterval);
-  }
-  await flushStats();
-  process.exit();
-});
+if (!process.env.VITEST) {
+  process.on('SIGINT', async () => {
+    console.log('[StatsCache] Flushing stats before shutdown...');
+    if (flushInterval) {
+      clearInterval(flushInterval);
+    }
+    await flushStats();
+    process.exit();
+  });
 
-process.on('SIGTERM', async () => {
-  console.log('[StatsCache] Flushing stats before shutdown...');
-  if (flushInterval) {
-    clearInterval(flushInterval);
-  }
-  await flushStats();
-  process.exit();
-});
+  process.on('SIGTERM', async () => {
+    console.log('[StatsCache] Flushing stats before shutdown...');
+    if (flushInterval) {
+      clearInterval(flushInterval);
+    }
+    await flushStats();
+    process.exit();
+  });
+}
