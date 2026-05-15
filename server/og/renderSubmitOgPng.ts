@@ -4,17 +4,10 @@ import { Resvg } from '@resvg/resvg-js';
 import type { PublicSubmitSession } from '../services/publicSubmitSession.js';
 import { SubmitOgCard, type SubmitOgCardProps } from './SubmitOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
-import { loadOgSessionIcons } from './ogSessionIcons.js';
-import {
-  fetchUrlAsDataUrl,
-  toSatoriSafeDataUrl,
-} from './renderProfileOgPng.js';
+import { toSatoriSafeDataUrl } from './renderProfileOgPng.js';
 
 const OG_W = 1200;
 const OG_H = 630;
-
-const TRANSPARENT_PNG_DATA_URL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
@@ -29,8 +22,7 @@ function networkLabel(session: PublicSubmitSession): string {
 
 export function buildSubmitOgCardProps(
   session: PublicSubmitSession,
-  backgroundDataUrl: string | null,
-  icons: Awaited<ReturnType<typeof loadOgSessionIcons>>
+  backgroundDataUrl: string | null
 ): SubmitOgCardProps {
   const icao = session.airportIcao?.toUpperCase() ?? '----';
   const runway = session.activeRunway?.trim();
@@ -39,26 +31,23 @@ export function buildSubmitOgCardProps(
   const atisText = session.atisText?.replace(/\s+/g, ' ').trim();
   const flightsN = session.flightCount ?? 0;
 
-  const details: SubmitOgCardProps['details'] = [];
+  const stats: SubmitOgCardProps['stats'] = [];
 
   if (runway) {
-    details.push({
-      iconDataUrl: icons.runway,
+    stats.push({
       label: 'Active runway',
       value: runway,
     });
   }
 
   if (atisLetter) {
-    details.push({
-      iconDataUrl: icons.atis,
+    stats.push({
       label: 'ATIS',
       value: atisLetter,
     });
   }
 
-  details.push({
-    iconDataUrl: icons.flights,
+  stats.push({
     label: 'Flights',
     value:
       flightsN === 1
@@ -67,25 +56,21 @@ export function buildSubmitOgCardProps(
   });
 
   if (controller) {
-    details.push({
+    stats.push({
       label: 'Controller',
       value: controller,
     });
   }
 
   const atisSnippet = atisText
-    ? truncate(
-        atisLetter ? `Information ${atisLetter}: ${atisText}` : atisText,
-        140
-      )
+    ? truncate(atisLetter ? `INFO ${atisLetter}: ${atisText}` : atisText, 140)
     : null;
 
   return {
     airportIcao: icao,
     networkLabel: networkLabel(session),
     atisSnippet,
-    atisLetter: atisLetter ?? null,
-    details,
+    stats,
     backgroundDataUrl,
   };
 }
@@ -95,9 +80,8 @@ export async function renderPublicSubmitOgPng(
   backgroundDataUrl: string | null
 ): Promise<Buffer> {
   const fonts = await getInterFontsForSatori();
-  const icons = await loadOgSessionIcons();
   const safeBackground = await toSatoriSafeDataUrl(backgroundDataUrl);
-  const props = buildSubmitOgCardProps(session, safeBackground, icons);
+  const props = buildSubmitOgCardProps(session, safeBackground);
 
   const svg = await satori(createElement(SubmitOgCard, props), {
     width: OG_W,

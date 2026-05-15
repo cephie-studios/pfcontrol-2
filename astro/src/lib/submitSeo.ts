@@ -79,7 +79,7 @@ export function buildSubmitSessionSeo(
   if (atisText) {
     const atisSnippet = truncateMeta(atisText, 180);
     descParts.push(
-      atisLetter ? `Information ${atisLetter}: ${atisSnippet}` : atisSnippet
+      atisLetter ? `INFO ${atisLetter}: ${atisSnippet}` : atisSnippet
     );
   }
 

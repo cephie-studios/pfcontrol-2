@@ -26,7 +26,7 @@ describe('buildSubmitSessionSeo', () => {
     expect(seo.pageTitle).toContain('ATIS B');
     expect(seo.pageDescription).toContain('Controller bananensammler_');
     expect(seo.pageDescription).toContain('RWY 29');
-    expect(seo.pageDescription).toContain('Information B:');
+    expect(seo.pageDescription).toContain('INFO B:');
     expect(seo.pageDescription).toContain('RWY 29 IN USE');
     expect(seo.ogImage).toBe(
       `${siteOrigin}/api/og/submit/${encodeURIComponent('9824e8cc')}`
