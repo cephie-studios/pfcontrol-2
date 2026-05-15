@@ -10,6 +10,7 @@ import {
   type ProfileOgCardProps,
 } from './ProfileOgCard.js';
 import { getInterFontsForSatori } from './loadInterFonts.js';
+import { getOgLinkIcons } from './ogLinkIcons.js';
 
 const OG_W = 1200;
 const OG_H = 630;
@@ -131,10 +132,17 @@ export async function fetchAvatarDataUrl(
   return TRANSPARENT_PNG_DATA_URL;
 }
 
+export type OgLinkIcons = {
+  roblox: string;
+  vatsim: string;
+  star: string;
+};
+
 export function buildProfileOgCardProps(
   profile: PublicPilotProfile,
   avatarDataUrl: string,
-  backgroundDataUrl: string | null
+  backgroundDataUrl: string | null,
+  icons: OgLinkIcons
 ): ProfileOgCardProps {
   const { user, privacySettings } = profile;
   const plainBio = user.bio ? toPlainText(user.bio) : '';
@@ -175,12 +183,17 @@ export function buildProfileOgCardProps(
   const links: OgLinkItem[] = [];
   if (privacySettings.displayLinkedAccountsOnProfile) {
     if (user.roblox_username) {
-      links.push({ platform: 'Roblox', detail: user.roblox_username });
+      links.push({
+        platform: 'roblox',
+        detail: user.roblox_username,
+        iconDataUrl: icons.roblox,
+      });
     }
     if (user.vatsim_cid) {
       links.push({
-        platform: 'VATSIM',
+        platform: 'vatsim',
         detail: user.vatsim_rating_short ?? user.vatsim_cid,
+        iconDataUrl: icons.vatsim,
       });
     }
   }
@@ -205,6 +218,7 @@ export function buildProfileOgCardProps(
     stats,
     links,
     rating,
+    ratingIconDataUrl: rating ? icons.star : null,
     avatarDataUrl,
     backgroundDataUrl,
   };
@@ -219,7 +233,21 @@ export async function renderPublicProfileOgPng(
   const safeAvatar =
     (await toSatoriSafeDataUrl(avatarDataUrl)) ?? TRANSPARENT_PNG_DATA_URL;
   const safeBackground = await toSatoriSafeDataUrl(backgroundDataUrl);
-  const props = buildProfileOgCardProps(profile, safeAvatar, safeBackground);
+  const rawIcons = getOgLinkIcons();
+  const icons: OgLinkIcons = {
+    roblox:
+      (await toSatoriSafeDataUrl(rawIcons.roblox)) ?? rawIcons.roblox,
+    vatsim:
+      (await toSatoriSafeDataUrl(rawIcons.vatsim ?? rawIcons.roblox)) ??
+      rawIcons.roblox,
+    star: (await toSatoriSafeDataUrl(rawIcons.star)) ?? rawIcons.star,
+  };
+  const props = buildProfileOgCardProps(
+    profile,
+    safeAvatar,
+    safeBackground,
+    icons
+  );
   const svg = await satori(createElement(ProfileOgCard, props), {
     width: OG_W,
     height: OG_H,

@@ -4,8 +4,9 @@ export interface OgStatItem {
 }
 
 export interface OgLinkItem {
-  platform: string;
+  platform: 'roblox' | 'vatsim';
   detail: string;
+  iconDataUrl: string;
 }
 
 export interface ProfileOgCardProps {
@@ -16,6 +17,7 @@ export interface ProfileOgCardProps {
   stats: OgStatItem[];
   links: OgLinkItem[];
   rating: { score: string; reviewCount: number } | null;
+  ratingIconDataUrl: string | null;
   avatarDataUrl: string;
   backgroundDataUrl: string | null;
 }
@@ -32,6 +34,7 @@ export function ProfileOgCard({
   stats,
   links,
   rating,
+  ratingIconDataUrl,
   avatarDataUrl,
   backgroundDataUrl,
 }: ProfileOgCardProps) {
@@ -194,7 +197,7 @@ export function ProfileOgCard({
                 fontWeight: 400,
                 color: '#71717a',
                 lineHeight: 1.4,
-                marginBottom: links.length > 0 || rating ? 14 : 0,
+                marginBottom: links.length > 0 || rating ? 8 : 0,
                 maxWidth: 680,
               }}
             >
@@ -207,23 +210,56 @@ export function ProfileOgCard({
                 display: 'flex',
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                gap: 20,
+                alignItems: 'center',
+                gap: 24,
+                marginTop: 20,
                 fontSize: 15,
                 fontWeight: 400,
-                color: '#52525b',
+                color: '#71717a',
                 lineHeight: 1.4,
               }}
             >
               {links.map((link) => (
-                <span key={`${link.platform}-${link.detail}`}>
-                  {link.platform}: {link.detail}
-                </span>
+                <div
+                  key={`${link.platform}-${link.detail}`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <img
+                    src={link.iconDataUrl}
+                    width={18}
+                    height={18}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <span>{link.detail}</span>
+                </div>
               ))}
               {rating ? (
-                <span>
-                  Controller Rating {rating.score}/5 ({rating.reviewCount}{' '}
-                  {rating.reviewCount === 1 ? 'review' : 'reviews'})
-                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  {ratingIconDataUrl ? (
+                    <img
+                      src={ratingIconDataUrl}
+                      width={18}
+                      height={18}
+                      style={{ objectFit: 'contain' }}
+                    />
+                  ) : null}
+                  <span>
+                    Controller Rating {rating.score}/5 ({rating.reviewCount}{' '}
+                    {rating.reviewCount === 1 ? 'review' : 'reviews'})
+                  </span>
+                </div>
               ) : null}
             </div>
           )}
