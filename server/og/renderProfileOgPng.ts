@@ -23,7 +23,7 @@ function dataUrlToBuffer(dataUrl: string): Buffer {
   return Buffer.from(dataUrl.slice(comma + 1), 'base64');
 }
 
-async function toSatoriSafeDataUrl(
+export async function toSatoriSafeDataUrl(
   dataUrl: string | null
 ): Promise<string | null> {
   if (!dataUrl) return null;

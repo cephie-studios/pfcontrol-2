@@ -1,18 +1,26 @@
-import fs from 'node:fs';
 import express from 'express';
 import { getPublicPilotProfile } from '../services/publicPilotProfile.js';
+import { getPublicSubmitSession } from '../services/publicSubmitSession.js';
 import { resolveProfileBackground } from '../og/profileBackground.js';
+import { resolveSubmitSessionBackground } from '../og/submitBackground.js';
+import { resolvedBackgroundToDataUrl } from '../og/resolvedBackgroundToDataUrl.js';
 import {
   fetchAvatarDataUrl,
-  fetchUrlAsDataUrl,
   renderPublicProfileOgPng,
 } from '../og/renderProfileOgPng.js';
+import { renderPublicSubmitOgPng } from '../og/renderSubmitOgPng.js';
 import {
   getCachedProfileOgPng,
   profileOgCacheControlHeader,
   profileOgRedisKey,
   setCachedProfileOgPng,
 } from '../og/profileOgCache.js';
+import {
+  getCachedSubmitOgPng,
+  submitOgCacheControlHeader,
+  submitOgRedisKey,
+  setCachedSubmitOgPng,
+} from '../og/submitOgCache.js';
 
 const router = express.Router();
 
@@ -40,25 +48,7 @@ router.get('/profile/:username', async (req, res) => {
         .replace(/\/$/, '') || 'https://pfcontrol.com';
     const avatarDataUrl = await fetchAvatarDataUrl(profile);
     const resolvedBg = resolveProfileBackground(profile, frontendBase);
-    let backgroundDataUrl: string | null = null;
-    if (resolvedBg) {
-      if (resolvedBg.kind === 'local') {
-        try {
-          const buf = fs.readFileSync(resolvedBg.filePath);
-          const ext = resolvedBg.filePath.split('.').pop()?.toLowerCase() ?? 'png';
-          const mime =
-            ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
-            ext === 'webp' ? 'image/webp' :
-            ext === 'gif' ? 'image/gif' :
-            'image/png';
-          backgroundDataUrl = `data:${mime};base64,${buf.toString('base64')}`;
-        } catch {
-          backgroundDataUrl = null;
-        }
-      } else {
-        backgroundDataUrl = (await fetchUrlAsDataUrl(resolvedBg.url)) ?? null;
-      }
-    }
+    const backgroundDataUrl = await resolvedBackgroundToDataUrl(resolvedBg);
     const png = await renderPublicProfileOgPng(
       profile,
       avatarDataUrl,
@@ -71,6 +61,38 @@ router.get('/profile/:username', async (req, res) => {
     res.send(png);
   } catch (error) {
     console.error('[og] profile png:', error);
+    res.status(500).end();
+  }
+});
+
+// GET /api/og/submit/:sessionId — dynamic Open Graph PNG for public submit sessions
+router.get('/submit/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await getPublicSubmitSession(sessionId);
+    if (!session) {
+      return res.status(404).end();
+    }
+
+    const cacheKey = submitOgRedisKey(session);
+    const cached = await getCachedSubmitOgPng(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', submitOgCacheControlHeader());
+      res.send(cached);
+      return;
+    }
+
+    const resolvedBg = resolveSubmitSessionBackground(session.airportIcao);
+    const backgroundDataUrl = await resolvedBackgroundToDataUrl(resolvedBg);
+    const png = await renderPublicSubmitOgPng(session, backgroundDataUrl);
+    await setCachedSubmitOgPng(cacheKey, png);
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', submitOgCacheControlHeader());
+    res.send(png);
+  } catch (error) {
+    console.error('[og] submit png:', error);
     res.status(500).end();
   }
 });
