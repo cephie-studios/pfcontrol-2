@@ -775,32 +775,28 @@ export async function ensureAppSettingsChannelColumn() {
   `.execute(mainDb);
 }
 
-export async function syncVersionFromFile() {
-  const versionPath = path.join(__dirname, "..", "..", "VERSION");
-  let fileVersion: string;
-  try {
-    fileVersion = fs.readFileSync(versionPath, "utf8").trim();
-  } catch {
-    console.warn("[Version] VERSION file not found, skipping sync");
+export async function syncVersionFromEnv() {
+  const envVersion = process.env.APP_VERSION?.trim();
+  if (!envVersion) {
     return;
   }
 
   await mainDb
     .insertInto("app_settings")
     .values({
-      version: fileVersion,
+      version: envVersion,
       channel: DEPLOYMENT,
       updated_at: new Date(),
       updated_by: "system",
     })
     .onConflict((oc) =>
       oc.column("channel").doUpdateSet({
-        version: fileVersion,
+        version: envVersion,
         updated_at: new Date(),
         updated_by: "system",
       }),
     )
     .execute();
 
-  console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${fileVersion}`);
+  console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${envVersion}`);
 }
