@@ -70,10 +70,16 @@ jobs:
             else
               git fetch origin main canary
               SHA="${{ github.sha }}"
-              if git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+              MAIN_HEAD=$(git rev-parse origin/main)
+              CANARY_HEAD=$(git rev-parse origin/canary)
+              if [[ "$SHA" == "$MAIN_HEAD" ]]; then
                 CHANNEL=main
+              elif [[ "$SHA" == "$CANARY_HEAD" ]]; then
+                CHANNEL=canary
               elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
                 CHANNEL=canary
+              elif git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+                CHANNEL=main
               else
                 echo "Could not resolve deploy channel" >&2
                 exit 1
@@ -108,7 +114,6 @@ jobs:
     steps:
       - name: Configure Dokploy app version
         if: inputs.deploy_version != ''
-        continue-on-error: true
         env:
           DEPLOY_VERSION: ${{ inputs.deploy_version }}
         run: |
@@ -126,17 +131,24 @@ jobs:
 
           APP_JSON=$(curl -fsS "${API_BASE}/application.one?applicationId=${APP_ID}" "${AUTH[@]}")
 
+          # Runtime env (syncVersionFromEnv) and Docker build-args (ARG APP_VERSION) must both be set;
+          # Dokploy does not pass application env into docker build (see dokploy/dokploy#1244).
           CURRENT_ENV=$(echo "$APP_JSON" | jq -r '.env // ""')
           NEW_ENV=$(printf '%s\n' "$CURRENT_ENV" | grep -v '^APP_VERSION=' | sed '/^$/d')
           NEW_ENV="${NEW_ENV}"$'\n'"APP_VERSION=${DEPLOY_VERSION}"
 
+          CURRENT_ARGS=$(echo "$APP_JSON" | jq -r '.buildArgs // ""')
+          NEW_ARGS=$(printf '%s\n' "$CURRENT_ARGS" | grep -v '^APP_VERSION=' | sed '/^$/d')
+          NEW_ARGS="${NEW_ARGS}"$'\n'"APP_VERSION=${DEPLOY_VERSION}"
+
           PAYLOAD=$(echo "$APP_JSON" | jq \
             --arg applicationId "$APP_ID" \
             --arg env "$NEW_ENV" \
+            --arg buildArgs "$NEW_ARGS" \
             '{
               applicationId: $applicationId,
               env: $env,
-              buildArgs: (.buildArgs // ""),
+              buildArgs: $buildArgs,
               buildSecrets: (.buildSecrets // ""),
               createEnvFile: (.createEnvFile // true)
             }')
@@ -145,6 +157,8 @@ jobs:
             "${AUTH[@]}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
+
+          echo "Configured APP_VERSION=${DEPLOY_VERSION} for ${{ needs.resolve.outputs.channel }}"
 
       - name: Trigger Dokploy deploy
         env:

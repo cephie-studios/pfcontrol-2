@@ -36,10 +36,16 @@ jobs:
           if [[ "$CHANNEL" != "main" && "$CHANNEL" != "canary" ]]; then
             git fetch origin main canary
             SHA="${{ github.sha }}"
-            if git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+            MAIN_HEAD=$(git rev-parse origin/main)
+            CANARY_HEAD=$(git rev-parse origin/canary)
+            if [[ "$SHA" == "$MAIN_HEAD" ]]; then
               CHANNEL=main
+            elif [[ "$SHA" == "$CANARY_HEAD" ]]; then
+              CHANNEL=canary
             elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
               CHANNEL=canary
+            elif git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+              CHANNEL=main
             else
               echo "Could not resolve deploy channel" >&2
               exit 1
