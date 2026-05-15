@@ -30,9 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install native rollup binding
-        run: npm install --no-save @rollup/rollup-linux-x64-gnu
-
       - name: Run npm audit
         run: npm audit --audit-level=high
 
