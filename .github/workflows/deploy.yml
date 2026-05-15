@@ -1,10 +1,39 @@
 name: deploy
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      channel:
+        description: 'Deploy target (main or canary)'
+        required: true
+        type: string
+      deploy_title:
+        description: 'Dokploy deployment title (e.g. triggering commit subject)'
+        required: false
+        type: string
+        default: ''
+      deploy_description:
+        description: 'Dokploy deployment description (e.g. version tag)'
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Deploy target (main or canary); leave empty to auto-detect'
+        required: false
+        type: string
+        default: ''
+      deploy_title:
+        description: 'Dokploy deployment title'
+        required: false
+        type: string
+        default: ''
+      deploy_description:
+        description: 'Dokploy deployment description'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   deploy:
@@ -12,6 +41,7 @@ jobs:
 
     steps:
       - name: Checkout repository
+        if: inputs.channel == '' && github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -19,31 +49,54 @@ jobs:
       - name: Resolve deploy channel
         id: channel
         run: |
-          git fetch origin main canary
-          SHA="${{ github.sha }}"
-          if git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
-            CHANNEL=main
-          elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
-            CHANNEL=canary
-          else
-            echo "Tagged commit is not on origin/main or origin/canary" >&2
+          CHANNEL="${{ inputs.channel }}"
+          if [[ -z "$CHANNEL" ]]; then
+            REF="${GITHUB_REF#refs/heads/}"
+            if [[ "$REF" == "main" || "$REF" == "canary" ]]; then
+              CHANNEL="$REF"
+            else
+              git fetch origin main canary
+              SHA="${{ github.sha }}"
+              if git branch -r --contains "$SHA" | grep -qE 'origin/main$'; then
+                CHANNEL=main
+              elif git branch -r --contains "$SHA" | grep -qE 'origin/canary$'; then
+                CHANNEL=canary
+              else
+                echo "Could not resolve deploy channel" >&2
+                exit 1
+              fi
+            fi
+          fi
+          if [[ "$CHANNEL" != "main" && "$CHANNEL" != "canary" ]]; then
+            echo "Invalid channel: $CHANNEL" >&2
             exit 1
           fi
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-          echo "Deploying ${{ github.ref_name }} to $CHANNEL (commit $SHA)"
+          echo "Deploying to $CHANNEL"
 
-      - name: Trigger Dokploy deploy (canary)
-        if: steps.channel.outputs.channel == 'canary'
+      - name: Trigger Dokploy deploy
+        env:
+          DEPLOY_TITLE: ${{ inputs.deploy_title }}
+          DEPLOY_DESCRIPTION: ${{ inputs.deploy_description }}
         run: |
+          case "${{ steps.channel.outputs.channel }}" in
+            canary) APP_ID="IIakyrrLChtjnjuKKVFiB" ;;
+            main)   APP_ID="C4Vzp1quDF4mKt2AQPjkU" ;;
+            *)
+              echo "Unknown channel: ${{ steps.channel.outputs.channel }}" >&2
+              exit 1
+              ;;
+          esac
+
+          PAYLOAD=$(jq -n \
+            --arg applicationId "$APP_ID" \
+            --arg title "$DEPLOY_TITLE" \
+            --arg description "$DEPLOY_DESCRIPTION" \
+            '{applicationId: $applicationId}
+             + (if ($title | length) > 0 then {title: $title} else {} end)
+             + (if ($description | length) > 0 then {description: $description} else {} end)')
+
           curl -fsS -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"applicationId": "IIakyrrLChtjnjuKKVFiB"}'
-
-      - name: Trigger Dokploy deploy (main)
-        if: steps.channel.outputs.channel == 'main'
-        run: |
-          curl -fsS -X POST "https://${{ secrets.DOKPLOY_HOST }}/api/application.deploy" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"applicationId": "C4Vzp1quDF4mKt2AQPjkU"}'
+            -d "$PAYLOAD"
