@@ -20,6 +20,7 @@ import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
 import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
+import { DEPLOYMENT } from '../utils/cacheTtl.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { getPublicSubmitSession } from '../services/publicSubmitSession.js';
 import { Request, Response } from 'express';
@@ -73,13 +74,52 @@ router.post(
         });
       }
 
+      // Check event mode restrictions for PFATC / Advanced ATC sessions
+      if ((pfatc || advancedAtc) && !isAdmin(createdBy)) {
+        const eventModeRow = await mainDb
+          .selectFrom('app_settings')
+          .select(['pfatc_event_mode', 'aatc_event_mode'])
+          .where('channel', '=', DEPLOYMENT)
+          .executeTakeFirst();
+
+        const userRolesForEvent = await getUserRoles(createdBy);
+
+        const hasPfatcSector = userRolesForEvent.some((r) => {
+          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          return p?.pfatc_sector === true;
+        });
+
+        const hasAatcSector = userRolesForEvent.some((r) => {
+          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          return p?.aatc_sector === true;
+        });
+
+        if (pfatc && eventModeRow?.pfatc_event_mode && !hasPfatcSector) {
+          return res.status(403).json({
+            error: 'Event mode active',
+            message: 'PFATC event mode is active. Only PFATC Event Controllers can create PFATC sessions.',
+          });
+        }
+
+        if (advancedAtc && eventModeRow?.aatc_event_mode && !hasAatcSector) {
+          return res.status(403).json({
+            error: 'Event mode active',
+            message: 'AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.',
+          });
+        }
+      }
+
       const userSessions = await getSessionsByUser(createdBy);
 
       const userRoles = await getUserRoles(createdBy);
       const isTester =
         isAdmin(createdBy) ||
         userRoles.some(
-          (role) => role.name === 'Tester' || role.name === 'Event Controller'
+          (role) => role.name === 'Tester' || role.name === 'Event Controller' ||
+            (() => {
+              const p = typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
+              return p?.pfatc_sector === true || p?.aatc_sector === true;
+            })()
         );
       const maxSessions = isTester ? 100 : 50;
 
@@ -95,7 +135,6 @@ router.post(
       let sessionId = generateSessionId();
       const accessId = generateAccessId();
 
-      const existing = await getSessionById(sessionId);
       const MAX_TRIES = 3;
       let attempt = 0;
       let existingSession = await getSessionById(sessionId);

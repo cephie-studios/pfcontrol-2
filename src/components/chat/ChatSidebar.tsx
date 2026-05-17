@@ -117,6 +117,16 @@ export default function ChatSidebar({
   const globalSocketRef = useRef<ReturnType<typeof createGlobalChatSocket> | null>(null);
   const globalPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
   const globalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  // AATC-specific state (separate socket + messages from PFATC)
+  const aatcSocketRef = useRef<ReturnType<typeof createGlobalChatSocket> | null>(null);
+  const aatcPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
+  const [aatcMessages, setAatcMessages] = useState<GlobalChatMessage[]>([]);
+  const [aatcLoading, setAatcLoading] = useState(false);
+  const [aatcInput, setAatcInput] = useState("");
+  const [aatcConnectedUsers, setAatcConnectedUsers] = useState<ConnectedGlobalChatUser[]>([]);
+  const [aatcTypingUsers, setAatcTypingUsers] = useState<Map<string, string>>(new Map());
+  const aatcTypingTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastAatcTypingEmit = useRef(0);
   const onMentionReceivedRef = useRef(onMentionReceived);
   const [voiceUsers, setVoiceUsers] = useState<VoiceUser[]>([]);
   const [connectionState, setConnectionState] = useState<VoiceConnectionState>({
@@ -294,10 +304,9 @@ export default function ChatSidebar({
       });
   }, [sessionId, open, messagesLoaded]);
 
+  // PFATC global chat socket
   useEffect(() => {
-    if (!user || (!isPFATC && !isAdvancedATC)) return;
-    const networkKind: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
-    const globalTabId: "pfatc" | "aatc" = networkKind;
+    if (!user || !isPFATC) return;
 
     if (!globalSocketRef.current) {
       globalSocketRef.current = createGlobalChatSocket(
@@ -306,9 +315,7 @@ export default function ChatSidebar({
         position || null,
         (msg: GlobalChatMessage) => {
           setGlobalMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) {
-              return prev;
-            }
+            if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
         },
@@ -316,16 +323,12 @@ export default function ChatSidebar({
           setGlobalMessages((prev) => prev.filter((m) => m.id !== data.messageId));
         },
         (data: { messageId: number; error: string }) => {
-          if (
-            globalPendingDeleteRef.current &&
-            globalPendingDeleteRef.current.id === data.messageId
-          ) {
-            setGlobalMessages((prev) => {
-              const newMessages = [...prev, globalPendingDeleteRef.current!];
-              return newMessages.sort(
+          if (globalPendingDeleteRef.current?.id === data.messageId) {
+            setGlobalMessages((prev) =>
+              [...prev, globalPendingDeleteRef.current!].sort(
                 (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
-              );
-            });
+              ),
+            );
             globalPendingDeleteRef.current = null;
           }
         },
@@ -338,7 +341,7 @@ export default function ChatSidebar({
           });
         },
         (mention) => {
-          if (!open || activeTab !== globalTabId) {
+          if (!open || activeTab !== "pfatc") {
             if (user && mention.mentionedUserId === user.userId && onMentionReceivedRef.current) {
               onMentionReceivedRef.current({
                 messageId: parseInt(mention.messageId, 10),
@@ -352,13 +355,8 @@ export default function ChatSidebar({
           }
         },
         (mention) => {
-          if (!open || activeTab !== globalTabId) {
-            if (
-              mention.airport &&
-              station &&
-              mention.airport.toUpperCase() === station.toUpperCase() &&
-              onMentionReceivedRef.current
-            ) {
+          if (!open || activeTab !== "pfatc") {
+            if (mention.airport && station && mention.airport.toUpperCase() === station.toUpperCase() && onMentionReceivedRef.current) {
               onMentionReceivedRef.current({
                 messageId: parseInt(mention.messageId, 10),
                 mentionedUserId: user.userId,
@@ -380,21 +378,13 @@ export default function ChatSidebar({
           globalTypingTimeouts.current.set(
             typingId,
             setTimeout(() => {
-              setGlobalTypingUsers((m) => {
-                const next = new Map(m);
-                next.delete(typingId);
-                return next;
-              });
+              setGlobalTypingUsers((m) => { const next = new Map(m); next.delete(typingId); return next; });
               globalTypingTimeouts.current.delete(typingId);
             }, 3000),
           );
         },
-        networkKind,
+        "pfatc",
       );
-
-      if (open && activeTab === globalTabId) {
-        globalSocketRef.current.socket.emit("globalChatOpened");
-      }
     }
 
     return () => {
@@ -403,39 +393,135 @@ export default function ChatSidebar({
         globalSocketRef.current = null;
       }
     };
-  }, [user, station, position, isPFATC, isAdvancedATC, open, activeTab]);
+  }, [user, station, position, isPFATC]);
 
+  // AATC global chat socket (separate from PFATC)
   useEffect(() => {
-    if (!globalSocketRef.current) return;
-    const globalTabId: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
-    if (open && activeTab === globalTabId) {
-      globalSocketRef.current.socket.emit("globalChatOpened");
-    } else {
-      globalSocketRef.current.socket.emit("globalChatClosed");
+    if (!user || !isAdvancedATC) return;
+
+    if (!aatcSocketRef.current) {
+      aatcSocketRef.current = createGlobalChatSocket(
+        user.userId,
+        station || null,
+        position || null,
+        (msg: GlobalChatMessage) => {
+          setAatcMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        },
+        (data: { messageId: number }) => {
+          setAatcMessages((prev) => prev.filter((m) => m.id !== data.messageId));
+        },
+        (data: { messageId: number; error: string }) => {
+          if (aatcPendingDeleteRef.current?.id === data.messageId) {
+            setAatcMessages((prev) =>
+              [...prev, aatcPendingDeleteRef.current!].sort(
+                (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime(),
+              ),
+            );
+            aatcPendingDeleteRef.current = null;
+          }
+        },
+        undefined,
+        (data: { messageId: number; reason: string }) => {
+          setAutomoddedMessages((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(data.messageId, data.reason);
+            return newMap;
+          });
+        },
+        (mention) => {
+          if (!open || activeTab !== "aatc") {
+            if (user && mention.mentionedUserId === user.userId && onMentionReceivedRef.current) {
+              onMentionReceivedRef.current({
+                messageId: parseInt(mention.messageId, 10),
+                mentionedUserId: mention.mentionedUserId,
+                mentionerUsername: mention.mentionerUsername,
+                message: mention.message,
+                timestamp: mention.timestamp,
+                sessionId: "aatc-chat",
+              });
+            }
+          }
+        },
+        (mention) => {
+          if (!open || activeTab !== "aatc") {
+            if (mention.airport && station && mention.airport.toUpperCase() === station.toUpperCase() && onMentionReceivedRef.current) {
+              onMentionReceivedRef.current({
+                messageId: parseInt(mention.messageId, 10),
+                mentionedUserId: user.userId,
+                mentionerUsername: mention.mentionerUsername,
+                message: mention.message,
+                timestamp: mention.timestamp,
+                sessionId: "aatc-chat",
+              });
+            }
+          }
+        },
+        (users: ConnectedGlobalChatUser[]) => {
+          setAatcConnectedUsers(users);
+        },
+        ({ userId: typingId, username }: { userId: string; username: string }) => {
+          setAatcTypingUsers((prev) => new Map(prev).set(typingId, username));
+          const prev = aatcTypingTimeouts.current.get(typingId);
+          if (prev) clearTimeout(prev);
+          aatcTypingTimeouts.current.set(
+            typingId,
+            setTimeout(() => {
+              setAatcTypingUsers((m) => { const next = new Map(m); next.delete(typingId); return next; });
+              aatcTypingTimeouts.current.delete(typingId);
+            }, 3000),
+          );
+        },
+        "aatc",
+      );
     }
-  }, [open, activeTab, isAdvancedATC]);
+
+    return () => {
+      if (aatcSocketRef.current) {
+        aatcSocketRef.current.socket.disconnect();
+        aatcSocketRef.current = null;
+      }
+    };
+  }, [user, station, position, isAdvancedATC]);
 
   useEffect(() => {
-    const globalTabId: "pfatc" | "aatc" = isAdvancedATC ? "aatc" : "pfatc";
-    if (!open || activeTab !== globalTabId || globalMessages.length > 0) return;
+    if (globalSocketRef.current) {
+      if (open && activeTab === "pfatc") {
+        globalSocketRef.current.socket.emit("globalChatOpened");
+      } else {
+        globalSocketRef.current.socket.emit("globalChatClosed");
+      }
+    }
+    if (aatcSocketRef.current) {
+      if (open && activeTab === "aatc") {
+        aatcSocketRef.current.socket.emit("globalChatOpened");
+      } else {
+        aatcSocketRef.current.socket.emit("globalChatClosed");
+      }
+    }
+  }, [open, activeTab]);
 
-    setGlobalLoading(true);
-    const fetchFn = isAdvancedATC ? fetchAATCChatMessages : fetchGlobalChatMessages;
-    fetchFn()
-      .then((fetchedMessages) => {
-        setGlobalMessages(fetchedMessages);
-        setGlobalLoading(false);
-      })
-      .catch((error) => {
-        console.error("Failed to fetch global chat messages:", error);
-        setGlobalMessages([]);
-        setGlobalLoading(false);
-      });
-  }, [open, activeTab, isAdvancedATC, globalMessages.length]);
+  useEffect(() => {
+    if (!open) return;
+    if (activeTab === "pfatc" && globalMessages.length === 0) {
+      setGlobalLoading(true);
+      fetchGlobalChatMessages()
+        .then((msgs) => { setGlobalMessages(msgs); setGlobalLoading(false); })
+        .catch(() => { setGlobalMessages([]); setGlobalLoading(false); });
+    }
+    if (activeTab === "aatc" && aatcMessages.length === 0) {
+      setAatcLoading(true);
+      fetchAATCChatMessages()
+        .then((msgs) => { setAatcMessages(msgs); setAatcLoading(false); })
+        .catch(() => { setAatcMessages([]); setAatcLoading(false); });
+    }
+  }, [open, activeTab, globalMessages.length, aatcMessages.length]);
 
   const isGlobalChat = activeTab === "pfatc" || activeTab === "aatc";
-  const textMessages: ChatListMessage[] = isGlobalChat ? globalMessages : messages;
-  const textLoading = isGlobalChat ? globalLoading : loading;
+  const textMessages: ChatListMessage[] = activeTab === "aatc" ? aatcMessages : isGlobalChat ? globalMessages : messages;
+  const textLoading = activeTab === "aatc" ? aatcLoading : isGlobalChat ? globalLoading : loading;
   const showTextChat =
     (sessionId && activeTab === "session") ||
     (isPFATC && activeTab === "pfatc") ||
@@ -499,13 +585,18 @@ export default function ChatSidebar({
   };
 
   const sendGlobalMessage = () => {
-    if (!globalInput.trim() || !globalSocketRef.current || globalInput.trim().length > 500) return;
-    globalSocketRef.current.socket.emit("globalChatMessage", {
-      user,
-      message: globalInput.trim(),
-    });
-    setGlobalInput("");
-    lastGlobalTypingEmit.current = 0;
+    const isAatcTab = activeTab === "aatc";
+    const socketToUse = isAatcTab ? aatcSocketRef.current : globalSocketRef.current;
+    const inputValue = isAatcTab ? aatcInput : globalInput;
+    if (!inputValue.trim() || !socketToUse || inputValue.trim().length > 500) return;
+    socketToUse.socket.emit("globalChatMessage", { user, message: inputValue.trim() });
+    if (isAatcTab) {
+      setAatcInput("");
+      lastAatcTypingEmit.current = 0;
+    } else {
+      setGlobalInput("");
+      lastGlobalTypingEmit.current = 0;
+    }
   };
 
   async function handleDelete(msgId: number) {
@@ -520,26 +611,35 @@ export default function ChatSidebar({
   }
 
   async function handleGlobalDelete(msgId: number) {
-    if (!globalSocketRef.current || !user) return;
+    const isAatcTab = activeTab === "aatc";
+    const socketToUse = isAatcTab ? aatcSocketRef.current : globalSocketRef.current;
+    if (!socketToUse || !user) return;
 
-    const messageToDelete = globalMessages.find((m) => m.id === msgId);
-    if (!messageToDelete) return;
-
-    globalPendingDeleteRef.current = messageToDelete;
-    setGlobalMessages((prev) => prev.filter((m) => m.id !== msgId));
-    globalSocketRef.current.deleteMessage(msgId, user.userId);
+    if (isAatcTab) {
+      const messageToDelete = aatcMessages.find((m) => m.id === msgId);
+      if (!messageToDelete) return;
+      aatcPendingDeleteRef.current = messageToDelete;
+      setAatcMessages((prev) => prev.filter((m) => m.id !== msgId));
+    } else {
+      const messageToDelete = globalMessages.find((m) => m.id === msgId);
+      if (!messageToDelete) return;
+      globalPendingDeleteRef.current = messageToDelete;
+      setGlobalMessages((prev) => prev.filter((m) => m.id !== msgId));
+    }
+    socketToUse.deleteMessage(msgId, user.userId);
   }
 
   const handleGlobalInputChange = (value: string) => {
-    setGlobalInput(value);
+    const isAatcTab = activeTab === "aatc";
+    if (isAatcTab) setAatcInput(value); else setGlobalInput(value);
 
     const cursorPos = globalTextareaRef.current?.selectionStart || 0;
     const result = handleGlobalMentionSuggestions(
       value,
       cursorPos,
       airports,
-      globalMessages,
-      connectedGlobalChatUsers,
+      isAatcTab ? aatcMessages : globalMessages,
+      isAatcTab ? aatcConnectedUsers : connectedGlobalChatUsers,
       sessionUsers,
       user?.userId,
     );
@@ -548,20 +648,23 @@ export default function ChatSidebar({
     setShowGlobalSuggestions(result.shouldShow);
     setSelectedGlobalSuggestionIndex(result.shouldShow ? 0 : -1);
 
-    if (value && globalSocketRef.current && user) {
+    const socketToUse = isAatcTab ? aatcSocketRef.current : globalSocketRef.current;
+    const lastEmitRef = isAatcTab ? lastAatcTypingEmit : lastGlobalTypingEmit;
+    if (value && socketToUse && user) {
       const now = Date.now();
-      if (now - lastGlobalTypingEmit.current > 2000) {
-        lastGlobalTypingEmit.current = now;
-        globalSocketRef.current.sendTyping(user.username);
+      if (now - lastEmitRef.current > 2000) {
+        lastEmitRef.current = now;
+        socketToUse.sendTyping(user.username);
       }
     }
   };
 
   const insertGlobalMention = (value: string) => {
+    const isAatcTab = activeTab === "aatc";
     const cursorPos = globalTextareaRef.current?.selectionStart || 0;
-    const result = insertMentionIntoText(globalInput, cursorPos, value);
+    const result = insertMentionIntoText(isAatcTab ? aatcInput : globalInput, cursorPos, value);
 
-    setGlobalInput(result.newText);
+    if (isAatcTab) setAatcInput(result.newText); else setGlobalInput(result.newText);
     setShowGlobalSuggestions(false);
     setSelectedGlobalSuggestionIndex(-1);
 
@@ -661,7 +764,7 @@ export default function ChatSidebar({
 
     try {
       if (reportingGlobalMessage) {
-        if (isAdvancedATC) {
+        if (activeTab === "aatc") {
           await reportAATCChatMessage(reportingMessageId, reportReason.trim());
         } else {
           await reportGlobalChatMessage(reportingMessageId, reportReason.trim());
@@ -793,19 +896,11 @@ export default function ChatSidebar({
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
         <div className="flex items-center gap-3">
           <span className="font-extrabold text-xl text-blue-300">
-            {(isPFATC || isAdvancedATC) && sessionId
-              ? activeTab === "session"
-                ? "Session Chat"
-                : activeTab === "voice"
-                  ? "Voice Chat"
-                  : isAdvancedATC
-                    ? "AATC Chat"
-                    : "PFATC Chat"
-              : sessionId
-                ? activeTab === "voice"
-                  ? "Voice Chat"
-                  : "Session Chat"
-                : isAdvancedATC
+            {activeTab === "session"
+              ? "Session Chat"
+              : activeTab === "voice"
+                ? "Voice Chat"
+                : activeTab === "aatc"
                   ? "AATC Chat"
                   : "PFATC Chat"}
           </span>
@@ -913,7 +1008,7 @@ export default function ChatSidebar({
                 ))
               ) : (
                 <div className="flex flex-wrap gap-1">
-                  {connectedGlobalChatUsers.map((globalUser) => (
+                  {(activeTab === "aatc" ? aatcConnectedUsers : connectedGlobalChatUsers).map((globalUser) => (
                     <img
                       key={globalUser.id}
                       src={globalUser.avatar || "/assets/app/default/avatar.webp"}
@@ -925,7 +1020,7 @@ export default function ChatSidebar({
                       }}
                     />
                   ))}
-                  {connectedGlobalChatUsers.length === 0 && (
+                  {(activeTab === "aatc" ? aatcConnectedUsers : connectedGlobalChatUsers).length === 0 && (
                     <div className="text-xs text-zinc-400">No controllers online</div>
                   )}
                 </div>
@@ -983,11 +1078,11 @@ export default function ChatSidebar({
           <ChatTextComposer
             isGlobalChat={isGlobalChat}
             textareaRef={isGlobalChat ? globalTextareaRef : textareaRef}
-            value={isGlobalChat ? globalInput : input}
+            value={activeTab === "aatc" ? aatcInput : isGlobalChat ? globalInput : input}
             onChange={isGlobalChat ? handleGlobalInputChange : handleInputChange}
             onKeyDown={handleComposerKeyDown}
             onSend={isGlobalChat ? sendGlobalMessage : sendMessage}
-            sendDisabled={isGlobalChat ? !globalInput.trim() : !input.trim()}
+            sendDisabled={isGlobalChat ? !(activeTab === "aatc" ? aatcInput : globalInput).trim() : !input.trim()}
             placeholder={
               isGlobalChat
                 ? "Type a message... Use @ICAO or @username for mentions"
@@ -1003,7 +1098,7 @@ export default function ChatSidebar({
             globalSuggestions={globalSuggestions}
             selectedGlobalSuggestionIndex={selectedGlobalSuggestionIndex}
             insertGlobalMention={insertGlobalMention}
-            typingUsers={isGlobalChat ? globalTypingUsers : sessionTypingUsers}
+            typingUsers={activeTab === "aatc" ? aatcTypingUsers : isGlobalChat ? globalTypingUsers : sessionTypingUsers}
           />
         </div>
       )}

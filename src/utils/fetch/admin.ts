@@ -391,6 +391,22 @@ export async function fetchAdminSessions(
   return makeAdminRequest(`/sessions?${params.toString()}`);
 }
 
+export interface EventModeState {
+  pfatcEventMode: boolean;
+  aatcEventMode: boolean;
+}
+
+export async function fetchEventMode(): Promise<EventModeState> {
+  return makeAdminRequest("/sessions/event-mode");
+}
+
+export async function setEventMode(state: Partial<EventModeState>): Promise<EventModeState> {
+  return makeAdminRequest("/sessions/event-mode", {
+    method: "POST",
+    body: JSON.stringify(state),
+  });
+}
+
 export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
   return makeAdminRequest(`/users/${userId}/reveal-ip`, {
     method: "POST",

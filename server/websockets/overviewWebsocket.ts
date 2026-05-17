@@ -11,7 +11,7 @@ import {
   sanitizeFlightLevel,
   sanitizeRunway,
 } from "../utils/sanitization.js";
-import { isEventController } from "../middleware/flightAccess.js";
+import { isPFATCSectorController, isAATCSectorController } from "../middleware/flightAccess.js";
 import { incrementStat } from "../utils/statisticsCache.js";
 import { logFlightAction } from "../db/flightLogs.js";
 import type { Server as HTTPServer } from "http";
@@ -55,10 +55,16 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
     const isEventControllerFlag = socket.handshake.query.isEventController === "true";
 
     if (isEventControllerFlag && userId) {
-      const hasEventControllerRole = await isEventController(userId);
-      if (hasEventControllerRole) {
+      const [canPfatc, canAatc] = await Promise.all([
+        isPFATCSectorController(userId),
+        isAATCSectorController(userId),
+      ]);
+
+      if (canPfatc || canAatc) {
         eventControllerClients.add(socket.id);
         socket.data.isEventController = true;
+        socket.data.canEditPfatc = canPfatc;
+        socket.data.canEditAatc = canAatc;
         socket.data.userId = userId;
         socket.data.username = (socket.handshake.query.username as string) || "Unknown";
       }
@@ -94,6 +100,21 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
 
         try {
           const validSessionId = validateSessionId(sessionId);
+
+          // Enforce per-network-type access
+          const session = await (await import("../db/sessions.js")).getSessionById(validSessionId);
+          if (!session) {
+            socket.emit("flightError", { action: "update", flightId, error: "Session not found" });
+            return;
+          }
+          if (session.is_pfatc && !socket.data.canEditPfatc) {
+            socket.emit("flightError", { action: "update", flightId, error: "Not authorized to edit PFATC flights" });
+            return;
+          }
+          if (session.is_advanced_atc && !socket.data.canEditAatc) {
+            socket.emit("flightError", { action: "update", flightId, error: "Not authorized to edit AATC flights" });
+            return;
+          }
           validateFlightId(flightId);
 
           if (Object.prototype.hasOwnProperty.call(updates, "hidden")) {
@@ -223,6 +244,21 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
           const validSessionId = validateSessionId(sessionId);
           validateFlightId(flightId);
 
+          // Enforce per-network-type access for contactMe
+          const session = await (await import("../db/sessions.js")).getSessionById(validSessionId);
+          if (!session) {
+            socket.emit("flightError", { action: "contactMe", flightId, error: "Session not found" });
+            return;
+          }
+          if (session.is_pfatc && !socket.data.canEditPfatc) {
+            socket.emit("flightError", { action: "contactMe", flightId, error: "Not authorized for PFATC sessions" });
+            return;
+          }
+          if (session.is_advanced_atc && !socket.data.canEditAatc) {
+            socket.emit("flightError", { action: "contactMe", flightId, error: "Not authorized for AATC sessions" });
+            return;
+          }
+
           const sanitizedMessage = message
             ? sanitizeString(message, 200)
             : "CONTACT CONTROLLER ON FREQUENCY";
@@ -339,6 +375,8 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
             sessionUsers.map(async (user) => {
               let hasVatsimRating = false;
               let isEventController = false;
+              let isPFATCSector = false;
+              let isAATCSector = false;
               let avatar = null;
 
               if (user.id) {
@@ -350,9 +388,13 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
                     avatar = `https://cdn.discordapp.com/avatars/${user.id}/${userData.avatar}.png`;
                   }
 
-                  if (user.roles) {
-                    isEventController = user.roles.some((role) => role.name === "Event Controller");
-                  }
+                  const [pfatc, aatc] = await Promise.all([
+                    isPFATCSectorController(user.id),
+                    isAATCSectorController(user.id),
+                  ]);
+                  isPFATCSector = pfatc;
+                  isAATCSector = aatc;
+                  isEventController = pfatc || aatc;
                 } catch (err) {
                   console.error("Error fetching user data for controller badges:", err);
                 }
@@ -364,6 +406,8 @@ export async function getOverviewData(sessionUsersIO: SessionUsersServer) {
                 avatar,
                 hasVatsimRating,
                 isEventController,
+                isPFATCSectorController: isPFATCSector,
+                isAATCSectorController: isAATCSector,
               };
             }),
           );

@@ -102,7 +102,6 @@ export default function AdminSidebar({
       bans: ["bans", "ban_management"],
       testers: ["testers", "tester_management"],
       roles: ["roles", "role_management"],
-      event_controller: ["event_controller", "events", "event_manager"],
     };
 
     const mapped = aliases[permission] ?? [];

@@ -805,6 +805,18 @@ export async function ensureAppSettingsChannelColumn() {
   `.execute(mainDb);
 }
 
+export async function ensureEventModeColumns() {
+  await sql`
+    ALTER TABLE app_settings
+    ADD COLUMN IF NOT EXISTS pfatc_event_mode boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE app_settings
+    ADD COLUMN IF NOT EXISTS aatc_event_mode boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+}
+
 export async function syncVersionFromEnv(redis?: Redis) {
   const envVersion = process.env.APP_VERSION?.trim();
   if (!envVersion) {
