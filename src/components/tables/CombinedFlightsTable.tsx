@@ -1,4 +1,5 @@
 import type { Flight } from '../../types/flight';
+import type { DepartureTableColumnSettings, ArrivalsTableColumnSettings } from '../../types/settings';
 import DepartureTable from './DepartureTable';
 import ArrivalsTable from './ArrivalsTable';
 
@@ -20,6 +21,9 @@ interface CombinedFlightsTableProps {
   flashingPDCIds: Set<string>;
   setFlashingPDCIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   arrivalsLoading?: boolean;
+  activeRunway?: string | null;
+  departureColumns?: DepartureTableColumnSettings;
+  arrivalsColumns?: ArrivalsTableColumnSettings;
 }
 
 export default function CombinedFlightsTable({
@@ -34,6 +38,9 @@ export default function CombinedFlightsTable({
   flashingPDCIds,
   setFlashingPDCIds,
   arrivalsLoading,
+  activeRunway,
+  departureColumns,
+  arrivalsColumns,
 }: CombinedFlightsTableProps) {
   return (
     <div className="space-y-12 mt-8">
@@ -51,6 +58,8 @@ export default function CombinedFlightsTable({
           onToggleClearance={onToggleClearance}
           flashingPDCIds={flashingPDCIds}
           setFlashingPDCIds={setFlashingPDCIds}
+          activeRunway={activeRunway}
+          departureColumns={departureColumns}
         />
       </div>
 
@@ -64,6 +73,7 @@ export default function CombinedFlightsTable({
           onFlightChange={onFlightChange}
           backgroundStyle={backgroundStyle}
           loading={arrivalsLoading}
+          arrivalsColumns={arrivalsColumns}
         />
       </div>
     </div>

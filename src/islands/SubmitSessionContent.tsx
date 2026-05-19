@@ -6,7 +6,11 @@ import { SettingsProvider } from '../hooks/settings/SettingsProvider';
 import Submit from '../pages/Submit';
 import { PostHogProviderWrapper } from './PostHogProviderWrapper';
 
-export default function SubmitSessionContent() {
+interface SubmitSessionContentProps {
+  airportIcao?: string;
+}
+
+export default function SubmitSessionContent({ airportIcao }: SubmitSessionContentProps) {
   return (
     <PostHogProviderWrapper>
       <AuthProvider>
@@ -16,7 +20,7 @@ export default function SubmitSessionContent() {
               <Routes>
                 <Route
                   path="/submit/:sessionId"
-                  element={<Submit standalone={false} />}
+                  element={<Submit standalone={false} initialAirportIcao={airportIcao} />}
                 />
               </Routes>
             </BrowserRouter>

@@ -96,7 +96,7 @@ export default function AcarsSidebar({
                             </div>
                           </div>
                         )}
-                        {controller.isEventController && (
+                        {controller.isPFATCSectorController && (
                           <div className="relative group">
                             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center cursor-pointer">
                               <img
@@ -109,7 +109,27 @@ export default function AcarsSidebar({
                               <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-green-400 to-green-700">
                                 <div className="px-3 pb-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
                                   <span className="text-xs font-medium text-white">
-                                    PFATC Event Controller
+                                    PFATC Sector Controller
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {controller.isAATCSectorController && (
+                          <div className="relative group">
+                            <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center cursor-pointer">
+                              <img
+                                src="/assets/images/aatc.webp"
+                                alt="AATC"
+                                className="w-6 h-6 rounded-full border border-purple-500"
+                              />
+                            </div>
+                            <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50 whitespace-nowrap">
+                              <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-purple-500 to-purple-800">
+                                <div className="px-3 pb-1 bg-zinc-900/90 backdrop-blur-md rounded-lg">
+                                  <span className="text-xs font-medium text-white">
+                                    AATC Sector Controller
                                   </span>
                                 </div>
                               </div>

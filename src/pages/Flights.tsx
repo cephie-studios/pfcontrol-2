@@ -509,7 +509,8 @@ export default function Flights() {
       return;
     }
 
-    const isExternalArrival = externalArrivals.some((f) => f.id === flightId);
+    const isLocalFlight = flights.some((f) => f.id === flightId);
+    const isExternalArrival = !isLocalFlight && externalArrivals.some((f) => f.id === flightId);
 
     if (isExternalArrival && arrivalsSocket?.socket?.connected) {
       arrivalsSocket.updateArrival(flightId, updates);
@@ -665,7 +666,9 @@ export default function Flights() {
 
     let baseArrivals = ownArrivals;
     if (session && hasAdvancedNetworkFeatures(session)) {
-      baseArrivals = [...ownArrivals, ...externalArrivals];
+      const ownIds = new Set(ownArrivals.map((f) => f.id));
+      const dedupedExternal = externalArrivals.filter((f) => !ownIds.has(f.id));
+      baseArrivals = [...ownArrivals, ...dedupedExternal];
     }
 
     const mappedArrivals = baseArrivals.map((flight) => ({
@@ -692,7 +695,9 @@ export default function Flights() {
       );
 
       if (session && hasAdvancedNetworkFeatures(session)) {
-        baseFlights = [...ownArrivals, ...externalArrivals];
+        const ownIds = new Set(ownArrivals.map((f) => f.id));
+        const dedupedExternal = externalArrivals.filter((f) => !ownIds.has(f.id));
+        baseFlights = [...ownArrivals, ...dedupedExternal];
       } else {
         baseFlights = ownArrivals;
       }
@@ -787,6 +792,7 @@ export default function Flights() {
   const defaultDepartureColumns: DepartureTableColumnSettings = {
     time: true,
     callsign: true,
+    req: true,
     stand: true,
     aircraft: true,
     wakeTurbulence: true,
@@ -973,6 +979,9 @@ export default function Flights() {
                   flashingPDCIds={flashingPDCIds}
                   setFlashingPDCIds={setFlashingPDCIds}
                   arrivalsLoading={arrivalsLoading}
+                  activeRunway={session?.activeRunway}
+                  departureColumns={departureColumns}
+                  arrivalsColumns={arrivalsColumns}
                 />
                 <div className="flex justify-center gap-4 mt-4 pb-6">
                   <Button
@@ -1029,6 +1038,7 @@ export default function Flights() {
                       setFlashingPDCIds={setFlashingPDCIds}
                       flashFlightId={null}
                       id="departure-table"
+                      activeRunway={session?.activeRunway}
                     />
                     <div className="flex justify-center mt-4 pb-6">
                       <Button

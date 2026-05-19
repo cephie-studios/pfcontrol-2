@@ -18,6 +18,7 @@ export interface LayoutSettings {
 export interface DepartureTableColumnSettings {
   time: true; // always true, cannot be disabled
   callsign: boolean;
+  req: boolean;
   stand: boolean;
   aircraft: boolean;
   wakeTurbulence: boolean;

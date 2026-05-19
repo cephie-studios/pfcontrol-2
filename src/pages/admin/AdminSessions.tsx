@@ -16,6 +16,7 @@ import {
   Database,
   RefreshCw,
   TowerControl,
+  ChevronDown,
   Star,
   Shield,
   Wrench,
@@ -42,7 +43,10 @@ import {
   fetchAdminSessions,
   deleteAdminSession,
   logSessionJoin,
+  fetchEventMode,
+  setEventMode,
   type AdminSession,
+  type EventModeState,
 } from "../../utils/fetch/admin";
 import ErrorScreen from "../../components/common/ErrorScreen";
 
@@ -130,6 +134,12 @@ export default function AdminSessions() {
   const [filteredSessions, setFilteredSessions] = useState<AdminSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [eventMode, setEventModeState] = useState<EventModeState>({
+    pfatcEventMode: false,
+    aatcEventMode: false,
+  });
+  const [eventModeLoading, setEventModeLoading] = useState(false);
+  const [eventModeOpen, setEventModeOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [selectedSession, setSelectedSession] = useState<AdminSession | null>(null);
@@ -145,7 +155,33 @@ export default function AdminSessions() {
 
   useEffect(() => {
     fetchSessions();
+    loadEventMode();
   }, [page, search]);
+
+  const loadEventMode = async () => {
+    try {
+      const data = await fetchEventMode();
+      setEventModeState(data);
+    } catch {
+      // non-critical — silently ignore
+    }
+  };
+
+  const handleToggleEventMode = async (field: keyof EventModeState) => {
+    try {
+      setEventModeLoading(true);
+      const updated = await setEventMode({ [field]: !eventMode[field] });
+      setEventModeState(updated);
+      setToast({
+        message: `${field === "pfatcEventMode" ? "PFATC" : "AATC"} event mode ${updated[field] ? "enabled" : "disabled"}`,
+        type: "success",
+      });
+    } catch {
+      setToast({ message: "Failed to update event mode", type: "error" });
+    } finally {
+      setEventModeLoading(false);
+    }
+  };
   useEffect(() => {
     filterAndSortSessions();
   }, [sessions, sortBy]);
@@ -576,6 +612,23 @@ export default function AdminSessions() {
                   size="md"
                 />
 
+                {/* Event Mode Button */}
+                <button
+                  onClick={() => setEventModeOpen((o) => !o)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-full border-2 text-sm font-medium transition-colors ${
+                    eventModeOpen
+                      ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"
+                      : "bg-zinc-900/50 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                  } ${(eventMode.pfatcEventMode || eventMode.aatcEventMode) ? "ring-1 ring-yellow-500/40" : ""}`}
+                >
+                  <TowerControl className="w-4 h-4" />
+                  <span className="hidden sm:inline">Event Mode</span>
+                  {(eventMode.pfatcEventMode || eventMode.aatcEventMode) && (
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
+                  )}
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventModeOpen ? "rotate-180" : ""}`} />
+                </button>
+
                 {/* Refresh Button */}
                 <Button
                   onClick={fetchSessions}
@@ -589,6 +642,80 @@ export default function AdminSessions() {
                 </Button>
               </div>
             </div>
+
+            {/* Event Mode Collapsible Panel */}
+            {eventModeOpen && (
+              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6 mb-6">
+                <p className="text-zinc-500 text-sm mb-4">
+                  When event mode is active, only users with the corresponding Sector Controller role can create sessions on that network.
+                </p>
+                <div className="space-y-3">
+                  {/* PFATC */}
+                  <div className="flex items-center justify-between p-4 bg-zinc-800 border border-zinc-700/50 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${eventMode.pfatcEventMode ? "bg-blue-500/20" : "bg-zinc-700/50"}`}>
+                        <TowerControl className={`w-4 h-4 ${eventMode.pfatcEventMode ? "text-blue-400" : "text-zinc-500"}`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium text-sm">PFATC Event Mode</span>
+                          {eventMode.pfatcEventMode && (
+                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">Active</span>
+                          )}
+                        </div>
+                        <p className="text-zinc-500 text-xs mt-0.5">
+                          {eventMode.pfatcEventMode
+                            ? "Only PFATC Sector Controllers can create PFATC sessions"
+                            : "Anyone can create PFATC sessions"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleEventMode("pfatcEventMode")}
+                      disabled={eventModeLoading}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                        eventMode.pfatcEventMode ? "bg-blue-500" : "bg-zinc-600"
+                      }`}
+                      aria-label="Toggle PFATC event mode"
+                    >
+                      <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${eventMode.pfatcEventMode ? "translate-x-5" : "translate-x-0"}`} />
+                    </button>
+                  </div>
+
+                  {/* AATC */}
+                  <div className="flex items-center justify-between p-4 bg-zinc-800 border border-zinc-700/50 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${eventMode.aatcEventMode ? "bg-purple-500/20" : "bg-zinc-700/50"}`}>
+                        <TowerControl className={`w-4 h-4 ${eventMode.aatcEventMode ? "text-purple-400" : "text-zinc-500"}`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium text-sm">AATC Event Mode</span>
+                          {eventMode.aatcEventMode && (
+                            <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">Active</span>
+                          )}
+                        </div>
+                        <p className="text-zinc-500 text-xs mt-0.5">
+                          {eventMode.aatcEventMode
+                            ? "Only AATC Sector Controllers can create Advanced ATC sessions"
+                            : "Anyone can create Advanced ATC sessions"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleEventMode("aatcEventMode")}
+                      disabled={eventModeLoading}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                        eventMode.aatcEventMode ? "bg-purple-500" : "bg-zinc-600"
+                      }`}
+                      aria-label="Toggle AATC event mode"
+                    >
+                      <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${eventMode.aatcEventMode ? "translate-x-5" : "translate-x-0"}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Content */}
             {loading ? (

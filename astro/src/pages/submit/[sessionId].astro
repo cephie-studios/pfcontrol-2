@@ -12,7 +12,7 @@ interface SubmitSessionPublic {
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
   createdBy: string;
-  flightCount?: number;
+  flightCount: number;
   atisLetter?: string;
   atisText?: string;
   controllerUsername?: string;
@@ -54,6 +54,6 @@ const seo = buildSubmitSessionSeo(session, siteOrigin);
   keywords={seo.keywords}
 >
   <div class="min-h-screen bg-gray-950">
-    <SubmitSessionContent client:only="react" />
+    <SubmitSessionContent client:only="react" airportIcao={session.airportIcao} />
   </div>
 </BaseLayout>

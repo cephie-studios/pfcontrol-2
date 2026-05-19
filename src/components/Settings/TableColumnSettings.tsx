@@ -24,6 +24,7 @@ interface TableColumnSettingsProps {
 
 const departureColumnLabels = {
   callsign: 'Callsign',
+  req: 'On Request (REQ)',
   stand: 'Stand',
   aircraft: 'Aircraft Type',
   wakeTurbulence: 'Wake Turbulence',

@@ -680,6 +680,8 @@ export async function updateFlight(
     "pdc_remarks",
     "hidden",
     "route",
+    "req_at",
+    "req_phase",
   ];
 
   const dbUpdates: Record<string, unknown> = {};

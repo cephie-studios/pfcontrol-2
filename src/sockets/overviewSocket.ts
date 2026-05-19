@@ -18,6 +18,8 @@ export interface OverviewSession {
     avatar?: string | null;
     hasVatsimRating?: boolean;
     isEventController?: boolean;
+    isPFATCSectorController?: boolean;
+    isAATCSectorController?: boolean;
   }>;
   atis?: {
     letter: string;

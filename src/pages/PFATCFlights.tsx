@@ -203,12 +203,22 @@ export default function PFATCFlights() {
 
   const overviewSocketRef = useRef<ReturnType<typeof createOverviewSocket> | null>(null);
 
-  const isEventController =
-    user?.rolePermissions?.["event_controller"] ||
-    (user as { roles?: { name: string }[] })?.roles?.some(
-      (role) => role.name === "Event Controller",
-    ) ||
-    user?.isAdmin;
+  const isPFATCSectorController = Boolean(
+    user?.rolePermissions?.["pfatc_sector"] || user?.isAdmin,
+  );
+
+  const isAATCSectorController = Boolean(
+    user?.rolePermissions?.["aatc_sector"] || user?.isAdmin,
+  );
+
+  // Combined — used for showing toolbar controls and connecting the overview socket
+  const isEventController = isPFATCSectorController || isAATCSectorController;
+
+  const canEditFlight = (flight: { sessionIsPFATC?: boolean; sessionIsAdvancedATC?: boolean }) => {
+    if (isPFATCSectorController && flight.sessionIsPFATC) return true;
+    if (isAATCSectorController && flight.sessionIsAdvancedATC) return true;
+    return false;
+  };
 
   const chartHandlers = useMemo(
     () =>
@@ -858,9 +868,10 @@ export default function PFATCFlights() {
     const isUpdating = updatingFlights.has(String(flight.id));
     const currentValue = getCurrentValue(flight, field);
     const originalValue = String(flight[field as keyof FlightWithDetails] || "");
-    const isDisabled = !isEventController || !selectedStation;
+    const canEdit = canEditFlight(flight);
+    const isDisabled = !canEdit || !selectedStation;
 
-    if (!isEventController) {
+    if (!canEdit) {
       return <span className="font-mono text-zinc-300">{currentValue || "N/A"}</span>;
     }
 
@@ -1154,10 +1165,17 @@ export default function PFATCFlights() {
                 {(overviewData?.totalFlights || 0) === 1 ? "" : "S"}
               </span>
             </div>
-            {isEventController && (
+            {isPFATCSectorController && (
+              <div className="px-6 py-1.5 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
+                <span className="text-blue-400 text-sm font-semibold tracking-wider">
+                  PFATC SECTOR CONTROLLER
+                </span>
+              </div>
+            )}
+            {isAATCSectorController && (
               <div className="px-6 py-1.5 bg-purple-600/20 backdrop-blur-md border border-purple-500/30 rounded-full shadow-lg">
                 <span className="text-purple-400 text-sm font-semibold tracking-wider">
-                  EVENT CONTROLLER
+                  AATC SECTOR CONTROLLER
                 </span>
               </div>
             )}
@@ -1390,7 +1408,7 @@ export default function PFATCFlights() {
                               </div>
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController
+                              {canEditFlight(flight)
                                 ? renderEditableCell(flight, "status", "status")
                                 : getStatusBadge(flight.status || "")}
                             </td>
@@ -1403,7 +1421,7 @@ export default function PFATCFlights() {
                               </div>
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "arrival", "airport")
                               ) : (
                                 <div className="flex items-center gap-1.5">
@@ -1415,7 +1433,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "aircraft", "aircraft")
                               ) : (
                                 <span className="font-mono text-purple-300 font-medium">
@@ -1424,7 +1442,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "cruisingFL", "altitude")
                               ) : (
                                 <span className="font-mono text-cyan-300 font-medium">
@@ -1433,7 +1451,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "clearedFL", "altitude")
                               ) : (
                                 <span className="font-mono text-amber-300 font-medium">
@@ -1442,7 +1460,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "sid", "sid")
                               ) : (
                                 <span className="font-mono text-indigo-300 text-xs">
@@ -1451,7 +1469,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "star", "star")
                               ) : (
                                 <span className="font-mono text-pink-300 text-xs">
@@ -1460,7 +1478,7 @@ export default function PFATCFlights() {
                               )}
                             </td>
                             <td className="px-3 pr-6 py-4">
-                              {isEventController ? (
+                              {canEditFlight(flight) ? (
                                 renderEditableCell(flight, "remark", "text")
                               ) : (
                                 <span className="text-zinc-400 text-xs italic">
@@ -1477,14 +1495,14 @@ export default function PFATCFlights() {
                                       actionButtonRefs.current[flight.id] = el;
                                     }
                                   }}
-                                  className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!isEventController || !selectedStation ? "opacity-50 cursor-not-allowed" : ""}`}
+                                  className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!canEditFlight(flight) || !selectedStation ? "opacity-50 cursor-not-allowed" : ""}`}
                                   onClick={() => {
                                     setOpenActionMenuId(
                                       openActionMenuId === flight.id ? null : flight.id,
                                     );
                                   }}
                                   title="Actions"
-                                  disabled={!isEventController || !selectedStation}
+                                  disabled={!canEditFlight(flight) || !selectedStation}
                                 >
                                   <Menu className="h-6 w-6" strokeWidth={2.5} />
                                 </button>
@@ -1497,7 +1515,7 @@ export default function PFATCFlights() {
                                         onClick={() => setOpenActionMenuId(null)}
                                       />
                                       <div
-                                        className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
+                                        className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
                                         style={{
                                           zIndex: 9998,
                                           top: (() => {
@@ -1512,32 +1530,34 @@ export default function PFATCFlights() {
                                             const btn = actionButtonRefs.current[flight.id];
                                             if (btn) {
                                               const rect = btn.getBoundingClientRect();
-                                              return `${rect.right - 160}px`;
+                                              return `${rect.right - 176}px`;
                                             }
                                             return "0px";
                                           })(),
                                         }}
                                       >
-                                        <button
-                                          type="button"
-                                          className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                          onClick={() => handleOpenFlightDetails(flight)}
-                                        >
-                                          <FileText className="w-4 h-4" />
-                                          Details
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                          onClick={() => handleToggleHidden(flight)}
-                                        >
-                                          {flight.hidden ? (
-                                            <Eye className="w-4 h-4" />
-                                          ) : (
-                                            <EyeOff className="w-4 h-4" />
-                                          )}
-                                          {flight.hidden ? "Unhide" : "Hide"}
-                                        </button>
+                                        <div className="p-1.5">
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                            onClick={() => handleOpenFlightDetails(flight)}
+                                          >
+                                            <FileText className="w-4 h-4 shrink-0" />
+                                            <span className="font-medium">Details</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                            onClick={() => handleToggleHidden(flight)}
+                                          >
+                                            {flight.hidden ? (
+                                              <Eye className="w-4 h-4 shrink-0" />
+                                            ) : (
+                                              <EyeOff className="w-4 h-4 shrink-0" />
+                                            )}
+                                            <span className="font-medium">{flight.hidden ? "Unhide" : "Hide"}</span>
+                                          </button>
+                                        </div>
                                       </div>
                                     </>,
                                     document.body,
@@ -1783,7 +1803,8 @@ export default function PFATCFlights() {
         onMentionReceived={handleMentionReceived}
         station={selectedStation}
         position={selectedStation ? selectedStation.split("_").slice(1).join("_") : ""}
-        isPFATC={true}
+        isPFATC={isPFATCSectorController}
+        isAdvancedATC={isAATCSectorController}
         unreadSessionCount={0}
         unreadGlobalCount={0}
       />

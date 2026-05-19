@@ -7,6 +7,8 @@ import {
   ensureSessionsDeveloperApiKeyColumn,
   ensureDeveloperApiPolicyColumns,
   ensureAppSettingsChannelColumn,
+  ensureEventModeColumns,
+  ensureFlightReqColumns,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -66,6 +68,8 @@ try {
   await ensureSessionsDeveloperApiKeyColumn();
   await ensureDeveloperApiPolicyColumns();
   await ensureAppSettingsChannelColumn();
+  await ensureEventModeColumns();
+  await ensureFlightReqColumns();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

@@ -1,7 +1,46 @@
 import { Request, Response, NextFunction } from "express";
 import { mainDb } from "../db/connection.js";
 import { getUserRoles } from "../db/roles.js";
-import { isAdvancedNetworkSession } from "../utils/advancedNetworkSession.js";
+
+function hasPermission(roles: Awaited<ReturnType<typeof getUserRoles>>, permKey: string): boolean {
+  return roles.some((role) => {
+    let perms = role.permissions;
+    if (typeof perms === "string") {
+      try { perms = JSON.parse(perms); } catch { return false; }
+    }
+    return perms && typeof perms === "object" && (perms as Record<string, boolean>)[permKey] === true;
+  });
+}
+
+/** Check if user can edit PFATC session flights (pfatc_sector permission) */
+export async function isPFATCSectorController(userId: string): Promise<boolean> {
+  try {
+    const userRoles = await getUserRoles(userId);
+    return hasPermission(userRoles, "pfatc_sector");
+  } catch {
+    return false;
+  }
+}
+
+/** Check if user can edit AATC session flights (aatc_sector permission) */
+export async function isAATCSectorController(userId: string): Promise<boolean> {
+  try {
+    const userRoles = await getUserRoles(userId);
+    return hasPermission(userRoles, "aatc_sector");
+  } catch {
+    return false;
+  }
+}
+
+/** Legacy alias — kept for websocket compatibility */
+export async function isEventController(userId: string): Promise<boolean> {
+  try {
+    const userRoles = await getUserRoles(userId);
+    return hasPermission(userRoles, "pfatc_sector") || hasPermission(userRoles, "aatc_sector");
+  } catch {
+    return false;
+  }
+}
 
 export async function requireFlightAccess(req: Request, res: Response, next: NextFunction) {
   try {
@@ -21,22 +60,18 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
       .executeTakeFirst();
 
     if (!session) {
-      return res.status(404).json({
-        error: "Session not found",
-      });
+      return res.status(404).json({ error: "Session not found" });
     }
 
     const userRoles = await getUserRoles(userId);
-    const hasEventControllerRole = userRoles.some(
-      (role) => role.name === "event_controller" || role.name === "Event Controller",
-    );
 
-    if (hasEventControllerRole) {
-      if (!isAdvancedNetworkSession(session)) {
-        return res.status(403).json({
-          error: "Event controllers can only modify PFATC or Advanced ATC network sessions",
-        });
-      }
+    // PFATC Sector Controller can edit flights in PFATC sessions
+    if (hasPermission(userRoles, "pfatc_sector") && session.is_pfatc) {
+      return next();
+    }
+
+    // AATC Sector Controller can edit flights in Advanced ATC sessions
+    if (hasPermission(userRoles, "aatc_sector") && session.is_advanced_atc) {
       return next();
     }
 
@@ -60,18 +95,6 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
   }
 }
 
-export async function isEventController(userId: string): Promise<boolean> {
-  try {
-    const userRoles = await getUserRoles(userId);
-    return userRoles.some(
-      (role) => role.name === "event_controller" || role.name === "Event Controller",
-    );
-  } catch (error) {
-    console.error("Error checking event controller status:", error);
-    return false;
-  }
-}
-
 export async function canModifySession(
   userId: string,
   sessionId: string,
@@ -84,22 +107,15 @@ export async function canModifySession(
       .where("session_id", "=", sessionId)
       .executeTakeFirst();
 
-    if (!session) {
-      return false;
-    }
+    if (!session) return false;
 
-    const hasEventControllerRole = await isEventController(userId);
-    if (hasEventControllerRole && isAdvancedNetworkSession(session)) {
-      return true;
-    }
+    const userRoles = await getUserRoles(userId);
 
-    if (accessId && accessId === session.access_id) {
-      return true;
-    }
+    if (hasPermission(userRoles, "pfatc_sector") && session.is_pfatc) return true;
+    if (hasPermission(userRoles, "aatc_sector") && session.is_advanced_atc) return true;
 
-    if (userId === session.created_by) {
-      return true;
-    }
+    if (accessId && accessId === session.access_id) return true;
+    if (userId === session.created_by) return true;
 
     return false;
   } catch (error) {

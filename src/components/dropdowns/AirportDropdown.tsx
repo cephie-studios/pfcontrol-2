@@ -10,6 +10,9 @@ interface AirportDropdownProps {
   showFullName?: boolean;
   className?: string;
   excludeCenterPositions?: boolean;
+  searchable?: boolean;
+  portal?: boolean;
+  placeholder?: string;
 }
 
 export default function AirportDropdown({
@@ -20,6 +23,9 @@ export default function AirportDropdown({
   showFullName = true,
   className,
   excludeCenterPositions = true,
+  searchable = false,
+  portal = false,
+  placeholder,
 }: AirportDropdownProps) {
   const { airports, loading } = useData();
 
@@ -60,13 +66,15 @@ export default function AirportDropdown({
   return (
     <Dropdown
       options={dropdownOptions}
-      placeholder={loading ? 'Loading...' : 'Select Airport'}
+      placeholder={loading ? 'Loading...' : (placeholder ?? 'Select Airport')}
       value={value}
       onChange={onChange}
       disabled={disabled || loading}
       getDisplayValue={getDisplayValue}
       size={size}
       className={className}
+      searchable={searchable}
+      portal={portal}
     />
   );
 }

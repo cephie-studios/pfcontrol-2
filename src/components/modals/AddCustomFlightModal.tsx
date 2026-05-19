@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchSids } from '../../utils/fetch/data';
 import { X, Plane } from 'lucide-react';
 import Button from '../common/Button';
 import TextInput from '../common/TextInput';
@@ -57,21 +58,49 @@ export default function AddCustomFlightModal({
     }
   }, [isOpen, airportIcao, flightType]);
 
+  const isLocalArrival = useCallback(
+    (arrival: string) =>
+      !!arrival && !!airportIcao && arrival.toUpperCase() === airportIcao.toUpperCase(),
+    [airportIcao],
+  );
+
+  const handleChange = useCallback(
+    async (field: keyof Flight, value: string) => {
+      // Update the changed field immediately so the UI responds at once
+      setFormData((prev) => ({ ...prev, [field]: value }));
+
+      if (errors[field as string]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as string];
+          return newErrors;
+        });
+      }
+
+      // Auto-update SID when arrival or flight type changes (departures only)
+      if (flightType === 'departure' && (field === 'arrival' || field === 'flight_type')) {
+        const arrival = field === 'arrival' ? value : formData.arrival || '';
+        const flType = field === 'flight_type' ? value : formData.flight_type || 'IFR';
+
+        if (flType === 'VFR' || isLocalArrival(arrival)) {
+          setFormData((prev) => ({ ...prev, sid: 'RADAR VECTORS' }));
+        } else if (arrival) {
+          try {
+            const sids = await fetchSids(airportIcao);
+            const preferred = sids.find((s) => s.length > 0 && !s.includes(' '));
+            setFormData((prev) => ({ ...prev, sid: preferred || '' }));
+          } catch {
+            setFormData((prev) => ({ ...prev, sid: '' }));
+          }
+        } else {
+          setFormData((prev) => ({ ...prev, sid: '' }));
+        }
+      }
+    },
+    [airportIcao, flightType, formData.arrival, formData.flight_type, errors, isLocalArrival],
+  );
+
   if (!isOpen) return null;
-
-  const handleChange = (field: keyof Flight, value: string) => {
-    const updates: Partial<Flight> = { [field]: value };
-
-    setFormData((prev) => ({ ...prev, ...updates }));
-
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -96,7 +125,16 @@ export default function AddCustomFlightModal({
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    onAdd(formData);
+    const isRadarVectors =
+      formData.flight_type === 'VFR' ||
+      (!!formData.arrival &&
+        !!airportIcao &&
+        formData.arrival.toUpperCase() === airportIcao.toUpperCase());
+
+    onAdd({
+      ...formData,
+      ...(flightType === 'departure' ? { sid: isRadarVectors ? 'RADAR VECTORS' : formData.sid } : {}),
+    });
     handleClose();
   };
 
@@ -216,6 +254,7 @@ export default function AddCustomFlightModal({
                   value={formData.aircraft || ''}
                   onChange={(value) => handleChange('aircraft', value)}
                   size="sm"
+                  searchable
                 />
                 {errors.aircraft && (
                   <p className="text-red-400 text-xs mt-1">{errors.aircraft}</p>
@@ -275,6 +314,7 @@ export default function AddCustomFlightModal({
                       value={formData.arrival || ''}
                       onChange={(value) => handleChange('arrival', value)}
                       size="sm"
+                      searchable
                     />
                     {errors.arrival && (
                       <p className="text-red-400 text-xs mt-1">
@@ -293,6 +333,7 @@ export default function AddCustomFlightModal({
                       value={formData.departure || ''}
                       onChange={(value) => handleChange('departure', value)}
                       size="sm"
+                      searchable
                     />
                     {errors.departure && (
                       <p className="text-red-400 text-xs mt-1">

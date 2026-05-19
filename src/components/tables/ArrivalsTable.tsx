@@ -303,7 +303,8 @@ function ArrivalsTable({
 
   const handleStarChange = (flightId: string | number, star: string) => {
     if (onFlightChange) {
-      onFlightChange(flightId, { star });
+      const validStar = star.length > 0 && !star.includes(' ') ? star : '';
+      onFlightChange(flightId, { star: validStar });
     }
   };
 

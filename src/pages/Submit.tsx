@@ -62,9 +62,10 @@ interface AvailableImage {
 
 interface SubmitProps {
   standalone?: boolean;
+  initialAirportIcao?: string;
 }
 
-export default function Submit({ standalone = true }: SubmitProps) {
+export default function Submit({ standalone = true, initialAirportIcao }: SubmitProps) {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
@@ -93,7 +94,7 @@ export default function Submit({ standalone = true }: SubmitProps) {
   const [form, setForm] = useState({
     callsign: '',
     aircraft_type: '',
-    departure: '',
+    departure: initialAirportIcao ?? '',
     arrival: '',
     route: '',
     stand: '',
@@ -278,6 +279,28 @@ export default function Submit({ standalone = true }: SubmitProps) {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
+  const needsRadarVectors = (arrival: string, flightType: string) =>
+    flightType === 'VFR' ||
+    (!!arrival && !!form.departure && arrival.toUpperCase() === form.departure.toUpperCase());
+
+  const handleArrivalChange = (value: string) => {
+    setForm((f) => ({ ...f, arrival: value }));
+    if (needsRadarVectors(value, form.flight_type)) {
+      setRouteSid('RADAR VECTORS');
+    } else {
+      setRouteSid(undefined);
+    }
+  };
+
+  const handleFlightTypeChange = (value: string) => {
+    setForm((f) => ({ ...f, flight_type: value }));
+    if (needsRadarVectors(form.arrival, value)) {
+      setRouteSid('RADAR VECTORS');
+    } else if (form.flight_type === 'VFR') {
+      setRouteSid(undefined);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -293,12 +316,18 @@ export default function Submit({ standalone = true }: SubmitProps) {
       return;
     }
 
+    const effectiveSid = needsRadarVectors(form.arrival, form.flight_type)
+      ? 'RADAR VECTORS'
+      : routeSid;
+
     if (flightsSocket) {
       flightsSocket.addFlight({
         ...form,
         flight_type: form.flight_type,
         cruisingFL: form.cruisingFL,
         status: 'PENDING',
+        ...(effectiveSid ? { sid: effectiveSid } : {}),
+        ...(routeStar ? { star: routeStar } : {}),
       });
     } else {
       try {
@@ -307,6 +336,8 @@ export default function Submit({ standalone = true }: SubmitProps) {
           flight_type: form.flight_type,
           cruisingFL: form.cruisingFL,
           status: 'PENDING',
+          ...(effectiveSid ? { sid: effectiveSid } : {}),
+          ...(routeStar ? { star: routeStar } : {}),
         });
         setSubmittedFlight(flight);
         setSuccess(true);
@@ -355,6 +386,9 @@ export default function Submit({ standalone = true }: SubmitProps) {
       flight_type: 'IFR',
       cruisingFL: '',
     });
+    setRouteSid(undefined);
+    setRouteStar(undefined);
+    setRouteFlParity(null);
   };
 
   const handleGenerateRoute = async () => {
@@ -646,6 +680,7 @@ export default function Submit({ standalone = true }: SubmitProps) {
                     <AircraftDropdown
                       value={form.aircraft_type}
                       onChange={handleChange('aircraft_type')}
+                      searchable
                     />
                   </div>
                   <div>
@@ -655,7 +690,7 @@ export default function Submit({ standalone = true }: SubmitProps) {
                     </label>
                     <Dropdown
                       value={form.flight_type}
-                      onChange={handleChange('flight_type')}
+                      onChange={handleFlightTypeChange}
                       placeholder="IFR or VFR"
                       options={[
                         { label: 'IFR', value: 'IFR' },
@@ -688,6 +723,7 @@ export default function Submit({ standalone = true }: SubmitProps) {
                       value={form.departure}
                       onChange={handleChange('departure')}
                       disabled
+                      searchable
                     />
                   </div>
                   <div>
@@ -698,7 +734,8 @@ export default function Submit({ standalone = true }: SubmitProps) {
                     </label>
                     <AirportDropdown
                       value={form.arrival}
-                      onChange={handleChange('arrival')}
+                      onChange={handleArrivalChange}
+                      searchable
                     />
                   </div>
                   <div>

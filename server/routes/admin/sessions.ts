@@ -3,6 +3,8 @@ import { createAuditLogger } from '../../middleware/auditLogger.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { getAdminSessions } from '../../db/admin.js';
 import { deleteSession } from '../../db/sessions.js';
+import { mainDb } from '../../db/connection.js';
+import { DEPLOYMENT } from '../../utils/cacheTtl.js';
 
 const router = express.Router();
 
@@ -62,6 +64,67 @@ router.post(
     } catch (error) {
       console.error('Error logging session join:', error);
       res.status(500).json({ error: 'Failed to log session join' });
+    }
+  }
+);
+
+// GET: /api/admin/sessions/event-mode - Get current event mode state
+router.get('/event-mode', async (_req, res) => {
+  try {
+    const row = await mainDb
+      .selectFrom('app_settings')
+      .select(['pfatc_event_mode', 'aatc_event_mode'])
+      .where('channel', '=', DEPLOYMENT)
+      .executeTakeFirst();
+
+    res.json({
+      pfatcEventMode: row?.pfatc_event_mode ?? false,
+      aatcEventMode: row?.aatc_event_mode ?? false,
+    });
+  } catch (error) {
+    console.error('Error fetching event mode:', error);
+    res.status(500).json({ error: 'Failed to fetch event mode' });
+  }
+});
+
+// POST: /api/admin/sessions/event-mode - Update event mode state
+router.post(
+  '/event-mode',
+  createAuditLogger('EVENT_MODE_UPDATED'),
+  async (req, res) => {
+    try {
+      const { pfatcEventMode, aatcEventMode } = req.body as {
+        pfatcEventMode?: boolean;
+        aatcEventMode?: boolean;
+      };
+
+      const updates: Record<string, boolean> = {};
+      if (typeof pfatcEventMode === 'boolean') updates.pfatc_event_mode = pfatcEventMode;
+      if (typeof aatcEventMode === 'boolean') updates.aatc_event_mode = aatcEventMode;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'No valid fields provided' });
+      }
+
+      await mainDb
+        .updateTable('app_settings')
+        .set(updates)
+        .where('channel', '=', DEPLOYMENT)
+        .execute();
+
+      const row = await mainDb
+        .selectFrom('app_settings')
+        .select(['pfatc_event_mode', 'aatc_event_mode'])
+        .where('channel', '=', DEPLOYMENT)
+        .executeTakeFirst();
+
+      res.json({
+        pfatcEventMode: row?.pfatc_event_mode ?? false,
+        aatcEventMode: row?.aatc_event_mode ?? false,
+      });
+    } catch (error) {
+      console.error('Error updating event mode:', error);
+      res.status(500).json({ error: 'Failed to update event mode' });
     }
   }
 );

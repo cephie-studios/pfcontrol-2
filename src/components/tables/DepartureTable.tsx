@@ -29,6 +29,115 @@ import DepartureTableMobile from './mobile/DepartureTableMobile';
 import PDCModal from '../tools/PDCModal';
 import RouteModal from '../tools/RouteModal';
 import ConfirmationDialog from '../common/ConfirmationDialog';
+import { fetchStars, fetchSids } from '../../utils/fetch/data';
+
+const looksLikeProcedure = (s: string) => /^[A-Z]{2,5}\d[A-Z]?$/i.test(s);
+
+const sidWaypoint = (sid: string) =>
+  /^([A-Z]{2,5})\d[A-Z]?$/i.exec(sid)?.[1]?.toUpperCase();
+
+/**
+ * Replace the SID token in a route string with newSid, and update the
+ * connecting waypoint that immediately follows it.
+ *
+ * @param oldSidHint - the flight's stored sid field (may differ from what
+ *   was auto-inserted into the route string, e.g. NOVMA1X vs NOVM1X).
+ *   Used to derive the expected connecting-waypoint prefix reliably.
+ */
+
+function updateRouteWithSid(
+  route: string,
+  newSid: string,
+  oldSidHint: string | undefined,
+  departure?: string,
+  arrival?: string,
+): string {
+  const tokens = route.trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return newSid || '';
+  let start = 0;
+  let end = tokens.length - 1;
+  if (departure && tokens[start]?.toUpperCase() === departure.toUpperCase()) start++;
+  if (arrival && end >= start && tokens[end]?.toUpperCase() === arrival.toUpperCase()) end--;
+
+  let sidIdx = -1;
+  let oldSidInRoute = '';
+
+  if (start <= end && looksLikeProcedure(tokens[start])) {
+    oldSidInRoute = tokens[start];
+    sidIdx = start;
+    if (newSid) tokens[start] = newSid; else tokens.splice(start, 1);
+  } else {
+    if (newSid) { tokens.splice(start, 0, newSid); sidIdx = start; }
+  }
+
+  if (sidIdx !== -1 && newSid) {
+    const effectiveOld = oldSidHint || oldSidInRoute;
+    const oldWp = effectiveOld ? sidWaypoint(effectiveOld) : undefined;
+    const newWp = sidWaypoint(newSid);
+    const nextIdx = sidIdx + 1;
+    if (oldWp && newWp && tokens[nextIdx]) {
+      const next = tokens[nextIdx].toUpperCase();
+      // Match exact prefix OR route waypoint that starts with the prefix
+      if (next === oldWp || next.startsWith(oldWp)) {
+        tokens[nextIdx] = newWp;
+      }
+    }
+  }
+
+  return tokens.join(' ');
+}
+
+/**
+ * When the arrival airport changes, strip the old STAR + its connecting
+ * waypoint and the old arrival ICAO from the end of the route, then append
+ * the new STAR's connecting waypoint + new STAR + new arrival.
+ */
+function updateRouteWithArrival(
+  route: string,
+  newArrival: string,
+  oldArrival?: string,
+  oldStar?: string,
+  newStar?: string,
+): string {
+  const tokens = route.trim().split(/\s+/).filter(Boolean);
+
+  // Strip old arrival ICAO from end
+  if (oldArrival && tokens[tokens.length - 1]?.toUpperCase() === oldArrival.toUpperCase()) {
+    tokens.pop();
+  }
+
+  // Strip old STAR from end
+  let strippedStar = false;
+  if (tokens.length > 0) {
+    const last = tokens[tokens.length - 1].toUpperCase();
+    const oldStarUp = oldStar?.toUpperCase();
+    if ((oldStarUp && last === oldStarUp) || (!oldStarUp && looksLikeProcedure(last))) {
+      tokens.pop();
+      strippedStar = true;
+    }
+  }
+
+  // Strip old STAR's connecting waypoint from end
+  if (strippedStar && tokens.length > 0 && oldStar) {
+    const oldWp = sidWaypoint(oldStar);
+    if (oldWp) {
+      const last = tokens[tokens.length - 1].toUpperCase();
+      if (last === oldWp || last.startsWith(oldWp)) {
+        tokens.pop();
+      }
+    }
+  }
+
+  // Append new STAR's connecting waypoint + new STAR + new arrival
+  if (newStar && !newStar.includes(' ')) {
+    const newWp = sidWaypoint(newStar);
+    if (newWp) tokens.push(newWp);
+    tokens.push(newStar.toUpperCase());
+  }
+  tokens.push(newArrival.toUpperCase());
+
+  return tokens.join(' ');
+}
 
 interface DepartureTableProps {
   flights: Flight[];
@@ -48,6 +157,7 @@ interface DepartureTableProps {
   flashingPDCIds: Set<string>;
   setFlashingPDCIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   id?: string;
+  activeRunway?: string | null;
 }
 
 function DepartureTable({
@@ -58,6 +168,7 @@ function DepartureTable({
   departureColumns = {
     time: true,
     callsign: true,
+    req: true,
     stand: true,
     aircraft: true,
     wakeTurbulence: true,
@@ -84,12 +195,17 @@ function DepartureTable({
   flashingPDCIds,
   setFlashingPDCIds,
   id,
+  activeRunway,
 }: DepartureTableProps) {
   const { airlines, loading: airlinesLoading } = useData();
   const [showHidden, setShowHidden] = useState(false);
   const [pdcModalOpen, setPdcModalOpen] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [routeFlightId, setRouteFlightId] = useState<string | number | null>(null);
+  const routeFlight = routeFlightId != null
+    ? (flights.find((f) => f.id === routeFlightId) ?? null)
+    : null;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [flightToDelete, setFlightToDelete] = useState<string | number | null>(
     null
@@ -101,6 +217,82 @@ function DepartureTable({
     {}
   );
   const isMobile = useMediaQuery({ maxWidth: 1000 });
+  const isNarrow = useMediaQuery({ maxWidth: 1349 });
+
+  const [, setReqTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setReqTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const [reqOptimistic, setReqOptimistic] = useState<
+    Map<string | number, { req_at: string | null; req_phase: string | null }>
+  >(new Map());
+
+  useEffect(() => {
+    setReqOptimistic((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Map(prev);
+      let changed = false;
+      for (const [id, opt] of prev) {
+        const flight = flights.find((f) => f.id === id);
+        if (!flight) { next.delete(id); changed = true; continue; }
+        const serverAt = flight.req_at ?? null;
+        const optAt = opt.req_at ?? null;
+        const synced =
+          (serverAt === null && optAt === null) ||
+          (serverAt !== null && optAt !== null &&
+            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) < 5000);
+        if (synced) { next.delete(id); changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [flights]);
+
+  const getReqData = (flight: Flight) => {
+    const opt = reqOptimistic.get(flight.id);
+    return opt !== undefined
+      ? opt
+      : { req_at: flight.req_at ?? null, req_phase: flight.req_phase ?? null };
+  };
+
+  const reqPositions = useMemo(() => {
+    const byPhase: Record<string, Array<{ id: string | number; req_at: string }>> = {};
+    for (const f of flights) {
+      const { req_at, req_phase } = getReqData(f);
+      if (!req_at) continue;
+      const phase = req_phase || 'G';
+      if (!byPhase[phase]) byPhase[phase] = [];
+      byPhase[phase].push({ id: f.id, req_at });
+    }
+    for (const phase of Object.keys(byPhase)) {
+      byPhase[phase].sort((a, b) => a.req_at.localeCompare(b.req_at));
+    }
+    const result = new Map<string | number, { label: string; pos: number }>();
+    for (const [phase, list] of Object.entries(byPhase)) {
+      list.forEach(({ id }, idx) => {
+        const pos = idx + 1;
+        const label = phase === 'G' ? `REQ${pos}` : `R${pos}${phase}`;
+        result.set(id, { label, pos });
+      });
+    }
+    return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flights, reqOptimistic]);
+
+  const formatReqElapsed = (req_at: string) => {
+    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(req_at).getTime()) / 1000));
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const getReqColor = (req_at: string): string => {
+    const elapsed = Math.max(0, (Date.now() - new Date(req_at).getTime()) / 1000);
+    const progress = Math.min(1, elapsed / 300);
+    const hue = Math.round(48 * (1 - progress));
+    return `hsl(${hue}, 90%, 58%)`;
+  };
 
   const [remarkValues, setRemarkValues] = useState<
     Record<string | number, string>
@@ -193,10 +385,13 @@ function DepartureTable({
         return flight.status || '';
       case 'remark':
         return flight.remark || '';
+      case 'req':
+        return getReqData(flight).req_at ?? '';
       default:
         return '';
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reqOptimistic]);
 
   const sortedFlights = useMemo(() => {
     const flightsToSort = [...orderedFlights];
@@ -396,10 +591,52 @@ function DepartureTable({
     debouncedHandleRemarkChange(flightId, remark);
   };
 
-  const handleArrivalChange = (flightId: string | number, arrival: string) => {
-    if (onFlightChange) {
-      onFlightChange(flightId, { arrival });
+  const handleArrivalChange = async (flightId: string | number, arrival: string) => {
+    if (!onFlightChange) return;
+    const flight = flights.find((f) => f.id === flightId);
+
+    const isVfr = flight?.flight_type === 'VFR';
+    const isLocal =
+      isVfr ||
+      (!!arrival &&
+        !!flight?.departure &&
+        arrival.toUpperCase() === flight.departure.toUpperCase());
+
+    let newSid = '';
+    if (isLocal) {
+      newSid = 'RADAR VECTORS';
+    } else {
+      try {
+        const sids = await fetchSids(flight?.departure || '');
+        newSid = sids.find((s) => s.length > 0 && !s.includes(' ')) || '';
+      } catch {
+        newSid = '';
+      }
     }
+
+    let newStar = '';
+    if (isLocal) {
+      newStar = 'RADAR VECTORS';
+    } else {
+      try {
+        const stars = await fetchStars(arrival);
+        newStar = stars.find((s) => s.length > 0 && !s.includes(' ')) || '';
+      } catch {
+        // fetch failed — leave star empty
+      }
+    }
+
+    const sidForRoute = newSid && !newSid.includes(' ') ? newSid : '';
+    let route = updateRouteWithSid(
+      flight?.route || '',
+      sidForRoute,
+      flight?.sid,
+      flight?.departure,
+      flight?.arrival,
+    );
+    route = updateRouteWithArrival(route, arrival, flight?.arrival, flight?.star, newStar);
+
+    onFlightChange(flightId, { arrival, sid: newSid, star: newStar, route });
   };
 
   const handleRunwayChange = (flightId: string | number, runway: string) => {
@@ -419,9 +656,13 @@ function DepartureTable({
 
   const handleSidChange = (flightId: string | number, sid: string) => {
     if (onFlightChange) {
-      onFlightChange(flightId, { sid });
+      const flight = flights.find((f) => f.id === flightId);
+      const sidForRoute = looksLikeProcedure(sid) ? sid : '';
+      const route = updateRouteWithSid(flight?.route || '', sidForRoute, flight?.sid, flight?.departure, flight?.arrival);
+      onFlightChange(flightId, { sid, route });
     }
   };
+
 
   const handleCruisingFLChange = (
     flightId: string | number,
@@ -443,7 +684,45 @@ function DepartureTable({
 
   const handleStatusChange = (flightId: string | number, status: string) => {
     if (onFlightChange) {
-      onFlightChange(flightId, { status });
+      const flight = flights.find((f) => f.id === flightId);
+      const updates: Partial<Flight> = { status };
+      if (getReqData(flight!).req_at) {
+        updates.req_at = null;
+        updates.req_phase = null;
+        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+      }
+      onFlightChange(flightId, updates);
+    }
+  };
+
+  const handleToggleClearance = (flightId: string | number, checked: boolean) => {
+    onToggleClearance(flightId, checked);
+    if (checked && onFlightChange) {
+      const flight = flights.find((f) => f.id === flightId);
+      if (flight && getReqData(flight).req_at) {
+        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        onFlightChange(flightId, { req_at: null, req_phase: null });
+      }
+    }
+  };
+
+  const handleReqToggle = (flight: Flight) => {
+    if (!onFlightChange) return;
+    const current = getReqData(flight);
+    if (current.req_at) {
+      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: null, req_phase: null }));
+      onFlightChange(flight.id, { req_at: null, req_phase: null });
+    } else {
+      const status = (flight.status || '').toLowerCase();
+      const cleared = isClearanceChecked(flight.clearance);
+      let phase: string;
+      if (status === 'pending' && !cleared) phase = 'C';
+      else if (status === 'pending' && cleared) phase = 'P';
+      else if (status === 'push') phase = 'T';
+      else phase = 'G';
+      const newReqAt = new Date().toISOString();
+      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase }));
+      onFlightChange(flight.id, { req_at: newReqAt, req_phase: phase });
     }
   };
 
@@ -468,13 +747,13 @@ function DepartureTable({
   };
 
   const handleRouteOpen = (flight: Flight) => {
-    setSelectedFlight(flight);
+    setRouteFlightId(flight.id);
     setRouteModalOpen(true);
   };
 
   const handleRouteClose = () => {
     setRouteModalOpen(false);
-    setSelectedFlight(null);
+    setRouteFlightId(null);
   };
 
   const getFieldEditingState = (
@@ -544,7 +823,8 @@ function DepartureTable({
         <RouteModal
           isOpen={routeModalOpen}
           onClose={handleRouteClose}
-          flight={selectedFlight}
+          flight={routeFlight}
+          activeRunway={activeRunway}
           onFlightChange={onFlightChange}
         />
       </>
@@ -595,6 +875,14 @@ function DepartureTable({
                     onClick={() => handleSort('callsign')}
                   >
                     CALLSIGN
+                  </th>
+                )}
+                {departureColumns.req !== false && !isNarrow && (
+                  <th
+                    className="py-2.5 px-2 text-left w-16 column-req cursor-pointer select-none hover:bg-blue-700"
+                    onClick={() => handleSort('req')}
+                  >
+                    REQ{sortColumn === 'req' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
                   </th>
                 )}
                 {departureColumns.stand !== false && (
@@ -782,13 +1070,7 @@ function DepartureTable({
                     </td>
                     {departureColumns.callsign !== false && (
                       <td className="py-2 px-4 column-callsign">
-                        <div
-                          title={
-                            !airlinesLoading
-                              ? parseCallsign(flight.callsign, airlines)
-                              : flight.callsign || ''
-                          }
-                        >
+                        <div className="relative group/callsign">
                           <TextInput
                             value={
                               callsignValues[flight.id] ??
@@ -814,9 +1096,41 @@ function DepartureTable({
                               handleFieldBlur(flight.id, 'callsign')
                             }
                           />
+                          {!airlinesLoading && flight.callsign && (
+                            <div className="pointer-events-none absolute bottom-full left-0 mb-1 z-50 opacity-0 group-hover/callsign:opacity-100 transition-opacity duration-0">
+                              <div className="bg-zinc-800 border border-zinc-600 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
+                                {parseCallsign(flight.callsign, airlines)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
                     )}
+                    {departureColumns.req !== false && !isNarrow && (() => {
+                      const { req_at, req_phase: _ } = getReqData(flight);
+                      return (
+                        <td
+                          className="py-2 px-2 column-req cursor-pointer select-none"
+                          onClick={() => handleReqToggle(flight)}
+                          title={req_at ? 'Click to clear request' : 'Click to mark as on-request'}
+                        >
+                          {req_at ? (
+                            <div className="flex flex-col items-center leading-tight">
+                              <span className="text-xs font-bold" style={{ color: getReqColor(req_at) }}>
+                                {reqPositions.get(flight.id)?.label ?? 'REQ'}
+                              </span>
+                              <span className="text-xs" style={{ color: getReqColor(req_at) }}>
+                                {formatReqElapsed(req_at)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center opacity-40 hover:opacity-70 transition-opacity">
+                              <span className="text-xs text-zinc-300">REQ</span>
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })()}
                     {departureColumns.stand !== false && (
                       <td className="py-2 px-4 column-stand">
                         <TextInput
@@ -968,7 +1282,7 @@ function DepartureTable({
                           />
                           <button
                             onClick={() => handleRegenerateSquawk(flight.id)}
-                            className="text-gray-400 hover:text-blue-500 rounded transition-colors flex-shrink-0 ml-0.5"
+                            className="text-gray-400 hover:text-blue-500 rounded transition-colors shrink-0 ml-0.5"
                             title="Generate new squawk"
                             type="button"
                           >
@@ -982,7 +1296,7 @@ function DepartureTable({
                         <Checkbox
                           checked={isClearanceChecked(flight.clearance)}
                           onChange={() =>
-                            onToggleClearance(
+                            handleToggleClearance(
                               flight.id,
                               !isClearanceChecked(flight.clearance)
                             )
@@ -1147,7 +1461,7 @@ function DepartureTable({
       <RouteModal
         isOpen={routeModalOpen}
         onClose={handleRouteClose}
-        flight={selectedFlight}
+        flight={routeFlight}
         onFlightChange={onFlightChange}
       />
 
