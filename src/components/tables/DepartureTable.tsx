@@ -602,7 +602,7 @@ function DepartureTable({
         !!flight?.departure &&
         arrival.toUpperCase() === flight.departure.toUpperCase());
 
-    let newSid = flight?.sid || '';
+    let newSid = '';
     if (isLocal) {
       newSid = 'RADAR VECTORS';
     } else {
