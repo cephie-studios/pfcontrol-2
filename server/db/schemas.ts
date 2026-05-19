@@ -817,6 +817,18 @@ export async function ensureEventModeColumns() {
   `.execute(mainDb);
 }
 
+export async function ensureFlightReqColumns() {
+  await sql`
+    ALTER TABLE flights
+    ADD COLUMN IF NOT EXISTS req_at timestamptz NULL
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE flights
+    ADD COLUMN IF NOT EXISTS req_phase varchar(4) NULL
+  `.execute(mainDb);
+}
+
 export async function syncVersionFromEnv(redis?: Redis) {
   const envVersion = process.env.APP_VERSION?.trim();
   if (!envVersion) {

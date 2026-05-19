@@ -142,6 +142,25 @@ export function setupOverviewWebsocket(httpServer: HTTPServer, sessionUsersIO: S
           if (updates.star && typeof updates.star === "string")
             updates.star = sanitizeString(updates.star, 16);
 
+          if (updates.req_at !== undefined) {
+            if (updates.req_at === '' || updates.req_at === null) {
+              updates.req_at = null;
+            } else if (typeof updates.req_at === 'string' && !isNaN(Date.parse(updates.req_at))) {
+              // valid ISO timestamp — keep as-is
+            } else {
+              delete updates.req_at;
+            }
+          }
+          if (updates.req_phase !== undefined) {
+            if (updates.req_phase === '' || updates.req_phase === null) {
+              updates.req_phase = null;
+            } else if (typeof updates.req_phase === 'string' && ['C', 'P', 'T', 'G'].includes(updates.req_phase)) {
+              // valid phase — keep as-is
+            } else {
+              delete updates.req_phase;
+            }
+          }
+
           if (updates.clearance !== undefined) {
             if (typeof updates.clearance === "string") {
               updates.clearance = updates.clearance.toLowerCase() === "true";

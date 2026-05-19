@@ -363,28 +363,28 @@ export default function Settings() {
 
             <div id="table-column-settings">
               <TableColumnSettings
-                departureColumns={
-                  localSettings?.departureTableColumns || {
-                    time: true,
-                    callsign: true,
-                    stand: true,
-                    aircraft: true,
-                    wakeTurbulence: true,
-                    flightType: true,
-                    arrival: true,
-                    runway: true,
-                    sid: true,
-                    rfl: true,
-                    cfl: true,
-                    squawk: true,
-                    clearance: true,
-                    status: true,
-                    remark: true,
-                    pdc: true,
-                    hide: true,
-                    delete: true,
-                  }
-                }
+                departureColumns={{
+                  time: true,
+                  callsign: true,
+                  req: true,
+                  stand: true,
+                  aircraft: true,
+                  wakeTurbulence: true,
+                  flightType: true,
+                  arrival: true,
+                  runway: true,
+                  sid: true,
+                  rfl: true,
+                  cfl: true,
+                  squawk: true,
+                  clearance: true,
+                  status: true,
+                  remark: true,
+                  pdc: true,
+                  hide: true,
+                  delete: true,
+                  ...localSettings?.departureTableColumns,
+                }}
                 arrivalsColumns={
                   localSettings?.arrivalsTableColumns || {
                     time: true,

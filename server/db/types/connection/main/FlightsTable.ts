@@ -30,6 +30,8 @@ export interface FlightsTable {
   notes?: string;
   snap_images?: Array<{ cephie_id: string; url: string }>;
   featured_on_profile?: boolean;
+  req_at?: Date | null;
+  req_phase?: string | null;
   created_at?: Date;
   updated_at?: Date;
 }

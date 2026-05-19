@@ -142,6 +142,14 @@ export const steps: {
     disableNext: true,
   },
   {
+    target: '#departure-table .column-req',
+    title: 'REQ (On Request)',
+    content:
+      'Click any cell in this column to put a flight on-request. The label shows the queue position and phase. R1C means first in the clearance queue, R1P is push-back, R1T is taxi. After those phases it shows REQ1, REQ2, etc. The colour shifts from yellow to red over 5 minutes to indicate urgency. Click again to clear the request. It also clears automatically when clearance is checked or the status changes.',
+    placement: 'top',
+    disableNext: true,
+  },
+  {
     target: '#departure-table .column-stand',
     title: 'STAND',
     content:

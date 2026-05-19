@@ -323,6 +323,7 @@ export default function Create() {
                 setError("");
               }}
               disabled={isCreating}
+              searchable
             />
           </div>
 

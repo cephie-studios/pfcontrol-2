@@ -28,6 +28,7 @@ const defaultSettings: Settings = {
   departureTableColumns: {
     time: true,
     callsign: true,
+    req: true,
     stand: true,
     aircraft: true,
     wakeTurbulence: true,
@@ -72,6 +73,7 @@ const defaultSettings: Settings = {
   tutorialCompleted: false,
   displayStatsOnProfile: true,
   displayLinkedAccountsOnProfile: true,
+  displayControllerRatingOnProfile: true,
   hideFromLeaderboard: false,
   displayBackgroundOnProfile: true,
   bio: '',

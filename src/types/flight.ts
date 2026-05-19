@@ -36,6 +36,8 @@ export interface Flight {
   notes?: string;
   snap_images?: Array<{ cephie_id: string; url: string }>;
   featured_on_profile?: boolean;
+  req_at?: string | null;
+  req_phase?: string | null;
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
   user?: {

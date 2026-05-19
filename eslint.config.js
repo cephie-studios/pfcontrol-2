@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist/**", "server/dist/**", "src/utils/hateSpeechFilter.ts"]),
+  globalIgnores(["dist/**", "server/dist/**", "src/utils/hateSpeechFilter.ts", "astro/.astro/**"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

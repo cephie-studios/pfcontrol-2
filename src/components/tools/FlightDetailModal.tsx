@@ -9,6 +9,7 @@ import StarDropdown from '../dropdowns/StarDropdown';
 import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
 import StatusDropdown from '../dropdowns/StatusDropdown';
 import Checkbox from '../common/Checkbox';
+import RouteMap from '../map/RouteMap';
 
 interface FlightDetailsModalProps {
   isOpen: boolean;
@@ -163,6 +164,7 @@ export default function FlightDetailsModal({
                 }
                 size="sm"
                 showFullName={false}
+                searchable
               />
             </div>
           </div>
@@ -307,6 +309,9 @@ export default function FlightDetailsModal({
                   }
                   size="sm"
                   showFullName={false}
+                  searchable
+                  portal
+                  placeholder="Airport"
                 />
               </div>
             </div>
@@ -331,6 +336,18 @@ export default function FlightDetailsModal({
               placeholder="Enter route..."
               rows={4}
             />
+            {flight.route && flight.route.trim().length > 0 && (
+              <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
+                <RouteMap
+                  route={flight.route}
+                  departure={flight.departure}
+                  arrival={flight.arrival}
+                  sid={flight.sid}
+                  star={flight.star}
+                  className="w-full h-full"
+                />
+              </div>
+            )}
           </div>
 
           {/* PDC Section */}
@@ -364,6 +381,8 @@ export default function FlightDetailsModal({
               }
               size="sm"
               showFullName={false}
+              searchable
+              portal
             />
           </div>
 

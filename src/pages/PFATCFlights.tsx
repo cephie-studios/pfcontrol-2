@@ -1515,7 +1515,7 @@ export default function PFATCFlights() {
                                         onClick={() => setOpenActionMenuId(null)}
                                       />
                                       <div
-                                        className="fixed w-40 bg-gray-800 border border-blue-600 rounded-2xl shadow-lg py-1 overflow-hidden"
+                                        className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
                                         style={{
                                           zIndex: 9998,
                                           top: (() => {
@@ -1530,32 +1530,34 @@ export default function PFATCFlights() {
                                             const btn = actionButtonRefs.current[flight.id];
                                             if (btn) {
                                               const rect = btn.getBoundingClientRect();
-                                              return `${rect.right - 160}px`;
+                                              return `${rect.right - 176}px`;
                                             }
                                             return "0px";
                                           })(),
                                         }}
                                       >
-                                        <button
-                                          type="button"
-                                          className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                          onClick={() => handleOpenFlightDetails(flight)}
-                                        >
-                                          <FileText className="w-4 h-4" />
-                                          Details
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="w-full text-left px-3 py-2 text-sm hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                                          onClick={() => handleToggleHidden(flight)}
-                                        >
-                                          {flight.hidden ? (
-                                            <Eye className="w-4 h-4" />
-                                          ) : (
-                                            <EyeOff className="w-4 h-4" />
-                                          )}
-                                          {flight.hidden ? "Unhide" : "Hide"}
-                                        </button>
+                                        <div className="p-1.5">
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                            onClick={() => handleOpenFlightDetails(flight)}
+                                          >
+                                            <FileText className="w-4 h-4 shrink-0" />
+                                            <span className="font-medium">Details</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                            onClick={() => handleToggleHidden(flight)}
+                                          >
+                                            {flight.hidden ? (
+                                              <Eye className="w-4 h-4 shrink-0" />
+                                            ) : (
+                                              <EyeOff className="w-4 h-4 shrink-0" />
+                                            )}
+                                            <span className="font-medium">{flight.hidden ? "Unhide" : "Hide"}</span>
+                                          </button>
+                                        </div>
                                       </div>
                                     </>,
                                     document.body,
