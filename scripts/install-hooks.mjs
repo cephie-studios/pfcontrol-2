@@ -20,6 +20,8 @@ try {
 
 const hooksDir = join(root, '.git', 'hooks');
 mkdirSync(hooksDir, { recursive: true });
-writeFileSync(join(hooksDir, 'pre-commit'), '#!/bin/sh\nnpm run precommit\n');
+const hookScript =
+  '#!/bin/sh\nnode -e "require(\'child_process\').execSync(\'npm run precommit\', {stdio:\'inherit\', shell:true})"\n';
+writeFileSync(join(hooksDir, 'pre-commit'), hookScript);
 chmodSync(join(hooksDir, 'pre-commit'), '755');
 console.log('[hooks] pre-commit installed');

@@ -1,5 +1,6 @@
 import { getUserById, updateUserSettings } from '../db/users.js';
 import express from 'express';
+import path from 'path';
 import multer from 'multer';
 import requireAuth from '../middleware/auth.js';
 import { capture } from '../utils/posthog.js';
@@ -278,7 +279,8 @@ router.post(
       }
 
       const timestamp = Date.now();
-      const filename = `updateModalBanner${timestamp}`;
+      const ext = path.extname(file.originalname) || '.png';
+      const filename = `updateModalBanner${timestamp}${ext}`;
 
       const formData = new FormData();
       formData.append('image', file.buffer, filename);
