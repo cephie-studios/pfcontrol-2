@@ -32,3 +32,5 @@
 
 .editorconfig text eol=lf
 .prettierrc   text eol=lf
+
+*.astro linguist-detectable=true
