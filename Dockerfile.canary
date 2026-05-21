@@ -18,8 +18,10 @@ RUN cd astro && npm install && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Copy frontend env for Vite build
-COPY .env.vite.canary .env.canary
+# Vite loads `.env.production` when build mode is `production` (same as Dockerfile).
+COPY .env.vite.canary .env.production
+
+ENV NODE_ENV=production
 
 # Build the backend (TypeScript compilation)
 RUN npm run build:server

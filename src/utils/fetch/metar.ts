@@ -1,11 +1,10 @@
 import { apiFetch } from '../apiFetch.js';
+import { clientApiUrl } from '../clientApiBase.js';
 import type { MetarData } from '../../types/metar';
-
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchMetar(icao: string): Promise<MetarData | null> {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/api/metar/${icao}`, {
+    const response = await apiFetch(clientApiUrl(`/api/metar/${icao}`), {
       credentials: 'include',
     });
 

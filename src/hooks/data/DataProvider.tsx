@@ -9,6 +9,7 @@ import type { Airport, AirportFrequency } from '../../types/airports';
 import type { Aircraft } from '../../types/aircraft';
 import type { Airline } from '../../types/airlines';
 import { DataContext } from './useData';
+import { clientApiUrl } from '../../utils/clientApiBase';
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [airports, setAirports] = useState<Airport[]>([]);
@@ -38,18 +39,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       (async () => {
         try {
           const [runwaysData, sidsData] = await Promise.all([
-            fetch(
-              `${
-                import.meta.env.VITE_SERVER_URL
-              }/api/data/airports/${icao}/runways`
-            )
+            fetch(clientApiUrl(`/api/data/airports/${icao}/runways`))
               .then((res) => (res.ok ? res.json() : []))
               .catch(() => []),
-            fetch(
-              `${
-                import.meta.env.VITE_SERVER_URL
-              }/api/data/airports/${icao}/sids`
-            )
+            fetch(clientApiUrl(`/api/data/airports/${icao}/sids`))
               .then((res) => (res.ok ? res.json() : []))
               .catch(() => []),
           ]);

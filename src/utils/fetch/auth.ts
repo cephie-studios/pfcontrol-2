@@ -1,11 +1,9 @@
 import { apiFetch } from '../apiFetch.js';
+import { clientApiUrl } from '../clientApiBase.js';
 import type { User } from '../../types/user';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
 export async function getCurrentUser(): Promise<User> {
-  const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-  const res = await apiFetch(`${API_BASE_URL}/api/auth/me`, {
+  const res = await apiFetch(clientApiUrl('/api/auth/me'), {
     credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to fetch user');
@@ -16,7 +14,7 @@ export async function updateTutorialStatus(
   completed: boolean
 ): Promise<boolean> {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/api/auth/tutorial`, {
+    const response = await apiFetch(clientApiUrl('/api/auth/tutorial'), {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -33,7 +31,7 @@ export async function updateTutorialStatus(
 
 export async function logout(): Promise<boolean> {
   try {
-    const response = await apiFetch(`${API_BASE_URL}/api/auth/logout`, {
+    const response = await apiFetch(clientApiUrl('/api/auth/logout'), {
       method: 'POST',
       credentials: 'include',
     });
@@ -45,7 +43,7 @@ export async function logout(): Promise<boolean> {
 }
 
 export function getDiscordLoginUrl(callback?: string): string {
-  const url = new URL(`${API_BASE_URL}/api/auth/discord`);
+  const url = new URL(clientApiUrl('/api/auth/discord'));
   if (callback) {
     url.searchParams.set('callback', callback);
   }

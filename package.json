@@ -18,6 +18,8 @@
     "build:server": "tsc --project server/tsconfig.json",
     "build:astro": "cd astro && npm install && npx astro build",
     "build:dev": "npm run generate:developer-docs && vp build --mode development",
+    "prebuild:canary": "node -e \"require('fs').copyFileSync('.env.vite.canary','.env.production')\"",
+    "build:canary": "npm run generate:developer-docs && vp build --mode production",
     "build-only": "vp build",
     "test": "vitest run",
     "test:watch": "vitest",

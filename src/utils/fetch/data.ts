@@ -5,6 +5,10 @@ import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 import { clientApiUrl } from '../clientApiBase';
 
+function dataApiUrl(endpoint: string): string {
+  return clientApiUrl(`/api/data/${endpoint}`);
+}
+
 interface AvailableImage {
   filename: string;
   path: string;
@@ -13,9 +17,7 @@ interface AvailableImage {
 
 async function fetchData<T>(endpoint: string): Promise<T[]> {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/${endpoint}`
-    );
+    const response = await fetch(dataApiUrl(endpoint));
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -73,18 +75,14 @@ export async function fetchLeaderboard(): Promise<
     }>
   >
 > {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/data/leaderboard`
-  );
+  const response = await fetch(clientApiUrl('/api/data/leaderboard'));
   if (!response.ok) throw new Error('Failed to fetch leaderboard');
   return response.json();
 }
 
 export async function getTesterSettings(): Promise<TesterSettings> {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/settings`
-    );
+    const response = await fetch(clientApiUrl('/api/data/settings'));
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -97,9 +95,7 @@ export async function getTesterSettings(): Promise<TesterSettings> {
 }
 
 export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
-  const response = await fetch(
-    clientApiUrl('/api/data/notifications/active')
-  );
+  const response = await fetch(clientApiUrl('/api/data/notifications/active'));
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -109,16 +105,18 @@ export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
 export async function fetchUserRanks(
   userId: string
 ): Promise<Record<string, number | null>> {
-  const response = await fetch(
-    `${import.meta.env.VITE_SERVER_URL}/api/data/ranks/${userId}`
-  );
+  const response = await fetch(clientApiUrl(`/api/data/ranks/${userId}`));
   if (!response.ok) {
     throw new Error('Failed to fetch user ranks');
   }
   return response.json();
 }
 
-export async function fetchRoute(from: string, to: string, runway?: string): Promise<{
+export async function fetchRoute(
+  from: string,
+  to: string,
+  runway?: string
+): Promise<{
   path: Array<{ name: string; x: number; y: number; type: string }>;
   distance: number;
   route: string;
@@ -130,9 +128,7 @@ export async function fetchRoute(from: string, to: string, runway?: string): Pro
   try {
     const params = new URLSearchParams({ from, to });
     if (runway) params.set('runway', runway);
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/findRoute?${params}`
-    );
+    const response = await fetch(clientApiUrl(`/api/data/findRoute?${params}`));
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

@@ -1,5 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
+import { clientApiUrl } from '../clientApiBase.js';
 
 export interface Tester {
   id: number;
@@ -28,14 +28,17 @@ export interface TesterSettings {
 }
 
 async function makeTesterRequest(endpoint: string, options?: RequestInit) {
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/testers${endpoint}`, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  const response = await apiFetch(
+    clientApiUrl(`/api/admin/testers${endpoint}`),
+    {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    }
+  );
 
   if (!response.ok) {
     if (response.status === 403) {
