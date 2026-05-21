@@ -8,9 +8,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadEnv } from 'vite';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const deployment = process.env.DEPLOYMENT ?? '';
+const isCanary = deployment === 'canary';
 const mode =
   process.env.NODE_ENV === 'production' ? 'production' : 'development';
 const rootViteEnv = loadEnv(mode, repoRoot, 'VITE_');
+const publicSiteUrl =
+  rootViteEnv.PUBLIC_SITE_URL ??
+  process.env.PUBLIC_SITE_URL ??
+  (isCanary ? 'https://canary.pfcontrol.com' : 'https://pfcontrol.com');
 const rootSitemapEnv = loadEnv(mode, repoRoot, [
   'VITE_',
   'POSTGRES_',
@@ -24,14 +30,17 @@ const posthogHost =
   rootViteEnv.VITE_POSTHOG_HOST ??
   process.env.VITE_POSTHOG_HOST ??
   'https://us.i.posthog.com';
-const astroClientApiBase =
-  mode === 'production'
+const astroClientApiBase = isCanary
+  ? (rootViteEnv.VITE_SERVER_URL ??
+    process.env.VITE_SERVER_URL ??
+    'https://canary.pfcontrol.com')
+  : mode === 'production'
     ? ''
     : (rootViteEnv.VITE_SERVER_URL ??
       process.env.VITE_SERVER_URL ??
       'http://localhost:9901');
 
-const SITE = 'https://pfcontrol.com';
+const SITE = publicSiteUrl.replace(/\/$/, '');
 
 const STATIC_APP_SITEMAP_URLS = [
   `${SITE}/create`,
@@ -166,6 +175,7 @@ export default defineConfig({
       'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(posthogKey),
       'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(posthogHost),
       'import.meta.env.VITE_SERVER_URL': JSON.stringify(astroClientApiBase),
+      'import.meta.env.PUBLIC_SITE_URL': JSON.stringify(SITE),
     },
   },
 });

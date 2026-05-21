@@ -193,6 +193,10 @@ if (astroClientDir && existsSync(astroClientDir)) {
   app.use(
     express.static(astroClientDir, {
       setHeaders: (res, filePath) => {
+        const normalized = filePath.replace(/\\/g, '/');
+        if (normalized.includes('/_astro/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
         if (filePath.endsWith('.css'))
           res.setHeader('Content-Type', 'text/css; charset=utf-8');
         if (filePath.endsWith('.js'))
@@ -219,11 +223,13 @@ app.use((req, res, next) => {
 if (astroHandler) {
   app.use((req, res, next) => {
     if (req.query['tutorial'] === 'true') return next();
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     astroHandler!(req, res, next);
   });
 }
 
 app.get('/{*any}', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, must-revalidate');
   res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
 });
 

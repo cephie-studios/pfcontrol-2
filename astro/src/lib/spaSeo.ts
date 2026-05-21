@@ -1,4 +1,6 @@
-export const SPA_SITE_URL = 'https://pfcontrol.com';
+export const SPA_SITE_URL =
+  import.meta.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+  'https://pfcontrol.com';
 
 export const SPA_DEFAULT_TITLE = 'PFControl v2';
 
