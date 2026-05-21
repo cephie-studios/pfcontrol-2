@@ -43,3 +43,5 @@ astro/node_modules
 
 public/developer-api-docs.json
 docs/developer-api.generated.md
+
+services/realtime/**/*.exe

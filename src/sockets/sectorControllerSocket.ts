@@ -1,6 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:9901';
+import { getNodeSocketUrl } from './realtimeSocketUrl';
 
 export interface SectorControllerSocketCallbacks {
   onStationSelected?: (data: { station: string }) => void;
@@ -16,7 +15,7 @@ export function createSectorControllerSocket(
   selectStation: (station: string) => void;
   deselectStation: () => void;
 } {
-  const socket = io(SERVER_URL, {
+  const socket = io(getNodeSocketUrl(), {
     path: '/sockets/sector-controller',
     query: {
       user: JSON.stringify(user),

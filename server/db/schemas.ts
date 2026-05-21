@@ -862,3 +862,31 @@ export async function syncVersionFromEnv(redis?: Redis) {
 
   console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${envVersion}`);
 }
+
+// Indexes for Go realtime overview/arrivals batched queries.
+export async function ensureRealtimePerfIndexes() {
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flights_session_updated
+    ON flights (session_id, updated_at DESC)
+  `.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flights_arrival_updated
+    ON flights (arrival, updated_at DESC)
+    WHERE arrival IS NOT NULL
+  `.execute(mainDb);
+
+  await mainDb.schema
+    .createIndex('idx_sessions_airport_pfatc')
+    .ifNotExists()
+    .on('sessions')
+    .columns(['airport_icao', 'is_pfatc'])
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_sessions_airport_advanced_atc')
+    .ifNotExists()
+    .on('sessions')
+    .columns(['airport_icao', 'is_advanced_atc'])
+    .execute();
+}

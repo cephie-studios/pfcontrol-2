@@ -1,7 +1,6 @@
 import io from 'socket.io-client';
 import type { Flight } from '../types/flight';
-
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
+import { getRealtimeSocketUrl } from './realtimeSocketUrl';
 
 export function createArrivalsSocket(
   sessionId: string,
@@ -14,7 +13,7 @@ export function createArrivalsSocket(
   }) => void,
   onInitialExternalArrivals?: (flights: Flight[]) => void
 ) {
-  const socket = io(SOCKET_URL, {
+  const socket = io(getRealtimeSocketUrl(), {
     withCredentials: true,
     path: '/sockets/arrivals',
     query: { sessionId, accessId },

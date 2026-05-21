@@ -1,7 +1,6 @@
 import io from 'socket.io-client';
 import type { ChatMessage, ChatMention } from '../types/chats';
-
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
+import { getNodeSocketUrl } from './realtimeSocketUrl';
 
 export function createChatSocket(
   sessionId: string,
@@ -15,7 +14,7 @@ export function createChatSocket(
   onMessageAutomodded?: (data: { messageId: number }) => void,
   onUserTyping?: (data: { userId: string; username: string }) => void
 ) {
-  const socket = io(SOCKET_URL, {
+  const socket = io(getNodeSocketUrl(), {
     withCredentials: true,
     path: '/sockets/chat',
     query: { sessionId, accessId, userId },

@@ -9,6 +9,7 @@ import {
   ensureAppSettingsChannelColumn,
   ensureEventModeColumns,
   ensureFlightReqColumns,
+  ensureRealtimePerfIndexes,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -70,6 +71,7 @@ try {
   await ensureAppSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFlightReqColumns();
+  await ensureRealtimePerfIndexes();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

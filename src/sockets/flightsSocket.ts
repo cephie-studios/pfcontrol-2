@@ -1,7 +1,6 @@
 import io from 'socket.io-client';
 import type { Flight } from '../types/flight';
-
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
+import { getRealtimeSocketUrl } from './realtimeSocketUrl';
 
 export function createFlightsSocket(
   sessionId: string,
@@ -18,7 +17,7 @@ export function createFlightsSocket(
   }) => void,
   isEventController?: boolean
 ) {
-  const socket = io(SOCKET_URL, {
+  const socket = io(getRealtimeSocketUrl(), {
     withCredentials: true,
     path: '/sockets/flights',
     query: {

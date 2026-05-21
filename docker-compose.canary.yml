@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  pfcontrol:
+  pfcontrol-api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,10 +9,27 @@ services:
       - "9902:9902"
     environment:
       - NODE_ENV=production
+      - REALTIME_DELEGATED=true
     env_file:
       - .env.canary
     volumes:
       - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - pfcontrol-network
+    depends_on:
+      - pfcontrol-realtime
+
+  pfcontrol-realtime:
+    build:
+      context: ./services/realtime
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8080"
+    environment:
+      - REALTIME_PORT=8080
+    env_file:
+      - .env.canary
     restart: unless-stopped
     networks:
       - pfcontrol-network

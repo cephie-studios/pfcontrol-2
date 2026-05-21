@@ -1,8 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import type { SessionUser } from '../types/session';
 import type { ChatMention } from '../types/session';
-
-const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
+import { getRealtimeSocketUrl } from './realtimeSocketUrl';
 
 export interface FieldEditingState {
   userId: string;
@@ -36,7 +35,7 @@ export function createSessionUsersSocket(
   onFieldEditingUpdate?: (editingStates: FieldEditingState[]) => void,
   position?: string
 ) {
-  const socket = io(SOCKET_URL, {
+  const socket = io(getRealtimeSocketUrl(), {
     withCredentials: true,
     path: '/sockets/session-users',
     query: {

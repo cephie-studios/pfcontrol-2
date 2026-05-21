@@ -21,6 +21,11 @@ import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
 import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
 import { setupNotificationsWebsocket } from './websockets/notificationsWebsocket.js';
+import {
+  isRealtimeDelegated,
+  createSessionUsersBridgeForChat,
+} from './utils/rtBroadcast.js';
+import type { SessionUsersServer } from './websockets/sessionUsersWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
@@ -232,27 +237,47 @@ server.setMaxListeners(25);
 const pubClient = new Redis(process.env.REDIS_URL!);
 const subClient = pubClient.duplicate();
 
-const sessionUsersIO = setupSessionUsersWebsocket(server);
-sessionUsersIO.adapter(createAdapter(pubClient, subClient));
+const realtimeDelegated = isRealtimeDelegated();
+if (realtimeDelegated) {
+  console.log(
+    chalk.cyan.bold('[Realtime]'),
+    chalk.cyan(
+      'Overview, arrivals, flights, and session-users are served by pfcontrol-realtime (Go).'
+    )
+  );
+}
 
-const chatIO = setupChatWebsocket(server, sessionUsersIO);
+const sessionUsersIO = realtimeDelegated
+  ? null
+  : setupSessionUsersWebsocket(server);
+if (sessionUsersIO) {
+  sessionUsersIO.adapter(createAdapter(pubClient, subClient));
+}
+
+const chatSessionBridge = realtimeDelegated
+  ? createSessionUsersBridgeForChat()
+  : sessionUsersIO!;
+
+const chatIO = setupChatWebsocket(server, chatSessionBridge);
 chatIO.adapter(createAdapter(pubClient, subClient));
 
-const globalChatIO = setupGlobalChatWebsocket(server, sessionUsersIO);
+const globalChatIO = setupGlobalChatWebsocket(server, chatSessionBridge);
 globalChatIO.adapter(createAdapter(pubClient, subClient));
 
-const flightsIO = setupFlightsWebsocket(server);
-flightsIO.adapter(createAdapter(pubClient, subClient));
+if (!realtimeDelegated) {
+  const flightsIO = setupFlightsWebsocket(server);
+  flightsIO.adapter(createAdapter(pubClient, subClient));
 
-const overviewIO = setupOverviewWebsocket(server, sessionUsersIO);
-overviewIO.adapter(createAdapter(pubClient, subClient));
+  const overviewIO = setupOverviewWebsocket(server, sessionUsersIO!);
+  overviewIO.adapter(createAdapter(pubClient, subClient));
 
-const arrivalsIO = setupArrivalsWebsocket(server);
-arrivalsIO.adapter(createAdapter(pubClient, subClient));
+  const arrivalsIO = setupArrivalsWebsocket(server);
+  arrivalsIO.adapter(createAdapter(pubClient, subClient));
+}
 
 const sectorControllerIO = setupSectorControllerWebsocket(
   server,
-  sessionUsersIO
+  (sessionUsersIO ?? chatSessionBridge) as SessionUsersServer
 );
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 

@@ -1,0 +1,8 @@
+.git
+.gitignore
+README.md
+*.md
+pfcontrol-realtime
+pfcontrol-realtime.exe
+**/*.exe
+**/*_test.go
