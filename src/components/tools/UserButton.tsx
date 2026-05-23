@@ -93,7 +93,7 @@ export default function CustomUserButton({
         className={`flex items-center space-x-2.5 px-1.5 py-1.5 rounded-full bg-zinc-800/60 backdrop-blur-sm border border-zinc-700/50 ${className}`}
       >
         <div className="w-7 h-7 rounded-full bg-zinc-700 animate-pulse shrink-0" />
-        <div className="hidden md:block h-4 w-32 rounded-full bg-zinc-700 animate-pulse -mt-0.5 mr-2" />
+        <div className="hidden min-[925px]:block h-4 w-32 rounded-full bg-zinc-700 animate-pulse -mt-0.5 mr-2" />
       </div>
     );
   }
@@ -249,7 +249,7 @@ export default function CustomUserButton({
             <User className="w-4 h-4 text-zinc-400" />
           </div>
         )}
-        <span className="hidden md:block text-md font-medium text-zinc-200">
+        <span className="hidden min-[925px]:block text-md font-medium text-zinc-200">
           {user.username}
         </span>
         <ChevronDown

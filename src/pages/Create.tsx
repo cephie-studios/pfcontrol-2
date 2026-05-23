@@ -1,28 +1,50 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { AlertCircle, Info, Trash2 } from "lucide-react";
-import { useAuth } from "../hooks/auth/useAuth";
-import { useSettings } from "../hooks/settings/useSettings";
-import { createSession, fetchMySessions } from "../utils/fetch/sessions";
-import { generateATIS } from "../utils/fetch/atis";
-import { updateTutorialStatus } from "../utils/fetch/auth";
-import { steps } from "../components/tutorial/TutorialStepsCreate";
-import { useData } from "../hooks/data/useData";
-import { fetchBackgrounds } from "../utils/fetch/data";
-import Joyride, { type CallBackProps, STATUS } from "react-joyride-react19-compat";
-import { trackTutorialEvent } from "../utils/tutorialTracking";
-import Navbar from "../components/Navbar";
-import AirportDropdown from "../components/dropdowns/AirportDropdown";
-import RunwayDropdown from "../components/dropdowns/RunwayDropdown";
-import Checkbox from "../components/common/Checkbox";
-import Button from "../components/common/Button";
-import WindDisplay from "../components/tools/WindDisplay";
-import AtisReminderModal from "../components/modals/AtisReminderModal";
-import CustomTooltip from "../components/tutorial/CustomTooltip";
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AlertCircle, Info, Trash2 } from 'lucide-react';
+import { useAuth } from '../hooks/auth/useAuth';
+import { useSettings } from '../hooks/settings/useSettings';
+import { createSession, fetchMySessions } from '../utils/fetch/sessions';
+import { generateATIS } from '../utils/fetch/atis';
+import { updateTutorialStatus } from '../utils/fetch/auth';
+import { steps } from '../components/tutorial/TutorialStepsCreate';
+import { useData } from '../hooks/data/useData';
+import { fetchBackgrounds } from '../utils/fetch/data';
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from 'react-joyride-react19-compat';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
+import Navbar from '../components/Navbar';
+import AirportDropdown from '../components/dropdowns/AirportDropdown';
+import RunwayDropdown from '../components/dropdowns/RunwayDropdown';
+import Checkbox from '../components/common/Checkbox';
+import Button from '../components/common/Button';
+import WindDisplay from '../components/tools/WindDisplay';
+import AtisReminderModal from '../components/modals/AtisReminderModal';
+import CustomTooltip from '../components/tutorial/CustomTooltip';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
-type NetworkSessionKind = "standard" | "pfatc" | "advanced_atc";
+type NetworkSessionKind = 'standard' | 'pfatc' | 'advanced_atc';
+
+function networkKindFromModeParam(
+  mode: string | null
+): NetworkSessionKind | null {
+  if (!mode) return null;
+  const normalized = mode.toLowerCase();
+  if (normalized === 'pfatc') return 'pfatc';
+  if (normalized === 'aatc' || normalized === 'advanced_atc')
+    return 'advanced_atc';
+  return null;
+}
+
+function initialNetworkKind(
+  searchParams: URLSearchParams,
+  startTutorial: boolean
+): NetworkSessionKind {
+  if (startTutorial) return 'pfatc';
+  return networkKindFromModeParam(searchParams.get('mode')) ?? 'standard';
+}
 
 interface AvailableImage {
   filename: string;
@@ -32,29 +54,33 @@ interface AvailableImage {
 
 export default function Create() {
   const navigate = useNavigate();
-  const [selectedAirport, setSelectedAirport] = useState<string>("");
-  const [selectedRunway, setSelectedRunway] = useState<string>("");
-  const [selectedArrivalRunway, setSelectedArrivalRunway] = useState<string>("");
-  const [networkKind, setNetworkKind] = useState<NetworkSessionKind>("standard");
+  const [searchParams] = useSearchParams();
+  const startTutorial = searchParams.get('tutorial') === 'true';
+  const [selectedAirport, setSelectedAirport] = useState<string>('');
+  const [selectedRunway, setSelectedRunway] = useState<string>('');
+  const [selectedArrivalRunway, setSelectedArrivalRunway] =
+    useState<string>('');
+  const [networkKind, setNetworkKind] = useState<NetworkSessionKind>(() =>
+    initialNetworkKind(searchParams, startTutorial)
+  );
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string>('');
   const [sessionCount, setSessionCount] = useState<number>(0);
-  const [sessionLimitReached, setSessionLimitReached] = useState<boolean>(false);
+  const [sessionLimitReached, setSessionLimitReached] =
+    useState<boolean>(false);
   const [isDeletingOldest, setIsDeletingOldest] = useState<boolean>(false);
   const [showAtisReminderModal, setShowAtisReminderModal] = useState(false);
   const [createdSession, setCreatedSession] = useState<{
     sessionId: string;
     accessId: string;
     atisText: string;
-    networkSessionKind: "pfatc" | "advanced_atc";
+    networkSessionKind: 'pfatc' | 'advanced_atc';
   } | null>(null);
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
   const { airports, frequencies } = useData();
-  const [searchParams] = useSearchParams();
-  const startTutorial = searchParams.get("tutorial") === "true";
 
   useEffect(() => {
     if (user) {
@@ -74,7 +100,7 @@ export default function Create() {
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error("Error loading available images:", error);
+        console.error('Error loading available images:', error);
       }
     };
     loadImages();
@@ -85,32 +111,37 @@ export default function Create() {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === "random" || filename === "favorites") {
+      if (!filename || filename === 'random' || filename === 'favorites') {
         return filename;
       }
-      if (filename.startsWith("https://api.cephie.app/")) {
+      if (filename.startsWith('https://api.cephie.app/')) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === "random") {
+    if (selectedImage === 'random') {
       if (availableImages.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
       }
-    } else if (selectedImage === "favorites") {
+    } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== "random" && favImageUrl !== "favorites") {
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
         bgImage = `url(${imageUrl})`;
       }
     }
@@ -130,47 +161,53 @@ export default function Create() {
 
   const handleDeleteOldestSession = async () => {
     setIsDeletingOldest(true);
-    setError("");
+    setError('');
 
     try {
       setSessionCount((prev) => Math.max(0, prev - 1));
       setSessionLimitReached(false);
-      setError("");
+      setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete oldest session");
+      setError(
+        err instanceof Error ? err.message : 'Failed to delete oldest session'
+      );
     } finally {
       setIsDeletingOldest(false);
     }
   };
 
   const handleContinueToSession = (sessionId: string, accessId: string) => {
-    const tutorialParam = startTutorial ? "&tutorial=true" : "";
+    const tutorialParam = startTutorial ? '&tutorial=true' : '';
     navigate(`/view/${sessionId}?accessId=${accessId}${tutorialParam}`);
   };
 
   const handleCreateSession = async () => {
     if (!selectedAirport || !selectedRunway) {
-      setError("Please select both airport and departure runway");
+      setError('Please select both airport and departure runway');
       return;
     }
 
     if (sessionLimitReached) {
       const maxSessions = user?.isAdmin || user?.isTester ? 100 : 50;
-      setError(`Session limit reached. You can create up to ${maxSessions} sessions.`);
+      setError(
+        `Session limit reached. You can create up to ${maxSessions} sessions.`
+      );
       return;
     }
 
     setIsCreating(true);
-    setError("");
+    setError('');
 
     try {
-      const effectiveKind: NetworkSessionKind = startTutorial ? "pfatc" : networkKind;
+      const effectiveKind: NetworkSessionKind = startTutorial
+        ? 'pfatc'
+        : networkKind;
       const newSession = await createSession({
         airportIcao: selectedAirport,
         activeRunway: selectedRunway,
-        isPFATC: effectiveKind === "pfatc",
-        isAdvancedATC: effectiveKind === "advanced_atc",
-        createdBy: user?.userId || "unknown",
+        isPFATC: effectiveKind === 'pfatc',
+        isAdvancedATC: effectiveKind === 'advanced_atc',
+        createdBy: user?.userId || 'unknown',
         isTutorial: startTutorial,
       });
 
@@ -178,41 +215,49 @@ export default function Create() {
 
       let atisResponse = null;
       try {
-        const landingRunways = selectedArrivalRunway ? [selectedArrivalRunway] : [selectedRunway];
+        const landingRunways = selectedArrivalRunway
+          ? [selectedArrivalRunway]
+          : [selectedRunway];
         const departingRunways = [selectedRunway];
 
         atisResponse = await generateATIS({
           sessionId: newSession.sessionId,
-          ident: "A",
+          ident: 'A',
           icao: selectedAirport,
           landing_runways: landingRunways,
           departing_runways: departingRunways,
         });
       } catch (atisError) {
-        console.warn("Failed to generate ATIS during session creation:", atisError);
+        console.warn(
+          'Failed to generate ATIS during session creation:',
+          atisError
+        );
       }
 
       const showAtisReminder =
-        (effectiveKind === "pfatc" || effectiveKind === "advanced_atc") && atisResponse?.atisText;
+        (effectiveKind === 'pfatc' || effectiveKind === 'advanced_atc') &&
+        atisResponse?.atisText;
       if (showAtisReminder) {
         setCreatedSession({
           sessionId: newSession.sessionId,
           accessId: newSession.accessId,
-          atisText: atisResponse?.atisText || "",
-          networkSessionKind: effectiveKind === "advanced_atc" ? "advanced_atc" : "pfatc",
+          atisText: atisResponse?.atisText || '',
+          networkSessionKind:
+            effectiveKind === 'advanced_atc' ? 'advanced_atc' : 'pfatc',
         });
         setShowAtisReminderModal(true);
       } else {
         handleContinueToSession(newSession.sessionId, newSession.accessId);
       }
     } catch (err) {
-      console.error("Error creating session:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to create session";
+      console.error('Error creating session:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create session';
       setError(errorMessage);
 
       if (
-        errorMessage.includes("Session limit reached") ||
-        errorMessage.includes("limit reached")
+        errorMessage.includes('Session limit reached') ||
+        errorMessage.includes('limit reached')
       ) {
         setSessionLimitReached(true);
       }
@@ -222,7 +267,7 @@ export default function Create() {
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    trackTutorialEvent("create", data);
+    trackTutorialEvent('create', data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);
@@ -244,11 +289,11 @@ export default function Create() {
             className="absolute inset-0"
             style={{
               backgroundImage,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               opacity: customLoaded ? 1 : 0,
-              transition: "opacity 0.5s ease-in-out",
+              transition: 'opacity 0.5s ease-in-out',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
@@ -274,25 +319,26 @@ export default function Create() {
             id="session-count-info"
             className={`p-3 backdrop-blur-sm border-2 rounded-full flex items-center justify-between text-sm ${
               sessionLimitReached
-                ? "bg-red-900/40 border-red-700"
+                ? 'bg-red-900/40 border-red-700'
                 : sessionCount >= (user?.isAdmin || user?.isTester ? 48 : 8)
-                  ? "bg-yellow-900/40 border-yellow-700"
-                  : "bg-blue-900/40 border-blue-500/50"
+                  ? 'bg-yellow-900/40 border-yellow-700'
+                  : 'bg-blue-900/40 border-blue-500/50'
             }`}
           >
             <div className="flex items-center">
               <Info
                 className={`h-4 w-4 mr-2 ${
                   sessionLimitReached
-                    ? "text-red-400"
+                    ? 'text-red-400'
                     : sessionCount >= (user?.isAdmin || user?.isTester ? 48 : 8)
-                      ? "text-yellow-400"
-                      : "text-blue-400"
+                      ? 'text-yellow-400'
+                      : 'text-blue-400'
                 }`}
               />
               <span>
-                Sessions: {sessionCount}/{user?.isAdmin || user?.isTester ? 100 : 50}
-                {sessionLimitReached && " (Limit reached)"}
+                Sessions: {sessionCount}/
+                {user?.isAdmin || user?.isTester ? 100 : 50}
+                {sessionLimitReached && ' (Limit reached)'}
               </span>
             </div>
 
@@ -305,7 +351,9 @@ export default function Create() {
                 className="flex items-center space-x-1 text-xs"
               >
                 <Trash2 className="h-3 w-3" />
-                <span>{isDeletingOldest ? "Deleting..." : "Delete Oldest"}</span>
+                <span>
+                  {isDeletingOldest ? 'Deleting...' : 'Delete Oldest'}
+                </span>
               </Button>
             )}
           </div>
@@ -318,9 +366,9 @@ export default function Create() {
               value={selectedAirport}
               onChange={(airport) => {
                 setSelectedAirport(airport);
-                setSelectedRunway("");
-                setSelectedArrivalRunway("");
-                setError("");
+                setSelectedRunway('');
+                setSelectedArrivalRunway('');
+                setError('');
               }}
               disabled={isCreating}
               searchable
@@ -336,7 +384,7 @@ export default function Create() {
               value={selectedRunway}
               onChange={(runway) => {
                 setSelectedRunway(runway);
-                setError("");
+                setError('');
               }}
               disabled={isCreating || !selectedAirport}
             />
@@ -344,14 +392,15 @@ export default function Create() {
 
           <div id="arrival-runway-dropdown" className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              Select Arrival Runway <span className="text-gray-500">(Optional)</span>
+              Select Arrival Runway{' '}
+              <span className="text-gray-500">(Optional)</span>
             </label>
             <RunwayDropdown
               airportIcao={selectedAirport}
               value={selectedArrivalRunway}
               onChange={(runway) => {
                 setSelectedArrivalRunway(runway);
-                setError("");
+                setError('');
               }}
               disabled={isCreating || !selectedAirport}
               placeholder="Same as departure"
@@ -369,9 +418,9 @@ export default function Create() {
               <div className="flex-1">
                 <Checkbox
                   id="pfatc-checkbox"
-                  checked={startTutorial ? true : networkKind === "pfatc"}
+                  checked={startTutorial ? true : networkKind === 'pfatc'}
                   onChange={(checked) => {
-                    setNetworkKind(checked ? "pfatc" : "standard");
+                    setNetworkKind(checked ? 'pfatc' : 'standard');
                   }}
                   label={
                     <a
@@ -390,9 +439,11 @@ export default function Create() {
               <div className="flex-1">
                 <Checkbox
                   id="advanced-atc-checkbox"
-                  checked={startTutorial ? false : networkKind === "advanced_atc"}
+                  checked={
+                    startTutorial ? false : networkKind === 'advanced_atc'
+                  }
                   onChange={(checked) => {
-                    setNetworkKind(checked ? "advanced_atc" : "standard");
+                    setNetworkKind(checked ? 'advanced_atc' : 'standard');
                   }}
                   label={
                     <a
@@ -409,7 +460,7 @@ export default function Create() {
                 />
               </div>
             </div>
-            {networkKind === "pfatc" && !startTutorial && (
+            {networkKind === 'pfatc' && !startTutorial && (
               <div className="mt-2 p-3 bg-blue-900/40 backdrop-blur-sm border border-blue-500/50 rounded-2xl w-full">
                 <div className="flex items-start space-x-2">
                   <div className="flex-shrink-0 mt-0.5">
@@ -417,15 +468,16 @@ export default function Create() {
                   </div>
                   <div className="text-sm">
                     <p className="text-blue-300">
-                      All submitted flights will be publicly viewable on the Network Overview page.
-                      Flights are shared between sessions, allowing controllers to see the arrivals
-                      and traffic of other open sessions.
+                      All submitted flights will be publicly viewable on the
+                      Network Overview page. Flights are shared between
+                      sessions, allowing controllers to see the arrivals and
+                      traffic of other open sessions.
                     </p>
                   </div>
                 </div>
               </div>
             )}
-            {networkKind === "advanced_atc" && !startTutorial && (
+            {networkKind === 'advanced_atc' && !startTutorial && (
               <div className="mt-2 p-3 bg-violet-900/40 backdrop-blur-sm border border-violet-500/50 rounded-2xl w-full">
                 <div className="flex items-start space-x-2">
                   <div className="flex-shrink-0 mt-0.5">
@@ -433,9 +485,10 @@ export default function Create() {
                   </div>
                   <div className="text-sm">
                     <p className="text-violet-300">
-                      All submitted flights will be publicly viewable on the Network Overview page.
-                      Flights are shared between sessions, allowing controllers to see the arrivals
-                      and traffic of other open sessions.
+                      All submitted flights will be publicly viewable on the
+                      Network Overview page. Flights are shared between
+                      sessions, allowing controllers to see the arrivals and
+                      traffic of other open sessions.
                     </p>
                   </div>
                 </div>
@@ -450,8 +503,8 @@ export default function Create() {
               disabled={isCreating || sessionLimitReached}
               className={`w-full ${
                 isCreating || sessionLimitReached
-                  ? "opacity-50 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
               }`}
             >
               {isCreating ? (
@@ -479,9 +532,9 @@ export default function Create() {
                   Creating Session...
                 </span>
               ) : sessionLimitReached ? (
-                "Session Limit Reached"
+                'Session Limit Reached'
               ) : (
-                "Create Session"
+                'Create Session'
               )}
             </Button>
           </div>
@@ -499,15 +552,15 @@ export default function Create() {
         tooltipComponent={CustomTooltip}
         styles={{
           options: {
-            primaryColor: "#3b82f6",
-            textColor: "#ffffff",
-            backgroundColor: "#1f2937",
+            primaryColor: '#3b82f6',
+            textColor: '#ffffff',
+            backgroundColor: '#1f2937',
             zIndex: 1000,
           },
           spotlight: {
-            border: "2px solid #fbbf24",
-            borderRadius: "24px",
-            boxShadow: "0 0 20px rgba(251, 191, 36, 0.5)",
+            border: '2px solid #fbbf24',
+            borderRadius: '24px',
+            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
           },
         }}
       />
@@ -517,40 +570,50 @@ export default function Create() {
         <AtisReminderModal
           onContinue={() => {
             setShowAtisReminderModal(false);
-            handleContinueToSession(createdSession.sessionId, createdSession.accessId);
+            handleContinueToSession(
+              createdSession.sessionId,
+              createdSession.accessId
+            );
           }}
           atisText={createdSession.atisText}
           accessId={createdSession.accessId}
           userId={user.userId}
           sessionId={createdSession.sessionId}
           airportIcao={selectedAirport}
-          airportName={airports.find((a) => a.icao === selectedAirport)?.name || selectedAirport}
+          airportName={
+            airports.find((a) => a.icao === selectedAirport)?.name ||
+            selectedAirport
+          }
           airportControlName={
-            airports.find((a) => a.icao === selectedAirport)?.controlName || selectedAirport
+            airports.find((a) => a.icao === selectedAirport)?.controlName ||
+            selectedAirport
           }
           airportAppFrequency={(() => {
             const airportObj = airports.find((a) => a.icao === selectedAirport);
             const freqObj = frequencies.find((f) => f.icao === selectedAirport);
-            const order = ["APP", "TWR", "GND", "DEL"];
+            const order = ['APP', 'TWR', 'GND', 'DEL'];
             for (const key of order) {
               const fromAirport = airportObj?.allFrequencies?.[key];
               const fromFreqs = freqObj?.[key];
-              if (fromAirport && fromAirport !== "n/a") return fromAirport;
-              if (fromFreqs && fromFreqs !== "n/a") return fromFreqs;
+              if (fromAirport && fromAirport !== 'n/a') return fromAirport;
+              if (fromFreqs && fromFreqs !== 'n/a') return fromFreqs;
             }
-            return "n/a";
+            return 'n/a';
           })()}
           airportFrequencyType={(() => {
             const airportObj = airports.find((a) => a.icao === selectedAirport);
             const freqObj = frequencies.find((f) => f.icao === selectedAirport);
-            const order = ["APP", "TWR", "GND", "DEL"];
+            const order = ['APP', 'TWR', 'GND', 'DEL'];
             for (const key of order) {
               const fromAirport = airportObj?.allFrequencies?.[key];
               const fromFreqs = freqObj?.[key];
-              if ((fromAirport && fromAirport !== "n/a") || (fromFreqs && fromFreqs !== "n/a"))
+              if (
+                (fromAirport && fromAirport !== 'n/a') ||
+                (fromFreqs && fromFreqs !== 'n/a')
+              )
                 return key;
             }
-            return "APP";
+            return 'APP';
           })()}
           networkSessionKind={createdSession.networkSessionKind}
         />

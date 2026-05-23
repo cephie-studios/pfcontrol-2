@@ -50,14 +50,20 @@ function updateRouteWithSid(
   newSid: string,
   oldSidHint: string | undefined,
   departure?: string,
-  arrival?: string,
+  arrival?: string
 ): string {
   const tokens = route.trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return newSid || '';
   let start = 0;
   let end = tokens.length - 1;
-  if (departure && tokens[start]?.toUpperCase() === departure.toUpperCase()) start++;
-  if (arrival && end >= start && tokens[end]?.toUpperCase() === arrival.toUpperCase()) end--;
+  if (departure && tokens[start]?.toUpperCase() === departure.toUpperCase())
+    start++;
+  if (
+    arrival &&
+    end >= start &&
+    tokens[end]?.toUpperCase() === arrival.toUpperCase()
+  )
+    end--;
 
   let sidIdx = -1;
   let oldSidInRoute = '';
@@ -65,9 +71,13 @@ function updateRouteWithSid(
   if (start <= end && looksLikeProcedure(tokens[start])) {
     oldSidInRoute = tokens[start];
     sidIdx = start;
-    if (newSid) tokens[start] = newSid; else tokens.splice(start, 1);
+    if (newSid) tokens[start] = newSid;
+    else tokens.splice(start, 1);
   } else {
-    if (newSid) { tokens.splice(start, 0, newSid); sidIdx = start; }
+    if (newSid) {
+      tokens.splice(start, 0, newSid);
+      sidIdx = start;
+    }
   }
 
   if (sidIdx !== -1 && newSid) {
@@ -97,12 +107,15 @@ function updateRouteWithArrival(
   newArrival: string,
   oldArrival?: string,
   oldStar?: string,
-  newStar?: string,
+  newStar?: string
 ): string {
   const tokens = route.trim().split(/\s+/).filter(Boolean);
 
   // Strip old arrival ICAO from end
-  if (oldArrival && tokens[tokens.length - 1]?.toUpperCase() === oldArrival.toUpperCase()) {
+  if (
+    oldArrival &&
+    tokens[tokens.length - 1]?.toUpperCase() === oldArrival.toUpperCase()
+  ) {
     tokens.pop();
   }
 
@@ -111,7 +124,10 @@ function updateRouteWithArrival(
   if (tokens.length > 0) {
     const last = tokens[tokens.length - 1].toUpperCase();
     const oldStarUp = oldStar?.toUpperCase();
-    if ((oldStarUp && last === oldStarUp) || (!oldStarUp && looksLikeProcedure(last))) {
+    if (
+      (oldStarUp && last === oldStarUp) ||
+      (!oldStarUp && looksLikeProcedure(last))
+    ) {
       tokens.pop();
       strippedStar = true;
     }
@@ -202,10 +218,13 @@ function DepartureTable({
   const [pdcModalOpen, setPdcModalOpen] = useState(false);
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
-  const [routeFlightId, setRouteFlightId] = useState<string | number | null>(null);
-  const routeFlight = routeFlightId != null
-    ? (flights.find((f) => f.id === routeFlightId) ?? null)
-    : null;
+  const [routeFlightId, setRouteFlightId] = useState<string | number | null>(
+    null
+  );
+  const routeFlight =
+    routeFlightId != null
+      ? (flights.find((f) => f.id === routeFlightId) ?? null)
+      : null;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [flightToDelete, setFlightToDelete] = useState<string | number | null>(
     null
@@ -218,6 +237,7 @@ function DepartureTable({
   );
   const isMobile = useMediaQuery({ maxWidth: 1000 });
   const isNarrow = useMediaQuery({ maxWidth: 1349 });
+  const isTableCramped = useMediaQuery({ minWidth: 1001, maxWidth: 1200 });
 
   const [, setReqTick] = useState(0);
   useEffect(() => {
@@ -236,14 +256,23 @@ function DepartureTable({
       let changed = false;
       for (const [id, opt] of prev) {
         const flight = flights.find((f) => f.id === id);
-        if (!flight) { next.delete(id); changed = true; continue; }
+        if (!flight) {
+          next.delete(id);
+          changed = true;
+          continue;
+        }
         const serverAt = flight.req_at ?? null;
         const optAt = opt.req_at ?? null;
         const synced =
           (serverAt === null && optAt === null) ||
-          (serverAt !== null && optAt !== null &&
-            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) < 5000);
-        if (synced) { next.delete(id); changed = true; }
+          (serverAt !== null &&
+            optAt !== null &&
+            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) <
+              5000);
+        if (synced) {
+          next.delete(id);
+          changed = true;
+        }
       }
       return changed ? next : prev;
     });
@@ -257,7 +286,10 @@ function DepartureTable({
   };
 
   const reqPositions = useMemo(() => {
-    const byPhase: Record<string, Array<{ id: string | number; req_at: string }>> = {};
+    const byPhase: Record<
+      string,
+      Array<{ id: string | number; req_at: string }>
+    > = {};
     for (const f of flights) {
       const { req_at, req_phase } = getReqData(f);
       if (!req_at) continue;
@@ -277,18 +309,24 @@ function DepartureTable({
       });
     }
     return result;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flights, reqOptimistic]);
 
   const formatReqElapsed = (req_at: string) => {
-    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(req_at).getTime()) / 1000));
+    const elapsed = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(req_at).getTime()) / 1000)
+    );
     const m = Math.floor(elapsed / 60);
     const s = elapsed % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const getReqColor = (req_at: string): string => {
-    const elapsed = Math.max(0, (Date.now() - new Date(req_at).getTime()) / 1000);
+    const elapsed = Math.max(
+      0,
+      (Date.now() - new Date(req_at).getTime()) / 1000
+    );
     const progress = Math.min(1, elapsed / 300);
     const hue = Math.round(48 * (1 - progress));
     return `hsl(${hue}, 90%, 58%)`;
@@ -351,47 +389,50 @@ function DepartureTable({
     return orderedList;
   }, [flights, customFlightOrder]);
 
-  const getSortValue = useCallback((flight: Flight, column: string) => {
-    switch (column) {
-      case 'time':
-        return flight.timestamp || 0;
-      case 'callsign':
-        return flight.callsign || '';
-      case 'stand':
-        return flight.stand || '';
-      case 'aircraft':
-        return flight.aircraft || '';
-      case 'wakeTurbulence':
-        return flight.wtc || '';
-      case 'flightType':
-        return flight.flight_type || '';
-      case 'arrival':
-        return flight.arrival || '';
-      case 'runway':
-        return flight.runway || '';
-      case 'sid':
-        return flight.sid || '';
-      case 'rfl':
-        return flight.cruisingFL || '';
-      case 'cfl':
-        return flight.clearedFL || '';
-      case 'route':
-        return flight.route || '';
-      case 'squawk':
-        return flight.squawk || '';
-      case 'clearance':
-        return isClearanceChecked(flight.clearance) ? 1 : 0;
-      case 'status':
-        return flight.status || '';
-      case 'remark':
-        return flight.remark || '';
-      case 'req':
-        return getReqData(flight).req_at ?? '';
-      default:
-        return '';
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reqOptimistic]);
+  const getSortValue = useCallback(
+    (flight: Flight, column: string) => {
+      switch (column) {
+        case 'time':
+          return flight.timestamp || 0;
+        case 'callsign':
+          return flight.callsign || '';
+        case 'stand':
+          return flight.stand || '';
+        case 'aircraft':
+          return flight.aircraft || '';
+        case 'wakeTurbulence':
+          return flight.wtc || '';
+        case 'flightType':
+          return flight.flight_type || '';
+        case 'arrival':
+          return flight.arrival || '';
+        case 'runway':
+          return flight.runway || '';
+        case 'sid':
+          return flight.sid || '';
+        case 'rfl':
+          return flight.cruisingFL || '';
+        case 'cfl':
+          return flight.clearedFL || '';
+        case 'route':
+          return flight.route || '';
+        case 'squawk':
+          return flight.squawk || '';
+        case 'clearance':
+          return isClearanceChecked(flight.clearance) ? 1 : 0;
+        case 'status':
+          return flight.status || '';
+        case 'remark':
+          return flight.remark || '';
+        case 'req':
+          return getReqData(flight).req_at ?? '';
+        default:
+          return '';
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [reqOptimistic]
+  );
 
   const sortedFlights = useMemo(() => {
     const flightsToSort = [...orderedFlights];
@@ -591,7 +632,10 @@ function DepartureTable({
     debouncedHandleRemarkChange(flightId, remark);
   };
 
-  const handleArrivalChange = async (flightId: string | number, arrival: string) => {
+  const handleArrivalChange = async (
+    flightId: string | number,
+    arrival: string
+  ) => {
     if (!onFlightChange) return;
     const flight = flights.find((f) => f.id === flightId);
 
@@ -632,9 +676,15 @@ function DepartureTable({
       sidForRoute,
       flight?.sid,
       flight?.departure,
-      flight?.arrival,
+      flight?.arrival
     );
-    route = updateRouteWithArrival(route, arrival, flight?.arrival, flight?.star, newStar);
+    route = updateRouteWithArrival(
+      route,
+      arrival,
+      flight?.arrival,
+      flight?.star,
+      newStar
+    );
 
     onFlightChange(flightId, { arrival, sid: newSid, star: newStar, route });
   };
@@ -658,11 +708,16 @@ function DepartureTable({
     if (onFlightChange) {
       const flight = flights.find((f) => f.id === flightId);
       const sidForRoute = looksLikeProcedure(sid) ? sid : '';
-      const route = updateRouteWithSid(flight?.route || '', sidForRoute, flight?.sid, flight?.departure, flight?.arrival);
+      const route = updateRouteWithSid(
+        flight?.route || '',
+        sidForRoute,
+        flight?.sid,
+        flight?.departure,
+        flight?.arrival
+      );
       onFlightChange(flightId, { sid, route });
     }
   };
-
 
   const handleCruisingFLChange = (
     flightId: string | number,
@@ -689,18 +744,25 @@ function DepartureTable({
       if (getReqData(flight!).req_at) {
         updates.req_at = null;
         updates.req_phase = null;
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
       }
       onFlightChange(flightId, updates);
     }
   };
 
-  const handleToggleClearance = (flightId: string | number, checked: boolean) => {
+  const handleToggleClearance = (
+    flightId: string | number,
+    checked: boolean
+  ) => {
     onToggleClearance(flightId, checked);
     if (checked && onFlightChange) {
       const flight = flights.find((f) => f.id === flightId);
       if (flight && getReqData(flight).req_at) {
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
         onFlightChange(flightId, { req_at: null, req_phase: null });
       }
     }
@@ -710,7 +772,9 @@ function DepartureTable({
     if (!onFlightChange) return;
     const current = getReqData(flight);
     if (current.req_at) {
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: null, req_phase: null }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: null, req_phase: null })
+      );
       onFlightChange(flight.id, { req_at: null, req_phase: null });
     } else {
       const status = (flight.status || '').toLowerCase();
@@ -721,7 +785,9 @@ function DepartureTable({
       else if (status === 'push') phase = 'T';
       else phase = 'G';
       const newReqAt = new Date().toISOString();
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase })
+      );
       onFlightChange(flight.id, { req_at: newReqAt, req_phase: phase });
     }
   };
@@ -832,7 +898,7 @@ function DepartureTable({
   }
 
   return (
-    <div className="mt-8 px-4">
+    <div className="mt-6 px-4">
       {hasHiddenFlights && (
         <div className="mb-2 flex items-center gap-2">
           <Button
@@ -882,7 +948,12 @@ function DepartureTable({
                     className="py-2.5 px-2 text-left w-16 column-req cursor-pointer select-none hover:bg-blue-700"
                     onClick={() => handleSort('req')}
                   >
-                    REQ{sortColumn === 'req' ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                    REQ
+                    {sortColumn === 'req'
+                      ? sortDirection === 'asc'
+                        ? ' ↑'
+                        : ' ↓'
+                      : ''}
                   </th>
                 )}
                 {departureColumns.stand !== false && (
@@ -1056,15 +1127,14 @@ function DepartureTable({
                     {/* Time column */}
                     <td className="py-2 px-4 column-time">
                       <span>
-                        {(flight.timestamp || flight.created_at)
-                          ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
-                              'en-GB',
-                              {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                timeZone: 'UTC',
-                              }
-                            )
+                        {flight.timestamp || flight.created_at
+                          ? new Date(
+                              flight.timestamp || flight.created_at!
+                            ).toLocaleTimeString('en-GB', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              timeZone: 'UTC',
+                            })
                           : '--'}
                       </span>
                     </td>
@@ -1106,31 +1176,45 @@ function DepartureTable({
                         </div>
                       </td>
                     )}
-                    {departureColumns.req !== false && !isNarrow && (() => {
-                      const { req_at, req_phase: _ } = getReqData(flight);
-                      return (
-                        <td
-                          className="py-2 px-2 column-req cursor-pointer select-none"
-                          onClick={() => handleReqToggle(flight)}
-                          title={req_at ? 'Click to clear request' : 'Click to mark as on-request'}
-                        >
-                          {req_at ? (
-                            <div className="flex flex-col items-center leading-tight">
-                              <span className="text-xs font-bold" style={{ color: getReqColor(req_at) }}>
-                                {reqPositions.get(flight.id)?.label ?? 'REQ'}
-                              </span>
-                              <span className="text-xs" style={{ color: getReqColor(req_at) }}>
-                                {formatReqElapsed(req_at)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center opacity-40 hover:opacity-70 transition-opacity">
-                              <span className="text-xs text-zinc-300">REQ</span>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })()}
+                    {departureColumns.req !== false &&
+                      !isNarrow &&
+                      (() => {
+                        const { req_at, req_phase: _ } = getReqData(flight);
+                        return (
+                          <td
+                            className="py-2 px-2 column-req cursor-pointer select-none"
+                            onClick={() => handleReqToggle(flight)}
+                            title={
+                              req_at
+                                ? 'Click to clear request'
+                                : 'Click to mark as on-request'
+                            }
+                          >
+                            {req_at ? (
+                              <div className="flex flex-col items-center leading-tight">
+                                <span
+                                  className="text-xs font-bold"
+                                  style={{ color: getReqColor(req_at) }}
+                                >
+                                  {reqPositions.get(flight.id)?.label ?? 'REQ'}
+                                </span>
+                                <span
+                                  className="text-xs"
+                                  style={{ color: getReqColor(req_at) }}
+                                >
+                                  {formatReqElapsed(req_at)}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center opacity-40 hover:opacity-70 transition-opacity">
+                                <span className="text-xs text-zinc-300">
+                                  REQ
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })()}
                     {departureColumns.stand !== false && (
                       <td className="py-2 px-4 column-stand">
                         <TextInput
@@ -1407,6 +1491,26 @@ function DepartureTable({
                               }}
                             >
                               <div className="p-1.5">
+                                {isTableCramped &&
+                                  departureColumns.pdc !== false && (
+                                    <button
+                                      type="button"
+                                      className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm ${
+                                        isFlashing ? 'text-orange-400' : ''
+                                      }`}
+                                      onClick={() => {
+                                        handlePDCOpen(flight);
+                                        setOpenDropdownId(null);
+                                      }}
+                                    >
+                                      <FileSpreadsheet
+                                        className={`w-4 h-4 shrink-0 ${isFlashing ? 'text-orange-400' : ''}`}
+                                      />
+                                      <span className="font-medium">
+                                        Generate PDC
+                                      </span>
+                                    </button>
+                                  )}
                                 <button
                                   type="button"
                                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
@@ -1424,7 +1528,9 @@ function DepartureTable({
                                   ) : (
                                     <EyeOff className="w-4 h-4 shrink-0" />
                                   )}
-                                  <span className="font-medium">{flight.hidden ? 'Unhide' : 'Hide'}</span>
+                                  <span className="font-medium">
+                                    {flight.hidden ? 'Unhide' : 'Hide'}
+                                  </span>
                                 </button>
                                 <button
                                   type="button"
