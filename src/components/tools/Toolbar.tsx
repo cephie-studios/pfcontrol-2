@@ -354,18 +354,6 @@ export default function Toolbar({
     }
   }, [chatOpen]);
 
-  const handleMentionCleared = (mentionType: 'session' | 'global' | 'all') => {
-    if (mentionType === 'session') {
-      setUnreadSessionMentions([]);
-    } else if (mentionType === 'global') {
-      setUnreadGlobalMentions([]);
-    } else {
-      setUnreadMentions([]);
-      setUnreadSessionMentions([]);
-      setUnreadGlobalMentions([]);
-    }
-  };
-
   const getStatusIcon = () => {
     switch (connectionStatus) {
       case 'Connected':
