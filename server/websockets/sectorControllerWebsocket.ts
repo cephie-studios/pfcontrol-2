@@ -3,7 +3,6 @@ import type { Server as HttpServer } from "http";
 import { redisConnection } from "../db/connection.js";
 import { getUserRoles } from "../db/roles.js";
 import { isAdmin } from "../middleware/admin.js";
-import { getOverviewIO } from "../realtime/socketRegistry.js";
 import { scheduleOverviewRefresh } from "../realtime/overview.js";
 import type { SessionUsersServer } from "./sessionUsersWebsocket.js";
 import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
