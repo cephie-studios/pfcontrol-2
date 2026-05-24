@@ -1,11 +1,11 @@
-import { Server as SocketServer } from 'socket.io';
-import type { Server as HttpServer } from 'http';
-import { redisConnection } from '../db/connection.js';
-import { getUserRoles } from '../db/roles.js';
-import { isAdmin } from '../middleware/admin.js';
-import { getOverviewIO } from './overviewWebsocket.js';
-import type { SessionUsersServer } from './sessionUsersWebsocket.js';
-import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { Server as SocketServer } from "socket.io";
+import type { Server as HttpServer } from "http";
+import { redisConnection } from "../db/connection.js";
+import { getUserRoles } from "../db/roles.js";
+import { isAdmin } from "../middleware/admin.js";
+import { scheduleOverviewRefresh } from "../realtime/overview.js";
+import type { SessionUsersServer } from "./sessionUsersWebsocket.js";
+import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
 
 interface SectorController {
   id: string;
@@ -25,15 +25,12 @@ interface SectorController {
 // User roles cache with TTL
 const userRolesCache = new Map<
   string,
-  { roles: SectorController['roles']; timestamp: number }
+  { roles: SectorController["roles"]; timestamp: number }
 >();
 const ROLES_CACHE_TTL = 5 * 60 * 1000;
 
 // Rate limiting per socket
-const rateLimitMap = new Map<
-  string,
-  { count: number; resetTime: number }
->();
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 10000;
 const RATE_LIMIT_MAX = 15;
 
@@ -59,7 +56,7 @@ function checkRateLimit(userId: string): boolean {
 
 async function getUserRolesWithCache(
   userId: string
-): Promise<SectorController['roles']> {
+): Promise<SectorController["roles"]> {
   const now = Date.now();
   const cached = userRolesCache.get(userId);
 
@@ -67,30 +64,30 @@ async function getUserRolesWithCache(
     return cached.roles;
   }
 
-  let roles: SectorController['roles'] = [];
+  let roles: SectorController["roles"] = [];
   try {
     const dbRoles = await getUserRoles(userId);
     roles = dbRoles.map((role) => ({
       id: role.id,
       name: role.name,
-      color: role.color ?? '#000000',
-      icon: role.icon ?? '',
+      color: role.color ?? "#000000",
+      icon: role.icon ?? "",
       priority: role.priority ?? 0,
     }));
 
     if (isAdmin(userId)) {
       roles.unshift({
         id: -1,
-        name: 'Developer',
-        color: '#3B82F6',
-        icon: 'Braces',
+        name: "Developer",
+        color: "#3B82F6",
+        icon: "Braces",
         priority: 999999,
       });
     }
 
     userRolesCache.set(userId, { roles, timestamp: now });
   } catch (error) {
-    console.error('Error fetching user roles:', error);
+    console.error("Error fetching user roles:", error);
   }
 
   return roles;
@@ -107,7 +104,7 @@ export function invalidateUserRolesCache(userId?: string): void {
 export const getActiveSectorControllers = async (): Promise<
   SectorController[]
 > => {
-  const controllers = await redisConnection.hgetall('activeSectorControllers');
+  const controllers = await redisConnection.hgetall("activeSectorControllers");
   return Object.values(controllers).map(
     (controllerData) => JSON.parse(controllerData as string) as SectorController
   );
@@ -118,16 +115,16 @@ const addSectorController = async (
   controllerData: SectorController
 ): Promise<void> => {
   await redisConnection.hset(
-    'activeSectorControllers',
+    "activeSectorControllers",
     userId,
     JSON.stringify(controllerData)
   );
   // Set TTL for auto-cleanup in case of ungraceful disconnect
-  await redisConnection.expire('activeSectorControllers', REDIS_CONTROLLER_TTL);
+  await redisConnection.expire("activeSectorControllers", REDIS_CONTROLLER_TTL);
 };
 
 const removeSectorController = async (userId: string): Promise<void> => {
-  await redisConnection.hdel('activeSectorControllers', userId);
+  await redisConnection.hdel("activeSectorControllers", userId);
 };
 
 export function setupSectorControllerWebsocket(
@@ -135,14 +132,14 @@ export function setupSectorControllerWebsocket(
   sessionUsersIO: SessionUsersServer
 ) {
   const io = new SocketServer(httpServer, {
-    path: '/sockets/sector-controller',
-    allowRequest: createHandshakeRateLimiter({ scope: 'sector-controller' }),
+    path: "/sockets/sector-controller",
+    allowRequest: createHandshakeRateLimiter({ scope: "sector-controller" }),
     cors: {
       origin: [
-        'http://localhost:5173',
-        'http://localhost:9901',
-        'https://pfcontrol.com',
-        'https://canary.pfcontrol.com',
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
       ],
       credentials: true,
     },
@@ -151,7 +148,7 @@ export function setupSectorControllerWebsocket(
     },
   });
 
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     let user: { userId?: string; username?: string; avatar?: string | null };
 
     try {
@@ -168,7 +165,7 @@ export function setupSectorControllerWebsocket(
       try {
         user = JSON.parse(userQuery);
       } catch (parseError) {
-        console.error('Invalid user data:', parseError);
+        console.error("Invalid user data:", parseError);
         socket.disconnect(true);
         return;
       }
@@ -184,16 +181,18 @@ export function setupSectorControllerWebsocket(
       socket.join(`sector-${user.userId}`);
 
       // Handle station selection
-      socket.on('selectStation', async ({ station }) => {
+      socket.on("selectStation", async ({ station }) => {
         if (!user.userId) return;
 
         if (!checkRateLimit(user.userId)) {
-          socket.emit('error', { message: 'Too many requests. Please slow down.' });
+          socket.emit("error", {
+            message: "Too many requests. Please slow down.",
+          });
           return;
         }
 
-        if (!station || typeof station !== 'string' || station.length > 10) {
-          socket.emit('error', { message: 'Invalid station format' });
+        if (!station || typeof station !== "string" || station.length > 10) {
+          socket.emit("error", { message: "Invalid station format" });
           return;
         }
 
@@ -210,21 +209,24 @@ export function setupSectorControllerWebsocket(
           await addSectorController(user.userId, sectorController);
 
           // Broadcast to all connected clients
-          io.emit('controllerAdded', sectorController);
+          io.emit("controllerAdded", sectorController);
+          scheduleOverviewRefresh();
 
-          socket.emit('stationSelected', { station: sectorController.station });
+          socket.emit("stationSelected", { station: sectorController.station });
         } catch (error) {
-          console.error('Error selecting station:', error);
-          socket.emit('error', { message: 'Failed to select station' });
+          console.error("Error selecting station:", error);
+          socket.emit("error", { message: "Failed to select station" });
         }
       });
 
       // Handle station deselection
-      socket.on('deselectStation', async () => {
+      socket.on("deselectStation", async () => {
         if (!user.userId) return;
 
         if (!checkRateLimit(user.userId)) {
-          socket.emit('error', { message: 'Too many requests. Please slow down.' });
+          socket.emit("error", {
+            message: "Too many requests. Please slow down.",
+          });
           return;
         }
 
@@ -232,26 +234,28 @@ export function setupSectorControllerWebsocket(
           await removeSectorController(user.userId);
 
           // Broadcast to all connected clients
-          io.emit('controllerRemoved', { id: user.userId });
+          io.emit("controllerRemoved", { id: user.userId });
+          scheduleOverviewRefresh();
 
-          socket.emit('stationDeselected');
+          socket.emit("stationDeselected");
         } catch (error) {
-          console.error('Error deselecting station:', error);
+          console.error("Error deselecting station:", error);
         }
       });
 
-      socket.on('disconnect', async () => {
+      socket.on("disconnect", async () => {
         if (!user.userId) return;
 
         await removeSectorController(user.userId);
 
         // Broadcast to all connected clients
-        io.emit('controllerRemoved', { id: user.userId });
+        io.emit("controllerRemoved", { id: user.userId });
+        scheduleOverviewRefresh();
 
         rateLimitMap.delete(user.userId);
       });
     } catch (error) {
-      console.error('Error in sector controller websocket connection:', error);
+      console.error("Error in sector controller websocket connection:", error);
       socket.disconnect(true);
     }
   });
@@ -271,7 +275,7 @@ export function setupSectorControllerWebsocket(
     }
   }, 60000);
 
-  io.on('close', () => {
+  io.on("close", () => {
     clearInterval(cacheCleanupInterval);
     userRolesCache.clear();
     rateLimitMap.clear();

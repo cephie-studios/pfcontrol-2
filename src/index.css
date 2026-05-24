@@ -53,6 +53,12 @@ button {
     display: none;
   }
 }
+@media (max-width: 1200px) and (min-width: 1001px) {
+  .column-atyp,
+  .column-pdc {
+    display: none;
+  }
+}
 
 @media (max-width: 1000px) {
   .table-view {
@@ -71,22 +77,60 @@ button {
   }
 }
 
-/* Toolbar */
-@media (max-width: 1350px) {
+@media (min-width: 1551px) {
+  .toolbar .toolbar-secondary {
+    display: contents;
+  }
+}
+
+@media (max-width: 1550px) {
   .toolbar {
+    display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 16px;
+  }
+  .toolbar .wind-frequency-group {
+    justify-content: center;
+  }
+  .toolbar .toolbar-secondary {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: auto;
+    max-width: 100%;
+  }
+  .toolbar #toolbar-middle {
+    flex: none;
+    align-items: center;
+  }
+  .toolbar #toolbar-middle .toolbar-avatar-row {
+    justify-content: center;
+  }
+  .toolbar .toolbar-controls {
+    justify-content: center;
   }
 }
 @media (max-width: 1000px) {
   .toolbar {
-    flex-direction: column;
+    gap: 12px;
+  }
+  .toolbar .toolbar-secondary {
     gap: 12px;
   }
 }
 @media (max-width: 800px) {
   .toolbar {
+    display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .toolbar .toolbar-secondary {
     gap: 8px;
   }
 }
@@ -94,7 +138,7 @@ button {
   .toolbar .wind-frequency-group {
     flex-direction: column !important;
     gap: 4px;
-    align-items: flex-start;
+    align-items: center;
   }
 }
 

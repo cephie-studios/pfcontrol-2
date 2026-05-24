@@ -405,7 +405,7 @@ function ArrivalsTable({
   }
 
   return (
-    <div className="mt-8 px-4">
+    <div className="mt-6 px-4">
       {hasHiddenFlights && (
         <div className="mb-2 flex items-center gap-2">
           <Button
@@ -460,7 +460,7 @@ function ArrivalsTable({
                 )}
                 {arrivalsColumns.aircraft !== false && (
                   <th
-                    className="py-2.5 px-4 text-left cursor-pointer select-none hover:bg-green-700"
+                    className="py-2.5 px-4 text-left column-atyp cursor-pointer select-none hover:bg-green-700"
                     onClick={() => handleSort('aircraft')}
                   >
                     ATYP
@@ -565,300 +565,306 @@ function ArrivalsTable({
                   </td>
                 </tr>
               ) : null}
-              {!loading && visibleFlights.map((flight, index) => {
-                const isDragging = draggedFlightId === flight.id;
-                const isDragOver = dragOverIndex === index;
+              {!loading &&
+                visibleFlights.map((flight, index) => {
+                  const isDragging = draggedFlightId === flight.id;
+                  const isDragOver = dragOverIndex === index;
 
-                return (
-                  <tr
-                    key={flight.id}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`select-none ${
-                      flight.hidden ? 'opacity-60 text-gray-400' : ''
-                    } ${isDragging ? 'opacity-50' : ''} ${
-                      isDragOver ? 'border-t-2 border-green-400' : ''
-                    }`}
-                    style={backgroundStyle}
-                  >
-                    {/* Drag handle column */}
-                    <td className="py-2 px-2">
-                      <div
-                        draggable={true}
-                        onDragStart={(e) => handleDragStart(e, flight.id)}
-                        className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-                    </td>
-                    {/* Time column */}
-                    <td className="py-2 px-4 column-time">
-                      <span>
-                        {(flight.timestamp || flight.created_at)
-                          ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
-                              'en-GB',
-                              {
+                  return (
+                    <tr
+                      key={flight.id}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`select-none ${
+                        flight.hidden ? 'opacity-60 text-gray-400' : ''
+                      } ${isDragging ? 'opacity-50' : ''} ${
+                        isDragOver ? 'border-t-2 border-green-400' : ''
+                      }`}
+                      style={backgroundStyle}
+                    >
+                      {/* Drag handle column */}
+                      <td className="py-2 px-2">
+                        <div
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, flight.id)}
+                          className="cursor-move text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                      </td>
+                      {/* Time column */}
+                      <td className="py-2 px-4 column-time">
+                        <span>
+                          {flight.timestamp || flight.created_at
+                            ? new Date(
+                                flight.timestamp || flight.created_at!
+                              ).toLocaleTimeString('en-GB', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                                 timeZone: 'UTC',
-                              }
-                            )
-                          : '--'}
-                      </span>
-                    </td>
-                    {arrivalsColumns.callsign !== false && (
-                      <td className="py-2 px-4 column-callsign">
-                        <span
-                          className="text-white font-mono"
-                          title={
-                            !airlinesLoading
-                              ? parseCallsign(flight.callsign, airlines)
-                              : flight.callsign || ''
-                          }
-                        >
-                          {flight.callsign || '-'}
+                              })
+                            : '--'}
                         </span>
                       </td>
-                    )}
-                    {arrivalsColumns.gate !== false && (
-                      <td className="py-2 px-2 column-gate">
-                        <TextInput
-                          value={gateValues[flight.id] ?? (flight.gate || '')}
-                          onChange={(value) =>
-                            debouncedHandleGateChange(flight.id, value)
-                          }
-                          className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
-                          placeholder="-"
-                          maxLength={8}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
+                      {arrivalsColumns.callsign !== false && (
+                        <td className="py-2 px-4 column-callsign">
+                          <span
+                            className="text-white font-mono"
+                            title={
+                              !airlinesLoading
+                                ? parseCallsign(flight.callsign, airlines)
+                                : flight.callsign || ''
                             }
-                          }}
-                        />
-                      </td>
-                    )}
-                    {arrivalsColumns.aircraft !== false && (
-                      <td className="py-2 px-4">
-                        <span className="text-white font-mono">
-                          {flight.aircraft || '-'}
-                        </span>
-                      </td>
-                    )}
-                    {arrivalsColumns.wakeTurbulence !== false && (
-                      <td className="py-2 px-4 column-w">
-                        {flight.wtc || '-'}
-                      </td>
-                    )}
-                    {arrivalsColumns.flightType !== false && (
-                      <td className="py-2 px-4">{flight.flight_type || '-'}</td>
-                    )}
-                    {arrivalsColumns.departure !== false && (
-                      <td className="py-2 px-2">
-                        <span className="text-white font-mono">
-                          {flight.departure || '-'}
-                        </span>
-                      </td>
-                    )}
-                    {arrivalsColumns.runway !== false && (
-                      <td className="py-2 px-2 column-rwy">
-                        <span className="text-white font-mono">
-                          {flight.runway || '-'}
-                        </span>
-                      </td>
-                    )}
-                    {arrivalsColumns.star !== false && (
-                      <td className="py-2 px-2">
-                        <StarDropdown
-                          airportIcao={flight.arrival || ''}
-                          value={flight.star}
-                          onChange={(star) => handleStarChange(flight.id, star)}
-                          size="xs"
-                          placeholder="-"
-                        />
-                      </td>
-                    )}
-                    {arrivalsColumns.rfl !== false && (
-                      <td className="py-2 px-2 column-rfl">
-                        <span className="text-white font-mono">
-                          {flight.cruisingFL || '-'}
-                        </span>
-                      </td>
-                    )}
-                    {arrivalsColumns.cfl !== false && (
-                      <td className="py-2 px-2">
-                        <AltitudeDropdown
-                          value={flight.clearedFL}
-                          onChange={(alt) =>
-                            handleClearedFLChange(flight.id, alt)
-                          }
-                          size="xs"
-                          placeholder="-"
-                        />
-                      </td>
-                    )}
-                    {arrivalsColumns.route !== false && (
-                      <td className="py-2 px-2 column-route">
-                        <button
-                          className={`px-2 py-1 rounded transition-colors ${
-                            flight.route && flight.route.trim()
-                              ? 'text-gray-400 hover:text-blue-500'
-                              : 'text-red-500'
-                          }`}
-                          onClick={() => handleRouteOpen(flight)}
-                          title={
-                            flight.route && flight.route.trim()
-                              ? 'View Route'
-                              : 'No route specified'
-                          }
-                        >
-                          <Route />
-                        </button>
-                      </td>
-                    )}
-                    {arrivalsColumns.squawk !== false && (
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-0.5 w-full">
+                          >
+                            {flight.callsign || '-'}
+                          </span>
+                        </td>
+                      )}
+                      {arrivalsColumns.gate !== false && (
+                        <td className="py-2 px-2 column-gate">
                           <TextInput
-                            value={
-                              squawkValues[flight.id] ?? (flight.squawk || '')
-                            }
+                            value={gateValues[flight.id] ?? (flight.gate || '')}
                             onChange={(value) =>
-                              debouncedHandleSquawkChange(flight.id, value)
+                              debouncedHandleGateChange(flight.id, value)
                             }
-                            className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white w-full min-w-0"
+                            className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                             placeholder="-"
-                            maxLength={4}
-                            pattern="[0-9]*"
+                            maxLength={8}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.currentTarget.blur();
                               }
                             }}
                           />
+                        </td>
+                      )}
+                      {arrivalsColumns.aircraft !== false && (
+                        <td className="py-2 px-4 column-atyp">
+                          <span className="text-white font-mono">
+                            {flight.aircraft || '-'}
+                          </span>
+                        </td>
+                      )}
+                      {arrivalsColumns.wakeTurbulence !== false && (
+                        <td className="py-2 px-4 column-w">
+                          {flight.wtc || '-'}
+                        </td>
+                      )}
+                      {arrivalsColumns.flightType !== false && (
+                        <td className="py-2 px-4">
+                          {flight.flight_type || '-'}
+                        </td>
+                      )}
+                      {arrivalsColumns.departure !== false && (
+                        <td className="py-2 px-2">
+                          <span className="text-white font-mono">
+                            {flight.departure || '-'}
+                          </span>
+                        </td>
+                      )}
+                      {arrivalsColumns.runway !== false && (
+                        <td className="py-2 px-2 column-rwy">
+                          <span className="text-white font-mono">
+                            {flight.runway || '-'}
+                          </span>
+                        </td>
+                      )}
+                      {arrivalsColumns.star !== false && (
+                        <td className="py-2 px-2">
+                          <StarDropdown
+                            airportIcao={flight.arrival || ''}
+                            value={flight.star}
+                            onChange={(star) =>
+                              handleStarChange(flight.id, star)
+                            }
+                            size="xs"
+                            placeholder="-"
+                          />
+                        </td>
+                      )}
+                      {arrivalsColumns.rfl !== false && (
+                        <td className="py-2 px-2 column-rfl">
+                          <span className="text-white font-mono">
+                            {flight.cruisingFL || '-'}
+                          </span>
+                        </td>
+                      )}
+                      {arrivalsColumns.cfl !== false && (
+                        <td className="py-2 px-2">
+                          <AltitudeDropdown
+                            value={flight.clearedFL}
+                            onChange={(alt) =>
+                              handleClearedFLChange(flight.id, alt)
+                            }
+                            size="xs"
+                            placeholder="-"
+                          />
+                        </td>
+                      )}
+                      {arrivalsColumns.route !== false && (
+                        <td className="py-2 px-2 column-route">
                           <button
-                            onClick={() => handleRegenerateSquawk(flight.id)}
-                            className="text-gray-400 hover:text-blue-500 rounded transition-colors flex-shrink-0 ml-0.5"
-                            title="Generate new squawk"
-                            type="button"
+                            className={`px-2 py-1 rounded transition-colors ${
+                              flight.route && flight.route.trim()
+                                ? 'text-gray-400 hover:text-blue-500'
+                                : 'text-red-500'
+                            }`}
+                            onClick={() => handleRouteOpen(flight)}
+                            title={
+                              flight.route && flight.route.trim()
+                                ? 'View Route'
+                                : 'No route specified'
+                            }
                           >
-                            <RefreshCw className="w-2.5 h-2.5" />
+                            <Route />
                           </button>
-                        </div>
-                      </td>
-                    )}
-                    {arrivalsColumns.status !== false && (
-                      <td className="py-2 px-4">
-                        <StatusDropdown
-                          value={flight.status}
-                          onChange={(status) =>
-                            handleStatusChange(flight.id, status)
-                          }
-                          size="xs"
-                          placeholder="-"
-                          controllerType="arrival"
-                        />
-                      </td>
-                    )}
-                    {arrivalsColumns.remark !== false && (
-                      <td className="py-2 px-4 column-rmk">
-                        <TextInput
-                          value={
-                            remarkValues[flight.id] ?? (flight.remark || '')
-                          }
-                          onChange={(value) =>
-                            debouncedHandleRemarkChange(flight.id, value)
-                          }
-                          className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
-                          placeholder="-"
-                          maxLength={50}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.currentTarget.blur();
+                        </td>
+                      )}
+                      {arrivalsColumns.squawk !== false && (
+                        <td className="py-2 px-2">
+                          <div className="flex items-center gap-0.5 w-full">
+                            <TextInput
+                              value={
+                                squawkValues[flight.id] ?? (flight.squawk || '')
+                              }
+                              onChange={(value) =>
+                                debouncedHandleSquawkChange(flight.id, value)
+                              }
+                              className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white w-full min-w-0"
+                              placeholder="-"
+                              maxLength={4}
+                              pattern="[0-9]*"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => handleRegenerateSquawk(flight.id)}
+                              className="text-gray-400 hover:text-blue-500 rounded transition-colors flex-shrink-0 ml-0.5"
+                              title="Generate new squawk"
+                              type="button"
+                            >
+                              <RefreshCw className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                      {arrivalsColumns.status !== false && (
+                        <td className="py-2 px-4">
+                          <StatusDropdown
+                            value={flight.status}
+                            onChange={(status) =>
+                              handleStatusChange(flight.id, status)
+                            }
+                            size="xs"
+                            placeholder="-"
+                            controllerType="arrival"
+                          />
+                        </td>
+                      )}
+                      {arrivalsColumns.remark !== false && (
+                        <td className="py-2 px-4 column-rmk">
+                          <TextInput
+                            value={
+                              remarkValues[flight.id] ?? (flight.remark || '')
+                            }
+                            onChange={(value) =>
+                              debouncedHandleRemarkChange(flight.id, value)
+                            }
+                            className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
+                            placeholder="-"
+                            maxLength={50}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              }
+                            }}
+                          />
+                        </td>
+                      )}
+                      <td className="py-2 px-2 relative">
+                        <button
+                          type="button"
+                          ref={(el) => {
+                            if (el) {
+                              buttonRefs.current[flight.id] = el;
                             }
                           }}
-                        />
-                      </td>
-                    )}
-                    <td className="py-2 px-2 relative">
-                      <button
-                        type="button"
-                        ref={(el) => {
-                          if (el) {
-                            buttonRefs.current[flight.id] = el;
+                          className="flex items-center justify-center w-full text-gray-400 hover:text-white transition-colors"
+                          onClick={() =>
+                            setOpenDropdownId(
+                              openDropdownId === flight.id ? null : flight.id
+                            )
                           }
-                        }}
-                        className="flex items-center justify-center w-full text-gray-400 hover:text-white transition-colors"
-                        onClick={() =>
-                          setOpenDropdownId(
-                            openDropdownId === flight.id ? null : flight.id
-                          )
-                        }
-                        title="Actions"
-                      >
-                        <Menu className="h-6 w-6" strokeWidth={2.5} />
-                      </button>
-                      {openDropdownId === flight.id &&
-                        createPortal(
-                          <>
-                            <div
-                              className="fixed inset-0"
-                              style={{ zIndex: 9997 }}
-                              onClick={() => setOpenDropdownId(null)}
-                            />
-                            <div
-                              className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
-                              style={{
-                                zIndex: 9998,
-                                top: (() => {
-                                  const btn = buttonRefs.current[flight.id];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    return `${rect.bottom + 4}px`;
-                                  }
-                                  return '0px';
-                                })(),
-                                left: (() => {
-                                  const btn = buttonRefs.current[flight.id];
-                                  if (btn) {
-                                    const rect = btn.getBoundingClientRect();
-                                    return `${rect.right - 176}px`;
-                                  }
-                                  return '0px';
-                                })(),
-                              }}
-                            >
-                              <div className="p-1.5">
-                                <button
-                                  type="button"
-                                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
-                                  onClick={() => {
-                                    if (flight.hidden) {
-                                      handleUnhideFlight(flight.id);
-                                    } else {
-                                      handleHideFlight(flight.id);
+                          title="Actions"
+                        >
+                          <Menu className="h-6 w-6" strokeWidth={2.5} />
+                        </button>
+                        {openDropdownId === flight.id &&
+                          createPortal(
+                            <>
+                              <div
+                                className="fixed inset-0"
+                                style={{ zIndex: 9997 }}
+                                onClick={() => setOpenDropdownId(null)}
+                              />
+                              <div
+                                className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
+                                style={{
+                                  zIndex: 9998,
+                                  top: (() => {
+                                    const btn = buttonRefs.current[flight.id];
+                                    if (btn) {
+                                      const rect = btn.getBoundingClientRect();
+                                      return `${rect.bottom + 4}px`;
                                     }
-                                    setOpenDropdownId(null);
-                                  }}
-                                >
-                                  {flight.hidden ? (
-                                    <Eye className="w-4 h-4 shrink-0" />
-                                  ) : (
-                                    <EyeOff className="w-4 h-4 shrink-0" />
-                                  )}
-                                  <span className="font-medium">{flight.hidden ? 'Unhide' : 'Hide'}</span>
-                                </button>
+                                    return '0px';
+                                  })(),
+                                  left: (() => {
+                                    const btn = buttonRefs.current[flight.id];
+                                    if (btn) {
+                                      const rect = btn.getBoundingClientRect();
+                                      return `${rect.right - 176}px`;
+                                    }
+                                    return '0px';
+                                  })(),
+                                }}
+                              >
+                                <div className="p-1.5">
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                                    onClick={() => {
+                                      if (flight.hidden) {
+                                        handleUnhideFlight(flight.id);
+                                      } else {
+                                        handleHideFlight(flight.id);
+                                      }
+                                      setOpenDropdownId(null);
+                                    }}
+                                  >
+                                    {flight.hidden ? (
+                                      <Eye className="w-4 h-4 shrink-0" />
+                                    ) : (
+                                      <EyeOff className="w-4 h-4 shrink-0" />
+                                    )}
+                                    <span className="font-medium">
+                                      {flight.hidden ? 'Unhide' : 'Hide'}
+                                    </span>
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          </>,
-                          document.body
-                        )}
-                    </td>
-                  </tr>
-                );
-              })}
+                            </>,
+                            document.body
+                          )}
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -870,7 +876,6 @@ function ArrivalsTable({
         flight={selectedFlight}
         onFlightChange={onFlightChange}
       />
-
     </div>
   );
 }
