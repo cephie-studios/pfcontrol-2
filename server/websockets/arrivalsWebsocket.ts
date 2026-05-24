@@ -21,10 +21,7 @@ import {
   getNetworkKind,
   type NetworkKind,
 } from "../utils/advancedNetworkSession.js";
-import {
-  getCachedExternalArrivals,
-  broadcastArrivalChange,
-} from "../realtime/arrivals.js";
+import { getCachedExternalArrivals } from "../realtime/arrivals.js";
 import { getFlightSourceSessionId } from "../realtime/flightsRead.js";
 import { setArrivalsIO as registerArrivalsIO } from "../realtime/socketRegistry.js";
 import { setSessionMetaFromRow } from "../realtime/activeSessions.js";
