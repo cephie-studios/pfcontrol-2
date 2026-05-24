@@ -1,14 +1,14 @@
-import { Server as SocketServer } from 'socket.io';
+import { Server as SocketServer } from "socket.io";
 import {
   addChatMessage,
   deleteChatMessage,
   reportChatMessage,
-} from '../db/chats.js';
-import { validateSessionAccess } from '../middleware/sessionAccess.js';
-import { validateSessionId, validateAccessId } from '../utils/validation.js';
-import { sanitizeMessage } from '../utils/sanitization.js';
-import type { Server } from 'http';
-import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+} from "../db/chats.js";
+import { validateSessionAccess } from "../middleware/sessionAccess.js";
+import { validateSessionId, validateAccessId } from "../utils/validation.js";
+import { sanitizeMessage } from "../utils/sanitization.js";
+import type { Server } from "http";
+import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
 
 const activeChatUsers = new Map<string, Set<string>>();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
@@ -54,17 +54,17 @@ export function setupChatWebsocket(
   sessionUsersIO = sessionUsersWebsocketIO;
 
   const io = new SocketServer(httpServer, {
-    path: '/sockets/chat',
+    path: "/sockets/chat",
     allowRequest: createHandshakeRateLimiter({
-      scope: 'chat',
+      scope: "chat",
       maxAttempts: 500,
     }),
     cors: {
       origin: [
-        'http://localhost:5173',
-        'http://localhost:9901',
-        'https://pfcontrol.com',
-        'https://canary.pfcontrol.com',
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
       ],
       credentials: true,
     },
@@ -73,7 +73,7 @@ export function setupChatWebsocket(
     },
   });
 
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     try {
       const sessionId = validateSessionId(
         Array.isArray(socket.handshake.query.sessionId)
@@ -100,14 +100,18 @@ export function setupChatWebsocket(
 
       socket.join(sessionId);
 
-      socket.on('typing', ({ username }: { username: string }) => {
-        if (typeof username !== 'string' || username.length === 0 || username.length > 50) {
+      socket.on("typing", ({ username }: { username: string }) => {
+        if (
+          typeof username !== "string" ||
+          username.length === 0 ||
+          username.length > 50
+        ) {
           return;
         }
-        socket.to(sessionId).emit('userTyping', { userId, username });
+        socket.to(sessionId).emit("userTyping", { userId, username });
       });
 
-      socket.on('chatMessage', async ({ user, message }) => {
+      socket.on("chatMessage", async ({ user, message }) => {
         const sessionId = socket.data.sessionId;
         if (!sessionId || !message || message.length > 500) return;
 
@@ -128,7 +132,7 @@ export function setupChatWebsocket(
               .map((username) => users.find((u) => u.username === username)?.id)
               .filter((id): id is string => id !== undefined);
           } catch (error) {
-            console.error('Error resolving mentions:', error);
+            console.error("Error resolving mentions:", error);
           }
         }
 
@@ -151,22 +155,36 @@ export function setupChatWebsocket(
             sent_at: chatMsg.sent_at,
           };
 
-          io.to(sessionId).emit('chatMessage', formattedMsg);
+          io.to(sessionId).emit("chatMessage", formattedMsg);
+
+          const { pushSessionChatMessage } =
+            await import("../realtime/chatCache.js");
+          if (formattedMsg.id != null && formattedMsg.userId) {
+            void pushSessionChatMessage(sessionId, {
+              id: formattedMsg.id,
+              userId: formattedMsg.userId,
+              username: formattedMsg.username ?? "",
+              avatar: formattedMsg.avatar ?? "",
+              message: formattedMsg.message,
+              mentions: formattedMsg.mentions ?? [],
+              sent_at: formattedMsg.sent_at,
+            });
+          }
 
           if (chatMsg.automodded && chatMsg.id) {
-            socket.emit('messageAutomodded', {
+            socket.emit("messageAutomodded", {
               messageId: chatMsg.id,
-              reason: chatMsg.automodReason || 'Hate speech detected',
+              reason: chatMsg.automodReason || "Hate speech detected",
             });
             try {
               await reportChatMessage(
                 sessionId,
                 chatMsg.id,
-                'automod',
-                chatMsg.automodReason || 'Hate speech detected'
+                "automod",
+                chatMsg.automodReason || "Hate speech detected"
               );
             } catch (error) {
-              console.error('Error reporting automodded message:', error);
+              console.error("Error reporting automodded message:", error);
             }
           }
 
@@ -175,7 +193,7 @@ export function setupChatWebsocket(
             mentionedUserIds.length > 0
           ) {
             try {
-              const messageIdStr = chatMsg.id?.toString() ?? '';
+              const messageIdStr = chatMsg.id?.toString() ?? "";
               const timestampStr = chatMsg.sent_at
                 ? chatMsg.sent_at.toISOString()
                 : new Date().toISOString();
@@ -190,29 +208,29 @@ export function setupChatWebsocket(
                 });
               }
             } catch (error) {
-              console.error('Error sending mentions:', error);
+              console.error("Error sending mentions:", error);
             }
           }
         } catch (error) {
-          console.error('Error adding chat message:', error);
-          socket.emit('chatError', { message: 'Failed to send message' });
+          console.error("Error adding chat message:", error);
+          socket.emit("chatError", { message: "Failed to send message" });
         }
       });
 
-      socket.on('deleteMessage', async ({ messageId, userId }) => {
+      socket.on("deleteMessage", async ({ messageId, userId }) => {
         const sessionId = socket.data.sessionId;
         const success = await deleteChatMessage(sessionId, messageId, userId);
         if (success) {
-          io.to(sessionId).emit('messageDeleted', { messageId });
+          io.to(sessionId).emit("messageDeleted", { messageId });
         } else {
-          socket.emit('deleteError', {
+          socket.emit("deleteError", {
             messageId,
-            error: 'Cannot delete this message',
+            error: "Cannot delete this message",
           });
         }
       });
 
-      socket.on('chatOpened', () => {
+      socket.on("chatOpened", () => {
         const sessionId = socket.data.sessionId;
         const userId = socket.data.userId;
         if (sessionId && userId) {
@@ -222,30 +240,24 @@ export function setupChatWebsocket(
           const userSet = activeChatUsers.get(sessionId);
           if (userSet) {
             userSet.add(userId);
-            io.to(sessionId).emit(
-              'activeChatUsers',
-              Array.from(userSet)
-            );
+            io.to(sessionId).emit("activeChatUsers", Array.from(userSet));
           }
         }
       });
 
-      socket.on('chatClosed', () => {
+      socket.on("chatClosed", () => {
         const sessionId = socket.data.sessionId;
         const userId = socket.data.userId;
         if (sessionId && userId && activeChatUsers.has(sessionId)) {
           const userSet = activeChatUsers.get(sessionId);
           if (userSet) {
             userSet.delete(userId);
-            io.to(sessionId).emit(
-              'activeChatUsers',
-              Array.from(userSet)
-            );
+            io.to(sessionId).emit("activeChatUsers", Array.from(userSet));
           }
         }
       });
 
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         const sessionId = socket.data.sessionId;
         const userId = socket.data.userId;
         if (activeChatUsers.has(sessionId)) {
@@ -255,10 +267,7 @@ export function setupChatWebsocket(
             if (userSet.size === 0) {
               activeChatUsers.delete(sessionId);
             } else {
-              io.to(sessionId).emit(
-                'activeChatUsers',
-                Array.from(userSet)
-              );
+              io.to(sessionId).emit("activeChatUsers", Array.from(userSet));
             }
           }
         }
@@ -269,8 +278,8 @@ export function setupChatWebsocket(
   });
 
   // Cleanup on shutdown
-  process.on('SIGTERM', () => {
-    console.log('[Chat] Cleaning up intervals...');
+  process.on("SIGTERM", () => {
+    console.log("[Chat] Cleaning up intervals...");
     clearInterval(chatCleanupInterval);
     activeChatUsers.clear();
   });

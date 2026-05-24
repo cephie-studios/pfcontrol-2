@@ -8,7 +8,6 @@ import {
   ExclusiveSessionNetworkFlagsError,
   isPostgresCheckViolation,
 } from "../utils/sessionNetworkFlags.js";
-
 interface CreateSessionParams {
   sessionId: string;
   accessId: string;
@@ -56,6 +55,18 @@ export async function createSession({
       ...(developerApiKeyId ? { developer_api_key_id: developerApiKeyId } : {}),
     };
     await mainDb.insertInto("sessions").values(baseValues).execute();
+    const { setSessionMetaFromRow } =
+      await import("../realtime/activeSessions.js");
+    await setSessionMetaFromRow({
+      session_id: validSessionId,
+      airport_icao: airportIcao.toUpperCase(),
+      active_runway: activeRunway,
+      created_by: createdBy,
+      is_pfatc: isPfatc,
+      is_advanced_atc: isAdvancedAtc,
+      atis: JSON.stringify(encryptedAtis),
+      created_at: new Date(),
+    });
   } catch (e) {
     if (isPostgresCheckViolation(e)) {
       throw new ExclusiveSessionNetworkFlagsError();
@@ -154,7 +165,7 @@ export async function updateSession(
     refreshed_at: Date;
     is_pfatc: boolean;
     is_advanced_atc: boolean;
-  }>,
+  }>
 ) {
   const patch = { ...updates };
 
@@ -165,7 +176,9 @@ export async function updateSession(
     }
 
     const nextP =
-      patch.is_pfatc !== undefined ? Boolean(patch.is_pfatc) : Boolean(current.is_pfatc);
+      patch.is_pfatc !== undefined
+        ? Boolean(patch.is_pfatc)
+        : Boolean(current.is_pfatc);
     const nextA =
       patch.is_advanced_atc !== undefined
         ? Boolean(patch.is_advanced_atc)
@@ -189,16 +202,29 @@ export async function updateSession(
   }
 
   try {
-    return await mainDb
+    const result = await mainDb
       .updateTable("sessions")
       .set({
         ...patch,
         airport_icao: patch.airport_icao?.toUpperCase(),
-        refreshed_at: patch.refreshed_at ? new Date(patch.refreshed_at) : undefined,
+        refreshed_at: patch.refreshed_at
+          ? new Date(patch.refreshed_at)
+          : undefined,
       })
       .where("session_id", "=", sessionId)
       .returningAll()
       .executeTakeFirst();
+
+    if (result) {
+      const { setSessionMetaFromRow } =
+        await import("../realtime/activeSessions.js");
+      await setSessionMetaFromRow(result);
+      if (patch.atis !== undefined) {
+        const { onAtisChanged } = await import("../realtime/invalidate.js");
+        void onAtisChanged(sessionId);
+      }
+    }
+    return result;
   } catch (e) {
     if (isPostgresCheckViolation(e)) {
       throw new ExclusiveSessionNetworkFlagsError();
@@ -221,20 +247,33 @@ export async function updateSessionName(sessionId: string, customName: string) {
 export async function deleteSession(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
 
-  await mainDb.deleteFrom("flights").where("session_id", "=", validSessionId).execute();
+  await mainDb
+    .deleteFrom("flights")
+    .where("session_id", "=", validSessionId)
+    .execute();
 
-  await mainDb.deleteFrom("session_chat").where("session_id", "=", validSessionId).execute();
+  await mainDb
+    .deleteFrom("session_chat")
+    .where("session_id", "=", validSessionId)
+    .execute();
 
-  await mainDb.deleteFrom("sessions").where("session_id", "=", validSessionId).execute();
+  await mainDb
+    .deleteFrom("sessions")
+    .where("session_id", "=", validSessionId)
+    .execute();
 }
 
 export async function getAllSessions() {
-  return await mainDb.selectFrom("sessions").selectAll().orderBy("created_at", "desc").execute();
+  return await mainDb
+    .selectFrom("sessions")
+    .selectAll()
+    .orderBy("created_at", "desc")
+    .execute();
 }
 
 export async function getSessionsByAirportAndNetwork(
   airportIcao: string,
-  networkKind: "pfatc" | "advanced_atc",
+  networkKind: "pfatc" | "advanced_atc"
 ) {
   const query = mainDb
     .selectFrom("sessions")
@@ -288,7 +327,7 @@ export async function listPublicNetworkSessionsForDeveloperApi(opts: {
       "s.refreshed_at",
       "s.created_by",
       sql<number>`coalesce((select count(*)::int from flights f where f.session_id = s.session_id), 0)`.as(
-        "flight_count",
+        "flight_count"
       ),
       "u.username",
       "u.avatar",
@@ -313,7 +352,7 @@ export async function listPublicNetworkSessionsForDeveloperApi(opts: {
 
 export async function getPublicNetworkSessionForDeveloperApi(
   sessionId: string,
-  kind: DeveloperPublicNetworkKind,
+  kind: DeveloperPublicNetworkKind
 ): Promise<PublicNetworkSessionDeveloperRow | null> {
   const valid = validateSessionId(sessionId);
   let q = mainDb
@@ -328,7 +367,7 @@ export async function getPublicNetworkSessionForDeveloperApi(
       "s.refreshed_at",
       "s.created_by",
       sql<number>`coalesce((select count(*)::int from flights f where f.session_id = s.session_id), 0)`.as(
-        "flight_count",
+        "flight_count"
       ),
       "u.username",
       "u.avatar",

@@ -11,7 +11,6 @@ import crypto from "crypto";
 import { sql } from "kysely";
 import { incrementStat } from "../utils/statisticsCache.js";
 import type { FlightsTable } from "./types/connection/main/FlightsTable.js";
-
 function createUTCDate(): Date {
   const now = new Date();
   return new Date(
@@ -22,8 +21,8 @@ function createUTCDate(): Date {
       now.getUTCHours(),
       now.getUTCMinutes(),
       now.getUTCSeconds(),
-      now.getUTCMilliseconds(),
-    ),
+      now.getUTCMilliseconds()
+    )
   );
 }
 
@@ -88,8 +87,16 @@ export function sanitizeFlightForClient(flight: FlightsTable): ClientFlight {
   };
 }
 
-function sanitizeFlightForOwner(flight: FlightsTable): ClientFlight & { acars_token?: string } {
-  const { user_id: _uid, ip_address: _ip, cruisingfl, clearedfl, ...rest } = flight;
+function sanitizeFlightForOwner(
+  flight: FlightsTable
+): ClientFlight & { acars_token?: string } {
+  const {
+    user_id: _uid,
+    ip_address: _ip,
+    cruisingfl,
+    clearedfl,
+    ...rest
+  } = flight;
   return {
     ...rest,
     cruisingFL: cruisingfl,
@@ -121,13 +128,17 @@ function validateFlightFields(updates: Partial<FlightsTable>) {
   if (updates.cruisingfl !== undefined) {
     const fl = parseInt(String(updates.cruisingfl), 10);
     if (isNaN(fl) || fl < 0 || fl > 500 || fl % 5 !== 0) {
-      throw new Error("Cruising FL must be between 0 and 500 in 5-step increments");
+      throw new Error(
+        "Cruising FL must be between 0 and 500 in 5-step increments"
+      );
     }
   }
   if (updates.clearedfl !== undefined) {
     const fl = parseInt(String(updates.clearedfl), 10);
     if (isNaN(fl) || fl < 0 || fl > 500 || fl % 5 !== 0) {
-      throw new Error("Cleared FL must be between 0 and 500 in 5-step increments");
+      throw new Error(
+        "Cleared FL must be between 0 and 500 in 5-step increments"
+      );
     }
   }
 }
@@ -161,20 +172,30 @@ export async function getFlightsBySession(sessionId: string) {
 
     const userIds = [
       ...new Set(
-        flights.map((f) => f.user_id).filter((id): id is string => typeof id === "string"),
+        flights
+          .map((f) => f.user_id)
+          .filter((id): id is string => typeof id === "string")
       ),
     ];
 
     const usersMap = new Map<
       string,
-      { id: string; discord_username: string; discord_avatar_url: string | null }
+      {
+        id: string;
+        discord_username: string;
+        discord_avatar_url: string | null;
+      }
     >();
 
     if (userIds.length > 0) {
       try {
         const users = await mainDb
           .selectFrom("users")
-          .select(["id", "username as discord_username", "avatar as discord_avatar_url"])
+          .select([
+            "id",
+            "username as discord_username",
+            "avatar as discord_avatar_url",
+          ])
           .where("id", "in", userIds)
           .execute();
 
@@ -205,24 +226,47 @@ export async function getFlightsBySession(sessionId: string) {
 export async function getFlightsByUser(userId: string) {
   try {
     const flights = await mainDb
-      .selectFrom('flights')
-      .leftJoin('sessions', 'sessions.session_id', 'flights.session_id')
+      .selectFrom("flights")
+      .leftJoin("sessions", "sessions.session_id", "flights.session_id")
       .select([
-        'flights.id', 'flights.session_id', 'flights.user_id', 'flights.ip_address',
-        'flights.callsign', 'flights.aircraft', 'flights.flight_type',
-        'flights.departure', 'flights.arrival', 'flights.alternate', 'flights.route',
-        'flights.sid', 'flights.star', 'flights.runway',
-        'flights.clearedfl', 'flights.cruisingfl',
-        'flights.stand', 'flights.gate', 'flights.remark',
-        'flights.flight_plan_time', 'flights.status', 'flights.clearance',
-        'flights.position', 'flights.squawk', 'flights.wtc', 'flights.hidden',
-        'flights.acars_token', 'flights.pdc_remarks', 'flights.notes',
-        'flights.snap_images', 'flights.featured_on_profile',
-        'flights.created_at', 'flights.updated_at',
-        'sessions.is_pfatc', 'sessions.is_advanced_atc',
+        "flights.id",
+        "flights.session_id",
+        "flights.user_id",
+        "flights.ip_address",
+        "flights.callsign",
+        "flights.aircraft",
+        "flights.flight_type",
+        "flights.departure",
+        "flights.arrival",
+        "flights.alternate",
+        "flights.route",
+        "flights.sid",
+        "flights.star",
+        "flights.runway",
+        "flights.clearedfl",
+        "flights.cruisingfl",
+        "flights.stand",
+        "flights.gate",
+        "flights.remark",
+        "flights.flight_plan_time",
+        "flights.status",
+        "flights.clearance",
+        "flights.position",
+        "flights.squawk",
+        "flights.wtc",
+        "flights.hidden",
+        "flights.acars_token",
+        "flights.pdc_remarks",
+        "flights.notes",
+        "flights.snap_images",
+        "flights.featured_on_profile",
+        "flights.created_at",
+        "flights.updated_at",
+        "sessions.is_pfatc",
+        "sessions.is_advanced_atc",
       ])
-      .where('flights.user_id', '=', userId)
-      .orderBy('flights.created_at', 'desc')
+      .where("flights.user_id", "=", userId)
+      .orderBy("flights.created_at", "desc")
       .execute();
 
     return flights.map((flight) => ({
@@ -248,7 +292,10 @@ export async function getFlightByIdForUser(userId: string, flightId: string) {
 
     return flight ? sanitizeFlightForOwner(flight) : null;
   } catch (error) {
-    console.error(`Error fetching flight ${flightId} for user ${userId}:`, error);
+    console.error(
+      `Error fetching flight ${flightId} for user ${userId}:`,
+      error
+    );
     return null;
   }
 }
@@ -258,10 +305,10 @@ export async function getFlightLogsForUser(userId: string, flightId: string) {
     const validFlightId = validateFlightId(flightId);
 
     const ownedFlight = await mainDb
-      .selectFrom('flights')
-      .select(['id', 'created_at', 'user_id'])
-      .where('id', '=', validFlightId)
-      .where('user_id', '=', userId)
+      .selectFrom("flights")
+      .select(["id", "created_at", "user_id"])
+      .where("id", "=", validFlightId)
+      .where("user_id", "=", userId)
       .executeTakeFirst();
 
     if (!ownedFlight) {
@@ -274,20 +321,20 @@ export async function getFlightLogsForUser(userId: string, flightId: string) {
     );
 
     const logs = await mainDb
-      .selectFrom('flight_logs')
-      .leftJoin('users', 'users.id', 'flight_logs.user_id')
+      .selectFrom("flight_logs")
+      .leftJoin("users", "users.id", "flight_logs.user_id")
       .select([
-        'flight_logs.id',
-        'flight_logs.action',
-        'flight_logs.old_data',
-        'flight_logs.new_data',
-        'flight_logs.created_at',
-        'flight_logs.username',
-        'flight_logs.user_id',
-        'users.avatar as user_avatar_hash',
+        "flight_logs.id",
+        "flight_logs.action",
+        "flight_logs.old_data",
+        "flight_logs.new_data",
+        "flight_logs.created_at",
+        "flight_logs.username",
+        "flight_logs.user_id",
+        "users.avatar as user_avatar_hash",
       ])
-      .where('flight_logs.flight_id', '=', validFlightId)
-      .orderBy('flight_logs.created_at', 'desc')
+      .where("flight_logs.flight_id", "=", validFlightId)
+      .orderBy("flight_logs.created_at", "desc")
       .execute();
 
     return {
@@ -307,7 +354,10 @@ export async function getFlightLogsForUser(userId: string, flightId: string) {
       pilotUserId: ownedFlight.user_id,
     };
   } catch (error) {
-    console.error(`Error fetching flight logs for flight ${flightId} and user ${userId}:`, error);
+    console.error(
+      `Error fetching flight logs for flight ${flightId} and user ${userId}:`,
+      error
+    );
     return { logs: [], logsDiscardedDueToAge: false };
   }
 }
@@ -316,7 +366,7 @@ export async function claimFlightForUser(
   sessionId: string,
   flightId: string,
   acarsToken: string,
-  userId: string,
+  userId: string
 ) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
@@ -329,7 +379,8 @@ export async function claimFlightForUser(
     .executeTakeFirst();
 
   if (!flight) return { ok: false, reason: "not_found" as const };
-  if (flight.acars_token !== acarsToken) return { ok: false, reason: "invalid_token" as const };
+  if (flight.acars_token !== acarsToken)
+    return { ok: false, reason: "invalid_token" as const };
   if (flight.user_id && flight.user_id !== userId)
     return { ok: false, reason: "already_claimed" as const };
 
@@ -346,7 +397,11 @@ export async function claimFlightForUser(
   return { ok: true as const };
 }
 
-export async function validateAcarsAccess(sessionId: string, flightId: string, acarsToken: string) {
+export async function validateAcarsAccess(
+  sessionId: string,
+  flightId: string,
+  acarsToken: string
+) {
   try {
     const validSessionId = validateSessionId(sessionId);
     const validFlightId = validateFlightId(flightId);
@@ -370,7 +425,10 @@ export async function validateAcarsAccess(sessionId: string, flightId: string, a
   }
 }
 
-export async function getFlightsBySessionWithTime(sessionId: string, hoursBack = 2) {
+export async function getFlightsBySessionWithTime(
+  sessionId: string,
+  hoursBack = 2
+) {
   try {
     const validSessionId = validateSessionId(sessionId);
 
@@ -387,28 +445,41 @@ export async function getFlightsBySessionWithTime(sessionId: string, hoursBack =
           eb("flight_plan_time", ">=", sinceIso),
           eb("updated_at", ">=", sql<Date>`${sinceIso}`),
           eb("created_at", ">=", sql<Date>`${sinceIso}`),
-        ]),
+        ])
       )
-      .orderBy(sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`, "desc")
+      .orderBy(
+        sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`,
+        "desc"
+      )
       .orderBy("callsign", "asc")
       .execute();
 
     const userIds = [
       ...new Set(
-        flights.map((f) => f.user_id).filter((id): id is string => typeof id === "string"),
+        flights
+          .map((f) => f.user_id)
+          .filter((id): id is string => typeof id === "string")
       ),
     ];
 
     const usersMap = new Map<
       string,
-      { id: string; discord_username: string; discord_avatar_url: string | null }
+      {
+        id: string;
+        discord_username: string;
+        discord_avatar_url: string | null;
+      }
     >();
 
     if (userIds.length > 0) {
       try {
         const users = await mainDb
           .selectFrom("users")
-          .select(["id", "username as discord_username", "avatar as discord_avatar_url"])
+          .select([
+            "id",
+            "username as discord_username",
+            "avatar as discord_avatar_url",
+          ])
           .where("id", "in", userIds)
           .execute();
 
@@ -444,10 +515,26 @@ export interface ExternalArrivalFlight extends ClientFlight {
 
 export async function getExternalArrivalFlights(
   airportIcao: string,
-  networkKind: "pfatc" | "advanced_atc" | null,
+  networkKind: "pfatc" | "advanced_atc" | null
+): Promise<ExternalArrivalFlight[]> {
+  const { perfAsync } = await import("../realtime/perf.js");
+  return perfAsync(
+    "getExternalArrivalFlights",
+    () => getExternalArrivalFlightsUncached(airportIcao, networkKind),
+    { icao: airportIcao, network: networkKind ?? "none" }
+  );
+}
+
+async function getExternalArrivalFlightsUncached(
+  airportIcao: string,
+  networkKind: "pfatc" | "advanced_atc" | null
 ): Promise<ExternalArrivalFlight[]> {
   if (!networkKind) return [];
-  if (!airportIcao || airportIcao.length !== 4 || !/^[A-Z]{4}$/i.test(airportIcao)) {
+  if (
+    !airportIcao ||
+    airportIcao.length !== 4 ||
+    !/^[A-Z]{4}$/i.test(airportIcao)
+  ) {
     throw new Error("Invalid ICAO airport code");
   }
   try {
@@ -471,7 +558,7 @@ export async function getExternalArrivalFlights(
           eb("f.flight_plan_time", ">=", sinceIso),
           eb("f.updated_at", ">=", sql<Date>`${sinceIso}`),
           eb("f.created_at", ">=", sql<Date>`${sinceIso}`),
-        ]),
+        ])
       );
 
     if (networkKind === "pfatc") {
@@ -484,20 +571,30 @@ export async function getExternalArrivalFlights(
 
     const userIds = [
       ...new Set(
-        flights.map((f) => f.user_id).filter((id): id is string => typeof id === "string"),
+        flights
+          .map((f) => f.user_id)
+          .filter((id): id is string => typeof id === "string")
       ),
     ];
 
     const usersMap = new Map<
       string,
-      { id: string; discord_username: string; discord_avatar_url: string | null }
+      {
+        id: string;
+        discord_username: string;
+        discord_avatar_url: string | null;
+      }
     >();
 
     if (userIds.length > 0) {
       try {
         const users = await mainDb
           .selectFrom("users")
-          .select(["id", "username as discord_username", "avatar as discord_avatar_url"])
+          .select([
+            "id",
+            "username as discord_username",
+            "avatar as discord_avatar_url",
+          ])
           .where("id", "in", userIds)
           .execute();
 
@@ -511,17 +608,22 @@ export async function getExternalArrivalFlights(
           });
         });
       } catch (userError) {
-        console.error("Error fetching user data for external arrivals:", userError);
+        console.error(
+          "Error fetching user data for external arrivals:",
+          userError
+        );
       }
     }
 
-    return flights.map((f): ExternalArrivalFlight => ({
-      ...sanitizeFlightForClient(f),
-      user: f.user_id ? usersMap.get(f.user_id) : undefined,
-      sourceSessionId: f.source_session_id,
-      sourceAirport: f.source_airport,
-      isExternal: true,
-    }));
+    return flights.map(
+      (f): ExternalArrivalFlight => ({
+        ...sanitizeFlightForClient(f),
+        user: f.user_id ? usersMap.get(f.user_id) : undefined,
+        sourceSessionId: f.source_session_id,
+        sourceAirport: f.source_airport,
+        isExternal: true,
+      })
+    );
   } catch (error) {
     console.error("Error fetching external arrival flights:", error);
     return [];
@@ -552,7 +654,9 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
 
   flightData.id = generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
-  flightData.wtc = await getWakeTurbulence(flightData.aircraft || flightData.aircraft_type || "");
+  flightData.wtc = await getWakeTurbulence(
+    flightData.aircraft || flightData.aircraft_type || ""
+  );
   if (!flightData.flight_plan_time) {
     flightData.flight_plan_time = new Date().toISOString();
   }
@@ -593,7 +697,11 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
   }
 
   // Strip non-column fields
-  const { icao: _icao, aircraft_type: _at, ...insertData } = flightData as Record<string, unknown>;
+  const {
+    icao: _icao,
+    aircraft_type: _at,
+    ...insertData
+  } = flightData as Record<string, unknown>;
 
   const result = await mainDb
     .insertInto("flights")
@@ -604,11 +712,15 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
         Object.entries(insertData)
           .filter(([k]) => k !== "id")
           .map(([k, v]) => {
-            if ((k === "cruisingfl" || k === "clearedfl") && v !== undefined && v !== null) {
+            if (
+              (k === "cruisingfl" || k === "clearedfl") &&
+              v !== undefined &&
+              v !== null
+            ) {
               return [k, String(v)];
             }
             return [k, v];
-          }),
+          })
       ),
     })
     .returningAll()
@@ -617,8 +729,26 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
   if (!result) throw new Error("Failed to insert flight");
 
   if (flightData.user_id) {
-    incrementStat(String(flightData.user_id), "total_flights_submitted", 1, "total");
+    incrementStat(
+      String(flightData.user_id),
+      "total_flights_submitted",
+      1,
+      "total"
+    );
   }
+
+  const clientFlight = sanitizeFlightForClient(result);
+  void (async () => {
+    const { getSessionMeta } = await import("../realtime/activeSessions.js");
+    const { onFlightChanged } = await import("../realtime/invalidate.js");
+    const meta = await getSessionMeta(validSessionId);
+    void onFlightChanged({
+      sessionId: validSessionId,
+      flightId: result.id,
+      flight: clientFlight,
+      networkKind: meta?.networkKind ?? null,
+    });
+  })();
 
   return sanitizeFlightForOwner(result);
 }
@@ -640,11 +770,12 @@ export async function getFlightById(sessionId: string, flightId: string) {
 export async function getPublicFlightById(flightId: string) {
   const validFlightId = validateFlightId(flightId);
 
-  const flight = (await mainDb
-    .selectFrom('flights')
-    .selectAll()
-    .where('id', '=', validFlightId)
-    .executeTakeFirst()) ?? null;
+  const flight =
+    (await mainDb
+      .selectFrom("flights")
+      .selectAll()
+      .where("id", "=", validFlightId)
+      .executeTakeFirst()) ?? null;
 
   // Only expose flights that have been submitted (have an acars_token)
   if (!flight?.acars_token) return null;
@@ -654,7 +785,7 @@ export async function getPublicFlightById(flightId: string) {
 export async function updateFlight(
   sessionId: string,
   flightId: string,
-  updates: Record<string, unknown>,
+  updates: Record<string, unknown>
 ) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
@@ -711,26 +842,61 @@ export async function updateFlight(
 
   if (!result) throw new Error("Flight not found or update failed");
 
-  return sanitizeFlightForClient(result);
+  const clientFlight = sanitizeFlightForClient(result);
+  void (async () => {
+    const { getSessionMeta } = await import("../realtime/activeSessions.js");
+    const { onFlightChanged } = await import("../realtime/invalidate.js");
+    const meta = await getSessionMeta(validSessionId);
+    void onFlightChanged({
+      sessionId: validSessionId,
+      flightId: validFlightId,
+      flight: clientFlight,
+      networkKind: meta?.networkKind ?? null,
+    });
+  })();
+
+  return clientFlight;
 }
 
 export async function deleteFlight(sessionId: string, flightId: string) {
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
+
+  const existing = await getFlightById(validSessionId, validFlightId);
+
   await mainDb
     .deleteFrom("flights")
     .where("session_id", "=", validSessionId)
     .where("id", "=", validFlightId)
     .execute();
+
+  if (existing) {
+    void (async () => {
+      const { getSessionMeta } = await import("../realtime/activeSessions.js");
+      const { onFlightChanged } = await import("../realtime/invalidate.js");
+      const meta = await getSessionMeta(validSessionId);
+      void onFlightChanged({
+        sessionId: validSessionId,
+        flightId: validFlightId,
+        flight: sanitizeFlightForClient(existing),
+        networkKind: meta?.networkKind ?? null,
+        deleted: true,
+      });
+    })();
+  }
 }
 
-export async function updateFlightNotes(userId: string, flightId: string, notes: string) {
+export async function updateFlightNotes(
+  userId: string,
+  flightId: string,
+  notes: string
+) {
   const validFlightId = validateFlightId(flightId);
   await mainDb
-    .updateTable('flights')
+    .updateTable("flights")
     .set({ notes, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .execute();
 }
 
@@ -739,26 +905,34 @@ export async function addSnapImage(
   flightId: string,
   cephieId: string,
   url: string
-): Promise<{ ok: boolean; snap_images?: Array<{ cephie_id: string; url: string }> }> {
+): Promise<{
+  ok: boolean;
+  snap_images?: Array<{ cephie_id: string; url: string }>;
+}> {
   const validFlightId = validateFlightId(flightId);
 
   const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'snap_images'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .selectFrom("flights")
+    .select(["id", "user_id", "snap_images"])
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .executeTakeFirst();
 
   if (!flight) return { ok: false };
 
-  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
+  const existing =
+    (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
+    [];
   const updated = [...existing, { cephie_id: cephieId, url }];
 
   await mainDb
-    .updateTable('flights')
-    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .updateTable("flights")
+    .set({
+      snap_images: sql`${JSON.stringify(updated)}::jsonb`,
+      updated_at: createUTCDate(),
+    })
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .execute();
 
   return { ok: true, snap_images: updated };
@@ -772,25 +946,30 @@ export async function deleteSnapImage(
   const validFlightId = validateFlightId(flightId);
 
   const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'snap_images'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .selectFrom("flights")
+    .select(["id", "user_id", "snap_images"])
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .executeTakeFirst();
 
   if (!flight) return { ok: false };
 
-  const existing = (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [];
+  const existing =
+    (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
+    [];
   const target = existing.find((img) => img.cephie_id === cephieId);
   if (!target) return { ok: false };
 
   const updated = existing.filter((img) => img.cephie_id !== cephieId);
 
   await mainDb
-    .updateTable('flights')
-    .set({ snap_images: sql`${JSON.stringify(updated)}::jsonb`, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .updateTable("flights")
+    .set({
+      snap_images: sql`${JSON.stringify(updated)}::jsonb`,
+      updated_at: createUTCDate(),
+    })
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .execute();
 
   return { ok: true, cephie_id: cephieId };
@@ -803,10 +982,10 @@ export async function toggleFeaturedOnProfile(
   const validFlightId = validateFlightId(flightId);
 
   const flight = await mainDb
-    .selectFrom('flights')
-    .select(['id', 'user_id', 'featured_on_profile'])
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .selectFrom("flights")
+    .select(["id", "user_id", "featured_on_profile"])
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .executeTakeFirst();
 
   if (!flight) return { ok: false };
@@ -815,19 +994,19 @@ export async function toggleFeaturedOnProfile(
 
   if (newValue) {
     const countRow = await mainDb
-      .selectFrom('flights')
-      .select((eb) => eb.fn.count<number>('id').as('count'))
-      .where('user_id', '=', userId)
-      .where('featured_on_profile', '=', true)
+      .selectFrom("flights")
+      .select((eb) => eb.fn.count<number>("id").as("count"))
+      .where("user_id", "=", userId)
+      .where("featured_on_profile", "=", true)
       .executeTakeFirst();
     if (Number(countRow?.count ?? 0) >= 3) return { ok: false, atCap: true };
   }
 
   await mainDb
-    .updateTable('flights')
+    .updateTable("flights")
     .set({ featured_on_profile: newValue, updated_at: createUTCDate() })
-    .where('id', '=', validFlightId)
-    .where('user_id', '=', userId)
+    .where("id", "=", validFlightId)
+    .where("user_id", "=", userId)
     .execute();
 
   return { ok: true, featured: newValue };
@@ -836,15 +1015,23 @@ export async function toggleFeaturedOnProfile(
 export async function getFeaturedFlightsByUser(userId: string) {
   try {
     const flights = await mainDb
-      .selectFrom('flights')
+      .selectFrom("flights")
       .select([
-        'id', 'session_id', 'callsign', 'departure', 'arrival',
-        'aircraft', 'status', 'snap_images', 'featured_on_profile',
-        'created_at', 'acars_token',
+        "id",
+        "session_id",
+        "callsign",
+        "departure",
+        "arrival",
+        "aircraft",
+        "status",
+        "snap_images",
+        "featured_on_profile",
+        "created_at",
+        "acars_token",
       ])
-      .where('user_id', '=', userId)
-      .where('featured_on_profile', '=', true)
-      .orderBy('created_at', 'desc')
+      .where("user_id", "=", userId)
+      .where("featured_on_profile", "=", true)
+      .orderBy("created_at", "desc")
       .execute();
 
     return flights.map((f) => ({
@@ -854,7 +1041,9 @@ export async function getFeaturedFlightsByUser(userId: string) {
       arrival: f.arrival,
       aircraft: f.aircraft,
       status: f.status,
-      snap_images: (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [],
+      snap_images:
+        (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
+        [],
       created_at: f.created_at,
     }));
   } catch (error) {

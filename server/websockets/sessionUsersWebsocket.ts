@@ -1,15 +1,24 @@
-import { Server as SocketServer, Server } from 'socket.io';
-import { validateSessionAccess } from '../middleware/sessionAccess.js';
-import { getSessionById, updateSession } from '../db/sessions.js';
-import { getUserRoles } from '../db/roles.js';
-import { isAdmin } from '../middleware/admin.js';
-import { validateSessionId, validateAccessId } from '../utils/validation.js';
-import type { Server as HttpServer } from 'http';
-import { incrementStat } from '../utils/statisticsCache.js';
-import { getOverviewIO } from './overviewWebsocket.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import { redisConnection } from '../db/connection.js';
-import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { Server as SocketServer, Server } from "socket.io";
+import { validateSessionAccess } from "../middleware/sessionAccess.js";
+import { getSessionById, updateSession } from "../db/sessions.js";
+import { getUserRoles } from "../db/roles.js";
+import { isAdmin } from "../middleware/admin.js";
+import { validateSessionId, validateAccessId } from "../utils/validation.js";
+import type { Server as HttpServer } from "http";
+import { incrementStat } from "../utils/statisticsCache.js";
+import { getOverviewIO } from "../realtime/socketRegistry.js";
+import {
+  registerActiveSession,
+  onSessionUsersChanged as syncActiveSessionRegistry,
+  setSessionMetaFromRow,
+} from "../realtime/activeSessions.js";
+import {
+  onSessionUsersChangedInvalidate,
+  onAtisChanged,
+} from "../realtime/invalidate.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { redisConnection } from "../db/connection.js";
+import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
 
 interface SessionUser {
   id: string;
@@ -45,6 +54,8 @@ const addUserToSession = async (
     userId,
     JSON.stringify(userData)
   );
+  const { keys } = await import("../realtime/keys.js");
+  await redisConnection.sadd(keys.activeUsersIndex(), sessionId);
 };
 
 const updateUserInSession = async (
@@ -102,16 +113,23 @@ const userActivity = new Map<
 const cleanupOldSessions = async () => {
   try {
     const activeSessionIds = new Set<string>();
-    
-    const keys = await redisConnection.keys('activeUsers:*');
-    for (const key of keys) {
-      const sessionId = key.replace('activeUsers:', '');
-      const userCount = await redisConnection.hlen(key);
+    const { keys: rtKeys } = await import("../realtime/keys.js");
+
+    let sessionIds = await redisConnection.smembers(rtKeys.activeUsersIndex());
+    if (sessionIds.length === 0) {
+      const legacyKeys = await redisConnection.keys("activeUsers:*");
+      sessionIds = legacyKeys.map((key) => key.replace("activeUsers:", ""));
+    }
+
+    for (const sessionId of sessionIds) {
+      const userCount = await redisConnection.hlen(`activeUsers:${sessionId}`);
       if (userCount > 0) {
         activeSessionIds.add(sessionId);
+      } else {
+        await redisConnection.srem(rtKeys.activeUsersIndex(), sessionId);
       }
     }
-    
+
     for (const [sessionId, timer] of atisTimers.entries()) {
       if (!activeSessionIds.has(sessionId)) {
         clearInterval(timer);
@@ -120,22 +138,24 @@ const cleanupOldSessions = async () => {
         console.log(`[Cleanup] Removed ATIS timer for session ${sessionId}`);
       }
     }
-    
+
     for (const sessionId of fieldEditingStates.keys()) {
       if (!activeSessionIds.has(sessionId)) {
         fieldEditingStates.delete(sessionId);
-        console.log(`[Cleanup] Removed field editing states for session ${sessionId}`);
+        console.log(
+          `[Cleanup] Removed field editing states for session ${sessionId}`
+        );
       }
     }
-    
+
     for (const userKey of userActivity.keys()) {
-      const sessionId = userKey.split('-')[1];
+      const sessionId = userKey.split("-")[1];
       if (sessionId && !activeSessionIds.has(sessionId)) {
         userActivity.delete(userKey);
       }
     }
   } catch (error) {
-    console.error('[Cleanup] Error cleaning up old sessions:', error);
+    console.error("[Cleanup] Error cleaning up old sessions:", error);
   }
 };
 
@@ -164,37 +184,39 @@ async function generateAutoATIS(
     if (!session?.atis) return;
 
     const storedAtis =
-      typeof session.atis === 'string' ? JSON.parse(session.atis) : session.atis;
+      typeof session.atis === "string"
+        ? JSON.parse(session.atis)
+        : session.atis;
     const currentAtis = decrypt(storedAtis);
-    const currentLetter = currentAtis.letter || 'A';
-    const identOptions = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const currentLetter = currentAtis.letter || "A";
+    const identOptions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     const currentIndex = identOptions.indexOf(currentLetter);
     const nextIndex = (currentIndex + 1) % identOptions.length;
     const nextIdent = identOptions[nextIndex];
 
     const formatApproaches = () => {
       if (!config.selectedApproaches || config.selectedApproaches.length === 0)
-        return '';
+        return "";
 
       const primaryRunway =
         config.landingRunways.length > 0
           ? config.landingRunways[0]
           : config.departingRunways.length > 0
             ? config.departingRunways[0]
-            : '';
+            : "";
 
       if (config.selectedApproaches.length === 1) {
         return `EXPECT ${config.selectedApproaches[0]} APPROACH RUNWAY ${primaryRunway}`;
       }
 
       if (config.selectedApproaches.length === 2) {
-        return `EXPECT SIMULTANEOUS ${config.selectedApproaches.join(' AND ')} APPROACH RUNWAY ${primaryRunway}`;
+        return `EXPECT SIMULTANEOUS ${config.selectedApproaches.join(" AND ")} APPROACH RUNWAY ${primaryRunway}`;
       }
 
       const lastApproach =
         config.selectedApproaches[config.selectedApproaches.length - 1];
       const otherApproaches = config.selectedApproaches.slice(0, -1);
-      return `EXPECT SIMULTANEOUS ${otherApproaches.join(', ')} AND ${lastApproach} APPROACH RUNWAY ${primaryRunway}`;
+      return `EXPECT SIMULTANEOUS ${otherApproaches.join(", ")} AND ${lastApproach} APPROACH RUNWAY ${primaryRunway}`;
     };
 
     const approachText = formatApproaches();
@@ -211,16 +233,16 @@ async function generateAutoATIS(
       remarks2: {},
       landing_runways: config.landingRunways,
       departing_runways: config.departingRunways,
-      'output-type': 'atis',
+      "output-type": "atis",
       override_runways: false,
     };
 
     const response = await fetch(
       `https://atisgenerator.com/api/v1/airports/${config.icao}/atis`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       }
@@ -236,13 +258,13 @@ async function generateAutoATIS(
       data?: { text: string };
     };
 
-    if (data.status !== 'success') {
-      throw new Error(data.message || 'Failed to generate ATIS');
+    if (data.status !== "success") {
+      throw new Error(data.message || "Failed to generate ATIS");
     }
 
     const generatedAtis = data.data?.text;
     if (!generatedAtis) {
-      throw new Error('No ATIS data in response');
+      throw new Error("No ATIS data in response");
     }
 
     const atisData = {
@@ -254,26 +276,26 @@ async function generateAutoATIS(
     const encryptedAtis = encrypt(atisData);
     await updateSession(sessionId, { atis: JSON.stringify(encryptedAtis) });
 
-    io.to(sessionId).emit('atisUpdate', {
+    io.to(sessionId).emit("atisUpdate", {
       atis: atisData,
-      updatedBy: 'System',
+      updatedBy: "System",
       isAutoGenerated: true,
     });
   } catch (error) {
-    console.error('Error in auto ATIS generation:', error);
+    console.error("Error in auto ATIS generation:", error);
   }
 }
 
 export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
-    path: '/sockets/session-users',
-    allowRequest: createHandshakeRateLimiter({ scope: 'session-users' }),
+    path: "/sockets/session-users",
+    allowRequest: createHandshakeRateLimiter({ scope: "session-users" }),
     cors: {
       origin: [
-        'http://localhost:5173',
-        'http://localhost:9901',
-        'https://pfcontrol.com',
-        'https://canary.pfcontrol.com',
+        "http://localhost:5173",
+        "http://localhost:9901",
+        "https://pfcontrol.com",
+        "https://canary.pfcontrol.com",
       ],
       credentials: true,
     },
@@ -292,7 +314,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         try {
           await generateAutoATIS(sessionId, config as ATISConfig, io);
         } catch (error) {
-          console.error('Error auto-generating ATIS:', error);
+          console.error("Error auto-generating ATIS:", error);
         }
       },
       30 * 60 * 1000
@@ -305,7 +327,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
     const sessionEditingStates = fieldEditingStates.get(sessionId);
     if (sessionEditingStates) {
       const editingArray = Array.from(sessionEditingStates.values());
-      io.to(sessionId).emit('fieldEditingUpdate', editingArray);
+      io.to(sessionId).emit("fieldEditingUpdate", editingArray);
     }
   };
 
@@ -358,7 +380,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
     }
   };
 
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     try {
       const sessionId = validateSessionId(
         Array.isArray(socket.handshake.query.sessionId)
@@ -373,7 +395,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       const user = JSON.parse(
         Array.isArray(socket.handshake.query.user)
           ? socket.handshake.query.user[0]
-          : socket.handshake.query.user || '{}'
+          : socket.handshake.query.user || "{}"
       );
 
       socket.data.sessionId = sessionId;
@@ -397,20 +419,20 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         userRoles = (await getUserRoles(user.userId)).map((role) => ({
           id: role.id,
           name: role.name,
-          color: role.color ?? '#000000',
-          icon: role.icon ?? '',
+          color: role.color ?? "#000000",
+          icon: role.icon ?? "",
           priority: role.priority ?? 0,
         }));
       } catch (error) {
-        console.error('Error fetching user roles:', error);
+        console.error("Error fetching user roles:", error);
       }
 
       if (isAdmin(user.userId)) {
         userRoles.unshift({
           id: -1,
-          name: 'Developer',
-          color: '#3B82F6',
-          icon: 'Braces',
+          name: "Developer",
+          color: "#3B82F6",
+          icon: "Braces",
           priority: 999999,
         });
       }
@@ -419,9 +441,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         ? socket.handshake.query.position[0]
         : socket.handshake.query.position;
       const position =
-        typeof rawPosition === 'string' && rawPosition.length > 0
+        typeof rawPosition === "string" && rawPosition.length > 0
           ? rawPosition
-          : 'POSITION';
+          : "POSITION";
 
       const sessionUser = {
         id: user.userId,
@@ -435,25 +457,34 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       await addUserToSession(sessionId, user.userId, sessionUser);
 
       users = await getActiveUsersForSession(sessionId);
+      try {
+        const session = await getSessionById(sessionId);
+        if (session) await setSessionMetaFromRow(session);
+      } catch {
+        // ignore
+      }
+      await registerActiveSession(sessionId);
+      void onSessionUsersChangedInvalidate(sessionId, users.length);
+
       socket.join(sessionId);
       socket.join(`user-${user.userId}`);
-      io.to(sessionId).emit('sessionUsersUpdate', users);
+      io.to(sessionId).emit("sessionUsersUpdate", users);
 
       try {
         const session = await getSessionById(sessionId);
         if (session?.atis) {
           const encryptedAtis =
-            typeof session.atis === 'string'
+            typeof session.atis === "string"
               ? JSON.parse(session.atis)
               : session.atis;
           const decryptedAtis = decrypt(encryptedAtis);
-          socket.emit('atisUpdate', decryptedAtis);
+          socket.emit("atisUpdate", decryptedAtis);
         }
       } catch (error) {
-        console.error('Error sending ATIS data:', error);
+        console.error("Error sending ATIS data:", error);
       }
 
-      socket.on('atisGenerated', async (atisData) => {
+      socket.on("atisGenerated", async (atisData) => {
         try {
           const encryptedAtis = encrypt(atisData.atis);
           await updateSession(sessionId, {
@@ -471,29 +502,30 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
 
           scheduleATISGeneration(sessionId, sessionATISConfigs.get(sessionId));
 
-          io.to(sessionId).emit('atisUpdate', {
+          io.to(sessionId).emit("atisUpdate", {
             atis: atisData.atis,
             updatedBy: user.username,
             isAutoGenerated: false,
           });
+          void onAtisChanged(sessionId);
         } catch (error) {
-          console.error('Error handling ATIS update:', error);
+          console.error("Error handling ATIS update:", error);
         }
       });
 
-      socket.on('fieldEditingStart', ({ flightId, fieldName }) => {
+      socket.on("fieldEditingStart", ({ flightId, fieldName }) => {
         addFieldEditingState(sessionId, user, flightId, fieldName);
       });
 
-      socket.on('fieldEditingStop', ({ flightId, fieldName }) => {
+      socket.on("fieldEditingStop", ({ flightId, fieldName }) => {
         removeFieldEditingState(sessionId, user.userId, flightId, fieldName);
       });
 
-      socket.on('positionChange', async ({ position }) => {
+      socket.on("positionChange", async ({ position }) => {
         await updateUserInSession(sessionId, user.userId, { position });
         const updatedUsers = await getActiveUsersForSession(sessionId);
-        io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
-        // Removed redundant overviewData broadcast - already sent every 30s
+        io.to(sessionId).emit("sessionUsersUpdate", updatedUsers);
+        void onSessionUsersChangedInvalidate(sessionId, updatedUsers.length);
       });
 
       const userKey = `${user.userId}-${sessionId}`;
@@ -503,12 +535,12 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         totalActive: 0,
       });
 
-      socket.on('activityPing', () => {
+      socket.on("activityPing", () => {
         const entry = userActivity.get(userKey);
         if (entry) entry.lastActive = Date.now();
       });
 
-      socket.on('disconnect', async () => {
+      socket.on("disconnect", async () => {
         const entry = userActivity.get(userKey);
         if (entry) {
           const now = Date.now();
@@ -519,7 +551,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
           entry.totalActive += remainingActiveTime;
           incrementStat(
             user.userId,
-            'total_time_controlling_minutes',
+            "total_time_controlling_minutes",
             entry.totalActive
           );
           userActivity.delete(userKey);
@@ -527,7 +559,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
 
         await removeUserFromSession(sessionId, user.userId);
         const updatedUsers = await getActiveUsersForSession(sessionId);
-        io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
+        await syncActiveSessionRegistry(sessionId, updatedUsers.length);
+        void onSessionUsersChangedInvalidate(sessionId, updatedUsers.length);
+        io.to(sessionId).emit("sessionUsersUpdate", updatedUsers);
 
         const sessionStates = fieldEditingStates.get(sessionId);
         if (sessionStates) {
@@ -540,23 +574,23 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         }
       });
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '';
-      if (!msg.startsWith('Invalid') && !msg.endsWith('is required')) {
-        console.error('Error in websocket connection:', error);
+      const msg = error instanceof Error ? error.message : "";
+      if (!msg.startsWith("Invalid") && !msg.endsWith("is required")) {
+        console.error("Error in websocket connection:", error);
       }
       socket.disconnect(true);
     }
   });
 
   io.sendMentionToUser = (userId: string, mention: unknown) => {
-    io.to(`user-${userId}`).emit('chatMention', mention);
+    io.to(`user-${userId}`).emit("chatMention", mention);
   };
 
   io.getActiveUsersForSession = getActiveUsersForSession;
 
   // Cleanup on shutdown
-  process.on('SIGTERM', () => {
-    console.log('[SessionUsers] Cleaning up timers...');
+  process.on("SIGTERM", () => {
+    console.log("[SessionUsers] Cleaning up timers...");
     clearInterval(sessionCleanupInterval);
     for (const timer of atisTimers.values()) {
       clearInterval(timer);
