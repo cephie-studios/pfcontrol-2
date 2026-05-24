@@ -6,7 +6,6 @@ import { isAdmin } from "../middleware/admin.js";
 import { validateSessionId, validateAccessId } from "../utils/validation.js";
 import type { Server as HttpServer } from "http";
 import { incrementStat } from "../utils/statisticsCache.js";
-import { getOverviewIO } from "../realtime/socketRegistry.js";
 import {
   registerActiveSession,
   onSessionUsersChanged as syncActiveSessionRegistry,
