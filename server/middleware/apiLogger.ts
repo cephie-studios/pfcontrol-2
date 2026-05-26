@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { mainDb } from "../db/connection.js";
+import { recordTableDeletes } from "../db/databaseMetrics.js";
 import { getClientIp } from "../utils/getIpAddress.js";
 import { JwtPayloadClient } from "../types/JwtPayload.js";
 import { sql } from "kysely";
@@ -52,7 +53,9 @@ const EXCLUDED_PATHS = [
 const SENSITIVE_FIELDS = ["token", "secret", "key", "authorization"];
 
 function shouldLogRequest(path: string): boolean {
-  return !EXCLUDED_PATHS.some((excluded) => path.toLowerCase().includes(excluded.toLowerCase()));
+  return !EXCLUDED_PATHS.some((excluded) =>
+    path.toLowerCase().includes(excluded.toLowerCase())
+  );
 }
 
 function sanitizeObject(obj: unknown): unknown {
@@ -144,14 +147,18 @@ export function apiLogger() {
 
         if (req.body && Object.keys(req.body).length > 0) {
           try {
-            requestBody = truncateString(JSON.stringify(sanitizeObject(req.body)));
+            requestBody = truncateString(
+              JSON.stringify(sanitizeObject(req.body))
+            );
           } catch {
             requestBody = "[SERIALIZATION_ERROR]";
           }
         }
 
         const ipAddress = getClientIp(req);
-        const finalIpAddress = Array.isArray(ipAddress) ? ipAddress.join(", ") : ipAddress;
+        const finalIpAddress = Array.isArray(ipAddress)
+          ? ipAddress.join(", ")
+          : ipAddress;
 
         const logEntry: ApiLogEntry = {
           user_id: req.user?.userId || null,
@@ -189,7 +196,9 @@ export function apiLogger() {
 }
 
 // Cleanup function to remove old logs
-export async function cleanupOldApiLogs(daysToKeep: number = 30): Promise<void> {
+export async function cleanupOldApiLogs(
+  daysToKeep: number = 30
+): Promise<void> {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -197,9 +206,11 @@ export async function cleanupOldApiLogs(daysToKeep: number = 30): Promise<void> 
     const result = await mainDb
       .deleteFrom("api_logs")
       .where("created_at", "<", cutoffDate)
-      .execute();
+      .executeTakeFirst();
 
-    console.log(`Cleaned up ${result.length} old API log entries`);
+    const deleted = Number(result?.numDeletedRows ?? 0);
+    await recordTableDeletes("api_logs", deleted);
+    console.log(`Cleaned up ${deleted} old API log entries`);
   } catch (error) {
     console.error("Failed to cleanup old API logs:", error);
   }

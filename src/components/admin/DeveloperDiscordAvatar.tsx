@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { MdPeople } from "react-icons/md";
 
 type Props = {
   userId: string;
@@ -27,7 +27,7 @@ export default function DeveloperDiscordAvatar({
       className={`${className} shrink-0 rounded-full bg-zinc-600 flex items-center justify-center`}
       aria-hidden
     >
-      <Users className="w-4 h-4 text-zinc-400" />
+      <MdPeople className="w-4 h-4 text-zinc-400" />
     </div>
   );
 }

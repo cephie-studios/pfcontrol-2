@@ -1,19 +1,24 @@
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import { useAuth } from './hooks/auth/useAuth';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { useAuth } from "./hooks/auth/useAuth";
 
-import Home from './pages/Home';
-import Create from './pages/Create';
-import Sessions from './pages/Sessions';
-import Submit from './pages/Submit';
-import Flights from './pages/Flights';
-import MyFlights from './pages/MyFlights';
-import MyFlightDetail from './pages/MyFlightDetail';
-import Settings from './pages/Settings';
-import PFATCFlights from './pages/PFATCFlights';
-import ACARS from './pages/ACARS';
-import PilotProfile from './pages/PilotProfile';
-import PublicFlightView from './pages/PublicFlightView';
+import Home from "./pages/Home";
+import Create from "./pages/Create";
+import Sessions from "./pages/Sessions";
+import Submit from "./pages/Submit";
+import Flights from "./pages/Flights";
+import MyFlights from "./pages/MyFlights";
+import MyFlightDetail from "./pages/MyFlightDetail";
+import Settings from "./pages/Settings";
+import PFATCFlights from "./pages/PFATCFlights";
+import ACARS from "./pages/ACARS";
+import PilotProfile from "./pages/PilotProfile";
+import PublicFlightView from "./pages/PublicFlightView";
 
 import Login from "./pages/Login";
 import VatsimCallback from "./pages/VatsimCallback";
@@ -31,7 +36,9 @@ const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 const AdminBan = lazy(() => import("./pages/admin/AdminBan"));
 const AdminSessions = lazy(() => import("./pages/admin/AdminSessions"));
 const AdminTesters = lazy(() => import("./pages/admin/AdminTesters"));
-const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const AdminNotifications = lazy(
+  () => import("./pages/admin/AdminNotifications")
+);
 const AdminRoles = lazy(() => import("./pages/admin/AdminRoles"));
 const AdminChatReports = lazy(() => import("./pages/admin/AdminChatReports"));
 const AdminFlightLogs = lazy(() => import("./pages/admin/AdminFlightLogs"));
@@ -40,7 +47,11 @@ const AdminApiLogs = lazy(() => import("./pages/admin/AdminApiLogs"));
 const AdminRatings = lazy(() => import("./pages/admin/AdminRatings"));
 const AdminAltDetection = lazy(() => import("./pages/admin/AdminAltDetection"));
 const AdminDevelopers = lazy(() => import("./pages/admin/AdminDevelopers"));
-const DeveloperLayout = lazy(() => import("./pages/developers/DeveloperLayout"));
+const AdminWebsockets = lazy(() => import("./pages/admin/AdminWebsockets"));
+const AdminDatabase = lazy(() => import("./pages/admin/AdminDatabase"));
+const DeveloperLayout = lazy(
+  () => import("./pages/developers/DeveloperLayout")
+);
 const DeveloperOverview = lazy(() => import("./pages/developers/Overview"));
 const DeveloperConsole = lazy(() => import("./pages/developers/Console"));
 const DeveloperKeys = lazy(() => import("./pages/developers/Keys"));
@@ -61,7 +72,7 @@ export default function App() {
       ) : (
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/pfatc" element={<Navigate to="/overview" replace/> } />
+          <Route path="/pfatc" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<PFATCFlights />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
@@ -269,6 +280,22 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="admin">
                           <AdminDevelopers />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="websockets"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminWebsockets />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="database"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminDatabase />
                         </ProtectedRoute>
                       }
                     />

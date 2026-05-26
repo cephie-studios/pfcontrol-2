@@ -32,6 +32,9 @@ import {
   filenameLooksContentHashed,
 } from "./utils/httpCache.js";
 import { cleanupOldDeveloperUsage } from "./db/developer.js";
+import { cleanupOldWebsocketSnapshots } from "./db/websocketSnapshots.js";
+import { startDatabaseMetricsCapture } from "./db/databaseMetrics.js";
+import { registerAdminSocketNamespace } from "./realtime/socketRegistry.js";
 import posthogClient, { initTelemetry } from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
 
@@ -243,41 +246,92 @@ const subClient = pubClient.duplicate();
 
 const sessionUsersIO = setupSessionUsersWebsocket(server);
 sessionUsersIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "session-users",
+  "Session Users",
+  "/sockets/session-users",
+  sessionUsersIO
+);
 
 const chatIO = setupChatWebsocket(server, sessionUsersIO);
 chatIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace("chat", "Session Chat", "/sockets/chat", chatIO);
 
 const globalChatIO = setupGlobalChatWebsocket(server, sessionUsersIO);
 globalChatIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "global-chat",
+  "Global Chat",
+  "/sockets/global-chat",
+  globalChatIO
+);
 
 const flightsIO = setupFlightsWebsocket(server);
 flightsIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "flights",
+  "Flights",
+  "/sockets/flights",
+  flightsIO
+);
 
 const overviewIO = setupOverviewWebsocket(server, sessionUsersIO);
 overviewIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "overview",
+  "Overview",
+  "/sockets/overview",
+  overviewIO
+);
 
 const arrivalsIO = setupArrivalsWebsocket(server);
 arrivalsIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "arrivals",
+  "Arrivals",
+  "/sockets/arrivals",
+  arrivalsIO
+);
 
 const sectorControllerIO = setupSectorControllerWebsocket(
   server,
   sessionUsersIO
 );
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "sector-controller",
+  "Sector Controller",
+  "/sockets/sector-controller",
+  sectorControllerIO
+);
 
 const voiceChatIO = setupVoiceChatWebsocket(server);
 voiceChatIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "voice-chat",
+  "Voice Chat",
+  "/sockets/voice-chat",
+  voiceChatIO
+);
 
 const notificationsIO = setupNotificationsWebsocket(server);
 notificationsIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  "notifications",
+  "Notifications",
+  "/sockets/notifications",
+  notificationsIO
+);
 
 startStatsFlushing();
 startFlightLogsCleanup();
+startDatabaseMetricsCapture();
 updateLeaderboard();
 setInterval(updateLeaderboard, 12 * 60 * 60 * 1000);
 setInterval(
   () => {
     cleanupOldApiLogs(1);
+    void cleanupOldWebsocketSnapshots(1);
   },
   60 * 60 * 1000
 );

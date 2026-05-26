@@ -1,24 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Check,
-  X,
-  ShieldUser,
-  GripVertical,
-  Search,
-  Filter,
-} from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import TextInput from '../../components/common/TextInput';
-import Toast from '../../components/common/Toast';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Dropdown from '../../components/common/Dropdown';
+  MdAdd,
+  MdEdit,
+  MdDelete,
+  MdPeople,
+  MdCheck,
+  MdClose,
+  MdAdminPanelSettings,
+  MdDragIndicator,
+  MdFilterList,
+} from "react-icons/md";
+import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
+import AdminLayout from "../../components/admin/AdminLayout";
+import AdminModal from "../../components/admin/AdminModal";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import AdminToolbar from "../../components/admin/AdminToolbar";
+import AdminSearchInput from "../../components/admin/AdminSearchInput";
+import AdminStatStrip from "../../components/admin/AdminStatStrip";
+import AdminTable from "../../components/admin/AdminTable";
+import AdminTextInput from "../../components/admin/AdminTextInput";
+import {
+  adminDownsizeButtonSize,
+  adminSectionClass,
+  ADMIN_INPUT_ICON_CLASS,
+  ADMIN_TABLE_HEAD,
+  ADMIN_TH,
+  ADMIN_TD,
+  ADMIN_TOOLBAR_HEIGHT,
+} from "../../components/admin/adminConstants";
+import Loader from "../../components/common/Loader";
+import Button from "../../components/common/Button";
+import ErrorScreen from "../../components/common/ErrorScreen";
+import Dropdown from "../../components/common/Dropdown";
 import {
   fetchRoles,
   createRole,
@@ -30,123 +43,63 @@ import {
   updateRolePriorities,
   type Role,
   type UserWithRole,
-} from '../../utils/fetch/admin';
+} from "../../utils/fetch/admin";
 import {
   getIconComponent,
   AVAILABLE_ICONS,
   AVAILABLE_PERMISSIONS,
   PRESET_COLORS,
-} from '../../utils/roles';
+} from "../../utils/roles";
 
-function RoleItem({
-  role,
-  index,
-  onEdit,
-  onDelete,
-  onDragStart,
-  onDragOver,
-  onDrop,
-}: {
-  role: Role;
-  index: number;
-  onEdit: (role: Role) => void;
-  onDelete: (role: Role) => void;
-  onDragStart: (e: React.DragEvent, roleId: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDrop: (e: React.DragEvent, roleId: number) => void;
-}) {
+function RoleBadge({ role, compact }: { role: Role; compact?: boolean }) {
   const RoleIcon = getIconComponent(role.icon);
-
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, role.id)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDrop={(e) => onDrop(e, role.id)}
-      className="bg-zinc-800 border-2 border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600 transition-all cursor-move lg:cursor-move"
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border font-medium ${
+        compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
+      }`}
+      style={{
+        backgroundColor: `${role.color}18`,
+        borderColor: `${role.color}50`,
+        color: role.color,
+      }}
     >
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center space-x-3 flex-1 mb-4 lg:mb-0">
-          {/* Drag Handle - Hidden on mobile */}
-          <div className="hidden lg:block cursor-grab active:cursor-grabbing touch-none">
-            <GripVertical className="w-5 h-5 text-zinc-500 hover:text-zinc-300" />
-          </div>
+      <RoleIcon
+        className={compact ? "w-3 h-3" : "w-3.5 h-3.5"}
+        style={{ color: role.color }}
+      />
+      {role.name}
+    </span>
+  );
+}
 
-          <div className="flex-1">
-            <div className="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-3 mb-2">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 transition-all"
-                style={{
-                  backgroundColor: `${role.color}20`,
-                  borderColor: `${role.color}60`,
-                }}
-              >
-                <RoleIcon className="w-4 h-4" style={{ color: role.color }} />
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: role.color }}
-                >
-                  {role.name}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-1 bg-zinc-600/50 text-zinc-300 text-xs rounded-full">
-                  {role.user_count || 0} users
-                </span>
-                <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                  Priority: {role.priority}
-                </span>
-              </div>
-            </div>
-            {role.description && (
-              <p className="text-zinc-400 text-sm mb-3">{role.description}</p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(role.permissions)
-                .filter(([, enabled]) => enabled)
-                .map(([permission]) => {
-                  const permissionInfo = AVAILABLE_PERMISSIONS.find(
-                    (p) => p.key === permission
-                  );
-                  return (
-                    <span
-                      key={permission}
-                      className="px-2 py-1 bg-rose-500/20 text-rose-300 text-xs rounded border border-rose-500/30"
-                    >
-                      {permissionInfo?.label || permission}
-                    </span>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2 lg:ml-4">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onEdit(role)}
-            className="flex items-center space-x-2"
-          >
-            <Edit className="w-4 h-4" />
-            <span className="hidden lg:inline">Edit</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => onDelete(role)}
-            className="flex items-center space-x-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden lg:inline">Delete</span>
-          </Button>
-        </div>
-      </div>
+function PermissionSummary({
+  permissions,
+}: {
+  permissions: Record<string, boolean>;
+}) {
+  const enabled = AVAILABLE_PERMISSIONS.filter((p) => permissions[p.key]);
+  if (enabled.length === 0) {
+    return <span className="text-xs text-zinc-600">None</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1 max-w-md">
+      {enabled.slice(0, 4).map((p) => (
+        <span
+          key={p.key}
+          className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/60"
+        >
+          {p.label}
+        </span>
+      ))}
+      {enabled.length > 4 && (
+        <span className="text-[10px] text-zinc-500">+{enabled.length - 4}</span>
+      )}
     </div>
   );
 }
 
 export default function AdminRoles() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,30 +107,65 @@ export default function AdminRoles() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formDescription, setFormDescription] = useState('');
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
   const [formPermissions, setFormPermissions] = useState<
     Record<string, boolean>
   >({});
-  const [formColor, setFormColor] = useState('#6366F1');
-  const [formIcon, setFormIcon] = useState('Star');
+  const [formColor, setFormColor] = useState("#6366F1");
+  const [formIcon, setFormIcon] = useState("Star");
   const [formPriority, setFormPriority] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [userSearch, setUserSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [draggedId, setDraggedId] = useState<number | null>(null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: 'success' | 'error' | 'info';
+    type: "success" | "error" | "info";
   } | null>(null);
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [selectedUserForRole, setSelectedUserForRole] = useState<string | null>(
     null
   );
 
+  const validRoles = useMemo(
+    () => roles.filter((role) => role.id && !isNaN(role.id)),
+    [roles]
+  );
+
+  const stats = useMemo(() => {
+    const withRole = users.filter((u) => u.roles && u.roles.length > 0).length;
+    return {
+      roleCount: validRoles.length,
+      usersWithRoles: withRole,
+      usersWithoutRoles: users.length - withRole,
+      totalAssignments: users.reduce((n, u) => n + (u.roles?.length ?? 0), 0),
+    };
+  }, [validRoles.length, users]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      const matchesSearch =
+        !q ||
+        user.username.toLowerCase().includes(q) ||
+        user.id.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+      if (roleFilter === "all") return true;
+      if (roleFilter === "no-role") return !user.roles?.length;
+      return (
+        user.roles?.some((role) => role.id.toString() === roleFilter) ?? false
+      );
+    });
+  }, [users, userSearch, roleFilter]);
+
+  const hasUserFilters = userSearch.trim() !== "" || roleFilter !== "all";
+
+  const btnSize = adminDownsizeButtonSize("sm");
+  const toolbarBtnClass = `shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0`;
+
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, []);
 
   const fetchData = async () => {
@@ -192,30 +180,29 @@ export default function AdminRoles() {
       setUsers(usersData);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch data';
+        err instanceof Error ? err.message : "Failed to fetch data";
       setError(errorMessage);
-      setToast({ message: errorMessage, type: 'error' });
+      setToast({ message: errorMessage, type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormName('');
-    setFormDescription('');
+    setFormName("");
+    setFormDescription("");
     setFormPermissions({});
-    setFormColor('#6366F1');
-    setFormIcon('Star');
+    setFormColor("#6366F1");
+    setFormIcon("Star");
     setFormPriority(0);
     setSelectedRole(null);
   };
 
   const handleCreateRole = async () => {
     if (!formName.trim()) {
-      setToast({ message: 'Role name is required', type: 'error' });
+      setToast({ message: "Role name is required", type: "error" });
       return;
     }
-
     try {
       setSubmitting(true);
       await createRole({
@@ -226,15 +213,14 @@ export default function AdminRoles() {
         icon: formIcon,
         priority: isNaN(formPriority) ? 0 : formPriority,
       });
-      setToast({ message: 'Role created successfully', type: 'success' });
+      setToast({ message: "Role created successfully", type: "success" });
       setShowCreateModal(false);
       resetForm();
-      fetchData();
-    } catch (error) {
+      await fetchData();
+    } catch (e) {
       setToast({
-        message:
-          error instanceof Error ? error.message : 'Failed to create role',
-        type: 'error',
+        message: e instanceof Error ? e.message : "Failed to create role",
+        type: "error",
       });
     } finally {
       setSubmitting(false);
@@ -243,15 +229,13 @@ export default function AdminRoles() {
 
   const handleEditRole = async () => {
     if (!selectedRole || !formName.trim()) {
-      setToast({ message: 'Role name is required', type: 'error' });
+      setToast({ message: "Role name is required", type: "error" });
       return;
     }
-
     if (!selectedRole.id || isNaN(selectedRole.id)) {
-      setToast({ message: 'Invalid role ID', type: 'error' });
+      setToast({ message: "Invalid role ID", type: "error" });
       return;
     }
-
     try {
       setSubmitting(true);
       await updateRole(selectedRole.id, {
@@ -262,15 +246,14 @@ export default function AdminRoles() {
         icon: formIcon,
         priority: isNaN(formPriority) ? 0 : formPriority,
       });
-      setToast({ message: 'Role updated successfully', type: 'success' });
+      setToast({ message: "Role updated successfully", type: "success" });
       setShowEditModal(false);
       resetForm();
-      fetchData();
-    } catch (error) {
+      await fetchData();
+    } catch (e) {
       setToast({
-        message:
-          error instanceof Error ? error.message : 'Failed to update role',
-        type: 'error',
+        message: e instanceof Error ? e.message : "Failed to update role",
+        type: "error",
       });
     } finally {
       setSubmitting(false);
@@ -279,27 +262,24 @@ export default function AdminRoles() {
 
   const handleDeleteRole = async (role: Role) => {
     if (!role.id || isNaN(role.id)) {
-      setToast({ message: 'Invalid role ID', type: 'error' });
+      setToast({ message: "Invalid role ID", type: "error" });
       return;
     }
-
     if (
       !confirm(
-        `Are you sure you want to delete the "${role.name}" role? This will remove the role from all assigned users.`
+        `Delete "${role.name}"? This removes the role from all assigned users.`
       )
     ) {
       return;
     }
-
     try {
       await deleteRole(role.id);
-      setToast({ message: 'Role deleted successfully', type: 'success' });
-      fetchData();
-    } catch (error) {
+      setToast({ message: "Role deleted successfully", type: "success" });
+      await fetchData();
+    } catch (e) {
       setToast({
-        message:
-          error instanceof Error ? error.message : 'Failed to delete role',
-        type: 'error',
+        message: e instanceof Error ? e.message : "Failed to delete role",
+        type: "error",
       });
     }
   };
@@ -307,16 +287,14 @@ export default function AdminRoles() {
   const handleAssignRole = async (userId: string, roleId: number) => {
     try {
       await assignRoleToUser(userId, roleId);
+      setToast({ message: "Role assigned successfully", type: "success" });
+      setShowAddRoleModal(false);
+      setSelectedUserForRole(null);
+      await fetchData();
+    } catch (e) {
       setToast({
-        message: 'Role assigned successfully',
-        type: 'success',
-      });
-      fetchData();
-    } catch (error) {
-      setToast({
-        message:
-          error instanceof Error ? error.message : 'Failed to assign role',
-        type: 'error',
+        message: e instanceof Error ? e.message : "Failed to assign role",
+        type: "error",
       });
     }
   };
@@ -324,13 +302,12 @@ export default function AdminRoles() {
   const handleRemoveRole = async (userId: string, roleId: number) => {
     try {
       await removeRoleFromUser(userId, roleId);
-      setToast({ message: 'Role removed successfully', type: 'success' });
-      fetchData();
-    } catch (error) {
+      setToast({ message: "Role removed successfully", type: "success" });
+      await fetchData();
+    } catch (e) {
       setToast({
-        message:
-          error instanceof Error ? error.message : 'Failed to remove role',
-        type: 'error',
+        message: e instanceof Error ? e.message : "Failed to remove role",
+        type: "error",
       });
     }
   };
@@ -338,12 +315,12 @@ export default function AdminRoles() {
   const openEditModal = (role: Role) => {
     setSelectedRole(role);
     setFormName(role.name);
-    setFormDescription(role.description || '');
+    setFormDescription(role.description || "");
     setFormPermissions(role.permissions);
-    setFormColor(role.color || '#6366F1');
-    setFormIcon(role.icon || 'Star');
+    setFormColor(role.color || "#6366F1");
+    setFormIcon(role.icon || "Star");
     setFormPriority(
-      typeof role.priority === 'number' && !isNaN(role.priority)
+      typeof role.priority === "number" && !isNaN(role.priority)
         ? role.priority
         : 0
     );
@@ -355,8 +332,8 @@ export default function AdminRoles() {
     setShowCreateModal(true);
   };
 
-  const handleDragStart = (e: React.DragEvent, draggedId: number) => {
-    setDraggedId(draggedId);
+  const handleDragStart = (_e: React.DragEvent, id: number) => {
+    setDraggedId(id);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -370,7 +347,7 @@ export default function AdminRoles() {
     setRoles(newRoles);
   };
 
-  const handleDrop = async (e: React.DragEvent, droppedId: number) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDraggedId(null);
     const rolePriorities = roles
@@ -379,709 +356,675 @@ export default function AdminRoles() {
         id: role.id,
         priority: roles.length - index,
       }));
-
     if (rolePriorities.length === 0) {
-      setToast({
-        message: 'No valid roles to update',
-        type: 'error',
-      });
+      setToast({ message: "No valid roles to update", type: "error" });
       return;
     }
-
     try {
       await updateRolePriorities(rolePriorities);
-      setToast({
-        message: 'Role priorities updated successfully',
-        type: 'success',
-      });
-      fetchData();
-    } catch (error) {
+      setToast({ message: "Role order saved", type: "success" });
+      await fetchData();
+    } catch (e) {
       setToast({
         message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to update role priorities',
-        type: 'error',
+          e instanceof Error ? e.message : "Failed to update role priorities",
+        type: "error",
       });
-      fetchData();
+      await fetchData();
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.username
-      .toLowerCase()
-      .includes(userSearch.toLowerCase());
+  const clearUserFilters = () => {
+    setUserSearch("");
+    setRoleFilter("all");
+  };
 
-    if (roleFilter === 'all') {
-      return matchesSearch;
-    } else if (roleFilter === 'no-role') {
-      return matchesSearch && (!user.roles || user.roles.length === 0);
-    } else {
-      return (
-        matchesSearch &&
-        user.roles?.some((role) => role.id.toString() === roleFilter)
-      );
-    }
-  });
+  const roleFormFields = (
+    <div className="space-y-4">
+      <AdminTextInput
+        label="Role name"
+        value={formName}
+        onChange={setFormName}
+        placeholder="e.g. Moderator"
+        required
+      />
+      <AdminTextInput
+        label="Description"
+        value={formDescription}
+        onChange={setFormDescription}
+        placeholder="What this role is for…"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <span className="block text-xs text-zinc-500 mb-1.5">Icon</span>
+          <div className="grid grid-cols-4 gap-2">
+            {AVAILABLE_ICONS.map((iconOption) => {
+              const IconComponent = iconOption.icon;
+              return (
+                <button
+                  key={iconOption.value}
+                  type="button"
+                  onClick={() => setFormIcon(iconOption.value)}
+                  className={`p-2.5 rounded-xl border transition-colors ${
+                    formIcon === iconOption.value
+                      ? "border-blue-600 bg-blue-600/15"
+                      : "border-zinc-700/80 bg-zinc-900/40 hover:border-zinc-600"
+                  }`}
+                  title={iconOption.label}
+                >
+                  <IconComponent className="w-5 h-5 text-zinc-200 mx-auto" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <span className="block text-xs text-zinc-500 mb-1.5">Color</span>
+          <div className="grid grid-cols-5 gap-2 mb-2">
+            {PRESET_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setFormColor(color)}
+                className={`h-9 rounded-lg border-2 transition-all ${
+                  formColor === color
+                    ? "border-white ring-2 ring-white/40"
+                    : "border-transparent"
+                }`}
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={formColor}
+              onChange={(e) => setFormColor(e.target.value)}
+              className="h-10 flex-1 rounded-full border-2 border-blue-600 bg-zinc-900 cursor-pointer"
+            />
+            <input
+              type="text"
+              value={formColor}
+              onChange={(e) => setFormColor(e.target.value)}
+              className="w-24 h-10 px-3 rounded-full border-2 border-blue-600 bg-gray-800 text-white text-sm font-mono"
+            />
+          </div>
+        </div>
+      </div>
+      <AdminTextInput
+        label="Priority (higher = more important)"
+        value={String(formPriority)}
+        onChange={(v) => {
+          const parsed = parseInt(v, 10);
+          setFormPriority(Number.isNaN(parsed) ? 0 : parsed);
+        }}
+        placeholder="0"
+      />
+      <div>
+        <span className="block text-xs text-zinc-500 mb-1.5">Permissions</span>
+        <div className="space-y-2 rounded-xl border border-zinc-800/60 divide-y divide-zinc-800/80 overflow-hidden">
+          {AVAILABLE_PERMISSIONS.map((permission) => (
+            <div
+              key={permission.key}
+              className="flex items-center justify-between gap-3 px-3 py-2.5 bg-zinc-900/30"
+            >
+              <div className="min-w-0">
+                <p className="text-sm text-zinc-200 font-medium">
+                  {permission.label}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {permission.description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormPermissions((prev) => ({
+                    ...prev,
+                    [permission.key]: !prev[permission.key],
+                  }))
+                }
+                className={`shrink-0 w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                  formPermissions[permission.key]
+                    ? "bg-blue-600 border-blue-600"
+                    : "border-zinc-600 hover:border-zinc-500"
+                }`}
+                aria-pressed={!!formPermissions[permission.key]}
+              >
+                {formPermissions[permission.key] && (
+                  <MdCheck className="w-4 h-4 text-white" />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const roleFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All users" },
+      { value: "no-role", label: "No role" },
+      ...validRoles.map((role) => ({
+        value: role.id.toString(),
+        label: role.name,
+      })),
+    ],
+    [validRoles]
+  );
+
+  const assignableRolesForUser = useMemo(() => {
+    if (!selectedUserForRole) return [];
+    const user = users.find((u) => u.id === selectedUserForRole);
+    return validRoles.filter(
+      (role) => !user?.roles?.some((ur) => ur.id === role.id)
+    );
+  }, [selectedUserForRole, users, validRoles]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar />
-      <div className="flex pt-16">
-        {/* Mobile Overlay */}
-        {mobileSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-        )}
+    <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
+      <AdminPageHeader
+        title="Roles"
+        icon={MdAdminPanelSettings}
+        accent="rose"
+        actions={
+          <>
+            <AdminRefreshButton onClick={fetchData} loading={loading} />
+            <Button
+              onClick={openCreateModal}
+              variant="primary"
+              size="sm"
+              className={`${toolbarBtnClass} flex items-center gap-1.5`}
+            >
+              <MdAdd size={18} />
+              Create role
+            </Button>
+          </>
+        }
+      />
 
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <AdminSidebar
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader />
         </div>
-
-        {/* Mobile Sidebar */}
-        <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
-            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <AdminSidebar
-            collapsed={false}
-            onToggle={() => setMobileSidebarOpen(false)}
+      ) : error ? (
+        <ErrorScreen
+          title="Error loading roles"
+          message={error}
+          onRetry={fetchData}
+        />
+      ) : (
+        <>
+          <AdminStatStrip
+            columns={4}
+            items={[
+              { label: "Roles", value: stats.roleCount },
+              { label: "Users with roles", value: stats.usersWithRoles },
+              { label: "Without role", value: stats.usersWithoutRoles },
+              { label: "Assignments", value: stats.totalAssignments },
+            ]}
           />
-        </div>
 
-        <div className="flex-1 p-4 sm:p-6 lg:p-8">
-          {/* Header */}
-          <div className="mb-6 lg:mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
-              <div className="flex items-center mb-4 lg:mb-0">
-                <ShieldUser className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400 mr-4 mb-1" />
-                <h1
-                  className="text-3xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-rose-600 font-extrabold mb-2"
-                  style={{ lineHeight: 1.4 }}
-                >
-                  Role Management
-                </h1>
-              </div>
-              <Button
-                onClick={openCreateModal}
-                variant="outline"
-                className="flex items-center space-x-2 w-full lg:w-auto"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Role</span>
-              </Button>
-            </div>
-          </div>
+          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+            <p className="text-xs text-zinc-500 mb-3">
+              Drag rows to set display priority (top = highest). Changes save on
+              drop.
+            </p>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader />
-            </div>
-          ) : error ? (
-            <ErrorScreen
-              title="Error loading roles"
-              message={error}
-              onRetry={fetchData}
-            />
-          ) : (
-            <div className="space-y-8">
-              {/* Roles Section */}
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Roles</h2>
-                <div className="space-y-4">
-                  {roles
-                    .filter((role) => role.id && !isNaN(role.id))
-                    .map((role, index) => (
-                      <RoleItem
+            <div className="hidden lg:block">
+              <AdminTable minWidth="900px">
+                <thead className={ADMIN_TABLE_HEAD}>
+                  <tr>
+                    <th className={`${ADMIN_TH} w-10`} aria-label="Reorder" />
+                    <th className={ADMIN_TH}>Role</th>
+                    <th className={ADMIN_TH}>Members</th>
+                    <th className={ADMIN_TH}>Priority</th>
+                    <th className={ADMIN_TH}>Permissions</th>
+                    <th className={`${ADMIN_TH} text-right`}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/80">
+                  {validRoles.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
+                      >
+                        No roles yet. Create one to get started.
+                      </td>
+                    </tr>
+                  ) : (
+                    validRoles.map((role, index) => (
+                      <tr
                         key={role.id}
-                        role={role}
-                        index={index}
-                        onEdit={openEditModal}
-                        onDelete={handleDeleteRole}
-                        onDragStart={handleDragStart}
-                        onDragOver={handleDragOver}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, role.id)}
+                        onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={handleDrop}
-                      />
-                    ))}
-                </div>
-              </div>
-
-              {/* Users with Roles Section */}
-              <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  Roled Users
-                </h2>
-
-                {/* Search and Filter */}
-                <div className="flex flex-col lg:flex-row lg:space-x-4 space-y-4 lg:space-y-0 mb-6">
-                  <div className="flex-1 relative group">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-rose-400 transition-colors" />
-                    <input
-                      type="text"
-                      placeholder="Search by username..."
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full pl-11 pr-10 py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all duration-200 hover:border-zinc-600"
-                    />
-                  </div>
-                  <div className="relative w-full lg:w-52">
-                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400 z-10 ml-3 pointer-events-none" />
-                    <Dropdown
-                      value={roleFilter}
-                      onChange={setRoleFilter}
-                      options={[
-                        {
-                          value: 'all',
-                          label: 'All Roles',
-                        },
-                        {
-                          value: 'no-role',
-                          label: 'No Role',
-                        },
-                        ...roles.map((role) => ({
-                          value: role.id.toString(),
-                          label: role.name,
-                        })),
-                      ]}
-                      placeholder="Filter by role..."
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {filteredUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      className="bg-zinc-800 border border-zinc-700 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {user.avatar ? (
-                            <img
-                              src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
-                              alt={user.username}
-                              className="w-10 h-10 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 bg-zinc-600 rounded-full flex items-center justify-center">
-                              <Users className="w-5 h-5 text-zinc-400" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-white font-medium">
-                                {user.username}
-                              </span>
-                              {user.is_admin && (
-                                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30">
-                                  Developer
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-zinc-400 text-xs block mb-2">
-                              {user.id}
-                            </span>
-                            {user.roles && user.roles.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {user.roles.map((role) => {
-                                  const RoleIcon = getIconComponent(role.icon);
-                                  return (
-                                    <div
-                                      key={role.id}
-                                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all group"
-                                      style={{
-                                        backgroundColor: `${role.color}15`,
-                                        borderColor: `${role.color}40`,
-                                      }}
-                                    >
-                                      <RoleIcon
-                                        className="w-3 h-3"
-                                        style={{
-                                          color: role.color,
-                                        }}
-                                      />
-                                      <span
-                                        className="text-xs font-medium"
-                                        style={{
-                                          color: role.color,
-                                        }}
-                                      >
-                                        {role.name}
-                                      </span>
-                                      <button
-                                        onClick={() =>
-                                          handleRemoveRole(user.id, role.id)
-                                        }
-                                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Remove role"
-                                      >
-                                        <X className="w-3 h-3 text-zinc-400 hover:text-white" />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                        className={`hover:bg-zinc-800/30 ${
+                          draggedId === role.id ? "opacity-60" : ""
+                        }`}
+                      >
+                        <td className={ADMIN_TD}>
+                          <MdDragIndicator
+                            className="w-5 h-5 text-zinc-600 cursor-grab active:cursor-grabbing"
+                            aria-hidden
+                          />
+                        </td>
+                        <td className={ADMIN_TD}>
+                          <div className="min-w-0">
+                            <RoleBadge role={role} />
+                            {role.description && (
+                              <p className="text-xs text-zinc-500 mt-1 line-clamp-1">
+                                {role.description}
+                              </p>
                             )}
                           </div>
+                        </td>
+                        <td
+                          className={`${ADMIN_TD} text-zinc-300 tabular-nums`}
+                        >
+                          {role.user_count ?? 0}
+                        </td>
+                        <td
+                          className={`${ADMIN_TD} text-zinc-400 text-sm tabular-nums`}
+                        >
+                          {role.priority}
+                        </td>
+                        <td className={ADMIN_TD}>
+                          <PermissionSummary permissions={role.permissions} />
+                        </td>
+                        <td className={`${ADMIN_TD} text-right`}>
+                          <div className="flex justify-end gap-1.5">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size={btnSize}
+                              onClick={() => openEditModal(role)}
+                            >
+                              <MdEdit className="w-3.5 h-3.5 inline mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size={btnSize}
+                              onClick={() => void handleDeleteRole(role)}
+                            >
+                              <MdDelete className="w-3.5 h-3.5 inline mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </AdminTable>
+            </div>
+
+            <ul className="lg:hidden space-y-3">
+              {validRoles.length === 0 ? (
+                <li className="text-center py-10 text-zinc-500 text-sm">
+                  No roles yet. Create one to get started.
+                </li>
+              ) : (
+                validRoles.map((role, index) => (
+                  <li
+                    key={role.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, role.id)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={handleDrop}
+                    className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
+                  >
+                    <div className="flex items-start gap-2">
+                      <MdDragIndicator className="w-5 h-5 text-zinc-600 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <RoleBadge role={role} />
+                        {role.description && (
+                          <p className="text-xs text-zinc-500 mt-2">
+                            {role.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-zinc-500 mt-2">
+                          {role.user_count ?? 0} members · priority{" "}
+                          {role.priority}
+                        </p>
+                        <div className="mt-2">
+                          <PermissionSummary permissions={role.permissions} />
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex gap-2 mt-3">
                           <Button
-                            onClick={() => {
-                              setSelectedUserForRole(user.id);
-                              setShowAddRoleModal(true);
-                            }}
-                            size="sm"
+                            type="button"
                             variant="outline"
-                            className="flex items-center"
+                            size={btnSize}
+                            onClick={() => openEditModal(role)}
+                            className="flex-1"
                           >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden lg:inline ml-1">
-                              Add Role
-                            </span>
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size={btnSize}
+                            onClick={() => void handleDeleteRole(role)}
+                            className="flex-1"
+                          >
+                            Delete
                           </Button>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+
+          <div className={adminSectionClass()}>
+            <AdminToolbar>
+              <AdminSearchInput
+                value={userSearch}
+                onChange={setUserSearch}
+                placeholder="Search users…"
+              />
+              <div className="relative w-full sm:w-52 shrink-0">
+                <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
+                  <MdFilterList size={18} />
+                </span>
+                <Dropdown
+                  value={roleFilter}
+                  onChange={setRoleFilter}
+                  options={roleFilterOptions}
+                  placeholder="Filter by role…"
+                  className="!pl-11"
+                  size="sm"
+                />
               </div>
-            </div>
-          )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!hasUserFilters}
+                onClick={clearUserFilters}
+                className={toolbarBtnClass}
+              >
+                <MdClose size={16} className="mr-1" />
+                Clear
+              </Button>
+            </AdminToolbar>
 
-          {/* Create Role Modal */}
-          {showCreateModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white">
-                    Create New Role
-                  </h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCreateModal(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Role Name
-                    </label>
-                    <TextInput
-                      value={formName}
-                      onChange={setFormName}
-                      placeholder="Enter role name..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Description
-                    </label>
-                    <TextInput
-                      value={formDescription}
-                      onChange={setFormDescription}
-                      placeholder="Enter role description..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-zinc-300 mb-2">Icon</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {AVAILABLE_ICONS.map((iconOption) => {
-                          const IconComponent = iconOption.icon;
-                          return (
-                            <button
-                              key={iconOption.value}
-                              type="button"
-                              onClick={() => setFormIcon(iconOption.value)}
-                              className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                                formIcon === iconOption.value
-                                  ? 'border-rose-500 bg-rose-500/20'
-                                  : 'border-zinc-700 hover:border-zinc-600'
-                              }`}
-                              title={iconOption.label}
-                            >
-                              <IconComponent className="w-5 h-5 text-white mx-auto" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-zinc-300 mb-2">Color</label>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-5 gap-2">
-                          {PRESET_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              onClick={() => setFormColor(color)}
-                              className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
-                                formColor === color
-                                  ? 'border-white ring-2 ring-white/50'
-                                  : 'border-transparent'
-                              }`}
-                              style={{
-                                backgroundColor: color,
-                              }}
-                              title={color}
-                            />
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={formColor}
-                            onChange={(e) => setFormColor(e.target.value)}
-                            className="w-full h-10 rounded-lg border-2 border-zinc-700 bg-zinc-800 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={formColor}
-                            onChange={(e) => setFormColor(e.target.value)}
-                            className="w-24 h-10 px-3 bg-zinc-800 border-2 border-zinc-700 rounded-lg text-white text-sm font-mono"
-                            placeholder="#000000"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Priority (higher numbers appear first)
-                    </label>
-                    <TextInput
-                      value={formPriority.toString()}
-                      onChange={(val) => {
-                        const parsed = parseInt(val);
-                        setFormPriority(isNaN(parsed) ? 0 : parsed);
-                      }}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Permissions
-                    </label>
-                    <div className="space-y-3">
-                      {AVAILABLE_PERMISSIONS.map((permission) => (
-                        <div
-                          key={permission.key}
-                          className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700"
-                        >
-                          <div>
-                            <div className="text-white font-medium">
-                              {permission.label}
-                            </div>
-                            <div className="text-zinc-400 text-sm">
-                              {permission.description}
+            <div className="hidden md:block">
+              <AdminTable minWidth="800px">
+                <thead className={ADMIN_TABLE_HEAD}>
+                  <tr>
+                    <th className={ADMIN_TH}>User</th>
+                    <th className={ADMIN_TH}>Roles</th>
+                    <th className={`${ADMIN_TH} text-right`}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/80">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
+                      >
+                        No users match these filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-zinc-800/30">
+                        <td className={ADMIN_TD}>
+                          <div className="flex items-center gap-3">
+                            {user.avatar ? (
+                              <img
+                                src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
+                                alt=""
+                                className="w-9 h-9 rounded-full shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center shrink-0">
+                                <MdPeople className="w-4 h-4 text-zinc-400" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-medium text-zinc-100 truncate">
+                                {user.username}
+                                {user.is_admin && (
+                                  <span className="ml-2 text-[10px] uppercase tracking-wide text-blue-400/90 font-semibold">
+                                    Dev
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[11px] text-zinc-500 font-mono truncate">
+                                {user.id}
+                              </p>
                             </div>
                           </div>
-                          <button
-                            onClick={() =>
-                              setFormPermissions((prev) => ({
-                                ...prev,
-                                [permission.key]: !prev[permission.key],
-                              }))
-                            }
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-                              formPermissions[permission.key]
-                                ? 'bg-rose-500 border-rose-500'
-                                : 'border-zinc-600 hover:border-zinc-500'
-                            }`}
+                        </td>
+                        <td className={ADMIN_TD}>
+                          {user.roles && user.roles.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {user.roles.map((role) => (
+                                <span
+                                  key={role.id}
+                                  className="inline-flex items-center group"
+                                >
+                                  <RoleBadge role={role} compact />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleRemoveRole(user.id, role.id)
+                                    }
+                                    className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-white transition-opacity"
+                                    title="Remove role"
+                                  >
+                                    <MdClose size={14} />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-600">
+                              No roles
+                            </span>
+                          )}
+                        </td>
+                        <td className={`${ADMIN_TD} text-right`}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={btnSize}
+                            onClick={() => {
+                              setSelectedUserForRole(user.id);
+                              setShowAddRoleModal(true);
+                            }}
                           >
-                            {formPermissions[permission.key] && (
-                              <Check className="w-4 h-4 text-white" />
-                            )}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-3 pt-4">
-                    <Button
-                      onClick={handleCreateRole}
-                      disabled={submitting}
-                      variant="primary"
-                      className="flex-1"
-                    >
-                      {submitting ? 'Creating...' : 'Create Role'}
-                    </Button>
-                    <Button
-                      onClick={() => setShowCreateModal(false)}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                            <MdAdd className="w-3.5 h-3.5 inline mr-1" />
+                            Add role
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </AdminTable>
             </div>
-          )}
 
-          {/* Edit Role Modal */}
-          {showEditModal && selectedRole && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white">
-                    Edit Role: {selectedRole.name}
-                  </h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEditModal(false)}
+            <ul className="md:hidden space-y-3">
+              {filteredUsers.length === 0 ? (
+                <li className="text-center py-10 text-zinc-500 text-sm">
+                  No users match these filters.
+                </li>
+              ) : (
+                filteredUsers.map((user) => (
+                  <li
+                    key={user.id}
+                    className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Role Name
-                    </label>
-                    <TextInput
-                      value={formName}
-                      onChange={setFormName}
-                      placeholder="Enter role name..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Description
-                    </label>
-                    <TextInput
-                      value={formDescription}
-                      onChange={setFormDescription}
-                      placeholder="Enter role description..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-zinc-300 mb-2">Icon</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {AVAILABLE_ICONS.map((iconOption) => {
-                          const IconComponent = iconOption.icon;
-                          return (
+                    <div className="flex items-center gap-3 mb-3">
+                      {user.avatar ? (
+                        <img
+                          src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
+                          alt=""
+                          className="w-9 h-9 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center">
+                          <MdPeople className="w-4 h-4 text-zinc-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-zinc-100 truncate">
+                          {user.username}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 font-mono truncate">
+                          {user.id}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size={btnSize}
+                        onClick={() => {
+                          setSelectedUserForRole(user.id);
+                          setShowAddRoleModal(true);
+                        }}
+                      >
+                        <MdAdd size={18} />
+                      </Button>
+                    </div>
+                    {user.roles && user.roles.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {user.roles.map((role) => (
+                          <span
+                            key={role.id}
+                            className="inline-flex items-center"
+                          >
+                            <RoleBadge role={role} compact />
                             <button
-                              key={iconOption.value}
                               type="button"
-                              onClick={() => setFormIcon(iconOption.value)}
-                              className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                                formIcon === iconOption.value
-                                  ? 'border-rose-500 bg-rose-500/20'
-                                  : 'border-zinc-700 hover:border-zinc-600'
-                              }`}
-                              title={iconOption.label}
+                              onClick={() =>
+                                void handleRemoveRole(user.id, role.id)
+                              }
+                              className="ml-1 text-zinc-500 hover:text-white"
                             >
-                              <IconComponent className="w-5 h-5 text-white mx-auto" />
+                              <MdClose size={14} />
                             </button>
-                          );
-                        })}
+                          </span>
+                        ))}
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-zinc-300 mb-2">Color</label>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-5 gap-2">
-                          {PRESET_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              onClick={() => setFormColor(color)}
-                              className={`w-full h-10 rounded-lg border-2 transition-all hover:scale-105 ${
-                                formColor === color
-                                  ? 'border-white ring-2 ring-white/50'
-                                  : 'border-transparent'
-                              }`}
-                              style={{
-                                backgroundColor: color,
-                              }}
-                              title={color}
-                            />
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={formColor}
-                            onChange={(e) => setFormColor(e.target.value)}
-                            className="w-full h-10 rounded-lg border-2 border-zinc-700 bg-zinc-800 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={formColor}
-                            onChange={(e) => setFormColor(e.target.value)}
-                            className="w-24 h-10 px-3 bg-zinc-800 border-2 border-zinc-700 rounded-lg text-white text-sm font-mono"
-                            placeholder="#000000"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Priority (higher numbers appear first)
-                    </label>
-                    <TextInput
-                      value={formPriority.toString()}
-                      onChange={(val) => {
-                        const parsed = parseInt(val);
-                        setFormPriority(isNaN(parsed) ? 0 : parsed);
-                      }}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-zinc-300 mb-2">
-                      Permissions
-                    </label>
-                    <div className="space-y-3">
-                      {AVAILABLE_PERMISSIONS.map((permission) => (
-                        <div
-                          key={permission.key}
-                          className="flex items-center justify-between p-3 bg-zinc-800 rounded border border-zinc-700"
-                        >
-                          <div>
-                            <div className="text-white font-medium">
-                              {permission.label}
-                            </div>
-                            <div className="text-zinc-400 text-sm">
-                              {permission.description}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() =>
-                              setFormPermissions((prev) => ({
-                                ...prev,
-                                [permission.key]: !prev[permission.key],
-                              }))
-                            }
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-                              formPermissions[permission.key]
-                                ? 'bg-rose-500 border-rose-500'
-                                : 'border-zinc-600 hover:border-zinc-500'
-                            }`}
-                          >
-                            {formPermissions[permission.key] && (
-                              <Check className="w-4 h-4 text-white" />
-                            )}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-3 pt-4">
-                    <Button
-                      onClick={handleEditRole}
-                      disabled={submitting}
-                      variant="primary"
-                      className="flex-1"
-                    >
-                      {submitting ? 'Updating...' : 'Update Role'}
-                    </Button>
-                    <Button
-                      onClick={() => setShowEditModal(false)}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Add Role Modal */}
-          {showAddRoleModal && selectedUserForRole && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm mx-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">Add Role</h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddRoleModal(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {roles
-                    .filter(
-                      (role) =>
-                        !users
-                          .find((u) => u.id === selectedUserForRole)
-                          ?.roles?.some((ur) => ur.id === role.id)
-                    )
-                    .map((role) => {
-                      const RoleIcon = getIconComponent(role.icon);
-                      return (
-                        <button
-                          key={role.id}
-                          onClick={() => {
-                            handleAssignRole(selectedUserForRole, role.id);
-                            setShowAddRoleModal(false);
-                          }}
-                          className="w-full flex items-center space-x-3 p-3 bg-zinc-800 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
-                        >
-                          <RoleIcon
-                            className="w-5 h-5"
-                            style={{ color: role.color }}
-                          />
-                          <span className="text-white">{role.name}</span>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setMobileSidebarOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-rose-600 hover:bg-rose-700 rounded-full shadow-lg transition-colors"
-      >
-        <ShieldUser className="h-6 w-6 text-white" />
-      </button>
-
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+                    ) : (
+                      <p className="text-xs text-zinc-600">No roles assigned</p>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </>
       )}
-    </div>
+
+      <AdminModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create role"
+        size="xl"
+        footer={
+          <>
+            <Button
+              onClick={() => setShowCreateModal(false)}
+              variant="outline"
+              size={btnSize}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleCreateRole()}
+              disabled={submitting}
+              variant="primary"
+              size={btnSize}
+            >
+              {submitting ? "Creating…" : "Create role"}
+            </Button>
+          </>
+        }
+      >
+        {roleFormFields}
+      </AdminModal>
+
+      <AdminModal
+        open={showEditModal && !!selectedRole}
+        onClose={() => setShowEditModal(false)}
+        title={selectedRole ? `Edit ${selectedRole.name}` : "Edit role"}
+        size="xl"
+        footer={
+          <>
+            <Button
+              onClick={() => setShowEditModal(false)}
+              variant="outline"
+              size={btnSize}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleEditRole()}
+              disabled={submitting}
+              variant="primary"
+              size={btnSize}
+            >
+              {submitting ? "Saving…" : "Save changes"}
+            </Button>
+          </>
+        }
+      >
+        {roleFormFields}
+      </AdminModal>
+
+      <AdminModal
+        open={showAddRoleModal && !!selectedUserForRole}
+        onClose={() => {
+          setShowAddRoleModal(false);
+          setSelectedUserForRole(null);
+        }}
+        title="Assign role"
+        size="sm"
+      >
+        {assignableRolesForUser.length === 0 ? (
+          <p className="text-sm text-zinc-500 py-2">
+            This user already has every role, or no roles exist.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {assignableRolesForUser.map((role) => {
+              const RoleIcon = getIconComponent(role.icon);
+              return (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() =>
+                    void handleAssignRole(selectedUserForRole!, role.id)
+                  }
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-zinc-800/60 bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors text-left"
+                >
+                  <RoleIcon
+                    className="w-5 h-5 shrink-0"
+                    style={{ color: role.color }}
+                  />
+                  <span className="text-sm text-zinc-100 font-medium">
+                    {role.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </AdminModal>
+    </AdminLayout>
   );
 }

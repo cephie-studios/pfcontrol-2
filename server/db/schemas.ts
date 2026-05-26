@@ -829,6 +829,79 @@ export async function ensureFlightReqColumns() {
   `.execute(mainDb);
 }
 
+export async function ensureDailyDatabaseMetricsTables() {
+  await mainDb.schema
+    .createTable("daily_table_activity")
+    .ifNotExists()
+    .addColumn("activity_date", "date", (col) => col.notNull())
+    .addColumn("table_name", "varchar(128)", (col) => col.notNull())
+    .addColumn("rows_inserted", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("rows_deleted", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("table_bytes", "bigint", (col) => col.notNull().defaultTo(0))
+    .addColumn("row_count", "bigint", (col) => col.notNull().defaultTo(0))
+    .addColumn("created_at", "timestamptz", (col) => col.defaultTo("now()"))
+    .addColumn("updated_at", "timestamptz", (col) => col.defaultTo("now()"))
+    .addPrimaryKeyConstraint("daily_table_activity_pkey", [
+      "activity_date",
+      "table_name",
+    ])
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_daily_table_activity_date")
+    .ifNotExists()
+    .on("daily_table_activity")
+    .column("activity_date")
+    .execute();
+
+  await mainDb.schema
+    .createTable("daily_database_totals")
+    .ifNotExists()
+    .addColumn("activity_date", "date", (col) => col.primaryKey())
+    .addColumn("total_bytes", "bigint", (col) => col.notNull())
+    .addColumn("created_at", "timestamptz", (col) => col.defaultTo("now()"))
+    .execute();
+
+  await ensureDailyTableActivityBigintColumns();
+}
+
+export async function ensureDailyTableActivityBigintColumns() {
+  await sql`
+    ALTER TABLE daily_table_activity
+      ALTER COLUMN rows_inserted TYPE bigint USING rows_inserted::bigint,
+      ALTER COLUMN rows_deleted TYPE bigint USING rows_deleted::bigint,
+      ALTER COLUMN table_bytes TYPE bigint USING table_bytes::bigint,
+      ALTER COLUMN row_count TYPE bigint USING row_count::bigint
+  `.execute(mainDb);
+}
+
+export async function ensureWebsocketSnapshotsTable() {
+  await mainDb.schema
+    .createTable("websocket_snapshots")
+    .ifNotExists()
+    .addColumn("id", "bigserial", (col) => col.primaryKey())
+    .addColumn("namespace_id", "varchar(64)", (col) => col.notNull())
+    .addColumn("connected_count", "integer", (col) => col.notNull())
+    .addColumn("sampled_at", "timestamptz", (col) =>
+      col.notNull().defaultTo("now()")
+    )
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_websocket_snapshots_sampled_at")
+    .ifNotExists()
+    .on("websocket_snapshots")
+    .column("sampled_at")
+    .execute();
+
+  await mainDb.schema
+    .createIndex("idx_websocket_snapshots_namespace_sampled")
+    .ifNotExists()
+    .on("websocket_snapshots")
+    .columns(["namespace_id", "sampled_at"])
+    .execute();
+}
+
 export async function ensurePerformanceIndexes() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_flights_session_updated

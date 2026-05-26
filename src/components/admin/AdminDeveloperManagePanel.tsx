@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { KeyRound, Save, Shield } from "lucide-react";
+import { MdVpnKey, MdSave, MdShield } from "react-icons/md";
+import AdminModal from "./AdminModal";
+import AdminTable from "./AdminTable";
+import AdminSectionTitle from "./AdminSectionTitle";
+import {
+  adminDownsizeButtonSize,
+  adminSectionClass,
+  ADMIN_TABLE_HEAD,
+  ADMIN_TH,
+  ADMIN_TD,
+  statusBadgeClass,
+} from "./adminConstants";
+import Button from "../common/Button";
 import {
   approveAdminDeveloperKey,
   fetchAdminDeveloperCatalog,
@@ -31,10 +43,14 @@ export default function AdminDeveloperManagePanel({
   const [catalog, setCatalog] = useState<AdminScopeCatalogEntry[]>([]);
   const [keys, setKeys] = useState<AdminDeveloperKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(true);
-  const [ceiling, setCeiling] = useState<Set<string>>(() => new Set(developer.approvedScopes));
+  const [ceiling, setCeiling] = useState<Set<string>>(
+    () => new Set(developer.approvedScopes)
+  );
   const [ceilingBusy, setCeilingBusy] = useState(false);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
-  const [approveKey, setApproveKey] = useState<AdminDeveloperKeyRow | null>(null);
+  const [approveKey, setApproveKey] = useState<AdminDeveloperKeyRow | null>(
+    null
+  );
   const [approveScopes, setApproveScopes] = useState<Set<string>>(new Set());
   const [approveRpm, setApproveRpm] = useState("");
   const [approveNote, setApproveNote] = useState("");
@@ -79,7 +95,7 @@ export default function AdminDeveloperManagePanel({
 
   const catalogSorted = useMemo(
     () => [...catalog].sort((a, b) => a.id.localeCompare(b.id)),
-    [catalog],
+    [catalog]
   );
 
   const scopeGroups = useMemo(() => {
@@ -125,12 +141,19 @@ export default function AdminDeveloperManagePanel({
     if (!approveKey || approveScopes.size === 0) return;
     setRowBusy(approveKey.id);
     try {
-      const rpm = approveRpm.trim() === "" ? null : Math.max(0, parseInt(approveRpm, 10) || 0);
-      const res = await approveAdminDeveloperKey(developer.userId, approveKey.id, {
-        approvedScopes: [...approveScopes],
-        rateLimitPerMinute: rpm,
-        note: approveNote || undefined,
-      });
+      const rpm =
+        approveRpm.trim() === ""
+          ? null
+          : Math.max(0, parseInt(approveRpm, 10) || 0);
+      const res = await approveAdminDeveloperKey(
+        developer.userId,
+        approveKey.id,
+        {
+          approvedScopes: [...approveScopes],
+          rateLimitPerMinute: rpm,
+          note: approveNote || undefined,
+        }
+      );
       setRevealedSecret(res.secret);
       setApproveKey(null);
       const kr = await fetchAdminDeveloperKeys(developer.userId);
@@ -161,14 +184,17 @@ export default function AdminDeveloperManagePanel({
   const openEdit = (k: AdminDeveloperKeyRow) => {
     setEditKey(k);
     setEditScopes(new Set(k.scopes));
-    setEditRpm(k.rateLimitPerMinute != null ? String(k.rateLimitPerMinute) : "");
+    setEditRpm(
+      k.rateLimitPerMinute != null ? String(k.rateLimitPerMinute) : ""
+    );
   };
 
   const saveEdit = async () => {
     if (!editKey || editScopes.size === 0) return;
     setRowBusy(editKey.id);
     try {
-      const rpm = editRpm.trim() === "" ? null : Math.max(0, parseInt(editRpm, 10) || 0);
+      const rpm =
+        editRpm.trim() === "" ? null : Math.max(0, parseInt(editRpm, 10) || 0);
       await patchAdminDeveloperKey(developer.userId, editKey.id, {
         scopes: [...editScopes],
         rateLimitPerMinute: rpm,
@@ -200,52 +226,62 @@ export default function AdminDeveloperManagePanel({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-zinc-700 bg-zinc-900/50 p-5 shadow-inner ring-1 ring-zinc-800/45">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2 text-zinc-200 min-w-0">
-          <Shield className="w-5 h-5 text-cyan-400 shrink-0" />
-          <div>
-            <h3 className="font-semibold text-zinc-50">Scope ceiling & keys</h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              {developer.username} · {developer.keysActive} usable · {developer.keysPending} pending
-              · {developer.keysTotal} total
-            </p>
+    <div className="space-y-0">
+      <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-2 text-zinc-200 min-w-0">
+            <MdShield className="w-5 h-5 text-cyan-400 shrink-0" />
+            <div>
+              <AdminSectionTitle className="!mb-0">
+                Scope ceiling & keys
+              </AdminSectionTitle>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {developer.username} · {developer.keysActive} usable ·{" "}
+                {developer.keysPending} pending · {developer.keysTotal} total
+              </p>
+            </div>
           </div>
+          {(onProfileSuspend || onProfileReactivate) && (
+            <div className="flex shrink-0 gap-2">
+              {developer.status === "active" && onProfileSuspend && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size={adminDownsizeButtonSize("xs")}
+                  disabled={profileActionBusy}
+                  onClick={() => onProfileSuspend()}
+                  className="!border-amber-800/60 !text-amber-200"
+                >
+                  Suspend
+                </Button>
+              )}
+              {developer.status !== "active" && onProfileReactivate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size={adminDownsizeButtonSize("xs")}
+                  disabled={profileActionBusy}
+                  onClick={() => onProfileReactivate()}
+                  className="!border-emerald-800/50 !text-emerald-200"
+                >
+                  Reactivate
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-        {(onProfileSuspend || onProfileReactivate) && (
-          <div className="flex shrink-0 gap-2">
-            {developer.status === "active" && onProfileSuspend && (
-              <button
-                type="button"
-                disabled={profileActionBusy}
-                onClick={() => onProfileSuspend()}
-                className="px-3 py-1.5 rounded-xl border border-amber-800/60 bg-amber-950/40 text-amber-200 text-xs font-medium hover:bg-amber-950/60 disabled:opacity-50"
-              >
-                Suspend
-              </button>
-            )}
-            {developer.status !== "active" && onProfileReactivate && (
-              <button
-                type="button"
-                disabled={profileActionBusy}
-                onClick={() => onProfileReactivate()}
-                className="px-3 py-1.5 rounded-xl border border-emerald-800/50 bg-emerald-950/35 text-emerald-200 text-xs font-medium hover:bg-emerald-950/55 disabled:opacity-50"
-              >
-                Reactivate
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 mb-3">
+      <div className={adminSectionClass()}>
+        <AdminSectionTitle>
           Allowed scopes (max per developer)
-        </p>
+        </AdminSectionTitle>
         <div className="max-h-56 overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-950/50 p-3 space-y-3 shadow-inner ring-1 ring-zinc-800/40">
           {scopeGroups.map(([group, entries]) => (
             <div key={group}>
-              <p className="text-[11px] font-semibold text-zinc-500 mb-1.5 capitalize">{group}</p>
+              <p className="text-[11px] font-semibold text-zinc-500 mb-1.5 capitalize">
+                {group}
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {entries.map((s) => (
                   <label
@@ -256,10 +292,12 @@ export default function AdminDeveloperManagePanel({
                       type="checkbox"
                       checked={ceiling.has(s.id)}
                       onChange={() => toggleCeiling(s.id)}
-                      className="mt-0.5 rounded border-zinc-600"
+                      className="mt-0.5 accent-blue-600 rounded border-zinc-600"
                     />
                     <span>
-                      <span className="text-xs font-medium text-zinc-200 block">{s.label}</span>
+                      <span className="text-xs font-medium text-zinc-200 block">
+                        {s.label}
+                      </span>
                       <span className="text-[10px] text-zinc-500 leading-snug line-clamp-2">
                         {s.description}
                       </span>
@@ -270,125 +308,162 @@ export default function AdminDeveloperManagePanel({
             </div>
           ))}
         </div>
-        <button
+        <Button
           type="button"
+          size={adminDownsizeButtonSize("sm")}
           disabled={ceilingBusy || ceiling.size === 0}
           onClick={() => void saveCeiling()}
-          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 text-white text-sm font-medium"
+          className="mt-3 inline-flex items-center gap-2"
         >
-          <Save className="w-4 h-4" />
+          <MdSave className="w-4 h-4" />
           Save ceiling
-        </button>
+        </Button>
       </div>
 
-      <div>
+      <div className={adminSectionClass()}>
         <div className="flex items-center gap-2 mb-3">
-          <KeyRound className="w-4 h-4 text-zinc-400" />
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">API keys</p>
+          <MdVpnKey className="w-4 h-4 text-zinc-400" />
+          <AdminSectionTitle className="!mb-0">API keys</AdminSectionTitle>
         </div>
         {keysLoading ? (
           <p className="text-sm text-zinc-500 py-6">Loading keys…</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-700 shadow-inner ring-1 ring-zinc-800/40">
-            <table className="w-full text-sm text-left min-w-[640px]">
-              <thead className="bg-zinc-950 text-zinc-400 text-xs">
+          <AdminTable minWidth="640px">
+            <thead className={ADMIN_TABLE_HEAD}>
+              <tr>
+                <th className={ADMIN_TH}>Name</th>
+                <th className={ADMIN_TH}>Status</th>
+                <th className={ADMIN_TH}>Scopes</th>
+                <th className={ADMIN_TH}>RPM</th>
+                <th className={ADMIN_TH}>Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/80">
+              {keys.length === 0 ? (
                 <tr>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Scopes</th>
-                  <th className="px-3 py-2">RPM</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <td
+                    colSpan={5}
+                    className={`${ADMIN_TD} py-6 text-center text-zinc-500`}
+                  >
+                    No keys.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {keys.map((k) => (
-                  <tr key={k.id} className="border-t border-zinc-800/90 text-zinc-200">
-                    <td className="px-3 py-2">
+              ) : (
+                keys.map((k) => (
+                  <tr key={k.id} className="hover:bg-zinc-800/20">
+                    <td className={ADMIN_TD}>
                       <div className="font-medium">{k.name}</div>
-                      <code className="text-[10px] text-zinc-500">{k.prefix}</code>
+                      <code className="text-[10px] text-zinc-500">
+                        {k.prefix}
+                      </code>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className={ADMIN_TD}>
                       <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-md ${
-                          k.status === "active"
-                            ? "bg-emerald-950/60 text-emerald-300"
-                            : k.status === "pending"
-                              ? "bg-amber-950/60 text-amber-200"
-                              : "bg-zinc-800 text-zinc-400"
-                        }`}
+                        className={`text-xs font-medium px-2 py-0.5 rounded-md ${statusBadgeClass(k.status ?? "active")}`}
                       >
                         {k.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-400 max-w-[200px]">
+                    <td
+                      className={`${ADMIN_TD} text-xs text-zinc-400 max-w-[200px]`}
+                    >
                       {(k.status === "pending" ? k.requestedScopes : k.scopes)
                         .slice(0, 4)
                         .join(", ")}
-                      {(k.status === "pending" ? k.requestedScopes : k.scopes).length > 4
+                      {(k.status === "pending" ? k.requestedScopes : k.scopes)
+                        .length > 4
                         ? "…"
                         : ""}
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-400">
+                    <td className={`${ADMIN_TD} text-xs text-zinc-400`}>
                       {k.rateLimitPerMinute ?? "—"}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
+                    <td className={`${ADMIN_TD} whitespace-nowrap`}>
                       {k.revokedAt ? (
                         <span className="text-xs text-zinc-600">Revoked</span>
                       ) : k.status === "pending" ? (
                         <div className="flex gap-1">
-                          <button
+                          <Button
                             type="button"
+                            variant="primary"
+                            size={adminDownsizeButtonSize("xs")}
                             disabled={rowBusy === k.id}
                             onClick={() => openApprove(k)}
-                            className="px-2 py-1 rounded-lg bg-emerald-800/80 text-white text-xs hover:bg-emerald-700"
+                            className="!bg-emerald-800/80 hover:!bg-emerald-700"
                           >
                             Approve
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="outline"
+                            size={adminDownsizeButtonSize("xs")}
                             disabled={rowBusy === k.id}
                             onClick={() => void submitRejectKey(k)}
-                            className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-200 text-xs hover:bg-zinc-700"
                           >
                             Reject
-                          </button>
+                          </Button>
                         </div>
                       ) : k.status === "active" ? (
                         <div className="flex gap-1">
-                          <button
+                          <Button
                             type="button"
+                            variant="outline"
+                            size={adminDownsizeButtonSize("xs")}
                             disabled={rowBusy === k.id}
                             onClick={() => openEdit(k)}
-                            className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-200 text-xs hover:bg-zinc-700"
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="danger"
+                            size={adminDownsizeButtonSize("xs")}
                             disabled={rowBusy === k.id}
                             onClick={() => void doRevoke(k)}
-                            className="px-2 py-1 rounded-lg bg-red-950/50 text-red-200 text-xs hover:bg-red-900/60"
                           >
                             Revoke
-                          </button>
+                          </Button>
                         </div>
                       ) : null}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {keys.length === 0 && (
-              <p className="text-sm text-zinc-500 px-3 py-6 text-center">No keys.</p>
-            )}
-          </div>
+                ))
+              )}
+            </tbody>
+          </AdminTable>
         )}
       </div>
 
-      {approveKey && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <h4 className="text-lg font-semibold text-white mb-1">Approve key request</h4>
+      <AdminModal
+        open={!!approveKey}
+        onClose={() => setApproveKey(null)}
+        title="Approve key request"
+        size="md"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size={adminDownsizeButtonSize("sm")}
+              onClick={() => setApproveKey(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size={adminDownsizeButtonSize("sm")}
+              disabled={approveScopes.size === 0 || rowBusy != null}
+              onClick={() => void submitApprove()}
+              className="!bg-emerald-600 hover:!bg-emerald-500"
+            >
+              Approve & issue secret
+            </Button>
+          </>
+        }
+      >
+        {approveKey && (
+          <>
             <p className="text-xs text-zinc-500 mb-4">{approveKey.name}</p>
             <p className="text-xs text-zinc-400 mb-2">
               Select allowed scopes (subset of requested)
@@ -397,7 +472,10 @@ export default function AdminDeveloperManagePanel({
               {approveKey.requestedScopes.map((id) => {
                 const label = catalog.find((c) => c.id === id)?.label ?? id;
                 return (
-                  <label key={id} className="flex items-center gap-2 text-sm text-zinc-200">
+                  <label
+                    key={id}
+                    className="flex items-center gap-2 text-sm text-zinc-200"
+                  >
                     <input
                       type="checkbox"
                       checked={approveScopes.has(id)}
@@ -431,49 +509,61 @@ export default function AdminDeveloperManagePanel({
               rows={2}
               className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 mb-4"
             />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setApproveKey(null)}
-                className="px-3 py-2 rounded-xl text-zinc-400 hover:bg-zinc-800 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={approveScopes.size === 0 || rowBusy != null}
-                onClick={() => void submitApprove()}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-40"
-              >
-                Approve & issue secret
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </AdminModal>
 
-      {revealedSecret && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-zinc-900 border border-emerald-800/50 rounded-2xl p-5 max-w-lg w-full">
-            <h4 className="text-white font-semibold mb-2">Key secret (copy now)</h4>
-            <pre className="text-xs text-emerald-200 break-all bg-black/40 rounded-xl p-3 mb-4">
-              {revealedSecret}
-            </pre>
-            <button
+      <AdminModal
+        open={!!revealedSecret}
+        onClose={() => setRevealedSecret(null)}
+        title="Key secret (copy now)"
+        size="md"
+        footer={
+          <Button
+            type="button"
+            variant="outline"
+            size={adminDownsizeButtonSize("sm")}
+            onClick={() => setRevealedSecret(null)}
+            className="w-full"
+          >
+            Done
+          </Button>
+        }
+      >
+        <pre className="text-xs text-emerald-200 break-all bg-black/40 rounded-xl p-3">
+          {revealedSecret}
+        </pre>
+      </AdminModal>
+
+      <AdminModal
+        open={!!editKey}
+        onClose={() => setEditKey(null)}
+        title="Edit active key"
+        size="md"
+        footer={
+          <>
+            <Button
               type="button"
-              onClick={() => setRevealedSecret(null)}
-              className="w-full py-2 rounded-xl bg-zinc-800 text-zinc-200 text-sm"
+              variant="ghost"
+              size={adminDownsizeButtonSize("sm")}
+              onClick={() => setEditKey(null)}
             >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
-
-      {editKey && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <h4 className="text-lg font-semibold text-white mb-3">Edit active key</h4>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size={adminDownsizeButtonSize("sm")}
+              disabled={editScopes.size === 0 || rowBusy != null}
+              onClick={() => void saveEdit()}
+            >
+              Save
+            </Button>
+          </>
+        }
+      >
+        {editKey && (
+          <>
             <p className="text-xs text-zinc-500 mb-3">
               Scopes must stay within the profile ceiling.
             </p>
@@ -481,7 +571,10 @@ export default function AdminDeveloperManagePanel({
               {catalogSorted
                 .filter((c) => ceiling.has(c.id))
                 .map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 text-sm text-zinc-200">
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2 text-sm text-zinc-200"
+                  >
                     <input
                       type="checkbox"
                       checked={editScopes.has(c.id)}
@@ -498,32 +591,17 @@ export default function AdminDeveloperManagePanel({
                   </label>
                 ))}
             </div>
-            <label className="text-xs text-zinc-500">RPM override (empty = default)</label>
+            <label className="text-xs text-zinc-500">
+              RPM override (empty = default)
+            </label>
             <input
               value={editRpm}
               onChange={(e) => setEditRpm(e.target.value)}
               className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 mb-4"
             />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEditKey(null)}
-                className="px-3 py-2 rounded-xl text-zinc-400 hover:bg-zinc-800 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={editScopes.size === 0 || rowBusy != null}
-                onClick={() => void saveEdit()}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </AdminModal>
     </div>
   );
 }

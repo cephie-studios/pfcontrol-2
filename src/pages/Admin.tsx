@@ -1,34 +1,63 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { MdDashboard, MdSettings } from "react-icons/md";
+import AdminRefreshButton from "../components/admin/AdminRefreshButton";
+import AdminLayout from "../components/admin/AdminLayout";
+import AdminPageHeader from "../components/admin/AdminPageHeader";
+import AdminStatStrip from "../components/admin/AdminStatStrip";
+import AdminSectionTitle from "../components/admin/AdminSectionTitle";
+import { AdminMultiSeriesAreaChart } from "../components/admin/AdminChart";
 import {
-  Users,
-  Activity,
-  Database,
-  TrendingUp,
-  LayoutDashboard,
-  Settings,
-  RefreshCw,
-  Menu,
-} from "lucide-react";
-import Navbar from "../components/Navbar";
-import AdminSidebar from "../components/admin/AdminSidebar";
+  adminDownsizeButtonSize,
+  adminSectionClass,
+} from "../components/admin/adminConstants";
 import Loader from "../components/common/Loader";
-import { Line } from "../lib/chartJs";
 import { useAuth } from "../hooks/auth/useAuth";
 import {
   fetchAdminStatistics,
   fetchAppVersion,
   fetchApiLogStats24h,
   type AdminStats,
-  type DailyStats,
   type AppVersion,
 } from "../utils/fetch/admin";
-import Toast from "../components/common/Toast";
 import Button from "../components/common/Button";
 import ErrorScreen from "../components/common/ErrorScreen";
 
+const ACTIVITY_SERIES = [
+  { key: "flights", label: "Flights", color: "#a78bfa" },
+  {
+    key: "sessions",
+    label: "Sessions",
+    color: "#34d399",
+    strokeDasharray: "6 4",
+  },
+  { key: "logins", label: "Logins", color: "#60a5fa", strokeDasharray: "2 3" },
+  {
+    key: "users",
+    label: "New users",
+    color: "#fbbf24",
+    strokeDasharray: "8 4",
+  },
+] as const;
+
+const API_SERIES = [
+  { key: "successful", label: "2xx", color: "#34d399" },
+  {
+    key: "clientErrors",
+    label: "4xx",
+    color: "#fbbf24",
+    strokeDasharray: "6 4",
+  },
+  {
+    key: "serverErrors",
+    label: "5xx",
+    color: "#f87171",
+    strokeDasharray: "2 3",
+  },
+  { key: "other", label: "Other", color: "#94a3b8", strokeDasharray: "8 4" },
+] as const;
+
 export default function Admin() {
   const { user } = useAuth();
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(30);
@@ -56,9 +85,7 @@ export default function Admin() {
     try {
       setLoading(true);
       setError(null);
-
       const data = await fetchAdminStatistics(timeRange);
-
       const periodTotals = data.daily.reduce(
         (acc, day) => ({
           total_logins: acc.total_logins + day.logins_count,
@@ -66,26 +93,15 @@ export default function Admin() {
           total_flights: acc.total_flights + day.new_flights_count,
           total_users: acc.total_users + day.new_users_count,
         }),
-        {
-          total_logins: 0,
-          total_sessions: 0,
-          total_flights: 0,
-          total_users: 0,
-        },
+        { total_logins: 0, total_sessions: 0, total_flights: 0, total_users: 0 }
       );
-
-      setStats({
-        ...data,
-        periodTotals,
-        totals: data.totals,
-      });
-    } catch (error) {
-      console.error("Error fetching admin statistics:", error);
-      setError(error instanceof Error ? error.message : "Failed to fetch statistics");
-      setToast({
-        message: "Failed to fetch statistics",
-        type: "error",
-      });
+      setStats({ ...data, periodTotals, totals: data.totals });
+    } catch (err) {
+      console.error("Error fetching admin statistics:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch statistics"
+      );
+      setToast({ message: "Failed to fetch statistics", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -93,514 +109,227 @@ export default function Admin() {
 
   const fetchVersion = useCallback(async () => {
     if (!user?.isAdmin) return;
-
     try {
       setVersionLoading(true);
-      const version = await fetchAppVersion();
-      setAppVersion(version);
-    } catch (error) {
-      console.error("Error fetching app version:", error);
-      setToast({
-        message: "Failed to fetch app version",
-        type: "error",
-      });
+      setAppVersion(await fetchAppVersion());
+    } catch (err) {
+      console.error("Error fetching app version:", err);
+      setToast({ message: "Failed to fetch app version", type: "error" });
     } finally {
       setVersionLoading(false);
     }
   }, [user?.isAdmin]);
 
-  useEffect(() => {
-    fetchVersion();
-  }, [fetchVersion]);
-
   const fetchApiLogStats24hData = useCallback(async () => {
     try {
-      const data = await fetchApiLogStats24h();
-      setApiLogStats24h(data);
-    } catch (error) {
-      console.error("Error fetching API log stats for last 24 hours:", error);
-      setToast({
-        message: "Failed to fetch API log stats for last 24 hours",
-        type: "error",
-      });
+      setApiLogStats24h(await fetchApiLogStats24h());
+    } catch (err) {
+      console.error("Error fetching API log stats:", err);
+      setToast({ message: "Failed to fetch API log stats", type: "error" });
     }
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    void fetchVersion();
+  }, [fetchVersion]);
+
+  useEffect(() => {
+    void fetchStats();
   }, [fetchStats]);
 
   useEffect(() => {
-    fetchApiLogStats24hData();
+    void fetchApiLogStats24hData();
   }, [fetchApiLogStats24hData]);
 
-  const formatLoginsData = (daily: DailyStats[]) => {
-    const labels = daily.map((item) =>
-      new Date(item.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-    );
+  const activityChartData = useMemo(
+    () =>
+      (stats?.daily ?? []).map((item) => ({
+        label: item.date,
+        flights: item.new_flights_count,
+        sessions: item.new_sessions_count,
+        logins: item.logins_count,
+        users: item.new_users_count,
+      })),
+    [stats?.daily]
+  );
 
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Logins",
-          data: daily.map((item) => item.logins_count),
-          borderColor: "#3B82F6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#3B82F6",
-          pointBorderColor: "#1E40AF",
-          pointHoverBackgroundColor: "#60A5FA",
-          pointHoverBorderColor: "#1E40AF",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    };
-  };
+  const apiChartData = useMemo(
+    () =>
+      apiLogStats24h.map((item) => ({
+        label: item.hour,
+        successful: item.successful,
+        clientErrors: item.clientErrors,
+        serverErrors: item.serverErrors,
+        other: item.other,
+      })),
+    [apiLogStats24h]
+  );
 
-  const formatSessionsData = (daily: DailyStats[]) => {
-    const labels = daily.map((item) =>
-      new Date(item.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Sessions",
-          data: daily.map((item) => item.new_sessions_count),
-          borderColor: "#10B981",
-          backgroundColor: "rgba(16, 185, 129, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#10B981",
-          pointBorderColor: "#047857",
-          pointHoverBackgroundColor: "#34D399",
-          pointHoverBorderColor: "#047857",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    };
-  };
-
-  const formatFlightsData = (daily: DailyStats[]) => {
-    const labels = daily.map((item) =>
-      new Date(item.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Flights",
-          data: daily.map((item) => item.new_flights_count),
-          borderColor: "#8B5CF6",
-          backgroundColor: "rgba(139, 92, 246, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#8B5CF6",
-          pointBorderColor: "#7C3AED",
-          pointHoverBackgroundColor: "#A78BFA",
-          pointHoverBorderColor: "#7C3AED",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    };
-  };
-
-  const formatApiLogStats24hData = (
-    stats: Array<{
-      hour: string;
-      successful: number;
-      clientErrors: number;
-      serverErrors: number;
-      other: number;
-    }>,
-  ) => {
-    const labels = stats.map((item) =>
-      new Date(item.hour).toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    );
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Successful (2xx)",
-          data: stats.map((item) => item.successful),
-          borderColor: "#10B981",
-          backgroundColor: "rgba(16, 185, 129, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#10B981",
-          pointBorderColor: "#047857",
-          pointHoverBackgroundColor: "#34D399",
-          pointHoverBorderColor: "#047857",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: "Client Errors (4xx)",
-          data: stats.map((item) => item.clientErrors),
-          borderColor: "#F59E0B",
-          backgroundColor: "rgba(245, 158, 11, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#F59E0B",
-          pointBorderColor: "#D97706",
-          pointHoverBackgroundColor: "#FCD34D",
-          pointHoverBorderColor: "#D97706",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: "Server Errors (5xx)",
-          data: stats.map((item) => item.serverErrors),
-          borderColor: "#EF4444",
-          backgroundColor: "rgba(239, 68, 68, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#EF4444",
-          pointBorderColor: "#DC2626",
-          pointHoverBackgroundColor: "#F87171",
-          pointHoverBorderColor: "#DC2626",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-        {
-          label: "Other (1xx/3xx)",
-          data: stats.map((item) => item.other),
-          borderColor: "#6B7280",
-          backgroundColor: "rgba(107, 114, 128, 0.1)",
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: "#6B7280",
-          pointBorderColor: "#4B5563",
-          pointHoverBackgroundColor: "#9CA3AF",
-          pointHoverBorderColor: "#4B5563",
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    };
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: "rgba(17, 24, 39, 0.95)",
-        titleColor: "#F9FAFB",
-        bodyColor: "#D1D5DB",
-        borderColor: "#374151",
-        borderWidth: 1,
-        cornerRadius: 8,
-        displayColors: true,
-        mode: "index" as const,
-        intersect: false,
-      },
-    },
-    scales: {
-      x: {
-        grid: {
-          color: "rgba(55, 65, 81, 0.3)",
-          drawBorder: false,
-        },
-        ticks: {
-          color: "#9CA3AF",
-          font: {
-            size: 11,
-          },
-        },
-      },
-      y: {
-        grid: {
-          color: "rgba(55, 65, 81, 0.3)",
-          drawBorder: false,
-        },
-        ticks: {
-          color: "#9CA3AF",
-          font: {
-            size: 11,
-          },
-        },
-        beginAtZero: true,
-      },
-    },
-    interaction: {
-      mode: "index" as const,
-      intersect: false,
-    },
-    elements: {
-      line: {
-        borderWidth: 3,
-      },
-    },
-  };
+  const btnSize = adminDownsizeButtonSize("sm");
+  const period = stats?.periodTotals;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar mobileSidebarOpen={mobileSidebarOpen} />
+    <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
+      <AdminPageHeader
+        title="Admin Overview"
+        icon={MdDashboard}
+        accent="blue"
+        actions={
+          <div className="flex flex-wrap gap-1.5">
+            {[7, 30, 90, 180, 365].map((days) => (
+              <Button
+                key={days}
+                onClick={() => setTimeRange(days)}
+                variant={timeRange === days ? "primary" : "outline"}
+                size={btnSize}
+              >
+                {days}d
+              </Button>
+            ))}
+          </div>
+        }
+      />
 
-      <div className="flex pt-16">
-        {/* Mobile Overlay */}
-        {mobileSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-            onClick={() => setMobileSidebarOpen(false)}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader />
+        </div>
+      ) : error ? (
+        <ErrorScreen
+          title="Error loading statistics"
+          message={error}
+          onRetry={fetchStats}
+        />
+      ) : stats ? (
+        <>
+          <AdminStatStrip
+            items={[
+              { label: "Total users", value: stats.totals?.total_users ?? 0 },
+              {
+                label: "Total sessions",
+                value: stats.totals?.total_sessions ?? 0,
+              },
+              {
+                label: "Total flights",
+                value: stats.totals?.total_flights ?? 0,
+              },
+              { label: "Total logins", value: stats.totals?.total_logins ?? 0 },
+            ]}
           />
-        )}
 
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <AdminSidebar />
-        </div>
-
-        {/* Mobile Sidebar */}
-        <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
-            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <AdminSidebar onToggle={() => setMobileSidebarOpen(false)} />
-        </div>
-
-        <div className="flex-1 p-4 sm:p-6 lg:p-8">
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-blue-600 hover:bg-blue-700 rounded-full shadow-lg transition-colors"
-          >
-            <Menu className="h-6 w-6 text-white" />
-          </button>
-
-          {/* Header */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex items-center mb-4">
-              <LayoutDashboard className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mr-4" />
+          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+            <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
               <div>
-                <h1
-                  className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 font-extrabold mb-2"
-                  style={{ lineHeight: 1.2 }}
-                >
-                  Admin Overview
-                </h1>
+                <AdminSectionTitle className="!mb-1">
+                  Platform activity
+                </AdminSectionTitle>
+                <p className="text-xs text-zinc-500">
+                  Last {timeRange} days · hover for daily values
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2 ml-auto">
-                {[7, 30, 90, 365].map((days) => (
-                  <Button
-                    key={days}
-                    onClick={() => setTimeRange(days)}
-                    variant={timeRange === days ? "primary" : "outline"}
-                    size="sm"
-                  >
-                    {days} days
-                  </Button>
-                ))}
-              </div>
+              {period ? (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                  <span>
+                    <span className="text-purple-400">
+                      {period.total_flights.toLocaleString()}
+                    </span>{" "}
+                    flights
+                  </span>
+                  <span>
+                    <span className="text-emerald-400">
+                      {period.total_sessions.toLocaleString()}
+                    </span>{" "}
+                    sessions
+                  </span>
+                  <span>
+                    <span className="text-blue-400">
+                      {period.total_logins.toLocaleString()}
+                    </span>{" "}
+                    logins
+                  </span>
+                  <span>
+                    <span className="text-amber-400">
+                      {period.total_users.toLocaleString()}
+                    </span>{" "}
+                    new users
+                  </span>
+                </div>
+              ) : null}
             </div>
+
+            <AdminMultiSeriesAreaChart
+              data={activityChartData}
+              series={[...ACTIVITY_SERIES]}
+              height={176}
+              hideAxes
+              showLegend
+            />
           </div>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader />
+          {hasPermission("audit") ? (
+            <div className={adminSectionClass()}>
+              <div className="mb-4">
+                <AdminSectionTitle className="!mb-1">
+                  API traffic
+                </AdminSectionTitle>
+                <p className="text-xs text-zinc-500">
+                  Last 24 hours · hover for hourly values
+                </p>
+              </div>
+              <AdminMultiSeriesAreaChart
+                data={apiChartData}
+                series={[...API_SERIES]}
+                height={160}
+                hideAxes
+                showLegend
+              />
             </div>
-          ) : error ? (
-            <ErrorScreen title="Error loading statistics" message={error} onRetry={fetchStats} />
-          ) : stats ? (
-            <>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="p-2 sm:p-3 bg-blue-500/20 rounded-xl">
-                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-                    </div>
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                    {stats.totals?.total_users?.toLocaleString() || "0"}
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm">Total Users</p>
-                </div>
+          ) : null}
 
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="p-2 sm:p-3 bg-green-500/20 rounded-xl">
-                      <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
-                    </div>
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                    {stats.totals?.total_sessions?.toLocaleString() || "0"}
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm">Total Sessions</p>
-                </div>
-
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="p-2 sm:p-3 bg-purple-500/20 rounded-xl">
-                      <Database className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
-                    </div>
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                    {stats.totals?.total_flights?.toLocaleString() || "0"}
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm">Total Flights</p>
-                </div>
-
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="p-2 sm:p-3 bg-orange-500/20 rounded-xl">
-                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-                    </div>
-                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                    {stats.totals?.total_logins?.toLocaleString() || "0"}
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm">Total Logins</p>
-                </div>
+          {user?.isAdmin && (
+            <div className={adminSectionClass()}>
+              <div className="flex flex-wrap items-center gap-3">
+                <MdSettings size={18} className="text-blue-400 shrink-0" />
+                <AdminSectionTitle className="!mb-0 flex-1">
+                  Application version
+                </AdminSectionTitle>
+                <AdminRefreshButton
+                  onClick={fetchVersion}
+                  loading={versionLoading}
+                  iconOnly
+                  label="Refresh version"
+                />
               </div>
-
-              {/* Charts */}
-              <div className="space-y-6 sm:space-y-8">
-                <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
-                    Flights
-                  </h3>
-                  <div className="h-64 sm:h-80">
-                    <Line data={formatFlightsData(stats.daily)} options={chartOptions} />
+              {versionLoading ? (
+                <Loader />
+              ) : appVersion ? (
+                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mt-3">
+                  <div>
+                    <dt className="text-zinc-500 text-xs">Version</dt>
+                    <dd className="text-white font-medium">
+                      {appVersion.version}
+                    </dd>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                  <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
-                      Sessions
-                    </h3>
-                    <div className="h-64 sm:h-80">
-                      <Line data={formatSessionsData(stats.daily)} options={chartOptions} />
-                    </div>
+                  <div>
+                    <dt className="text-zinc-500 text-xs">Updated</dt>
+                    <dd className="text-zinc-300">
+                      {new Date(appVersion.updated_at).toLocaleString()}
+                    </dd>
                   </div>
-
-                  <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
-                      Logins
-                    </h3>
-                    <div className="h-64 sm:h-80">
-                      <Line data={formatLoginsData(stats.daily)} options={chartOptions} />
-                    </div>
+                  <div>
+                    <dt className="text-zinc-500 text-xs">By</dt>
+                    <dd className="text-zinc-300">{appVersion.updated_by}</dd>
                   </div>
-                </div>
-
-                {hasPermission("audit") && (
-                  <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">
-                      API Calls
-                    </h3>
-                    <div className="h-64 sm:h-80">
-                      <Line
-                        data={formatApiLogStats24hData(apiLogStats24h)}
-                        options={chartOptions}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Developer Controls */}
-              {user?.isAdmin && (
-                <div className="mt-6 sm:mt-8">
-                  <div className="bg-zinc-900 border-2 border-zinc-700/50 rounded-2xl p-4 sm:p-6">
-                    <div className="flex items-center mb-3 sm:mb-4">
-                      <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
-                        <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                      </div>
-                      <h2 className="text-lg sm:text-xl font-semibold text-white">
-                        Application Settings
-                      </h2>
-                    </div>
-
-                    {/* Version Management */}
-                    <div className="bg-zinc-900 rounded-lg p-3 sm:p-4 border-2 border-zinc-700/50">
-                      <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
-                        <div className="flex-1">
-                          <h3 className="text-base sm:text-lg font-medium text-white mb-1">
-                            App Version
-                          </h3>
-                          <p className="text-xs sm:text-sm text-zinc-400">
-                            Version is managed automatically by CI/CD
-                          </p>
-                        </div>
-                        <Button
-                          onClick={fetchVersion}
-                          variant="ghost"
-                          size="sm"
-                          disabled={versionLoading}
-                          className="p-2 flex-shrink-0"
-                        >
-                          <RefreshCw
-                            className={`w-4 h-4 ${versionLoading ? "animate-spin" : ""}`}
-                          />
-                        </Button>
-                      </div>
-
-                      {versionLoading ? (
-                        <div className="flex items-center justify-center py-4">
-                          <Loader />
-                        </div>
-                      ) : appVersion ? (
-                        <div className="bg-zinc-800/50 rounded-lg p-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-zinc-400">Current Version:</span>
-                            <span className="text-white font-medium">{appVersion.version}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm mt-1">
-                            <span className="text-zinc-400">Last Updated:</span>
-                            <span className="text-zinc-500">
-                              {new Date(appVersion.updated_at).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm mt-1">
-                            <span className="text-zinc-400">Updated By:</span>
-                            <span className="text-zinc-500">{appVersion.updated_by}</span>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-12 text-zinc-400">No statistics available</div>
+                </dl>
+              ) : null}
+            </div>
           )}
+        </>
+      ) : (
+        <div className="text-center py-12 text-zinc-400">
+          No statistics available
         </div>
-      </div>
-
-      {/* Toast Notification */}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </div>
+      )}
+    </AdminLayout>
   );
 }

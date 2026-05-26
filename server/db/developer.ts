@@ -1,5 +1,6 @@
 import { mainDb } from "./connection.js";
 import { sql } from "kysely";
+import { recordTableDeletes } from "./databaseMetrics.js";
 
 function parseStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -78,7 +79,9 @@ export async function upsertDeveloperProfile(input: {
 }) {
   const status = input.status ?? "active";
   const insertRpm =
-    input.defaultRateLimitPerMinute !== undefined ? input.defaultRateLimitPerMinute : null;
+    input.defaultRateLimitPerMinute !== undefined
+      ? input.defaultRateLimitPerMinute
+      : null;
 
   const updatePatch = {
     approved_scopes: sql`CAST(${JSON.stringify(input.approvedScopes)} AS jsonb)`,
@@ -108,13 +111,19 @@ export async function upsertDeveloperProfile(input: {
 
 const ADMIN_NOTICE_DETAIL_MAX = 2000;
 
-export async function bumpDeveloperAdminNoticeSeq(userId: string, detail: string): Promise<void> {
+export async function bumpDeveloperAdminNoticeSeq(
+  userId: string,
+  detail: string
+): Promise<void> {
   const trimmed = detail.trim();
   const clipped =
     trimmed.length > ADMIN_NOTICE_DETAIL_MAX
       ? `${trimmed.slice(0, ADMIN_NOTICE_DETAIL_MAX - 1)}…`
       : trimmed;
-  const text = clipped.length > 0 ? clipped : "An administrator updated your developer settings.";
+  const text =
+    clipped.length > 0
+      ? clipped
+      : "An administrator updated your developer settings.";
   await sql`
     UPDATE developer_profiles
     SET
@@ -135,7 +144,7 @@ export async function dismissDeveloperAdminNotice(userId: string) {
 
 export async function updateDeveloperProfileApprovedScopes(
   userId: string,
-  approvedScopes: string[],
+  approvedScopes: string[]
 ) {
   return mainDb
     .updateTable("developer_profiles")
@@ -148,7 +157,10 @@ export async function updateDeveloperProfileApprovedScopes(
     .executeTakeFirst();
 }
 
-export async function setDeveloperProfileStatus(userId: string, status: "active" | "suspended") {
+export async function setDeveloperProfileStatus(
+  userId: string,
+  status: "active" | "suspended"
+) {
   return mainDb
     .updateTable("developer_profiles")
     .set({ status, updated_at: new Date() })
@@ -157,7 +169,10 @@ export async function setDeveloperProfileStatus(userId: string, status: "active"
     .executeTakeFirst();
 }
 
-export async function updateDeveloperNotificationEmail(userId: string, email: string | null) {
+export async function updateDeveloperNotificationEmail(
+  userId: string,
+  email: string | null
+) {
   return mainDb
     .updateTable("developer_profiles")
     .set({
@@ -175,7 +190,10 @@ export async function listDeveloperApplications(filters: {
   limit: number;
 }) {
   const offset = (filters.page - 1) * filters.limit;
-  let q = mainDb.selectFrom("developer_applications").selectAll().orderBy("created_at", "desc");
+  let q = mainDb
+    .selectFrom("developer_applications")
+    .selectAll()
+    .orderBy("created_at", "desc");
   if (filters.status) {
     q = q.where("status", "=", filters.status);
   }
@@ -370,7 +388,10 @@ export async function revokeDeveloperApiKey(keyId: string, userId: string) {
     .executeTakeFirst();
 }
 
-export async function deleteRevokedDeveloperApiKey(keyId: string, userId: string) {
+export async function deleteRevokedDeveloperApiKey(
+  keyId: string,
+  userId: string
+) {
   return mainDb
     .deleteFrom("developer_api_keys")
     .where("id", "=", keyId)
@@ -434,7 +455,7 @@ export type DeveloperKeyWithProfile = {
 };
 
 export async function findActiveDeveloperKeyBySecretHash(
-  secretHash: string,
+  secretHash: string
 ): Promise<DeveloperKeyWithProfile | null> {
   const key = await mainDb
     .selectFrom("developer_api_keys")
@@ -494,7 +515,10 @@ export async function insertDeveloperApiUsage(input: {
 }
 
 export async function listApprovedDevelopersSummary() {
-  const profiles = await mainDb.selectFrom("developer_profiles").selectAll().execute();
+  const profiles = await mainDb
+    .selectFrom("developer_profiles")
+    .selectAll()
+    .execute();
   const keys = await mainDb
     .selectFrom("developer_api_keys")
     .select(["user_id", "id", "revoked_at", "status", "secret_hash"])
@@ -505,7 +529,10 @@ export async function listApprovedDevelopersSummary() {
     .groupBy("user_id")
     .execute();
   const lastByUser = new Map(lastUsage.map((r) => [r.user_id, r.last_at]));
-  const keyCounts = new Map<string, { usable: number; total: number; pending: number }>();
+  const keyCounts = new Map<
+    string,
+    { usable: number; total: number; pending: number }
+  >();
   for (const k of keys) {
     const cur = keyCounts.get(k.user_id) ?? { usable: 0, total: 0, pending: 0 };
     cur.total += 1;
@@ -529,23 +556,43 @@ export async function listApprovedDevelopersSummary() {
   }));
 }
 
-export async function cleanupOldDeveloperUsage(daysToKeep: number): Promise<void> {
+export async function cleanupOldDeveloperUsage(
+  daysToKeep: number
+): Promise<void> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysToKeep);
   try {
-    await mainDb.deleteFrom("developer_api_usage").where("created_at", "<", cutoff).execute();
+    const result = await mainDb
+      .deleteFrom("developer_api_usage")
+      .where("created_at", "<", cutoff)
+      .executeTakeFirst();
+    await recordTableDeletes(
+      "developer_api_usage",
+      Number(result?.numDeletedRows ?? 0)
+    );
   } catch (e) {
     console.error("[cleanupOldDeveloperUsage]", e);
   }
 }
 
-export async function deleteDeveloperAllDataForUser(userId: string): Promise<boolean> {
+export async function deleteDeveloperAllDataForUser(
+  userId: string
+): Promise<boolean> {
   const profile = await getDeveloperProfile(userId);
   if (!profile) return false;
   await mainDb.transaction().execute(async (trx) => {
-    await trx.deleteFrom("developer_api_keys").where("user_id", "=", userId).execute();
-    await trx.deleteFrom("developer_applications").where("user_id", "=", userId).execute();
-    await trx.deleteFrom("developer_profiles").where("user_id", "=", userId).execute();
+    await trx
+      .deleteFrom("developer_api_keys")
+      .where("user_id", "=", userId)
+      .execute();
+    await trx
+      .deleteFrom("developer_applications")
+      .where("user_id", "=", userId)
+      .execute();
+    await trx
+      .deleteFrom("developer_profiles")
+      .where("user_id", "=", userId)
+      .execute();
   });
   return true;
 }

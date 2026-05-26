@@ -1,4 +1,5 @@
 import { mainDb } from "./connection.js";
+import { recordTableDeletes } from "./databaseMetrics.js";
 import { encrypt, decrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 
@@ -62,14 +63,22 @@ export async function logFlightAction(logData: FlightLogData) {
   }
 }
 
-export async function cleanupOldFlightLogs(daysToKeep = FLIGHT_LOG_RETENTION_DAYS) {
+export async function cleanupOldFlightLogs(
+  daysToKeep = FLIGHT_LOG_RETENTION_DAYS
+) {
   try {
     const result = await mainDb
       .deleteFrom("flight_logs")
-      .where("created_at", "<", new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000))
+      .where(
+        "created_at",
+        "<",
+        new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
+      )
       .executeTakeFirst();
 
-    return Number(result?.numDeletedRows ?? 0);
+    const deleted = Number(result?.numDeletedRows ?? 0);
+    await recordTableDeletes("flight_logs", deleted);
+    return deleted;
   } catch (error) {
     console.error("Error cleaning up flight logs:", error);
     throw error;
@@ -115,7 +124,11 @@ export interface FlightLogFilters {
   text?: string;
 }
 
-export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilters = {}) {
+export async function getFlightLogs(
+  page = 1,
+  limit = 50,
+  filters: FlightLogFilters = {}
+) {
   try {
     let query = mainDb
       .selectFrom("flight_logs")
@@ -134,7 +147,7 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
           eb("user_id", "ilike", searchPattern),
           eb(sql`old_data::text`, "ilike", searchPattern),
           eb(sql`new_data::text`, "ilike", searchPattern),
-        ]),
+        ])
       );
     }
 
@@ -165,11 +178,13 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
         eb.or([
           eb(sql`old_data::text`, "ilike", searchPattern),
           eb(sql`new_data::text`, "ilike", searchPattern),
-        ]),
+        ])
       );
     }
 
-    let countQuery = mainDb.selectFrom("flight_logs").select((eb) => eb.fn.count("id").as("count"));
+    let countQuery = mainDb
+      .selectFrom("flight_logs")
+      .select((eb) => eb.fn.count("id").as("count"));
 
     if (filters.general) {
       const searchPattern = `%${filters.general}%`;
@@ -181,7 +196,7 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
           eb("user_id", "ilike", searchPattern),
           eb(sql`old_data::text`, "ilike", searchPattern),
           eb(sql`new_data::text`, "ilike", searchPattern),
-        ]),
+        ])
       );
     }
     if (filters.user) {
@@ -211,7 +226,7 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
         eb.or([
           eb(sql`old_data::text`, "ilike", searchPattern),
           eb(sql`new_data::text`, "ilike", searchPattern),
-        ]),
+        ])
       );
     }
 
@@ -223,7 +238,9 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
         ...log,
         ip_address: log.ip_address
           ? decrypt(
-              typeof log.ip_address === "string" ? JSON.parse(log.ip_address) : log.ip_address,
+              typeof log.ip_address === "string"
+                ? JSON.parse(log.ip_address)
+                : log.ip_address
             )
           : null,
       })),
@@ -242,7 +259,7 @@ export async function getFlightLogs(page = 1, limit = 50, filters: FlightLogFilt
 
 export async function listDeveloperFlightLogsMetadata(
   ownerUserId: string,
-  opts: { sessionId?: string; page?: number; limit?: number },
+  opts: { sessionId?: string; page?: number; limit?: number }
 ) {
   const page = Math.max(1, opts.page ?? 1);
   const limit = Math.min(100, Math.max(1, opts.limit ?? 50));
@@ -311,7 +328,11 @@ export async function getFlightLogById(logId: string | number) {
     return {
       ...log,
       ip_address: log.ip_address
-        ? decrypt(typeof log.ip_address === "string" ? JSON.parse(log.ip_address) : log.ip_address)
+        ? decrypt(
+            typeof log.ip_address === "string"
+              ? JSON.parse(log.ip_address)
+              : log.ip_address
+          )
         : null,
     };
   } catch (error) {

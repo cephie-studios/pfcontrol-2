@@ -25,6 +25,11 @@ import { DeveloperApplicationsTable } from "./main/DeveloperApplicationsTable";
 import { DeveloperProfilesTable } from "./main/DeveloperProfilesTable";
 import { DeveloperApiKeysTable } from "./main/DeveloperApiKeysTable";
 import { DeveloperApiUsageTable } from "./main/DeveloperApiUsageTable";
+import {
+  DailyDatabaseTotalsTable,
+  DailyTableActivityTable,
+} from "./main/DailyTableActivityTable";
+import { WebsocketSnapshotsTable } from "./main/WebsocketSnapshotsTable";
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -54,4 +59,7 @@ export interface MainDatabase {
   developer_profiles: DeveloperProfilesTable;
   developer_api_keys: DeveloperApiKeysTable;
   developer_api_usage: DeveloperApiUsageTable;
+  daily_table_activity: DailyTableActivityTable;
+  daily_database_totals: DailyDatabaseTotalsTable;
+  websocket_snapshots: WebsocketSnapshotsTable;
 }
