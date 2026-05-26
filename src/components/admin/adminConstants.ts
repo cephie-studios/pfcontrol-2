@@ -41,6 +41,42 @@ export function adminDownsizeButtonSize(
 }
 
 export const ADMIN_PAGE_BG = "min-h-screen bg-zinc-950 text-white";
+export const ADMIN_SCALE_MAX = 1.5;
+export const ADMIN_SCALE_MIN_AT_2K = 1.125;
+
+const ADMIN_2K = { width: 2560, height: 1440 } as const;
+const ADMIN_4K = { width: 3840, height: 2160 } as const;
+
+const ADMIN_ASPECT_MIN = 1.6;
+const ADMIN_ASPECT_MAX = 1.9;
+
+export function shouldScaleAdminViewport(
+  viewportWidth: number,
+  viewportHeight: number
+): boolean {
+  const aspect = viewportWidth / viewportHeight;
+  if (aspect < ADMIN_ASPECT_MIN || aspect > ADMIN_ASPECT_MAX) return false;
+  const is4K =
+    viewportWidth >= ADMIN_4K.width && viewportHeight >= ADMIN_4K.height;
+  const is2K =
+    viewportWidth >= ADMIN_2K.width && viewportHeight >= ADMIN_2K.height;
+  return is4K || is2K;
+}
+
+export function getAdminViewportScale(
+  viewportWidth: number,
+  viewportHeight: number
+): number {
+  if (!shouldScaleAdminViewport(viewportWidth, viewportHeight)) return 1;
+  const span = ADMIN_4K.height - ADMIN_2K.height;
+  const progress = Math.min(
+    1,
+    Math.max(0, (viewportHeight - ADMIN_2K.height) / span)
+  );
+  return (
+    ADMIN_SCALE_MIN_AT_2K + progress * (ADMIN_SCALE_MAX - ADMIN_SCALE_MIN_AT_2K)
+  );
+}
 
 export const ADMIN_HEADING =
   "text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-blue-600 font-extrabold";
