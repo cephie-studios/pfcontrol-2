@@ -44,6 +44,8 @@ type AdminMultiSeriesChartProps = {
   emptyLabel?: string;
   hideAxes?: boolean;
   showLegend?: boolean;
+  /** Gradient fill under each series (default true). */
+  filled?: boolean;
 };
 
 function shortDateLabel(raw: string | Date | number): string {
@@ -150,7 +152,7 @@ export function AdminAreaChart({
   if (points.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 text-sm text-zinc-500"
+        className="flex items-center justify-center rounded-xl bg-zinc-900/30 text-sm text-zinc-500"
         style={{ height }}
       >
         {emptyLabel}
@@ -237,11 +239,22 @@ export function AdminMultiSeriesAreaChart({
   emptyLabel = "No data for this period",
   hideAxes = true,
   showLegend = false,
+  filled = true,
 }: AdminMultiSeriesChartProps) {
+  const gid = useId().replace(/:/g, "");
+  const gradientPrefix = `adminMultiFill-${gid}`;
+  const Chart = filled ? AreaChart : LineChart;
+  const margin = {
+    top: 8,
+    right: hideAxes ? 4 : 8,
+    left: hideAxes ? 4 : 0,
+    bottom: 0,
+  };
+
   if (data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 text-sm text-zinc-500"
+        className="flex items-center justify-center rounded-xl bg-zinc-900/30 text-sm text-zinc-500"
         style={{ height }}
       >
         {emptyLabel}
@@ -256,15 +269,25 @@ export function AdminMultiSeriesAreaChart({
         style={{ height }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={data}
-            margin={{
-              top: 8,
-              right: hideAxes ? 4 : 8,
-              left: hideAxes ? 4 : 0,
-              bottom: 0,
-            }}
-          >
+          <Chart data={data} margin={margin}>
+            {filled ? (
+              <defs>
+                {series.map((s) => (
+                  <linearGradient
+                    key={s.key}
+                    id={`${gradientPrefix}-${s.key}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor={s.color} stopOpacity={0.45} />
+                    <stop offset="55%" stopColor={s.color} stopOpacity={0.12} />
+                    <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+            ) : null}
             <XAxis
               dataKey={xKey}
               hide={hideAxes}
@@ -302,20 +325,44 @@ export function AdminMultiSeriesAreaChart({
                 );
               }}
             />
-            {series.map((s) => (
-              <Line
-                key={s.key}
-                type="monotone"
-                dataKey={s.key}
-                name={s.label}
-                stroke={s.color}
-                strokeWidth={2}
-                strokeDasharray={s.strokeDasharray}
-                dot={false}
-                activeDot={{ r: 3, strokeWidth: 2, stroke: "#18181b" }}
-              />
-            ))}
-          </LineChart>
+            {series.map((s) =>
+              filled ? (
+                <Area
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  name={s.label}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  strokeDasharray={s.strokeDasharray}
+                  fill={`url(#${gradientPrefix}-${s.key})`}
+                  dot={false}
+                  activeDot={{
+                    r: 3,
+                    fill: s.color,
+                    stroke: "#18181b",
+                    strokeWidth: 2,
+                  }}
+                />
+              ) : (
+                <Line
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  name={s.label}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  strokeDasharray={s.strokeDasharray}
+                  dot={false}
+                  activeDot={{
+                    r: 3,
+                    strokeWidth: 2,
+                    stroke: "#18181b",
+                  }}
+                />
+              )
+            )}
+          </Chart>
         </ResponsiveContainer>
       </div>
       {showLegend ? <ChartLegend series={series} /> : null}

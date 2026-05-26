@@ -3,13 +3,18 @@ import { MdDashboard, MdSettings } from "react-icons/md";
 import AdminRefreshButton from "../components/admin/AdminRefreshButton";
 import AdminLayout from "../components/admin/AdminLayout";
 import AdminPageHeader from "../components/admin/AdminPageHeader";
-import AdminStatStrip from "../components/admin/AdminStatStrip";
+import AdminStatCards from "../components/admin/AdminStatCards";
 import AdminSectionTitle from "../components/admin/AdminSectionTitle";
-import { AdminMultiSeriesAreaChart } from "../components/admin/AdminChart";
+import {
+  AdminAreaChart,
+  AdminMultiSeriesAreaChart,
+} from "../components/admin/AdminChart";
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
   ADMIN_HEADER_ACTIONS_MOBILE,
+  ADMIN_SEGMENT_ACTIVE,
+  ADMIN_SEGMENT_INACTIVE,
 } from "../components/admin/adminConstants";
 import Loader from "../components/common/Loader";
 import { useAuth } from "../hooks/auth/useAuth";
@@ -23,14 +28,36 @@ import {
 import Button from "../components/common/Button";
 import ErrorScreen from "../components/common/ErrorScreen";
 
-const ACTIVITY_SERIES = [
-  { key: "flights", label: "Flights", color: "#a78bfa" },
+type ActivityChartView = "flights" | "sessions" | "accounts";
+
+const ACTIVITY_CHART_VIEWS: {
+  id: ActivityChartView;
+  label: string;
+  color: string;
+  periodKey: "total_flights" | "total_sessions" | null;
+  periodLabel?: string;
+}[] = [
   {
-    key: "sessions",
+    id: "flights",
+    label: "Flights",
+    color: "#a78bfa",
+    periodKey: "total_flights",
+  },
+  {
+    id: "sessions",
     label: "Sessions",
     color: "#34d399",
-    strokeDasharray: "6 4",
+    periodKey: "total_sessions",
   },
+  {
+    id: "accounts",
+    label: "Accounts",
+    color: "#60a5fa",
+    periodKey: null,
+  },
+];
+
+const ACCOUNTS_SERIES = [
   { key: "logins", label: "Logins", color: "#60a5fa", strokeDasharray: "2 3" },
   {
     key: "users",
@@ -78,6 +105,8 @@ export default function Admin() {
       other: number;
     }>
   >([]);
+  const [activityChartView, setActivityChartView] =
+    useState<ActivityChartView>("flights");
 
   const hasPermission = (permission: string) =>
     Boolean(user?.isAdmin || user?.rolePermissions?.[permission]);
@@ -154,6 +183,18 @@ export default function Admin() {
     [stats?.daily]
   );
 
+  const activeActivityView = ACTIVITY_CHART_VIEWS.find(
+    (v) => v.id === activityChartView
+  )!;
+
+  const singleSeriesChartData = useMemo(() => {
+    if (activityChartView === "accounts") return [];
+    return activityChartData.map((row) => ({
+      label: row.label,
+      value: Number(row[activityChartView]) || 0,
+    }));
+  }, [activityChartData, activityChartView]);
+
   const apiChartData = useMemo(
     () =>
       apiLogStats24h.map((item) => ({
@@ -204,7 +245,7 @@ export default function Admin() {
         />
       ) : stats ? (
         <>
-          <AdminStatStrip
+          <AdminStatCards
             items={[
               { label: "Total users", value: stats.totals?.total_users ?? 0 },
               {
@@ -220,52 +261,88 @@ export default function Admin() {
           />
 
           <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
-            <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div className="min-w-0 flex-1">
                 <AdminSectionTitle className="!mb-1">
                   Platform activity
                 </AdminSectionTitle>
-                <p className="text-xs text-zinc-500">
-                  Last {timeRange} days · hover for daily values
+                <p className="text-xs text-zinc-500 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>Last {timeRange} days · hover for daily values</span>
+                  {period ? (
+                    <>
+                      <span
+                        className="hidden md:inline text-zinc-600"
+                        aria-hidden
+                      >
+                        ·
+                      </span>
+                      <span className="hidden md:inline">
+                        {activityChartView === "accounts" ? (
+                          <>
+                            <span style={{ color: ACCOUNTS_SERIES[0].color }}>
+                              {period.total_logins.toLocaleString()}
+                            </span>{" "}
+                            logins ·{" "}
+                            <span style={{ color: ACCOUNTS_SERIES[1].color }}>
+                              {period.total_users.toLocaleString()}
+                            </span>{" "}
+                            new users in period
+                          </>
+                        ) : activeActivityView.periodKey ? (
+                          <>
+                            <span style={{ color: activeActivityView.color }}>
+                              {period[
+                                activeActivityView.periodKey
+                              ].toLocaleString()}
+                            </span>{" "}
+                            {activeActivityView.label.toLowerCase()} in period
+                          </>
+                        ) : null}
+                      </span>
+                    </>
+                  ) : null}
                 </p>
               </div>
-              {period ? (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                  <span>
-                    <span className="text-purple-400">
-                      {period.total_flights.toLocaleString()}
-                    </span>{" "}
-                    flights
-                  </span>
-                  <span>
-                    <span className="text-emerald-400">
-                      {period.total_sessions.toLocaleString()}
-                    </span>{" "}
-                    sessions
-                  </span>
-                  <span>
-                    <span className="text-blue-400">
-                      {period.total_logins.toLocaleString()}
-                    </span>{" "}
-                    logins
-                  </span>
-                  <span>
-                    <span className="text-amber-400">
-                      {period.total_users.toLocaleString()}
-                    </span>{" "}
-                    new users
-                  </span>
-                </div>
-              ) : null}
+              <div
+                className="inline-flex h-9 shrink-0 rounded-full border-2 border-blue-600 overflow-hidden"
+                role="group"
+                aria-label="Platform activity chart"
+              >
+                {ACTIVITY_CHART_VIEWS.map((view) => (
+                  <button
+                    key={view.id}
+                    type="button"
+                    aria-pressed={activityChartView === view.id}
+                    onClick={() => setActivityChartView(view.id)}
+                    className={`px-3 sm:px-4 h-full text-xs sm:text-sm font-medium transition-colors ${
+                      activityChartView === view.id
+                        ? ADMIN_SEGMENT_ACTIVE
+                        : ADMIN_SEGMENT_INACTIVE
+                    }`}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <AdminMultiSeriesAreaChart
-              data={activityChartData}
-              series={[...ACTIVITY_SERIES]}
-              height={176}
-              hideAxes
-              showLegend
-            />
+            {activityChartView === "accounts" ? (
+              <AdminMultiSeriesAreaChart
+                data={activityChartData}
+                series={[...ACCOUNTS_SERIES]}
+                height={200}
+                hideAxes
+                showLegend
+              />
+            ) : (
+              <AdminAreaChart
+                data={singleSeriesChartData}
+                color={activeActivityView.color}
+                valueLabel={activeActivityView.label}
+                height={200}
+                hideAxes
+              />
+            )}
           </div>
 
           {hasPermission("audit") ? (
@@ -284,6 +361,7 @@ export default function Admin() {
                 height={160}
                 hideAxes
                 showLegend
+                filled={false}
               />
             </div>
           ) : null}
