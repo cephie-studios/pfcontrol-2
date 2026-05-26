@@ -21,6 +21,10 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   statusBadgeClass,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import Button from "../../components/common/Button";
@@ -337,35 +341,50 @@ export default function AdminDevelopers() {
             ]}
           />
 
-          <AdminToolbar>
-            <Dropdown
-              options={sectionOptions}
-              value={section}
-              onChange={(v) => setSection(v as Section)}
-              size="sm"
-            />
+          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
             {section === "applications" ? (
               <>
-                <Dropdown
-                  options={appFilterOptions}
-                  value={appFilter}
-                  onChange={(v) => setAppFilter(v as AppFilter)}
-                  size="sm"
-                />
                 <AdminSearchInput
                   value={appSearch}
                   onChange={setAppSearch}
                   placeholder="Search applications…"
                   grow
+                  className={`max-md:order-1 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
                 />
+                <div className={`${ADMIN_TOOLBAR_MOBILE_PAIR} max-md:order-2`}>
+                  <Dropdown
+                    options={sectionOptions}
+                    value={section}
+                    onChange={(v) => setSection(v as Section)}
+                    size="sm"
+                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+                  />
+                  <Dropdown
+                    options={appFilterOptions}
+                    value={appFilter}
+                    onChange={(v) => setAppFilter(v as AppFilter)}
+                    size="sm"
+                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+                  />
+                </div>
               </>
             ) : (
-              <AdminSearchInput
-                value={devSearch}
-                onChange={setDevSearch}
-                placeholder="Search developers…"
-                grow
-              />
+              <>
+                <AdminSearchInput
+                  value={devSearch}
+                  onChange={setDevSearch}
+                  placeholder="Search developers…"
+                  grow
+                  className={ADMIN_TOOLBAR_MOBILE_SEARCH}
+                />
+                <Dropdown
+                  options={sectionOptions}
+                  value={section}
+                  onChange={(v) => setSection(v as Section)}
+                  size="sm"
+                  className="max-md:w-full"
+                />
+              </>
             )}
           </AdminToolbar>
 

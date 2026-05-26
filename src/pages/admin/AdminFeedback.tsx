@@ -9,6 +9,10 @@ import AdminSearchInput from "../../components/admin/AdminSearchInput";
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import Button from "../../components/common/Button";
@@ -141,22 +145,37 @@ export default function AdminFeedback() {
         title="Feedback Management"
         icon={MdStar}
         accent="yellow"
-        actions={<AdminRefreshButton onClick={fetchData} loading={loading} />}
+        actions={
+          <AdminRefreshButton
+            onClick={fetchData}
+            loading={loading}
+            className="max-md:hidden"
+          />
+        }
       />
 
-      <AdminToolbar>
+      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
         <AdminSearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search by username or comment…"
           loading={loading}
+          className={ADMIN_TOOLBAR_MOBILE_SEARCH}
         />
-        <Dropdown
-          options={filterOptions}
-          value={filterRating}
-          onChange={setFilterRating}
-          size="sm"
-        />
+        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
+          <Dropdown
+            options={filterOptions}
+            value={filterRating}
+            onChange={setFilterRating}
+            size="sm"
+            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+          />
+          <AdminRefreshButton
+            onClick={fetchData}
+            loading={loading}
+            className={`md:hidden shrink-0 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+          />
+        </div>
       </AdminToolbar>
 
       {loading ? (

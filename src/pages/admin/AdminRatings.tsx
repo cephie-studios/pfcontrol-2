@@ -8,6 +8,7 @@ import AdminTable from "../../components/admin/AdminTable";
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
+  ADMIN_HEADER_ACTIONS_MOBILE,
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
@@ -89,8 +90,9 @@ export default function AdminRatings() {
         title="Controller Ratings"
         icon={MdThumbUp}
         accent="blue"
+        actionsClassName={ADMIN_HEADER_ACTIONS_MOBILE}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 max-md:w-full">
             {[7, 30, 90].map((days) => (
               <Button
                 key={days}

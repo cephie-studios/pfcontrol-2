@@ -33,6 +33,10 @@ import {
   adminSectionClass,
   adminTableShellClass,
   ADMIN_TOOLBAR_HEIGHT,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import ErrorScreen from "../../components/common/ErrorScreen";
@@ -443,51 +447,60 @@ export default function AdminAltDetection() {
             />
           )}
 
-          <AdminToolbar>
+          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
             <AdminSearchInput
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search username…"
+              className={ADMIN_TOOLBAR_MOBILE_SEARCH}
             />
-            <Dropdown
-              size="sm"
-              value={minScoreFilter}
-              onChange={(v) => setMinScoreFilter(v as typeof minScoreFilter)}
-              options={scoreFilterOptions}
-              className="w-44"
-            />
-            <Dropdown
-              size="sm"
-              value={sortBy}
-              onChange={(v) => setSortBy(v as typeof sortBy)}
-              options={sortOptions}
-              className="w-40"
-            />
-            <Button
-              variant={showBannedOnly ? "danger" : "outline"}
-              size="sm"
-              onClick={() => setShowBannedOnly((v) => !v)}
-              className={toolbarBtnClass}
-            >
-              <MdShield size={18} className="mr-1.5" />
-              {showBannedOnly ? "With bans only" : "All clusters"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (allExpanded) {
-                  setExpandedIds(new Set());
-                } else {
-                  setExpandedIds(new Set(filtered.map((c) => c.id)));
-                }
-              }}
-              disabled={filtered.length === 0}
-              className={`ml-auto ${toolbarBtnClass}`}
-            >
-              <MdUnfoldMore size={18} className="mr-1.5" />
-              {allExpanded ? "Collapse all" : "Expand all"}
-            </Button>
+            <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
+              <Dropdown
+                size="sm"
+                value={minScoreFilter}
+                onChange={(v) => setMinScoreFilter(v as typeof minScoreFilter)}
+                options={scoreFilterOptions}
+                className={`w-44 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+              />
+              <Dropdown
+                size="sm"
+                value={sortBy}
+                onChange={(v) => setSortBy(v as typeof sortBy)}
+                options={sortOptions}
+                className={`w-40 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+              />
+            </div>
+            <div className={`${ADMIN_TOOLBAR_MOBILE_PAIR} max-md:[&>*]:flex-1`}>
+              <Button
+                variant={showBannedOnly ? "danger" : "outline"}
+                size="sm"
+                onClick={() => setShowBannedOnly((v) => !v)}
+                className={`max-md:flex-1 max-md:justify-center ${toolbarBtnClass}`}
+              >
+                <MdShield size={18} className="mr-1.5 shrink-0" />
+                <span className="truncate">
+                  {showBannedOnly ? "With bans only" : "All clusters"}
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (allExpanded) {
+                    setExpandedIds(new Set());
+                  } else {
+                    setExpandedIds(new Set(filtered.map((c) => c.id)));
+                  }
+                }}
+                disabled={filtered.length === 0}
+                className={`md:ml-auto max-md:flex-1 max-md:justify-center ${toolbarBtnClass}`}
+              >
+                <MdUnfoldMore size={18} className="mr-1.5 shrink-0" />
+                <span className="truncate">
+                  {allExpanded ? "Collapse all" : "Expand all"}
+                </span>
+              </Button>
+            </div>
           </AdminToolbar>
 
           <div

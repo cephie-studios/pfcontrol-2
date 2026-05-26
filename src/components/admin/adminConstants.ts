@@ -146,3 +146,23 @@ export function statusBadgeClass(status: string): string {
   }
   return "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50";
 }
+
+export const ADMIN_TOOLBAR_MOBILE_COL =
+  "max-md:flex-col max-md:items-stretch max-md:gap-2";
+
+export const ADMIN_TOOLBAR_MOBILE_SEARCH =
+  "max-md:!w-full max-md:!max-w-none max-md:flex-none max-md:basis-full";
+
+export const ADMIN_TOOLBAR_MOBILE_SPLIT_ROW =
+  "md:contents max-md:w-full max-md:flex max-md:items-center max-md:gap-2 max-md:[&>*]:flex-1 max-md:[&>*]:min-w-0";
+
+export const ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM = "max-md:flex-1 max-md:min-w-0";
+
+export const ADMIN_TOOLBAR_MOBILE_PAIR =
+  "md:contents max-md:flex max-md:w-full max-md:gap-2 max-md:items-center max-md:[&>*]:flex-1 max-md:[&>*]:min-w-0";
+
+export const ADMIN_TOOLBAR_MOBILE_STACK_ITEM =
+  "max-md:w-full max-md:max-w-none max-md:flex-none max-md:basis-full";
+
+export const ADMIN_HEADER_ACTIONS_MOBILE =
+  "max-md:basis-full max-md:w-full max-md:ml-0 max-md:justify-stretch max-md:[&_button]:flex-1 max-md:[&_button]:min-w-0";

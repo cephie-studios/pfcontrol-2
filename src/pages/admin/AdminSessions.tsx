@@ -32,6 +32,10 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import Button from "../../components/common/Button";
@@ -533,68 +537,76 @@ export default function AdminSessions() {
         accent="yellow"
       />
 
-      <AdminToolbar>
+      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
         <AdminSearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search by session ID, airport, or creator..."
           loading={loading}
+          className={ADMIN_TOOLBAR_MOBILE_SEARCH}
         />
 
-        <div className="flex bg-gray-800 border-2 border-blue-600 rounded-full overflow-hidden h-10 shrink-0">
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            className={`px-3 h-full flex items-center justify-center gap-1.5 text-xs transition-colors ${
-              viewMode === "grid"
-                ? ADMIN_SEGMENT_ACTIVE
-                : ADMIN_SEGMENT_INACTIVE
-            }`}
-          >
-            <MdGridOn className="w-3.5 h-3.5" />
-            <span>Grid</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("list")}
-            className={`px-3 h-full flex items-center justify-center gap-1.5 text-xs transition-colors ${
-              viewMode === "list"
-                ? ADMIN_SEGMENT_ACTIVE
-                : ADMIN_SEGMENT_INACTIVE
-            }`}
-          >
-            <MdViewList className="w-3.5 h-3.5" />
-            <span>List</span>
-          </button>
-        </div>
+        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
+          <div className="flex bg-gray-800 border-2 border-blue-600 rounded-full overflow-hidden h-10 shrink-0 max-md:flex-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`px-3 h-full flex items-center justify-center gap-1.5 text-xs transition-colors ${
+                viewMode === "grid"
+                  ? ADMIN_SEGMENT_ACTIVE
+                  : ADMIN_SEGMENT_INACTIVE
+              }`}
+            >
+              <MdGridOn className="w-3.5 h-3.5" />
+              <span>Grid</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`px-3 h-full flex items-center justify-center gap-1.5 text-xs transition-colors ${
+                viewMode === "list"
+                  ? ADMIN_SEGMENT_ACTIVE
+                  : ADMIN_SEGMENT_INACTIVE
+              }`}
+            >
+              <MdViewList className="w-3.5 h-3.5" />
+              <span>List</span>
+            </button>
+          </div>
 
-        <Dropdown
-          options={sortOptions}
-          value={sortBy}
-          onChange={(value) => setSortBy(value as SortBy)}
-          size="sm"
-        />
-
-        <button
-          type="button"
-          onClick={() => setEventModeOpen((o) => !o)}
-          className={`flex items-center gap-1.5 h-10 px-3 rounded-full border-2 text-xs font-medium transition-colors shrink-0 ${
-            eventModeOpen
-              ? "bg-blue-500/20 border-blue-500/50 text-blue-200"
-              : "bg-gray-800 border-blue-600 text-zinc-200 hover:border-blue-400 hover:text-white"
-          } ${eventMode.pfatcEventMode || eventMode.aatcEventMode ? "ring-1 ring-blue-500/40" : ""}`}
-        >
-          <MdCellTower className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Event Mode</span>
-          {(eventMode.pfatcEventMode || eventMode.aatcEventMode) && (
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-          )}
-          <MdExpandMore
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${eventModeOpen ? "rotate-180" : ""}`}
+          <Dropdown
+            options={sortOptions}
+            value={sortBy}
+            onChange={(value) => setSortBy(value as SortBy)}
+            size="sm"
+            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
           />
-        </button>
 
-        <AdminRefreshButton onClick={fetchSessions} loading={loading} />
+          <button
+            type="button"
+            onClick={() => setEventModeOpen((o) => !o)}
+            className={`flex items-center gap-1.5 h-10 px-3 rounded-full border-2 text-xs font-medium transition-colors shrink-0 max-md:flex-1 max-md:justify-center ${
+              eventModeOpen
+                ? "bg-blue-500/20 border-blue-500/50 text-blue-200"
+                : "bg-gray-800 border-blue-600 text-zinc-200 hover:border-blue-400 hover:text-white"
+            } ${eventMode.pfatcEventMode || eventMode.aatcEventMode ? "ring-1 ring-blue-500/40" : ""}`}
+          >
+            <MdCellTower className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Event Mode</span>
+            {(eventMode.pfatcEventMode || eventMode.aatcEventMode) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+            )}
+            <MdExpandMore
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${eventModeOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          <AdminRefreshButton
+            onClick={fetchSessions}
+            loading={loading}
+            className="max-md:ml-auto shrink-0"
+          />
+        </div>
       </AdminToolbar>
 
       {eventModeOpen && (

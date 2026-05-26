@@ -9,6 +9,7 @@ import { AdminMultiSeriesAreaChart } from "../components/admin/AdminChart";
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
+  ADMIN_HEADER_ACTIONS_MOBILE,
 } from "../components/admin/adminConstants";
 import Loader from "../components/common/Loader";
 import { useAuth } from "../hooks/auth/useAuth";
@@ -174,8 +175,9 @@ export default function Admin() {
         title="Admin Overview"
         icon={MdDashboard}
         accent="blue"
+        actionsClassName={ADMIN_HEADER_ACTIONS_MOBILE}
         actions={
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 max-md:w-full">
             {[7, 30, 90, 180, 365].map((days) => (
               <Button
                 key={days}

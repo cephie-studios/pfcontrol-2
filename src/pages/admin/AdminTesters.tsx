@@ -211,7 +211,7 @@ export default function AdminTesters() {
             value={newTesterUserId}
             onChange={setNewTesterUserId}
             placeholder="Discord user ID"
-            className="flex-1 min-w-[12rem] max-w-xs"
+            className="flex-1 min-w-[12rem] max-w-xs max-md:w-full max-md:max-w-none max-md:basis-full"
             required
           />
           <AdminIconInput
@@ -250,6 +250,7 @@ export default function AdminTesters() {
             }}
             placeholder="Search by username or ID…"
             loading={loading}
+            className="max-md:!w-full max-md:!max-w-none max-md:flex-none max-md:basis-full"
           />
         </AdminToolbar>
 

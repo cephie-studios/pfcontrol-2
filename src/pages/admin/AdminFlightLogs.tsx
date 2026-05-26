@@ -304,7 +304,7 @@ export default function AdminFlightLogs() {
           onChange={setSessionFilter}
           placeholder="Session…"
         />
-        <div className="flex items-end">
+        <div className="flex items-end max-md:order-last">
           <Button
             onClick={clearFilters}
             variant="outline"

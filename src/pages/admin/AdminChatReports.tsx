@@ -19,6 +19,9 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import Button from "../../components/common/Button";
@@ -121,21 +124,28 @@ export default function AdminChatReports() {
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
       <AdminPageHeader title="Chat Reports" icon={MdReport} accent="red" />
 
-      <AdminToolbar>
+      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
         <AdminSearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search by message or user…"
           loading={loading}
+          className={ADMIN_TOOLBAR_MOBILE_SEARCH}
         />
-        <Dropdown
-          options={filterOptions}
-          value={filterReporter}
-          onChange={setFilterReporter}
-          placeholder="Filter by reporter…"
-          size="sm"
-        />
-        <AdminRefreshButton onClick={fetchReports} loading={loading} />
+        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
+          <Dropdown
+            options={filterOptions}
+            value={filterReporter}
+            onChange={setFilterReporter}
+            placeholder="Filter by reporter…"
+            size="sm"
+          />
+          <AdminRefreshButton
+            onClick={fetchReports}
+            loading={loading}
+            className="shrink-0"
+          />
+        </div>
       </AdminToolbar>
 
       {loading ? (

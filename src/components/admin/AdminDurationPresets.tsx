@@ -3,8 +3,8 @@ import {
   ADMIN_SEGMENT_INACTIVE,
   ADMIN_TOOLBAR_HEIGHT,
 } from "./adminConstants";
-import { ADMIN_DURATION_PRESETS } from "./adminDurationPresets";
-import type { AdminDurationPresetId } from "./adminDurationPresets";
+import { ADMIN_DURATION_PRESETS } from "./adminDurationPresetConfig";
+import type { AdminDurationPresetId } from "./adminDurationPresetConfig";
 
 type AdminDurationPresetsProps = {
   label?: string;

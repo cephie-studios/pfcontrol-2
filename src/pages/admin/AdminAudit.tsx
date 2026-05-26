@@ -39,6 +39,12 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
+  ADMIN_TOOLBAR_MOBILE_STACK_ITEM,
 } from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
 import Dropdown from "../../components/common/Dropdown";
@@ -495,57 +501,62 @@ export default function AdminAudit() {
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
       <AdminPageHeader title="Audit Log" icon={MdGppMaybe} accent="orange" />
 
-      <AdminToolbar>
+      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
         <AdminIconInput
           icon={<MdPerson size={18} />}
           value={adminFilter}
           onChange={setAdminFilter}
           placeholder="Filter by admin..."
-          className="w-40 sm:w-48"
+          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
         />
         <AdminSearchInput
           value={targetUserFilter}
           onChange={setTargetUserFilter}
           placeholder="Filter by target user..."
           grow={false}
-          className="w-40 sm:w-48"
+          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
         />
-        <div className="relative w-44 sm:w-52">
-          <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
-            <MdFilterList size={18} />
-          </span>
-          <Dropdown
-            size="sm"
-            options={actionTypeOptions}
-            value={actionTypeFilter}
-            onChange={handleActionTypeChange}
-            placeholder="Filter by action..."
-            className="!pl-11"
+        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
+          <AdminIconInput
+            icon={<MdCalendarToday size={18} />}
+            type="datetime-local"
+            value={dateFromFilter}
+            onChange={setDateFromFilter}
+            className={`w-44 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+            aria-label="From date"
+          />
+          <AdminIconInput
+            icon={<MdCalendarToday size={18} />}
+            type="datetime-local"
+            value={dateToFilter}
+            onChange={setDateToFilter}
+            className={`w-44 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+            aria-label="To date"
           />
         </div>
-        <AdminIconInput
-          icon={<MdCalendarToday size={18} />}
-          type="datetime-local"
-          value={dateFromFilter}
-          onChange={setDateFromFilter}
-          className="w-44 sm:w-48"
-          aria-label="From date"
-        />
-        <AdminIconInput
-          icon={<MdCalendarToday size={18} />}
-          type="datetime-local"
-          value={dateToFilter}
-          onChange={setDateToFilter}
-          className="w-44 sm:w-48"
-          aria-label="To date"
-        />
-        <Button
-          onClick={clearFilters}
-          variant="outline"
-          size={adminDownsizeButtonSize("md")}
-        >
-          Clear Filters
-        </Button>
+        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
+          <div className="relative w-44 sm:w-52">
+            <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
+              <MdFilterList size={18} />
+            </span>
+            <Dropdown
+              size="sm"
+              options={actionTypeOptions}
+              value={actionTypeFilter}
+              onChange={handleActionTypeChange}
+              placeholder="Filter by action..."
+              className="!pl-11"
+            />
+          </div>
+          <Button
+            onClick={clearFilters}
+            variant="outline"
+            size={adminDownsizeButtonSize("md")}
+            className="shrink-0"
+          >
+            Clear Filters
+          </Button>
+        </div>
       </AdminToolbar>
 
       {loading ? (

@@ -29,7 +29,7 @@ import AdminTable from "../../components/admin/AdminTable";
 import AdminToggleSwitch from "../../components/admin/AdminToggleSwitch";
 import AdminTextInput from "../../components/admin/AdminTextInput";
 import AdminDurationPresets from "../../components/admin/AdminDurationPresets";
-import type { AdminDurationPresetId } from "../../components/admin/adminDurationPresets";
+import type { AdminDurationPresetId } from "../../components/admin/adminDurationPresetConfig";
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -315,14 +315,14 @@ export default function AdminBan() {
           <div>
             <span className="block text-xs text-zinc-500 mb-2">Ban type</span>
             <div
-              className="inline-flex h-10 rounded-full border-2 border-blue-600 overflow-hidden"
+              className="inline-flex max-md:flex max-md:w-full h-10 rounded-full border-2 border-blue-600 overflow-hidden"
               role="group"
               aria-label="Ban type"
             >
               <button
                 type="button"
                 onClick={() => setBanType("user")}
-                className={`px-4 h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                className={`px-4 max-md:flex-1 max-md:justify-center h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
                   banType === "user"
                     ? ADMIN_SEGMENT_ACTIVE
                     : ADMIN_SEGMENT_INACTIVE
@@ -334,7 +334,7 @@ export default function AdminBan() {
               <button
                 type="button"
                 onClick={() => setBanType("ip")}
-                className={`px-4 h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                className={`px-4 max-md:flex-1 max-md:justify-center h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
                   banType === "ip"
                     ? ADMIN_SEGMENT_ACTIVE
                     : ADMIN_SEGMENT_INACTIVE

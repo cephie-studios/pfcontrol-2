@@ -21,6 +21,11 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
+  ADMIN_TOOLBAR_MOBILE_STACK_ITEM,
 } from "../../components/admin/adminConstants";
 import Dropdown from "../../components/common/Dropdown";
 import Button from "../../components/common/Button";
@@ -243,63 +248,69 @@ export default function AdminApiLogs() {
         />
       )}
 
-      <AdminToolbar>
+      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
         <AdminSearchInput
           value={searchFilter}
           onChange={setSearchFilter}
           placeholder="Search logs..."
           grow={false}
-          className="w-40 sm:w-48"
+          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
         />
         <AdminIconInput
           icon={<MdPerson size={18} />}
           value={userFilter}
           onChange={setUserFilter}
           placeholder="Filter by user..."
-          className="w-36 sm:w-40"
+          className={`w-36 sm:w-40 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
         />
         <AdminIconInput
           icon={<MdLink size={18} />}
           value={pathFilter}
           onChange={setPathFilter}
           placeholder="Filter by path..."
-          className="w-36 sm:w-44"
+          className={`w-36 sm:w-44 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
         />
-        <Dropdown
-          options={methodOptions}
-          value={methodFilter}
-          onChange={setMethodFilter}
-          placeholder="Method"
-          size="sm"
-        />
-        <Dropdown
-          options={statusCodeOptions}
-          value={statusCodeFilter}
-          onChange={setStatusCodeFilter}
-          placeholder="Status"
-          size="sm"
-        />
-        <AdminIconInput
-          icon={<MdCalendarToday size={18} />}
-          type="date"
-          value={dateFromFilter}
-          onChange={setDateFromFilter}
-          className="w-48"
-          aria-label="From date"
-        />
-        <AdminIconInput
-          icon={<MdCalendarToday size={18} />}
-          type="date"
-          value={dateToFilter}
-          onChange={setDateToFilter}
-          className="w-48"
-          aria-label="To date"
-        />
+        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
+          <Dropdown
+            options={methodOptions}
+            value={methodFilter}
+            onChange={setMethodFilter}
+            placeholder="Method"
+            size="sm"
+            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+          />
+          <Dropdown
+            options={statusCodeOptions}
+            value={statusCodeFilter}
+            onChange={setStatusCodeFilter}
+            placeholder="Status"
+            size="sm"
+            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+          />
+        </div>
+        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
+          <AdminIconInput
+            icon={<MdCalendarToday size={18} />}
+            type="date"
+            value={dateFromFilter}
+            onChange={setDateFromFilter}
+            className={`w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+            aria-label="From date"
+          />
+          <AdminIconInput
+            icon={<MdCalendarToday size={18} />}
+            type="date"
+            value={dateToFilter}
+            onChange={setDateToFilter}
+            className={`w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+            aria-label="To date"
+          />
+        </div>
         <Button
           onClick={clearFilters}
           variant="outline"
           size="sm"
-          className={`shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0`}
+          className={`shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0 max-md:w-full max-md:basis-full`}
         >
           <MdClose size={16} className="mr-1" />
           Clear
