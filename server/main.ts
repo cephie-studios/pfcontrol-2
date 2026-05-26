@@ -2,7 +2,7 @@ import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { existsSync } from "fs";
 import express from "express";
-import type { RequestHandler } from "express";
+import type { RequestHandler, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import apiRoutes from "./routes/index.js";
@@ -27,6 +27,10 @@ import { updateLeaderboard } from "./db/leaderboard.js";
 import { startFlightLogsCleanup } from "./db/flightLogs.js";
 import { apiLogger, cleanupOldApiLogs } from "./middleware/apiLogger.js";
 import { httpErrorHandler } from "./middleware/httpErrorHandler.js";
+import {
+  applyImmutableAsset,
+  filenameLooksContentHashed,
+} from "./utils/httpCache.js";
 import { cleanupOldDeveloperUsage } from "./db/developer.js";
 import posthogClient, { initTelemetry } from "./utils/posthog.js";
 import { setupExpressErrorHandler } from "posthog-node";
@@ -173,29 +177,33 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", apiRoutes);
 
-app.use(express.static(path.join(__dirname, "../public")));
+function setHashedStaticHeaders(res: Response, filePath: string): void {
+  if (filenameLooksContentHashed(filePath)) {
+    applyImmutableAsset(res);
+  }
+  if (filePath.endsWith(".js")) {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  } else if (filePath.endsWith(".css")) {
+    res.setHeader("Content-Type", "text/css; charset=utf-8");
+  }
+}
+
+app.use(
+  express.static(path.join(__dirname, "../public"), {
+    setHeaders: setHashedStaticHeaders,
+  })
+);
 app.use(
   express.static(path.join(__dirname, "..", "..", "dist"), {
     index: false,
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".js"))
-        res.setHeader("Content-Type", "application/javascript");
-    },
+    setHeaders: setHashedStaticHeaders,
   })
 );
 
 if (astroClientDir && existsSync(astroClientDir)) {
   app.use(
     express.static(astroClientDir, {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith(".css"))
-          res.setHeader("Content-Type", "text/css; charset=utf-8");
-        if (filePath.endsWith(".js"))
-          res.setHeader(
-            "Content-Type",
-            "application/javascript; charset=utf-8"
-          );
-      },
+      setHeaders: setHashedStaticHeaders,
     })
   );
 }
@@ -219,6 +227,7 @@ if (astroHandler) {
 }
 
 app.get("/{*any}", (_req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.sendFile(path.join(__dirname, "..", "..", "dist", "index.html"));
 });
 
