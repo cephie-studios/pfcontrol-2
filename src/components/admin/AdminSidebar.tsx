@@ -291,7 +291,7 @@ export default function AdminSidebar({
 
   const linkClass = (isActive: boolean, textColor?: string) =>
     `flex items-center gap-2.5 rounded-lg transition-colors duration-150 ${
-      collapsed ? "justify-center h-8 w-full px-0" : "h-8 px-2.5"
+      collapsed ? "justify-center h-9 w-full px-0" : "h-9 px-3"
     } ${
       isActive
         ? navActiveClass(textColor)
@@ -301,7 +301,7 @@ export default function AdminSidebar({
   return (
     <div
       className={`bg-zinc-950 border-r border-zinc-800 transition-all duration-300 h-[calc(100vh-4rem)] sticky top-16 z-[40] ${
-        collapsed ? "w-14" : "w-56"
+        collapsed ? "w-16" : "w-64 xl:w-72"
       } flex flex-col overflow-hidden`}
     >
       <div className="px-2 py-2 border-b border-zinc-800 shrink-0">
@@ -348,7 +348,7 @@ export default function AdminSidebar({
                   className={linkClass(isActive, item.textColor)}
                   title={item.label}
                 >
-                  <Icon size={20} className="shrink-0" />
+                  <Icon className="shrink-0 w-5 h-5 xl:w-6 xl:h-6" />
                 </Link>
               );
             })}
@@ -367,8 +367,8 @@ export default function AdminSidebar({
                     className="flex items-center justify-between w-full h-7 px-2 text-xs font-medium text-zinc-500 hover:text-zinc-300 rounded-md transition-colors"
                   >
                     <span className="flex items-center gap-1.5">
-                      <SectionIcon size={14} className="shrink-0" />
-                      {section.title}
+                      <SectionIcon className="shrink-0 w-3.5 h-3.5 xl:w-4 xl:h-4" />
+                      <span className="xl:text-sm">{section.title}</span>
                     </span>
                     <MdExpandMore
                       size={16}
@@ -386,8 +386,8 @@ export default function AdminSidebar({
                             to={item.path}
                             className={linkClass(isActive, item.textColor)}
                           >
-                            <Icon size={20} className="shrink-0" />
-                            <span className="text-sm font-medium truncate">
+                            <Icon className="shrink-0 w-5 h-5 xl:w-6 xl:h-6" />
+                            <span className="text-sm xl:text-base font-medium truncate">
                               {item.label}
                             </span>
                           </Link>

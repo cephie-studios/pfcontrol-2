@@ -1,9 +1,8 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { MdMenu } from "react-icons/md";
 import Navbar from "../Navbar";
 import AdminSidebar from "./AdminSidebar";
 import Toast from "../common/Toast";
-import { useAdminViewportScale } from "../../hooks/useAdminViewportScale";
 
 export type AdminToast = {
   message: string;
@@ -23,19 +22,12 @@ export default function AdminLayout({
 }: AdminLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const viewportScale = useAdminViewportScale();
-  const scaleStyle: CSSProperties | undefined =
-    viewportScale > 1 ? { zoom: viewportScale } : undefined;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <Navbar mobileSidebarOpen={mobileSidebarOpen} />
 
-      <div
-        className="flex pt-16 min-h-[calc(100vh-4rem)]"
-        style={scaleStyle}
-        data-admin-scaled={viewportScale > 1 ? "true" : undefined}
-      >
+      <div className="flex pt-16 min-h-[calc(100vh-4rem)]">
         {mobileSidebarOpen && (
           <div
             className="fixed inset-0 bg-black/60 z-40 lg:hidden"
@@ -62,7 +54,7 @@ export default function AdminLayout({
           />
         </div>
 
-        <main className="flex-1 min-w-0 p-4 sm:p-5 lg:p-6 overflow-x-hidden">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 overflow-x-hidden">
           {children}
         </main>
       </div>

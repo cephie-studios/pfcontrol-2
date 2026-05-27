@@ -1,23 +1,23 @@
 export function adminCardClass(extra = "") {
-  return `rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-xl p-5 shadow-xl ring-1 ring-zinc-700/50${extra ? ` ${extra}` : ""}`;
+  return `rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-xl p-5 xl:p-7 shadow-xl ring-1 ring-zinc-700/50${extra ? ` ${extra}` : ""}`;
 }
 
 export function adminSectionClass(extra = "") {
-  return `border-t border-zinc-800/80 pt-5 mt-5 first:border-t-0 first:pt-0 first:mt-0${extra ? ` ${extra}` : ""}`;
+  return `border-t border-zinc-800/80 pt-5 xl:pt-6 mt-5 xl:mt-6 first:border-t-0 first:pt-0 first:mt-0${extra ? ` ${extra}` : ""}`;
 }
 
 export function adminStatStripItemClass() {
   return "min-w-0";
 }
 
-export const ADMIN_TOOLBAR_HEIGHT = "h-10";
+export const ADMIN_TOOLBAR_HEIGHT = "h-10 xl:h-11";
 
 export const ADMIN_INPUT_ICON_CLASS =
   "absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none z-10 flex items-center justify-center";
 
-export const ADMIN_SEARCH_INPUT = `box-border ${ADMIN_TOOLBAR_HEIGHT} w-full text-sm font-medium pl-11 pr-4 rounded-full border-2 border-blue-600 bg-gray-800 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-400 transition-colors appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden`;
+export const ADMIN_SEARCH_INPUT = `box-border ${ADMIN_TOOLBAR_HEIGHT} w-full text-sm xl:text-base font-medium pl-11 pr-4 rounded-full border-2 border-blue-600 bg-gray-800 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-400 transition-colors appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden`;
 
-export const ADMIN_FIELD_INPUT = `box-border ${ADMIN_TOOLBAR_HEIGHT} w-full text-sm font-medium px-4 rounded-full border-2 border-blue-600 bg-gray-800 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-400 transition-colors`;
+export const ADMIN_FIELD_INPUT = `box-border ${ADMIN_TOOLBAR_HEIGHT} w-full text-sm xl:text-base font-medium px-4 rounded-full border-2 border-blue-600 bg-gray-800 text-white placeholder-zinc-400 focus:outline-none focus:border-blue-400 transition-colors`;
 
 export const ADMIN_FIELD_INPUT_ICON = `${ADMIN_FIELD_INPUT} pl-11`;
 
@@ -29,7 +29,7 @@ export function adminTableShellClass(extra = "") {
   return `rounded-xl border border-zinc-800/60 overflow-hidden bg-zinc-900/30${extra ? ` ${extra}` : ""}`;
 }
 
-export const ADMIN_SECTION_TITLE = "text-sm font-semibold text-zinc-200 mb-3";
+export const ADMIN_SECTION_TITLE = "text-sm xl:text-base font-semibold text-zinc-200 mb-3";
 
 export function adminDownsizeButtonSize(
   size?: "icon" | "xs" | "sm" | "md" | "lg"
@@ -41,42 +41,6 @@ export function adminDownsizeButtonSize(
 }
 
 export const ADMIN_PAGE_BG = "min-h-screen bg-zinc-950 text-white";
-export const ADMIN_SCALE_MAX = 1.5;
-export const ADMIN_SCALE_MIN_AT_2K = 1.125;
-
-const ADMIN_2K = { width: 2560, height: 1440 } as const;
-const ADMIN_4K = { width: 3840, height: 2160 } as const;
-
-const ADMIN_ASPECT_MIN = 1.6;
-const ADMIN_ASPECT_MAX = 1.9;
-
-export function shouldScaleAdminViewport(
-  viewportWidth: number,
-  viewportHeight: number
-): boolean {
-  const aspect = viewportWidth / viewportHeight;
-  if (aspect < ADMIN_ASPECT_MIN || aspect > ADMIN_ASPECT_MAX) return false;
-  const is4K =
-    viewportWidth >= ADMIN_4K.width && viewportHeight >= ADMIN_4K.height;
-  const is2K =
-    viewportWidth >= ADMIN_2K.width && viewportHeight >= ADMIN_2K.height;
-  return is4K || is2K;
-}
-
-export function getAdminViewportScale(
-  viewportWidth: number,
-  viewportHeight: number
-): number {
-  if (!shouldScaleAdminViewport(viewportWidth, viewportHeight)) return 1;
-  const span = ADMIN_4K.height - ADMIN_2K.height;
-  const progress = Math.min(
-    1,
-    Math.max(0, (viewportHeight - ADMIN_2K.height) / span)
-  );
-  return (
-    ADMIN_SCALE_MIN_AT_2K + progress * (ADMIN_SCALE_MAX - ADMIN_SCALE_MIN_AT_2K)
-  );
-}
 
 export const ADMIN_HEADING =
   "text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-blue-600 font-extrabold";
@@ -120,7 +84,7 @@ const ACCENT_ICON: Record<AdminPageAccent, string> = {
 };
 
 export function adminPageTitleClass(accent: AdminPageAccent = "blue") {
-  return `text-xl sm:text-2xl text-transparent bg-clip-text bg-linear-to-r ${ACCENT_TITLE_GRADIENT[accent]} font-extrabold`;
+  return `text-2xl sm:text-3xl lg:text-4xl xl:text-5xl text-transparent bg-clip-text bg-linear-to-r ${ACCENT_TITLE_GRADIENT[accent]} font-extrabold`;
 }
 
 export function adminPageIconClass(accent: AdminPageAccent = "blue") {
@@ -142,9 +106,9 @@ export const ADMIN_CHECKBOX = "rounded border-zinc-600 accent-blue-600";
 export const ADMIN_TABLE_HEAD = "bg-zinc-900";
 
 export const ADMIN_TH =
-  "py-2 px-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider";
+  "py-2 px-3 xl:py-3 xl:px-4 text-left text-xs xl:text-sm font-medium text-zinc-400 uppercase tracking-wider";
 
-export const ADMIN_TD = "py-2 px-3 text-sm text-zinc-300";
+export const ADMIN_TD = "py-2 px-3 xl:py-3 xl:px-4 text-sm xl:text-base text-zinc-300";
 
 export const NAV_ACTIVE_COLORS: Record<string, string> = {
   "green-400": "text-green-400",

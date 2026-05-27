@@ -28,16 +28,16 @@ export default function AdminStatStrip({
     >
       {items.map((item) => (
         <div key={item.label} className={adminStatStripItemClass()}>
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs xl:text-sm text-zinc-500 uppercase tracking-wide">
             {item.label}
           </p>
-          <p className="text-xl sm:text-2xl font-semibold text-white tabular-nums mt-0.5">
+          <p className="text-xl sm:text-2xl xl:text-3xl font-semibold text-white tabular-nums mt-0.5">
             {typeof item.value === "number"
               ? item.value.toLocaleString()
               : item.value}
           </p>
           {item.sub && (
-            <p className="text-xs text-zinc-500 mt-0.5 truncate">{item.sub}</p>
+            <p className="text-xs xl:text-sm text-zinc-500 mt-0.5 truncate">{item.sub}</p>
           )}
         </div>
       ))}

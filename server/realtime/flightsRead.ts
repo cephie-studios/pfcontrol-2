@@ -134,6 +134,28 @@ export async function getFlightsForSessionCached(
   return flights;
 }
 
+export async function getAllFlightsForSession(
+  sessionId: string
+): Promise<ClientFlight[]> {
+  const validSessionId = validateSessionId(sessionId);
+
+  const rows = await mainDb
+    .selectFrom("flights")
+    .selectAll()
+    .where("session_id", "=", validSessionId)
+    .orderBy(
+      sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`,
+      "desc"
+    )
+    .execute();
+
+  const pairs = rows.map((f) => ({
+    flight: sanitizeFlightForClient(f),
+    userId: f.user_id,
+  }));
+  return attachUsersToFlights(pairs);
+}
+
 export async function invalidateSessionFlightsCache(
   sessionId: string
 ): Promise<void> {

@@ -21,16 +21,16 @@ export default function AdminStatCards({
     <div className={`grid ${colClass} gap-3 mb-5`}>
       {items.map((item) => (
         <div key={item.label} className={adminCardClass("!p-4")}>
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">
+          <p className="text-xs xl:text-sm text-zinc-500 uppercase tracking-wide">
             {item.label}
           </p>
-          <p className="text-xl sm:text-2xl font-semibold text-white tabular-nums mt-1">
+          <p className="text-xl sm:text-2xl xl:text-3xl font-semibold text-white tabular-nums mt-1">
             {typeof item.value === "number"
               ? item.value.toLocaleString()
               : item.value}
           </p>
           {item.sub ? (
-            <p className="text-xs text-zinc-500 mt-1 truncate">{item.sub}</p>
+            <p className="text-xs xl:text-sm text-zinc-500 mt-1 truncate">{item.sub}</p>
           ) : null}
         </div>
       ))}

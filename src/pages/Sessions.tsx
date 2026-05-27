@@ -17,7 +17,6 @@ import { useAuth } from "../hooks/auth/useAuth";
 import { useSettings } from "../hooks/settings/useSettings";
 import { fetchMySessions, updateSessionName, deleteSession } from "../utils/fetch/sessions";
 import type { SessionInfo } from "../types/session";
-import { fetchFlights } from "../utils/fetch/flights";
 import { fetchBackgrounds } from "../utils/fetch/data";
 import Button from "../components/common/Button";
 import TextInput from "../components/common/TextInput";
@@ -52,18 +51,8 @@ export default function Sessions() {
       return;
     }
     fetchMySessions()
-      .then(async (data) => {
-        const sessionsWithCounts = await Promise.all(
-          data.map(async (session) => {
-            try {
-              const flights = await fetchFlights(session.sessionId);
-              return { ...session, flightCount: flights.length };
-            } catch {
-              return { ...session, flightCount: 0 };
-            }
-          }),
-        );
-        setSessions(sessionsWithCounts);
+      .then((data) => {
+        setSessions(data);
       })
       .catch(() => setError("Failed to load sessions."))
       .finally(() => setLoading(false));
