@@ -154,3 +154,7 @@ button {
 .dev-refresh-spin-once {
   animation: dev-refresh-spin-once 0.65s ease-out forwards;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -28,6 +28,8 @@ import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
+import ProductShowcase from '../components/home/ProductShowcase';
+import { useCountUp } from '../hooks/useCountUp';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -66,6 +68,10 @@ export default function Home({ standalone = true }: HomeProps) {
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
+
+  const [sessionsCount, sessionsRef] = useCountUp(stats.sessionsCreated);
+  const [usersCount, usersRef] = useCountUp(stats.registeredUsers);
+  const [flightsCount, flightsRef] = useCountUp(stats.flightsLogged);
 
   const statTitles: Record<string, string> = {
     total_sessions_created: 'Sessions Created',
@@ -245,7 +251,8 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <section className="relative py-36 px-2 sm:px-6 bg-black">
+      {/* Mobile: simple 3-step layout */}
+      <section className="block lg:hidden relative py-36 px-2 sm:px-6 bg-black">
         <div className="max-w-5xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
@@ -298,13 +305,16 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
+      {/* Desktop: interactive scroll showcase */}
+      <ProductShowcase />
+
       <section className="relative py-36 px-2 sm:px-6 bg-black">
         <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
             style={{ lineHeight: 1.4 }}
           >
-            Join our community
+            PFControl by the numbers
           </h2>
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
           <p className="text-xl text-center text-gray-300 max-w-3xl mx-auto">
@@ -314,7 +324,7 @@ export default function Home({ standalone = true }: HomeProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 cursor-default mt-20 max-w-7xl mx-auto px-2 sm:px-6">
           {/* Card 1 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
+          <div ref={sessionsRef} className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
               <TowerControl className="h-8 w-8 text-white" />
             </div>
@@ -322,12 +332,12 @@ export default function Home({ standalone = true }: HomeProps) {
               Sessions Created
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.sessionsCreated.toLocaleString()}
+              {sessionsCount.toLocaleString()}
             </div>
             <p className="text-gray-400">Last 30 days</p>
           </div>
           {/* Card 2 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
+          <div ref={usersRef} className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
               <Users className="h-8 w-8 text-white" />
             </div>
@@ -335,12 +345,12 @@ export default function Home({ standalone = true }: HomeProps) {
               Registered Users
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.registeredUsers.toLocaleString()}
+              {usersCount.toLocaleString()}
             </div>
             <p className="text-gray-400">All time</p>
           </div>
           {/* Card 3 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
+          <div ref={flightsRef} className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
             <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
               <Plane className="h-8 w-8 text-white" />
             </div>
@@ -348,7 +358,7 @@ export default function Home({ standalone = true }: HomeProps) {
               Flights Logged
             </h3>
             <div className="text-4xl font-bold text-white mb-3">
-              {stats.flightsLogged.toLocaleString()}
+              {flightsCount.toLocaleString()}
             </div>
             <p className="text-gray-400">Last 30 days</p>
           </div>

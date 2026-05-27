@@ -286,10 +286,9 @@ function Dropdown({
     // Shared option list used by both portal and absolute panels.
     const optionsList = (
       <div
-        className={`${maxHeight} overflow-y-auto overscroll-contain py-2`}
+        className={`no-scrollbar ${maxHeight} overflow-y-auto overscroll-contain py-2`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {allowClear && (
           <button
             type="button"
@@ -376,7 +375,7 @@ function Dropdown({
       <div className="relative">
         <div
           ref={triggerWrapperRef}
-          className={`relative bg-gray-800 border-2 transition-[border-radius] duration-75 border-blue-600 ${
+          className={`relative bg-gray-800 border-2 border-blue-600 ${
             isOpen ? triggerOpenClass : 'rounded-full'
           } ${disabled ? 'opacity-70' : ''} ${className}`}
         >
@@ -410,7 +409,7 @@ function Dropdown({
   const dropdownContent = isOpen && (
     <div
       ref={dropdownRef}
-      className={`fixed bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-auto overscroll-contain px-1`}
+      className={`no-scrollbar fixed bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-auto overscroll-contain px-1`}
       style={{
         top: `${dropdownPosition.top}px`,
         left: `${dropdownPosition.left}px`,
@@ -421,7 +420,6 @@ function Dropdown({
         visibility: isMeasured ? 'visible' : 'hidden',
       }}
     >
-      <style>{`div::-webkit-scrollbar { display: none; }`}</style>
       {allowClear && (
         <button
           type="button"
