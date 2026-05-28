@@ -468,7 +468,7 @@ export default function ProductShowcase() {
     setSubmitCopied(false);
     setSquawkHighlight(false);
     setSquawkSpinning(false);
-    setAalSqkNew(null);
+    if (slide < 7) setAalSqkNew(null);
     setRouteModalVisible(false);
     setRouteGenerated(false);
     // slide 1 effect animates the second avatar in; slides 2+ start with both visible
@@ -724,7 +724,7 @@ export default function ProductShowcase() {
                       const req     = f.id === 1 ? bawReqData : f.id === 2 ? ezyReqData : aalReqData;
                       const status  = f.id === 1 ? bawStatus : 'PENDING';
                       const cleared = f.id === 1 && bawCleared;
-                      const sqk     = visible ? (f.id === 3 && aalSqkNew !== null ? aalSqkNew : f.sqk) : 0;
+                      const sqk     = visible ? (f.id === 3 ? (aalSqkNew ?? (slide >= 6 ? 4721 : f.sqk)) : f.sqk) : 0;
                       const sqkHL   = f.id === 3 && squawkHighlight;
                       const sqkSpin = f.id === 3 && squawkSpinning;
 
