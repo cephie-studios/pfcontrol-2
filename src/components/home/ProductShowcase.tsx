@@ -1,5 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Check, Copy, GripHorizontal, GripVertical, HelpCircle, Info, Loader2, Map, MessageCircle, MoreHorizontal, Pause, Play, Radio, RefreshCw, Route, Settings, TowerControl, Wand2, X } from 'lucide-react';
+import gsap from 'gsap';
+import { usePostHog } from 'posthog-js/react';
+import { Check, Copy, GripHorizontal, GripVertical, HelpCircle, Info, Loader2, Map, MessageCircle, MoreHorizontal, Pause, Play, Radio, RefreshCw, RotateCcw, Route, Settings, TowerControl, Wand2, X } from 'lucide-react';
+import { useAuth } from '../../hooks/auth/useAuth';
 import { fetchRoute } from '../../utils/fetch/data';
 import Dropdown from '../common/Dropdown';
 import Checkbox from '../common/Checkbox';
@@ -8,11 +11,7 @@ import Button from '../common/Button';
 import WindDisplay from '../tools/WindDisplay';
 import FrequencyDisplay from '../tools/FrequencyDisplay';
 import RouteMap from '../map/RouteMap';
-
-// ---------------------------------------------------------------------------
-// Data
-// ---------------------------------------------------------------------------
-
+//To those trying to maintain this component: Only god and claude knows what's going on in here, good luck and godspeed
 const ALL_FLIGHTS = [
   { id: 1, time: '14:32', callsign: 'BAW123',  aircraft: 'B738', stand: '205', dest: 'LCLK', rwy: '26L', sid: 'BOGNA1X', rfl: '070', sqk: 2341 },
   { id: 2, time: '14:35', callsign: 'EZY456',  aircraft: 'A320', stand: '122', dest: 'LEMH', rwy: '26L', sid: 'BOGNA1X', rfl: '060', sqk: 5342 },
@@ -22,17 +21,13 @@ const ALL_FLIGHTS = [
 const PHASES: { duration: number; caption: string }[] = [
   { duration: 4000, caption: 'Open a session for your airport.' },
   { duration: 5000, caption: 'Share the view link to bring in another controller.' },
-  { duration: 4000, caption: 'Share the submit link so pilots can file their plans.' },
-  { duration: 7000, caption: 'Strips appear as pilots submit, without having to reload.' },
-  { duration: 8000, caption: 'Pilots call all at once. REQ logs the order they requested clearance so nothing gets missed.' },
-  { duration: 7000, caption: 'C and STS update instantly for all controllers in the session without having to reload.' },
+  { duration: 4000, caption: 'Share the submit link so pilots can file their flight plans.' },
+  { duration: 7000, caption: 'Strips appear as pilots submit, without controllers needing to reload.' },
+  { duration: 8000, caption: 'When pilots call and you can\'t accommodate them immediately. You can mark strips as on Request.' },
+  { duration: 7000, caption: 'Once cleared, strips can be given a status so other controllers know exactly where each flight is at.' },
   { duration: 5000, caption: 'Squawk codes are assigned automatically and can be regenerated at any time.' },
   { duration: 8000, caption: 'Generate or edit routes for any strip and preview them on the map.' },
 ];
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function reqColor(elapsed: number) {
   return `hsl(${Math.round(48 * (1 - Math.min(1, elapsed / 300)))}, 90%, 58%)`;
@@ -43,10 +38,6 @@ function fmtReq(elapsed: number) {
 }
 
 type ReqData = { label: string; elapsed: number } | null;
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
 function ReqCell({ req }: { req: ReqData }) {
   if (!req) return <div className="flex items-center justify-center opacity-25"><span className="text-xs text-zinc-400">REQ</span></div>;
@@ -59,13 +50,17 @@ function ReqCell({ req }: { req: ReqData }) {
   );
 }
 
-function SqkCell({ value, highlight }: { value: number; highlight: boolean }) {
+function SqkCell({ value, highlight, spinning }: { value: number; highlight: boolean; spinning?: boolean }) {
   return (
-    <div className={`flex items-center gap-0.5 transition-all duration-300 ${highlight ? 'ring-1 ring-blue-400 rounded px-0.5' : ''}`}>
+    <div className={`flex items-center gap-1 transition-all duration-300 ${highlight ? 'ring-1 ring-blue-400 rounded px-0.5' : ''}`}>
       <span className="text-sm text-white tabular-nums w-10">
         {value > 0 ? String(value).padStart(4, '0') : ''}
       </span>
-      {highlight && <RefreshCw className="w-2.5 h-2.5 text-blue-400 animate-pulse shrink-0" />}
+      <RefreshCw className={`w-2.5 h-2.5 shrink-0 transition-all duration-300 ${
+        spinning ? 'text-blue-400 animate-spin' :
+        highlight ? 'text-blue-400 animate-pulse' :
+        'text-zinc-600'
+      }`} />
     </div>
   );
 }
@@ -104,13 +99,11 @@ function MockNavbar({ viewCopied, viewHighlight, submitCopied, submitHighlight }
   }, []);
 
   return (
-    <div className="relative flex items-center px-6 h-16 border-b border-white/10 select-none" style={{ background: 'rgba(9,9,11,0.5)', backdropFilter: 'blur(3px)' }}>
-      {/* Logo — left */}
+    <div className="relative flex items-center px-6 h-16 select-none" style={{ background: 'rgba(9,9,11,0.5)', backdropFilter: 'blur(3px)' }}>
       <div className="flex items-center gap-2">
         <TowerControl className="h-7 w-7 text-blue-400" />
         <span className="text-xl font-bold bg-linear-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">PFControl</span>
       </div>
-      {/* Center: session controls — absolutely centered */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
         <div className="flex items-center gap-1.5 bg-yellow-600 border-2 border-yellow-600 rounded-full px-3 py-1.5 text-xs font-medium text-white select-none cursor-default">
           <HelpCircle className="h-3.5 w-3.5 shrink-0" />
@@ -126,14 +119,12 @@ function MockNavbar({ viewCopied, viewHighlight, submitCopied, submitHighlight }
 
 function MockToolbar({ avatarCount }: { avatarCount: number }) {
   return (
-    <div className="showcase-toolbar toolbar flex items-center justify-between px-4 py-2 border-b border-white/10 select-none">
-      {/* Left: live wind + frequency */}
+    <div className="showcase-toolbar toolbar flex items-center justify-between px-4 py-2 select-none">
       <div className="flex items-center gap-4">
         <WindDisplay icao="EGKK" size="small" />
         <FrequencyDisplay airportIcao="EGKK" showExpandedTable={false} />
       </div>
 
-      {/* Center: avatars + EGKK */}
       <div className="flex flex-col items-center gap-0.5">
         <div className="flex items-center">
           <img
@@ -148,7 +139,7 @@ function MockToolbar({ avatarCount }: { avatarCount: number }) {
             alt="devbanane"
             className="w-8 h-8 rounded-full shadow-md object-cover shrink-0 transition-all duration-500"
             style={{
-              marginLeft: '-10px',
+              marginLeft: avatarCount >= 2 ? '-10px' : '-32px',
               border: '2px solid #3b82f6',
               opacity: avatarCount >= 2 ? 1 : 0,
               transform: avatarCount >= 2 ? 'scale(1)' : 'scale(0.6)',
@@ -159,7 +150,6 @@ function MockToolbar({ avatarCount }: { avatarCount: number }) {
         <span className="text-md text-gray-300 font-bold leading-none">EGKK</span>
       </div>
 
-      {/* Right: toolbar controls copied from Toolbar.tsx */}
       <div className="flex items-center gap-4">
         <Dropdown
           options={[
@@ -210,10 +200,12 @@ function MockToolbar({ avatarCount }: { avatarCount: number }) {
 function DemoRouteModal({
   visible,
   resetKey,
+  paused,
   onRouteGenerated,
 }: {
   visible: boolean;
   resetKey: number;
+  paused: boolean;
   onRouteGenerated: () => void;
 }) {
   const [generating, setGenerating] = useState(false);
@@ -221,15 +213,20 @@ function DemoRouteModal({
   const [route, setRoute] = useState('');
   const [sid, setSid] = useState<string | undefined>();
   const [star, setStar] = useState<string | undefined>();
+  const triggeredRef = useRef(false);
 
-  // Reset + auto-generate when phase becomes visible
   useEffect(() => {
+    triggeredRef.current = false;
     setGenerating(false);
     setGeneratePulse(false);
     setRoute('');
     setSid(undefined);
     setStar(undefined);
-    if (!visible) return;
+  }, [visible, resetKey]);
+
+  useEffect(() => {
+    if (!visible || paused || triggeredRef.current) return;
+    triggeredRef.current = true;
 
     const t1 = setTimeout(() => setGeneratePulse(true), 1200);
     const t2 = setTimeout(() => {
@@ -242,7 +239,6 @@ function DemoRouteModal({
           setStar(result.star);
           onRouteGenerated();
         } else {
-          // fallback static route if API unavailable
           setRoute('EGKK NOVMA1X NOVMA MADAS BETIR BETIR1W MDPC');
           setSid('NOVMA1X');
           onRouteGenerated();
@@ -253,7 +249,7 @@ function DemoRouteModal({
 
     return () => { clearTimeout(t1); clearTimeout(t2); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, resetKey]);
+  }, [visible, resetKey, paused]);
 
   return (
     <div
@@ -267,7 +263,6 @@ function DemoRouteModal({
       }}
     >
       <div className="bg-zinc-900 border-2 border-blue-600 rounded-xl overflow-hidden">
-        {/* Header — matches RouteModal */}
         <div className="flex justify-between items-center px-5 pt-4 pb-3 border-b border-zinc-700">
           <div className="flex items-center gap-3">
             <GripHorizontal className="h-5 w-5 text-zinc-400" />
@@ -276,9 +271,7 @@ function DemoRouteModal({
           <div className="p-1 rounded-full text-zinc-400"><X className="h-5 w-5" /></div>
         </div>
 
-        {/* Body — matches RouteModal layout */}
         <div className="px-5 pt-4 pb-5">
-          {/* Dep / Arr / SID / STAR */}
           <div className="grid grid-cols-4 gap-3 mb-4">
             <div>
               <div className="text-xs font-medium text-green-400 mb-0.5">Departure</div>
@@ -298,7 +291,6 @@ function DemoRouteModal({
             </div>
           </div>
 
-          {/* Route label + buttons */}
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-zinc-300">Route</label>
             <div className="flex items-center gap-2">
@@ -317,7 +309,6 @@ function DemoRouteModal({
             </div>
           </div>
 
-          {/* Route textarea — div replica */}
           <div
             className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-3 font-mono text-sm leading-relaxed min-h-[72px]"
             style={{ wordBreak: 'break-all' }}
@@ -329,7 +320,6 @@ function DemoRouteModal({
                 : <span className="text-zinc-500">Enter route…</span>}
           </div>
 
-          {/* Map — shown once route is ready */}
           {route && !generating && (
             <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
               <RouteMap
@@ -348,23 +338,25 @@ function DemoRouteModal({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
 export default function ProductShowcase() {
+  const { user } = useAuth();
+  const posthog = usePostHog();
   const [slide,  setSlide]  = useState(0);
   const [seq,    setSeq]    = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
+  const [done,   setDone]   = useState(false);
+  const hasEnteredRef = useRef(false);
+  const cardRef        = useRef<HTMLDivElement>(null);
+  const dotsPillRef    = useRef<HTMLDivElement>(null);
+  const dotsContentRef = useRef<HTMLDivElement>(null);
+  const playBtnRef     = useRef<HTMLDivElement>(null);
 
   const [viewHighlight,   setViewHighlight]   = useState(false);
   const [viewCopied,      setViewCopied]      = useState(false);
   const [submitHighlight, setSubmitHighlight] = useState(false);
   const [submitCopied,    setSubmitCopied]    = useState(false);
   const [avatarCount,     setAvatarCount]     = useState(1);
-
-  // 0=none, 1=BAW only, 2=BAW+EZY, 3=all three
-  const [stripsShown, setStripsShown] = useState(0);
+  const [stripsShown,     setStripsShown]     = useState(0);
 
   const [bawReq,       setBawReq]       = useState(0);
   const [ezyReq,       setEzyReq]       = useState(0);
@@ -377,22 +369,74 @@ export default function ProductShowcase() {
   const [bawStatus,  setBawStatus]  = useState<'PENDING' | 'STUP' | 'PUSH'>('PENDING');
 
   const [squawkHighlight, setSquawkHighlight] = useState(false);
+  const [squawkSpinning,  setSquawkSpinning]  = useState(false);
+  const [aalSqkNew,       setAalSqkNew]       = useState<number | null>(null);
 
   const [routeModalVisible, setRouteModalVisible] = useState(false);
   const [routeGenerated,    setRouteGenerated]    = useState(false);
 
   const elapsedAtPauseRef = useRef(0);
   const runStartRef       = useRef(Date.now());
+  const captionRef        = useRef<HTMLParagraphElement>(null);
+  const rowRefs           = useRef<(HTMLTableRowElement | null)[]>([]);
+  const ctaContentRef     = useRef<HTMLDivElement>(null);
+  const dotRefs           = useRef<(HTMLDivElement | null)[]>([]);
 
-  const goTo = (i: number) => {
+  const goTo = (i: number, source: 'dot' | 'restart' = 'dot') => {
     elapsedAtPauseRef.current = 0;
+    setDone(false);
     setSlide(i);
     setSeq(s => s + 1);
     setPaused(false);
+    posthog?.capture('showcase_navigate', { slide: i, source });
   };
 
-  // Slide timer
+  useLayoutEffect(() => {
+    if (cardRef.current)        gsap.set(cardRef.current,        { opacity: 0, scale: 0.96, y: 24 });
+    if (dotsPillRef.current)    gsap.set(dotsPillRef.current,    { scaleX: 0.15, transformOrigin: 'center' });
+    if (dotsContentRef.current) gsap.set(dotsContentRef.current, { opacity: 0 });
+    if (playBtnRef.current)     gsap.set(playBtnRef.current,     { scale: 0, opacity: 0, transformOrigin: 'center' });
+  }, []);
+
   useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!hasEnteredRef.current) {
+            hasEnteredRef.current = true;
+            posthog?.capture('showcase_viewed');
+            gsap.to(card, { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: 'circ.out' });
+            const pill = dotsPillRef.current;
+            const btn  = playBtnRef.current;
+            if (pill) {
+              gsap.timeline()
+                .to(pill, { scaleX: 1.06, duration: 0.35, ease: 'power3.out'   })
+                .to(pill, { scaleX: 0.97, duration: 0.1,  ease: 'power1.inOut' })
+                .to(pill, { scaleX: 1,    duration: 0.1,  ease: 'power1.inOut' });
+            }
+            const dotsContent = dotsContentRef.current;
+            if (dotsContent) {
+              gsap.to(dotsContent, { opacity: 1, duration: 0.12, delay: 0.35 + 0.1 + 0.1 });
+            }
+            if (btn) {
+              gsap.to(btn, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)', delay: 0.35 + 0.1 + 0.1 });
+            }
+          }
+          setPaused(p => (p ? false : p));
+        } else {
+          if (hasEnteredRef.current) setPaused(true);
+        }
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [posthog]);
+
+  useEffect(() => {
+    if (done) return;
     if (paused) {
       elapsedAtPauseRef.current += Date.now() - runStartRef.current;
       return;
@@ -401,33 +445,129 @@ export default function ProductShowcase() {
     const remaining = PHASES[slide].duration - elapsedAtPauseRef.current;
     const t = setTimeout(() => {
       elapsedAtPauseRef.current = 0;
-      setSlide(s => (s + 1) % PHASES.length);
-      setSeq(s => s + 1);
+      if (slide === PHASES.length - 1) {
+        setDone(true);
+        setPaused(true);
+        posthog?.capture('showcase_completed');
+      } else {
+        setSlide(s => {
+          posthog?.capture('showcase_slide_view', { slide: s + 1, caption: PHASES[s + 1]?.caption });
+          return s + 1;
+        });
+        setSeq(s => s + 1);
+      }
     }, Math.max(0, remaining));
     return () => clearTimeout(t);
-  }, [slide, seq, paused]);
+  }, [slide, seq, paused, done, posthog]);
 
-  // Synchronous resets before paint — prevents any flash on navigation
   useLayoutEffect(() => {
     setViewHighlight(false);
     setViewCopied(false);
     setSubmitHighlight(false);
     setSubmitCopied(false);
     setSquawkHighlight(false);
+    setSquawkSpinning(false);
+    setAalSqkNew(null);
     setRouteModalVisible(false);
     setRouteGenerated(false);
-    // Avatar: 1 for slides 0-1 (slide 1 effect animates it in), 2 for slides 2+
+    // slide 1 effect animates the second avatar in; slides 2+ start with both visible
     setAvatarCount(slide >= 2 ? 2 : 1);
-    // Strips: phase 3 effect animates them in; phase 4+ they persist as all-shown
-    setStripsShown(slide >= 4 ? 3 : 0);
-    // REQ: reset on slides up to and including phase 4 entry
+    // phase 3 animates strips in one by one; phase 4+ they persist at full count
+    const newStripsShown = slide >= 4 ? 3 : 0;
+    setStripsShown(newStripsShown);
+    rowRefs.current.forEach((row, i) => {
+      if (!row) return;
+      gsap.killTweensOf(row);
+      gsap.set(row, { opacity: newStripsShown >= i + 1 ? 1 : 0, y: 0 });
+    });
     if (slide <= 4) {
       setBawReq(0); setEzyReq(0); setAalReq(0);
       setBawReqActive(false); setEzyReqActive(false); setAalReqActive(false);
     }
-    // Clearance/status: reset before phase 5
     if (slide < 5) { setBawCleared(false); setBawStatus('PENDING'); }
   }, [slide, seq]);
+
+  useEffect(() => {
+    if (!captionRef.current) return;
+    gsap.fromTo(captionRef.current,
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }
+    );
+  }, [slide, seq]);
+
+  // Guards against firing with stale stripsShown when slide changes — only animate on genuine increases
+  const prevStripsShownRef = useRef(0);
+  useEffect(() => {
+    const prev = prevStripsShownRef.current;
+    prevStripsShownRef.current = stripsShown;
+    if (slide !== 3 || stripsShown === 0 || stripsShown <= prev) return;
+    const row = rowRefs.current[stripsShown - 1];
+    if (!row) return;
+    gsap.fromTo(row,
+      { opacity: 0, y: -10 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
+    );
+  }, [stripsShown, slide]);
+
+  useEffect(() => {
+    if (!done || !ctaContentRef.current) return;
+    gsap.fromTo(ctaContentRef.current,
+      { opacity: 0, scale: 0.9, y: 20 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'back.out(1.4)' }
+    );
+  }, [done]);
+
+  // Dot transition — old + new animate simultaneously; intermediates ripple
+  const prevDotIdxRef = useRef(-1);
+  const dotTlRef      = useRef<gsap.core.Timeline | null>(null);
+  useEffect(() => {
+    const curr = done ? PHASES.length : slide;
+    const prev = prevDotIdxRef.current;
+
+    if (prev === -1) {
+      dotRefs.current.forEach((dot, i) => {
+        if (!dot) return;
+        gsap.set(dot, { width: i === curr ? 36 : 11 });
+      });
+      prevDotIdxRef.current = curr;
+      return;
+    }
+
+    dotTlRef.current?.kill();
+    prevDotIdxRef.current = curr;
+
+    // Snap any dot that's neither prev nor curr — clears dots stuck mid-shrink from previous animations
+    dotRefs.current.forEach((dot, i) => {
+      if (!dot || i === prev || i === curr) return;
+      gsap.killTweensOf(dot);
+      gsap.set(dot, { width: 11, background: 'rgba(255,255,255,0.25)' });
+    });
+
+    const direction = curr > prev ? 1 : -1;
+    const steps     = Math.abs(curr - prev);
+    const totalDur  = 0.5;
+    const isSkip    = steps > 1;
+
+    const tl = gsap.timeline();
+    dotTlRef.current = tl;
+
+    const prevDot  = dotRefs.current[prev];
+    const destDot  = dotRefs.current[curr];
+    const collapseDur  = isSkip ? totalDur * 0.25 : totalDur;
+    const collapseEase = isSkip ? 'power3.in'  : 'circ.out';
+    const expandEase   = isSkip ? 'power4.in'  : 'circ.out';
+    if (prevDot) tl.to(prevDot, { width: 11, duration: collapseDur, ease: collapseEase }, 0);
+    if (destDot) tl.to(destDot, { width: 36, duration: totalDur,    ease: expandEase   }, 0);
+
+    for (let s = 1; s < steps; s++) {
+      const dot = dotRefs.current[prev + direction * s];
+      if (!dot) continue;
+      const t        = (s / (steps + 1)) * totalDur * 0.8;
+      const pulseDur = Math.min(0.14, totalDur / steps);
+      tl.to(dot, { width: 20, background: 'rgba(255,255,255,0.3)',  duration: pulseDur * 0.5, ease: 'power1.out' }, t);
+      tl.to(dot, { width: 11, background: 'rgba(255,255,255,0.25)', duration: pulseDur * 0.5, ease: 'power1.in'  }, t + pulseDur * 0.5);
+    }
+  }, [slide, done, seq]);
 
   // Phase 1: view link highlight + second avatar
   useEffect(() => {
@@ -490,12 +630,13 @@ export default function ProductShowcase() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [slide, seq, paused]);
 
-  // Phase 6: AAL2314 squawk counts up
-  // Phase 6: highlight AAL2314 squawk cell + pulse regenerate button
+  // Phase 6: highlight squawk cell, then spin + regenerate to new code
   useEffect(() => {
     if (slide !== 6 || paused) return;
-    const t = setTimeout(() => setSquawkHighlight(true), 400);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setSquawkHighlight(true), 400);
+    const t2 = setTimeout(() => setSquawkSpinning(true), 1800);
+    const t3 = setTimeout(() => { setSquawkSpinning(false); setAalSqkNew(4721); }, 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [slide, seq, paused]);
 
   // Phase 7: route modal fades in
@@ -507,7 +648,6 @@ export default function ProductShowcase() {
 
   const animKey = `${slide}-${seq}`;
 
-  // REQ derivations
   const bawReqData: ReqData = (slide === 4 && bawReqActive) || (slide === 5 && !bawCleared)
     ? { label: 'R1C', elapsed: bawReq } : null;
   const ezyReqData: ReqData = slide >= 4 && ezyReqActive ? { label: 'R2C', elapsed: ezyReq } : null;
@@ -526,6 +666,7 @@ export default function ProductShowcase() {
 
       <div className="mx-auto pb-36" style={{ width: '70vw' }}>
         <div
+          ref={cardRef}
           className="relative rounded-2xl overflow-hidden pointer-events-none flex flex-col"
           style={{
             backgroundImage: 'url(/assets/app/backgrounds/vowray__002.webp)',
@@ -543,7 +684,6 @@ export default function ProductShowcase() {
           />
           <MockToolbar avatarCount={avatarCount} />
 
-          {/* Strip table + floating route modal */}
           <div className="relative flex-1">
             <div className="px-5 pt-3" style={{ minHeight: '220px' }}>
               <div className="rounded-xl overflow-hidden">
@@ -572,7 +712,7 @@ export default function ProductShowcase() {
                     {stripsShown === 0 && (
                       <tr>
                         <td colSpan={16}>
-                          <div className="mt-24 px-4 py-6 text-center text-gray-400">
+                          <div className="mt-24 px-4 py-6 text-center text-gray-400 select-none pointer-events-none">
                             No departures found.
                           </div>
                         </td>
@@ -583,21 +723,16 @@ export default function ProductShowcase() {
                       const req     = f.id === 1 ? bawReqData : f.id === 2 ? ezyReqData : aalReqData;
                       const status  = f.id === 1 ? bawStatus : 'PENDING';
                       const cleared = f.id === 1 && bawCleared;
-                      const sqk     = visible ? f.sqk : 0;
+                      const sqk     = visible ? (f.id === 3 && aalSqkNew !== null ? aalSqkNew : f.sqk) : 0;
                       const sqkHL   = f.id === 3 && squawkHighlight;
+                      const sqkSpin = f.id === 3 && squawkSpinning;
 
                       return (
                         <tr
                           key={f.id}
+                          ref={(el) => { rowRefs.current[f.id - 1] = el; }}
                           className="select-none"
-                          style={{
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            opacity:   visible ? 1 : 0,
-                            transform: visible ? 'translateY(0)' : 'translateY(-5px)',
-                            transition: visible
-                              ? 'opacity 0.55s cubic-bezier(0.16,1,0.3,1), transform 0.55s cubic-bezier(0.16,1,0.3,1)'
-                              : 'none',
-                          }}
+                          style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: 0 }}
                         >
                           <td className="py-2 px-2 text-sm text-zinc-600"><GripVertical className="w-4 h-4" /></td>
                           <td className="py-2 px-4 text-sm text-white tabular-nums column-time">{f.time}</td>
@@ -619,7 +754,7 @@ export default function ProductShowcase() {
                               <Route className="w-4 h-4" />
                             </div>
                           </td>
-                          <td className="py-2 px-4 text-sm"><SqkCell value={sqk} highlight={sqkHL} /></td>
+                          <td className="py-2 px-4 text-sm"><SqkCell value={sqk} highlight={sqkHL} spinning={sqkSpin} /></td>
                           <td className="py-2 px-4 text-sm column-clearance"><Checkbox checked={cleared} onChange={() => {}} label="" checkedClass="bg-green-600 border-green-600" /></td>
                           <td className="py-2 px-3 text-sm column-sts"><StatusDropdown value={status} onChange={() => {}} size="xs" controllerType="departure" /></td>
                           <td className="py-2 pr-4 pl-2 text-sm text-center column-more">
@@ -638,16 +773,31 @@ export default function ProductShowcase() {
             <DemoRouteModal
               visible={routeModalVisible}
               resetKey={seq}
+              paused={paused}
               onRouteGenerated={() => setRouteGenerated(true)}
             />
           </div>
 
-          {/* Caption */}
+          {done && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 select-auto pointer-events-none" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}>
+              <div ref={ctaContentRef} className="flex flex-col items-center gap-5 text-center pointer-events-auto" style={{ opacity: 0 }}>
+                <p className="text-white text-3xl font-extrabold">Ready to get started?</p>
+                <a
+                  href={user ? '/?tutorial=true' : '/login?callback=/?tutorial=true'}
+                  className="flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors"
+                >
+                  Start Tutorial
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="px-6 py-6" style={{ minHeight: '96px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p
               key={animKey}
+              ref={captionRef}
               className="text-white font-bold text-xl text-center leading-snug"
-              style={{ animation: 'capIn 0.5s cubic-bezier(0.16,1,0.3,1) both' }}
+              style={{ opacity: 0 }}
             >
               {PHASES[slide].caption}
             </p>
@@ -658,49 +808,84 @@ export default function ProductShowcase() {
         <div className="mt-8 flex justify-center">
           <div className="flex items-center gap-3">
             <div
-              className="flex items-center gap-4 rounded-full px-4 py-3"
+              ref={dotsPillRef}
+              className="flex items-center rounded-full gap-1 px-4 py-3"
               style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}
             >
-              {PHASES.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  style={{ border: 'none', padding: 0, cursor: 'pointer', background: 'none', flexShrink: 0 }}
-                >
-                  <div style={{
-                    width: i === slide ? '40px' : '9px',
-                    height: '9px',
-                    borderRadius: 9999,
-                    background: 'rgba(255,255,255,0.2)',
-                    transition: 'width 0.5s cubic-bezier(0.16,1,0.3,1)',
-                    overflow: 'hidden',
-                  }}>
-                    {i === slide && (
-                      <div key={animKey} style={{
-                        height: '100%',
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.9)',
+              <div ref={dotsContentRef} className="flex items-center">
+                {PHASES.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goTo(i)}
+                    style={{ border: 'none', padding: 0, cursor: 'pointer', background: 'none', flexShrink: 0, width: '36px', display: 'flex', justifyContent: 'center' }}
+                  >
+                    <div
+                      ref={(el) => { dotRefs.current[i] = el; }}
+                      style={{
+                        width: 11,
+                        height: '11px',
                         borderRadius: 9999,
-                        transformOrigin: 'left center',
-                        animation: `carouselFill ${p.duration}ms linear forwards`,
-                        animationPlayState: paused ? 'paused' : 'running',
-                      }} />
-                    )}
-                  </div>
+                        background: 'rgba(255,255,255,0.25)',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {i === slide && !done && (
+                        <div key={animKey} style={{
+                          height: '100%',
+                          width: '100%',
+                          background: 'rgba(255,255,255,0.95)',
+                          borderRadius: 9999,
+                          transformOrigin: 'left center',
+                          animation: `carouselFill ${p.duration}ms linear forwards`,
+                          animationPlayState: paused ? 'paused' : 'running',
+                        }} />
+                      )}
+                    </div>
+                  </button>
+                ))}
+                {/* Done dot */}
+                <button
+                  onClick={() => { setSlide(PHASES.length - 1); setDone(true); setPaused(true); }}
+                  style={{ border: 'none', padding: 0, cursor: 'pointer', background: 'none', flexShrink: 0, width: '36px', display: 'flex', justifyContent: 'center' }}
+                >
+                  <div
+                    ref={(el) => { dotRefs.current[PHASES.length] = el; }}
+                    style={{
+                      width: 11,
+                      height: '11px',
+                      borderRadius: 9999,
+                      background: done ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.25)',
+                      transition: 'background 0.3s',
+                      flexShrink: 0,
+                    }}
+                  />
                 </button>
-              ))}
+              </div>
             </div>
 
-            <button
-              onClick={() => setPaused(v => !v)}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-              style={{ border: 'none' }}
-            >
-              {paused
-                ? <Play  className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" stroke="none" />
-                : <Pause className="w-3.5 h-3.5 text-white"        fill="currentColor" stroke="none" />
-              }
-            </button>
+            <div ref={playBtnRef} style={{ opacity: 0 }}>
+              {done ? (
+                <button
+                  onClick={() => goTo(0, 'restart')}
+                  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: 'none' }}
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-white" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setPaused(v => { posthog?.capture('showcase_playback', { action: v ? 'play' : 'pause', slide }); return !v; }); }}
+                  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: 'none' }}
+                >
+                  {paused
+                    ? <Play  className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" stroke="none" />
+                    : <Pause className="w-3.5 h-3.5 text-white"        fill="currentColor" stroke="none" />
+                  }
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -709,10 +894,6 @@ export default function ProductShowcase() {
         @keyframes carouselFill {
           from { transform: scaleX(0); }
           to   { transform: scaleX(1); }
-        }
-        @keyframes capIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
         }
         .showcase-toolbar #frequency-display > div {
           padding-top: 6px;
