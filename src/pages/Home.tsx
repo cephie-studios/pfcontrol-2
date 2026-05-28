@@ -252,7 +252,7 @@ export default function Home({ standalone = true }: HomeProps) {
       </section>
 
       {/* Mobile: simple 3-step layout */}
-      <section className="block lg:hidden relative py-36 px-2 sm:px-6 bg-black">
+      <section className="block min-[1338px]:hidden relative py-36 px-2 sm:px-6 bg-black">
         <div className="max-w-5xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"

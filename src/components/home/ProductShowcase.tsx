@@ -253,12 +253,13 @@ function DemoRouteModal({
 
   return (
     <div
-      className="absolute left-1/2 -translate-x-1/2 z-10 select-none pointer-events-none shadow-2xl"
+      className="absolute z-10 select-none pointer-events-none shadow-2xl"
       style={{
-        top: '8px',
+        top: '-4px',
+        left: '44%',
         width: '520px',
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.97)',
+        transform: visible ? 'translateX(-50%) translateY(-110px) scale(1)' : 'translateX(-50%) translateY(-10px) scale(0.97)',
         transition: 'opacity 0.4s ease, transform 0.4s ease',
       }}
     >
@@ -654,7 +655,7 @@ export default function ProductShowcase() {
   const aalReqData: ReqData = slide >= 4 && aalReqActive ? { label: 'R3C', elapsed: aalReq } : null;
 
   return (
-    <section className="hidden lg:block relative overflow-hidden bg-black">
+    <section className="hidden min-[1338px]:block relative overflow-hidden bg-black">
       <div className="pt-36 pb-14 max-w-4xl mx-auto px-6 text-center">
         <h2
           className="text-4xl sm:text-6xl font-extrabold bg-linear-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent"
@@ -687,10 +688,10 @@ export default function ProductShowcase() {
           <div className="relative flex-1">
             <div className="px-5 pt-3" style={{ minHeight: '220px' }}>
               <div className="rounded-xl overflow-hidden">
-                <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
+                <table className="min-w-full showcase-table" style={{ borderCollapse: 'collapse' }}>
                   <thead>
                     <tr className="bg-blue-950 text-blue-200 select-none">
-                      <th className="py-2.5 px-2 text-left w-8"></th>
+                      <th className="py-2.5 px-2 text-left w-8 column-drag"></th>
                       <th className="py-2.5 px-4 text-left text-sm column-time">TIME</th>
                       <th className="py-2.5 px-4 text-left text-sm column-callsign">CALLSIGN</th>
                       <th className="py-2.5 px-2 text-left text-sm w-16 column-req">REQ</th>
@@ -734,7 +735,7 @@ export default function ProductShowcase() {
                           className="select-none"
                           style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: 0 }}
                         >
-                          <td className="py-2 px-2 text-sm text-zinc-600"><GripVertical className="w-4 h-4" /></td>
+                          <td className="py-2 px-2 text-sm text-zinc-600 column-drag"><GripVertical className="w-4 h-4" /></td>
                           <td className="py-2 px-4 text-sm text-white tabular-nums column-time">{f.time}</td>
                           <td className="py-2 px-4 text-sm font-medium text-white column-callsign">{f.callsign}</td>
                           <td className="py-2 px-2 text-sm column-req"><ReqCell req={req} /></td>
@@ -898,6 +899,39 @@ export default function ProductShowcase() {
         .showcase-toolbar #frequency-display > div {
           padding-top: 6px;
           padding-bottom: 6px;
+        }
+        @media (max-width: 1550px) {
+          .showcase-toolbar.toolbar {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0;
+          }
+        }
+        @media (max-width: 2145px) {
+          .showcase-toolbar.toolbar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+          }
+          .showcase-table .column-cfl {
+            display: none;
+          }
+        }
+        @media (max-width: 1600px) {
+          .showcase-table .column-route {
+            display: table-cell;
+          }
+          .showcase-table .column-stand {
+            display: none;
+          }
+        }
+        @media (max-width: 1400px) {
+          .showcase-table .column-drag {
+            display: none;
+          }
         }
       `}</style>
     </section>
