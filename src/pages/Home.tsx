@@ -5,29 +5,31 @@ import {
   TowerControl,
   Users,
   Crown,
-} from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import {
   fetchStatistics,
   fetchLeaderboard,
   fetchBackgrounds,
-} from '../utils/fetch/data';
-import { useSearchParams } from 'react-router-dom';
-import { updateTutorialStatus } from '../utils/fetch/auth';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useSettings } from '../hooks/settings/useSettings';
-import { steps } from '../components/tutorial/TutorialStepsHome';
+} from "../utils/fetch/data";
+import { useSearchParams } from "react-router-dom";
+import { updateTutorialStatus } from "../utils/fetch/auth";
+import { useAuth } from "../hooks/auth/useAuth";
+import { useSettings } from "../hooks/settings/useSettings";
+import { steps } from "../components/tutorial/TutorialStepsHome";
 import Joyride, {
   type CallBackProps,
   STATUS,
-} from 'react-joyride-react19-compat';
-import { trackTutorialEvent } from '../utils/tutorialTracking';
-import { posthog } from '../utils/posthog';
-import Modal from '../components/common/Modal';
-import CustomTooltip from '../components/tutorial/CustomTooltip';
-import Footer from '../components/Footer';
-import Button from '../components/common/Button';
-import Navbar from '../components/Navbar';
+} from "react-joyride-react19-compat";
+import { trackTutorialEvent } from "../utils/tutorialTracking";
+import { posthog } from "../utils/posthog";
+import Modal from "../components/common/Modal";
+import CustomTooltip from "../components/tutorial/CustomTooltip";
+import Footer from "../components/Footer";
+import Button from "../components/common/Button";
+import Navbar from "../components/Navbar";
+import ProductShowcase from "../components/home/ProductShowcase";
+import { useCountUp } from "../hooks/useCountUp";
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -62,38 +64,42 @@ export default function Home({ standalone = true }: HomeProps) {
   const [customLoaded, setCustomLoaded] = useState(false);
 
   const [searchParams] = useSearchParams();
-  const startTutorial = searchParams.get('tutorial') === 'true';
+  const startTutorial = searchParams.get("tutorial") === "true";
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
 
+  const [sessionsCount, sessionsRef] = useCountUp(stats.sessionsCreated);
+  const [usersCount, usersRef] = useCountUp(stats.registeredUsers);
+  const [flightsCount, flightsRef] = useCountUp(stats.flightsLogged);
+
   const statTitles: Record<string, string> = {
-    total_sessions_created: 'Sessions Created',
-    'total_flights_submitted.total': 'Flights Submitted',
-    total_time_controlling_minutes: 'Time Controlling',
-    'total_flight_edits.total_edit_actions': 'Flight Edits',
+    total_sessions_created: "Sessions Created",
+    "total_flights_submitted.total": "Flights Submitted",
+    total_time_controlling_minutes: "Time Controlling",
+    "total_flight_edits.total_edit_actions": "Flight Edits",
   };
 
   useEffect(() => {
     if (user && !user.settings?.tutorialCompleted && !startTutorial) {
       setShowTutorialPrompt(true);
-      posthog.capture('tutorial_prompt_shown');
+      posthog.capture("tutorial_prompt_shown");
     }
   }, [user, startTutorial]);
 
   const handleTutorialChoice = (start: boolean) => {
     setShowTutorialPrompt(false);
     if (start) {
-      posthog.capture('tutorial_prompt_accepted');
-      window.location.href = '/?tutorial=true';
+      posthog.capture("tutorial_prompt_accepted");
+      window.location.href = "/?tutorial=true";
     } else {
-      posthog.capture('tutorial_prompt_declined');
+      posthog.capture("tutorial_prompt_declined");
       updateTutorialStatus(true);
     }
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    trackTutorialEvent('home', data);
+    trackTutorialEvent("home", data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);
@@ -122,7 +128,7 @@ export default function Home({ standalone = true }: HomeProps) {
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error('Error loading available images:', error);
+        console.error("Error loading available images:", error);
       }
     };
     loadImages();
@@ -133,21 +139,21 @@ export default function Home({ standalone = true }: HomeProps) {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
+      if (!filename || filename === "random" || filename === "favorites") {
         return filename;
       }
-      if (filename.startsWith('https://api.cephie.app/')) {
+      if (filename.startsWith("https://api.cephie.app/")) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === 'random') {
+    if (selectedImage === "random") {
       if (availableImages.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
       }
-    } else if (selectedImage === 'favorites') {
+    } else if (selectedImage === "favorites") {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
         const randomFav =
@@ -155,15 +161,15 @@ export default function Home({ standalone = true }: HomeProps) {
         const favImageUrl = getImageUrl(randomFav);
         if (
           favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
+          favImageUrl !== "random" &&
+          favImageUrl !== "favorites"
         ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
         bgImage = `url(${imageUrl})`;
       }
     }
@@ -183,7 +189,7 @@ export default function Home({ standalone = true }: HomeProps) {
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
-      return '/assets/app/default/avatar.webp';
+      return "/assets/app/default/avatar.webp";
     }
     return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
   };
@@ -197,11 +203,11 @@ export default function Home({ standalone = true }: HomeProps) {
           className="absolute inset-0"
           style={{
             backgroundImage,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
             opacity: customLoaded ? 1 : 0,
-            transition: 'opacity 0.5s ease-in-out',
+            transition: "opacity 0.5s ease-in-out",
           }}
         />
         <div className="absolute inset-0 backdrop-blur-[5px]"></div>
@@ -221,8 +227,8 @@ export default function Home({ standalone = true }: HomeProps) {
               <Button
                 onClick={() =>
                   (window.location.href = startTutorial
-                    ? '/create?tutorial=true'
-                    : '/create')
+                    ? "/create?tutorial=true"
+                    : "/create")
                 }
                 variant="outline"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
@@ -232,7 +238,7 @@ export default function Home({ standalone = true }: HomeProps) {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
-                onClick={() => (window.location.href = '/pfatc')}
+                onClick={() => (window.location.href = "/pfatc")}
                 variant="ghost"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
                 id="pfatc-flights-btn"
@@ -245,7 +251,8 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <section className="relative py-36 px-2 sm:px-6 bg-black">
+      {/* Mobile: simple 3-step layout */}
+      <section className="block lg:hidden relative py-36 px-2 sm:px-6 bg-black">
         <div className="max-w-5xl mx-auto px-2 sm:px-6 relative z-10">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
@@ -298,62 +305,8 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <section className="relative py-36 px-2 sm:px-6 bg-black">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
-          <h2
-            className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
-            style={{ lineHeight: 1.4 }}
-          >
-            Join our community
-          </h2>
-          <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
-          <p className="text-xl text-center text-gray-300 max-w-3xl mx-auto">
-            Join thousands of controllers and pilots using PFControl worldwide.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 cursor-default mt-20 max-w-7xl mx-auto px-2 sm:px-6">
-          {/* Card 1 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <TowerControl className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Sessions Created
-            </h3>
-            <div className="text-4xl font-bold text-white mb-3">
-              {stats.sessionsCreated.toLocaleString()}
-            </div>
-            <p className="text-gray-400">Last 30 days</p>
-          </div>
-          {/* Card 2 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <Users className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Registered Users
-            </h3>
-            <div className="text-4xl font-bold text-white mb-3">
-              {stats.registeredUsers.toLocaleString()}
-            </div>
-            <p className="text-gray-400">All time</p>
-          </div>
-          {/* Card 3 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <Plane className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Flights Logged
-            </h3>
-            <div className="text-4xl font-bold text-white mb-3">
-              {stats.flightsLogged.toLocaleString()}
-            </div>
-            <p className="text-gray-400">Last 30 days</p>
-          </div>
-        </div>
-      </section>
+      {/* Desktop: interactive scroll showcase */}
+      <ProductShowcase />
 
       <section className="relative py-36 px-2 sm:px-6 bg-black">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 relative z-10">
@@ -362,7 +315,7 @@ export default function Home({ standalone = true }: HomeProps) {
           </h2>
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 mt-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-28 pt-24">
-            {' '}
+            {" "}
             {Object.entries(leaderboard)
               .filter(([key]) => !/chat|message/i.test(key))
               .map(([key, users]) => (
@@ -373,61 +326,88 @@ export default function Home({ standalone = true }: HomeProps) {
                   >
                     {statTitles[key] ||
                       key
-                        .replace(/total_|_/g, ' ')
-                        .replace('submitted total', 'Flights Submitted')
+                        .replace(/total_|_/g, " ")
+                        .replace("submitted total", "Flights Submitted")
                         .trim()}
                   </h3>
-                  <div className="flex flex-col md:flex-row justify-center gap-12">
-                    {users.slice(0, 3).map((user, idx) => (
-                      <div
-                        key={user.userId}
-                        className="flex flex-col items-center"
-                      >
-                        <div className="relative">
-                          <img
-                            src={getDiscordAvatar(user.userId, user.avatar)}
-                            alt={user.username}
-                            className="w-28 h-28 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-300 transition-colors"
-                            onClick={() =>
-                              (window.location.href = `/user/${user.username}`)
-                            }
-                          />
-                          {idx <= 2 && (
+                  {/* Podium — order: 2nd | 1st | 3rd */}
+                  <div className="flex items-end justify-center gap-4">
+                    {[1, 0, 2].map((rank) => {
+                      const u = users[rank];
+                      if (!u) return null;
+                      const podiumHeights = [80, 52, 36]; // 1st, 2nd, 3rd bar heights (px)
+                      const podiumColors = ["#fbbf24", "#c0c0c0", "#ad6823"];
+                      const avatarSizes = [
+                        "w-24 h-24",
+                        "w-20 h-20",
+                        "w-16 h-16",
+                      ];
+                      const barHeight = podiumHeights[rank];
+                      const barColor = podiumColors[rank];
+                      return (
+                        <div
+                          key={u.userId}
+                          className="flex flex-col items-center"
+                        >
+                          <div className="relative mb-3">
+                            <img
+                              src={getDiscordAvatar(u.userId, u.avatar)}
+                              alt={u.username}
+                              className={`${avatarSizes[rank]} rounded-full border-2 cursor-pointer hover:opacity-90 transition-opacity`}
+                              style={{ borderColor: barColor }}
+                              onClick={() =>
+                                (window.location.href = `/user/${u.username}`)
+                              }
+                            />
                             <Crown
-                              className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
+                              className="absolute -top-2 -right-1 w-6 h-6 rotate-12"
                               style={{
-                                color:
-                                  idx === 0
-                                    ? '#fbbf24'
-                                    : idx === 1
-                                      ? '#c0c0c0'
-                                      : '#ad6823',
+                                color: barColor,
                                 filter:
-                                  'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                                  "drop-shadow(0 1px 3px rgba(0,0,0,0.6))",
                               }}
                             />
-                          )}
+                          </div>
+                          <span className="text-gray-300 text-sm font-medium mb-1 max-w-[90px] truncate text-center">
+                            {u.username}
+                          </span>
+                          <span
+                            className="font-mono font-bold text-sm mb-2"
+                            style={{ color: barColor }}
+                          >
+                            {key === "total_time_controlling_minutes"
+                              ? (() => {
+                                  const mins = Math.floor(u.score);
+                                  if (mins >= 60) {
+                                    const h = Math.floor(mins / 60);
+                                    const rem = mins % 60;
+                                    return rem === 0
+                                      ? `${h}h`
+                                      : `${h}h ${rem}m`;
+                                  }
+                                  return `${mins}m`;
+                                })()
+                              : u.score}
+                          </span>
+                          {/* Podium bar */}
+                          <div
+                            className="w-24 rounded-t-lg flex items-center justify-center"
+                            style={{
+                              height: barHeight,
+                              background: `${barColor}22`,
+                              borderTop: `2px solid ${barColor}55`,
+                            }}
+                          >
+                            <span
+                              className="text-2xl font-black"
+                              style={{ color: `${barColor}99` }}
+                            >
+                              {rank + 1}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-gray-300 mt-4 mb-1 text-lg font-medium">
-                          {user.username}
-                        </span>
-                        <span className="text-blue-400 font-mono font-bold text-lg">
-                          {key === 'total_time_controlling_minutes'
-                            ? (() => {
-                                const mins = Math.floor(user.score);
-                                if (mins >= 60) {
-                                  const h = Math.floor(mins / 60);
-                                  const rem = mins % 60;
-                                  return rem === 0
-                                    ? `${h}h.`
-                                    : `${h}h.${rem}min.`;
-                                }
-                                return `${mins} min.`;
-                              })()
-                            : user.score}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -435,123 +415,59 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <section className="text-white py-24 text-center px-2 sm:px-6 relative bg-black">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
+      <section className="relative py-36 px-2 sm:px-6 bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 text-center mb-24">
           <h2
-            className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
+            className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6"
             style={{ lineHeight: 1.4 }}
           >
-            Technologies & Frameworks
+            Join the community
           </h2>
-          <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
-          <p className="text-xl text-center text-gray-300 max-w-3xl mx-auto">
-            What technologies we use to develop PFControl.
-          </p>
+          <div className="w-16 h-1 bg-blue-500 mx-auto -mt-4"></div>
         </div>
 
-        <div className="mt-20 max-w-7xl mx-auto px-2 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 space-y-12 font-medium">
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/tailwind.svg"
-                alt="Tailwind CSS"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">Tailwind CSS</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/react.svg"
-                alt="React"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">React</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/nodejs.svg"
-                alt="Node.js"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">Node.js</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/redis.svg"
-                alt="Redis"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">Redis</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/postgresql.svg"
-                alt="PostgreSQL"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">PostgreSQL</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <img
-                src="/assets/app/icons/git.svg"
-                alt="Git"
-                className="h-24 w-24 mb-2"
-              />
-              <span className="text-gray-300 text-sm">Git</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="text-white py-24 -mb-24 text-center px-2 sm:px-6 relative bg-black">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 relative z-10">
-          <h2
-            className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center"
-            style={{ lineHeight: 1.4 }}
+        <div className="max-w-5xl mx-auto px-2 sm:px-6 flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-zinc-800 cursor-default">
+          <div
+            ref={sessionsRef}
+            className="flex-1 flex flex-col items-center justify-center py-10 md:py-0 gap-2"
           >
-            Why Choose PFControl?
-          </h2>
-          <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 -mt-4"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 cursor-default mt-20 max-w-7xl mx-auto px-2 sm:px-6">
-          {/* Card 1 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Secure & Reliable
-            </h3>
-            <p className="text-gray-400">
-              Your sessions and data are protected with end-to-end encryption
-              and regular backups.
-            </p>
+            <span className="text-5xl sm:text-6xl font-black text-white tabular-nums tracking-tight">
+              {sessionsCount.toLocaleString()}
+            </span>
+            <span className="text-base text-zinc-400 uppercase tracking-widest font-medium">
+              Sessions Created
+            </span>
+            <span className="text-xs text-zinc-600 uppercase tracking-wider">
+              Last 30 days
+            </span>
           </div>
-          {/* Card 2 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <Users className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Real Time Updates
-            </h3>
-            <p className="text-gray-400">
-              Instantly see changes and updates as they happen, keeping your
-              controlling in sync at all times.
-            </p>
+          <div
+            ref={usersRef}
+            className="flex-1 flex flex-col items-center justify-center py-10 md:py-0 gap-2"
+          >
+            <span className="text-5xl sm:text-6xl font-black text-white tabular-nums tracking-tight">
+              {usersCount.toLocaleString()}
+            </span>
+            <span className="text-base text-zinc-400 uppercase tracking-widest font-medium">
+              Registered Users
+            </span>
+            <span className="text-xs text-zinc-600 uppercase tracking-wider">
+              All time
+            </span>
           </div>
-          {/* Card 3 */}
-          <div className="relative bg-zinc-900 border-2 border-blue-800 rounded-2xl p-10 text-center shadow-xl transition-transform hover:-translate-y-2 hover:shadow-2xl hover:border-blue-400">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-900 p-3 rounded-full shadow-lg border-2 border-blue-800">
-              <Plane className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold mt-6 mb-4 text-blue-200">
-              Collaborative
-            </h3>
-            <p className="text-gray-400">
-              Chat and collaborate with your controllers in our secure chats and
-              voice channels across any device.
-            </p>
+          <div
+            ref={flightsRef}
+            className="flex-1 flex flex-col items-center justify-center py-10 md:py-0 gap-2"
+          >
+            <span className="text-5xl sm:text-6xl font-black text-white tabular-nums tracking-tight">
+              {flightsCount.toLocaleString()}
+            </span>
+            <span className="text-base text-zinc-400 uppercase tracking-widest font-medium">
+              Flights Logged
+            </span>
+            <span className="text-xs text-zinc-600 uppercase tracking-wider">
+              Last 30 days
+            </span>
           </div>
         </div>
       </section>
@@ -562,11 +478,11 @@ export default function Home({ standalone = true }: HomeProps) {
           className="absolute inset-0"
           style={{
             backgroundImage,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
             opacity: customLoaded ? 1 : 0,
-            transition: 'opacity 0.5s ease-in-out',
+            transition: "opacity 0.5s ease-in-out",
           }}
         />
         <div className="absolute inset-0 backdrop-blur-[5px]"></div>
@@ -601,8 +517,8 @@ export default function Home({ standalone = true }: HomeProps) {
               <Button
                 onClick={() => {
                   window.location.href = startTutorial
-                    ? '/create?tutorial=true'
-                    : '/create';
+                    ? "/create?tutorial=true"
+                    : "/create";
                 }}
                 variant="outline"
                 className="px-8 py-4 text-base sm:text-lg font-semibold"
@@ -625,15 +541,15 @@ export default function Home({ standalone = true }: HomeProps) {
         tooltipComponent={CustomTooltip}
         styles={{
           options: {
-            primaryColor: '#3b82f6',
-            textColor: '#ffffff',
-            backgroundColor: '#1f2937',
+            primaryColor: "#3b82f6",
+            textColor: "#ffffff",
+            backgroundColor: "#1f2937",
             zIndex: 1000,
           },
           spotlight: {
-            border: '2px solid #fbbf24',
-            borderRadius: '24px',
-            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
+            border: "2px solid #fbbf24",
+            borderRadius: "24px",
+            boxShadow: "0 0 20px rgba(251, 191, 36, 0.5)",
           },
         }}
       />
