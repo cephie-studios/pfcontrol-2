@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "oxc",
-    "typescript",
-    "unicorn",
-    "react"
-  ],
+  "plugins": ["oxc", "typescript", "unicorn", "react"],
   "categories": {
     "correctness": "warn"
   },
@@ -19,9 +14,7 @@
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.{ts,tsx}"
-      ],
+      "files": ["**/*.{ts,tsx}"],
       "rules": {
         "constructor-super": "error",
         "for-direction": "error",

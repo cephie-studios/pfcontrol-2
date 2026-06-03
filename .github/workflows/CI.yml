@@ -34,7 +34,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Check formatting
-        run: npx prettier --check "server/**/*.ts" "src/**/*.{ts,tsx}"
+        run: npx vp fmt --check
 
       - name: Run lint
         run: npm run lint
