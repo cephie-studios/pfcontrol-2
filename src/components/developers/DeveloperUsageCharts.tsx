@@ -85,17 +85,22 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
         label: shortAxisDate(d.date),
         requests: d.count,
       })),
-    [data],
+    [data]
   );
 
-  const maxRequests = useMemo(() => points.reduce((m, p) => Math.max(m, p.requests), 0), [points]);
+  const maxRequests = useMemo(
+    () => points.reduce((m, p) => Math.max(m, p.requests), 0),
+    [points]
+  );
 
   const yAxisMax = maxRequests === 0 ? 8 : Math.ceil(maxRequests * 1.12);
 
   if (points.length === 0) {
     return (
       <div className="h-full min-h-[200px] flex items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 shadow-inner ring-1 ring-zinc-800/40">
-        <p className="text-sm text-zinc-500">No usage data for this period yet.</p>
+        <p className="text-sm text-zinc-500">
+          No usage data for this period yet.
+        </p>
       </div>
     );
   }
@@ -107,7 +112,10 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
       aria-label="Request volume over time"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.45} />
@@ -198,10 +206,13 @@ export function DeveloperScopeDonutChart({
         name: scopeLabelMap.get(r.scope_id) ?? r.scope_id,
         value: r.count,
       })),
-    [rows, scopeLabelMap],
+    [rows, scopeLabelMap]
   );
 
-  const total = useMemo(() => pieData.reduce((s, d) => s + d.value, 0), [pieData]);
+  const total = useMemo(
+    () => pieData.reduce((s, d) => s + d.value, 0),
+    [pieData]
+  );
 
   return (
     <div className="flex h-full w-full min-h-[220px] min-w-0 flex-row [&_.recharts-surface]:outline-none">
@@ -227,7 +238,10 @@ export function DeveloperScopeDonutChart({
                 animationEasing="ease-out"
               >
                 {pieData.map((_, i) => (
-                  <Cell key={`cell-${i}`} fill={SCOPE_COLORS[i % SCOPE_COLORS.length]} />
+                  <Cell
+                    key={`cell-${i}`}
+                    fill={SCOPE_COLORS[i % SCOPE_COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip
@@ -236,7 +250,8 @@ export function DeveloperScopeDonutChart({
                   if (!active || !payload?.length) return null;
                   const p = payload[0];
                   const v = Number(p.value);
-                  const pct = total > 0 ? Math.round((v / total) * 1000) / 10 : 0;
+                  const pct =
+                    total > 0 ? Math.round((v / total) * 1000) / 10 : 0;
                   return (
                     <div className={`${CHART_TOOLTIP_PANEL} max-w-[240px]`}>
                       <p className="text-xs font-medium text-zinc-100 leading-snug">

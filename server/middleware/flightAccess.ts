@@ -2,18 +2,31 @@ import { Request, Response, NextFunction } from "express";
 import { mainDb } from "../db/connection.js";
 import { getUserRoles } from "../db/roles.js";
 
-function hasPermission(roles: Awaited<ReturnType<typeof getUserRoles>>, permKey: string): boolean {
+function hasPermission(
+  roles: Awaited<ReturnType<typeof getUserRoles>>,
+  permKey: string
+): boolean {
   return roles.some((role) => {
     let perms = role.permissions;
     if (typeof perms === "string") {
-      try { perms = JSON.parse(perms); } catch { return false; }
+      try {
+        perms = JSON.parse(perms);
+      } catch {
+        return false;
+      }
     }
-    return perms && typeof perms === "object" && (perms as Record<string, boolean>)[permKey] === true;
+    return (
+      perms &&
+      typeof perms === "object" &&
+      (perms as Record<string, boolean>)[permKey] === true
+    );
   });
 }
 
 /** Check if user can edit PFATC session flights (pfatc_sector permission) */
-export async function isPFATCSectorController(userId: string): Promise<boolean> {
+export async function isPFATCSectorController(
+  userId: string
+): Promise<boolean> {
   try {
     const userRoles = await getUserRoles(userId);
     return hasPermission(userRoles, "pfatc_sector");
@@ -36,13 +49,20 @@ export async function isAATCSectorController(userId: string): Promise<boolean> {
 export async function isEventController(userId: string): Promise<boolean> {
   try {
     const userRoles = await getUserRoles(userId);
-    return hasPermission(userRoles, "pfatc_sector") || hasPermission(userRoles, "aatc_sector");
+    return (
+      hasPermission(userRoles, "pfatc_sector") ||
+      hasPermission(userRoles, "aatc_sector")
+    );
   } catch {
     return false;
   }
 }
 
-export async function requireFlightAccess(req: Request, res: Response, next: NextFunction) {
+export async function requireFlightAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const { sessionId } = req.params;
     const userId = req.user?.userId;
@@ -55,7 +75,13 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
 
     const session = await mainDb
       .selectFrom("sessions")
-      .select(["session_id", "access_id", "created_by", "is_pfatc", "is_advanced_atc"])
+      .select([
+        "session_id",
+        "access_id",
+        "created_by",
+        "is_pfatc",
+        "is_advanced_atc",
+      ])
       .where("session_id", "=", sessionId)
       .executeTakeFirst();
 
@@ -98,12 +124,18 @@ export async function requireFlightAccess(req: Request, res: Response, next: Nex
 export async function canModifySession(
   userId: string,
   sessionId: string,
-  accessId?: string,
+  accessId?: string
 ): Promise<boolean> {
   try {
     const session = await mainDb
       .selectFrom("sessions")
-      .select(["session_id", "access_id", "created_by", "is_pfatc", "is_advanced_atc"])
+      .select([
+        "session_id",
+        "access_id",
+        "created_by",
+        "is_pfatc",
+        "is_advanced_atc",
+      ])
       .where("session_id", "=", sessionId)
       .executeTakeFirst();
 
@@ -111,8 +143,10 @@ export async function canModifySession(
 
     const userRoles = await getUserRoles(userId);
 
-    if (hasPermission(userRoles, "pfatc_sector") && session.is_pfatc) return true;
-    if (hasPermission(userRoles, "aatc_sector") && session.is_advanced_atc) return true;
+    if (hasPermission(userRoles, "pfatc_sector") && session.is_pfatc)
+      return true;
+    if (hasPermission(userRoles, "aatc_sector") && session.is_advanced_atc)
+      return true;
 
     if (accessId && accessId === session.access_id) return true;
     if (userId === session.created_by) return true;

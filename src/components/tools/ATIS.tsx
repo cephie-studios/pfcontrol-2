@@ -38,21 +38,27 @@ export default function ATIS({
 }: ATISProps) {
   const { airportRunways, fetchAirportData, fetchedAirports } = useData();
   const [ident, setIdent] = useState<string>("A");
-  const [selectedApproaches, setSelectedApproaches] = useState<string[]>(["ILS"]);
+  const [selectedApproaches, setSelectedApproaches] = useState<string[]>([
+    "ILS",
+  ]);
   const [landingRunways, setLandingRunways] = useState<string[]>([]);
   const [departingRunways, setDepartingRunways] = useState<string[]>([]);
   const [remarks, setRemarks] = useState<string>("");
   const [metar, setMetar] = useState<string>("");
   const [atisText, setAtisText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isLoadingPreviousATIS, setIsLoadingPreviousATIS] = useState<boolean>(false);
+  const [isLoadingPreviousATIS, setIsLoadingPreviousATIS] =
+    useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const identOptions = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   const approachOptions = ["ILS", "VISUAL", "RNAV"];
-  const availableRunways = useMemo(() => airportRunways[icao] || [], [airportRunways, icao]);
+  const availableRunways = useMemo(
+    () => airportRunways[icao] || [],
+    [airportRunways, icao]
+  );
 
   useEffect(() => {
     if (!socket) return;
@@ -84,7 +90,10 @@ export default function ATIS({
 
         if (sessionData?.atis) {
           let atisData = null;
-          if (typeof sessionData.atis === "object" && icao in sessionData.atis) {
+          if (
+            typeof sessionData.atis === "object" &&
+            icao in sessionData.atis
+          ) {
             // @ts-expect-error: dynamic key access
             atisData = sessionData.atis[icao];
           } else if (sessionData.atis.letter && sessionData.atis.text) {
@@ -161,12 +170,16 @@ export default function ATIS({
               extractedApproaches.push("ILS", "VISUAL");
             } else if (atisText.includes("SIMULTANEOUS")) {
               if (atisText.includes("ILS")) extractedApproaches.push("ILS");
-              if (atisText.includes("VISUAL")) extractedApproaches.push("VISUAL");
+              if (atisText.includes("VISUAL"))
+                extractedApproaches.push("VISUAL");
               if (atisText.includes("RNAV")) extractedApproaches.push("RNAV");
             } else {
-              if (atisText.includes("ILS APPROACH")) extractedApproaches.push("ILS");
-              if (atisText.includes("VISUAL APPROACH")) extractedApproaches.push("VISUAL");
-              if (atisText.includes("RNAV APPROACH")) extractedApproaches.push("RNAV");
+              if (atisText.includes("ILS APPROACH"))
+                extractedApproaches.push("ILS");
+              if (atisText.includes("VISUAL APPROACH"))
+                extractedApproaches.push("VISUAL");
+              if (atisText.includes("RNAV APPROACH"))
+                extractedApproaches.push("RNAV");
             }
 
             if (extractedLandingRunways.length > 0) {
@@ -222,7 +235,12 @@ export default function ATIS({
   }, [icao, open]);
 
   useEffect(() => {
-    if (activeRunway && open && landingRunways.length === 0 && departingRunways.length === 0) {
+    if (
+      activeRunway &&
+      open &&
+      landingRunways.length === 0 &&
+      departingRunways.length === 0
+    ) {
       setLandingRunways([activeRunway]);
       setDepartingRunways([activeRunway]);
     }
@@ -240,11 +258,15 @@ export default function ATIS({
   const toggleRunway = (runway: string, type: "landing" | "departing") => {
     if (type === "landing") {
       setLandingRunways((prev) =>
-        prev.includes(runway) ? prev.filter((r) => r !== runway) : [...prev, runway],
+        prev.includes(runway)
+          ? prev.filter((r) => r !== runway)
+          : [...prev, runway]
       );
     } else {
       setDepartingRunways((prev) =>
-        prev.includes(runway) ? prev.filter((r) => r !== runway) : [...prev, runway],
+        prev.includes(runway)
+          ? prev.filter((r) => r !== runway)
+          : [...prev, runway]
       );
     }
   };
@@ -267,7 +289,8 @@ export default function ATIS({
       const formatApproaches = () => {
         if (selectedApproaches.length === 0) return "";
 
-        const approachRunways = landingRunways.length > 0 ? landingRunways : departingRunways;
+        const approachRunways =
+          landingRunways.length > 0 ? landingRunways : departingRunways;
         const runwaysText =
           approachRunways.length === 1
             ? `RUNWAY ${approachRunways[0]}`
@@ -284,7 +307,7 @@ export default function ATIS({
         const lastApproach = selectedApproaches[selectedApproaches.length - 1];
         const otherApproaches = selectedApproaches.slice(0, -1);
         return `EXPECT SIMULTANEOUS ${otherApproaches.join(
-          ", ",
+          ", "
         )} AND ${lastApproach} APPROACH ${runwaysText}`;
       };
 
@@ -328,12 +351,17 @@ export default function ATIS({
         onAtisUpdate({
           letter: data.ident,
           text: data.atisText,
-          timestamp: typeof data.timestamp === "string" ? Number(data.timestamp) : data.timestamp,
+          timestamp:
+            typeof data.timestamp === "string"
+              ? Number(data.timestamp)
+              : data.timestamp,
         });
       }
     } catch (error) {
       console.error("Error generating ATIS:", error);
-      setError(error instanceof Error ? error.message : "Failed to generate ATIS");
+      setError(
+        error instanceof Error ? error.message : "Failed to generate ATIS"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -380,8 +408,13 @@ export default function ATIS({
       style={{ zIndex: 10000 }}
     >
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
-        <span className="font-extrabold text-xl text-blue-300">ATIS Generator - {icao}</span>
-        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700 transition-colors">
+        <span className="font-extrabold text-xl text-blue-300">
+          ATIS Generator - {icao}
+        </span>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+        >
           <X className="h-5 w-5 text-gray-400" />
         </button>
       </div>
@@ -389,9 +422,14 @@ export default function ATIS({
       <div className="flex-1 overflow-y-auto p-5 space-y-6">
         {(isLoading || isLoadingPreviousATIS) && (
           <div className="flex items-center justify-center gap-2 p-4">
-            <Loader className="h-6 w-6 shrink-0 animate-spin text-blue-400" aria-hidden />
+            <Loader
+              className="h-6 w-6 shrink-0 animate-spin text-blue-400"
+              aria-hidden
+            />
             {isLoadingPreviousATIS && (
-              <span className="text-sm text-gray-400">Loading previous ATIS data...</span>
+              <span className="text-sm text-gray-400">
+                Loading previous ATIS data...
+              </span>
             )}
           </div>
         )}
@@ -405,13 +443,17 @@ export default function ATIS({
         {atisText && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">Generated ATIS</h3>
+              <h3 className="text-lg font-semibold text-blue-300">
+                Generated ATIS
+              </h3>
               <Button
                 onClick={copyToClipboard}
                 size="sm"
                 variant="outline"
                 className={`flex items-center gap-1 relative overflow-hidden transition-all duration-300 ${
-                  copied ? "bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white" : ""
+                  copied
+                    ? "bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white"
+                    : ""
                 }`}
               >
                 <div
@@ -424,7 +466,9 @@ export default function ATIS({
                       copied ? "rotate-12" : ""
                     }`}
                   />
-                  <span className="font-medium">{copied ? "Copied!" : "Copy"}</span>
+                  <span className="font-medium">
+                    {copied ? "Copied!" : "Copy"}
+                  </span>
                 </div>
                 {copied && (
                   <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg"></div>
@@ -438,7 +482,9 @@ export default function ATIS({
         )}
 
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">ATIS Identifier</h3>
+          <h3 className="text-lg font-semibold text-blue-300">
+            ATIS Identifier
+          </h3>
           <div className="grid grid-cols-6 gap-2">
             {identOptions.map((letter) => (
               <button
@@ -458,7 +504,9 @@ export default function ATIS({
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">Approach Types</h3>
+          <h3 className="text-lg font-semibold text-blue-300">
+            Approach Types
+          </h3>
           <div className="flex flex-wrap gap-2">
             {approachOptions.map((approach) => (
               <button
@@ -478,7 +526,9 @@ export default function ATIS({
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">Active Runways</h3>
+          <h3 className="text-lg font-semibold text-blue-300">
+            Active Runways
+          </h3>
           {availableRunways.length > 0 ? (
             <div className="space-y-3">
               {availableRunways.map((runway) => (
@@ -486,7 +536,9 @@ export default function ATIS({
                   key={runway}
                   className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg border border-zinc-700"
                 >
-                  <span className="font-mono text-lg font-semibold">{runway}</span>
+                  <span className="font-mono text-lg font-semibold">
+                    {runway}
+                  </span>
                   <div className="flex gap-2">
                     <Checkbox
                       checked={landingRunways.includes(runway)}
@@ -522,7 +574,9 @@ export default function ATIS({
               disabled={isRefreshing}
               className="flex items-center gap-1"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </div>
@@ -536,7 +590,9 @@ export default function ATIS({
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">Additional Remarks</h3>
+          <h3 className="text-lg font-semibold text-blue-300">
+            Additional Remarks
+          </h3>
           <TextInput
             value={remarks}
             onChange={setRemarks}

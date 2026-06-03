@@ -1,4 +1,4 @@
-import Button from './Button';
+import Button from "./Button";
 
 interface ErrorScreenProps {
   title: string;
@@ -11,7 +11,7 @@ export default function ErrorScreen({
   title,
   message,
   onRetry,
-  className = '',
+  className = "",
 }: ErrorScreenProps) {
   return (
     <div className={`text-center py-12 ${className}`}>

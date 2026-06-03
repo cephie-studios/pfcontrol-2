@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import {
   fetchUserSettings,
   updateUserSettings,
-} from '../../utils/fetch/settings';
-import type { Settings } from '../../types/settings';
-import { SettingsContext } from './useSettings';
+} from "../../utils/fetch/settings";
+import type { Settings } from "../../types/settings";
+import { SettingsContext } from "./useSettings";
 
 const defaultSettings: Settings = {
   backgroundImage: {
@@ -23,7 +23,7 @@ const defaultSettings: Settings = {
   layout: {
     showCombinedView: false,
     flightRowOpacity: 100,
-    chartDrawerViewMode: 'legacy',
+    chartDrawerViewMode: "legacy",
   },
   departureTableColumns: {
     time: true,
@@ -76,7 +76,7 @@ const defaultSettings: Settings = {
   displayControllerRatingOnProfile: true,
   hideFromLeaderboard: false,
   displayBackgroundOnProfile: true,
-  bio: '',
+  bio: "",
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -122,7 +122,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
       setSettings(mergedSettings);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error("Failed to load settings:", error);
       setSettings(defaultSettings);
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       await updateUserSettings(newSettings);
       setSettings(newSettings);
     } catch (error) {
-      console.error('Failed to update settings:', error);
+      console.error("Failed to update settings:", error);
       throw error;
     }
   };

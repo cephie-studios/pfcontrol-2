@@ -32,20 +32,33 @@ export default function DeveloperSubnav() {
         }}
         aria-hidden
       />
-      <NavLink to="/developers" end className={({ isActive }) => linkClass(isActive)}>
+      <NavLink
+        to="/developers"
+        end
+        className={({ isActive }) => linkClass(isActive)}
+      >
         <Home className="w-4 h-4 shrink-0 opacity-90" />
         Overview
       </NavLink>
-      <NavLink to="/developers/console" className={({ isActive }) => linkClass(isActive)}>
+      <NavLink
+        to="/developers/console"
+        className={({ isActive }) => linkClass(isActive)}
+      >
         <LayoutDashboard className="w-4 h-4 shrink-0 opacity-90" />
         Usage
       </NavLink>
-      <NavLink to="/developers/keys" className={({ isActive }) => linkClass(isActive)}>
+      <NavLink
+        to="/developers/keys"
+        className={({ isActive }) => linkClass(isActive)}
+      >
         <KeyRound className="w-4 h-4 shrink-0 opacity-90" />
         <span className="hidden sm:inline">API keys</span>
         <span className="sm:hidden">Keys</span>
       </NavLink>
-      <NavLink to="/developers/docs" className={({ isActive }) => linkClass(isActive)}>
+      <NavLink
+        to="/developers/docs"
+        className={({ isActive }) => linkClass(isActive)}
+      >
         <BookOpen className="w-4 h-4 shrink-0 opacity-90" />
         <span className="hidden sm:inline">API reference</span>
         <span className="sm:hidden">Docs</span>

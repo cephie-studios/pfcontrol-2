@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   createSession,
   getSessionById,
@@ -6,31 +6,31 @@ import {
   deleteSession,
   getAllSessions,
   updateSessionName,
-} from '../db/sessions.js';
-import { ExclusiveSessionNetworkFlagsError } from '../utils/sessionNetworkFlags.js';
-import { addSessionToUser, removeSessionFromUser } from '../db/users.js';
-import { generateSessionId, generateAccessId } from '../utils/ids.js';
-import { recordNewSession } from '../db/statistics.js';
+} from "../db/sessions.js";
+import { ExclusiveSessionNetworkFlagsError } from "../utils/sessionNetworkFlags.js";
+import { addSessionToUser, removeSessionFromUser } from "../db/users.js";
+import { generateSessionId, generateAccessId } from "../utils/ids.js";
+import { recordNewSession } from "../db/statistics.js";
 import {
   requireSessionAccess,
   requireSessionOwnership,
-} from '../middleware/sessionAccess.js';
-import { getSessionsByUser } from '../db/sessions.js';
-import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
-import { sanitizeAlphanumeric } from '../utils/sanitization.js';
-import { getUserRoles } from '../db/roles.js';
-import { isAdmin } from '../middleware/admin.js';
-import { DEPLOYMENT } from '../utils/cacheTtl.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import { getPublicSubmitSession } from '../services/publicSubmitSession.js';
-import { Request, Response } from 'express';
-import { JwtPayloadClient } from '../types/JwtPayload.js';
-import requireAuth from '../middleware/auth.js';
-import { capture } from '../utils/posthog.js';
-import { sql } from 'kysely';
-import { mainDb } from '../db/connection.js';
-import { redisConnection } from '../db/connection.js';
-import { keys, TTL } from '../realtime/keys.js';
+} from "../middleware/sessionAccess.js";
+import { getSessionsByUser } from "../db/sessions.js";
+import { sessionCreationLimiter } from "../middleware/rateLimiting.js";
+import { sanitizeAlphanumeric } from "../utils/sanitization.js";
+import { getUserRoles } from "../db/roles.js";
+import { isAdmin } from "../middleware/admin.js";
+import { DEPLOYMENT } from "../utils/cacheTtl.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { getPublicSubmitSession } from "../services/publicSubmitSession.js";
+import { Request, Response } from "express";
+import { JwtPayloadClient } from "../types/JwtPayload.js";
+import requireAuth from "../middleware/auth.js";
+import { capture } from "../utils/posthog.js";
+import { sql } from "kysely";
+import { mainDb } from "../db/connection.js";
+import { redisConnection } from "../db/connection.js";
+import { keys, TTL } from "../realtime/keys.js";
 
 async function invalidateUserSessionsCache(userId: string): Promise<void> {
   try {
@@ -42,10 +42,10 @@ async function invalidateUserSessionsCache(userId: string): Promise<void> {
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
-    typeof user === 'object' &&
+    typeof user === "object" &&
     user !== null &&
-    'userId' in user &&
-    typeof (user as Record<string, unknown>).userId === 'string'
+    "userId" in user &&
+    typeof (user as Record<string, unknown>).userId === "string"
   );
 }
 
@@ -53,14 +53,14 @@ const router = express.Router();
 
 // POST: /api/sessions/create - Create new session
 router.post(
-  '/create',
+  "/create",
   sessionCreationLimiter,
   requireAuth,
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       const createdBy = user.userId;
       const {
@@ -71,50 +71,58 @@ router.post(
         isTutorial = false,
       } = req.body;
       if (!airportIcao) {
-        return res.status(400).json({ error: 'Airport ICAO is required' });
+        return res.status(400).json({ error: "Airport ICAO is required" });
       }
 
       const pfatc = Boolean(isPFATC);
       const advancedAtc = Boolean(isAdvancedATC);
       if (pfatc && advancedAtc) {
         return res.status(400).json({
-          error: 'Invalid session type',
+          error: "Invalid session type",
           message:
-            'Choose either PFATC Network or Advanced ATC Session, not both.',
+            "Choose either PFATC Network or Advanced ATC Session, not both.",
         });
       }
 
       // Check event mode restrictions for PFATC / Advanced ATC sessions
       if ((pfatc || advancedAtc) && !isAdmin(createdBy)) {
         const eventModeRow = await mainDb
-          .selectFrom('app_settings')
-          .select(['pfatc_event_mode', 'aatc_event_mode'])
-          .where('channel', '=', DEPLOYMENT)
+          .selectFrom("app_settings")
+          .select(["pfatc_event_mode", "aatc_event_mode"])
+          .where("channel", "=", DEPLOYMENT)
           .executeTakeFirst();
 
         const userRolesForEvent = await getUserRoles(createdBy);
 
         const hasPfatcSector = userRolesForEvent.some((r) => {
-          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          const p =
+            typeof r.permissions === "string"
+              ? JSON.parse(r.permissions)
+              : r.permissions;
           return p?.pfatc_sector === true;
         });
 
         const hasAatcSector = userRolesForEvent.some((r) => {
-          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          const p =
+            typeof r.permissions === "string"
+              ? JSON.parse(r.permissions)
+              : r.permissions;
           return p?.aatc_sector === true;
         });
 
         if (pfatc && eventModeRow?.pfatc_event_mode && !hasPfatcSector) {
           return res.status(403).json({
-            error: 'Event mode active',
-            message: 'PFATC event mode is active. Only PFATC Event Controllers can create PFATC sessions.',
+            error: "Event mode active",
+            message:
+              "PFATC event mode is active. Only PFATC Event Controllers can create PFATC sessions.",
           });
         }
 
         if (advancedAtc && eventModeRow?.aatc_event_mode && !hasAatcSector) {
           return res.status(403).json({
-            error: 'Event mode active',
-            message: 'AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.',
+            error: "Event mode active",
+            message:
+              "AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.",
           });
         }
       }
@@ -125,9 +133,14 @@ router.post(
       const isTester =
         isAdmin(createdBy) ||
         userRoles.some(
-          (role) => role.name === 'Tester' || role.name === 'Event Controller' ||
+          (role) =>
+            role.name === "Tester" ||
+            role.name === "Event Controller" ||
             (() => {
-              const p = typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
+              const p =
+                typeof role.permissions === "string"
+                  ? JSON.parse(role.permissions)
+                  : role.permissions;
               return p?.pfatc_sector === true || p?.aatc_sector === true;
             })()
         );
@@ -135,7 +148,7 @@ router.post(
 
       if (userSessions.length >= maxSessions) {
         return res.status(400).json({
-          error: 'Session limit reached',
+          error: "Session limit reached",
           message: `You can only have ${maxSessions} active sessions. Please delete an old session first.`,
           sessionCount: userSessions.length,
           maxSessions,
@@ -158,7 +171,7 @@ router.post(
       if (existingSession) {
         return res
           .status(500)
-          .json({ error: 'Session ID collision, please try again.' });
+          .json({ error: "Session ID collision, please try again." });
       }
 
       await createSession({
@@ -179,7 +192,7 @@ router.post(
 
       capture(req, {
         distinctId: createdBy,
-        event: 'session_created',
+        event: "session_created",
         properties: {
           session_id: sessionId,
           airport_icao: airportIcao,
@@ -202,26 +215,26 @@ router.post(
     } catch (error) {
       if (error instanceof ExclusiveSessionNetworkFlagsError) {
         return res.status(400).json({
-          error: 'Invalid session type',
+          error: "Invalid session type",
           message:
-            'Choose either PFATC Network or Advanced ATC Session, not both.',
+            "Choose either PFATC Network or Advanced ATC Session, not both.",
         });
       }
-      console.error('Error creating session:', error);
+      console.error("Error creating session:", error);
       res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to create session',
+        error: "Internal server error",
+        message: "Failed to create session",
       });
     }
   }
 );
 
 // GET: /api/sessions/mine - Get sessions for the authenticated user
-router.get('/mine', requireAuth, async (req, res) => {
+router.get("/mine", requireAuth, async (req, res) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const cacheKey = keys.userSessions(userId);
@@ -239,13 +252,10 @@ router.get('/mine', requireAuth, async (req, res) => {
 
     if (sessionIds.length > 0) {
       const counts = await mainDb
-        .selectFrom('flights')
-        .select([
-          'session_id',
-          sql<number>`count(*)::int`.as('count'),
-        ])
-        .where('session_id', 'in', sessionIds)
-        .groupBy('session_id')
+        .selectFrom("flights")
+        .select(["session_id", sql<number>`count(*)::int`.as("count")])
+        .where("session_id", "in", sessionIds)
+        .groupBy("session_id")
         .execute();
       for (const row of counts) {
         flightCountMap.set(row.session_id, row.count);
@@ -266,58 +276,62 @@ router.get('/mine', requireAuth, async (req, res) => {
     }));
 
     try {
-      await redisConnection.setex(cacheKey, TTL.USER_SESSIONS_SEC, JSON.stringify(result));
+      await redisConnection.setex(
+        cacheKey,
+        TTL.USER_SESSIONS_SEC,
+        JSON.stringify(result)
+      );
     } catch {
       // ignore cache errors
     }
 
     res.json(result);
   } catch (error) {
-    console.error('Error fetching user sessions:', error);
+    console.error("Error fetching user sessions:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch user sessions',
+      error: "Internal server error",
+      message: "Failed to fetch user sessions",
     });
   }
 });
 
 // GET: /api/sessions/:sessionId/submit - Get basic session info for submit page (public)
-router.get('/:sessionId/submit', async (req, res) => {
+router.get("/:sessionId/submit", async (req, res) => {
   try {
     const { sessionId } = req.params;
     const session = await getPublicSubmitSession(sessionId);
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ error: "Session not found" });
     }
 
     res.json(session);
   } catch (error) {
-    console.error('Error fetching session for submit:', error);
+    console.error("Error fetching session for submit:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch session',
+      error: "Internal server error",
+      message: "Failed to fetch session",
     });
   }
 });
 
 // GET: /api/sessions/:sessionId - Get session by ID
-router.get('/:sessionId', requireSessionAccess, async (req, res) => {
+router.get("/:sessionId", requireSessionAccess, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const session = await getSessionById(sessionId);
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ error: "Session not found" });
     }
-    let atis = { letter: 'A', text: '', timestamp: new Date().toISOString() };
+    let atis = { letter: "A", text: "", timestamp: new Date().toISOString() };
     if (session.atis) {
       try {
         const parsed =
-          typeof session.atis === 'string'
+          typeof session.atis === "string"
             ? JSON.parse(session.atis)
             : session.atis;
         atis = decrypt(parsed);
       } catch (err) {
-        console.error('Error decrypting ATIS:', err);
+        console.error("Error decrypting ATIS:", err);
         // fallback to default atis
       }
     }
@@ -333,16 +347,16 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
       atis,
     });
   } catch (error) {
-    console.error('Error fetching session:', error);
+    console.error("Error fetching session:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch session',
+      error: "Internal server error",
+      message: "Failed to fetch session",
     });
   }
 });
 
 // PUT: /api/sessions/:sessionId - Update session
-router.put('/:sessionId', requireSessionAccess, async (req, res) => {
+router.put("/:sessionId", requireSessionAccess, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { activeRunway, atis } = req.body;
@@ -361,31 +375,31 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
     } catch (error) {
       if (error instanceof ExclusiveSessionNetworkFlagsError) {
         return res.status(400).json({
-          error: 'Invalid session type',
+          error: "Invalid session type",
           message:
-            'Choose either PFATC Network or Advanced ATC Session, not both.',
+            "Choose either PFATC Network or Advanced ATC Session, not both.",
         });
       }
       throw error;
     }
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ error: "Session not found" });
     }
     await invalidateUserSessionsCache(session.created_by);
     let decryptedAtis = {
-      letter: 'A',
-      text: '',
+      letter: "A",
+      text: "",
       timestamp: new Date().toISOString(),
     };
     if (session.atis) {
       try {
         const parsed =
-          typeof session.atis === 'string'
+          typeof session.atis === "string"
             ? JSON.parse(session.atis)
             : session.atis;
         decryptedAtis = decrypt(parsed);
       } catch (err) {
-        console.error('Error decrypting ATIS:', err);
+        console.error("Error decrypting ATIS:", err);
         // fallback to default atis
       }
     }
@@ -401,70 +415,70 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
       atis: decryptedAtis,
     });
   } catch (error) {
-    console.error('Error updating session:', error);
+    console.error("Error updating session:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to update session',
+      error: "Internal server error",
+      message: "Failed to update session",
     });
   }
 });
 
 // POST: /api/sessions/update-name - Rename session
 router.post(
-  '/update-name',
+  "/update-name",
   requireAuth,
   requireSessionOwnership,
   async (req, res) => {
     try {
       const { sessionId, name } = req.body;
-      if (!sessionId || typeof name !== 'string' || name.length > 50) {
-        return res.status(400).json({ error: 'Invalid sessionId or name' });
+      if (!sessionId || typeof name !== "string" || name.length > 50) {
+        return res.status(400).json({ error: "Invalid sessionId or name" });
       }
       const sanitizedName = sanitizeAlphanumeric(name, 50);
       const updatedSession = await updateSessionName(sessionId, sanitizedName);
       if (!updatedSession) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(404).json({ error: "Session not found" });
       }
       if (req.user?.userId) {
         await invalidateUserSessionsCache(req.user.userId);
         capture(req, {
           distinctId: req.user.userId,
-          event: 'session_renamed',
+          event: "session_renamed",
           properties: { session_id: sessionId },
         });
       }
       res.json({ customName: updatedSession.custom_name });
     } catch (error) {
-      console.error('Error updating session name:', error);
+      console.error("Error updating session name:", error);
       res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to update session name',
+        error: "Internal server error",
+        message: "Failed to update session name",
       });
     }
   }
 );
 
 // POST: /api/sessions/delete - Delete session (POST for compatibility)
-router.post('/delete', requireAuth, async (req: Request, res: Response) => {
+router.post("/delete", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user;
     if (!isJwtPayloadClient(user)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     const { sessionId } = req.body;
     if (!sessionId) {
-      return res.status(400).json({ error: 'Session ID required' });
+      return res.status(400).json({ error: "Session ID required" });
     }
 
     const session = await getSessionById(sessionId);
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ error: "Session not found" });
     }
 
     if (session.created_by !== user.userId) {
       return res
         .status(403)
-        .json({ error: 'You can only delete your own sessions' });
+        .json({ error: "You can only delete your own sessions" });
     }
 
     await deleteSession(sessionId);
@@ -472,34 +486,34 @@ router.post('/delete', requireAuth, async (req: Request, res: Response) => {
     await invalidateUserSessionsCache(session.created_by);
     capture(req, {
       distinctId: user.userId,
-      event: 'session_deleted',
+      event: "session_deleted",
       properties: { session_id: sessionId, airport_icao: session.airport_icao },
     });
-    res.json({ message: 'Session deleted successfully', sessionId });
+    res.json({ message: "Session deleted successfully", sessionId });
   } catch (error) {
-    console.error('Error deleting session:', error);
+    console.error("Error deleting session:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to delete session',
+      error: "Internal server error",
+      message: "Failed to delete session",
     });
   }
 });
 
 // POST: /api/sessions/delete-oldest - Delete user's oldest session
 router.post(
-  '/delete-oldest',
+  "/delete-oldest",
   requireAuth,
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       const userId = user.userId;
       const userSessions = await getSessionsByUser(userId);
 
       if (userSessions.length === 0) {
-        return res.status(404).json({ error: 'No sessions found' });
+        return res.status(404).json({ error: "No sessions found" });
       }
 
       const oldestSession = userSessions
@@ -513,7 +527,7 @@ router.post(
       if (!oldestSession) {
         return res
           .status(404)
-          .json({ error: 'No sessions with valid created_at found' });
+          .json({ error: "No sessions with valid created_at found" });
       }
 
       await deleteSession(oldestSession.session_id);
@@ -521,7 +535,7 @@ router.post(
 
       capture(req, {
         distinctId: userId,
-        event: 'session_deleted',
+        event: "session_deleted",
         properties: {
           session_id: oldestSession.session_id,
           airport_icao: oldestSession.airport_icao,
@@ -530,23 +544,23 @@ router.post(
       });
 
       res.json({
-        message: 'Oldest session deleted successfully',
+        message: "Oldest session deleted successfully",
         sessionId: oldestSession.session_id,
         airportIcao: oldestSession.airport_icao,
         createdAt: oldestSession.created_at,
       });
     } catch (error) {
-      console.error('Error deleting oldest session:', error);
+      console.error("Error deleting oldest session:", error);
       res.status(500).json({
-        error: 'Internal server error',
-        message: 'Failed to delete oldest session',
+        error: "Internal server error",
+        message: "Failed to delete oldest session",
       });
     }
   }
 );
 
 // GET: /api/sessions/ - Get all sessions
-router.get('/', async (_req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const sessions = await getAllSessions();
     res.json(
@@ -561,10 +575,10 @@ router.get('/', async (_req, res) => {
       }))
     );
   } catch (error) {
-    console.error('Error fetching sessions:', error);
+    console.error("Error fetching sessions:", error);
     res.status(500).json({
-      error: 'Internal server error',
-      message: 'Failed to fetch sessions',
+      error: "Internal server error",
+      message: "Failed to fetch sessions",
     });
   }
 });

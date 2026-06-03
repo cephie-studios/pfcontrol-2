@@ -1,13 +1,13 @@
-import { useEffect, useMemo } from 'react';
-import { useData } from '../../hooks/data/useData';
-import Dropdown from '../common/Dropdown';
+import { useEffect, useMemo } from "react";
+import { useData } from "../../hooks/data/useData";
+import Dropdown from "../common/Dropdown";
 
 interface SidDropdownProps {
   airportIcao: string;
   onChange: (value: string) => void;
   value?: string;
   disabled?: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   placeholder?: string;
 }
 
@@ -16,8 +16,8 @@ export default function SidDropdown({
   onChange,
   value,
   disabled = false,
-  size = 'md',
-  placeholder = 'Select SID',
+  size = "md",
+  placeholder = "Select SID",
 }: SidDropdownProps) {
   const { airportSids, fetchAirportData, fetchedAirports } = useData();
 
@@ -34,8 +34,8 @@ export default function SidDropdown({
   const isLoading = useMemo(() => {
     return Boolean(
       airportIcao &&
-        fetchedAirports.has(airportIcao) &&
-        !airportSids[airportIcao]
+      fetchedAirports.has(airportIcao) &&
+      !airportSids[airportIcao]
     );
   }, [airportIcao, fetchedAirports, airportSids]);
 
@@ -48,9 +48,9 @@ export default function SidDropdown({
 
   const getDisplayValue = (selectedValue: string) => {
     if (!selectedValue) {
-      if (!airportIcao) return 'Select Airport First';
-      if (isLoading) return 'Loading SIDs...';
-      if (sids.length === 0) return 'No SIDs available';
+      if (!airportIcao) return "Select Airport First";
+      if (isLoading) return "Loading SIDs...";
+      if (sids.length === 0) return "No SIDs available";
       return placeholder;
     }
     return selectedValue;

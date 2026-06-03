@@ -1,8 +1,8 @@
-import express from 'express';
-import requireAuth from '../middleware/auth.js';
-import { updateSession } from '../db/sessions.js';
-import { encrypt } from '../utils/encryption.js';
-import { capture } from '../utils/posthog.js';
+import express from "express";
+import requireAuth from "../middleware/auth.js";
+import { updateSession } from "../db/sessions.js";
+import { encrypt } from "../utils/encryption.js";
+import { capture } from "../utils/posthog.js";
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ interface ExternalATISResponse {
 }
 
 // POST: /api/atis/generate
-router.post('/generate', requireAuth, async (req, res) => {
+router.post("/generate", requireAuth, async (req, res) => {
   try {
     const body: ATISGenerateRequest = req.body;
 
@@ -44,12 +44,12 @@ router.post('/generate', requireAuth, async (req, res) => {
     if (!sessionId || !icao || !ident) {
       return res
         .status(400)
-        .json({ error: 'Session ID, ICAO, and Ident are required' });
+        .json({ error: "Session ID, ICAO, and Ident are required" });
     }
     if (!Array.isArray(landing_runways) || !Array.isArray(departing_runways)) {
       return res
         .status(400)
-        .json({ error: 'Landing and departing runways must be arrays' });
+        .json({ error: "Landing and departing runways must be arrays" });
     }
 
     const requestBody = {
@@ -59,7 +59,7 @@ router.post('/generate', requireAuth, async (req, res) => {
       remarks2,
       landing_runways,
       departing_runways,
-      'output-type': 'atis',
+      "output-type": "atis",
       override_runways: false,
       metar: metar || undefined,
     };
@@ -69,32 +69,32 @@ router.post('/generate', requireAuth, async (req, res) => {
       response = await fetch(
         `https://atisgenerator.com/api/v1/airports/${icao}/atis`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(requestBody),
         }
       );
     } catch (fetchError) {
-      console.error('Failed to fetch from ATIS generator API:', fetchError);
-      throw new Error('Unable to connect to ATIS generation service');
+      console.error("Failed to fetch from ATIS generator API:", fetchError);
+      throw new Error("Unable to connect to ATIS generation service");
     }
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
+      const errorText = await response.text().catch(() => "Unknown error");
       console.error(`ATIS API error: ${response.status} - ${errorText}`);
 
       if (metar && (response.status === 400 || response.status === 500)) {
-        console.warn('Retrying ATIS generation without METAR data');
+        console.warn("Retrying ATIS generation without METAR data");
         try {
           const retryBody = { ...requestBody, metar: undefined };
           const retryResponse = await fetch(
             `https://atisgenerator.com/api/v1/airports/${icao}/atis`,
             {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
               },
               body: JSON.stringify(retryBody),
             }
@@ -121,13 +121,13 @@ router.post('/generate', requireAuth, async (req, res) => {
 
     const data = (await response.json()) as ExternalATISResponse;
 
-    if (data.status !== 'success') {
-      throw new Error(data.message || 'Failed to generate ATIS');
+    if (data.status !== "success") {
+      throw new Error(data.message || "Failed to generate ATIS");
     }
 
     const generatedAtis = data.data?.text;
     if (!generatedAtis) {
-      throw new Error('No ATIS text in response');
+      throw new Error("No ATIS text in response");
     }
 
     const atisTimestamp = new Date().toISOString();
@@ -143,10 +143,15 @@ router.post('/generate', requireAuth, async (req, res) => {
       atis: JSON.stringify(encryptedAtis),
     });
     if (!updatedSession) {
-      throw new Error('Failed to update session with ATIS data');
+      throw new Error("Failed to update session with ATIS data");
     }
 
-    if (req.user?.userId) capture(req, { distinctId: req.user.userId, event: 'atis_generated', properties: { session_id: sessionId, icao, ident } });
+    if (req.user?.userId)
+      capture(req, {
+        distinctId: req.user.userId,
+        event: "atis_generated",
+        properties: { session_id: sessionId, icao, ident },
+      });
 
     res.json({
       text: generatedAtis,
@@ -156,9 +161,9 @@ router.post('/generate', requireAuth, async (req, res) => {
       ident: ident,
     });
   } catch (error) {
-    console.error('Error generating ATIS:', error);
+    console.error("Error generating ATIS:", error);
     const errorMessage =
-      error instanceof Error ? error.message : 'Failed to generate ATIS';
+      error instanceof Error ? error.message : "Failed to generate ATIS";
     res.status(500).json({ error: errorMessage });
   }
 });

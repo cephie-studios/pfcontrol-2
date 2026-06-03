@@ -22,7 +22,12 @@ export interface DeveloperApiDocEndpoint {
   pathTemplate: string;
   fullUrlExample: string;
   pathParams?: { name: string; description: string; example?: string }[];
-  queryParams?: { name: string; required: boolean; description: string; example?: string }[];
+  queryParams?: {
+    name: string;
+    required: boolean;
+    description: string;
+    example?: string;
+  }[];
   requestBodySummary?: string;
   requestBodyExampleJson?: string;
   requestHeaders: DeveloperApiDocHeader[];
@@ -65,8 +70,13 @@ function escapeShellSingleQuotes(s: string): string {
   return `'${s.replace(/'/g, `'"'"'`)}'`;
 }
 
-function buildExampleCurl(method: string, pathWithQuery: string, bodyJson?: string): string {
-  const headers = '-H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json"';
+function buildExampleCurl(
+  method: string,
+  pathWithQuery: string,
+  bodyJson?: string
+): string {
+  const headers =
+    '-H "Authorization: Bearer YOUR_PFC_LIVE_KEY" -H "Accept: application/json"';
   const m = method.toUpperCase();
   if (m === "GET" || m === "HEAD") {
     return `curl -sS ${headers} "${DEFAULT_BASE}${pathWithQuery}"`;
@@ -77,19 +87,26 @@ function buildExampleCurl(method: string, pathWithQuery: string, bodyJson?: stri
   return `curl -sS -X ${m} ${headers} "${DEFAULT_BASE}${pathWithQuery}"`;
 }
 
-function endpointFromRoute(r: DeveloperExtRouteDefinition): DeveloperApiDocEndpoint {
+function endpointFromRoute(
+  r: DeveloperExtRouteDefinition
+): DeveloperApiDocEndpoint {
   const pathTemplate = pathTemplateForRoute(r);
   let examplePath = pathTemplate;
   if (r.pathParams?.length) {
     for (const p of r.pathParams) {
-      examplePath = examplePath.replace(`{${p.name}}`, p.example ?? `{${p.name}}`);
+      examplePath = examplePath.replace(
+        `{${p.name}}`,
+        p.example ?? `{${p.name}}`
+      );
     }
   }
   let query = "";
   if (r.queryParams?.length) {
     const parts = r.queryParams
       .filter((q) => q.required && q.example)
-      .map((q) => `${encodeURIComponent(q.name)}=${encodeURIComponent(q.example!)}`);
+      .map(
+        (q) => `${encodeURIComponent(q.name)}=${encodeURIComponent(q.example!)}`
+      );
     if (parts.length) query = `?${parts.join("&")}`;
   }
   const pathWithQuery = `${examplePath}${query}`;
@@ -128,13 +145,22 @@ function endpointFromRoute(r: DeveloperExtRouteDefinition): DeveloperApiDocEndpo
     requestHeaders,
     responseContentType: "application/json",
     responseSummary: r.responseSummary,
-    exampleCurl: buildExampleCurl(r.method, pathWithQuery, r.requestBodyExampleJson),
+    exampleCurl: buildExampleCurl(
+      r.method,
+      pathWithQuery,
+      r.requestBodyExampleJson
+    ),
   };
 }
 
 export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
-  const defaultPerMinute = Number(process.env.DEVELOPER_API_RATE_LIMIT_PER_MINUTE);
-  const perMin = Number.isFinite(defaultPerMinute) && defaultPerMinute > 0 ? defaultPerMinute : 120;
+  const defaultPerMinute = Number(
+    process.env.DEVELOPER_API_RATE_LIMIT_PER_MINUTE
+  );
+  const perMin =
+    Number.isFinite(defaultPerMinute) && defaultPerMinute > 0
+      ? defaultPerMinute
+      : 120;
 
   return {
     specVersion: 1,

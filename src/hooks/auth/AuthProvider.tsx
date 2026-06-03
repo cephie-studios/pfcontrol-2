@@ -48,7 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error("Error refreshing user:", error);
-      posthog?.captureException?.(error, { source: "AuthProvider.refreshUser" });
+      posthog?.captureException?.(error, {
+        source: "AuthProvider.refreshUser",
+      });
       setUser(null);
     } finally {
       setIsLoading(false);

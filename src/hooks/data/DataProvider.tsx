@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   fetchAirports,
   fetchAircrafts,
   fetchAirlines,
   fetchFrequencies,
-} from '../../utils/fetch/data';
-import type { Airport, AirportFrequency } from '../../types/airports';
-import type { Aircraft } from '../../types/aircraft';
-import type { Airline } from '../../types/airlines';
-import { DataContext } from './useData';
+} from "../../utils/fetch/data";
+import type { Airport, AirportFrequency } from "../../types/airports";
+import type { Aircraft } from "../../types/aircraft";
+import type { Airline } from "../../types/airlines";
+import { DataContext } from "./useData";
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [airports, setAirports] = useState<Airport[]>([]);
@@ -39,16 +39,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         try {
           const [runwaysData, sidsData] = await Promise.all([
             fetch(
-              `${
-                import.meta.env.VITE_SERVER_URL
-              }/api/data/airports/${icao}/runways`
+              `${import.meta.env.VITE_SERVER_URL}/api/data/airports/${icao}/runways`
             )
               .then((res) => (res.ok ? res.json() : []))
               .catch(() => []),
             fetch(
-              `${
-                import.meta.env.VITE_SERVER_URL
-              }/api/data/airports/${icao}/sids`
+              `${import.meta.env.VITE_SERVER_URL}/api/data/airports/${icao}/sids`
             )
               .then((res) => (res.ok ? res.json() : []))
               .catch(() => []),
@@ -79,19 +75,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const [airportsData, aircraftsData, airlinesData, frequenciesData] =
           await Promise.all([
             fetchAirports().catch((err) => {
-              console.error('Failed to fetch airports:', err);
+              console.error("Failed to fetch airports:", err);
               return [];
             }),
             fetchAircrafts().catch((err) => {
-              console.error('Failed to fetch aircrafts:', err);
+              console.error("Failed to fetch aircrafts:", err);
               return [];
             }),
             fetchAirlines().catch((err) => {
-              console.error('Failed to fetch airlines:', err);
+              console.error("Failed to fetch airlines:", err);
               return [];
             }),
             fetchFrequencies().catch((err) => {
-              console.error('Failed to fetch frequencies:', err);
+              console.error("Failed to fetch frequencies:", err);
               return [];
             }),
           ]);
@@ -101,8 +97,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setAirlines(Array.isArray(airlinesData) ? airlinesData : []);
         setFrequencies(Array.isArray(frequenciesData) ? frequenciesData : []);
       } catch (err) {
-        setError('Failed to load data');
-        console.error('Error loading static data:', err);
+        setError("Failed to load data");
+        console.error("Error loading static data:", err);
         setAirports([]);
         setAircrafts([]);
         setAirlines([]);

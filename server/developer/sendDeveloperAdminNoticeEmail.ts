@@ -42,11 +42,15 @@ function bodyForNotice(detail: string): string {
 
 function developerNoticeTemplateId(): string {
   return (
-    process.env.RESEND_DEVELOPER_NOTICE_TEMPLATE_ID?.trim() || DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID
+    process.env.RESEND_DEVELOPER_NOTICE_TEMPLATE_ID?.trim() ||
+    DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID
   );
 }
 
-export async function sendDeveloperAdminNoticeEmail(userId: string, detail: string): Promise<void> {
+export async function sendDeveloperAdminNoticeEmail(
+  userId: string,
+  detail: string
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) return;
 
@@ -66,7 +70,10 @@ export async function sendDeveloperAdminNoticeEmail(userId: string, detail: stri
   try {
     unsubscribeUrl = createDeveloperNotificationUnsubscribeUrl(userId, to);
   } catch (e) {
-    console.error("[developer admin notice email] failed to build unsubscribe URL", e);
+    console.error(
+      "[developer admin notice email] failed to build unsubscribe URL",
+      e
+    );
     return;
   }
 

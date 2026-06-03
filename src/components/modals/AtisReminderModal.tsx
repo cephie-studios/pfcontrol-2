@@ -104,14 +104,15 @@ export default function AtisReminderModal({
         <p className="text-gray-300 mb-6">
           {isAdvancedAtc ? (
             <>
-              For an <strong className="text-blue-300">Advanced ATC</strong> session, use the same
-              public-network ATIS layout as PFATC (shown below) so pilots and overview stay
-              consistent.
+              For an <strong className="text-blue-300">Advanced ATC</strong>{" "}
+              session, use the same public-network ATIS layout as PFATC (shown
+              below) so pilots and overview stay consistent.
             </>
           ) : (
             <>
               If you want to use this on the{" "}
-              <strong className="text-blue-300">PFATC Network</strong>, use the ATIS format below:
+              <strong className="text-blue-300">PFATC Network</strong>, use the
+              ATIS format below:
             </>
           )}
         </p>
@@ -129,7 +130,9 @@ export default function AtisReminderModal({
             )}
           </button>
           <div className={`${accentLabel} font-bold mb-3`}>{airportName}</div>
-          <pre className="whitespace-pre-wrap break-words pr-10">{formattedAtis}</pre>
+          <pre className="whitespace-pre-wrap break-words pr-10">
+            {formattedAtis}
+          </pre>
         </div>
 
         <Button

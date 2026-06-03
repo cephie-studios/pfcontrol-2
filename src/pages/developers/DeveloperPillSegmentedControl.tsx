@@ -13,7 +13,9 @@ type Props<T extends string | number> = {
   className?: string;
 };
 
-export default function DeveloperPillSegmentedControl<T extends string | number>({
+export default function DeveloperPillSegmentedControl<
+  T extends string | number,
+>({
   tabs,
   value,
   onChange,
@@ -41,7 +43,8 @@ export default function DeveloperPillSegmentedControl<T extends string | number>
       <div
         className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
         style={{
-          width: tabCount > 0 ? `calc((100% - 0.5rem) / ${tabCount})` : undefined,
+          width:
+            tabCount > 0 ? `calc((100% - 0.5rem) / ${tabCount})` : undefined,
           left:
             tabCount > 0
               ? `calc(0.25rem + ${activeIndex} * ((100% - 0.5rem) / ${tabCount}))`

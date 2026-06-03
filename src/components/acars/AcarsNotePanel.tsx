@@ -1,4 +1,4 @@
-import { StickyNote } from 'lucide-react';
+import { StickyNote } from "lucide-react";
 
 interface NotePanelProps {
   notes: string;

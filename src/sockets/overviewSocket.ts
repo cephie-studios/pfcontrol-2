@@ -45,8 +45,15 @@ export function createOverviewSocket(
   userId?: string,
   username?: string,
   onFlightUpdated?: (data: { sessionId: string; flight: Flight }) => void,
-  onFlightUpdateAck?: (_data: { flightId: string | number; updates: Partial<Flight> }) => void,
-  onFlightError?: (error: { action: string; flightId?: string | number; error: string }) => void,
+  onFlightUpdateAck?: (_data: {
+    flightId: string | number;
+    updates: Partial<Flight>;
+  }) => void,
+  onFlightError?: (error: {
+    action: string;
+    flightId?: string | number;
+    error: string;
+  }) => void
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
@@ -71,7 +78,10 @@ export function createOverviewSocket(
   socket.on("connect_error", (error) => {
     console.error("[Overview Socket] Connection error:", error.message);
 
-    if (error.message.includes("Session ID") || error.message.includes("session")) {
+    if (
+      error.message.includes("Session ID") ||
+      error.message.includes("session")
+    ) {
       socket.disconnect();
       setTimeout(() => {
         socket.connect();
@@ -123,7 +133,11 @@ export function createOverviewSocket(
     disconnect: () => {
       socket.disconnect();
     },
-    updateFlight: (sessionId: string, flightId: string | number, updates: Partial<Flight>) => {
+    updateFlight: (
+      sessionId: string,
+      flightId: string | number,
+      updates: Partial<Flight>
+    ) => {
       socket.emit("updateFlight", { sessionId, flightId, updates });
     },
     sendContact: (
@@ -131,7 +145,7 @@ export function createOverviewSocket(
       flightId: string | number,
       message: string,
       station: string,
-      position: string,
+      position: string
     ) => {
       socket.emit("contactMe", {
         sessionId,

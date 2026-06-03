@@ -1,34 +1,34 @@
-import { mainDb } from './connection.js';
-import { sql } from 'kysely';
-import { isAdmin } from '../middleware/admin.js';
-import { invalidateAllUsersCache } from './admin.js';
-import { invalidateUserCache } from './users.js';
+import { mainDb } from "./connection.js";
+import { sql } from "kysely";
+import { isAdmin } from "../middleware/admin.js";
+import { invalidateAllUsersCache } from "./admin.js";
+import { invalidateUserCache } from "./users.js";
 
 export async function getAllRoles() {
   try {
     const result = await mainDb
-      .selectFrom('roles as r')
-      .leftJoin('user_roles as ur', 'ur.role_id', 'r.id')
+      .selectFrom("roles as r")
+      .leftJoin("user_roles as ur", "ur.role_id", "r.id")
       .select([
-        'r.id',
-        'r.name',
-        'r.description',
-        'r.permissions',
-        'r.color',
-        'r.icon',
-        'r.priority',
-        'r.created_at',
-        'r.updated_at',
-        sql<number>`COUNT(DISTINCT ur.user_id)`.as('user_count'),
+        "r.id",
+        "r.name",
+        "r.description",
+        "r.permissions",
+        "r.color",
+        "r.icon",
+        "r.priority",
+        "r.created_at",
+        "r.updated_at",
+        sql<number>`COUNT(DISTINCT ur.user_id)`.as("user_count"),
       ])
-      .groupBy('r.id')
-      .orderBy('r.priority', 'desc')
-      .orderBy('r.created_at', 'desc')
+      .groupBy("r.id")
+      .orderBy("r.priority", "desc")
+      .orderBy("r.created_at", "desc")
       .execute();
 
     return result;
   } catch (error) {
-    console.error('Error fetching roles:', error);
+    console.error("Error fetching roles:", error);
     throw error;
   }
 }
@@ -36,13 +36,13 @@ export async function getAllRoles() {
 export async function getRoleById(id: number) {
   try {
     const result = await mainDb
-      .selectFrom('roles')
+      .selectFrom("roles")
       .selectAll()
-      .where('id', '=', id)
+      .where("id", "=", id)
       .executeTakeFirst();
     return result || null;
   } catch (error) {
-    console.error('Error fetching role by ID:', error);
+    console.error("Error fetching role by ID:", error);
     throw error;
   }
 }
@@ -64,14 +64,14 @@ export async function createRole({
 }) {
   try {
     const result = await mainDb
-      .insertInto('roles')
+      .insertInto("roles")
       .values({
         id: sql`DEFAULT`,
         name,
         description,
         permissions: sql`CAST(${JSON.stringify(permissions)} AS jsonb)`,
-        color: color || '#6366F1',
-        icon: icon || 'Star',
+        color: color || "#6366F1",
+        icon: icon || "Star",
         priority: priority ?? 0,
       })
       .returningAll()
@@ -79,7 +79,7 @@ export async function createRole({
 
     return result || null;
   } catch (error) {
-    console.error('Error creating role:', error);
+    console.error("Error creating role:", error);
     throw error;
   }
 }
@@ -113,38 +113,38 @@ export async function updateRole(
     updateData.updated_at = sql`NOW()`;
 
     const result = await mainDb
-      .updateTable('roles')
+      .updateTable("roles")
       .set(updateData)
-      .where('id', '=', id)
+      .where("id", "=", id)
       .returningAll()
       .executeTakeFirst();
 
     return result || null;
   } catch (error) {
-    console.error('Error updating role:', error);
+    console.error("Error updating role:", error);
     throw error;
   }
 }
 
 export async function deleteRole(id: number) {
   try {
-    await mainDb.deleteFrom('user_roles').where('role_id', '=', id).execute();
+    await mainDb.deleteFrom("user_roles").where("role_id", "=", id).execute();
 
     await mainDb
-      .updateTable('users')
+      .updateTable("users")
       .set({ role_id: undefined })
-      .where('role_id', '=', id)
+      .where("role_id", "=", id)
       .execute();
 
     const result = await mainDb
-      .deleteFrom('roles')
-      .where('id', '=', id)
+      .deleteFrom("roles")
+      .where("id", "=", id)
       .returningAll()
       .executeTakeFirst();
 
     return result || null;
   } catch (error) {
-    console.error('Error deleting role:', error);
+    console.error("Error deleting role:", error);
     throw error;
   }
 }
@@ -152,22 +152,22 @@ export async function deleteRole(id: number) {
 export async function assignRoleToUser(userId: string, roleId: number) {
   try {
     await mainDb
-      .insertInto('user_roles')
+      .insertInto("user_roles")
       .values({ user_id: userId, role_id: roleId })
-      .onConflict((oc) => oc.columns(['user_id', 'role_id']).doNothing())
+      .onConflict((oc) => oc.columns(["user_id", "role_id"]).doNothing())
       .execute();
 
     const user = await mainDb
-      .selectFrom('users')
-      .select('role_id')
-      .where('id', '=', userId)
+      .selectFrom("users")
+      .select("role_id")
+      .where("id", "=", userId)
       .executeTakeFirst();
 
     if (!user?.role_id) {
       await mainDb
-        .updateTable('users')
+        .updateTable("users")
         .set({ role_id: roleId, updated_at: sql`NOW()` })
-        .where('id', '=', userId)
+        .where("id", "=", userId)
         .execute();
     }
 
@@ -176,29 +176,29 @@ export async function assignRoleToUser(userId: string, roleId: number) {
 
     return { userId, roleId };
   } catch (error) {
-    console.error('Error assigning role to user:', error);
+    console.error("Error assigning role to user:", error);
     throw error;
   }
 }
 export async function removeRoleFromUser(userId: string, roleId: number) {
   try {
     await mainDb
-      .deleteFrom('user_roles')
-      .where('user_id', '=', userId)
-      .where('role_id', '=', roleId)
+      .deleteFrom("user_roles")
+      .where("user_id", "=", userId)
+      .where("role_id", "=", roleId)
       .execute();
 
     const user = await mainDb
-      .selectFrom('users')
-      .select('role_id')
-      .where('id', '=', userId)
+      .selectFrom("users")
+      .select("role_id")
+      .where("id", "=", userId)
       .executeTakeFirst();
 
     if (user?.role_id === roleId) {
       await mainDb
-        .updateTable('users')
+        .updateTable("users")
         .set({ role_id: undefined, updated_at: sql`NOW()` })
-        .where('id', '=', userId)
+        .where("id", "=", userId)
         .execute();
     }
 
@@ -207,7 +207,7 @@ export async function removeRoleFromUser(userId: string, roleId: number) {
 
     return { userId, roleId };
   } catch (error) {
-    console.error('Error removing role from user:', error);
+    console.error("Error removing role from user:", error);
     throw error;
   }
 }
@@ -215,27 +215,27 @@ export async function removeRoleFromUser(userId: string, roleId: number) {
 export async function getUserRoles(userId: string) {
   try {
     const result = await mainDb
-      .selectFrom('roles as r')
-      .innerJoin('user_roles as ur', 'ur.role_id', 'r.id')
+      .selectFrom("roles as r")
+      .innerJoin("user_roles as ur", "ur.role_id", "r.id")
       .select([
-        'r.id',
-        'r.name',
-        'r.description',
-        'r.permissions',
-        'r.color',
-        'r.icon',
-        'r.priority',
-        'r.created_at',
-        'r.updated_at',
+        "r.id",
+        "r.name",
+        "r.description",
+        "r.permissions",
+        "r.color",
+        "r.icon",
+        "r.priority",
+        "r.created_at",
+        "r.updated_at",
       ])
-      .where('ur.user_id', '=', userId)
-      .orderBy('r.priority', 'desc')
-      .orderBy('r.created_at', 'desc')
+      .where("ur.user_id", "=", userId)
+      .orderBy("r.priority", "desc")
+      .orderBy("r.created_at", "desc")
       .execute();
 
     return result;
   } catch (error) {
-    console.error('Error fetching user roles:', error);
+    console.error("Error fetching user roles:", error);
     throw error;
   }
 }
@@ -247,15 +247,15 @@ export async function updateRolePriorities(
     await mainDb.transaction().execute(async (trx) => {
       for (const { id, priority } of rolePriorities) {
         await trx
-          .updateTable('roles')
+          .updateTable("roles")
           .set({ priority, updated_at: sql`NOW()` })
-          .where('id', '=', id)
+          .where("id", "=", id)
           .execute();
       }
     });
     return true;
   } catch (error) {
-    console.error('Error updating role priorities:', error);
+    console.error("Error updating role priorities:", error);
     throw error;
   }
 }
@@ -263,36 +263,36 @@ export async function updateRolePriorities(
 export async function getUsersWithRoles() {
   try {
     const users = await mainDb
-      .selectFrom('users as u')
-      .leftJoin('user_roles as ur', 'ur.user_id', 'u.id')
-      .select(['u.id', 'u.username', 'u.avatar', 'u.created_at', 'u.role_id'])
+      .selectFrom("users as u")
+      .leftJoin("user_roles as ur", "ur.user_id", "u.id")
+      .select(["u.id", "u.username", "u.avatar", "u.created_at", "u.role_id"])
       .where((qb) =>
         qb.or([
-          qb('ur.role_id', 'is not', null),
-          qb('u.role_id', 'is not', null),
+          qb("ur.role_id", "is not", null),
+          qb("u.role_id", "is not", null),
         ])
       )
       .distinct()
-      .orderBy('u.username')
+      .orderBy("u.username")
       .execute();
 
     const userIds = users.map((u) => u.id);
     const userRoles = await mainDb
-      .selectFrom('user_roles as ur')
-      .innerJoin('roles as r', 'ur.role_id', 'r.id')
+      .selectFrom("user_roles as ur")
+      .innerJoin("roles as r", "ur.role_id", "r.id")
       .select([
-        'ur.user_id',
-        'r.id as role_id',
-        'r.name',
-        'r.color',
-        'r.icon',
-        'r.priority',
-        'r.permissions',
-        'r.created_at',
+        "ur.user_id",
+        "r.id as role_id",
+        "r.name",
+        "r.color",
+        "r.icon",
+        "r.priority",
+        "r.permissions",
+        "r.created_at",
       ])
-      .where('ur.user_id', 'in', userIds.length ? userIds : [''])
-      .orderBy('r.priority', 'desc')
-      .orderBy('r.created_at', 'desc')
+      .where("ur.user_id", "in", userIds.length ? userIds : [""])
+      .orderBy("r.priority", "desc")
+      .orderBy("r.created_at", "desc")
       .execute();
 
     type UserRole = {
@@ -310,8 +310,8 @@ export async function getUsersWithRoles() {
       rolesByUser[role.user_id].push({
         id: role.role_id,
         name: role.name,
-        color: role.color ?? '#6366F1',
-        icon: role.icon ?? 'Star',
+        color: role.color ?? "#6366F1",
+        icon: role.icon ?? "Star",
         priority: role.priority ?? 0,
         permissions: role.permissions,
       });
@@ -329,9 +329,9 @@ export async function getUsersWithRoles() {
     });
 
     const allUsers = await mainDb
-      .selectFrom('users')
-      .select(['id', 'username', 'avatar', 'created_at', 'role_id'])
-      .orderBy('username')
+      .selectFrom("users")
+      .select(["id", "username", "avatar", "created_at", "role_id"])
+      .orderBy("username")
       .execute();
 
     const allRelevantUsers = allUsers
@@ -373,7 +373,7 @@ export async function getUsersWithRoles() {
 
     return uniqueUsers.sort((a, b) => a.username.localeCompare(b.username));
   } catch (error) {
-    console.error('Error fetching users with roles:', error);
+    console.error("Error fetching users with roles:", error);
     throw error;
   }
 }

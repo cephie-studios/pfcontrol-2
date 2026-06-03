@@ -10,7 +10,10 @@
  */
 import { posthog } from "./posthog";
 
-export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function apiFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
   const headers = new Headers(init?.headers);
   const sessionId = posthog.get_session_id?.();
   if (sessionId) headers.set("x-posthog-session-id", sessionId);
@@ -37,11 +40,14 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       .clone()
       .text()
       .catch(() => "");
-    posthog.captureException?.(new Error(`HTTP ${res.status} from ${String(input)}`), {
-      source: "apiFetch",
-      status: res.status,
-      body_preview: text.slice(0, 500),
-    });
+    posthog.captureException?.(
+      new Error(`HTTP ${res.status} from ${String(input)}`),
+      {
+        source: "apiFetch",
+        status: res.status,
+        body_preview: text.slice(0, 500),
+      }
+    );
   }
 
   if (res.status === 403) {
@@ -50,7 +56,10 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
       .clone()
       .json()
       .then((data: { error?: string }) => {
-        if (data?.error === "Account is banned" || data?.error === "VPN access blocked") {
+        if (
+          data?.error === "Account is banned" ||
+          data?.error === "VPN access blocked"
+        ) {
           window.dispatchEvent(new CustomEvent("auth:forbidden"));
         }
       })

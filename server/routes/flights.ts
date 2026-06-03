@@ -433,7 +433,9 @@ router.post(
         .then((session) => {
           if (session) {
             if (session.created_by) {
-              redisConnection.del(keys.userSessions(session.created_by)).catch(() => {});
+              redisConnection
+                .del(keys.userSessions(session.created_by))
+                .catch(() => {});
             }
             broadcastToArrivalSessions(
               flight,
@@ -508,7 +510,9 @@ router.delete(
       getSessionById(req.params.sessionId)
         .then((session) => {
           if (session?.created_by) {
-            redisConnection.del(keys.userSessions(session.created_by)).catch(() => {});
+            redisConnection
+              .del(keys.userSessions(session.created_by))
+              .catch(() => {});
           }
         })
         .catch(() => {});

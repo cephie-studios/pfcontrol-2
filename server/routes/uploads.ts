@@ -1,26 +1,26 @@
-import { getUserById, updateUserSettings } from '../db/users.js';
-import express from 'express';
-import path from 'path';
-import multer from 'multer';
-import requireAuth from '../middleware/auth.js';
-import { capture } from '../utils/posthog.js';
-import { requirePermission } from '../middleware/rolePermissions.js';
-import FormData from 'form-data';
-import axios from 'axios';
+import { getUserById, updateUserSettings } from "../db/users.js";
+import express from "express";
+import path from "path";
+import multer from "multer";
+import requireAuth from "../middleware/auth.js";
+import { capture } from "../utils/posthog.js";
+import { requirePermission } from "../middleware/rolePermissions.js";
+import FormData from "form-data";
+import axios from "axios";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 const CEPHIE_API_KEY = process.env.CEPHIE_API_KEY;
-const CEPHIE_API_BASE = 'https://api.cephie.app';
+const CEPHIE_API_BASE = "https://api.cephie.app";
 const CEPHIE_UPLOAD_URL = `${CEPHIE_API_BASE}/api/v1/images/upload`;
 
 function getImageIdFromCephieUrl(url: string): string | null {
-  if (!url || !url.startsWith('https://api.cephie.app/')) return null;
+  if (!url || !url.startsWith("https://api.cephie.app/")) return null;
   try {
     const pathname = new URL(url).pathname;
-    const parts = pathname.split('/').filter(Boolean);
-    if (parts[0] === 'img' && parts.length === 2) return parts[1];
+    const parts = pathname.split("/").filter(Boolean);
+    if (parts[0] === "img" && parts.length === 2) return parts[1];
     return null;
   } catch {
     return null;
@@ -31,20 +31,23 @@ export async function deleteOldImage(url: string | undefined, userId?: string) {
   if (!url) return;
   const id = getImageIdFromCephieUrl(url);
   if (!id) {
-    console.warn('Could not extract image id from URL for delete:', url);
+    console.warn("Could not extract image id from URL for delete:", url);
     return;
   }
   try {
-    const response = await axios.delete(`${CEPHIE_API_BASE}/api/v1/images/${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CEPHIE_API_KEY,
-      },
-      data: userId != null ? { userId } : {},
-    });
+    const response = await axios.delete(
+      `${CEPHIE_API_BASE}/api/v1/images/${id}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": CEPHIE_API_KEY,
+        },
+        data: userId != null ? { userId } : {},
+      }
+    );
     if (response.status !== 200) {
       console.error(
-        'Failed to delete old image:',
+        "Failed to delete old image:",
         response.status,
         response.statusText,
         response.data
@@ -53,50 +56,50 @@ export async function deleteOldImage(url: string | undefined, userId?: string) {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error(
-        'Error deleting old image:',
+        "Error deleting old image:",
         error.response?.data || error.message
       );
     } else {
-      console.error('Error deleting old image:', error);
+      console.error("Error deleting old image:", error);
     }
   }
 }
 
 // POST: /api/uploads/upload-background - Upload a new background image
 
-import { Request, Response } from 'express';
-import { JwtPayloadClient } from '../types/JwtPayload';
+import { Request, Response } from "express";
+import { JwtPayloadClient } from "../types/JwtPayload";
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
-    typeof user === 'object' &&
+    typeof user === "object" &&
     user !== null &&
-    'userId' in user &&
-    typeof (user as Record<string, unknown>).userId === 'string'
+    "userId" in user &&
+    typeof (user as Record<string, unknown>).userId === "string"
   );
 }
 
 router.post(
-  '/upload-background',
+  "/upload-background",
   requireAuth,
-  upload.single('image'),
+  upload.single("image"),
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       const userId = user.userId;
       const file = req.file;
 
-      if (!file || !file.mimetype.startsWith('image/')) {
-        console.error('Invalid file:', file);
-        return res.status(400).json({ error: 'Invalid or missing image file' });
+      if (!file || !file.mimetype.startsWith("image/")) {
+        console.error("Invalid file:", file);
+        return res.status(400).json({ error: "Invalid or missing image file" });
       }
 
       const dbUser = await getUserById(userId);
       if (!dbUser) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).json({ error: "User not found" });
       }
 
       const currentSettings = dbUser.settings || {};
@@ -107,12 +110,12 @@ router.post(
       }
 
       const formData = new FormData();
-      formData.append('image', file.buffer, file.originalname);
+      formData.append("image", file.buffer, file.originalname);
 
       const uploadResponse = await axios.post(CEPHIE_UPLOAD_URL, formData, {
         headers: {
-          'x-user-id': userId,
-          'x-api-key': CEPHIE_API_KEY,
+          "x-user-id": userId,
+          "x-api-key": CEPHIE_API_KEY,
           ...formData.getHeaders(),
         },
         maxBodyLength: Infinity,
@@ -123,7 +126,7 @@ router.post(
       if (!newImageUrl) {
         return res
           .status(500)
-          .json({ error: 'No URL returned from Cephie upload' });
+          .json({ error: "No URL returned from Cephie upload" });
       }
 
       const updatedSettings = {
@@ -136,25 +139,25 @@ router.post(
       };
       await updateUserSettings(userId, updatedSettings);
 
-      capture(req, { distinctId: userId, event: 'background_uploaded' });
+      capture(req, { distinctId: userId, event: "background_uploaded" });
 
       res.json({
-        message: 'Background image uploaded successfully',
+        message: "Background image uploaded successfully",
         url: newImageUrl,
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error(
-          'Error uploading background image:',
+          "Error uploading background image:",
           error.response?.data || error.message
         );
         res.status(500).json({
-          error: 'Failed to upload background image',
+          error: "Failed to upload background image",
           details: error.response?.data,
         });
       } else {
-        console.error('Error uploading background image:', error);
-        res.status(500).json({ error: 'Failed to upload background image' });
+        console.error("Error uploading background image:", error);
+        res.status(500).json({ error: "Failed to upload background image" });
       }
     }
   }
@@ -162,26 +165,26 @@ router.post(
 
 // DELETE: /api/uploads/delete-background - Delete the current background image
 router.delete(
-  '/delete-background',
+  "/delete-background",
   requireAuth,
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       const userId = user.userId;
 
       const dbUser = await getUserById(userId);
       if (!dbUser) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).json({ error: "User not found" });
       }
 
       const currentSettings = dbUser.settings || {};
       const currentImageUrl = currentSettings.backgroundImage?.selectedImage;
 
       if (!currentImageUrl) {
-        return res.status(400).json({ error: 'No background image to delete' });
+        return res.status(400).json({ error: "No background image to delete" });
       }
 
       await deleteOldImage(currentImageUrl, userId);
@@ -196,32 +199,32 @@ router.delete(
       };
       await updateUserSettings(userId, updatedSettings);
 
-      capture(req, { distinctId: userId, event: 'background_deleted' });
+      capture(req, { distinctId: userId, event: "background_deleted" });
 
-      res.json({ message: 'Background image deleted successfully' });
+      res.json({ message: "Background image deleted successfully" });
     } catch (error) {
-      console.error('Error deleting background image:', error);
-      res.status(500).json({ error: 'Failed to delete background image' });
+      console.error("Error deleting background image:", error);
+      res.status(500).json({ error: "Failed to delete background image" });
     }
   }
 );
 
 // GET: /api/uploads/cephie-snap-images - List current user's Cephie Snap images (for background picker)
 router.get(
-  '/cephie-snap-images',
+  "/cephie-snap-images",
   requireAuth,
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
       const response = await axios.get(
         `${CEPHIE_API_BASE}/api/v1/images/my-images`,
         {
           headers: {
-            'x-user-id': user.userId,
-            'x-api-key': CEPHIE_API_KEY,
+            "x-user-id": user.userId,
+            "x-api-key": CEPHIE_API_KEY,
           },
         }
       );
@@ -231,19 +234,25 @@ router.get(
       if (axios.isAxiosError(err)) {
         const status = err.response?.status ?? 500;
         const data = err.response?.data;
-        return res.status(status).json(
-          data && typeof data === 'object' ? data : { error: 'Failed to load Cephie Snap images' }
-        );
+        return res
+          .status(status)
+          .json(
+            data && typeof data === "object"
+              ? data
+              : { error: "Failed to load Cephie Snap images" }
+          );
       }
-      console.error('Error fetching Cephie Snap images:', err);
-      return res.status(500).json({ error: 'Failed to load Cephie Snap images' });
+      console.error("Error fetching Cephie Snap images:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to load Cephie Snap images" });
     }
   }
 );
 
 // GET: /api/uploads/background-url/:filename - Get full URL for a background image
 router.get(
-  '/background-url/:filename',
+  "/background-url/:filename",
   requireAuth,
   async (req: express.Request, res: express.Response) => {
     try {
@@ -253,42 +262,42 @@ router.get(
 
       res.json({ url: backgroundUrl });
     } catch (error) {
-      console.error('Error getting background URL:', error);
-      res.status(500).json({ error: 'Failed to get background URL' });
+      console.error("Error getting background URL:", error);
+      res.status(500).json({ error: "Failed to get background URL" });
     }
   }
 );
 
 // POST: /api/uploads/upload-modal-banner - Upload a banner image for update modals (admin only)
 router.post(
-  '/upload-modal-banner',
+  "/upload-modal-banner",
   requireAuth,
-  requirePermission('notifications'),
-  upload.single('image'),
+  requirePermission("notifications"),
+  upload.single("image"),
   async (req: Request, res: Response) => {
     try {
       const user = req.user;
       if (!isJwtPayloadClient(user)) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
       const file = req.file;
-      if (!file || !file.mimetype.startsWith('image/')) {
-        console.error('Invalid file:', file);
-        return res.status(400).json({ error: 'Invalid or missing image file' });
+      if (!file || !file.mimetype.startsWith("image/")) {
+        console.error("Invalid file:", file);
+        return res.status(400).json({ error: "Invalid or missing image file" });
       }
 
       const timestamp = Date.now();
-      const ext = path.extname(file.originalname) || '.png';
+      const ext = path.extname(file.originalname) || ".png";
       const filename = `updateModalBanner${timestamp}${ext}`;
 
       const formData = new FormData();
-      formData.append('image', file.buffer, filename);
+      formData.append("image", file.buffer, filename);
 
       const uploadResponse = await axios.post(CEPHIE_UPLOAD_URL, formData, {
         headers: {
-          'x-user-id': user.userId,
-          'x-api-key': CEPHIE_API_KEY,
+          "x-user-id": user.userId,
+          "x-api-key": CEPHIE_API_KEY,
           ...formData.getHeaders(),
         },
         maxBodyLength: Infinity,
@@ -299,26 +308,26 @@ router.post(
       if (!newImageUrl) {
         return res
           .status(500)
-          .json({ error: 'No URL returned from Cephie upload' });
+          .json({ error: "No URL returned from Cephie upload" });
       }
 
       res.json({
-        message: 'Modal banner uploaded successfully',
+        message: "Modal banner uploaded successfully",
         url: newImageUrl,
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error(
-          'Error uploading modal banner:',
+          "Error uploading modal banner:",
           error.response?.data || error.message
         );
         res.status(500).json({
-          error: 'Failed to upload modal banner',
+          error: "Failed to upload modal banner",
           details: error.response?.data,
         });
       } else {
-        console.error('Error uploading modal banner:', error);
-        res.status(500).json({ error: 'Failed to upload modal banner' });
+        console.error("Error uploading modal banner:", error);
+        res.status(500).json({ error: "Failed to upload modal banner" });
       }
     }
   }

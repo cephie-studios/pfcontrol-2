@@ -779,9 +779,7 @@ export default function AdminUsers() {
                           onClick={() =>
                             (window.location.href = `/admin/bans?userId=${
                               tableUser.id
-                            }&username=${encodeURIComponent(
-                              tableUser.username
-                            )}`)
+                            }&username=${encodeURIComponent(tableUser.username)}`)
                           }
                           className="flex items-center space-x-2 w-full sm:w-auto"
                         >

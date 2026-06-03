@@ -40,7 +40,11 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     responseSummary:
       "Aggregate rating count and average for a VATSIM controller id (no pilot identifiers).",
     pathParams: [
-      { name: "controllerId", description: "VATSIM controller identifier.", example: "1234567" },
+      {
+        name: "controllerId",
+        description: "VATSIM controller identifier.",
+        example: "1234567",
+      },
     ],
   },
   {
@@ -87,7 +91,13 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     },
     responseSummary:
       "One PFATC network session (sanitized): airport, runway, counts, controller public profile. Not limited to sessions you own.",
-    pathParams: [{ name: "sessionId", description: "Session identifier.", example: "sess_abc123" }],
+    pathParams: [
+      {
+        name: "sessionId",
+        description: "Session identifier.",
+        example: "sess_abc123",
+      },
+    ],
   },
   {
     scopeId: "sessions.network_pfatc",
@@ -126,7 +136,13 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     },
     responseSummary:
       "One Advanced ATC (AATC) network session (sanitized). Not limited to sessions you own.",
-    pathParams: [{ name: "sessionId", description: "Session identifier.", example: "sess_abc123" }],
+    pathParams: [
+      {
+        name: "sessionId",
+        description: "Session identifier.",
+        example: "sess_abc123",
+      },
+    ],
   },
   {
     scopeId: "sessions.network_aatc",
@@ -163,9 +179,14 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       regex: /^\/sessions\/[^/]+\/flights\/[^/]+$/i,
       pathTemplate: "/sessions/{sessionId}/flights/{flightId}",
     },
-    responseSummary: "Single flight JSON (no IP, ACARS token, or pilot Discord linkage).",
+    responseSummary:
+      "Single flight JSON (no IP, ACARS token, or pilot Discord linkage).",
     pathParams: [
-      { name: "sessionId", description: "Session identifier.", example: "sess_abc123" },
+      {
+        name: "sessionId",
+        description: "Session identifier.",
+        example: "sess_abc123",
+      },
       {
         name: "flightId",
         description: "Flight UUID.",
@@ -184,7 +205,11 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     responseSummary:
       "Updated flight JSON (sanitized). Only allowed for sessions created with this same API key.",
     pathParams: [
-      { name: "sessionId", description: "Session identifier.", example: "sess_abc123" },
+      {
+        name: "sessionId",
+        description: "Session identifier.",
+        example: "sess_abc123",
+      },
       {
         name: "flightId",
         description: "Flight UUID.",
@@ -193,7 +218,11 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     ],
     requestBodySummary:
       "Partial flight fields (same subset as web UI): callsign, aircraft, departure, arrival, route, sid, star, runway, cruisingFL, clearedFL, squawk, wtc, status, remark, clearance, stand, gate, hidden, etc.",
-    requestBodyExampleJson: JSON.stringify({ status: "ACTIVE", runway: "27L", squawk: "1234" }),
+    requestBodyExampleJson: JSON.stringify({
+      status: "ACTIVE",
+      runway: "27L",
+      squawk: "1234",
+    }),
   },
   {
     scopeId: "flights.list",
@@ -203,7 +232,8 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       regex: /^\/sessions\/[^/]+\/flights$/i,
       pathTemplate: "/sessions/{sessionId}/flights",
     },
-    responseSummary: "JSON array of flights (sanitized; no IPs or ACARS tokens).",
+    responseSummary:
+      "JSON array of flights (sanitized; no IPs or ACARS tokens).",
     pathParams: [
       {
         name: "sessionId",
@@ -220,8 +250,15 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       regex: /^\/sessions\/[^/]+\/flights$/i,
       pathTemplate: "/sessions/{sessionId}/flights",
     },
-    responseSummary: "Creates a flight; returns sanitized flight (no ACARS token in response).",
-    pathParams: [{ name: "sessionId", description: "Session you own.", example: "sess_abc123" }],
+    responseSummary:
+      "Creates a flight; returns sanitized flight (no ACARS token in response).",
+    pathParams: [
+      {
+        name: "sessionId",
+        description: "Session you own.",
+        example: "sess_abc123",
+      },
+    ],
     requestBodySummary:
       "Flight fields (same as web submit): callsign, aircraft, flight_type, departure, arrival, route, etc.",
     requestBodyExampleJson: JSON.stringify({
@@ -242,7 +279,13 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     },
     responseSummary:
       "Session metadata without access_id (join codes are not exposed via developer API).",
-    pathParams: [{ name: "sessionId", description: "Session identifier.", example: "sess_abc123" }],
+    pathParams: [
+      {
+        name: "sessionId",
+        description: "Session identifier.",
+        example: "sess_abc123",
+      },
+    ],
   },
   {
     scopeId: "sessions.list",
@@ -294,7 +337,8 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     scopeId: "data.backgrounds",
     method: "GET",
     pattern: { kind: "exact", path: "/data/backgrounds" },
-    responseSummary: "JSON array of background image metadata (filename, path, extension).",
+    responseSummary:
+      "JSON array of background image metadata (filename, path, extension).",
   },
   {
     scopeId: "data.find_route",
@@ -392,7 +436,10 @@ export function pathTemplateForRoute(r: DeveloperExtRouteDefinition): string {
   return r.pattern.pathTemplate;
 }
 
-export function matchExtDeveloperRoute(method: string, pathNoQuery: string): string | null {
+export function matchExtDeveloperRoute(
+  method: string,
+  pathNoQuery: string
+): string | null {
   const p = pathNoQuery.split("?")[0];
   for (const r of DEVELOPER_EXT_ROUTES) {
     if (r.method !== method) continue;

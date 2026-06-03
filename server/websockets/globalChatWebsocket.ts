@@ -2,7 +2,10 @@ import { Server as SocketServer } from "socket.io";
 import { mainDb } from "../db/connection.js";
 import { reportGlobalChatMessage } from "../db/chats.js";
 import { sanitizeMessage } from "../utils/sanitization.js";
-import { containsHateSpeech, getHateSpeechReason } from "../utils/hateSpeechFilter.js";
+import {
+  containsHateSpeech,
+  getHateSpeechReason,
+} from "../utils/hateSpeechFilter.js";
 import { encrypt, decrypt } from "../utils/encryption.js";
 import { sql } from "kysely";
 import type { Server } from "http";
@@ -51,11 +54,14 @@ const cleanupInactiveGlobalUsers = () => {
   }
 };
 
-const globalChatCleanupInterval = setInterval(cleanupInactiveGlobalUsers, 2 * 60 * 1000);
+const globalChatCleanupInterval = setInterval(
+  cleanupInactiveGlobalUsers,
+  2 * 60 * 1000
+);
 
 interface SessionUsersWebsocketIO {
   getActiveUsersForSession?(
-    sessionId: string,
+    sessionId: string
   ): Promise<Array<{ id: string; username: string; position?: string }>>;
   sendMentionToUser(userId: string, mentionData: MentionData): void;
 }
@@ -87,7 +93,7 @@ interface GlobalChatMessage {
 
 export function setupGlobalChatWebsocket(
   httpServer: Server,
-  sessionUsersWebsocketIO: SessionUsersWebsocketIO,
+  sessionUsersWebsocketIO: SessionUsersWebsocketIO
 ) {
   sessionUsersIO = sessionUsersWebsocketIO;
 
@@ -118,7 +124,11 @@ export function setupGlobalChatWebsocket(
           .updateTable("global_chat")
           .set({ deleted_at: sql`(NOW() AT TIME ZONE 'UTC')` })
           .where((eb) =>
-            eb(sql`sent_at`, "<", sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`),
+            eb(
+              sql`sent_at`,
+              "<",
+              sql`(NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes'`
+            )
           )
           .where("deleted_at", "is", null)
           .execute();
@@ -126,7 +136,7 @@ export function setupGlobalChatWebsocket(
         console.error("[Global Chat] Error cleaning old messages:", error);
       }
     },
-    5 * 60 * 1000,
+    5 * 60 * 1000
   );
 
   io.on("connection", async (socket) => {
@@ -145,7 +155,8 @@ export function setupGlobalChatWebsocket(
     const rawNetworkKind = Array.isArray(socket.handshake.query.networkKind)
       ? socket.handshake.query.networkKind[0]
       : socket.handshake.query.networkKind;
-    const networkKind: "pfatc" | "aatc" = rawNetworkKind === "aatc" ? "aatc" : "pfatc";
+    const networkKind: "pfatc" | "aatc" =
+      rawNetworkKind === "aatc" ? "aatc" : "pfatc";
     const roomName = networkKind === "aatc" ? "aatc-chat" : "global-chat";
 
     if (!userId) {
@@ -197,7 +208,10 @@ export function setupGlobalChatWebsocket(
           lastSeen: Date.now(),
         });
 
-        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
+        io.to(roomName).emit(
+          "connectedGlobalChatUsers",
+          Array.from(networkMap.values())
+        );
       } catch (error) {
         console.error("[Global Chat] Error fetching user data:", error);
         const networkMap = connectedGlobalChatUsers.get(networkKind)!;
@@ -209,7 +223,10 @@ export function setupGlobalChatWebsocket(
           position: position || null,
           lastSeen: Date.now(),
         });
-        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
+        io.to(roomName).emit(
+          "connectedGlobalChatUsers",
+          Array.from(networkMap.values())
+        );
       }
     }
 
@@ -220,13 +237,20 @@ export function setupGlobalChatWebsocket(
     });
 
     socket.on("globalChatMessage", async ({ user, message }) => {
-      if (!message || message.length > 500 || user.userId !== socket.data.userId) return;
+      if (
+        !message ||
+        message.length > 500 ||
+        user.userId !== socket.data.userId
+      )
+        return;
 
       const sanitizedMessage = sanitizeMessage(message, 500);
       if (!sanitizedMessage) return;
 
       if (socket.data.station) {
-        const existingUser = connectedGlobalChatUsers.get(networkKind)!.get(user.userId);
+        const existingUser = connectedGlobalChatUsers
+          .get(networkKind)!
+          .get(user.userId);
 
         let avatarUrl = user.avatar;
         if (user.avatar && !user.avatar.startsWith("http")) {
@@ -242,7 +266,10 @@ export function setupGlobalChatWebsocket(
           position: socket.data.position || null,
           lastSeen: Date.now(),
         });
-        io.to(roomName).emit("connectedGlobalChatUsers", Array.from(networkMap.values()));
+        io.to(roomName).emit(
+          "connectedGlobalChatUsers",
+          Array.from(networkMap.values())
+        );
       }
 
       const parsedAirportMentions = parseAirportMentions(sanitizedMessage);
@@ -250,7 +277,9 @@ export function setupGlobalChatWebsocket(
 
       const hasHateSpeech = containsHateSpeech(sanitizedMessage);
       const automodded = hasHateSpeech;
-      const automodReason = hasHateSpeech ? getHateSpeechReason(sanitizedMessage) : undefined;
+      const automodReason = hasHateSpeech
+        ? getHateSpeechReason(sanitizedMessage)
+        : undefined;
 
       const encryptedMsg = encrypt(sanitizedMessage);
       if (!encryptedMsg) {
@@ -270,9 +299,13 @@ export function setupGlobalChatWebsocket(
             position: socket.data.position ?? undefined,
             message: JSON.stringify(encryptedMsg),
             airport_mentions:
-              parsedAirportMentions.length > 0 ? JSON.stringify(parsedAirportMentions) : undefined,
+              parsedAirportMentions.length > 0
+                ? JSON.stringify(parsedAirportMentions)
+                : undefined,
             user_mentions:
-              parsedUserMentions.length > 0 ? JSON.stringify(parsedUserMentions) : undefined,
+              parsedUserMentions.length > 0
+                ? JSON.stringify(parsedUserMentions)
+                : undefined,
             sent_at: sql`NOW()`,
             network_kind: networkKind,
           })
@@ -299,7 +332,9 @@ export function setupGlobalChatWebsocket(
         try {
           if (result.message) {
             const encryptedData =
-              typeof result.message === "string" ? JSON.parse(result.message) : result.message;
+              typeof result.message === "string"
+                ? JSON.parse(result.message)
+                : result.message;
             decryptedMessage = decrypt(encryptedData) || "";
           }
         } catch (e) {
@@ -329,7 +364,10 @@ export function setupGlobalChatWebsocket(
         if (result.user_mentions) {
           if (Array.isArray(result.user_mentions)) {
             userMentions = result.user_mentions;
-          } else if (typeof result.user_mentions === "string" && result.user_mentions.trim()) {
+          } else if (
+            typeof result.user_mentions === "string" &&
+            result.user_mentions.trim()
+          ) {
             try {
               userMentions = JSON.parse(result.user_mentions);
             } catch (e) {
@@ -379,10 +417,13 @@ export function setupGlobalChatWebsocket(
             await reportGlobalChatMessage(
               chatMsg.id,
               "automod",
-              automodReason || "Content violation detected",
+              automodReason || "Content violation detected"
             );
           } catch (error) {
-            console.error("[Global Chat] Error reporting automodded message:", error);
+            console.error(
+              "[Global Chat] Error reporting automodded message:",
+              error
+            );
           }
         }
 
@@ -461,7 +502,7 @@ export function setupGlobalChatWebsocket(
         activeGlobalChatUsers.get(nk)!.add(userId);
         io.to(socket.data.roomName).emit(
           "activeGlobalChatUsers",
-          Array.from(activeGlobalChatUsers.get(nk)!),
+          Array.from(activeGlobalChatUsers.get(nk)!)
         );
       }
     });
@@ -473,7 +514,7 @@ export function setupGlobalChatWebsocket(
         activeGlobalChatUsers.get(nk)!.delete(userId);
         io.to(socket.data.roomName).emit(
           "activeGlobalChatUsers",
-          Array.from(activeGlobalChatUsers.get(nk)!),
+          Array.from(activeGlobalChatUsers.get(nk)!)
         );
       }
     });
@@ -485,10 +526,13 @@ export function setupGlobalChatWebsocket(
       if (userId) {
         activeGlobalChatUsers.get(nk)!.delete(userId);
         connectedGlobalChatUsers.get(nk)!.delete(userId);
-        io.to(room).emit("activeGlobalChatUsers", Array.from(activeGlobalChatUsers.get(nk)!));
+        io.to(room).emit(
+          "activeGlobalChatUsers",
+          Array.from(activeGlobalChatUsers.get(nk)!)
+        );
         io.to(room).emit(
           "connectedGlobalChatUsers",
-          Array.from(connectedGlobalChatUsers.get(nk)!.values()),
+          Array.from(connectedGlobalChatUsers.get(nk)!.values())
         );
       }
     });

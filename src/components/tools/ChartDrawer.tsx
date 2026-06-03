@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Map,
   ZoomIn,
@@ -10,11 +10,11 @@ import {
   Loader2,
   PlaneTakeoff,
   List,
-} from 'lucide-react';
-import type { Airport } from '../../types/airports';
-import type { Settings } from '../../types/settings';
-import TextInput from '../common/TextInput';
-import Button from '../common/Button';
+} from "lucide-react";
+import type { Airport } from "../../types/airports";
+import type { Settings } from "../../types/settings";
+import TextInput from "../common/TextInput";
+import Button from "../common/Button";
 
 interface ChartDrawerProps {
   isOpen: boolean;
@@ -80,26 +80,26 @@ export default function ChartDrawer({
 }: ChartDrawerProps) {
   const [showAllAirports, setShowAllAirports] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileView, setMobileView] = useState<'chart' | 'sidebar'>('sidebar');
+  const [mobileView, setMobileView] = useState<"chart" | "sidebar">("sidebar");
 
-  const viewMode = settings?.layout?.chartDrawerViewMode || 'legacy';
+  const viewMode = settings?.layout?.chartDrawerViewMode || "legacy";
 
   const sectorAirportMap: Record<string, string[]> = {
-    LECB_CTR: ['LEMH'],
-    EGTT_CTR: ['EGKK', 'EGHI'],
-    GCCC_R6_CTR: ['GCLP'],
-    LCCC_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    MDCS_CTR: ['MDPC', 'MDST', 'MDAB', 'MDCR', 'MTCA'],
-    EFIN_CTR: ['EFKT'],
+    LECB_CTR: ["LEMH"],
+    EGTT_CTR: ["EGKK", "EGHI"],
+    GCCC_R6_CTR: ["GCLP"],
+    LCCC_CTR: ["LCLK", "LCPH", "LCRA"],
+    MDCS_CTR: ["MDPC", "MDST", "MDAB", "MDCR", "MTCA"],
+    EFIN_CTR: ["EFKT"],
   };
 
   const sectorAirports = sectorStation
     ? sectorAirportMap[sectorStation] || []
     : [];
 
-  const isLegacyMode = viewMode === 'legacy';
+  const isLegacyMode = viewMode === "legacy";
   const hasSectorAirports = sectorAirports.length > 0;
 
   const departureCharts = departureAirport
@@ -110,19 +110,19 @@ export default function ChartDrawer({
     : [];
 
   const availableAirports = [
-    'EFKT',
-    'EGHI',
-    'EGKK',
-    'GCLP',
-    'LCLK',
-    'LCPH',
-    'LCRA',
-    'LEMH',
-    'MDAB',
-    'MDCR',
-    'MDPC',
-    'MDST',
-    'MTCA',
+    "EFKT",
+    "EGHI",
+    "EGKK",
+    "GCLP",
+    "LCLK",
+    "LCPH",
+    "LCRA",
+    "LEMH",
+    "MDAB",
+    "MDCR",
+    "MDPC",
+    "MDST",
+    "MTCA",
   ];
 
   const otherAirports = hasSectorAirports
@@ -219,86 +219,86 @@ export default function ChartDrawer({
   if (searchQuery) {
     filteredDepartureCharts.forEach((chart) => {
       if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Name');
+        matchedCategories.add("Name");
       if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Type');
+        matchedCategories.add("Type");
       if (
         chart.credits &&
         chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
       )
-        matchedCategories.add('Author');
+        matchedCategories.add("Author");
       if (departureAirport?.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Airport');
+        matchedCategories.add("Airport");
       if (
         chart.procedures &&
         chart.procedures.some((proc: string) =>
           proc.toLowerCase().includes(searchQuery.toLowerCase())
         )
       )
-        matchedCategories.add('Procedure');
+        matchedCategories.add("Procedure");
     });
     filteredArrivalCharts.forEach((chart) => {
       if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Name');
+        matchedCategories.add("Name");
       if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Type');
+        matchedCategories.add("Type");
       if (
         chart.credits &&
         chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
       )
-        matchedCategories.add('Author');
+        matchedCategories.add("Author");
       if (arrivalAirport?.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Airport');
+        matchedCategories.add("Airport");
       if (
         chart.procedures &&
         chart.procedures.some((proc: string) =>
           proc.toLowerCase().includes(searchQuery.toLowerCase())
         )
       )
-        matchedCategories.add('Procedure');
+        matchedCategories.add("Procedure");
     });
     sectorAirportsList.forEach(({ icao, charts }) => {
       charts.forEach((chart) => {
         if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Name');
+          matchedCategories.add("Name");
         if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Type');
+          matchedCategories.add("Type");
         if (
           chart.credits &&
           chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
         )
-          matchedCategories.add('Author');
+          matchedCategories.add("Author");
         if (icao.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Airport');
+          matchedCategories.add("Airport");
         if (
           chart.procedures &&
           chart.procedures.some((proc: string) =>
             proc.toLowerCase().includes(searchQuery.toLowerCase())
           )
         )
-          matchedCategories.add('Procedure');
+          matchedCategories.add("Procedure");
       });
     });
     filteredOtherAirports.forEach(({ icao, charts }) => {
       charts.forEach((chart) => {
         if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Name');
+          matchedCategories.add("Name");
         if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Type');
+          matchedCategories.add("Type");
         if (
           chart.credits &&
           chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
         )
-          matchedCategories.add('Author');
+          matchedCategories.add("Author");
         if (icao.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Airport');
+          matchedCategories.add("Airport");
         if (
           chart.procedures &&
           chart.procedures.some((proc: string) =>
             proc.toLowerCase().includes(searchQuery.toLowerCase())
           )
         )
-          matchedCategories.add('Procedure');
+          matchedCategories.add("Procedure");
       });
     });
   }
@@ -314,19 +314,19 @@ export default function ChartDrawer({
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [isOpen]);
 
@@ -340,16 +340,16 @@ export default function ChartDrawer({
       else if (e.deltaY > 0) handleZoomOut();
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [containerRef, handleZoomIn, handleZoomOut]);
 
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 bg-zinc-900 text-white transition-transform duration-300 ${
-        isOpen ? 'translate-y-0' : 'translate-y-full'
+        isOpen ? "translate-y-0" : "translate-y-full"
       } rounded-t-3xl border-t-2 border-blue-800 flex flex-col`}
-      style={{ height: '85vh', zIndex: 48 }}
+      style={{ height: "85vh", zIndex: 48 }}
     >
       <div className="relative flex items-center py-4 px-6 border-b border-blue-800/50 rounded-t-3xl gap-4 bg-zinc-900/80 backdrop-blur-sm shadow-lg">
         <div className="flex items-center gap-2">
@@ -363,7 +363,7 @@ export default function ChartDrawer({
           style={{ zIndex: 49 }}
         >
           {selectedChart &&
-            (!isLegacyMode || !isMobile || mobileView === 'chart') && (
+            (!isLegacyMode || !isMobile || mobileView === "chart") && (
               <>
                 {!isLegacyMode && (
                   <Button
@@ -415,7 +415,7 @@ export default function ChartDrawer({
       <div className="flex-1 overflow-hidden flex">
         {isLegacyMode ? (
           isMobile ? (
-            mobileView === 'sidebar' ? (
+            mobileView === "sidebar" ? (
               <div className="flex-1 overflow-hidden">
                 <div className="w-full border-r border-zinc-800 overflow-y-auto p-4">
                   <div className="mb-4">
@@ -427,7 +427,7 @@ export default function ChartDrawer({
                     />
                     {searchQuery && matchedCategories.size > 0 && (
                       <div className="text-xs text-zinc-400 mt-1">
-                        Filtered by: {Array.from(matchedCategories).join(', ')}
+                        Filtered by: {Array.from(matchedCategories).join(", ")}
                       </div>
                     )}
                   </div>
@@ -438,7 +438,7 @@ export default function ChartDrawer({
                         <div className="flex items-center gap-2 mb-2 px-1">
                           <PlaneTakeoff className="w-3.5 h-3.5 text-green-500" />
                           <h3 className="text-xs font-semibold text-green-500 uppercase">
-                            {arrivalAirport ? 'Departure' : 'Airport Charts'} -{' '}
+                            {arrivalAirport ? "Departure" : "Airport Charts"} -{" "}
                             {departureAirport}
                           </h3>
                         </div>
@@ -451,7 +451,7 @@ export default function ChartDrawer({
                               key={chart.path}
                               onClick={() => {
                                 setSelectedChart(chart.path);
-                                setMobileView('chart');
+                                setMobileView("chart");
                               }}
                               className="w-full p-2.5 flex-col items-start justify-start"
                             >
@@ -485,7 +485,7 @@ export default function ChartDrawer({
                               key={chart.path}
                               onClick={() => {
                                 setSelectedChart(chart.path);
-                                setMobileView('chart');
+                                setMobileView("chart");
                               }}
                               className="w-full p-2.5 flex-col items-start justify-start"
                             >
@@ -524,7 +524,7 @@ export default function ChartDrawer({
                                   key={chart.path}
                                   onClick={() => {
                                     setSelectedChart(chart.path);
-                                    setMobileView('chart');
+                                    setMobileView("chart");
                                   }}
                                   className="w-full p-2.5 flex-col items-start justify-start"
                                 >
@@ -576,7 +576,7 @@ export default function ChartDrawer({
                                     key={chart.path}
                                     onClick={() => {
                                       setSelectedChart(chart.path);
-                                      setMobileView('chart');
+                                      setMobileView("chart");
                                     }}
                                     className="w-full p-2.5 flex-col items-start justify-start"
                                   >
@@ -617,7 +617,7 @@ export default function ChartDrawer({
             ) : (
               <div className="flex-1 relative bg-black flex flex-col">
                 <Button
-                  onClick={() => setMobileView('sidebar')}
+                  onClick={() => setMobileView("sidebar")}
                   variant="outline"
                   size="sm"
                   className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-zinc-800/80 backdrop-blur-sm"
@@ -648,8 +648,8 @@ export default function ChartDrawer({
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       style={{
-                        cursor: isChartDragging ? 'grabbing' : 'grab',
-                        touchAction: 'none',
+                        cursor: isChartDragging ? "grabbing" : "grab",
+                        touchAction: "none",
                       }}
                     >
                       {imageLoading && (
@@ -661,15 +661,15 @@ export default function ChartDrawer({
                         key={selectedChart}
                         src={selectedChart}
                         alt="Airport Chart"
-                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? "opacity-0" : "opacity-100"}`}
                         style={{
                           transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
-                          transformOrigin: 'center',
+                          transformOrigin: "center",
                           transition: isChartDragging
-                            ? 'none'
-                            : 'transform 0.1s ease-out',
-                          userSelect: 'none',
-                          pointerEvents: 'auto',
+                            ? "none"
+                            : "transform 0.1s ease-out",
+                          userSelect: "none",
+                          pointerEvents: "auto",
                         }}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
@@ -691,7 +691,7 @@ export default function ChartDrawer({
                     {chartsToUse.find((c) => c.path === selectedChart)
                       ?.credits && (
                       <div className="absolute bottom-4 right-4 bg-zinc-800/80 backdrop-blur-sm rounded-lg p-2 text-xs text-zinc-300 text-center max-w-52">
-                        Chart created by{' '}
+                        Chart created by{" "}
                         {
                           chartsToUse.find((c) => c.path === selectedChart)
                             ?.credits
@@ -717,7 +717,7 @@ export default function ChartDrawer({
                   />
                   {searchQuery && matchedCategories.size > 0 && (
                     <div className="text-xs text-zinc-400 mt-1">
-                      Filtered by: {Array.from(matchedCategories).join(', ')}
+                      Filtered by: {Array.from(matchedCategories).join(", ")}
                     </div>
                   )}
                 </div>
@@ -728,7 +728,7 @@ export default function ChartDrawer({
                       <div className="flex items-center gap-2 mb-2 px-1">
                         <PlaneTakeoff className="w-3.5 h-3.5 text-green-500" />
                         <h3 className="text-xs font-semibold text-green-500 uppercase">
-                          {arrivalAirport ? 'Departure' : 'Airport Charts'} -{' '}
+                          {arrivalAirport ? "Departure" : "Airport Charts"} -{" "}
                           {departureAirport}
                         </h3>
                       </div>
@@ -742,15 +742,15 @@ export default function ChartDrawer({
                             onClick={() => setSelectedChart(chart.path)}
                             className={`w-full p-2.5 flex-col items-start justify-start ${
                               selectedChart === chart.path
-                                ? 'bg-green-600/20 !border-green-500 !border-2'
-                                : ''
+                                ? "bg-green-600/20 !border-green-500 !border-2"
+                                : ""
                             }`}
                           >
                             <div
                               className={`text-sm font-medium transition-colors line-clamp-1 ${
                                 selectedChart === chart.path
-                                  ? 'text-green-400'
-                                  : 'text-white group-hover:text-green-400'
+                                  ? "text-green-400"
+                                  : "text-white group-hover:text-green-400"
                               }`}
                             >
                               {chart.name}
@@ -783,15 +783,15 @@ export default function ChartDrawer({
                             onClick={() => setSelectedChart(chart.path)}
                             className={`w-full p-2.5 flex-col items-start justify-start ${
                               selectedChart === chart.path
-                                ? 'bg-blue-600/20 !border-blue-500 !border-2'
-                                : ''
+                                ? "bg-blue-600/20 !border-blue-500 !border-2"
+                                : ""
                             }`}
                           >
                             <div
                               className={`text-sm font-medium transition-colors line-clamp-1 ${
                                 selectedChart === chart.path
-                                  ? 'text-blue-400'
-                                  : 'text-white group-hover:text-blue-400'
+                                  ? "text-blue-400"
+                                  : "text-white group-hover:text-blue-400"
                               }`}
                             >
                               {chart.name}
@@ -829,15 +829,15 @@ export default function ChartDrawer({
                                 onClick={() => setSelectedChart(chart.path)}
                                 className={`w-full p-2.5 flex-col items-start justify-start ${
                                   selectedChart === chart.path
-                                    ? 'bg-purple-600/20 !border-purple-500 !border-2'
-                                    : ''
+                                    ? "bg-purple-600/20 !border-purple-500 !border-2"
+                                    : ""
                                 }`}
                               >
                                 <div
                                   className={`text-sm font-medium transition-colors line-clamp-1 ${
                                     selectedChart === chart.path
-                                      ? 'text-purple-400'
-                                      : 'text-white group-hover:text-purple-400'
+                                      ? "text-purple-400"
+                                      : "text-white group-hover:text-purple-400"
                                   }`}
                                 >
                                   {chart.name}
@@ -888,15 +888,15 @@ export default function ChartDrawer({
                                   onClick={() => setSelectedChart(chart.path)}
                                   className={`w-full p-2.5 flex-col items-start justify-start ${
                                     selectedChart === chart.path
-                                      ? 'bg-zinc-600/20 !border-white !border-2'
-                                      : ''
+                                      ? "bg-zinc-600/20 !border-white !border-2"
+                                      : ""
                                   }`}
                                 >
                                   <div
                                     className={`text-sm font-medium transition-colors line-clamp-1 ${
                                       selectedChart === chart.path
-                                        ? 'text-zinc-300'
-                                        : 'text-white group-hover:text-zinc-300'
+                                        ? "text-zinc-300"
+                                        : "text-white group-hover:text-zinc-300"
                                     }`}
                                   >
                                     {chart.name}
@@ -955,8 +955,8 @@ export default function ChartDrawer({
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       style={{
-                        cursor: isChartDragging ? 'grabbing' : 'grab',
-                        touchAction: 'none',
+                        cursor: isChartDragging ? "grabbing" : "grab",
+                        touchAction: "none",
                       }}
                     >
                       {imageLoading && (
@@ -968,15 +968,15 @@ export default function ChartDrawer({
                         key={selectedChart}
                         src={selectedChart}
                         alt="Airport Chart"
-                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? "opacity-0" : "opacity-100"}`}
                         style={{
                           transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
-                          transformOrigin: 'center',
+                          transformOrigin: "center",
                           transition: isChartDragging
-                            ? 'none'
-                            : 'transform 0.1s ease-out',
-                          userSelect: 'none',
-                          pointerEvents: 'auto',
+                            ? "none"
+                            : "transform 0.1s ease-out",
+                          userSelect: "none",
+                          pointerEvents: "auto",
                         }}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
@@ -998,7 +998,7 @@ export default function ChartDrawer({
                     {chartsToUse.find((c) => c.path === selectedChart)
                       ?.credits && (
                       <div className="absolute bottom-4 right-4 bg-zinc-800/80 backdrop-blur-sm rounded-lg p-2 text-xs text-zinc-300 text-center max-w-52">
-                        Chart created by{' '}
+                        Chart created by{" "}
                         {
                           chartsToUse.find((c) => c.path === selectedChart)
                             ?.credits
@@ -1038,8 +1038,8 @@ export default function ChartDrawer({
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       style={{
-                        cursor: isChartDragging ? 'grabbing' : 'grab',
-                        touchAction: 'none',
+                        cursor: isChartDragging ? "grabbing" : "grab",
+                        touchAction: "none",
                       }}
                     >
                       {imageLoading && (
@@ -1051,15 +1051,15 @@ export default function ChartDrawer({
                         key={selectedChart}
                         src={selectedChart}
                         alt="Airport Chart"
-                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                        className={`object-contain select-none max-w-full max-h-full transition-opacity duration-200 ${imageLoading ? "opacity-0" : "opacity-100"}`}
                         style={{
                           transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
-                          transformOrigin: 'center',
+                          transformOrigin: "center",
                           transition: isChartDragging
-                            ? 'none'
-                            : 'transform 0.1s ease-out',
-                          userSelect: 'none',
-                          pointerEvents: 'auto',
+                            ? "none"
+                            : "transform 0.1s ease-out",
+                          userSelect: "none",
+                          pointerEvents: "auto",
                         }}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
@@ -1081,7 +1081,7 @@ export default function ChartDrawer({
                     {chartsToUse.find((c) => c.path === selectedChart)
                       ?.credits && (
                       <div className="absolute bottom-4 right-4 bg-zinc-800/80 backdrop-blur-sm rounded-lg p-2 text-xs text-zinc-300 text-center max-w-52">
-                        Chart created by{' '}
+                        Chart created by{" "}
                         {
                           chartsToUse.find((c) => c.path === selectedChart)
                             ?.credits
@@ -1108,7 +1108,7 @@ export default function ChartDrawer({
                     />
                     {searchQuery && matchedCategories.size > 0 && (
                       <div className="text-xs text-zinc-400 mt-1.5 px-1">
-                        Filtering by: {Array.from(matchedCategories).join(', ')}
+                        Filtering by: {Array.from(matchedCategories).join(", ")}
                       </div>
                     )}
                   </div>
@@ -1122,7 +1122,7 @@ export default function ChartDrawer({
                             <div className="flex items-center gap-2 px-2 py-2 mb-1.5 bg-green-500/10 border-l-4 border-green-500 rounded">
                               <PlaneTakeoff className="w-4 h-4 text-green-400" />
                               <h3 className="text-xs font-bold text-green-400 uppercase tracking-wide">
-                                {arrivalAirport ? 'Departure' : 'Airport'} -{' '}
+                                {arrivalAirport ? "Departure" : "Airport"} -{" "}
                                 {departureAirport}
                               </h3>
                               <span className="ml-auto text-xs text-green-400/70 font-medium">

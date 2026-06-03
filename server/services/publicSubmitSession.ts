@@ -1,7 +1,7 @@
-import { sql } from 'kysely';
-import { mainDb } from '../db/connection.js';
-import { getSessionById } from '../db/sessions.js';
-import { parsePublicSessionAtis } from '../utils/publicSessionAtis.js';
+import { sql } from "kysely";
+import { mainDb } from "../db/connection.js";
+import { getSessionById } from "../db/sessions.js";
+import { parsePublicSessionAtis } from "../utils/publicSessionAtis.js";
 
 export interface PublicSubmitSession {
   sessionId: string;
@@ -24,14 +24,14 @@ export async function getPublicSubmitSession(
 
   const [flightCountRow, controller] = await Promise.all([
     mainDb
-      .selectFrom('flights')
-      .select(sql`count(*)`.as('count'))
-      .where('session_id', '=', session.session_id)
+      .selectFrom("flights")
+      .select(sql`count(*)`.as("count"))
+      .where("session_id", "=", session.session_id)
       .executeTakeFirst(),
     mainDb
-      .selectFrom('users')
-      .select(['username'])
-      .where('id', '=', session.created_by)
+      .selectFrom("users")
+      .select(["username"])
+      .where("id", "=", session.created_by)
       .executeTakeFirst(),
   ]);
 

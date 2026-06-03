@@ -1,4 +1,4 @@
-import { apiFetch } from '../apiFetch.js';
+import { apiFetch } from "../apiFetch.js";
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export interface ATISGenerateRequest {
@@ -22,11 +22,11 @@ export async function generateATIS(
   data: ATISGenerateRequest
 ): Promise<ATISGenerateResponse> {
   const response = await apiFetch(`${API_BASE_URL}/api/atis/generate`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    credentials: 'include',
+    credentials: "include",
     body: JSON.stringify(data),
   });
 

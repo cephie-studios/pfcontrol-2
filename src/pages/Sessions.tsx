@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/auth/useAuth";
 import { useSettings } from "../hooks/settings/useSettings";
-import { fetchMySessions, updateSessionName, deleteSession } from "../utils/fetch/sessions";
+import {
+  fetchMySessions,
+  updateSessionName,
+  deleteSession,
+} from "../utils/fetch/sessions";
 import type { SessionInfo } from "../types/session";
 import { fetchBackgrounds } from "../utils/fetch/data";
 import Button from "../components/common/Button";
@@ -92,9 +96,14 @@ export default function Sessions() {
     } else if (selectedImage === "favorites") {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== "random" && favImageUrl !== "favorites") {
+        if (
+          favImageUrl &&
+          favImageUrl !== "random" &&
+          favImageUrl !== "favorites"
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
@@ -131,9 +140,12 @@ export default function Sessions() {
     }
     setSavingName(sessionId);
     try {
-      const { customName } = await updateSessionName(sessionId, editNameValue.trim());
+      const { customName } = await updateSessionName(
+        sessionId,
+        editNameValue.trim()
+      );
       setSessions((prev) =>
-        prev.map((s) => (s.sessionId === sessionId ? { ...s, customName } : s)),
+        prev.map((s) => (s.sessionId === sessionId ? { ...s, customName } : s))
       );
       setEditingName(null);
       setEditNameValue("");
@@ -153,7 +165,9 @@ export default function Sessions() {
     setDeleteInProgress(sessionToDelete);
     try {
       await deleteSession(sessionToDelete);
-      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionToDelete));
+      setSessions((prev) =>
+        prev.filter((s) => s.sessionId !== sessionToDelete)
+      );
       setSessionToDelete(null);
     } catch {
       setError("Failed to delete session.");
@@ -168,7 +182,11 @@ export default function Sessions() {
         <Navbar />
         <div className="relative w-full h-80 md:h-96 overflow-hidden">
           <div className="absolute inset-0">
-            <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+            <img
+              src="/assets/images/hero.webp"
+              alt="Banner"
+              className="object-cover w-full h-full scale-110"
+            />
             <div
               className="absolute inset-0"
               style={{
@@ -196,7 +214,10 @@ export default function Sessions() {
           <div className="p-6">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse">
+                <div
+                  key={i}
+                  className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse"
+                >
                   <div className="flex items-center mb-3 gap-2">
                     <div className="h-5 w-5 rounded bg-gray-700 shrink-0" />
                     <div className="h-4 w-36 rounded-full bg-gray-700" />
@@ -231,7 +252,9 @@ export default function Sessions() {
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
           <AlertTriangle className="h-8 w-8 text-yellow-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Not logged in</h2>
-          <p className="text-gray-400 mb-6">Please log in to view your sessions.</p>
+          <p className="text-gray-400 mb-6">
+            Please log in to view your sessions.
+          </p>
           <Link
             to="/"
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full transition-all"
@@ -311,11 +334,15 @@ export default function Sessions() {
               <div className="p-4 bg-yellow-900/20 border-2 border-red-600/30 rounded-xl">
                 <div className="flex items-center">
                   <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-                  <span className="text-red-400 font-medium">Session limit reached</span>
+                  <span className="text-red-400 font-medium">
+                    Session limit reached
+                  </span>
                 </div>
                 <p className="text-red-200 mt-1">
                   You have reached the maximum of {maxSessions} sessions.{" "}
-                  <span className="italic">Delete an old session to create a new one.</span>
+                  <span className="italic">
+                    Delete an old session to create a new one.
+                  </span>
                 </p>
               </div>
             )}
@@ -326,7 +353,9 @@ export default function Sessions() {
                   <Workflow className="h-12 w-12 text-blue-400" />
                 </div>
                 <h2 className="text-xl font-semibold mb-2">No sessions yet</h2>
-                <p className="text-gray-400 mb-6">You haven't created any sessions yet.</p>
+                <p className="text-gray-400 mb-6">
+                  You haven't created any sessions yet.
+                </p>
                 <Link
                   to="/create"
                   className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full transition-all"
@@ -352,7 +381,9 @@ export default function Sessions() {
                             ? session.customName
                             : `${session.airportIcao || "Unknown"} Session`}
                         </span>
-                        {session.isLegacy && <Info className="h-4 w-4 text-yellow-400 ml-2" />}
+                        {session.isLegacy && (
+                          <Info className="h-4 w-4 text-yellow-400 ml-2" />
+                        )}
                       </div>
                       <div className="space-y-2 text-sm text-gray-300">
                         <div className="flex items-center">
@@ -378,12 +409,16 @@ export default function Sessions() {
                           ) : session.isPFATC ? (
                             <>
                               <Workflow className="h-4 w-4 mr-2 text-blue-400" />
-                              <span className="text-blue-400 font-medium">PFATC Session</span>
+                              <span className="text-blue-400 font-medium">
+                                PFATC Session
+                              </span>
                             </>
                           ) : (
                             <>
                               <Workflow className="h-4 w-4 mr-2 text-green-400" />
-                              <span className="text-green-400 font-medium">Standard Session</span>
+                              <span className="text-green-400 font-medium">
+                                Standard Session
+                              </span>
                             </>
                           )}
                         </div>
@@ -398,7 +433,10 @@ export default function Sessions() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          startEditingName(session.sessionId, session.customName || "")
+                          startEditingName(
+                            session.sessionId,
+                            session.customName || ""
+                          )
                         }
                       >
                         <Pencil className="h-4 w-4" />
@@ -440,31 +478,39 @@ export default function Sessions() {
             </div>
 
             <div className="mb-6">
-              {sessions.find((s) => s.sessionId === sessionToDelete)?.isLegacy && (
+              {sessions.find((s) => s.sessionId === sessionToDelete)
+                ?.isLegacy && (
                 <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
                   <div className="flex items-center mb-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                    <span className="text-yellow-400 font-medium">Legacy Session</span>
+                    <span className="text-yellow-400 font-medium">
+                      Legacy Session
+                    </span>
                   </div>
                   <p className="text-sm text-yellow-200">
-                    This session uses old encryption. Deleting it is recommended for security.
+                    This session uses old encryption. Deleting it is recommended
+                    for security.
                   </p>
                 </div>
               )}
               <p className="text-gray-300 mb-2">
-                Are you sure you want to delete this session? This action cannot be undone.
+                Are you sure you want to delete this session? This action cannot
+                be undone.
               </p>
               <p className="text-sm text-gray-400">
                 Session:{" "}
                 <span className="font-medium">
-                  {sessions.find((s) => s.sessionId === sessionToDelete)?.customName ||
+                  {sessions.find((s) => s.sessionId === sessionToDelete)
+                    ?.customName ||
                     `${
-                      sessions.find((s) => s.sessionId === sessionToDelete)?.airportIcao ||
-                      "Unknown"
+                      sessions.find((s) => s.sessionId === sessionToDelete)
+                        ?.airportIcao || "Unknown"
                     } Session`}
                 </span>
               </p>
-              <p className="text-sm text-gray-500 font-mono">ID: {sessionToDelete}</p>
+              <p className="text-sm text-gray-500 font-mono">
+                ID: {sessionToDelete}
+              </p>
             </div>
 
             <div className="flex justify-end space-x-3">
@@ -513,7 +559,8 @@ export default function Sessions() {
             </div>
             <div className="mb-6">
               <p className="text-gray-300 mb-4">
-                Change the name for this session. This helps you identify it more easily.
+                Change the name for this session. This helps you identify it
+                more easily.
               </p>
               <TextInput
                 value={editNameValue}

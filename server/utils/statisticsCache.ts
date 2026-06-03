@@ -1,8 +1,8 @@
-import { updateUserStatistics, getUserById } from '../db/users.js';
-import { redisConnection } from '../db/connection.js';
+import { updateUserStatistics, getUserById } from "../db/users.js";
+import { redisConnection } from "../db/connection.js";
 
 const FLUSH_INTERVAL = 5 * 60 * 1000;
-const STATS_KEY_PREFIX = 'stats_cache:';
+const STATS_KEY_PREFIX = "stats_cache:";
 
 export async function incrementStat(
   userId: string,
@@ -29,7 +29,7 @@ export async function incrementStat(
 
 async function flushStats() {
   try {
-    if (typeof redisConnection.keys !== 'function') {
+    if (typeof redisConnection.keys !== "function") {
       return;
     }
     const keys = await redisConnection.keys(`${STATS_KEY_PREFIX}*`);
@@ -48,7 +48,7 @@ async function flushStats() {
           ...existingStats,
         };
         for (const [fullKey, val] of Object.entries(statsHash)) {
-          const parts = fullKey.split('.');
+          const parts = fullKey.split(".");
           if (parts.length === 1) {
             stats[parts[0]] = (Number(stats[parts[0]]) || 0) + parseFloat(val);
           } else {
@@ -65,7 +65,7 @@ async function flushStats() {
       }
     }
   } catch (error) {
-    console.error('[Redis] Failed to flush stats:', error);
+    console.error("[Redis] Failed to flush stats:", error);
   }
 }
 
@@ -76,12 +76,12 @@ export function startStatsFlushing() {
     clearInterval(flushInterval);
   }
   flushInterval = setInterval(flushStats, FLUSH_INTERVAL);
-  console.log('[StatsCache] Started stats flushing');
+  console.log("[StatsCache] Started stats flushing");
 }
 
 if (!process.env.VITEST) {
-  process.on('SIGINT', async () => {
-    console.log('[StatsCache] Flushing stats before shutdown...');
+  process.on("SIGINT", async () => {
+    console.log("[StatsCache] Flushing stats before shutdown...");
     if (flushInterval) {
       clearInterval(flushInterval);
     }
@@ -89,8 +89,8 @@ if (!process.env.VITEST) {
     process.exit();
   });
 
-  process.on('SIGTERM', async () => {
-    console.log('[StatsCache] Flushing stats before shutdown...');
+  process.on("SIGTERM", async () => {
+    console.log("[StatsCache] Flushing stats before shutdown...");
     if (flushInterval) {
       clearInterval(flushInterval);
     }

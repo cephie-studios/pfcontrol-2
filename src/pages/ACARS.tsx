@@ -1,37 +1,37 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Loader from '../components/common/Loader';
-import Button from '../components/common/Button';
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Loader from "../components/common/Loader";
+import Button from "../components/common/Button";
 import {
   PanelLeftClose,
   PanelLeftOpen,
   Map,
   PlaneTakeoff,
   PlusCircle,
-} from 'lucide-react';
-import { useData } from '../hooks/data/useData';
-import { useSettings } from '../hooks/settings/useSettings';
-import { useAuth } from '../hooks/auth/useAuth';
-import { createFlightsSocket } from '../sockets/flightsSocket';
+} from "lucide-react";
+import { useData } from "../hooks/data/useData";
+import { useSettings } from "../hooks/settings/useSettings";
+import { useAuth } from "../hooks/auth/useAuth";
+import { createFlightsSocket } from "../sockets/flightsSocket";
 import {
   createOverviewSocket,
   type OverviewSession,
-} from '../sockets/overviewSocket';
-import { getAirportName, parseCallsign } from '../utils/callsignParser';
-import { getChartsForAirport, playNotificationSound } from '../utils/acars';
-import { createChartHandlers } from '../utils/charts';
-import type { AcarsMessage } from '../types/acars';
-import type { Flight } from '../types/flight';
-import type { SessionInfo } from '../types/session';
+} from "../sockets/overviewSocket";
+import { getAirportName, parseCallsign } from "../utils/callsignParser";
+import { getChartsForAirport, playNotificationSound } from "../utils/acars";
+import { createChartHandlers } from "../utils/charts";
+import type { AcarsMessage } from "../types/acars";
+import type { Flight } from "../types/flight";
+import type { SessionInfo } from "../types/session";
 
-import AcarsSidebar from '../components/acars/AcarsSidebar';
-import AcarsTerminal from '../components/acars/AcarsTerminal';
-import AcarsNotePanel from '../components/acars/AcarsNotePanel';
-import ChartDrawer from '../components/tools/ChartDrawer';
-import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
-import Modal from '../components/common/Modal';
-import { getDiscordLoginUrl } from '../utils/fetch/auth';
+import AcarsSidebar from "../components/acars/AcarsSidebar";
+import AcarsTerminal from "../components/acars/AcarsTerminal";
+import AcarsNotePanel from "../components/acars/AcarsNotePanel";
+import ChartDrawer from "../components/tools/ChartDrawer";
+import ControllerRatingPopup from "../components/tools/ControllerRatingPopup";
+import Modal from "../components/common/Modal";
+import { getDiscordLoginUrl } from "../utils/fetch/auth";
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -39,7 +39,7 @@ export default function ACARS() {
     flightId: string;
   }>();
   const [searchParams] = useSearchParams();
-  const accessId = searchParams.get('acars_token');
+  const accessId = searchParams.get("acars_token");
   const navigate = useNavigate();
   const { user } = useAuth();
   const { airports, airlines, loading: dataLoading } = useData();
@@ -54,7 +54,7 @@ export default function ACARS() {
   const [isAuthError, setIsAuthError] = useState(false);
   const [pdcRequested, setPdcRequested] = useState(false);
   const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string>('');
+  const [notes, setNotes] = useState<string>("");
   const [selectedChart, setSelectedChart] = useState<string | null>(null);
   const [chartLoadError, setChartLoadError] = useState(false);
   const [chartZoom, setChartZoom] = useState(1);
@@ -63,8 +63,8 @@ export default function ACARS() {
   const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [showSidebar, setShowSidebar] = useState(true);
-  const [mobileTab, setMobileTab] = useState<'terminal' | 'notes' | 'charts'>(
-    'terminal'
+  const [mobileTab, setMobileTab] = useState<"terminal" | "notes" | "charts">(
+    "terminal"
   );
   const [showChartsDrawer, setShowChartsDrawer] = useState(false);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
@@ -146,12 +146,12 @@ export default function ACARS() {
         }
 
         const departureAirport = getAirportName(
-          flight.departure || '',
+          flight.departure || "",
           airports
         );
-        const arrivalAirport = getAirportName(flight.arrival || '', airports);
+        const arrivalAirport = getAirportName(flight.arrival || "", airports);
         const formattedCallsign = parseCallsign(
-          flight.callsign || '',
+          flight.callsign || "",
           airlines
         );
 
@@ -159,20 +159,20 @@ export default function ACARS() {
 ════════════════════════════════════════
 
 Callsign: ${flight.callsign} (${formattedCallsign})
-Aircraft: ${flight.aircraft || 'N/A'}
-Flight Type: ${flight.flight_type || 'N/A'}
+Aircraft: ${flight.aircraft || "N/A"}
+Flight Type: ${flight.flight_type || "N/A"}
 
 Departure: ${flight.departure} - ${departureAirport}
 Arrival: ${flight.arrival} - ${arrivalAirport}
-${flight.alternate ? `Alternate: ${flight.alternate}` : ''}
+${flight.alternate ? `Alternate: ${flight.alternate}` : ""}
 
-Stand: ${flight.stand || 'N/A'}
-${flight.gate ? `Gate: ${flight.gate}` : ''}
-Runway: ${flight.runway || 'N/A'}
+Stand: ${flight.stand || "N/A"}
+${flight.gate ? `Gate: ${flight.gate}` : ""}
+Runway: ${flight.runway || "N/A"}
 
-Cruising FL: ${flight.cruisingFL || 'N/A'}
+Cruising FL: ${flight.cruisingFL || "N/A"}
 
-Route: ${flight.route || 'N/A'}
+Route: ${flight.route || "N/A"}
 
 ════════════════════════════════════════
 NOTES:
@@ -226,24 +226,24 @@ NOTES:
     if (initializedRef.current) return;
     const validateAndLoad = async () => {
       if (!sessionId || !flightId || !accessId) {
-        setError('Missing required parameters');
+        setError("Missing required parameters");
         setLoading(false);
         return;
       }
       try {
         const validateResponse = await fetch(
           `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}/${flightId}/validate-acars?acars_token=${accessId}`,
-          { credentials: 'include' }
+          { credentials: "include" }
         );
-        if (!validateResponse.ok) throw new Error('Failed to validate access');
+        if (!validateResponse.ok) throw new Error("Failed to validate access");
         const { valid, accessId: sessionAccess } =
           await validateResponse.json();
-        if (!valid) throw new Error('Invalid access token');
+        if (!valid) throw new Error("Invalid access token");
         setSessionAccessId(sessionAccess);
 
         const sessionResponse = await fetch(
           `${import.meta.env.VITE_SERVER_URL}/api/sessions/${sessionId}/submit`,
-          { credentials: 'include' }
+          { credentials: "include" }
         );
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json();
@@ -254,20 +254,20 @@ NOTES:
           `${import.meta.env.VITE_SERVER_URL}/api/flights/${sessionId}/${flightId}/acars-flight?acars_token=${accessId}`
         );
         if (!flightResponse.ok) {
-          throw new Error('Failed to load flight data');
+          throw new Error("Failed to load flight data");
         }
         const currentFlight: Flight = await flightResponse.json();
         if (!currentFlight || String(currentFlight.id) !== String(flightId)) {
-          throw new Error('Flight not found');
+          throw new Error("Flight not found");
         }
         setFlight(currentFlight);
         setLoading(false);
         await fetch(
           `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`,
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({
               sessionId,
               flightId,
@@ -276,7 +276,7 @@ NOTES:
           }
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Access denied');
+        setError(err instanceof Error ? err.message : "Access denied");
         setLoading(false);
       }
     };
@@ -295,15 +295,15 @@ NOTES:
       await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active/${sessionId}/${flightId}`,
         {
-          method: 'DELETE',
-          credentials: 'include',
+          method: "DELETE",
+          credentials: "include",
           keepalive: true,
         }
       );
     };
-    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener("beforeunload", handleUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener("beforeunload", handleUnload);
       handleUnload();
     };
   }, [sessionId, flightId]);
@@ -313,26 +313,26 @@ NOTES:
     const warningMsg: AcarsMessage = {
       id: `${Date.now()}-warning`,
       timestamp: new Date().toISOString(),
-      station: 'SYSTEM',
-      text: 'DO NOT CLOSE THIS WINDOW, CONTROLLERS MAY SEND PRE DEPARTURE CLEARANCES THROUGH THE ACARS TERMINAL',
-      type: 'warning',
+      station: "SYSTEM",
+      text: "DO NOT CLOSE THIS WINDOW, CONTROLLERS MAY SEND PRE DEPARTURE CLEARANCES THROUGH THE ACARS TERMINAL",
+      type: "warning",
     };
     const successMsg: AcarsMessage = {
       id: `${Date.now()}-success`,
       timestamp: new Date().toISOString(),
-      station: 'SYSTEM',
+      station: "SYSTEM",
       text: `FLIGHT PLAN: ${flight.callsign} SUBMITTED SUCCESSFULLY`,
-      type: 'Success',
+      type: "Success",
     };
-    const formattedCallsign = parseCallsign(flight.callsign || '', airlines);
-    const departureAirport = getAirportName(flight.departure || '', airports);
-    const arrivalAirport = getAirportName(flight.arrival || '', airports);
+    const formattedCallsign = parseCallsign(flight.callsign || "", airlines);
+    const departureAirport = getAirportName(flight.departure || "", airports);
+    const arrivalAirport = getAirportName(flight.arrival || "", airports);
     const detailsMsg: AcarsMessage = {
       id: `${Date.now()}-details`,
       timestamp: new Date().toISOString(),
-      station: 'SYSTEM',
-      text: `FLIGHT PLAN DETAILS,\nCALLSIGN: ${flight.callsign} (${formattedCallsign}), \nTYPE: ${flight.aircraft},\nRULES: ${flight.flight_type},\nSTAND: ${flight.stand || 'N/A'},\nDEPARTING: ${departureAirport},\nARRIVING: ${arrivalAirport}`,
-      type: 'system',
+      station: "SYSTEM",
+      text: `FLIGHT PLAN DETAILS,\nCALLSIGN: ${flight.callsign} (${formattedCallsign}), \nTYPE: ${flight.aircraft},\nRULES: ${flight.flight_type},\nSTAND: ${flight.stand || "N/A"},\nDEPARTING: ${departureAirport},\nARRIVING: ${arrivalAirport}`,
+      type: "system",
     };
     const initialMessages = [warningMsg, detailsMsg, successMsg];
     if (flight.pdc_remarks) {
@@ -341,17 +341,17 @@ NOTES:
         timestamp: new Date().toISOString(),
         station: `${flight.departure}_DEL`,
         text: flight.pdc_remarks,
-        type: 'pdc',
+        type: "pdc",
       };
       initialMessages.push(pdcMsg);
     }
     setMessages(initialMessages);
-    if (settings) playNotificationSound('warning', settings);
+    if (settings) playNotificationSound("warning", settings);
     initializedRef.current = true;
   }, [flight, dataLoading, airlines, airports, settings]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
@@ -359,15 +359,15 @@ NOTES:
     const socket = createFlightsSocket(
       sessionId,
       sessionAccessId,
-      '',
-      '',
+      "",
+      "",
       () => {},
       () => {},
       () => {}
     );
     socketRef.current = socket;
     socket.socket.on(
-      'pdcIssued',
+      "pdcIssued",
       (payload: {
         pdcText?: string;
         updatedFlight?: { pdc_remarks?: string };
@@ -376,12 +376,12 @@ NOTES:
         const pdcText = payload?.pdcText ?? payload?.updatedFlight?.pdc_remarks;
         if (pdcText && String(payload.flightId) === String(flightId)) {
           addPDCMessage(pdcText);
-          if (settings) playNotificationSound('pdc', settings);
+          if (settings) playNotificationSound("pdc", settings);
         }
       }
     );
     socket.socket.on(
-      'contactMe',
+      "contactMe",
       (payload: {
         flightId: string | number;
         message?: string;
@@ -389,9 +389,9 @@ NOTES:
         position?: string;
       }) => {
         if (String(payload.flightId) === String(flightId)) {
-          const station = payload.station || flight?.departure || 'UNKNOWN';
-          const position = payload.position || 'TWR';
-          const displayStation = station.includes('_CTR')
+          const station = payload.station || flight?.departure || "UNKNOWN";
+          const position = payload.position || "TWR";
+          const displayStation = station.includes("_CTR")
             ? station
             : `${station}_${position}`;
 
@@ -399,11 +399,11 @@ NOTES:
             id: `${Date.now()}-contact`,
             timestamp: new Date().toISOString(),
             station: displayStation,
-            text: payload.message || 'CONTACT CONTROLLER ON FREQUENCY',
-            type: 'contact',
+            text: payload.message || "CONTACT CONTROLLER ON FREQUENCY",
+            type: "contact",
           };
           setMessages((prev) => [...prev, contactMsg]);
-          if (settings) playNotificationSound('contact', settings);
+          if (settings) playNotificationSound("contact", settings);
         }
       }
     );
@@ -441,27 +441,27 @@ NOTES:
       timestamp: new Date().toISOString(),
       station: `${flight?.departure}_DEL`,
       text,
-      type: 'pdc',
+      type: "pdc",
     };
     setMessages((prev) => [...prev, message]);
   };
 
   const handleRequestPDC = () => {
     if (!flight || !socketRef.current?.socket || pdcRequested) return;
-    socketRef.current.socket.emit('requestPDC', {
+    socketRef.current.socket.emit("requestPDC", {
       flightId: flight.id,
       callsign: flight.callsign,
-      note: 'PDC requested via ACARS terminal',
+      note: "PDC requested via ACARS terminal",
     });
     const confirmMsg: AcarsMessage = {
       id: `${Date.now()}-pdc-request`,
       timestamp: new Date().toISOString(),
-      station: 'SYSTEM',
-      text: 'PDC REQUEST SENT TO CONTROLLERS',
-      type: 'Success',
+      station: "SYSTEM",
+      text: "PDC REQUEST SENT TO CONTROLLERS",
+      type: "Success",
     };
     setMessages((prev) => [...prev, confirmMsg]);
-    if (settings) playNotificationSound('system', settings);
+    if (settings) playNotificationSound("system", settings);
     setPdcRequested(true);
   };
 
@@ -472,28 +472,28 @@ NOTES:
       timestamp: new Date().toISOString(),
       station: `${session.airportIcao}_ATIS`,
       text: session.atis.text,
-      type: 'atis',
+      type: "atis",
     };
     setMessages((prev) => [...prev, atisMsg]);
-    if (settings) playNotificationSound('atis', settings);
+    if (settings) playNotificationSound("atis", settings);
   };
 
-  const getMessageColor = (type: AcarsMessage['type']) => {
+  const getMessageColor = (type: AcarsMessage["type"]) => {
     switch (type) {
-      case 'warning':
-        return 'text-red-400';
-      case 'pdc':
-        return 'text-cyan-400';
-      case 'Success':
-        return 'text-green-400';
-      case 'system':
-        return 'text-white';
-      case 'contact':
-        return 'text-orange-400';
-      case 'atis':
-        return 'text-blue-400';
+      case "warning":
+        return "text-red-400";
+      case "pdc":
+        return "text-cyan-400";
+      case "Success":
+        return "text-green-400";
+      case "system":
+        return "text-white";
+      case "contact":
+        return "text-orange-400";
+      case "atis":
+        return "text-blue-400";
       default:
-        return 'text-white';
+        return "text-white";
     }
   };
 
@@ -595,7 +595,7 @@ NOTES:
                   >
                     Sign In with Discord
                   </Button>
-                  <Button onClick={() => navigate('/')} variant="outline">
+                  <Button onClick={() => navigate("/")} variant="outline">
                     Return Home
                   </Button>
                 </div>
@@ -606,7 +606,7 @@ NOTES:
                   Access Denied
                 </h1>
                 <p className="text-zinc-400 mb-6">{error}</p>
-                <Button onClick={() => navigate('/')}>Return Home</Button>
+                <Button onClick={() => navigate("/")}>Return Home</Button>
               </>
             )}
           </div>
@@ -627,7 +627,7 @@ NOTES:
               <h1 className="text-2xl font-bold text-white">
                 {flight?.callsign
                   ? formattedCallsign || flight.callsign
-                  : 'ACARS Terminal'}
+                  : "ACARS Terminal"}
               </h1>
             </div>
           </div>
@@ -648,7 +648,7 @@ NOTES:
                 <PanelLeftClose className="w-5 h-5" />
               )}
               <span className="hidden sm:inline">
-                {showSidebar ? 'Hide Sidebar' : 'Show Sidebar'}
+                {showSidebar ? "Hide Sidebar" : "Show Sidebar"}
               </span>
             </Button>
             <Button
@@ -662,7 +662,7 @@ NOTES:
                 <Map className="w-5 h-5" />
               )}
               <span className="hidden sm:inline">
-                {showChartsDrawer ? 'Hide Charts' : 'Show Charts'}
+                {showChartsDrawer ? "Hide Charts" : "Show Charts"}
               </span>
             </Button>
           </div>
@@ -676,7 +676,7 @@ NOTES:
             controllerId={session.createdBy}
             flightId={flightId}
             onClose={() => {
-              localStorage.setItem(`rating_dismissed_${flightId}`, '1');
+              localStorage.setItem(`rating_dismissed_${flightId}`, "1");
               setShowRating(false);
             }}
             isInline={true}
@@ -687,7 +687,7 @@ NOTES:
       {/* Desktop Layout */}
       <div
         className="hidden md:flex gap-4 pt-4 px-6 pb-6"
-        style={{ height: 'calc(100vh - 200px)' }}
+        style={{ height: "calc(100vh - 200px)" }}
       >
         {/* Sidebar */}
         {showSidebar && (
@@ -710,8 +710,8 @@ NOTES:
           style={{
             width: `${terminalWidth}%`,
             minWidth: 200,
-            transition: 'width 0.3s',
-            flex: 'none',
+            transition: "width 0.3s",
+            flex: "none",
           }}
           className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
         >
@@ -732,8 +732,8 @@ NOTES:
             style={{
               width: `${notesWidth}%`,
               minWidth: 120,
-              transition: 'width 0.3s',
-              flex: 'none',
+              transition: "width 0.3s",
+              flex: "none",
             }}
             className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
           >
@@ -750,27 +750,27 @@ NOTES:
         <div className="flex gap-2 mb-4">
           <button
             className={`flex-1 py-2 rounded-lg font-mono text-xs ${
-              mobileTab === 'terminal'
-                ? 'bg-blue-700 text-white'
-                : 'bg-zinc-800 text-zinc-400'
+              mobileTab === "terminal"
+                ? "bg-blue-700 text-white"
+                : "bg-zinc-800 text-zinc-400"
             }`}
-            onClick={() => setMobileTab('terminal')}
+            onClick={() => setMobileTab("terminal")}
           >
             Terminal
           </button>
           <button
             className={`flex-1 py-2 rounded-lg font-mono text-xs ${
-              mobileTab === 'notes'
-                ? 'bg-blue-700 text-white'
-                : 'bg-zinc-800 text-zinc-400'
+              mobileTab === "notes"
+                ? "bg-blue-700 text-white"
+                : "bg-zinc-800 text-zinc-400"
             }`}
-            onClick={() => setMobileTab('notes')}
+            onClick={() => setMobileTab("notes")}
           >
             Notes
           </button>
         </div>
         <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-800 overflow-hidden">
-          {mobileTab === 'terminal' && (
+          {mobileTab === "terminal" && (
             <AcarsTerminal
               flightCallsign={flight?.callsign}
               messages={messages}
@@ -781,13 +781,13 @@ NOTES:
               pdcRequested={pdcRequested}
             />
           )}
-          {mobileTab === 'notes' && (
+          {mobileTab === "notes" && (
             <AcarsNotePanel
               notes={notes}
               handleNotesChange={handleNotesChange}
             />
           )}
-          {mobileTab === 'charts' && (
+          {mobileTab === "charts" && (
             <ChartDrawer
               isOpen={true}
               onClose={() => {}}
@@ -859,13 +859,16 @@ NOTES:
                   const callback =
                     sessionId && flight?.id && accessId
                       ? `/my-flights?claimSessionId=${encodeURIComponent(sessionId)}&claimFlightId=${encodeURIComponent(String(flight.id))}&claimToken=${encodeURIComponent(accessId)}`
-                      : '/my-flights';
+                      : "/my-flights";
                   window.location.href = getDiscordLoginUrl(callback);
                 }}
               >
                 Create Account Now
               </Button>
-              <Button variant="outline" onClick={() => setShowAccountPrompt(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowAccountPrompt(false)}
+              >
                 Skip for now
               </Button>
             </>

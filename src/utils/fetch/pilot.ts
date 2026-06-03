@@ -1,4 +1,4 @@
-import type { PilotProfile } from '../../types/pilot';
+import type { PilotProfile } from "../../types/pilot";
 
 export async function fetchPilotProfile(
   username: string

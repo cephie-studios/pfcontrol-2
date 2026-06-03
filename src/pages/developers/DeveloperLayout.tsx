@@ -4,7 +4,10 @@ import { Code2, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import DeveloperSubnav from "./DeveloperSubnav";
 import { API_EXT_BASE } from "./constants";
-import { DeveloperPortalProvider, useDeveloperPortal } from "./developerPortalContext";
+import {
+  DeveloperPortalProvider,
+  useDeveloperPortal,
+} from "./developerPortalContext";
 
 const notifyRemovedBannerClass =
   "mb-6 flex items-start gap-2 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-100 text-sm ring-1 ring-emerald-900/30";
@@ -12,7 +15,8 @@ const notifyWarnBannerClass =
   "mb-6 flex items-start gap-2 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-100 text-sm ring-1 ring-amber-900/25";
 
 function DeveloperShell() {
-  const { error, loading, dashLoading, refresh, loadApplication } = useDeveloperPortal();
+  const { error, loading, dashLoading, refresh, loadApplication } =
+    useDeveloperPortal();
   const [refreshSpinOnce, setRefreshSpinOnce] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [notifyEmailBanner, setNotifyEmailBanner] = useState<
@@ -50,13 +54,18 @@ function DeveloperShell() {
               <div className="flex items-center gap-2 text-blue-400 mb-1">
                 <Code2 className="w-5 h-5" />
                 <span className="text-sm font-semibold uppercase tracking-wide">
-                  Developers <span className="text-md text-red-400 italic">BETA</span>
+                  Developers{" "}
+                  <span className="text-md text-red-400 italic">BETA</span>
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50">Developer API</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50">
+                Developer API
+              </h1>
               <p className="text-zinc-400 mt-2 text-sm sm:text-base max-w-6xl">
                 Base URL:{" "}
-                <code className="text-blue-300 text-xs sm:text-sm break-all">{API_EXT_BASE}</code>
+                <code className="text-blue-300 text-xs sm:text-sm break-all">
+                  {API_EXT_BASE}
+                </code>
               </p>
             </div>
             <button
@@ -79,8 +88,8 @@ function DeveloperShell() {
           {notifyEmailBanner === "removed" && (
             <div className={notifyRemovedBannerClass}>
               <span className="flex-1 min-w-0 leading-relaxed">
-                Your notification email was removed. You won&apos;t receive developer update emails
-                anymore.
+                Your notification email was removed. You won&apos;t receive
+                developer update emails anymore.
               </span>
               <button
                 type="button"
@@ -94,8 +103,8 @@ function DeveloperShell() {
           {notifyEmailBanner === "stale" && (
             <div className={notifyWarnBannerClass}>
               <span className="flex-1 min-w-0 leading-relaxed">
-                That unsubscribe link is no longer valid, or your notification address was already
-                cleared.
+                That unsubscribe link is no longer valid, or your notification
+                address was already cleared.
               </span>
               <button
                 type="button"

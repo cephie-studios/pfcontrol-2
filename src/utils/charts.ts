@@ -78,7 +78,7 @@ export const createChartHandlers = (
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button')) {
+    if (target.closest("button")) {
       return;
     }
 

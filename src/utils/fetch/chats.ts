@@ -21,21 +21,31 @@ export async function sendChatMessage(sessionId: string, message: string) {
 }
 
 export async function deleteChatMessage(sessionId: string, messageId: number) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
   if (!res.ok) throw new Error("Failed to delete message");
   return res.json();
 }
 
-export async function reportChatMessage(sessionId: string, messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
+export async function reportChatMessage(
+  sessionId: string,
+  messageId: number,
+  reason: string
+) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    }
+  );
   if (!res.ok) throw new Error("Failed to report message");
   return res.json();
 }
@@ -48,13 +58,19 @@ export async function fetchGlobalChatMessages() {
   return res.json();
 }
 
-export async function reportGlobalChatMessage(messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/global/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
+export async function reportGlobalChatMessage(
+  messageId: number,
+  reason: string
+) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/global/${messageId}/report`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    }
+  );
   if (!res.ok) throw new Error("Failed to report message");
   return res.json();
 }
@@ -68,12 +84,15 @@ export async function fetchAATCChatMessages() {
 }
 
 export async function reportAATCChatMessage(messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/aatc/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/aatc/${messageId}/report`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    }
+  );
   if (!res.ok) throw new Error("Failed to report message");
   return res.json();
 }

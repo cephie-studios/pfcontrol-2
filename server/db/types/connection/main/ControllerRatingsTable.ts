@@ -1,4 +1,4 @@
-import type { Generated } from 'kysely';
+import type { Generated } from "kysely";
 
 export interface ControllerRatingsTable {
   id: Generated<number>;

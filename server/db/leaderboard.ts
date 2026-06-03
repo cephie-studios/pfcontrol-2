@@ -1,20 +1,20 @@
-import { mainDb } from './connection.js';
-import { redisConnection } from './connection.js';
-import { getUserById } from './users.js';
+import { mainDb } from "./connection.js";
+import { redisConnection } from "./connection.js";
+import { getUserById } from "./users.js";
 
 export const STATS_KEYS = [
-  'total_sessions_created',
-  'total_flights_submitted.total',
-  'total_time_controlling_minutes',
-  'total_chat_messages_sent',
-  'total_flight_edits.total_edit_actions',
+  "total_sessions_created",
+  "total_flights_submitted.total",
+  "total_time_controlling_minutes",
+  "total_chat_messages_sent",
+  "total_flight_edits.total_edit_actions",
 ];
 
 export async function updateLeaderboard() {
   try {
     const users = await mainDb
-      .selectFrom('users')
-      .select(['id', 'username', 'statistics'])
+      .selectFrom("users")
+      .select(["id", "username", "statistics"])
       .execute();
 
     for (const key of STATS_KEYS) {
@@ -24,39 +24,39 @@ export async function updateLeaderboard() {
         const statsRaw = user.statistics;
         type Stats = Record<string, unknown>;
         let stats: Stats = {};
-        if (typeof statsRaw === 'string') {
+        if (typeof statsRaw === "string") {
           try {
             stats = JSON.parse(statsRaw) as Stats;
           } catch {
             stats = {};
           }
-        } else if (typeof statsRaw === 'object' && statsRaw !== null) {
+        } else if (typeof statsRaw === "object" && statsRaw !== null) {
           stats = statsRaw as Stats;
         }
 
         let value = 0;
 
-        if (key.includes('.')) {
-          const [parent, child] = key.split('.');
+        if (key.includes(".")) {
+          const [parent, child] = key.split(".");
           const parentVal = stats[parent];
           if (
             parentVal &&
-            typeof parentVal === 'object' &&
+            typeof parentVal === "object" &&
             parentVal !== null
           ) {
             const childVal = (parentVal as Record<string, unknown>)[child];
-            if (typeof childVal === 'number') {
+            if (typeof childVal === "number") {
               value = childVal;
-            } else if (typeof childVal === 'string') {
+            } else if (typeof childVal === "string") {
               const parsed = parseFloat(childVal);
               if (!Number.isNaN(parsed)) value = parsed;
             }
           }
         } else {
           const v = stats[key];
-          if (typeof v === 'number') {
+          if (typeof v === "number") {
             value = v;
-          } else if (typeof v === 'string') {
+          } else if (typeof v === "string") {
             const parsed = parseFloat(v);
             if (!Number.isNaN(parsed)) value = parsed;
           }
@@ -79,7 +79,7 @@ export async function updateLeaderboard() {
       }
     }
   } catch (error) {
-    console.error('[Leaderboard] Update failed:', error);
+    console.error("[Leaderboard] Update failed:", error);
   }
 }
 
@@ -108,7 +108,7 @@ export async function getTopUsers(
       `leaderboard:${key}`,
       0,
       limit - 1,
-      'WITHSCORES'
+      "WITHSCORES"
     );
     const entries = [];
     for (let i = 0; i < top.length; i += 2) {
@@ -118,7 +118,7 @@ export async function getTopUsers(
       const user = await getUserById(userId);
       entries.push({
         userId,
-        username: user?.username || 'Unknown',
+        username: user?.username || "Unknown",
         avatar: user?.avatar || null,
         score,
       });

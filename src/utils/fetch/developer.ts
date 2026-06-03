@@ -43,13 +43,18 @@ export async function fetchDeveloperApiDocs(): Promise<DeveloperApiPublicSpec> {
   try {
     return await tryLive();
   } catch {
-    const res = await fetch("/developer-api-docs.json", { credentials: "same-origin" });
-    if (!res.ok) throw new Error("Failed to load bundled developer-api-docs.json");
+    const res = await fetch("/developer-api-docs.json", {
+      credentials: "same-origin",
+    });
+    if (!res.ok)
+      throw new Error("Failed to load bundled developer-api-docs.json");
     return res.json() as Promise<DeveloperApiPublicSpec>;
   }
 }
 
-export async function fetchDeveloperCatalog(): Promise<DeveloperScopeCatalogEntry[]> {
+export async function fetchDeveloperCatalog(): Promise<
+  DeveloperScopeCatalogEntry[]
+> {
   const res = await apiFetch(`${API_BASE_URL}/api/developer/catalog`, {
     credentials: "include",
   });
@@ -67,17 +72,22 @@ export async function fetchDeveloperApplication(): Promise<DeveloperApplicationS
 }
 
 export async function patchDeveloperNotificationEmail(
-  email: string | null,
+  email: string | null
 ): Promise<{ notificationEmail: string | null }> {
-  const res = await apiFetch(`${API_BASE_URL}/api/developer/profile/notification-email`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/developer/profile/notification-email`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Failed to save email");
+    throw new Error(
+      (err as { error?: string }).error || "Failed to save email"
+    );
   }
   return res.json() as Promise<{ notificationEmail: string | null }>;
 }
@@ -108,16 +118,19 @@ export async function submitDeveloperScopeExpansionRequest(input: {
   why: string;
   additionalScopes: string[];
 }): Promise<void> {
-  const res = await apiFetch(`${API_BASE_URL}/api/developer/application/scope-expansion`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      who: input.who,
-      why: input.why,
-      additionalScopes: input.additionalScopes,
-    }),
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/developer/application/scope-expansion`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        who: input.who,
+        why: input.why,
+        additionalScopes: input.additionalScopes,
+      }),
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Failed to submit");
@@ -195,7 +208,9 @@ export async function createDeveloperKey(input: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Failed to create key");
+    throw new Error(
+      (err as { error?: string }).error || "Failed to create key"
+    );
   }
   const data = (await res.json()) as Record<string, unknown>;
   if (res.status === 202 || data.status === "pending") {
@@ -239,15 +254,20 @@ export async function deleteDeveloperKey(id: string): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Failed to delete key");
+    throw new Error(
+      (err as { error?: string }).error || "Failed to delete key"
+    );
   }
 }
 
 export async function revokeDeveloperKey(id: string): Promise<void> {
-  const res = await apiFetch(`${API_BASE_URL}/api/developer/keys/${id}/revoke`, {
-    method: "POST",
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/developer/keys/${id}/revoke`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Failed to revoke");
@@ -260,13 +280,18 @@ export async function rotateDeveloperKey(id: string): Promise<{
   prefix: string;
   scopes: string[];
 }> {
-  const res = await apiFetch(`${API_BASE_URL}/api/developer/keys/${id}/rotate`, {
-    method: "POST",
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/developer/keys/${id}/rotate`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Failed to rotate key");
+    throw new Error(
+      (err as { error?: string }).error || "Failed to rotate key"
+    );
   }
   return res.json();
 }
@@ -300,9 +325,12 @@ export async function fetchDeveloperDashboardSummary(opts?: {
   } else if (opts?.days != null) {
     q = `?days=${opts.days}`;
   }
-  const res = await apiFetch(`${API_BASE_URL}/api/developer/dashboard/summary${q}`, {
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/developer/dashboard/summary${q}`,
+    {
+      credentials: "include",
+    }
+  );
   if (!res.ok) throw new Error("Failed to load dashboard");
   return res.json();
 }

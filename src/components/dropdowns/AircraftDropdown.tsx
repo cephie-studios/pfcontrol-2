@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { useData } from '../../hooks/data/useData';
-import Dropdown from '../common/Dropdown';
+import { useMemo } from "react";
+import { useData } from "../../hooks/data/useData";
+import Dropdown from "../common/Dropdown";
 
 interface AircraftDropdownProps {
   value?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   showFullName?: boolean;
   searchable?: boolean;
   portal?: boolean;
@@ -16,7 +16,7 @@ export default function AircraftDropdown({
   value,
   onChange,
   disabled = false,
-  size = 'md',
+  size = "md",
   showFullName = true,
   searchable = false,
   portal = false,
@@ -37,7 +37,7 @@ export default function AircraftDropdown({
   }, [aircrafts, showFullName]);
 
   const getDisplayValue = (selectedValue: string) => {
-    if (!selectedValue) return loading ? 'Loading...' : 'Select Aircraft';
+    if (!selectedValue) return loading ? "Loading..." : "Select Aircraft";
 
     if (!Array.isArray(aircrafts)) {
       return selectedValue;
@@ -54,7 +54,7 @@ export default function AircraftDropdown({
   return (
     <Dropdown
       options={dropdownOptions}
-      placeholder={loading ? 'Loading...' : 'Select Aircraft'}
+      placeholder={loading ? "Loading..." : "Select Aircraft"}
       value={value}
       onChange={onChange}
       disabled={disabled || loading}

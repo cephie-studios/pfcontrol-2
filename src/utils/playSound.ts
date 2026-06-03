@@ -1,4 +1,4 @@
-import type { Settings } from '../types/settings';
+import type { Settings } from "../types/settings";
 
 export function linearToLogVolume(linearVolume: number): number {
   const clamped = Math.max(0, Math.min(200, linearVolume));
@@ -21,11 +21,13 @@ export function playAudioWithGain(
     return;
   }
 
-  const audioContext = new (window.AudioContext ||
+  const audioContext = new (
+    window.AudioContext ||
     (
       window as Window &
         typeof globalThis & { webkitAudioContext?: typeof AudioContext }
-    ).webkitAudioContext!)();
+    ).webkitAudioContext!
+  )();
   const source = audioContext.createMediaElementSource(audioElement);
   const gainNode = audioContext.createGain();
 
@@ -45,34 +47,34 @@ export function playSound(
     try {
       const audio = new Audio(filepath);
       audio.volume = Math.max(0, Math.min(1, volume));
-      audio.preload = 'auto';
+      audio.preload = "auto";
 
       const onCanPlay = () => {
-        audio.removeEventListener('canplay', onCanPlay);
-        audio.removeEventListener('error', onError);
+        audio.removeEventListener("canplay", onCanPlay);
+        audio.removeEventListener("error", onError);
         resolve();
       };
 
       const onError = (error: Event) => {
-        audio.removeEventListener('canplay', onCanPlay);
-        audio.removeEventListener('error', onError);
-        console.warn('Could not play sound:', filepath, error);
+        audio.removeEventListener("canplay", onCanPlay);
+        audio.removeEventListener("error", onError);
+        console.warn("Could not play sound:", filepath, error);
         reject(error);
       };
 
-      audio.addEventListener('canplay', onCanPlay);
-      audio.addEventListener('error', onError);
+      audio.addEventListener("canplay", onCanPlay);
+      audio.addEventListener("error", onError);
 
       audio.play().catch(onError);
     } catch (error) {
-      console.warn('Could not create audio element for:', filepath, error);
+      console.warn("Could not create audio element for:", filepath, error);
       reject(error);
     }
   });
 }
 
 export function playSoundWithSettings(
-  soundType: 'startupSound' | 'chatNotificationSound' | 'newStripSound',
+  soundType: "startupSound" | "chatNotificationSound" | "newStripSound",
   userSettings: Settings,
   fallbackVolume: number = 0.7
 ): Promise<void> {
@@ -95,30 +97,30 @@ export function playSoundWithSettings(
   return new Promise((resolve, reject) => {
     try {
       const audio = new Audio(soundMap[soundType]);
-      audio.preload = 'auto';
+      audio.preload = "auto";
 
       const onCanPlay = () => {
-        audio.removeEventListener('canplay', onCanPlay);
-        audio.removeEventListener('error', onError);
+        audio.removeEventListener("canplay", onCanPlay);
+        audio.removeEventListener("error", onError);
 
         playAudioWithGain(audio, adjustedVolume);
         resolve();
       };
 
       const onError = (error: Event) => {
-        audio.removeEventListener('canplay', onCanPlay);
-        audio.removeEventListener('error', onError);
-        console.warn('Could not play sound:', soundMap[soundType], error);
+        audio.removeEventListener("canplay", onCanPlay);
+        audio.removeEventListener("error", onError);
+        console.warn("Could not play sound:", soundMap[soundType], error);
         reject(error);
       };
 
-      audio.addEventListener('canplay', onCanPlay);
-      audio.addEventListener('error', onError);
+      audio.addEventListener("canplay", onCanPlay);
+      audio.addEventListener("error", onError);
 
       audio.load();
     } catch (error) {
       console.warn(
-        'Could not create audio element for:',
+        "Could not create audio element for:",
         soundMap[soundType],
         error
       );
@@ -129,7 +131,7 @@ export function playSoundWithSettings(
 
 export function preloadSound(filepath: string): HTMLAudioElement {
   const audio = new Audio(filepath);
-  audio.preload = 'auto';
+  audio.preload = "auto";
   return audio;
 }
 
@@ -142,11 +144,11 @@ export function playSounds(
 }
 
 export const SOUNDS = {
-  CHAT_NOTIFICATION: '/assets/app/sounds/chatNotification.wav',
-  SESSION_STARTUP: '/assets/app/sounds/startup.mp3',
-  NEW_STRIP: '/assets/app/sounds/newStrip.mp3',
-  ACARS_BEEP: '/assets/app/sounds/ACARSBeep.wav',
-  ACARS_CHAT_POP: '/assets/app/sounds/ACARSChatPop.mp3',
-  VC_CONNECT: '/assets/app/sounds/vcConnect.mp3',
-  VC_DISCONNECT: '/assets/app/sounds/vcDisconnect.mp3',
+  CHAT_NOTIFICATION: "/assets/app/sounds/chatNotification.wav",
+  SESSION_STARTUP: "/assets/app/sounds/startup.mp3",
+  NEW_STRIP: "/assets/app/sounds/newStrip.mp3",
+  ACARS_BEEP: "/assets/app/sounds/ACARSBeep.wav",
+  ACARS_CHAT_POP: "/assets/app/sounds/ACARSChatPop.mp3",
+  VC_CONNECT: "/assets/app/sounds/vcConnect.mp3",
+  VC_DISCONNECT: "/assets/app/sounds/vcDisconnect.mp3",
 } as const;

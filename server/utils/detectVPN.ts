@@ -1,8 +1,8 @@
-import axios from 'axios';
-import dns from 'dns/promises';
-import { getClientIp } from './getIpAddress.js';
-import { Request } from 'express';
-import { redisConnection } from '../db/connection.js';
+import axios from "axios";
+import dns from "dns/promises";
+import { getClientIp } from "./getIpAddress.js";
+import { Request } from "express";
+import { redisConnection } from "../db/connection.js";
 
 const PROXYCHECK_API_KEY = process.env.PROXYCHECK_API_KEY;
 const VPN_IP_CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
@@ -11,24 +11,24 @@ const TOR_DNS_TIMEOUT_MS = 3000;
 
 // proxycheck.io type values that indicate anonymizing infrastructure
 const BLOCKED_PROXY_TYPES = new Set([
-  'Tor',
-  'Tor Exit Node',
-  'VPN',
-  'SOCKS4',
-  'SOCKS5',
-  'SOCKS4A',
-  'SOCKS5H',
-  'HTTP Proxy',
-  'HTTPS Proxy',
-  'Web Proxy',
+  "Tor",
+  "Tor Exit Node",
+  "VPN",
+  "SOCKS4",
+  "SOCKS5",
+  "SOCKS4A",
+  "SOCKS5H",
+  "HTTP Proxy",
+  "HTTPS Proxy",
+  "Web Proxy",
 ]);
 
 function isPrivateIp(ip: string): boolean {
-  if (ip === '127.0.0.1' || ip === '::1') return true;
-  if (ip.startsWith('10.') || ip.startsWith('192.168.')) return true;
-  if (ip.startsWith('fc00::') || ip.startsWith('fe80::')) return true;
-  if (ip.startsWith('172.')) {
-    const second = parseInt(ip.split('.')[1], 10);
+  if (ip === "127.0.0.1" || ip === "::1") return true;
+  if (ip.startsWith("10.") || ip.startsWith("192.168.")) return true;
+  if (ip.startsWith("fc00::") || ip.startsWith("fe80::")) return true;
+  if (ip.startsWith("172.")) {
+    const second = parseInt(ip.split(".")[1], 10);
     if (second >= 16 && second <= 31) return true;
   }
   return false;
@@ -42,13 +42,13 @@ async function queryProxycheck(ip: string): Promise<boolean> {
     const info = data[ip];
     if (!info) return false;
     return (
-      info.proxy === 'yes' ||
-      info.vpn === 'yes' ||
+      info.proxy === "yes" ||
+      info.vpn === "yes" ||
       BLOCKED_PROXY_TYPES.has(info.type) ||
       Number(info.risk) > 0
     );
   } catch (err) {
-    console.error('VPN check error, allowing request:', err);
+    console.error("VPN check error, allowing request:", err);
     return false;
   }
 }
@@ -56,14 +56,19 @@ async function queryProxycheck(ip: string): Promise<boolean> {
 // Expands a compressed IPv6 address to full 8-group notation.
 // e.g. "2405:8100:8000:5ca1::66:1fab" → "2405:8100:8000:5ca1:0000:0000:0066:1fab"
 function expandIPv6(ip: string): string {
-  const halves = ip.split('::');
+  const halves = ip.split("::");
   if (halves.length === 2) {
-    const left = halves[0] ? halves[0].split(':') : [];
-    const right = halves[1] ? halves[1].split(':') : [];
-    const fill = Array(8 - left.length - right.length).fill('0000');
-    return [...left, ...fill, ...right].map((g) => g.padStart(4, '0')).join(':');
+    const left = halves[0] ? halves[0].split(":") : [];
+    const right = halves[1] ? halves[1].split(":") : [];
+    const fill = Array(8 - left.length - right.length).fill("0000");
+    return [...left, ...fill, ...right]
+      .map((g) => g.padStart(4, "0"))
+      .join(":");
   }
-  return ip.split(':').map((g) => g.padStart(4, '0')).join(':');
+  return ip
+    .split(":")
+    .map((g) => g.padStart(4, "0"))
+    .join(":");
 }
 
 /**
@@ -83,22 +88,22 @@ function expandIPv6(ip: string): string {
 async function queryTorDns(ip: string): Promise<boolean> {
   try {
     let query: string;
-    if (ip.includes(':')) {
+    if (ip.includes(":")) {
       const expanded = expandIPv6(ip);
-      const nibbles = expanded.replace(/:/g, '').split('').reverse().join('.');
+      const nibbles = expanded.replace(/:/g, "").split("").reverse().join(".");
       query = `${nibbles}.ip6.dnsel.torproject.org`;
     } else {
-      const reversed = ip.split('.').reverse().join('.');
+      const reversed = ip.split(".").reverse().join(".");
       query = `${reversed}.dnsel.torproject.org`;
     }
 
     const addresses = await Promise.race([
       dns.resolve4(query),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('DNS timeout')), TOR_DNS_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("DNS timeout")), TOR_DNS_TIMEOUT_MS)
       ),
     ]);
-    return addresses.includes('127.0.0.2');
+    return addresses.includes("127.0.0.2");
   } catch {
     // NXDOMAIN, timeout, or resolution failure = not a registered Tor exit node
     return false;
@@ -110,13 +115,13 @@ async function queryTorDns(ip: string): Promise<boolean> {
  * with per-IP Redis caching (TTL 1 hour). Works for both IPv4 and IPv6.
  */
 export async function isTorExitNode(ip: string): Promise<boolean> {
-  const normalized = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+  const normalized = ip.startsWith("::ffff:") ? ip.slice(7) : ip;
   if (isPrivateIp(normalized)) return false;
 
   const cacheKey = `tor:${normalized}`;
   try {
     const cached = await redisConnection.get(cacheKey);
-    if (cached !== null) return cached === '1';
+    if (cached !== null) return cached === "1";
   } catch {
     // Redis unavailable — fall through to live check
   }
@@ -124,7 +129,7 @@ export async function isTorExitNode(ip: string): Promise<boolean> {
   const isTor = await queryTorDns(normalized);
 
   try {
-    await redisConnection.setex(cacheKey, TOR_CACHE_TTL, isTor ? '1' : '0');
+    await redisConnection.setex(cacheKey, TOR_CACHE_TTL, isTor ? "1" : "0");
   } catch {
     // Redis unavailable — skip caching
   }
@@ -149,7 +154,7 @@ export async function isIpVpn(ip: string): Promise<boolean> {
   const cacheKey = `vpn:ip:${ip}`;
   try {
     const cached = await redisConnection.get(cacheKey);
-    if (cached !== null) return cached === '1';
+    if (cached !== null) return cached === "1";
   } catch {
     // Redis unavailable — fall through to live check
   }
@@ -160,7 +165,11 @@ export async function isIpVpn(ip: string): Promise<boolean> {
   const promise = queryProxycheck(ip)
     .then(async (isVpn) => {
       try {
-        await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
+        await redisConnection.setex(
+          cacheKey,
+          VPN_IP_CACHE_TTL,
+          isVpn ? "1" : "0"
+        );
       } catch {
         // Redis unavailable — skip caching
       }

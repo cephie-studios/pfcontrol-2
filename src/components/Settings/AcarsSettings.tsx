@@ -5,10 +5,10 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
+} from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { Settings } from "../../types/settings";
+import Button from "../common/Button";
 
 interface AcarsSettingsProps {
   settings: Settings | null;
@@ -21,7 +21,7 @@ export default function AcarsSettings({
 }: AcarsSettingsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState<
-    'sidebar' | 'terminal' | 'notes' | null
+    "sidebar" | "terminal" | "notes" | null
   >(null);
   const [previewWidths, setPreviewWidths] = useState({
     sidebar: 30,
@@ -104,7 +104,7 @@ export default function AcarsSettings({
 
   const handleSidebarWidthChange = (width: number) => {
     if (!settings) return;
-    console.log('Saving sidebarWidth', width);
+    console.log("Saving sidebarWidth", width);
     const updatedSettings = {
       ...settings,
       acars: {
@@ -139,7 +139,7 @@ export default function AcarsSettings({
     onChange(updatedSettings);
   };
 
-  const handleMouseDown = (divider: 'sidebar' | 'terminal' | 'notes') => {
+  const handleMouseDown = (divider: "sidebar" | "terminal" | "notes") => {
     setIsDragging(divider);
   };
 
@@ -157,7 +157,7 @@ export default function AcarsSettings({
     let tempTerminal = previewWidths.terminal;
     let tempNotes = previewWidths.notes;
 
-    if (isDragging === 'sidebar') {
+    if (isDragging === "sidebar") {
       const mouseSidebar = (x / rect.width) * 100;
       tempSidebar =
         Math.round(
@@ -177,7 +177,7 @@ export default function AcarsSettings({
         tempTerminal = 100 - tempSidebar;
         tempTerminal = Math.max(minTerminal, tempTerminal);
       }
-    } else if (isDragging === 'terminal' && settings.acars.notesEnabled) {
+    } else if (isDragging === "terminal" && settings.acars.notesEnabled) {
       const sidebar = previewWidths.sidebar;
       const mouseTerminal = (x / rect.width) * 100 - sidebar;
       tempTerminal =
@@ -222,11 +222,11 @@ export default function AcarsSettings({
 
   useEffect(() => {
     if (isDragging) {
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     } else {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     }
   }, [isDragging]);
 
@@ -241,18 +241,18 @@ export default function AcarsSettings({
       handleMouseUp();
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove);
-    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener("mousemove", handleGlobalMouseMove);
+    document.addEventListener("mouseup", handleGlobalMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
     };
   }, [isDragging, previewWidths, settings]);
 
   useEffect(() => {
     console.log(
-      'Rendered with settings.sidebarWidth',
+      "Rendered with settings.sidebarWidth",
       settings?.acars.sidebarWidth
     );
   }, [settings]);
@@ -299,8 +299,8 @@ export default function AcarsSettings({
       <div
         className={`transition-all duration-300 ease-in-out ${
           isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
+            ? "max-h-[2000px] opacity-100"
+            : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="p-4 sm:p-6">
@@ -338,15 +338,15 @@ export default function AcarsSettings({
                     onClick={handleNotesToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       settings.acars.notesEnabled
-                        ? 'bg-blue-600'
-                        : 'bg-zinc-700'
+                        ? "bg-blue-600"
+                        : "bg-zinc-700"
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         settings.acars.notesEnabled
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
+                          ? "translate-x-6"
+                          : "translate-x-1"
                       }`}
                     />
                   </button>
@@ -370,15 +370,15 @@ export default function AcarsSettings({
                     onClick={handleAutoRedirectToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       (settings.acars.autoRedirectToAcars ?? true)
-                        ? 'bg-green-600'
-                        : 'bg-zinc-700'
+                        ? "bg-green-600"
+                        : "bg-zinc-700"
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         (settings.acars.autoRedirectToAcars ?? true)
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
+                          ? "translate-x-6"
+                          : "translate-x-1"
                       }`}
                     />
                   </button>
@@ -403,7 +403,7 @@ export default function AcarsSettings({
               <div
                 ref={containerRef}
                 className="relative bg-zinc-950 border border-zinc-700 rounded-lg overflow-hidden"
-                style={{ height: '200px' }}
+                style={{ height: "200px" }}
               >
                 <div className="flex h-full">
                   {/* Sidebar */}
@@ -424,7 +424,7 @@ export default function AcarsSettings({
                   </div>
                   <div
                     className="w-1 bg-blue-500 hover:bg-blue-400 cursor-col-resize flex-shrink-0 relative group"
-                    onMouseDown={() => handleMouseDown('sidebar')}
+                    onMouseDown={() => handleMouseDown("sidebar")}
                   >
                     <div className="absolute inset-y-0 -left-1 -right-1" />
                   </div>
@@ -448,7 +448,7 @@ export default function AcarsSettings({
                   {settings.acars.notesEnabled && (
                     <div
                       className="w-1 bg-blue-500 hover:bg-blue-400 cursor-col-resize flex-shrink-0 relative group"
-                      onMouseDown={() => handleMouseDown('terminal')}
+                      onMouseDown={() => handleMouseDown("terminal")}
                     >
                       <div className="absolute inset-y-0 -left-1 -right-1" />
                     </div>
@@ -474,7 +474,7 @@ export default function AcarsSettings({
                 </div>
               </div>
               <p className="text-xs text-zinc-500 mt-2 text-center">
-                Sidebar: {previewWidths.sidebar}% • Terminal:{' '}
+                Sidebar: {previewWidths.sidebar}% • Terminal:{" "}
                 {previewWidths.terminal}%
                 {settings.acars.notesEnabled ? (
                   <> • Notes: {previewWidths.notes}%</>

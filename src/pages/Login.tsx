@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { getDiscordLoginUrl } from '../utils/fetch/auth';
-import { fetchStatistics } from '../utils/fetch/data';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Users } from 'lucide-react';
-import { FaDiscord } from 'react-icons/fa';
-import { useAuth } from '../hooks/auth/useAuth';
-import Checkbox from '../components/common/Checkbox';
-import Button from '../components/common/Button';
+import { useState, useEffect } from "react";
+import { getDiscordLoginUrl } from "../utils/fetch/auth";
+import { fetchStatistics } from "../utils/fetch/data";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Users } from "lucide-react";
+import { FaDiscord } from "react-icons/fa";
+import { useAuth } from "../hooks/auth/useAuth";
+import Checkbox from "../components/common/Checkbox";
+import Button from "../components/common/Button";
 
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
@@ -14,7 +14,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const user = useAuth();
-  const callback = searchParams.get('callback');
+  const callback = searchParams.get("callback");
 
   useEffect(() => {
     fetchStatistics().then((data) => {
@@ -36,13 +36,13 @@ export default function Login() {
   };
 
   if (user.user) {
-    navigate('/');
+    navigate("/");
     return null;
   }
 
   const buttonClass = agreed
-    ? 'w-full py-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
-    : 'w-full py-4 flex items-center justify-center gap-3 bg-gray-700 text-gray-400';
+    ? "w-full py-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+    : "w-full py-4 flex items-center justify-center gap-3 bg-gray-700 text-gray-400";
 
   return (
     <div className="min-h-screen bg-gray-950 text-white relative">
@@ -96,7 +96,7 @@ export default function Login() {
 
           <div
             className={`w-full flex items-center border-2 border-blue-600 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
-                      ${agreed ? 'bg-blue-600/30' : 'bg-blue-600/10'}
+                      ${agreed ? "bg-blue-600/30" : "bg-blue-600/10"}
                       hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
           >
             <Checkbox
@@ -104,7 +104,7 @@ export default function Login() {
               onChange={setAgreed}
               label={
                 <span className="text-sm">
-                  I agree to the{' '}
+                  I agree to the{" "}
                   <Link
                     to="https://cephie.app/legal/terms"
                     target="_blank"
@@ -114,7 +114,7 @@ export default function Login() {
                   >
                     Terms of Use
                   </Link>
-                  ,{' '}
+                  ,{" "}
                   <Link
                     to="https://cephie.app/legal/privacy"
                     target="_blank"
@@ -124,7 +124,7 @@ export default function Login() {
                   >
                     Privacy Policy
                   </Link>
-                  , and{' '}
+                  , and{" "}
                   <Link
                     to="https://cephie.app/legal/cookies"
                     target="_blank"
@@ -142,7 +142,8 @@ export default function Login() {
 
           <div className="flex w-full justify-center">
             <p className="text-xs text-gray-500 text-center max-w-xs">
-              PFControl is an independent service and is not in any way affiliated with Project Flight.
+              PFControl is an independent service and is not in any way
+              affiliated with Project Flight.
             </p>
           </div>
         </div>

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { fetchStars } from '../../utils/fetch/data';
-import Dropdown from '../common/Dropdown';
+import { useEffect, useMemo, useState } from "react";
+import { fetchStars } from "../../utils/fetch/data";
+import Dropdown from "../common/Dropdown";
 
 interface StarDropdownProps {
   airportIcao: string;
   value?: string;
   onChange: (star: string) => void;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   placeholder?: string;
   disabled?: boolean;
 }
@@ -15,8 +15,8 @@ export default function StarDropdown({
   airportIcao,
   value,
   onChange,
-  size = 'md',
-  placeholder = 'Select STAR',
+  size = "md",
+  placeholder = "Select STAR",
   disabled = false,
 }: StarDropdownProps) {
   const [stars, setStars] = useState<string[]>([]);
@@ -48,9 +48,9 @@ export default function StarDropdown({
 
   const getDisplayValue = (selectedValue: string) => {
     if (!selectedValue) {
-      if (!airportIcao) return 'Select Airport First';
-      if (isLoading) return 'Loading STARs...';
-      if (stars.length === 0) return 'No STARs available';
+      if (!airportIcao) return "Select Airport First";
+      if (isLoading) return "Loading STARs...";
+      if (stars.length === 0) return "No STARs available";
       return placeholder;
     }
     return selectedValue;

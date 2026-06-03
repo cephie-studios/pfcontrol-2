@@ -1,6 +1,6 @@
-import { User, Radio, ExternalLink } from 'lucide-react';
-import { useAuth } from '../../hooks/auth/useAuth';
-import type { OverviewSession } from '../../sockets/overviewSocket';
+import { User, Radio, ExternalLink } from "lucide-react";
+import { useAuth } from "../../hooks/auth/useAuth";
+import type { OverviewSession } from "../../sockets/overviewSocket";
 
 interface SidebarProps {
   activeSessions: OverviewSession[];
@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 const getAvatarUrl = (avatar: string | null) => {
-  if (!avatar) return '/assets/app/default/avatar.webp';
+  if (!avatar) return "/assets/app/default/avatar.webp";
   return avatar;
 };
 
@@ -42,7 +42,7 @@ export default function AcarsSidebar({
                           onClick={() =>
                             window.open(
                               `/user/${controller.username}`,
-                              '_blank'
+                              "_blank"
                             )
                           }
                           src={
@@ -71,9 +71,9 @@ export default function AcarsSidebar({
                         </div>
                       </div>
                       <span className="text-xs text-zinc-300">
-                        {controller.role === 'ALL'
-                          ? 'APP'
-                          : controller.role || 'APP'}
+                        {controller.role === "ALL"
+                          ? "APP"
+                          : controller.role || "APP"}
                       </span>
                       <div className="flex items-center gap-1 ml-auto">
                         {controller.hasVatsimRating && (

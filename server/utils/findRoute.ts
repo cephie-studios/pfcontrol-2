@@ -1,9 +1,8 @@
-
 interface NavPoint {
   name: string;
   x: number;
   y: number;
-  type: 'AIRPORT' | 'WAYPOINT' | 'VOR-DME' | 'NDB';
+  type: "AIRPORT" | "WAYPOINT" | "VOR-DME" | "NDB";
 }
 
 interface Node {
@@ -39,11 +38,11 @@ function getNearby(
   for (const p of allPoints) {
     if (p.name === current.name) continue;
 
-    if (p.type === 'AIRPORT' && p.name !== goal.name) continue;
+    if (p.type === "AIRPORT" && p.name !== goal.name) continue;
 
     if (p.name !== goal.name) {
       const atAirport = allPoints.some(
-        airport => airport.type === 'AIRPORT' && sameSpot(p, airport)
+        (airport) => airport.type === "AIRPORT" && sameSpot(p, airport)
       );
       if (atAirport) continue;
     }
@@ -68,7 +67,7 @@ function buildPath(node: Node): NavPoint[] {
 
   return path.filter((p, i) => {
     const isStartOrEnd = i === 0 || i === path.length - 1;
-    return isStartOrEnd || p.type !== 'AIRPORT';
+    return isStartOrEnd || p.type !== "AIRPORT";
   });
 }
 
@@ -114,8 +113,12 @@ function findPath(
   startFix?: string,
   endFix?: string
 ) {
-  const startAirport = allPoints.find(p => p.name === startName && p.type === 'AIRPORT');
-  const endAirport = allPoints.find(p => p.name === endName && p.type === 'AIRPORT');
+  const startAirport = allPoints.find(
+    (p) => p.name === startName && p.type === "AIRPORT"
+  );
+  const endAirport = allPoints.find(
+    (p) => p.name === endName && p.type === "AIRPORT"
+  );
 
   if (!startAirport || !endAirport) {
     return { path: [], distance: 0, success: false };
@@ -123,10 +126,10 @@ function findPath(
 
   // Resolve actual start/end nav points for A* (fall back to airport if fix not found)
   const start = startFix
-    ? (allPoints.find(p => p.name === startFix) ?? startAirport)
+    ? (allPoints.find((p) => p.name === startFix) ?? startAirport)
     : startAirport;
   const end = endFix
-    ? (allPoints.find(p => p.name === endFix) ?? endAirport)
+    ? (allPoints.find((p) => p.name === endFix) ?? endAirport)
     : endAirport;
 
   // When routing fix-to-fix we want the goal for neighbor filtering to be the end fix,
@@ -149,7 +152,7 @@ function findPath(
       const path = buildPath(current);
 
       // Relax the waypoint minimum when routing between fixes
-      const waypointCount = path.filter(p => p.type !== 'AIRPORT').length;
+      const waypointCount = path.filter((p) => p.type !== "AIRPORT").length;
       if (!usingFixes && waypointCount < 2) {
         continue;
       }
@@ -163,25 +166,28 @@ function findPath(
 
     checked.add(current.point.name);
 
-    const neighbors = getNearby(current.point, end, allPoints, maxDist, minDist);
+    const neighbors = getNearby(
+      current.point,
+      end,
+      allPoints,
+      maxDist,
+      minDist
+    );
 
     for (const neighbor of neighbors) {
       if (checked.has(neighbor.name)) continue;
 
-      const newCost = current.cost + getRealisticCost(
-        current.point,
-        neighbor,
-        current.parent,
-        turnPenalty
-      );
+      const newCost =
+        current.cost +
+        getRealisticCost(current.point, neighbor, current.parent, turnPenalty);
 
-      const existing = toCheck.find(n => n.point.name === neighbor.name);
+      const existing = toCheck.find((n) => n.point.name === neighbor.name);
 
       if (!existing) {
         toCheck.push({
           point: neighbor,
           cost: newCost,
-          parent: current
+          parent: current,
         });
       } else if (newCost < existing.cost) {
         existing.cost = newCost;

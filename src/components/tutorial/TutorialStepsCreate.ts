@@ -27,7 +27,8 @@ export const steps: {
   {
     target: "#runway-dropdown",
     title: "Select Departure Runway",
-    content: "Pick the active departure runway. This helps with wind and ATIS generation.",
+    content:
+      "Pick the active departure runway. This helps with wind and ATIS generation.",
     placement: "right" as Placement,
     disableNext: true,
   },

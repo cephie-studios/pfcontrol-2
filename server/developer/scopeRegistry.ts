@@ -1,4 +1,8 @@
-export { matchExtDataRoute, matchExtDeveloperRoute, DEVELOPER_EXT_ROUTES } from "./extRoutes.js";
+export {
+  matchExtDataRoute,
+  matchExtDeveloperRoute,
+  DEVELOPER_EXT_ROUTES,
+} from "./extRoutes.js";
 export type {
   DeveloperExtRouteDefinition,
   DeveloperExtRouteParamDoc,
@@ -40,7 +44,8 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   {
     id: "data.airport_runways",
     label: "Airport runways",
-    description: "GET /data/airports/:icao/runways — runway list for one airport.",
+    description:
+      "GET /data/airports/:icao/runways — runway list for one airport.",
   },
   {
     id: "data.airport_sids",
@@ -55,12 +60,14 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   {
     id: "data.find_route",
     label: "Route finder",
-    description: "GET /data/findRoute?from=&to= — waypoint graph route between fixes.",
+    description:
+      "GET /data/findRoute?from=&to= — waypoint graph route between fixes.",
   },
   {
     id: "data.airport_status",
     label: "Airport status",
-    description: "GET /data/airports/:icao/status — active PFATC session, METAR, etc.",
+    description:
+      "GET /data/airports/:icao/status — active PFATC session, METAR, etc.",
   },
   {
     id: "sessions.network_pfatc",
@@ -77,7 +84,8 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   {
     id: "sessions.list",
     label: "List my sessions",
-    description: "GET /sessions — sessions you created; join codes are never returned.",
+    description:
+      "GET /sessions — sessions you created; join codes are never returned.",
   },
   {
     id: "sessions.create",
@@ -88,22 +96,26 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   {
     id: "sessions.read",
     label: "Read session",
-    description: "GET /sessions/:sessionId — metadata for a session you own (no access_id).",
+    description:
+      "GET /sessions/:sessionId — metadata for a session you own (no access_id).",
   },
   {
     id: "flights.list",
     label: "List session flights",
-    description: "GET /sessions/:sessionId/flights — all flights in a session you own (sanitized).",
+    description:
+      "GET /sessions/:sessionId/flights — all flights in a session you own (sanitized).",
   },
   {
     id: "flights.read",
     label: "Read flight",
-    description: "GET /sessions/:sessionId/flights/:flightId — one flight (sanitized).",
+    description:
+      "GET /sessions/:sessionId/flights/:flightId — one flight (sanitized).",
   },
   {
     id: "flights.create",
     label: "Create flight",
-    description: "POST /sessions/:sessionId/flights — add a flight to a session you own.",
+    description:
+      "POST /sessions/:sessionId/flights — add a flight to a session you own.",
   },
   {
     id: "flights.update",
@@ -120,7 +132,8 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   {
     id: "notifications.read",
     label: "Active notifications",
-    description: "GET /notifications/active — public announcement banners (no admin CRUD).",
+    description:
+      "GET /notifications/active — public announcement banners (no admin CRUD).",
   },
   {
     id: "flight_logs.read",
@@ -130,7 +143,9 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
   },
 ];
 
-export const ALL_DEVELOPER_SCOPE_IDS: string[] = DEVELOPER_SCOPE_CATALOG.map((s) => s.id);
+export const ALL_DEVELOPER_SCOPE_IDS: string[] = DEVELOPER_SCOPE_CATALOG.map(
+  (s) => s.id
+);
 
 export function isValidScopeList(scopes: unknown): scopes is string[] {
   if (!Array.isArray(scopes)) return false;

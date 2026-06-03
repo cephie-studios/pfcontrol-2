@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Star, X, Loader2, Check } from 'lucide-react';
-import { submitControllerRating } from '../../utils/fetch/ratings';
-import Button from '../common/Button';
-import { Portal } from './Portal';
+import { useState } from "react";
+import { Star, X, Loader2, Check } from "lucide-react";
+import { submitControllerRating } from "../../utils/fetch/ratings";
+import Button from "../common/Button";
+import { Portal } from "./Portal";
 
 interface ControllerRatingPopupProps {
   controllerId: string;
@@ -21,13 +21,13 @@ export default function ControllerRatingPopup({
   const [hover, setHover] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (rating === 0) return;
 
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       await submitControllerRating(controllerId, rating, flightId);
@@ -36,18 +36,22 @@ export default function ControllerRatingPopup({
         onClose();
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit rating');
+      setError(err instanceof Error ? err.message : "Failed to submit rating");
       setIsSubmitting(false);
     }
   };
 
   const content = (
     <div
-      className={`${isInline ? 'bg-zinc-900/70 backdrop-blur-md mb-6' : 'bg-zinc-900 max-w-md mx-auto mb-8 shadow-2xl'} border border-zinc-800 rounded-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200`}
+      className={`${isInline ? "bg-zinc-900/70 backdrop-blur-md mb-6" : "bg-zinc-900 max-w-md mx-auto mb-8 shadow-2xl"} border border-zinc-800 rounded-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200`}
     >
       <div className="p-6">
-        <div className={`flex ${isInline ? 'justify-center' : 'justify-between'} items-center mb-4`}>
-          <h3 className="text-xl font-bold text-white italic">Rate your Controller</h3>
+        <div
+          className={`flex ${isInline ? "justify-center" : "justify-between"} items-center mb-4`}
+        >
+          <h3 className="text-xl font-bold text-white italic">
+            Rate your Controller
+          </h3>
           {!isInline && (
             <button
               onClick={onClose}
@@ -90,8 +94,8 @@ export default function ControllerRatingPopup({
                   <Star
                     className={`w-10 h-10 ${
                       star <= (hover || rating)
-                        ? 'fill-yellow-500 text-yellow-500'
-                        : 'text-zinc-700'
+                        ? "fill-yellow-500 text-yellow-500"
+                        : "text-zinc-700"
                     }`}
                   />
                 </button>
@@ -124,7 +128,7 @@ export default function ControllerRatingPopup({
                 {isSubmitting ? (
                   <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                 ) : (
-                  'Submit Rating'
+                  "Submit Rating"
                 )}
               </Button>
             </div>

@@ -1,36 +1,36 @@
-import { createElement } from 'react';
-import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
-import type { PublicPilotProfile } from '../services/publicPilotProfile.js';
+import { createElement } from "react";
+import satori from "satori";
+import { Resvg } from "@resvg/resvg-js";
+import type { PublicPilotProfile } from "../services/publicPilotProfile.js";
 import {
   ProfileOgCard,
   type OgLinkItem,
   type OgStatItem,
   type ProfileOgCardProps,
-} from './ProfileOgCard.js';
-import { getInterFontsForSatori } from './loadInterFonts.js';
-import { loadOgLinkIcons } from './ogLinkIcons.js';
-import { toSatoriSafeDataUrl } from './toSatoriSafeDataUrl.js';
+} from "./ProfileOgCard.js";
+import { getInterFontsForSatori } from "./loadInterFonts.js";
+import { loadOgLinkIcons } from "./ogLinkIcons.js";
+import { toSatoriSafeDataUrl } from "./toSatoriSafeDataUrl.js";
 
 const OG_W = 1200;
 const OG_H = 630;
 
 const TRANSPARENT_PNG_DATA_URL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
 function discordDefaultAvatarUrl(userId: string): string {
   try {
     const idx = Number((BigInt(userId) >> 22n) % 6n);
     return `https://cdn.discordapp.com/embed/avatars/${idx}.png`;
   } catch {
-    return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    return "https://cdn.discordapp.com/embed/avatars/0.png";
   }
 }
 
 function toPlainText(s: string): string {
   return s
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -41,16 +41,16 @@ function truncate(s: string, max: number): string {
 
 function getStat(stats: Record<string, unknown>, key: string): number | null {
   const val = stats?.[key];
-  if (typeof val === 'number') return val;
-  if (typeof val === 'object' && val !== null) {
-    const nested = (val as Record<string, unknown>)['total'];
-    if (typeof nested === 'number') return nested;
+  if (typeof val === "number") return val;
+  if (typeof val === "object" && val !== null) {
+    const nested = (val as Record<string, unknown>)["total"];
+    if (typeof nested === "number") return nested;
   }
   return null;
 }
 
 function formatTimeControlling(rawMins: number | null): string {
-  if (rawMins === null) return '—';
+  if (rawMins === null) return "—";
   const mins = Math.floor(rawMins);
   if (mins >= 60) {
     const h = Math.floor(mins / 60);
@@ -62,9 +62,9 @@ function formatTimeControlling(rawMins: number | null): string {
 
 function formatMemberSinceLabel(dateStr: string): string {
   try {
-    const formatted = new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    const formatted = new Date(dateStr).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
     return `Member since ${formatted}`;
   } catch {
@@ -73,25 +73,25 @@ function formatMemberSinceLabel(dateStr: string): string {
 }
 
 function buildMetaLine(
-  roles: PublicPilotProfile['user']['roles'],
+  roles: PublicPilotProfile["user"]["roles"],
   memberSinceLabel: string
 ): string | null {
   const roleNames =
     roles
       ?.map((r) => r.name)
       .filter(Boolean)
-      .join(', ') ?? '';
+      .join(", ") ?? "";
   const parts = [roleNames || null, memberSinceLabel].filter(Boolean);
-  return parts.length > 0 ? parts.join(' · ') : null;
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 export async function fetchUrlAsDataUrl(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { redirect: 'follow' });
+    const res = await fetch(url, { redirect: "follow" });
     if (!res.ok) return null;
-    const contentType = res.headers.get('content-type') || 'image/png';
+    const contentType = res.headers.get("content-type") || "image/png";
     const buf = Buffer.from(await res.arrayBuffer());
-    return `data:${contentType};base64,${buf.toString('base64')}`;
+    return `data:${contentType};base64,${buf.toString("base64")}`;
   } catch {
     return null;
   }
@@ -123,38 +123,38 @@ export function buildProfileOgCardProps(
   icons: OgLinkIcons
 ): ProfileOgCardProps {
   const { user, privacySettings } = profile;
-  const plainBio = user.bio ? toPlainText(user.bio) : '';
+  const plainBio = user.bio ? toPlainText(user.bio) : "";
   const bioSnippet = plainBio ? truncate(plainBio, 100) : null;
   const memberSinceLabel = formatMemberSinceLabel(user.member_since);
   const metaLine = buildMetaLine(user.roles, memberSinceLabel);
 
   const sessionsN = privacySettings.displayPilotStatsOnProfile
-    ? getStat(user.statistics, 'total_sessions_created')
+    ? getStat(user.statistics, "total_sessions_created")
     : null;
   const flightsN = privacySettings.displayPilotStatsOnProfile
-    ? getStat(user.statistics, 'total_flights_submitted')
+    ? getStat(user.statistics, "total_flights_submitted")
     : null;
   const ctrlMins = privacySettings.displayPilotStatsOnProfile
-    ? getStat(user.statistics, 'total_time_controlling_minutes')
+    ? getStat(user.statistics, "total_time_controlling_minutes")
     : null;
 
   const stats: OgStatItem[] = [];
   if (sessionsN != null) {
     stats.push({
-      value: sessionsN.toLocaleString('en-US'),
-      label: 'Sessions',
+      value: sessionsN.toLocaleString("en-US"),
+      label: "Sessions",
     });
   }
   if (flightsN != null) {
     stats.push({
-      value: flightsN.toLocaleString('en-US'),
-      label: 'Flights',
+      value: flightsN.toLocaleString("en-US"),
+      label: "Flights",
     });
   }
   if (ctrlMins != null) {
     stats.push({
       value: formatTimeControlling(ctrlMins),
-      label: 'ATC Time',
+      label: "ATC Time",
     });
   }
 
@@ -162,21 +162,21 @@ export function buildProfileOgCardProps(
   if (privacySettings.displayLinkedAccountsOnProfile) {
     if (user.roblox_username) {
       links.push({
-        platform: 'roblox',
+        platform: "roblox",
         detail: user.roblox_username,
         iconDataUrl: icons.roblox,
       });
     }
     if (user.vatsim_cid) {
       links.push({
-        platform: 'vatsim',
+        platform: "vatsim",
         detail: user.vatsim_rating_short ?? user.vatsim_cid,
         iconDataUrl: icons.vatsim,
       });
     }
   }
 
-  let rating: ProfileOgCardProps['rating'] = null;
+  let rating: ProfileOgCardProps["rating"] = null;
   if (
     privacySettings.displayControllerRatingOnProfile &&
     user.rating &&
@@ -192,7 +192,7 @@ export function buildProfileOgCardProps(
     username: user.username,
     bioSnippet,
     metaLine,
-    teamBadge: user.is_admin ? 'PFControl Team' : null,
+    teamBadge: user.is_admin ? "PFControl Team" : null,
     stats,
     links,
     rating,
@@ -231,7 +231,7 @@ export async function renderPublicProfileOgPng(
 
   const resvg = new Resvg(svg, {
     fitTo: {
-      mode: 'width',
+      mode: "width",
       value: OG_W,
     },
   });

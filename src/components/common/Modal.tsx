@@ -1,11 +1,11 @@
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 
 interface ModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   title: string;
   children: React.ReactNode;
-  variant?: 'primary' | 'danger' | 'success';
+  variant?: "primary" | "danger" | "success";
   icon?: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -15,30 +15,30 @@ export default function Modal({
   onClose,
   title,
   children,
-  variant = 'primary',
+  variant = "primary",
   icon,
   footer,
 }: ModalProps) {
   if (!isOpen) return null;
 
   const borderColor =
-    variant === 'danger'
-      ? 'border-red-600'
-      : variant === 'success'
-        ? 'border-green-600'
-        : 'border-blue-800';
+    variant === "danger"
+      ? "border-red-600"
+      : variant === "success"
+        ? "border-green-600"
+        : "border-blue-800";
   const iconBg =
-    variant === 'danger'
-      ? 'bg-red-900/30'
-      : variant === 'success'
-        ? 'bg-green-900/30'
-        : 'bg-blue-900/30';
+    variant === "danger"
+      ? "bg-red-900/30"
+      : variant === "success"
+        ? "bg-green-900/30"
+        : "bg-blue-900/30";
   const iconColor =
-    variant === 'danger'
-      ? 'text-red-500'
-      : variant === 'success'
-        ? 'text-green-500'
-        : 'text-blue-400';
+    variant === "danger"
+      ? "text-red-500"
+      : variant === "success"
+        ? "text-green-500"
+        : "text-blue-400";
 
   return (
     <div className="fixed inset-0 bg-black/65 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">

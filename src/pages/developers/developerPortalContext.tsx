@@ -29,7 +29,10 @@ import {
   type DeveloperKeyRow,
 } from "../../utils/fetch/developer";
 import { API_EXT_BASE } from "./constants";
-import { buildSampleCurlForScopes, type SampleCurlResult } from "../../utils/developerSampleCurl";
+import {
+  buildSampleCurlForScopes,
+  type SampleCurlResult,
+} from "../../utils/developerSampleCurl";
 
 export type DeveloperUsageChartWindow = "24h" | 7 | 14 | 30;
 
@@ -69,7 +72,11 @@ type DeveloperPortalContextValue = {
   loadApplication: () => Promise<void>;
   loadDashboard: () => Promise<void>;
   refresh: () => void;
-  toggleScope: (id: string, set: Set<string>, update: (s: Set<string>) => void) => void;
+  toggleScope: (
+    id: string,
+    set: Set<string>,
+    update: (s: Set<string>) => void
+  ) => void;
   handleApply: () => Promise<void>;
   scopeExpansionSubmitting: boolean;
   submitScopeExpansionRequest: (input: {
@@ -94,12 +101,15 @@ type DeveloperPortalContextValue = {
   saveNotificationEmail: (email: string | null) => Promise<void>;
 };
 
-const DeveloperPortalContext = createContext<DeveloperPortalContextValue | null>(null);
+const DeveloperPortalContext =
+  createContext<DeveloperPortalContextValue | null>(null);
 
 export function useDeveloperPortal() {
   const v = useContext(DeveloperPortalContext);
   if (!v) {
-    throw new Error("useDeveloperPortal must be used within DeveloperPortalProvider");
+    throw new Error(
+      "useDeveloperPortal must be used within DeveloperPortalProvider"
+    );
   }
   return v;
 }
@@ -108,18 +118,25 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<DeveloperScopeCatalogEntry[]>([]);
-  const [appState, setAppState] = useState<DeveloperApplicationState | null>(null);
+  const [appState, setAppState] = useState<DeveloperApplicationState | null>(
+    null
+  );
 
   const [who, setWho] = useState("");
   const [why, setWhy] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
-  const [scopeExpansionSubmitting, setScopeExpansionSubmitting] = useState(false);
+  const [scopeExpansionSubmitting, setScopeExpansionSubmitting] =
+    useState(false);
 
-  const [usageChartWindow, setUsageChartWindow] = useState<DeveloperUsageChartWindow>(14);
-  const [summary, setSummary] = useState<DeveloperDashboardSummary | null>(null);
+  const [usageChartWindow, setUsageChartWindow] =
+    useState<DeveloperUsageChartWindow>(14);
+  const [summary, setSummary] = useState<DeveloperDashboardSummary | null>(
+    null
+  );
   const [keys, setKeys] = useState<DeveloperKeyRow[]>([]);
-  const [keyDefaultRateLimitPerMinute, setKeyDefaultRateLimitPerMinute] = useState(120);
+  const [keyDefaultRateLimitPerMinute, setKeyDefaultRateLimitPerMinute] =
+    useState(120);
   const [dashLoading, setDashLoading] = useState(false);
 
   const [newKeyName, setNewKeyName] = useState("");
@@ -136,7 +153,10 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [cat, app] = await Promise.all([fetchDeveloperCatalog(), fetchDeveloperApplication()]);
+      const [cat, app] = await Promise.all([
+        fetchDeveloperCatalog(),
+        fetchDeveloperApplication(),
+      ]);
       setCatalog(cat);
       setAppState(app);
     } catch (e) {
@@ -151,7 +171,9 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
     try {
       const [s, keysPayload] = await Promise.all([
         fetchDeveloperDashboardSummary(
-          usageChartWindow === "24h" ? { hours: 24 } : { days: usageChartWindow },
+          usageChartWindow === "24h"
+            ? { hours: 24 }
+            : { days: usageChartWindow }
         ),
         fetchDeveloperKeys(),
       ]);
@@ -172,11 +194,15 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   const profileActive = appState?.profile?.status === "active";
   const profileSuspended = appState?.profile?.status === "suspended";
   const pending = appState?.latestApplication?.status === "pending";
-  const approvedScopesKey = JSON.stringify(appState?.profile?.approvedScopes ?? []);
+  const approvedScopesKey = JSON.stringify(
+    appState?.profile?.approvedScopes ?? []
+  );
   const approvedScopes = useMemo(() => {
     try {
       const p = JSON.parse(approvedScopesKey) as unknown;
-      return Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : [];
+      return Array.isArray(p)
+        ? p.filter((x): x is string => typeof x === "string")
+        : [];
     } catch {
       return [];
     }
@@ -233,7 +259,7 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
         setNotificationEmailSaving(false);
       }
     },
-    [loadApplication],
+    [loadApplication]
   );
 
   const dismissAdminNotice = useCallback(async () => {
@@ -253,7 +279,7 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       else next.add(id);
       update(next);
     },
-    [],
+    []
   );
 
   const handleApply = useCallback(async () => {
@@ -281,7 +307,11 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   }, [who, why, selectedScopes, loadApplication]);
 
   const submitScopeExpansionRequest = useCallback(
-    async (input: { who: string; why: string; additionalScopes: string[] }): Promise<boolean> => {
+    async (input: {
+      who: string;
+      why: string;
+      additionalScopes: string[];
+    }): Promise<boolean> => {
       if (input.additionalScopes.length === 0) {
         setError("Pick at least one new scope to include in your request.");
         return false;
@@ -299,7 +329,7 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
         setScopeExpansionSubmitting(false);
       }
     },
-    [loadApplication],
+    [loadApplication]
   );
 
   const handleCreateKey = useCallback(async () => {
@@ -334,7 +364,8 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
 
   const handleRevoke = useCallback(
     async (id: string) => {
-      if (!confirm("Revoke this API key? Clients using it will stop working.")) return;
+      if (!confirm("Revoke this API key? Clients using it will stop working."))
+        return;
       setKeyBusy(true);
       setError(null);
       try {
@@ -346,12 +377,15 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
         setKeyBusy(false);
       }
     },
-    [loadDashboard],
+    [loadDashboard]
   );
 
   const handleDeleteKey = useCallback(
     async (id: string) => {
-      if (!confirm("Permanently delete this revoked key? This cannot be undone.")) return;
+      if (
+        !confirm("Permanently delete this revoked key? This cannot be undone.")
+      )
+        return;
       setKeyBusy(true);
       setError(null);
       try {
@@ -363,14 +397,14 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
         setKeyBusy(false);
       }
     },
-    [loadDashboard],
+    [loadDashboard]
   );
 
   const handleRotateKey = useCallback(
     async (id: string) => {
       if (
         !confirm(
-          "Rotate this key? The old secret stops working immediately. Copy the new secret when it appears.",
+          "Rotate this key? The old secret stops working immediately. Copy the new secret when it appears."
         )
       )
         return;
@@ -387,7 +421,7 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
         setKeyBusy(false);
       }
     },
-    [loadDashboard],
+    [loadDashboard]
   );
 
   const copySecret = useCallback(async () => {
@@ -400,7 +434,11 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
 
   const curlSample = useMemo((): SampleCurlResult | null => {
     if (!createdSecret || curlExampleScopes.length === 0) return null;
-    return buildSampleCurlForScopes(createdSecret, API_EXT_BASE, curlExampleScopes);
+    return buildSampleCurlForScopes(
+      createdSecret,
+      API_EXT_BASE,
+      curlExampleScopes
+    );
   }, [createdSecret, curlExampleScopes]);
 
   useEffect(() => {
@@ -527,10 +565,12 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       notificationEmail,
       notificationEmailSaving,
       saveNotificationEmail,
-    ],
+    ]
   );
 
   return (
-    <DeveloperPortalContext.Provider value={value}>{children}</DeveloperPortalContext.Provider>
+    <DeveloperPortalContext.Provider value={value}>
+      {children}
+    </DeveloperPortalContext.Provider>
   );
 }

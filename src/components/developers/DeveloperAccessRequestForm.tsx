@@ -45,7 +45,9 @@ export default function DeveloperAccessRequestForm({
   onDismiss,
 }: Props) {
   const isInitial = mode === "initial";
-  const title = isInitial ? "Let’s get you API access" : "Request more API access";
+  const title = isInitial
+    ? "Let’s get you API access"
+    : "Request more API access";
   const subtitle = isInitial
     ? "A quick intro helps us approve you faster. Choose the scopes you need right now — you can always request more later from this same page once you’re approved."
     : "Share a bit of context and pick only the new scopes you need. Your existing access stays on while we review this.";
@@ -71,7 +73,9 @@ export default function DeveloperAccessRequestForm({
   const handleTrySubmit = () => {
     if (submitting) return;
     if (selectedScopes.size === 0) {
-      setValidationError("Choose at least one scope before sending your request.");
+      setValidationError(
+        "Choose at least one scope before sending your request."
+      );
       return;
     }
     const whoLen = who.trim().length;
@@ -79,14 +83,14 @@ export default function DeveloperAccessRequestForm({
       setValidationError(
         whoMinLen <= 1
           ? "Please tell us a little about yourself before sending."
-          : `The “about you” field is too short — add at least ${whoMinLen} characters (you have ${whoLen}).`,
+          : `The “about you” field is too short — add at least ${whoMinLen} characters (you have ${whoLen}).`
       );
       return;
     }
     const whyLen = why.trim().length;
     if (whyLen < whyMinLen) {
       setValidationError(
-        `The project description is too short — write at least ${whyMinLen} characters so we can review your request (you have ${whyLen}).`,
+        `The project description is too short — write at least ${whyMinLen} characters so we can review your request (you have ${whyLen}).`
       );
       return;
     }
@@ -109,16 +113,20 @@ export default function DeveloperAccessRequestForm({
 
       <div className="flex items-start gap-3 mb-2 pr-10">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-zinc-50 tracking-tight">{title}</h2>
-          <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-2xl">{subtitle}</p>
+          <h2 className="text-xl sm:text-2xl font-semibold text-zinc-50 tracking-tight">
+            {title}
+          </h2>
+          <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-2xl">
+            {subtitle}
+          </p>
         </div>
       </div>
 
       {isInitial && (
         <p className="mt-4 mb-6 rounded-2xl border border-sky-800/35 bg-sky-950/30 px-4 py-3 text-sm text-sky-100/90 leading-relaxed">
-          <span className="font-medium text-sky-200">Note:</span> you only have to pick what you
-          need today. After you&apos;re approved, you can come back anytime and use this same flow
-          to ask for additional scopes.
+          <span className="font-medium text-sky-200">Note:</span> you only have
+          to pick what you need today. After you&apos;re approved, you can come
+          back anytime and use this same flow to ask for additional scopes.
         </p>
       )}
 
@@ -156,7 +164,9 @@ export default function DeveloperAccessRequestForm({
           <label className={`${labelClass} mb-3`}>
             {scopeLabel}
             {selectedScopes.size > 0 && (
-              <span className="ml-2 font-normal text-sky-400">{selectedScopes.size} selected</span>
+              <span className="ml-2 font-normal text-sky-400">
+                {selectedScopes.size} selected
+              </span>
             )}
           </label>
           {catalog.length === 0 ? (
@@ -182,7 +192,10 @@ export default function DeveloperAccessRequestForm({
             className="flex items-start gap-2 rounded-xl border border-red-900/55 bg-red-950/50 px-3.5 py-3 text-sm text-red-100 ring-1 ring-red-900/30"
             role="alert"
           >
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" aria-hidden />
+            <AlertCircle
+              className="w-4 h-4 shrink-0 text-red-400 mt-0.5"
+              aria-hidden
+            />
             <span>{validationError}</span>
           </div>
         )}
@@ -209,7 +222,11 @@ export default function DeveloperAccessRequestForm({
               onClick={handleTrySubmit}
               className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-45 disabled:pointer-events-none text-white text-sm font-semibold shadow-lg shadow-sky-950/30 transition-colors"
             >
-              {submitting ? "Sending…" : isInitial ? "Send my application" : "Send scope request"}
+              {submitting
+                ? "Sending…"
+                : isInitial
+                  ? "Send my application"
+                  : "Send scope request"}
             </button>
           </div>
         </div>

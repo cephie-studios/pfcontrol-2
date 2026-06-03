@@ -1,13 +1,13 @@
-import { Flag, Trash } from 'lucide-react';
-import type { ChatMessage } from '../../types/chats';
-import type { GlobalChatMessage } from '../../sockets/globalChatSocket';
+import { Flag, Trash } from "lucide-react";
+import type { ChatMessage } from "../../types/chats";
+import type { GlobalChatMessage } from "../../sockets/globalChatSocket";
 import {
   formatStationDisplay,
   renderMessage,
   shouldShowMessageHeader,
   isMessageMentioned,
   getMessageTimeString,
-} from '../../utils/chats';
+} from "../../utils/chats";
 
 export type ChatListMessage = ChatMessage | GlobalChatMessage;
 
@@ -44,13 +44,13 @@ export function ChatMessageRow({
 
   const rowClass = isGlobal
     ? `flex items-start gap-2 relative ${
-        isOwn ? 'justify-end' : ''
-      } ${isMentioned ? 'bg-blue-900/20 rounded-lg p-1 my-1' : 'gap-3'}`
+        isOwn ? "justify-end" : ""
+      } ${isMentioned ? "bg-blue-900/20 rounded-lg p-1 my-1" : "gap-3"}`
     : `flex items-start gap-1 relative ${
-        isOwn ? 'justify-end' : 'gap-3'
-      } ${isMentioned ? 'bg-blue-900/20 rounded-lg p-1 my-1' : 'gap-3'}`;
+        isOwn ? "justify-end" : "gap-3"
+      } ${isMentioned ? "bg-blue-900/20 rounded-lg p-1 my-1" : "gap-3"}`;
 
-  const displayName = msg.username || 'Unknown';
+  const displayName = msg.username || "Unknown";
 
   return (
     <div
@@ -60,44 +60,42 @@ export function ChatMessageRow({
     >
       {showHeader && !isOwn && (
         <img
-          src={msg.avatar || '/assets/app/default/avatar.webp'}
+          src={msg.avatar || "/assets/app/default/avatar.webp"}
           alt={displayName}
           className="w-9 h-9 rounded-full border-2 border-blue-700 shadow"
         />
       )}
       {!showHeader && !isOwn && <div className="w-9 h-9" />}
-      <div className={`${isOwn ? 'text-right' : ''} relative group`}>
+      <div className={`${isOwn ? "text-right" : ""} relative group`}>
         {showHeader && (
           <div className="text-xs text-gray-400 mb-1">
             <span className="font-semibold text-blue-300">{displayName}</span>
-            {isGlobal &&
-              'station' in msg &&
-              msg.station && (
-                <span className="text-green-400">
-                  {' - '}
-                  {formatStationDisplay(msg.station, msg.position)}
-                </span>
-              )}
-            {' • '}
+            {isGlobal && "station" in msg && msg.station && (
+              <span className="text-green-400">
+                {" - "}
+                {formatStationDisplay(msg.station, msg.position)}
+              </span>
+            )}
+            {" • "}
             {getMessageTimeString(msg.sent_at)}
           </div>
         )}
         <div
           className={`rounded-l-2xl rounded-tr-2xl px-3 py-2 text-sm shadow relative ${
             isOwn
-              ? 'bg-blue-800 text-white ml-auto max-w-[19rem]'
-              : 'bg-zinc-800 text-white max-w-[19rem]'
+              ? "bg-blue-800 text-white ml-auto max-w-[19rem]"
+              : "bg-zinc-800 text-white max-w-[19rem]"
           } break-words overflow-wrap-anywhere`}
           style={
             isOwn
               ? {
-                  borderTopRightRadius: '1rem',
-                  borderBottomRightRadius: '0rem',
+                  borderTopRightRadius: "1rem",
+                  borderBottomRightRadius: "0rem",
                 }
               : {
-                  borderTopLeftRadius: '1rem',
-                  borderBottomLeftRadius: '0rem',
-                  borderBottomRightRadius: '1rem',
+                  borderTopLeftRadius: "1rem",
+                  borderBottomLeftRadius: "0rem",
+                  borderBottomRightRadius: "1rem",
                 }
           }
         >
@@ -144,7 +142,7 @@ export function ChatMessageRow({
               <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-red-600 to-orange-600">
                 <div className="px-3 py-1.5 bg-zinc-900/95 backdrop-blur-md rounded-lg">
                   <div className="text-xs text-white">
-                    Automod flagged this for{' '}
+                    Automod flagged this for{" "}
                     <span className="text-yellow-300 font-semibold">
                       {automodReason}
                     </span>
@@ -158,7 +156,7 @@ export function ChatMessageRow({
       {!showHeader && isOwn && <div className="w-9 h-9" />}
       {showHeader && isOwn && (
         <img
-          src={msg.avatar || '/assets/app/default/avatar.webp'}
+          src={msg.avatar || "/assets/app/default/avatar.webp"}
           alt={displayName}
           className="w-9 h-9 rounded-full border-2 border-blue-700 shadow"
         />

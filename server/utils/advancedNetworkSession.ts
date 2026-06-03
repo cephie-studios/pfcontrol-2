@@ -15,7 +15,10 @@ export function getNetworkKind(session: SessionKindShape): NetworkKind | null {
   return null;
 }
 
-export function isSameNetwork(a: SessionKindShape, b: SessionKindShape): boolean {
+export function isSameNetwork(
+  a: SessionKindShape,
+  b: SessionKindShape
+): boolean {
   const kindA = getNetworkKind(a);
   const kindB = getNetworkKind(b);
   return kindA !== null && kindA === kindB;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -6,13 +6,13 @@ import {
   Table,
   PlaneLanding,
   PlaneTakeoff,
-} from 'lucide-react';
+} from "lucide-react";
 import type {
   DepartureTableColumnSettings,
   ArrivalsTableColumnSettings,
-} from '../../types/settings';
-import Button from '../common/Button';
-import Checkbox from '../common/Checkbox';
+} from "../../types/settings";
+import Button from "../common/Button";
+import Checkbox from "../common/Checkbox";
 
 interface TableColumnSettingsProps {
   departureColumns: DepartureTableColumnSettings;
@@ -23,43 +23,43 @@ interface TableColumnSettingsProps {
 }
 
 const departureColumnLabels = {
-  callsign: 'Callsign',
-  req: 'On Request (REQ)',
-  stand: 'Stand',
-  aircraft: 'Aircraft Type',
-  wakeTurbulence: 'Wake Turbulence',
-  flightType: 'Flight Type',
-  arrival: 'Arrival Airport',
-  runway: 'Runway',
-  sid: 'SID',
-  rfl: 'RFL (Requested Flight Level)',
-  cfl: 'CFL (Cleared Flight Level)',
-  squawk: 'Squawk',
-  clearance: 'Clearance',
-  status: 'Status',
-  remark: 'Remarks',
-  route: 'Route Button',
-  pdc: 'PDC Button',
-  hide: 'Hide Button',
-  delete: 'Delete Button',
+  callsign: "Callsign",
+  req: "On Request (REQ)",
+  stand: "Stand",
+  aircraft: "Aircraft Type",
+  wakeTurbulence: "Wake Turbulence",
+  flightType: "Flight Type",
+  arrival: "Arrival Airport",
+  runway: "Runway",
+  sid: "SID",
+  rfl: "RFL (Requested Flight Level)",
+  cfl: "CFL (Cleared Flight Level)",
+  squawk: "Squawk",
+  clearance: "Clearance",
+  status: "Status",
+  remark: "Remarks",
+  route: "Route Button",
+  pdc: "PDC Button",
+  hide: "Hide Button",
+  delete: "Delete Button",
 };
 
 const arrivalsColumnLabels = {
-  callsign: 'Callsign',
-  gate: 'Gate',
-  aircraft: 'Aircraft Type',
-  wakeTurbulence: 'Wake Turbulence',
-  flightType: 'Flight Type',
-  departure: 'Departure Airport',
-  runway: 'Runway',
-  star: 'STAR',
-  rfl: 'RFL (Requested Flight Level)',
-  cfl: 'CFL (Cleared Flight Level)',
-  squawk: 'Squawk',
-  status: 'Status',
-  remark: 'Remarks',
-  route: 'Route Button',
-  hide: 'Hide Button',
+  callsign: "Callsign",
+  gate: "Gate",
+  aircraft: "Aircraft Type",
+  wakeTurbulence: "Wake Turbulence",
+  flightType: "Flight Type",
+  departure: "Departure Airport",
+  runway: "Runway",
+  star: "STAR",
+  rfl: "RFL (Requested Flight Level)",
+  cfl: "CFL (Cleared Flight Level)",
+  squawk: "Squawk",
+  status: "Status",
+  remark: "Remarks",
+  route: "Route Button",
+  hide: "Hide Button",
 };
 
 export default function TableColumnSettings({
@@ -75,7 +75,7 @@ export default function TableColumnSettings({
     column: keyof DepartureTableColumnSettings,
     value: boolean
   ) => {
-    if (column === 'time') return;
+    if (column === "time") return;
     onDepartureColumnsChange({
       ...departureColumns,
       [column]: value,
@@ -86,7 +86,7 @@ export default function TableColumnSettings({
     column: keyof ArrivalsTableColumnSettings,
     value: boolean
   ) => {
-    if (column === 'time') return;
+    if (column === "time") return;
     onArrivalsColumnsChange({
       ...arrivalsColumns,
       [column]: value,
@@ -152,8 +152,8 @@ export default function TableColumnSettings({
       <div
         className={`transition-all duration-300 ease-in-out ${
           isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
+            ? "max-h-[2000px] opacity-100"
+            : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="p-4 sm:p-6">
