@@ -1,29 +1,33 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  BarChart3,
-  Users,
-  Database,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
-  ShieldUser,
-  ChevronDown,
-  Ban,
-  LayoutDashboard,
-  ShieldAlert,
-  Bell,
-  MessageCircleWarning,
-  NotebookPen,
-  ShieldCheck,
-  LockKeyhole,
-  Star,
-  HeartPulse,
-  ThumbsUp,
-  GitMerge,
-  Code2,
-} from "lucide-react";
+  MdBarChart,
+  MdPeople,
+  MdStorage,
+  MdChevronLeft,
+  MdChevronRight,
+  MdSecurity,
+  MdAdminPanelSettings,
+  MdExpandMore,
+  MdBlock,
+  MdDashboard,
+  MdReport,
+  MdNotifications,
+  MdChat,
+  MdFlight,
+  MdVerifiedUser,
+  MdVpnKey,
+  MdStar,
+  MdMonitorHeart,
+  MdThumbUp,
+  MdMergeType,
+  MdCode,
+  MdCable,
+  MdQueryStats,
+} from "react-icons/md";
+import type { IconType } from "react-icons";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/auth/useAuth";
+import { navActiveClass } from "./adminConstants";
 
 interface AdminSidebarProps {
   collapsed?: boolean;
@@ -32,6 +36,20 @@ interface AdminSidebarProps {
 
 const SIDEBAR_STORAGE_KEY = "admin-sidebar-collapsed";
 
+type NavItem = {
+  icon: IconType;
+  label: string;
+  path: string;
+  textColor?: string;
+  permission: string;
+};
+
+type NavSection = {
+  title: string;
+  icon: IconType;
+  items: NavItem[];
+};
+
 export default function AdminSidebar({
   collapsed: initialCollapsed = false,
   onToggle,
@@ -39,15 +57,12 @@ export default function AdminSidebar({
   const location = useLocation();
   const { user } = useAuth();
 
-  // Get initial state from localStorage or fallback to prop
   const getInitialCollapsedState = (): boolean => {
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (stored !== null) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.warn("Failed to read sidebar state from localStorage:", error);
+      if (stored !== null) return JSON.parse(stored);
+    } catch {
+      /* localStorage unavailable */
     }
     return initialCollapsed;
   };
@@ -55,36 +70,34 @@ export default function AdminSidebar({
   const [collapsed, setCollapsed] = useState(getInitialCollapsedState);
   const [generalCollapsed, setGeneralCollapsed] = useState(false);
   const [moderationCollapsed, setModerationCollapsed] = useState(false);
-  const [usersCollapsed, setUsersCollapsed] = useState(false);
+  const [securityCollapsed, setSecurityCollapsed] = useState(false);
+  const [monitoringCollapsed, setMonitoringCollapsed] = useState(false);
   const [showText, setShowText] = useState(!collapsed);
 
   useEffect(() => {
     if (!collapsed) {
-      const timer = setTimeout(() => setShowText(true), 300);
+      const timer = setTimeout(() => setShowText(true), 200);
       return () => clearTimeout(timer);
-    } else {
-      setShowText(false);
     }
+    setShowText(false);
   }, [collapsed]);
 
   const handleToggle = () => {
     const newCollapsed = !collapsed;
     setCollapsed(newCollapsed);
-
-    // Persist to localStorage
     try {
       localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(newCollapsed));
-    } catch (error) {
-      console.warn("Failed to save sidebar state to localStorage:", error);
+    } catch {
+      /* localStorage unavailable */
     }
-
     onToggle?.();
   };
 
   const hasPermission = (permission: string) => {
     if (user?.isAdmin) return true;
     const perms = (user?.rolePermissions ?? {}) as Record<string, unknown>;
-    const checkVal = (v: unknown) => v === true || v === "true" || v === "1" || v === 1;
+    const checkVal = (v: unknown) =>
+      v === true || v === "true" || v === "1" || v === 1;
 
     if (checkVal(perms[permission])) return true;
 
@@ -104,57 +117,53 @@ export default function AdminSidebar({
       roles: ["roles", "role_management"],
     };
 
-    const mapped = aliases[permission] ?? [];
-    for (const p of mapped) {
+    for (const p of aliases[permission] ?? []) {
       if (checkVal(perms[p])) return true;
     }
-
     return false;
   };
 
-  const sections = [
+  const sections: NavSection[] = [
     {
       title: "General",
-      icon: LayoutDashboard,
-      collapsed: generalCollapsed,
-      setCollapsed: setGeneralCollapsed,
+      icon: MdDashboard,
       items: [
         {
-          icon: BarChart3,
+          icon: MdBarChart,
           label: "Overview",
           path: "/admin",
           permission: "admin",
         },
         {
-          icon: Users,
+          icon: MdPeople,
           label: "Users",
           path: "/admin/users",
           textColor: "green-400",
           permission: "users",
         },
         {
-          icon: Database,
+          icon: MdStorage,
           label: "Sessions",
           path: "/admin/sessions",
           textColor: "yellow-400",
           permission: "sessions",
         },
         {
-          icon: Bell,
+          icon: MdNotifications,
           label: "Notifications",
           path: "/admin/notifications",
           textColor: "cyan-400",
           permission: "notifications",
         },
         {
-          icon: Star,
+          icon: MdStar,
           label: "Feedback",
           path: "/admin/feedback",
           textColor: "yellow-400",
           permission: "admin",
         },
         {
-          icon: ThumbsUp,
+          icon: MdThumbUp,
           label: "Ratings",
           path: "/admin/ratings",
           textColor: "indigo-400",
@@ -164,26 +173,24 @@ export default function AdminSidebar({
     },
     {
       title: "Moderation",
-      icon: LockKeyhole,
-      collapsed: moderationCollapsed,
-      setCollapsed: setModerationCollapsed,
+      icon: MdVpnKey,
       items: [
         {
-          icon: MessageCircleWarning,
+          icon: MdChat,
           label: "Chat Reports",
           path: "/admin/chat-reports",
           textColor: "red-400",
           permission: "chat_reports",
         },
         {
-          icon: NotebookPen,
+          icon: MdFlight,
           label: "Flight Archive",
           path: "/admin/flight-logs",
           textColor: "rose-400",
           permission: "audit",
         },
         {
-          icon: Ban,
+          icon: MdBlock,
           label: "Bans",
           path: "/admin/bans",
           textColor: "red-400",
@@ -193,47 +200,45 @@ export default function AdminSidebar({
     },
     {
       title: "Security",
-      icon: Shield,
-      collapsed: usersCollapsed,
-      setCollapsed: setUsersCollapsed,
+      icon: MdSecurity,
       items: [
         {
-          icon: HeartPulse,
+          icon: MdMonitorHeart,
           label: "API Logs",
           path: "/admin/api-logs",
           textColor: "blue-400",
           permission: "audit",
         },
         {
-          icon: Code2,
+          icon: MdCode,
           label: "Developers",
           path: "/admin/developers",
           textColor: "cyan-400",
           permission: "admin",
         },
         {
-          icon: ShieldCheck,
+          icon: MdVerifiedUser,
           label: "Testers",
           path: "/admin/testers",
           textColor: "purple-400",
           permission: "testers",
         },
         {
-          icon: ShieldUser,
+          icon: MdAdminPanelSettings,
           label: "Roles",
           path: "/admin/roles",
           textColor: "rose-400",
           permission: "roles",
         },
         {
-          icon: ShieldAlert,
+          icon: MdReport,
           label: "Audit Log",
           path: "/admin/audit",
           textColor: "orange-400",
           permission: "audit",
         },
         {
-          icon: GitMerge,
+          icon: MdMergeType,
           label: "Alt Detection",
           path: "/admin/alts",
           textColor: "amber-400",
@@ -241,121 +246,155 @@ export default function AdminSidebar({
         },
       ].filter((item) => hasPermission(item.permission)),
     },
+    {
+      title: "Monitoring",
+      icon: MdQueryStats,
+      items: [
+        {
+          icon: MdCable,
+          label: "WebSockets",
+          path: "/admin/websockets",
+          textColor: "cyan-400",
+          permission: "admin",
+        },
+        {
+          icon: MdStorage,
+          label: "Database",
+          path: "/admin/database",
+          textColor: "blue-400",
+          permission: "admin",
+        },
+      ].filter((item) => hasPermission(item.permission)),
+    },
   ].filter((section) => section.items.length > 0);
 
-  const allItems = sections.flatMap((section) => section.items);
+  const sectionState: Record<
+    string,
+    { collapsed: boolean; setCollapsed: (v: boolean) => void }
+  > = {
+    General: { collapsed: generalCollapsed, setCollapsed: setGeneralCollapsed },
+    Moderation: {
+      collapsed: moderationCollapsed,
+      setCollapsed: setModerationCollapsed,
+    },
+    Security: {
+      collapsed: securityCollapsed,
+      setCollapsed: setSecurityCollapsed,
+    },
+    Monitoring: {
+      collapsed: monitoringCollapsed,
+      setCollapsed: setMonitoringCollapsed,
+    },
+  };
+
+  const allItems = sections.flatMap((s) => s.items);
+
+  const linkClass = (isActive: boolean, textColor?: string) =>
+    `flex items-center gap-2.5 rounded-lg transition-colors duration-150 ${
+      collapsed ? "justify-center h-9 w-full px-0" : "h-9 px-3"
+    } ${
+      isActive
+        ? navActiveClass(textColor)
+        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+    }`;
 
   return (
     <div
-      className={`bg-black border-r border-zinc-700/50 transition-all duration-300 h-screen z-[40] ${
-        collapsed ? "w-16" : "w-64"
-      } flex flex-col overflow-y-auto`}
+      className={`bg-zinc-950 border-r border-zinc-800 transition-all duration-300 h-[calc(100vh-4rem)] sticky top-16 z-[40] ${
+        collapsed ? "w-16" : "w-64 xl:w-72"
+      } flex flex-col overflow-hidden`}
     >
-      {/* Header */}
-      <div className="p-4 border-b border-zinc-700/50">
-        <div className="flex items-center justify-between">
+      <div className="px-2 py-2 border-b border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between gap-1">
           {!collapsed && (
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <LayoutDashboard className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+              <div className="p-1.5 bg-blue-500/20 rounded-lg shrink-0">
+                <MdDashboard size={18} className="text-blue-400" />
               </div>
               <div
-                className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
-                  showText ? "w-auto opacity-100" : "w-0 opacity-0"
+                className={`transition-opacity duration-200 truncate ${
+                  showText ? "opacity-100" : "opacity-0"
                 }`}
               >
-                <h2 className="text-white font-semibold">Admin Panel</h2>
+                <h2 className="text-sm font-semibold text-white">Admin</h2>
               </div>
             </div>
           )}
           <button
+            type="button"
             onClick={handleToggle}
-            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white"
+            className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white shrink-0"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? (
+              <MdChevronRight size={18} />
+            ) : (
+              <MdChevronLeft size={18} />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1.5">
         {collapsed ? (
-          <div className="space-y-1">
+          <div className="flex flex-col gap-0.5">
             {allItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
-
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`
-                    flex items-center justify-center px-3 py-3 rounded-xl transition-all duration-200
-                    ${
-                      isActive
-                        ? "text-blue-400"
-                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                    }
-                  `}
+                  className={linkClass(isActive, item.textColor)}
                   title={item.label}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="shrink-0 w-5 h-5 xl:w-6 xl:h-6" />
                 </Link>
               );
             })}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-1">
             {sections.map((section) => {
               const SectionIcon = section.icon;
+              const state = sectionState[section.title];
+              const isSectionCollapsed = state?.collapsed ?? false;
               return (
                 <div key={section.title}>
                   <button
-                    onClick={() => section.setCollapsed(!section.collapsed)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800/60 rounded-xl transition-all duration-200"
+                    type="button"
+                    onClick={() => state?.setCollapsed(!isSectionCollapsed)}
+                    className="flex items-center justify-between w-full h-7 px-2 text-xs font-medium text-zinc-500 hover:text-zinc-300 rounded-md transition-colors"
                   >
-                    <div className="flex items-center space-x-2">
-                      <SectionIcon className="w-4 h-4 flex-shrink-0" />
-                      <span className="font-medium">{section.title}</span>
-                    </div>
-                    {section.collapsed ? (
-                      <ChevronRight className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
+                    <span className="flex items-center gap-1.5">
+                      <SectionIcon className="shrink-0 w-3.5 h-3.5 xl:w-4 xl:h-4" />
+                      <span className="xl:text-sm">{section.title}</span>
+                    </span>
+                    <MdExpandMore
+                      size={16}
+                      className={`transition-transform ${isSectionCollapsed ? "-rotate-90" : ""}`}
+                    />
                   </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      section.collapsed ? "max-h-0 opacity-0" : "max-h-96 opacity-100"
-                    }`}
-                  >
-                    <div className="space-y-1 ml-2">
+                  {!isSectionCollapsed && (
+                    <div className="flex flex-col gap-0.5 mt-0.5 ml-0.5">
                       {section.items.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
-
                         return (
                           <Link
                             key={item.path}
                             to={item.path}
-                            className={`
-                              flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200
-                              ${
-                                isActive
-                                  ? `text-${item.textColor || "blue-400"}`
-                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                              }
-                            `}
+                            className={linkClass(isActive, item.textColor)}
                           >
-                            <Icon className="w-5 h-5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium">{item.label}</div>
-                            </div>
+                            <Icon className="shrink-0 w-5 h-5 xl:w-6 xl:h-6" />
+                            <span className="text-sm xl:text-base font-medium truncate">
+                              {item.label}
+                            </span>
                           </Link>
                         );
                       })}
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

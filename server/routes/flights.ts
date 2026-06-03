@@ -20,7 +20,7 @@ import {
   deleteSnapImage,
   toggleFeaturedOnProfile,
 } from "../db/flights.js";
-import { getFlightsForSessionCached } from "../realtime/flightsRead.js";
+import { getAllFlightsForSession } from "../realtime/flightsRead.js";
 import {
   broadcastFlightEvent,
   broadcastToArrivalSessions,
@@ -29,7 +29,8 @@ import { getSessionById } from "../db/sessions.js";
 import { getNetworkKind } from "../utils/advancedNetworkSession.js";
 import { recordNewFlight } from "../db/statistics.js";
 import { getClientIp } from "../utils/getIpAddress.js";
-import { mainDb } from "../db/connection.js";
+import { mainDb, redisConnection } from "../db/connection.js";
+import { keys } from "../realtime/keys.js";
 import {
   flightCreationLimiter,
   acarsValidationLimiter,
@@ -379,7 +380,7 @@ router.get("/public/:flightId", generalApiLimiter, async (req, res) => {
 // GET: /api/flights/:sessionId - get all flights for a session
 router.get("/:sessionId", requireAuth, async (req, res) => {
   try {
-    const flights = await getFlightsForSessionCached(req.params.sessionId);
+    const flights = await getAllFlightsForSession(req.params.sessionId);
     res.json(flights);
   } catch {
     res.status(500).json({ error: "Failed to fetch flights" });
@@ -431,6 +432,9 @@ router.post(
       getSessionById(req.params.sessionId)
         .then((session) => {
           if (session) {
+            if (session.created_by) {
+              redisConnection.del(keys.userSessions(session.created_by)).catch(() => {});
+            }
             broadcastToArrivalSessions(
               flight,
               getNetworkKind(session),
@@ -500,6 +504,14 @@ router.delete(
       broadcastFlightEvent(req.params.sessionId, "flightDeleted", {
         flightId: req.params.flightId,
       });
+
+      getSessionById(req.params.sessionId)
+        .then((session) => {
+          if (session?.created_by) {
+            redisConnection.del(keys.userSessions(session.created_by)).catch(() => {});
+          }
+        })
+        .catch(() => {});
 
       res.json({ success: true });
     } catch {

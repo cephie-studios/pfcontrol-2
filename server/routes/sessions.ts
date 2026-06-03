@@ -29,6 +29,16 @@ import requireAuth from '../middleware/auth.js';
 import { capture } from '../utils/posthog.js';
 import { sql } from 'kysely';
 import { mainDb } from '../db/connection.js';
+import { redisConnection } from '../db/connection.js';
+import { keys, TTL } from '../realtime/keys.js';
+
+async function invalidateUserSessionsCache(userId: string): Promise<void> {
+  try {
+    await redisConnection.del(keys.userSessions(userId));
+  } catch {
+    // ignore
+  }
+}
 
 function isJwtPayloadClient(user: unknown): user is JwtPayloadClient {
   return (
@@ -163,6 +173,7 @@ router.post(
       });
 
       await addSessionToUser(createdBy, sessionId);
+      await invalidateUserSessionsCache(createdBy);
 
       await recordNewSession();
 
@@ -212,21 +223,55 @@ router.get('/mine', requireAuth, async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    const cacheKey = keys.userSessions(userId);
+    try {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    } catch {
+      // ignore cache errors
+    }
+
     const sessions = await getSessionsByUser(userId);
-    res.json(
-      sessions.map((session) => ({
-        sessionId: session.session_id,
-        accessId: session.access_id,
-        airportIcao: session.airport_icao,
-        createdAt: session.created_at,
-        createdBy: session.created_by,
-        isPFATC: session.is_pfatc,
-        isAdvancedATC: session.is_advanced_atc,
-        activeRunway: session.active_runway,
-        customName: session.custom_name,
-        flightCount: 0,
-      }))
-    );
+
+    const sessionIds = sessions.map((s) => s.session_id);
+    const flightCountMap = new Map<string, number>();
+
+    if (sessionIds.length > 0) {
+      const counts = await mainDb
+        .selectFrom('flights')
+        .select([
+          'session_id',
+          sql<number>`count(*)::int`.as('count'),
+        ])
+        .where('session_id', 'in', sessionIds)
+        .groupBy('session_id')
+        .execute();
+      for (const row of counts) {
+        flightCountMap.set(row.session_id, row.count);
+      }
+    }
+
+    const result = sessions.map((session) => ({
+      sessionId: session.session_id,
+      accessId: session.access_id,
+      airportIcao: session.airport_icao,
+      createdAt: session.created_at,
+      createdBy: session.created_by,
+      isPFATC: session.is_pfatc,
+      isAdvancedATC: session.is_advanced_atc,
+      activeRunway: session.active_runway,
+      customName: session.custom_name,
+      flightCount: flightCountMap.get(session.session_id) ?? 0,
+    }));
+
+    try {
+      await redisConnection.setex(cacheKey, TTL.USER_SESSIONS_SEC, JSON.stringify(result));
+    } catch {
+      // ignore cache errors
+    }
+
+    res.json(result);
   } catch (error) {
     console.error('Error fetching user sessions:', error);
     res.status(500).json({
@@ -326,6 +371,7 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
+    await invalidateUserSessionsCache(session.created_by);
     let decryptedAtis = {
       letter: 'A',
       text: '',
@@ -379,12 +425,14 @@ router.post(
       if (!updatedSession) {
         return res.status(404).json({ error: 'Session not found' });
       }
-      if (req.user?.userId)
+      if (req.user?.userId) {
+        await invalidateUserSessionsCache(req.user.userId);
         capture(req, {
           distinctId: req.user.userId,
           event: 'session_renamed',
           properties: { session_id: sessionId },
         });
+      }
       res.json({ customName: updatedSession.custom_name });
     } catch (error) {
       console.error('Error updating session name:', error);
@@ -421,6 +469,7 @@ router.post('/delete', requireAuth, async (req: Request, res: Response) => {
 
     await deleteSession(sessionId);
     await removeSessionFromUser(session.created_by, sessionId);
+    await invalidateUserSessionsCache(session.created_by);
     capture(req, {
       distinctId: user.userId,
       event: 'session_deleted',
@@ -468,6 +517,7 @@ router.post(
       }
 
       await deleteSession(oldestSession.session_id);
+      await invalidateUserSessionsCache(userId);
 
       capture(req, {
         distinctId: userId,

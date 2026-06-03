@@ -1,6 +1,7 @@
 import { prefixKey } from "../utils/cacheTtl.js";
 
 export const TTL = {
+  USER_SESSIONS_SEC: 5 * 60,
   USER_BADGE_SEC: 15 * 60,
   SESSION_META_SEC: 24 * 60 * 60,
   SESSION_FLIGHTS_SEC: 120,
@@ -13,6 +14,7 @@ export const TTL = {
 } as const;
 
 export const keys = {
+  userSessions: (userId: string) => prefixKey(`user:sessions:${userId}`),
   activeNetwork: (network: "pfatc" | "advanced_atc") =>
     prefixKey(`active:network:${network}`),
   sessionMeta: (sessionId: string) => prefixKey(`session:meta:${sessionId}`),

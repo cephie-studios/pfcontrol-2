@@ -9,6 +9,8 @@ import {
   ensureAppSettingsChannelColumn,
   ensureEventModeColumns,
   ensureFlightReqColumns,
+  ensureDailyDatabaseMetricsTables,
+  ensureWebsocketSnapshotsTable,
   ensurePerformanceIndexes,
   syncVersionFromEnv,
 } from "./schemas.js";
@@ -71,6 +73,8 @@ try {
   await ensureAppSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFlightReqColumns();
+  await ensureDailyDatabaseMetricsTables();
+  await ensureWebsocketSnapshotsTable();
   await ensurePerformanceIndexes();
   await syncVersionFromEnv(redisConnection);
   console.log("[Database] Tables initialized successfully");

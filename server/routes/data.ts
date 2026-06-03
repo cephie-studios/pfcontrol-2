@@ -607,7 +607,7 @@ router.get("/settings", async (req, res) => {
 router.get("/notifications/active", async (req, res) => {
   try {
     const notifications = await getActiveNotifications();
-    applyPublicCache(res, { browserMaxAge: 0, edgeMaxAge: 30 });
+    applyPublicCache(res, { browserMaxAge: 0, edgeMaxAge: 0 });
     res.json(notifications);
   } catch (error) {
     console.error("Error fetching active notifications:", error);

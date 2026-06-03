@@ -1,23 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Loader2,
-  Menu,
-  RefreshCw,
-  Users,
-  Inbox,
-  KeyRound,
-  Clock,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { MdVpnKey, MdSchedule, MdEdit, MdDelete, MdCode } from "react-icons/md";
 
 const REFRESH_ICON_MIN_SPIN_MS = 500;
-import Navbar from "../../components/Navbar";
-import AdminSidebar from "../../components/admin/AdminSidebar";
+const APPLICATIONS_FETCH_LIMIT = 100;
+
+import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
+import AdminLayout from "../../components/admin/AdminLayout";
+import AdminModal from "../../components/admin/AdminModal";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import AdminToolbar from "../../components/admin/AdminToolbar";
+import AdminSearchInput from "../../components/admin/AdminSearchInput";
+import AdminStatStrip from "../../components/admin/AdminStatStrip";
+import AdminTable from "../../components/admin/AdminTable";
 import AdminDeveloperEditModal from "../../components/admin/AdminDeveloperEditModal";
 import AdminDeveloperApplicationReviewModal from "../../components/admin/AdminDeveloperApplicationReviewModal";
 import DeveloperDiscordAvatar from "../../components/admin/DeveloperDiscordAvatar";
+import {
+  adminDownsizeButtonSize,
+  ADMIN_TABLE_HEAD,
+  ADMIN_TH,
+  ADMIN_TD,
+  statusBadgeClass,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_PAIR,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
+} from "../../components/admin/adminConstants";
 import Loader from "../../components/common/Loader";
+import Button from "../../components/common/Button";
+import Dropdown from "../../components/common/Dropdown";
+import ErrorScreen from "../../components/common/ErrorScreen";
 import {
   fetchAdminDeveloperApplications,
   fetchAdminDevelopers,
@@ -30,88 +42,58 @@ import {
   type AdminDeveloperSummary,
 } from "../../utils/fetch/adminDevelopers";
 
-type Tab = "applications" | "developers";
+type Section = "applications" | "developers";
 
 const APP_FILTERS = ["pending", "approved", "rejected", "all"] as const;
 type AppFilter = (typeof APP_FILTERS)[number];
 
-const APP_FILTER_LABEL: Record<AppFilter, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-  all: "All",
-};
+const sectionOptions = [
+  { value: "applications", label: "Applications" },
+  { value: "developers", label: "Developers" },
+];
 
-function statusBadgeClass(status: string) {
-  const s = status.toLowerCase();
-  if (s === "active" || s === "approved")
-    return "bg-emerald-950/55 text-emerald-300 ring-2 ring-emerald-800/40";
-  if (s === "pending") return "bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35";
-  if (s === "rejected" || s === "suspended")
-    return "bg-red-950/40 text-red-300 ring-1 ring-red-900/40";
-  return "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50";
-}
-
-function FilterPills({ value, onChange }: { value: AppFilter; onChange: (v: AppFilter) => void }) {
-  const activeIndex = APP_FILTERS.indexOf(value);
-  const idx = activeIndex >= 0 ? activeIndex : 0;
-  const n = APP_FILTERS.length;
-  return (
-    <div
-      className="relative flex w-full max-w-sm rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60"
-      role="tablist"
-      aria-label="Application status"
-    >
-      <div
-        className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
-        style={{
-          width: `calc((100% - 0.5rem) / ${n})`,
-          left: `calc(0.25rem + ${idx} * ((100% - 0.5rem) / ${n}))`,
-        }}
-        aria-hidden
-      />
-      {APP_FILTERS.map((f) => (
-        <button
-          key={f}
-          type="button"
-          role="tab"
-          aria-selected={value === f}
-          onClick={() => onChange(f)}
-          className={`relative z-10 flex-1 min-w-0 px-1.5 py-2 rounded-full text-xs font-semibold transition-colors sm:text-sm sm:px-2 ${
-            value === f ? "text-white" : "text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          {APP_FILTER_LABEL[f]}
-        </button>
-      ))}
-    </div>
-  );
-}
+const appFilterOptions = [
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "all", label: "All statuses" },
+];
 
 export default function AdminDevelopers() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("applications");
+  const [section, setSection] = useState<Section>("applications");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [applications, setApplications] = useState<AdminDeveloperApplication[]>([]);
-  const [appTotal, setAppTotal] = useState(0);
+  const [applications, setApplications] = useState<AdminDeveloperApplication[]>(
+    []
+  );
   const [appFilter, setAppFilter] = useState<AppFilter>("pending");
+  const [appSearch, setAppSearch] = useState("");
+  const [devSearch, setDevSearch] = useState("");
   const [developers, setDevelopers] = useState<AdminDeveloperSummary[]>([]);
   const [rejectNote, setRejectNote] = useState("");
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | string | null>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [reviewApp, setReviewApp] = useState<AdminDeveloperApplication | null>(null);
+  const [reviewApp, setReviewApp] = useState<AdminDeveloperApplication | null>(
+    null
+  );
   const [refreshIconBusy, setRefreshIconBusy] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
   const loadSeqRef = useRef(0);
-  const refreshIconClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshIconClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const load = useCallback(
-    async (opts?: { headerRefresh?: boolean }) => {
+    async (opts?: { headerRefresh?: boolean; initial?: boolean }) => {
+      const showPageLoader = opts?.initial === true;
       const showHeaderRefresh = opts?.headerRefresh === true;
       let seq = 0;
       let spinStartedAt = 0;
+
       if (showHeaderRefresh) {
         if (refreshIconClearTimerRef.current) {
           clearTimeout(refreshIconClearTimerRef.current);
@@ -121,26 +103,34 @@ export default function AdminDevelopers() {
         spinStartedAt = Date.now();
         setRefreshIconBusy(true);
       }
-      setLoading(true);
+      if (showPageLoader) {
+        setLoading(true);
+      }
       setError(null);
+
       try {
         const [appRes, devRes] = await Promise.all([
           fetchAdminDeveloperApplications({
-            status: appFilter === "all" ? undefined : appFilter,
             page: 1,
-            limit: 50,
+            limit: APPLICATIONS_FETCH_LIMIT,
           }),
           fetchAdminDevelopers(),
         ]);
         setApplications(appRes.applications);
-        setAppTotal(appRes.total);
         setDevelopers(devRes.developers);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load");
+        const message = e instanceof Error ? e.message : "Failed to load";
+        setError(message);
+        setToast({ message, type: "error" });
       } finally {
-        setLoading(false);
+        if (showPageLoader) {
+          setLoading(false);
+        }
         if (showHeaderRefresh) {
-          const wait = Math.max(0, REFRESH_ICON_MIN_SPIN_MS - (Date.now() - spinStartedAt));
+          const wait = Math.max(
+            0,
+            REFRESH_ICON_MIN_SPIN_MS - (Date.now() - spinStartedAt)
+          );
           refreshIconClearTimerRef.current = setTimeout(() => {
             refreshIconClearTimerRef.current = null;
             if (loadSeqRef.current === seq) {
@@ -150,11 +140,11 @@ export default function AdminDevelopers() {
         }
       }
     },
-    [appFilter],
+    []
   );
 
   useEffect(() => {
-    void load();
+    void load({ initial: true });
   }, [load]);
 
   useEffect(
@@ -164,13 +154,46 @@ export default function AdminDevelopers() {
         refreshIconClearTimerRef.current = null;
       }
     },
-    [],
+    []
   );
+
+  const appCounts = useMemo(() => {
+    const pending = applications.filter((a) => a.status === "pending").length;
+    const approved = applications.filter((a) => a.status === "approved").length;
+    const rejected = applications.filter((a) => a.status === "rejected").length;
+    return { pending, approved, rejected, total: applications.length };
+  }, [applications]);
+
+  const filteredApplications = useMemo(() => {
+    const q = appSearch.trim().toLowerCase();
+    return applications.filter((a) => {
+      if (appFilter !== "all" && a.status !== appFilter) return false;
+      if (!q) return true;
+      return (
+        a.username.toLowerCase().includes(q) ||
+        a.userId.toLowerCase().includes(q) ||
+        a.whoText.toLowerCase().includes(q) ||
+        (a.whyText?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [applications, appFilter, appSearch]);
+
+  const filteredDevelopers = useMemo(() => {
+    const q = devSearch.trim().toLowerCase();
+    if (!q) return developers;
+    return developers.filter(
+      (d) =>
+        d.username.toLowerCase().includes(q) ||
+        d.userId.toLowerCase().includes(q)
+    );
+  }, [developers, devSearch]);
 
   const editDeveloper = useMemo(
     () => developers.find((d) => d.userId === editUserId) ?? null,
-    [developers, editUserId],
+    [developers, editUserId]
   );
+
+  const btnSize = adminDownsizeButtonSize("sm");
 
   const handleApproveFromReview = async (
     appId: number,
@@ -178,12 +201,13 @@ export default function AdminDevelopers() {
       approvedScopes: string[];
       rateLimitPerMinute?: number | null;
       note?: string;
-    },
+    }
   ) => {
     setBusyId(appId);
     try {
       await approveDeveloperApplication(appId, body);
       setReviewApp(null);
+      setToast({ message: "Application approved", type: "success" });
       await load();
     } catch (e) {
       throw e instanceof Error ? e : new Error("Approve failed");
@@ -199,22 +223,31 @@ export default function AdminDevelopers() {
       await rejectDeveloperApplication(rejectId, rejectNote);
       setRejectId(null);
       setRejectNote("");
+      setToast({ message: "Application rejected", type: "success" });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Reject failed");
+      setToast({
+        message: e instanceof Error ? e.message : "Reject failed",
+        type: "error",
+      });
     } finally {
       setBusyId(null);
     }
   };
 
   const handleSuspend = async (userId: string) => {
-    if (!confirm("Suspend this developer? Their API keys will stop working.")) return;
+    if (!confirm("Suspend this developer? Their API keys will stop working."))
+      return;
     setBusyId(userId);
     try {
       await suspendDeveloperProfile(userId);
+      setToast({ message: "Developer suspended", type: "success" });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Suspend failed");
+      setToast({
+        message: e instanceof Error ? e.message : "Suspend failed",
+        type: "error",
+      });
     } finally {
       setBusyId(null);
     }
@@ -224,9 +257,13 @@ export default function AdminDevelopers() {
     setBusyId(userId);
     try {
       await reactivateDeveloperProfile(userId);
+      setToast({ message: "Developer reactivated", type: "success" });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Reactivate failed");
+      setToast({
+        message: e instanceof Error ? e.message : "Reactivate failed",
+        type: "error",
+      });
     } finally {
       setBusyId(null);
     }
@@ -235,7 +272,7 @@ export default function AdminDevelopers() {
   const handleDeleteDeveloper = async (userId: string) => {
     if (
       !confirm(
-        "Permanently delete this developer? This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted.",
+        "Permanently delete this developer? This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted."
       )
     )
       return;
@@ -243,400 +280,462 @@ export default function AdminDevelopers() {
     try {
       await deleteAdminDeveloperAccount(userId);
       setEditUserId((cur) => (cur === userId ? null : cur));
+      setToast({ message: "Developer deleted", type: "success" });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      setToast({
+        message: e instanceof Error ? e.message : "Delete failed",
+        type: "error",
+      });
     } finally {
       setBusyId(null);
     }
   };
 
-  const tabActiveIndex = tab === "applications" ? 0 : 1;
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
-      <Navbar />
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <AdminSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+    <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
+      <AdminPageHeader
+        title="Developers"
+        icon={MdCode}
+        accent="blue"
+        actions={
+          <AdminRefreshButton
+            onClick={() => void load({ headerRefresh: true })}
+            loading={refreshIconBusy}
+          />
+        }
+      />
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader />
+        </div>
+      ) : error ? (
+        <ErrorScreen
+          title="Error loading developers"
+          message={error}
+          onRetry={() => void load({ initial: true })}
         />
-        <main className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden pt-24 [scrollbar-gutter:stable]">
-          <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900/80">
-            <button
-              type="button"
-              onClick={() => setMobileSidebarOpen(true)}
-              className="p-2 rounded-lg text-zinc-300 hover:bg-zinc-800"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <span className="text-sm font-medium text-zinc-200">Developers</span>
-            <span className="w-9" />
-          </div>
-          {mobileSidebarOpen && (
-            <div className="lg:hidden fixed inset-0 z-50 flex">
-              <button
-                type="button"
-                className="flex-1 bg-black/60"
-                aria-label="Close menu"
-                onClick={() => setMobileSidebarOpen(false)}
-              />
-              <div className="w-64 bg-black border-l border-zinc-800">
-                <AdminSidebar />
-              </div>
-            </div>
-          )}
+      ) : (
+        <>
+          <AdminStatStrip
+            columns={4}
+            items={[
+              { label: "Pending", value: appCounts.pending },
+              { label: "Approved", value: appCounts.approved },
+              { label: "Rejected", value: appCounts.rejected },
+              {
+                label: "Active developers",
+                value: developers.filter((d) => d.status === "active").length,
+                sub: `${developers.length} total profiles`,
+              },
+            ]}
+          />
 
-          <div className="p-6 max-w-6xl mx-auto pb-16">
-            {/* Page header */}
-            <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">
-                  Developers Management
-                </h1>
-                <p className="text-sm text-zinc-500 mt-1 max-w-xl">
-                  Review applications, set scope ceilings, and manage API keys per developer.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void load({ headerRefresh: true })}
-                aria-busy={refreshIconBusy}
-                className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800 text-sm ring-1 ring-zinc-800/50 transition-colors disabled:opacity-60 disabled:pointer-events-none"
-                disabled={refreshIconBusy}
-              >
-                {refreshIconBusy ? (
-                  <Loader2 className="w-4 h-4 shrink-0 animate-spin text-blue-400" aria-hidden />
-                ) : (
-                  <RefreshCw className="w-4 h-4 shrink-0" aria-hidden />
-                )}
-                Refresh
-              </button>
-            </div>
-
-            {/* Main tab switcher */}
-            <div className="mb-7 max-w-xs">
-              <nav
-                className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60"
-                aria-label="Developer admin sections"
-              >
-                <div
-                  className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
-                  style={{
-                    width: "calc(50% - 0.25rem)",
-                    left: tabActiveIndex === 0 ? "0.25rem" : "calc(50%)",
-                  }}
-                  aria-hidden
+          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
+            {section === "applications" ? (
+              <>
+                <AdminSearchInput
+                  value={appSearch}
+                  onChange={setAppSearch}
+                  placeholder="Search applications…"
+                  grow
+                  className={`max-md:order-1 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setTab("applications")}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-colors ${
-                    tab === "applications" ? "text-white" : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <Inbox className="w-4 h-4 opacity-90" />
-                  Applications
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab("developers")}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-colors ${
-                    tab === "developers" ? "text-white" : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <Users className="w-4 h-4 opacity-90" />
-                  Developers
-                </button>
-              </nav>
-            </div>
-
-            {error && (
-              <div className="mb-6 rounded-2xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-red-200 text-sm ring-1 ring-red-900/30">
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="flex justify-center py-24">
-                <Loader />
-              </div>
-            ) : tab === "applications" ? (
-              /* ── Applications tab ── */
-              <div className="space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <FilterPills value={appFilter} onChange={setAppFilter} />
-                  <p className="text-sm text-zinc-500 shrink-0">
-                    <span className="text-zinc-300 font-medium tabular-nums">{appTotal}</span>{" "}
-                    matching
-                  </p>
+                <div className={`${ADMIN_TOOLBAR_MOBILE_PAIR} max-md:order-2`}>
+                  <Dropdown
+                    options={sectionOptions}
+                    value={section}
+                    onChange={(v) => setSection(v as Section)}
+                    size="sm"
+                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+                  />
+                  <Dropdown
+                    options={appFilterOptions}
+                    value={appFilter}
+                    onChange={(v) => setAppFilter(v as AppFilter)}
+                    size="sm"
+                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+                  />
                 </div>
+              </>
+            ) : (
+              <>
+                <AdminSearchInput
+                  value={devSearch}
+                  onChange={setDevSearch}
+                  placeholder="Search developers…"
+                  grow
+                  className={ADMIN_TOOLBAR_MOBILE_SEARCH}
+                />
+                <Dropdown
+                  options={sectionOptions}
+                  value={section}
+                  onChange={(v) => setSection(v as Section)}
+                  size="sm"
+                  className="max-md:w-full"
+                />
+              </>
+            )}
+          </AdminToolbar>
 
-                {applications.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 px-6 py-16 text-center ring-1 ring-zinc-800/40">
-                    <Inbox className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                    <p className="text-zinc-400 font-medium">No applications</p>
-                    <p className="text-sm text-zinc-600 mt-1">Try another status filter.</p>
-                  </div>
-                ) : (
-                  <ul className="grid gap-4 sm:grid-cols-1 xl:grid-cols-2">
-                    {applications.map((a) => (
-                      <li
-                        key={a.id}
-                        className="rounded-2xl border border-zinc-700/80 bg-zinc-900/40 p-5 ring-1 ring-zinc-800/45 flex flex-col"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-zinc-100 truncate">{a.username}</p>
+          {section === "applications" ? (
+            <>
+              <div className="hidden lg:block">
+                <AdminTable minWidth="960px">
+                  <thead className={ADMIN_TABLE_HEAD}>
+                    <tr>
+                      <th className={ADMIN_TH}>Applicant</th>
+                      <th className={ADMIN_TH}>Status</th>
+                      <th className={ADMIN_TH}>Who / why</th>
+                      <th className={ADMIN_TH}>Requested scopes</th>
+                      <th className={ADMIN_TH}>Submitted</th>
+                      <th className={`${ADMIN_TH} text-right`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/80">
+                    {filteredApplications.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
+                        >
+                          No applications match this filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredApplications.map((a) => (
+                        <tr
+                          key={a.id}
+                          className="hover:bg-zinc-800/30 align-top"
+                        >
+                          <td className={ADMIN_TD}>
+                            <p className="font-medium text-zinc-100 truncate">
+                              {a.username}
+                            </p>
                             <p className="text-[11px] text-zinc-500 font-mono truncate mt-0.5">
                               {a.userId}
                             </p>
-                          </div>
-                          <span
-                            className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass(a.status)}`}
-                          >
-                            {a.status}
-                          </span>
-                        </div>
-                        <div className="mt-4 space-y-3">
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mb-1">
-                              Who
-                            </p>
-                            <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3">
+                          </td>
+                          <td className={ADMIN_TD}>
+                            <span
+                              className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${statusBadgeClass(a.status)}`}
+                            >
+                              {a.status}
+                            </span>
+                          </td>
+                          <td className={`${ADMIN_TD} max-w-xs`}>
+                            <p className="text-sm text-zinc-300 line-clamp-2">
                               {a.whoText}
                             </p>
-                          </div>
-                          {a.whyText?.trim() && (
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mb-1">
-                                Why
-                              </p>
-                              <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                            {a.whyText?.trim() && (
+                              <p className="text-xs text-zinc-500 line-clamp-1 mt-1">
                                 {a.whyText}
                               </p>
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">
-                              Requested scopes
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
+                            )}
+                          </td>
+                          <td className={ADMIN_TD}>
+                            <div className="flex flex-wrap gap-1 max-w-[220px]">
                               {a.requestedScopes.map((s) => (
                                 <span
                                   key={s}
-                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-950/80 text-zinc-400 border border-zinc-800"
+                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 text-zinc-400 border border-zinc-800"
                                 >
                                   {s}
                                 </span>
                               ))}
                             </div>
-                          </div>
-                        </div>
-                        {a.status === "pending" && (
-                          <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-zinc-800/90">
-                            <button
-                              type="button"
-                              disabled={busyId === a.id}
-                              onClick={() => setReviewApp(a)}
-                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors"
-                            >
-                              Review &amp; approve
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busyId === a.id}
-                              onClick={() => setRejectId(a.id)}
-                              className="px-4 py-2 rounded-xl border border-zinc-600 bg-zinc-800/80 text-zinc-200 text-sm font-medium hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                          </td>
+                          <td
+                            className={`${ADMIN_TD} text-zinc-400 text-sm whitespace-nowrap`}
+                          >
+                            {formatDate(a.createdAt)}
+                          </td>
+                          <td className={`${ADMIN_TD} text-right`}>
+                            {a.status === "pending" ? (
+                              <div className="flex flex-wrap justify-end gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="success"
+                                  size={btnSize}
+                                  disabled={busyId === a.id}
+                                  onClick={() => setReviewApp(a)}
+                                >
+                                  Review
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size={btnSize}
+                                  disabled={busyId === a.id}
+                                  onClick={() => setRejectId(a.id)}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-zinc-600">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </AdminTable>
               </div>
-            ) : (
-              /* ── Developers tab ── */
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wide font-semibold">
-                    {developers.length} developer
-                    {developers.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
 
-                {developers.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 px-4 py-16 text-center ring-1 ring-zinc-800/40">
-                    <Users className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-                    <p className="text-zinc-400 font-medium">No developer profiles yet.</p>
-                  </div>
+              <ul className="lg:hidden space-y-3">
+                {filteredApplications.length === 0 ? (
+                  <li className="text-center py-10 text-zinc-500 text-sm">
+                    No applications match this filter.
+                  </li>
                 ) : (
-                  <>
-                    {/* Desktop table */}
-                    <div className="hidden md:block rounded-2xl border border-zinc-700/50 bg-zinc-900 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[700px] text-sm">
-                          <thead className="bg-zinc-800/80 text-zinc-400 text-xs">
-                            <tr>
-                              <th className="px-5 py-3.5 text-left font-medium">Developer</th>
-                              <th className="px-4 py-3.5 text-left font-medium">Status</th>
-                              <th className="px-4 py-3.5 text-left font-medium">Keys</th>
-                              <th className="px-4 py-3.5 text-left font-medium">Last activity</th>
-                              <th className="px-4 py-3.5 text-right font-medium">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {developers.map((d) => (
-                              <tr
-                                key={d.userId}
-                                className="border-t border-zinc-700/50 hover:bg-zinc-800/40 transition-colors"
-                              >
-                                <td className="px-5 py-3.5">
-                                  <div className="flex items-center gap-3">
-                                    <DeveloperDiscordAvatar
-                                      userId={d.userId}
-                                      username={d.username}
-                                      avatar={d.avatar}
-                                    />
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-zinc-100 truncate">
-                                        {d.username}
-                                      </p>
-                                      <p className="text-[11px] text-zinc-500 font-mono truncate">
-                                        {d.userId}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <span
-                                    className={`text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass(d.status)}`}
-                                  >
-                                    {d.status}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <span className="flex items-center gap-1 text-emerald-400/90">
-                                      <KeyRound className="w-3 h-3" />
-                                      {d.keysActive}
-                                    </span>
-                                    {d.keysPending > 0 && (
-                                      <span className="text-amber-400/90 flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                        {d.keysPending} pending
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <span className="flex items-center gap-1 text-xs text-zinc-500">
-                                    <Clock className="w-3 h-3" />
-                                    {d.lastApiActivity
-                                      ? new Date(d.lastApiActivity).toLocaleDateString()
-                                      : "—"}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3.5 text-right">
-                                  <div className="flex flex-wrap justify-end gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditUserId(d.userId)}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 text-xs hover:bg-zinc-700 transition-colors border border-zinc-700"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={busyId === d.userId}
-                                      onClick={() => void handleDeleteDeveloper(d.userId)}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/50 text-red-200 text-xs hover:bg-red-900/55 transition-colors border border-red-900/50 disabled:opacity-50"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Mobile cards */}
-                    <ul className="md:hidden space-y-3">
-                      {developers.map((d) => (
-                        <li
-                          key={d.userId}
-                          className="rounded-2xl border border-zinc-700/50 bg-zinc-900 p-4"
+                  filteredApplications.map((a) => (
+                    <li
+                      key={a.id}
+                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-zinc-100 truncate">
+                            {a.username}
+                          </p>
+                          <p className="text-[11px] text-zinc-500 font-mono truncate">
+                            {a.userId}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${statusBadgeClass(a.status)}`}
                         >
-                          <div className="flex items-center gap-3 mb-3">
-                            <DeveloperDiscordAvatar
-                              userId={d.userId}
-                              username={d.username}
-                              avatar={d.avatar}
-                              className="h-9 w-9"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-zinc-100 truncate">{d.username}</p>
-                              <p className="text-[11px] text-zinc-500 font-mono truncate">
-                                {d.userId}
-                              </p>
+                          {a.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-400 line-clamp-2">
+                        {a.whoText}
+                      </p>
+                      <p className="text-xs text-zinc-600 mt-2">
+                        {formatDate(a.createdAt)}
+                      </p>
+                      {a.status === "pending" && (
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800/80">
+                          <Button
+                            type="button"
+                            variant="success"
+                            size={btnSize}
+                            disabled={busyId === a.id}
+                            onClick={() => setReviewApp(a)}
+                            className="flex-1"
+                          >
+                            Review
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={btnSize}
+                            disabled={busyId === a.id}
+                            onClick={() => setRejectId(a.id)}
+                            className="flex-1"
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </>
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <AdminTable minWidth="700px">
+                  <thead className={ADMIN_TABLE_HEAD}>
+                    <tr>
+                      <th className={ADMIN_TH}>Developer</th>
+                      <th className={ADMIN_TH}>Status</th>
+                      <th className={ADMIN_TH}>Keys</th>
+                      <th className={ADMIN_TH}>Last activity</th>
+                      <th className={`${ADMIN_TH} text-right`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/80">
+                    {filteredDevelopers.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
+                        >
+                          No developer profiles found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredDevelopers.map((d) => (
+                        <tr key={d.userId} className="hover:bg-zinc-800/30">
+                          <td className={ADMIN_TD}>
+                            <div className="flex items-center gap-3">
+                              <DeveloperDiscordAvatar
+                                userId={d.userId}
+                                username={d.username}
+                                avatar={d.avatar}
+                              />
+                              <div className="min-w-0">
+                                <p className="font-medium text-zinc-100 truncate">
+                                  {d.username}
+                                </p>
+                                <p className="text-[11px] text-zinc-500 font-mono truncate">
+                                  {d.userId}
+                                </p>
+                              </div>
                             </div>
+                          </td>
+                          <td className={ADMIN_TD}>
                             <span
                               className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${statusBadgeClass(d.status)}`}
                             >
                               {d.status}
                             </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 text-xs text-zinc-500">
+                          </td>
+                          <td className={ADMIN_TD}>
+                            <div className="flex items-center gap-2 text-xs">
                               <span className="flex items-center gap-1 text-emerald-400/90">
-                                <KeyRound className="w-3 h-3" />
-                                {d.keysActive} active
+                                <MdVpnKey className="w-3 h-3" />
+                                {d.keysActive}
                               </span>
                               {d.keysPending > 0 && (
-                                <span className="text-amber-400/90">{d.keysPending} pending</span>
+                                <span className="text-amber-400/90">
+                                  {d.keysPending} pending
+                                </span>
                               )}
                             </div>
-                            <div className="flex gap-2 shrink-0">
-                              <button
+                          </td>
+                          <td className={ADMIN_TD}>
+                            <span className="flex items-center gap-1 text-xs text-zinc-500">
+                              <MdSchedule className="w-3 h-3" />
+                              {d.lastApiActivity
+                                ? new Date(
+                                    d.lastApiActivity
+                                  ).toLocaleDateString()
+                                : "—"}
+                            </span>
+                          </td>
+                          <td className={`${ADMIN_TD} text-right`}>
+                            <div className="flex flex-wrap justify-end gap-1.5">
+                              <Button
                                 type="button"
+                                variant="outline"
+                                size={btnSize}
                                 onClick={() => setEditUserId(d.userId)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 text-xs hover:bg-zinc-700 transition-colors border border-zinc-700"
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <MdEdit className="w-3.5 h-3.5 inline mr-1" />
                                 Edit
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 type="button"
+                                variant="danger"
+                                size={btnSize}
                                 disabled={busyId === d.userId}
-                                onClick={() => void handleDeleteDeveloper(d.userId)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/50 text-red-200 text-xs hover:bg-red-900/55 transition-colors border border-red-900/50 disabled:opacity-50"
-                                aria-label="Delete developer"
+                                onClick={() =>
+                                  void handleDeleteDeveloper(d.userId)
+                                }
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <MdDelete className="w-3.5 h-3.5 inline mr-1" />
+                                Delete
+                              </Button>
                             </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </AdminTable>
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+
+              <ul className="md:hidden space-y-3">
+                {filteredDevelopers.length === 0 ? (
+                  <li className="text-center py-10 text-zinc-500 text-sm">
+                    No developer profiles found.
+                  </li>
+                ) : (
+                  filteredDevelopers.map((d) => (
+                    <li
+                      key={d.userId}
+                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <DeveloperDiscordAvatar
+                          userId={d.userId}
+                          username={d.username}
+                          avatar={d.avatar}
+                          className="h-9 w-9"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-zinc-100 truncate">
+                            {d.username}
+                          </p>
+                          <p className="text-[11px] text-zinc-500 font-mono truncate">
+                            {d.userId}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${statusBadgeClass(d.status)}`}
+                        >
+                          {d.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-xs text-zinc-500">
+                          <span className="flex items-center gap-1 text-emerald-400/90">
+                            <MdVpnKey className="w-3 h-3" />
+                            {d.keysActive} active
+                          </span>
+                          {d.keysPending > 0 && (
+                            <span className="text-amber-400/90">
+                              {d.keysPending} pending
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={btnSize}
+                            onClick={() => setEditUserId(d.userId)}
+                          >
+                            <MdEdit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size={btnSize}
+                            disabled={busyId === d.userId}
+                            onClick={() => void handleDeleteDeveloper(d.userId)}
+                            aria-label="Delete developer"
+                          >
+                            <MdDelete className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </>
+          )}
+        </>
+      )}
 
       {reviewApp && (
         <AdminDeveloperApplicationReviewModal
+          open
           application={reviewApp}
           busy={busyId === reviewApp.id}
           onClose={() => setReviewApp(null)}
@@ -648,57 +747,66 @@ export default function AdminDevelopers() {
         />
       )}
 
-      {/* Reject application modal */}
-      {rejectId != null && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-md w-full shadow-2xl ring-1 ring-zinc-800/60">
-            <h3 className="text-base font-semibold text-white mb-1">Reject application</h3>
-            <p className="text-xs text-zinc-500 mb-4">
-              Optional note is stored for the applicant and audit trail.
-            </p>
-            <textarea
-              value={rejectNote}
-              onChange={(e) => setRejectNote(e.target.value)}
-              placeholder="Optional note to the applicant"
-              rows={3}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 mb-5 focus:outline-none focus:ring-2 focus:ring-zinc-600/40 resize-none"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setRejectId(null);
-                  setRejectNote("");
-                }}
-                className="px-4 py-2 rounded-xl text-zinc-400 hover:bg-zinc-800 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleReject()}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminModal
+        open={rejectId != null}
+        onClose={() => {
+          setRejectId(null);
+          setRejectNote("");
+        }}
+        title="Reject application"
+        size="sm"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size={btnSize}
+              onClick={() => {
+                setRejectId(null);
+                setRejectNote("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size={btnSize}
+              onClick={() => void handleReject()}
+            >
+              Reject
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-zinc-500 mb-4">
+          Optional note is stored for the applicant and audit trail.
+        </p>
+        <textarea
+          value={rejectNote}
+          onChange={(e) => setRejectNote(e.target.value)}
+          placeholder="Optional note to the applicant"
+          rows={3}
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/40 resize-none"
+        />
+      </AdminModal>
 
-      {/* Developer edit modal */}
       {editUserId && editDeveloper && (
         <AdminDeveloperEditModal
           developer={editDeveloper}
           onReload={load}
           onClose={() => setEditUserId(null)}
           onProfileSuspend={() => void handleSuspend(editDeveloper.userId)}
-          onProfileReactivate={() => void handleReactivate(editDeveloper.userId)}
+          onProfileReactivate={() =>
+            void handleReactivate(editDeveloper.userId)
+          }
           profileActionBusy={busyId === editDeveloper.userId}
-          onDeleteDeveloper={() => void handleDeleteDeveloper(editDeveloper.userId)}
+          onDeleteDeveloper={() =>
+            void handleDeleteDeveloper(editDeveloper.userId)
+          }
           deleteDeveloperBusy={busyId === editDeveloper.userId}
         />
       )}
-    </div>
+    </AdminLayout>
   );
 }

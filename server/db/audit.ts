@@ -1,6 +1,7 @@
-import { mainDb } from './connection.js';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import { sql } from 'kysely';
+import { mainDb } from "./connection.js";
+import { recordTableDeletes } from "./databaseMetrics.js";
+import { encrypt, decrypt } from "../utils/encryption.js";
+import { sql } from "kysely";
 
 export interface AdminActionData {
   adminId: number | string;
@@ -29,7 +30,7 @@ export async function logAdminAction(actionData: AdminActionData) {
     const encryptedIP = ipAddress ? encrypt(ipAddress) : null;
 
     const result = await mainDb
-      .insertInto('audit_log')
+      .insertInto("audit_log")
       .values({
         id: sql`DEFAULT`,
         admin_id: String(adminId),
@@ -48,12 +49,12 @@ export async function logAdminAction(actionData: AdminActionData) {
         user_agent:
           userAgent !== null && userAgent !== undefined ? userAgent : undefined,
       })
-      .returning(['id', 'created_at'])
+      .returning(["id", "created_at"])
       .executeTakeFirst();
 
     return result?.id;
   } catch (error) {
-    console.error('Error logging admin action:', error);
+    console.error("Error logging admin action:", error);
     throw error;
   }
 }
@@ -75,52 +76,52 @@ export async function getAuditLogs(
     const offset = (page - 1) * limit;
 
     let query = mainDb
-      .selectFrom('audit_log')
+      .selectFrom("audit_log")
       .select([
-        'id',
-        'admin_id',
-        'admin_username',
-        'action_type',
-        'target_user_id',
-        'target_username',
-        'details',
-        'ip_address',
-        'user_agent',
-        'created_at',
+        "id",
+        "admin_id",
+        "admin_username",
+        "action_type",
+        "target_user_id",
+        "target_username",
+        "details",
+        "ip_address",
+        "user_agent",
+        "created_at",
       ]);
 
     if (filters.adminId) {
       query = query.where((q) =>
         q.or([
-          q('admin_id', 'ilike', `%${filters.adminId}%`),
-          q('admin_username', 'ilike', `%${filters.adminId}%`),
+          q("admin_id", "ilike", `%${filters.adminId}%`),
+          q("admin_username", "ilike", `%${filters.adminId}%`),
         ])
       );
     }
 
     if (filters.actionType) {
-      query = query.where('action_type', '=', filters.actionType);
+      query = query.where("action_type", "=", filters.actionType);
     }
 
     if (filters.targetUserId) {
       query = query.where((q) =>
         q.or([
-          q('target_user_id', 'ilike', `%${filters.targetUserId}%`),
-          q('target_username', 'ilike', `%${filters.targetUserId}%`),
+          q("target_user_id", "ilike", `%${filters.targetUserId}%`),
+          q("target_username", "ilike", `%${filters.targetUserId}%`),
         ])
       );
     }
 
     if (filters.dateFrom) {
-      query = query.where('created_at', '>=', new Date(filters.dateFrom));
+      query = query.where("created_at", ">=", new Date(filters.dateFrom));
     }
 
     if (filters.dateTo) {
-      query = query.where('created_at', '<=', new Date(filters.dateTo));
+      query = query.where("created_at", "<=", new Date(filters.dateTo));
     }
 
     const logsResult = await query
-      .orderBy('created_at', 'desc')
+      .orderBy("created_at", "desc")
       .limit(limit)
       .offset(offset)
       .execute();
@@ -130,7 +131,7 @@ export async function getAuditLogs(
       if (log.ip_address) {
         try {
           const parsed =
-            typeof log.ip_address === 'string'
+            typeof log.ip_address === "string"
               ? JSON.parse(log.ip_address)
               : log.ip_address;
           decryptedIP = decrypt(parsed);
@@ -142,7 +143,7 @@ export async function getAuditLogs(
         ...log,
         ip_address: decryptedIP,
         details:
-          typeof log.details === 'string'
+          typeof log.details === "string"
             ? JSON.parse(log.details)
             : log.details,
       };
@@ -150,38 +151,38 @@ export async function getAuditLogs(
 
     // Count query for pagination
     let countQuery = mainDb
-      .selectFrom('audit_log')
-      .select(sql<number>`count(*)`.as('count'));
+      .selectFrom("audit_log")
+      .select(sql<number>`count(*)`.as("count"));
     if (filters.adminId) {
       countQuery = countQuery.where((q) =>
         q.or([
-          q('admin_id', 'ilike', `%${filters.adminId}%`),
-          q('admin_username', 'ilike', `%${filters.adminId}%`),
+          q("admin_id", "ilike", `%${filters.adminId}%`),
+          q("admin_username", "ilike", `%${filters.adminId}%`),
         ])
       );
     }
     if (filters.actionType) {
-      countQuery = countQuery.where('action_type', '=', filters.actionType);
+      countQuery = countQuery.where("action_type", "=", filters.actionType);
     }
     if (filters.targetUserId) {
       countQuery = countQuery.where((q) =>
         q.or([
-          q('target_user_id', 'ilike', `%${filters.targetUserId}%`),
-          q('target_username', 'ilike', `%${filters.targetUserId}%`),
+          q("target_user_id", "ilike", `%${filters.targetUserId}%`),
+          q("target_username", "ilike", `%${filters.targetUserId}%`),
         ])
       );
     }
     if (filters.dateFrom) {
       countQuery = countQuery.where(
-        'created_at',
-        '>=',
+        "created_at",
+        ">=",
         new Date(filters.dateFrom)
       );
     }
     if (filters.dateTo) {
       countQuery = countQuery.where(
-        'created_at',
-        '<=',
+        "created_at",
+        "<=",
         new Date(filters.dateTo)
       );
     }
@@ -199,7 +200,7 @@ export async function getAuditLogs(
       },
     };
   } catch (error) {
-    console.error('Error fetching audit logs:', error);
+    console.error("Error fetching audit logs:", error);
     throw error;
   }
 }
@@ -207,20 +208,20 @@ export async function getAuditLogs(
 export async function getAuditLogById(logId: number | string) {
   try {
     const result = await mainDb
-      .selectFrom('audit_log')
+      .selectFrom("audit_log")
       .select([
-        'id',
-        'admin_id',
-        'admin_username',
-        'action_type',
-        'target_user_id',
-        'target_username',
-        'details',
-        'ip_address',
-        'user_agent',
-        'created_at',
+        "id",
+        "admin_id",
+        "admin_username",
+        "action_type",
+        "target_user_id",
+        "target_username",
+        "details",
+        "ip_address",
+        "user_agent",
+        "created_at",
       ])
-      .where('id', '=', typeof logId === 'string' ? Number(logId) : logId)
+      .where("id", "=", typeof logId === "string" ? Number(logId) : logId)
       .executeTakeFirst();
 
     if (!result) {
@@ -231,7 +232,7 @@ export async function getAuditLogById(logId: number | string) {
     if (result.ip_address) {
       try {
         const parsed =
-          typeof result.ip_address === 'string'
+          typeof result.ip_address === "string"
             ? JSON.parse(result.ip_address)
             : result.ip_address;
         decryptedIP = decrypt(parsed);
@@ -244,12 +245,12 @@ export async function getAuditLogById(logId: number | string) {
       ...result,
       ip_address: decryptedIP,
       details:
-        typeof result.details === 'string'
+        typeof result.details === "string"
           ? JSON.parse(result.details)
           : result.details,
     };
   } catch (error) {
-    console.error('Error fetching audit log by ID:', error);
+    console.error("Error fetching audit log by ID:", error);
     throw error;
   }
 }
@@ -257,22 +258,24 @@ export async function getAuditLogById(logId: number | string) {
 export async function cleanupOldAuditLogs(daysToKeep = 14) {
   try {
     const result = await mainDb
-      .deleteFrom('audit_log')
+      .deleteFrom("audit_log")
       .where(
-        'created_at',
-        '<',
+        "created_at",
+        "<",
         new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       )
       .executeTakeFirst();
 
-    return Number(result?.numDeletedRows ?? 0);
+    const deleted = Number(result?.numDeletedRows ?? 0);
+    await recordTableDeletes("audit_log", deleted);
+    return deleted;
   } catch (error) {
-    console.error('Error cleaning up audit logs:', error);
+    console.error("Error cleaning up audit logs:", error);
     throw error;
   }
 }
 
-let cleanupInterval: NodeJS.Timeout | null = null;
+let _cleanupInterval: NodeJS.Timeout | null = null;
 
 function startAutomaticCleanup() {
   const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
@@ -281,15 +284,15 @@ function startAutomaticCleanup() {
     try {
       await cleanupOldAuditLogs(14);
     } catch (error) {
-      console.error('Initial audit log cleanup failed:', error);
+      console.error("Initial audit log cleanup failed:", error);
     }
   }, 60 * 1000);
 
-  cleanupInterval = setInterval(async () => {
+  _cleanupInterval = setInterval(async () => {
     try {
       await cleanupOldAuditLogs(14);
     } catch (error) {
-      console.error('Scheduled audit log cleanup failed:', error);
+      console.error("Scheduled audit log cleanup failed:", error);
     }
   }, CLEANUP_INTERVAL);
 }

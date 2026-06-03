@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
+  executeTakeFirst: vi.fn(),
 }));
 
-vi.mock('../../../server/db/connection.js', () => ({
+vi.mock("../../../server/db/connection.js", () => ({
   mainDb: {
     insertInto: vi.fn(() => ({
       values: vi.fn(() => ({
@@ -15,7 +16,7 @@ vi.mock('../../../server/db/connection.js', () => ({
     })),
     deleteFrom: vi.fn(() => ({
       where: vi.fn(() => ({
-        execute: mocks.execute,
+        executeTakeFirst: mocks.executeTakeFirst,
       })),
     })),
   },
@@ -28,65 +29,65 @@ import {
   recordNewFlight,
   recordNewSession,
   recordNewUser,
-} from '../../../server/db/statistics.js';
+} from "../../../server/db/statistics.js";
 
-describe('recordLogin', () => {
+describe("recordLogin", () => {
   beforeEach(() => {
     mocks.execute.mockClear();
     mocks.execute.mockResolvedValue(undefined);
   });
 
-  it('runs insert upsert without throwing', async () => {
+  it("runs insert upsert without throwing", async () => {
     await recordLogin();
     expect(mocks.execute).toHaveBeenCalled();
   });
 });
 
-describe('recordNewSession', () => {
+describe("recordNewSession", () => {
   beforeEach(() => {
     mocks.execute.mockClear();
     mocks.execute.mockResolvedValue(undefined);
   });
 
-  it('runs insert upsert without throwing', async () => {
+  it("runs insert upsert without throwing", async () => {
     await recordNewSession();
     expect(mocks.execute).toHaveBeenCalled();
   });
 });
 
-describe('recordNewFlight', () => {
+describe("recordNewFlight", () => {
   beforeEach(() => {
     mocks.execute.mockClear();
     mocks.execute.mockResolvedValue(undefined);
   });
 
-  it('runs insert upsert without throwing', async () => {
+  it("runs insert upsert without throwing", async () => {
     await recordNewFlight();
     expect(mocks.execute).toHaveBeenCalled();
   });
 });
 
-describe('recordNewUser', () => {
+describe("recordNewUser", () => {
   beforeEach(() => {
     mocks.execute.mockClear();
     mocks.execute.mockResolvedValue(undefined);
   });
 
-  it('runs insert upsert without throwing', async () => {
+  it("runs insert upsert without throwing", async () => {
     await recordNewUser();
     expect(mocks.execute).toHaveBeenCalled();
   });
 });
 
-describe('cleanupOldStatistics', () => {
+describe("cleanupOldStatistics", () => {
   beforeEach(() => {
-    mocks.execute.mockClear();
-    mocks.execute.mockResolvedValue(undefined);
+    mocks.executeTakeFirst.mockClear();
+    mocks.executeTakeFirst.mockResolvedValue({ numDeletedRows: 0n });
   });
 
-  it('can delete old rows when throttle allows', async () => {
+  it("can delete old rows when throttle allows", async () => {
     await cleanupOldStatistics();
     await cleanupOldStatistics();
-    expect(mocks.execute).toHaveBeenCalled();
+    expect(mocks.executeTakeFirst).toHaveBeenCalledTimes(1);
   });
 });

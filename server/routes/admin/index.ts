@@ -1,6 +1,5 @@
 import express from "express";
 import requireAuth from "../../middleware/auth.js";
-import { createAuditLogger } from "../../middleware/auditLogger.js";
 import { requirePermission } from "../../middleware/rolePermissions.js";
 import { getDailyStatistics, getTotalStatistics } from "../../db/admin.js";
 import { getAppVersion } from "../../db/version.js";
@@ -20,6 +19,8 @@ import apiLogsRouter from "./api-logs.js";
 import ratingsRouter from "./ratings.js";
 import altsRouter from "./alts.js";
 import developersRouter from "./developers.js";
+import websocketsRouter from "./websockets.js";
+import databaseRouter from "./database.js";
 
 const router = express.Router();
 
@@ -40,6 +41,8 @@ router.use("/api-logs", apiLogsRouter);
 router.use("/ratings", ratingsRouter);
 router.use("/alts", altsRouter);
 router.use("/developers", developersRouter);
+router.use("/websockets", websocketsRouter);
+router.use("/database", databaseRouter);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get("/statistics", requirePermission("admin"), async (req, res) => {

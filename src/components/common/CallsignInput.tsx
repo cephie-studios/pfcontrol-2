@@ -106,9 +106,16 @@ export default function CallsignInput({
   const handleAirlineSelect = (icao: string) => {
     onChange(icao);
     setShowSuggestions(false);
-    setHasBlurred(true);
-    setValidationError(validateCallsign(icao));
-    inputRef.current?.blur();
+    setHasBlurred(false);
+    setValidationError('');
+    // Keep focus so the user can immediately type the flight number
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      }
+    }, 0);
   };
 
   const handleInputFocus = () => {
@@ -168,17 +175,12 @@ export default function CallsignInput({
           <div className="border-t border-blue-600/50 mx-4" />
 
           <div
-            className="max-h-64 overflow-y-auto py-2"
+            className="no-scrollbar max-h-64 overflow-y-auto py-2"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}
           >
-            <style>{`
-              div::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
             {filteredAirlines.slice(0, 50).map((airline, index) => (
               <button
                 key={`${airline.icao}-${airline.callsign}-${index}`}

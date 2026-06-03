@@ -349,7 +349,9 @@ async function makeAdminRequest(endpoint: string, options?: RequestInit) {
   return response.json();
 }
 
-export async function fetchAdminStatistics(days: number = 30): Promise<AdminStats> {
+export async function fetchAdminStatistics(
+  days: number = 30
+): Promise<AdminStats> {
   return makeAdminRequest(`/statistics?days=${days}`);
 }
 
@@ -357,7 +359,7 @@ export async function fetchAdminUsers(
   page: number = 1,
   limit: number = 50,
   search: string = "",
-  filterAdmin: string = "all",
+  filterAdmin: string = "all"
 ): Promise<AdminUsersResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -381,7 +383,7 @@ export interface AdminSessionsResponse {
 export async function fetchAdminSessions(
   page: number = 1,
   limit: number = 100,
-  search: string = "",
+  search: string = ""
 ): Promise<AdminSessionsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -400,7 +402,9 @@ export async function fetchEventMode(): Promise<EventModeState> {
   return makeAdminRequest("/sessions/event-mode");
 }
 
-export async function setEventMode(state: Partial<EventModeState>): Promise<EventModeState> {
+export async function setEventMode(
+  state: Partial<EventModeState>
+): Promise<EventModeState> {
   return makeAdminRequest("/sessions/event-mode", {
     method: "POST",
     body: JSON.stringify(state),
@@ -414,7 +418,7 @@ export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
 }
 
 export async function revealAuditLogIP(
-  logId: number,
+  logId: number
 ): Promise<{ logId: number; ip_address: string }> {
   return makeAdminRequest(`/audit-logs/${logId}/reveal-ip`, {
     method: "POST",
@@ -449,7 +453,7 @@ export async function unbanUser(userIdOrIp: string) {
 
 export async function fetchAllBans(
   page: number = 1,
-  limit: number = 50,
+  limit: number = 50
 ): Promise<{ bans: Ban[]; pagination: Pagination }> {
   return makeAdminRequest(`/bans?page=${page}&limit=${limit}`);
 }
@@ -463,19 +467,24 @@ export async function fetchAuditLogs(
     targetUserId?: string;
     dateFrom?: string;
     dateTo?: string;
-  } = {},
+  } = {}
 ): Promise<AuditLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
+      Object.entries(filters).filter(
+        ([, value]) => value != null && value !== ""
+      )
     ),
   });
 
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/audit-logs?${params}`, {
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/audit-logs?${params}`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch audit logs");
@@ -485,7 +494,7 @@ export async function fetchAuditLogs(
 }
 
 export async function deleteAdminSession(
-  sessionId: string,
+  sessionId: string
 ): Promise<{ message: string; sessionId: string }> {
   return makeAdminRequest(`/sessions/${sessionId}`, {
     method: "DELETE",
@@ -493,7 +502,7 @@ export async function deleteAdminSession(
 }
 
 export async function logSessionJoin(
-  sessionId: string,
+  sessionId: string
 ): Promise<{ message: string; sessionId: string }> {
   return makeAdminRequest(`/sessions/${sessionId}/join`, {
     method: "POST",
@@ -506,7 +515,7 @@ export async function fetchNotifications(): Promise<Notification[]> {
 }
 
 export async function addNotification(
-  notification: Omit<Notification, "id" | "created_at" | "updated_at">,
+  notification: Omit<Notification, "id" | "created_at" | "updated_at">
 ): Promise<Notification> {
   const response = await makeAdminRequest("/notifications", {
     method: "POST",
@@ -517,7 +526,7 @@ export async function addNotification(
 
 export async function updateNotification(
   id: number,
-  notification: Partial<Omit<Notification, "id" | "created_at" | "updated_at">>,
+  notification: Partial<Omit<Notification, "id" | "created_at" | "updated_at">>
 ): Promise<Notification> {
   const response = await makeAdminRequest(`/notifications/${id}`, {
     method: "PUT",
@@ -559,7 +568,7 @@ export async function updateRole(
     color?: string;
     icon?: string;
     priority?: number;
-  },
+  }
 ): Promise<Role> {
   return makeAdminRequest(`/roles/${id}`, {
     method: "PUT",
@@ -568,7 +577,7 @@ export async function updateRole(
 }
 
 export async function updateRolePriorities(
-  rolePriorities: Array<{ id: number; priority: number }>,
+  rolePriorities: Array<{ id: number; priority: number }>
 ): Promise<boolean> {
   return makeAdminRequest("/roles/priorities", {
     method: "PUT",
@@ -582,14 +591,20 @@ export async function deleteRole(id: number): Promise<void> {
   });
 }
 
-export async function assignRoleToUser(userId: string, roleId: number): Promise<void> {
+export async function assignRoleToUser(
+  userId: string,
+  roleId: number
+): Promise<void> {
   return makeAdminRequest(`/roles/assign`, {
     method: "POST",
     body: JSON.stringify({ userId, roleId }),
   });
 }
 
-export async function removeRoleFromUser(userId: string, roleId: number): Promise<void> {
+export async function removeRoleFromUser(
+  userId: string,
+  roleId: number
+): Promise<void> {
   return makeAdminRequest(`/roles/remove`, {
     method: "POST",
     body: JSON.stringify({ userId, roleId }),
@@ -607,7 +622,7 @@ export async function fetchAppVersion(): Promise<AppVersion> {
 export async function fetchChatReports(
   page = 1,
   limit = 50,
-  filterReporter?: string,
+  filterReporter?: string
 ): Promise<ChatReportsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -615,31 +630,40 @@ export async function fetchChatReports(
   });
   if (filterReporter) params.append("reporter", filterReporter);
 
-  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports?${params}`, {
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/chat-reports?${params}`,
+    {
+      credentials: "include",
+    }
+  );
   if (!res.ok) throw new Error("Failed to fetch chat reports");
   return res.json();
 }
 
 export async function updateChatReportStatus(
   reportId: number,
-  status: "pending" | "resolved",
+  status: "pending" | "resolved"
 ): Promise<void> {
-  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }
+  );
   if (!res.ok) throw new Error("Failed to update report status");
 }
 
 export async function deleteChatReport(reportId: number): Promise<void> {
-  const res = await apiFetch(`${API_BASE_URL}/api/admin/chat-reports/${reportId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/chat-reports/${reportId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
   if (!res.ok) throw new Error("Failed to delete report");
 }
 
@@ -654,19 +678,24 @@ export async function fetchFlightLogs(
     flightId?: string;
     date?: string;
     text?: string;
-  } = {},
+  } = {}
 ): Promise<FlightLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
+      Object.entries(filters).filter(
+        ([, value]) => value != null && value !== ""
+      )
     ),
   });
 
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/flight-logs?${params}`, {
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/flight-logs?${params}`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch flight logs");
@@ -676,12 +705,15 @@ export async function fetchFlightLogs(
 }
 
 export async function revealFlightLogIP(
-  logId: number,
+  logId: number
 ): Promise<{ logId: number; ip_address: string }> {
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`, {
-    method: "POST",
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/flight-logs/reveal-ip/${logId}`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to reveal flight log IP");
@@ -715,19 +747,24 @@ export async function fetchApiLogs(
     dateFrom?: string;
     dateTo?: string;
     search?: string;
-  } = {},
+  } = {}
 ): Promise<ApiLogsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...Object.fromEntries(
-      Object.entries(filters).filter(([, value]) => value != null && value !== ""),
+      Object.entries(filters).filter(
+        ([, value]) => value != null && value !== ""
+      )
     ),
   });
 
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs?${params}`, {
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/api-logs?${params}`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch API logs");
@@ -737,9 +774,12 @@ export async function fetchApiLogs(
 }
 
 export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`, {
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/api-logs/stats?days=${days}`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch API log stats");
@@ -769,9 +809,12 @@ export async function fetchApiLogStats24h(): Promise<
     other: number;
   }>
 > {
-  const response = await apiFetch(`${API_BASE_URL}/api/admin/api-logs/stats-24h`, {
-    credentials: "include",
-  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/api/admin/api-logs/stats-24h`,
+    {
+      credentials: "include",
+    }
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch API log stats for last 24 hours");
@@ -785,7 +828,7 @@ export async function fetchControllerRatingStats(): Promise<ControllerRatingStat
 }
 
 export async function fetchControllerDailyRatingStats(
-  days: number = 30,
+  days: number = 30
 ): Promise<DailyRatingStats[]> {
   return makeAdminRequest(`/ratings/daily?days=${days}`);
 }
@@ -811,7 +854,7 @@ export interface VpnGateResponse {
 export async function fetchVpnGate(
   page: number = 1,
   limit: number = 50,
-  search: string = "",
+  search: string = ""
 ): Promise<VpnGateResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -822,7 +865,7 @@ export async function fetchVpnGate(
 }
 
 export async function toggleVpnGate(
-  enabled: boolean,
+  enabled: boolean
 ): Promise<{ success: boolean; enabled: boolean }> {
   return makeAdminRequest("/bans/vpn-gate/toggle", {
     method: "POST",
@@ -843,10 +886,15 @@ export async function addVpnException({
   });
 }
 
-export async function removeVpnException(userId: string): Promise<{ success: boolean }> {
-  return makeAdminRequest(`/bans/vpn-gate/exceptions/${encodeURIComponent(userId)}`, {
-    method: "DELETE",
-  });
+export async function removeVpnException(
+  userId: string
+): Promise<{ success: boolean }> {
+  return makeAdminRequest(
+    `/bans/vpn-gate/exceptions/${encodeURIComponent(userId)}`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
 export interface IpLocationResult {
@@ -910,10 +958,89 @@ export interface AltClustersResponse {
 }
 
 export async function fetchAltClusters(
-  options: { minScore?: number } = {},
+  options: { minScore?: number } = {}
 ): Promise<AltClustersResponse> {
   const params = new URLSearchParams();
-  if (options.minScore != null) params.set("minScore", String(options.minScore));
+  if (options.minScore != null)
+    params.set("minScore", String(options.minScore));
   const qs = params.toString();
   return makeAdminRequest(`/alts${qs ? "?" + qs : ""}`);
+}
+
+export interface AdminWebsocketNamespace {
+  id: string;
+  label: string;
+  path: string;
+  connected: number;
+  history: number[];
+  history24h: number[];
+}
+
+export interface AdminWebsocketStatsResponse {
+  namespaces: AdminWebsocketNamespace[];
+  totalConnected: number;
+  polledAt: string;
+}
+
+export async function fetchAdminWebsocketStats(): Promise<AdminWebsocketStatsResponse> {
+  return makeAdminRequest("/websockets");
+}
+
+export interface AdminDatabaseTable {
+  name: string;
+  bytes: number;
+  bytesFormatted: string;
+  rowEstimate: number;
+  retentionDays?: number;
+}
+
+export interface AdminDatabaseTableDayActivity {
+  inserted: number;
+  deleted: number;
+  bytes: number;
+  rowCount: number;
+}
+
+export interface AdminDatabaseActivityTable {
+  table: string;
+  today: AdminDatabaseTableDayActivity;
+  yesterday: AdminDatabaseTableDayActivity;
+}
+
+export interface AdminDatabaseDailyStat {
+  date: string;
+  logins: number;
+  newSessions: number;
+  newFlights: number;
+  newUsers: number;
+}
+
+export interface AdminDatabaseStatsResponse {
+  tables: AdminDatabaseTable[];
+  totalBytes: number;
+  totalFormatted: string;
+  largestTable: { name: string; bytes: number; formatted: string } | null;
+  retentionPolicies: Array<{
+    table: string;
+    retentionDays: number;
+    label: string;
+  }>;
+  projection: Array<{ day: number; date: string; projectedBytes: number }>;
+  projected30dBytes: number;
+  projected30dFormatted: string;
+  growthPercent30d: number;
+  dailyNetGrowthBytes: number;
+  dailyNetGrowthFormatted: string;
+  projectionMethodology: string;
+  activitySummary: {
+    today: string;
+    yesterday: string;
+    tables: AdminDatabaseActivityTable[];
+  };
+  dailyStatistics: AdminDatabaseDailyStat[];
+  polledAt: string;
+}
+
+export async function fetchAdminDatabaseStats(): Promise<AdminDatabaseStatsResponse> {
+  return makeAdminRequest("/database");
 }
