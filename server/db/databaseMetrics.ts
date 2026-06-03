@@ -396,6 +396,8 @@ let metricsInterval: NodeJS.Timeout | null = null;
 let metricsFinalizeInterval: NodeJS.Timeout | null = null;
 
 export function startDatabaseMetricsCapture(): void {
+  stopDatabaseMetricsCapture();
+
   setTimeout(() => {
     void (async () => {
       try {
