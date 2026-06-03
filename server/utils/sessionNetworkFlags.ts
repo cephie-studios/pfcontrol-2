@@ -5,7 +5,10 @@ export class ExclusiveSessionNetworkFlagsError extends Error {
   }
 }
 
-export function assertExclusiveSessionNetworkFlags(isPfatc: boolean, isAdvancedAtc: boolean): void {
+export function assertExclusiveSessionNetworkFlags(
+  isPfatc: boolean,
+  isAdvancedAtc: boolean
+): void {
   if (isPfatc && isAdvancedAtc) {
     throw new ExclusiveSessionNetworkFlagsError();
   }

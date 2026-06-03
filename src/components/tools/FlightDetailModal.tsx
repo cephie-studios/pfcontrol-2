@@ -1,15 +1,15 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, GripHorizontal, RefreshCw } from 'lucide-react';
-import type { Flight } from '../../types/flight';
-import TextInput from '../common/TextInput';
-import AirportDropdown from '../dropdowns/AirportDropdown';
-import AircraftDropdown from '../dropdowns/AircraftDropdown';
-import SidDropdown from '../dropdowns/SidDropdown';
-import StarDropdown from '../dropdowns/StarDropdown';
-import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
-import StatusDropdown from '../dropdowns/StatusDropdown';
-import Checkbox from '../common/Checkbox';
-import RouteMap from '../map/RouteMap';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { X, GripHorizontal, RefreshCw } from "lucide-react";
+import type { Flight } from "../../types/flight";
+import TextInput from "../common/TextInput";
+import AirportDropdown from "../dropdowns/AirportDropdown";
+import AircraftDropdown from "../dropdowns/AircraftDropdown";
+import SidDropdown from "../dropdowns/SidDropdown";
+import StarDropdown from "../dropdowns/StarDropdown";
+import AltitudeDropdown from "../dropdowns/AltitudeDropdown";
+import StatusDropdown from "../dropdowns/StatusDropdown";
+import Checkbox from "../common/Checkbox";
+import RouteMap from "../map/RouteMap";
 
 interface FlightDetailsModalProps {
   isOpen: boolean;
@@ -35,7 +35,7 @@ export default function FlightDetailsModal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   const generateRandomSquawk = useCallback((): string => {
-    let squawk = '';
+    let squawk = "";
     for (let i = 0; i < 4; i++) {
       squawk += Math.floor(Math.random() * 6) + 1;
     }
@@ -45,7 +45,7 @@ export default function FlightDetailsModal({
   const handleRegenerateSquawk = useCallback(() => {
     if (flight && onFlightChange) {
       const newSquawk = generateRandomSquawk();
-      onFlightChange(flight.id, 'squawk', newSquawk, flight.squawk || '');
+      onFlightChange(flight.id, "squawk", newSquawk, flight.squawk || "");
     }
   }, [flight, onFlightChange, generateRandomSquawk]);
 
@@ -81,14 +81,14 @@ export default function FlightDetailsModal({
 
   useEffect(() => {
     if (isDragging) {
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
 
       return () => {
-        document.body.style.userSelect = 'auto';
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.userSelect = "auto";
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
@@ -104,7 +104,7 @@ export default function FlightDetailsModal({
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
-          cursor: 'default',
+          cursor: "default",
         }}
       >
         {/* Header */}
@@ -115,7 +115,7 @@ export default function FlightDetailsModal({
           <div className="flex items-center gap-2">
             <GripHorizontal className="w-5 h-5 text-zinc-400" />
             <h2 className="text-lg font-bold text-white">
-              {flight.callsign || 'Unknown'} - {flight.aircraft || 'N/A'}
+              {flight.callsign || "Unknown"} - {flight.aircraft || "N/A"}
             </h2>
           </div>
           <button
@@ -135,13 +135,13 @@ export default function FlightDetailsModal({
                 Callsign
               </label>
               <TextInput
-                value={flight.callsign || ''}
+                value={flight.callsign || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'callsign',
+                    "callsign",
                     value,
-                    flight.callsign || ''
+                    flight.callsign || ""
                   )
                 }
                 className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white w-full"
@@ -153,13 +153,13 @@ export default function FlightDetailsModal({
                 Aircraft
               </label>
               <AircraftDropdown
-                value={flight.aircraft || ''}
+                value={flight.aircraft || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'aircraft',
+                    "aircraft",
                     value,
-                    flight.aircraft || ''
+                    flight.aircraft || ""
                   )
                 }
                 size="sm"
@@ -177,13 +177,13 @@ export default function FlightDetailsModal({
               </label>
               <div className="flex items-center gap-2 bg-zinc-800 px-3 py-2 rounded">
                 <TextInput
-                  value={flight.squawk || ''}
+                  value={flight.squawk || ""}
                   onChange={(value) =>
                     onFlightChange?.(
                       flight.id,
-                      'squawk',
+                      "squawk",
                       value,
-                      flight.squawk || ''
+                      flight.squawk || ""
                     )
                   }
                   className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white w-full"
@@ -205,13 +205,13 @@ export default function FlightDetailsModal({
                 Status
               </label>
               <StatusDropdown
-                value={flight.status || ''}
+                value={flight.status || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'status',
+                    "status",
                     value,
-                    flight.status || ''
+                    flight.status || ""
                   )
                 }
                 size="sm"
@@ -225,20 +225,20 @@ export default function FlightDetailsModal({
               <div className="p-2 flex items-center justify-center">
                 <Checkbox
                   checked={
-                    flight.clearance === 'true' || flight.clearance === true
+                    flight.clearance === "true" || flight.clearance === true
                   }
                   onChange={(checked) =>
                     onFlightChange?.(
                       flight.id,
-                      'clearance',
+                      "clearance",
                       String(checked),
                       String(flight.clearance || false)
                     )
                   }
                   label={
-                    flight.clearance === 'true' || flight.clearance === true
-                      ? 'YES'
-                      : 'NO'
+                    flight.clearance === "true" || flight.clearance === true
+                      ? "YES"
+                      : "NO"
                   }
                   checkedClass="bg-green-600 border-green-600"
                 />
@@ -257,7 +257,7 @@ export default function FlightDetailsModal({
                   Departure
                 </label>
                 <div className="text-white font-mono text-lg font-bold">
-                  {flight.departure || '-'}
+                  {flight.departure || "-"}
                 </div>
               </div>
               <div>
@@ -265,10 +265,10 @@ export default function FlightDetailsModal({
                   SID
                 </label>
                 <SidDropdown
-                  airportIcao={flight.departure || ''}
-                  value={flight.sid || ''}
+                  airportIcao={flight.departure || ""}
+                  value={flight.sid || ""}
                   onChange={(value) =>
-                    onFlightChange?.(flight.id, 'sid', value, flight.sid || '')
+                    onFlightChange?.(flight.id, "sid", value, flight.sid || "")
                   }
                   size="sm"
                   placeholder="-"
@@ -279,14 +279,14 @@ export default function FlightDetailsModal({
                   STAR
                 </label>
                 <StarDropdown
-                  airportIcao={flight.arrival || ''}
-                  value={flight.star || ''}
+                  airportIcao={flight.arrival || ""}
+                  value={flight.star || ""}
                   onChange={(value) =>
                     onFlightChange?.(
                       flight.id,
-                      'star',
+                      "star",
                       value,
-                      flight.star || ''
+                      flight.star || ""
                     )
                   }
                   size="sm"
@@ -298,13 +298,13 @@ export default function FlightDetailsModal({
                   Arrival
                 </label>
                 <AirportDropdown
-                  value={flight.arrival || ''}
+                  value={flight.arrival || ""}
                   onChange={(value) =>
                     onFlightChange?.(
                       flight.id,
-                      'arrival',
+                      "arrival",
                       value,
-                      flight.arrival || ''
+                      flight.arrival || ""
                     )
                   }
                   size="sm"
@@ -323,13 +323,13 @@ export default function FlightDetailsModal({
               Route
             </label>
             <textarea
-              value={flight.route || ''}
+              value={flight.route || ""}
               onChange={(e) =>
                 onFlightChange?.(
                   flight.id,
-                  'route',
+                  "route",
                   e.target.value,
-                  flight.route || ''
+                  flight.route || ""
                 )
               }
               className="w-full bg-zinc-800 border border-zinc-600 rounded-lg p-4 text-white font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
@@ -337,7 +337,10 @@ export default function FlightDetailsModal({
               rows={4}
             />
             {flight.route && flight.route.trim().length > 0 && (
-              <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
+              <div
+                className="mt-3 rounded-lg overflow-hidden border border-zinc-700"
+                style={{ height: 220 }}
+              >
                 <RouteMap
                   route={flight.route}
                   departure={flight.departure}
@@ -370,13 +373,13 @@ export default function FlightDetailsModal({
               Alternate
             </label>
             <AirportDropdown
-              value={flight.alternate || ''}
+              value={flight.alternate || ""}
               onChange={(value) =>
                 onFlightChange?.(
                   flight.id,
-                  'alternate',
+                  "alternate",
                   value,
-                  flight.alternate || ''
+                  flight.alternate || ""
                 )
               }
               size="sm"
@@ -393,13 +396,13 @@ export default function FlightDetailsModal({
                 RFL
               </label>
               <AltitudeDropdown
-                value={flight.cruisingFL || ''}
+                value={flight.cruisingFL || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'cruisingFL',
+                    "cruisingFL",
                     value,
-                    flight.cruisingFL || ''
+                    flight.cruisingFL || ""
                   )
                 }
                 size="sm"
@@ -411,13 +414,13 @@ export default function FlightDetailsModal({
                 Cleared FL
               </label>
               <AltitudeDropdown
-                value={flight.clearedFL || ''}
+                value={flight.clearedFL || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'clearedFL',
+                    "clearedFL",
                     value,
-                    flight.clearedFL || ''
+                    flight.clearedFL || ""
                   )
                 }
                 size="sm"
@@ -429,13 +432,13 @@ export default function FlightDetailsModal({
                 Remarks
               </label>
               <TextInput
-                value={flight.remark || ''}
+                value={flight.remark || ""}
                 onChange={(value) =>
                   onFlightChange?.(
                     flight.id,
-                    'remark',
+                    "remark",
                     value,
-                    flight.remark || ''
+                    flight.remark || ""
                   )
                 }
                 className="bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-white w-full"

@@ -90,7 +90,7 @@ async function backfillStatistics() {
           new_flights_count: directStats.total_flights,
           new_users_count: directStats.total_users,
           updated_at: mainDb.fn("NOW"),
-        }),
+        })
       )
       .execute();
   } catch (error) {
@@ -108,7 +108,10 @@ export async function getDailyStatistics(days = 30) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to read cache for daily stats (${days} days):`, error.message);
+      console.warn(
+        `[Redis] Failed to read cache for daily stats (${days} days):`,
+        error.message
+      );
     }
   }
 
@@ -120,7 +123,9 @@ export async function getDailyStatistics(days = 30) {
       .select([
         "date",
         mainDb.fn.coalesce("logins_count", sql`0`).as("logins_count"),
-        mainDb.fn.coalesce("new_sessions_count", sql`0`).as("new_sessions_count"),
+        mainDb.fn
+          .coalesce("new_sessions_count", sql`0`)
+          .as("new_sessions_count"),
         mainDb.fn.coalesce("new_flights_count", sql`0`).as("new_flights_count"),
         mainDb.fn.coalesce("new_users_count", sql`0`).as("new_users_count"),
       ])
@@ -137,7 +142,10 @@ export async function getDailyStatistics(days = 30) {
       await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(`[Redis] Failed to set cache for daily stats (${days} days):`, error.message);
+        console.warn(
+          `[Redis] Failed to set cache for daily stats (${days} days):`,
+          error.message
+        );
       }
     }
 
@@ -158,7 +166,10 @@ export async function getTotalStatistics() {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for total stats:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for total stats:",
+        error.message
+      );
     }
   }
 
@@ -186,7 +197,10 @@ export async function getTotalStatistics() {
       await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for total stats:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for total stats:",
+          error.message
+        );
       }
     }
 
@@ -202,7 +216,12 @@ export async function getTotalStatistics() {
   }
 }
 
-export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin = "all") {
+export async function getAllUsers(
+  page = 1,
+  limit = 50,
+  search = "",
+  filterAdmin = "all"
+) {
   try {
     const offset = (page - 1) * limit;
     const cacheKey = `allUsers:${page}:${limit}:${search}:${filterAdmin}`;
@@ -247,7 +266,7 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
           eb.or([
             eb("u.username", "ilike", `%${trimmedSearch}%`),
             eb("u.id", "ilike", `%${trimmedSearch}%`),
-          ]),
+          ])
         );
       } else if (isIpSearch) {
         const ipHash = hashIp(trimmedSearch);
@@ -282,12 +301,14 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
               "MATCH",
               "user:*",
               "COUNT",
-              1000,
+              1000
             );
             cursor = newCursor;
 
             const userIds = keys
-              .filter((key) => key.startsWith("user:") && !key.includes(":username:"))
+              .filter(
+                (key) => key.startsWith("user:") && !key.includes(":username:")
+              )
               .map((key) => key.replace("user:", ""));
 
             cachedUserIds.push(...userIds);
@@ -336,14 +357,18 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       }));
 
       const userIds = rawUsers.map((u) => u.id);
-      const allUserRoles = await Promise.all(userIds.map((userId) => getUserRoles(userId)));
+      const allUserRoles = await Promise.all(
+        userIds.map((userId) => getUserRoles(userId))
+      );
 
       const usersWithAdminStatus = rawUsers.map((user, index) => {
         let decryptedSettings = null;
         try {
           if (user.settings) {
             const settingsObj =
-              typeof user.settings === "string" ? JSON.parse(user.settings) : user.settings;
+              typeof user.settings === "string"
+                ? JSON.parse(user.settings)
+                : user.settings;
             decryptedSettings = decrypt(settingsObj);
           }
         } catch {
@@ -359,18 +384,24 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
                 : user.role_permissions;
           }
         } catch (error) {
-          console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
+          console.warn(
+            `Failed to parse role permissions for user ${user.id}:`,
+            error
+          );
         }
         user.role_permissions = rolePermissions;
 
         let decryptedIP = user.ip_address;
         if (user.ip_address) {
           try {
-            if (typeof user.ip_address === "string" && user.ip_address.trim().startsWith("{")) {
+            if (
+              typeof user.ip_address === "string" &&
+              user.ip_address.trim().startsWith("{")
+            ) {
               decryptedIP = decrypt(JSON.parse(user.ip_address));
             } else {
               const isEncryptedObject = (
-                val: unknown,
+                val: unknown
               ): val is { iv: string; data: string; authTag: string } => {
                 if (typeof val !== "object" || val === null) return false;
                 const obj = val as Record<string, unknown>;
@@ -402,13 +433,16 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
 
       let usersWithCacheStatus;
       if (filterAdmin === "cached") {
-        usersWithCacheStatus = usersWithAdminStatus.map((user) => ({ ...user, cached: true }));
+        usersWithCacheStatus = usersWithAdminStatus.map((user) => ({
+          ...user,
+          cached: true,
+        }));
       } else {
         usersWithCacheStatus = await Promise.all(
           usersWithAdminStatus.map(async (user) => {
             const isCached = await redisConnection.exists(`user:${user.id}`);
             return { ...user, cached: isCached === 1 };
-          }),
+          })
         );
       }
 
@@ -425,11 +459,14 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
           cacheKey,
           JSON.stringify({ users: filteredUsers, total: totalUsers }),
           "EX",
-          300,
+          300
         );
       } catch (error) {
         if (error instanceof Error) {
-          console.warn(`[Redis] Failed to set cache for allUsers (${cacheKey}):`, error.message);
+          console.warn(
+            `[Redis] Failed to set cache for allUsers (${cacheKey}):`,
+            error.message
+          );
         }
       }
     }
@@ -479,7 +516,7 @@ export async function getAdminSessions(page = 1, limit = 100, search = "") {
           eb("s.airport_icao", "ilike", searchTerm),
           eb("u.username", "ilike", searchTerm),
           eb("s.created_by", "ilike", searchTerm),
-        ]),
+        ])
       );
     }
 
@@ -505,19 +542,23 @@ export async function getAdminSessions(page = 1, limit = 100, search = "") {
             .execute()
         : [];
 
-    const flightCountMap = new Map(flightCounts.map((r) => [r.session_id, Number(r.count)]));
+    const flightCountMap = new Map(
+      flightCounts.map((r) => [r.session_id, Number(r.count)])
+    );
 
     const sessionsWithDetails = await Promise.all(
       sessions.map(async (session) => {
         const flight_count = flightCountMap.get(session.session_id) || 0;
-        const activeSessionUsers = await getActiveUsersForSession(session.session_id);
+        const activeSessionUsers = await getActiveUsersForSession(
+          session.session_id
+        );
         return {
           ...session,
           flight_count,
           active_users: activeSessionUsers,
           active_user_count: activeSessionUsers.length,
         };
-      }),
+      })
     );
 
     return {
@@ -557,7 +598,7 @@ export async function syncUserSessionCounts() {
       .where(
         "id",
         "not in",
-        sessionCounts.map((r) => r.created_by),
+        sessionCounts.map((r) => r.created_by)
       )
       .execute();
 
@@ -581,7 +622,10 @@ export async function getControllerRatingStats() {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for controller rating stats:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for controller rating stats:",
+        error.message
+      );
     }
   }
 
@@ -613,7 +657,10 @@ export async function getControllerRatingStats() {
 
     const topRatingPilots = await mainDb
       .selectFrom("controller_ratings")
-      .select(["pilot_id", (eb) => eb.fn.count<number>("id").as("rating_count")])
+      .select([
+        "pilot_id",
+        (eb) => eb.fn.count<number>("id").as("rating_count"),
+      ])
       .groupBy("pilot_id")
       .orderBy("rating_count", "desc")
       .limit(9)
@@ -633,7 +680,9 @@ export async function getControllerRatingStats() {
       .where("id", "in", [...controllerIds, ...pilotIds])
       .execute();
 
-    const userMap = new Map(users.map((u) => [u.id, { username: u.username, avatar: u.avatar }]));
+    const userMap = new Map(
+      users.map((u) => [u.id, { username: u.username, avatar: u.avatar }])
+    );
 
     const result = {
       topRated: topRatedControllers.map((c) => ({
@@ -657,7 +706,10 @@ export async function getControllerRatingStats() {
       await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for controller rating stats:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for controller rating stats:",
+          error.message
+        );
       }
     }
 
@@ -680,7 +732,7 @@ export async function getControllerRatingsDailyStats(days: number = 30) {
     if (error instanceof Error) {
       console.warn(
         `[Redis] Failed to read cache for controller rating daily stats (${days} days):`,
-        error.message,
+        error.message
       );
     }
   }
@@ -693,18 +745,27 @@ export async function getControllerRatingsDailyStats(days: number = 30) {
         (eb) => eb.fn.count<number>("id").as("count"),
         (eb) => eb.fn.avg<number>("rating").as("avg_rating"),
       ])
-      .where("created_at", ">=", sql<Date>`NOW() - INTERVAL '${sql.raw(days.toString())} days'`)
+      .where(
+        "created_at",
+        ">=",
+        sql<Date>`NOW() - INTERVAL '${sql.raw(days.toString())} days'`
+      )
       .groupBy(sql`DATE(created_at)`)
       .orderBy(sql`DATE(created_at)`, "asc")
       .execute();
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(dailyStats), "EX", 300);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(dailyStats),
+        "EX",
+        300
+      );
     } catch (error) {
       if (error instanceof Error) {
         console.warn(
           `[Redis] Failed to set cache for controller rating daily stats (${days} days):`,
-          error.message,
+          error.message
         );
       }
     }
@@ -726,7 +787,7 @@ export async function invalidateAllUsersCache() {
         "MATCH",
         "allUsers:*",
         "COUNT",
-        100,
+        100
       );
       cursor = newCursor;
       keysToDelete.push(...keys);

@@ -17,9 +17,15 @@ import { createChartHandlers } from "../utils/charts";
 import { useData } from "../hooks/data/useData";
 import type { Flight } from "../types/flight";
 import type { Position } from "../types/session";
-import type { ArrivalsTableColumnSettings, DepartureTableColumnSettings } from "../types/settings";
+import type {
+  ArrivalsTableColumnSettings,
+  DepartureTableColumnSettings,
+} from "../types/settings";
 import type { FieldEditingState } from "../sockets/sessionUsersSocket";
-import Joyride, { type CallBackProps, STATUS } from "react-joyride-react19-compat";
+import Joyride, {
+  type CallBackProps,
+  STATUS,
+} from "react-joyride-react19-compat";
 import { usePostHog } from "@posthog/react";
 import { trackTutorialEvent } from "../utils/tutorialTracking";
 import Navbar from "../components/Navbar";
@@ -72,9 +78,9 @@ export default function Flights() {
   const [loading, setLoading] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [flashingPDCIds, setFlashingPDCIds] = useState<Set<string>>(new Set());
-  const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(
-    null,
-  );
+  const [flightsSocket, setFlightsSocket] = useState<ReturnType<
+    typeof createFlightsSocket
+  > | null>(null);
   const [arrivalsSocket, setArrivalsSocket] = useState<ReturnType<
     typeof createArrivalsSocket
   > | null>(null);
@@ -84,22 +90,36 @@ export default function Flights() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const { airports } = useData();
-  const [currentView, setCurrentView] = useState<"departures" | "arrivals">("departures");
+  const [currentView, setCurrentView] = useState<"departures" | "arrivals">(
+    "departures"
+  );
   const [externalArrivals, setExternalArrivals] = useState<Flight[]>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(true);
-  const [localHiddenFlights, setLocalHiddenFlights] = useState<Set<string | number>>(new Set());
+  const [localHiddenFlights, setLocalHiddenFlights] = useState<
+    Set<string | number>
+  >(new Set());
   const [position, setPosition] = useState<Position>("ALL");
-  const [fieldEditingStates, setFieldEditingStates] = useState<FieldEditingState[]>([]);
+  const [fieldEditingStates, setFieldEditingStates] = useState<
+    FieldEditingState[]
+  >([]);
   const [sessionUsersSocket, setSessionUsersSocket] = useState<ReturnType<
     typeof createSessionUsersSocket
   > | null>(null);
-  const [customDepartureFlights, setCustomDepartureFlights] = useState<Flight[]>([]);
-  const [customArrivalFlights, setCustomArrivalFlights] = useState<Flight[]>([]);
+  const [customDepartureFlights, setCustomDepartureFlights] = useState<
+    Flight[]
+  >([]);
+  const [customArrivalFlights, setCustomArrivalFlights] = useState<Flight[]>(
+    []
+  );
   const [showAddDepartureModal, setShowAddDepartureModal] = useState(false);
   const [showAddArrivalModal, setShowAddArrivalModal] = useState(false);
   const [showContactAcarsModal, setShowContactAcarsModal] = useState(false);
-  const [activeAcarsFlights, setActiveAcarsFlights] = useState<Set<string | number>>(new Set());
-  const [activeAcarsFlightData, setActiveAcarsFlightData] = useState<Flight[]>([]);
+  const [activeAcarsFlights, setActiveAcarsFlights] = useState<
+    Set<string | number>
+  >(new Set());
+  const [activeAcarsFlightData, setActiveAcarsFlightData] = useState<Flight[]>(
+    []
+  );
   const [showChartsDrawer, setShowChartsDrawer] = useState(false);
   const [selectedChart, setSelectedChart] = useState<string | null>(null);
   const [chartLoadError, setChartLoadError] = useState<boolean>(false);
@@ -126,7 +146,11 @@ export default function Flights() {
   const handleMentionReceived = useCallback(() => {
     const currentUser = userRef.current;
     if (currentUser) {
-      playSoundWithSettings("chatNotificationSound", currentUser.settings, 0.7).catch((error) => {
+      playSoundWithSettings(
+        "chatNotificationSound",
+        currentUser.settings,
+        0.7
+      ).catch((error) => {
         console.warn("Failed to play chat notification sound:", error);
       });
     }
@@ -178,7 +202,13 @@ export default function Flights() {
   }, [sessionId, accessId]);
 
   useEffect(() => {
-    if (!sessionId || sessionId === lastSessionId || initialLoadComplete || accessError) return;
+    if (
+      !sessionId ||
+      sessionId === lastSessionId ||
+      initialLoadComplete ||
+      accessError
+    )
+      return;
 
     setLoading(true);
     setLastSessionId(sessionId);
@@ -186,9 +216,15 @@ export default function Flights() {
     Promise.all([
       fetchSession(sessionId, accessId ?? "").catch((error) => {
         console.error("Error fetching session:", error);
-        if (error.message?.includes("403") || error.message?.includes("Invalid session access")) {
+        if (
+          error.message?.includes("403") ||
+          error.message?.includes("Invalid session access")
+        ) {
           setAccessError("Invalid access link or session expired");
-        } else if (error.message?.includes("404") || error.message?.includes("not found")) {
+        } else if (
+          error.message?.includes("404") ||
+          error.message?.includes("not found")
+        ) {
           setAccessError("Session not found");
         } else {
           setAccessError("Unable to access session");
@@ -207,9 +243,11 @@ export default function Flights() {
         setFlights(flightsData);
         setInitialLoadComplete(true);
         if (!startupSoundPlayed && user && settings) {
-          playSoundWithSettings("startupSound", settings, 0.7).catch((error) => {
-            console.warn("Failed to play session startup sound:", error);
-          });
+          playSoundWithSettings("startupSound", settings, 0.7).catch(
+            (error) => {
+              console.warn("Failed to play session startup sound:", error);
+            }
+          );
           setStartupSoundPlayed(true);
         }
       })
@@ -253,13 +291,19 @@ export default function Flights() {
 
       const currentSettings = settingsRef.current;
       if (currentSettings) {
-        playSoundWithSettings("newStripSound", currentSettings, 0.7).catch((error) => {
-          console.warn("Failed to play new strip sound:", error);
-        });
+        playSoundWithSettings("newStripSound", currentSettings, 0.7).catch(
+          (error) => {
+            console.warn("Failed to play new strip sound:", error);
+          }
+        );
       }
     };
 
-    const handleFlightDeleted = ({ flightId }: { flightId: string | number }) => {
+    const handleFlightDeleted = ({
+      flightId,
+    }: {
+      flightId: string | number;
+    }) => {
       setFlights((prev) => prev.filter((flight) => flight.id !== flightId));
     };
 
@@ -271,9 +315,13 @@ export default function Flights() {
       handleFlightUpdate,
       handleFlightAdded,
       handleFlightDeleted,
-      (error: { action: string; flightId?: string | number; error: string }) => {
+      (error: {
+        action: string;
+        flightId?: string | number;
+        error: string;
+      }) => {
         console.error("Flight websocket error:", error);
-      },
+      }
     );
     socket.socket.on("sessionUpdated", (updates) => {
       setSession((prev) => (prev ? { ...prev, ...updates } : null));
@@ -283,7 +331,14 @@ export default function Flights() {
       flightsSocketConnectedRef.current = false;
       socket.socket.disconnect();
     };
-  }, [sessionId, accessId, initialLoadComplete, accessError, user?.userId, user?.username]);
+  }, [
+    sessionId,
+    accessId,
+    initialLoadComplete,
+    accessError,
+    user?.userId,
+    user?.username,
+  ]);
   const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
     if (!flightsSocket?.socket) {
       console.warn("handleIssuePDC: no flights socket available");
@@ -307,7 +362,7 @@ export default function Flights() {
           `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`,
           {
             credentials: "include",
-          },
+          }
         );
 
         if (response.ok) {
@@ -327,7 +382,7 @@ export default function Flights() {
     flightId: string | number,
     message: string,
     station: string,
-    position: string,
+    position: string
   ) => {
     if (!flightsSocket?.socket) {
       throw new Error("No flights socket");
@@ -375,7 +430,7 @@ export default function Flights() {
       (flights: Flight[]) => {
         setExternalArrivals(flights);
         setArrivalsLoading(false);
-      },
+      }
     );
     setArrivalsSocket(socket);
     return () => {
@@ -386,7 +441,11 @@ export default function Flights() {
 
   // For sessions without advanced network features, arrivals come from own flights (already loaded)
   useEffect(() => {
-    if (initialLoadComplete && session && !hasAdvancedNetworkFeatures(session)) {
+    if (
+      initialLoadComplete &&
+      session &&
+      !hasAdvancedNetworkFeatures(session)
+    ) {
       setArrivalsLoading(false);
     }
   }, [initialLoadComplete, session]);
@@ -423,8 +482,9 @@ export default function Flights() {
       () => {},
       () => {},
       handleMentionReceived,
-      (editingStates: FieldEditingState[]) => setFieldEditingStates(editingStates),
-      "ALL",
+      (editingStates: FieldEditingState[]) =>
+        setFieldEditingStates(editingStates),
+      "ALL"
     );
 
     setSessionUsersSocket(socket);
@@ -440,7 +500,14 @@ export default function Flights() {
         socket.disconnect();
       }
     };
-  }, [sessionId, accessId, user?.userId, user?.username, user?.avatar, handleMentionReceived]);
+  }, [
+    sessionId,
+    accessId,
+    user?.userId,
+    user?.username,
+    user?.avatar,
+    handleMentionReceived,
+  ]);
 
   useEffect(() => {
     if (sessionUsersSocket && sessionUsersSocket.emitPositionChange) {
@@ -467,7 +534,10 @@ export default function Flights() {
     };
   }, [flightsSocket]);
 
-  const handleToggleClearance = (flightId: string | number, checked: boolean) => {
+  const handleToggleClearance = (
+    flightId: string | number,
+    checked: boolean
+  ) => {
     handleFlightUpdate(flightId, { clearance: checked });
 
     if (checked) {
@@ -479,7 +549,10 @@ export default function Flights() {
     }
   };
 
-  const handleFlightUpdate = (flightId: string | number, updates: Partial<Flight>) => {
+  const handleFlightUpdate = (
+    flightId: string | number,
+    updates: Partial<Flight>
+  ) => {
     if (Object.prototype.hasOwnProperty.call(updates, "hidden")) {
       if (updates.hidden) {
         setLocalHiddenFlights((prev) => new Set(prev).add(flightId));
@@ -493,10 +566,12 @@ export default function Flights() {
       return;
     }
 
-    const isCustomDeparture = customDepartureFlights.some((f) => f.id === flightId);
+    const isCustomDeparture = customDepartureFlights.some(
+      (f) => f.id === flightId
+    );
     if (isCustomDeparture) {
       setCustomDepartureFlights((prev) =>
-        prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f)),
+        prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f))
       );
       return;
     }
@@ -504,13 +579,14 @@ export default function Flights() {
     const isCustomArrival = customArrivalFlights.some((f) => f.id === flightId);
     if (isCustomArrival) {
       setCustomArrivalFlights((prev) =>
-        prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f)),
+        prev.map((f) => (f.id === flightId ? { ...f, ...updates } : f))
       );
       return;
     }
 
     const isLocalFlight = flights.some((f) => f.id === flightId);
-    const isExternalArrival = !isLocalFlight && externalArrivals.some((f) => f.id === flightId);
+    const isExternalArrival =
+      !isLocalFlight && externalArrivals.some((f) => f.id === flightId);
 
     if (isExternalArrival && arrivalsSocket?.socket?.connected) {
       arrivalsSocket.updateArrival(flightId, updates);
@@ -519,15 +595,21 @@ export default function Flights() {
     } else {
       console.warn("Socket not connected, updating local state only");
       setFlights((prev) =>
-        prev.map((flight) => (flight.id === flightId ? { ...flight, ...updates } : flight)),
+        prev.map((flight) =>
+          flight.id === flightId ? { ...flight, ...updates } : flight
+        )
       );
     }
   };
 
   const handleFlightDelete = (flightId: string | number) => {
-    const isCustomDeparture = customDepartureFlights.some((f) => f.id === flightId);
+    const isCustomDeparture = customDepartureFlights.some(
+      (f) => f.id === flightId
+    );
     if (isCustomDeparture) {
-      setCustomDepartureFlights((prev) => prev.filter((f) => f.id !== flightId));
+      setCustomDepartureFlights((prev) =>
+        prev.filter((f) => f.id !== flightId)
+      );
       return;
     }
 
@@ -607,7 +689,9 @@ export default function Flights() {
       await updateSession(sessionId, accessId ?? "", {
         activeRunway: selectedRunway,
       });
-      setSession((prev) => (prev ? { ...prev, activeRunway: selectedRunway } : null));
+      setSession((prev) =>
+        prev ? { ...prev, activeRunway: selectedRunway } : null
+      );
       if (flightsSocket?.socket?.connected) {
         flightsSocket.updateSession({ activeRunway: selectedRunway });
       } else {
@@ -641,7 +725,11 @@ export default function Flights() {
 
   const departureFlights = useMemo(() => {
     const regularDepartures = flights
-      .filter((flight) => flight.departure?.toUpperCase() === session?.airportIcao?.toUpperCase())
+      .filter(
+        (flight) =>
+          flight.departure?.toUpperCase() ===
+          session?.airportIcao?.toUpperCase()
+      )
       .map((flight) => ({
         ...flight,
         hidden: localHiddenFlights.has(flight.id),
@@ -652,16 +740,23 @@ export default function Flights() {
     if (position !== "ALL") {
       const allowedStatuses = getAllowedStatuses(position);
       allDepartures = allDepartures.filter((flight) =>
-        allowedStatuses.includes(flight.status || ""),
+        allowedStatuses.includes(flight.status || "")
       );
     }
 
     return allDepartures;
-  }, [flights, session?.airportIcao, localHiddenFlights, customDepartureFlights, position]);
+  }, [
+    flights,
+    session?.airportIcao,
+    localHiddenFlights,
+    customDepartureFlights,
+    position,
+  ]);
 
   const arrivalFlights = useMemo(() => {
     const ownArrivals = flights.filter(
-      (flight) => flight.arrival?.toUpperCase() === session?.airportIcao?.toUpperCase(),
+      (flight) =>
+        flight.arrival?.toUpperCase() === session?.airportIcao?.toUpperCase()
     );
 
     let baseArrivals = ownArrivals;
@@ -691,12 +786,15 @@ export default function Flights() {
 
     if (currentView === "arrivals") {
       const ownArrivals = flights.filter(
-        (flight) => flight.arrival?.toUpperCase() === session?.airportIcao?.toUpperCase(),
+        (flight) =>
+          flight.arrival?.toUpperCase() === session?.airportIcao?.toUpperCase()
       );
 
       if (session && hasAdvancedNetworkFeatures(session)) {
         const ownIds = new Set(ownArrivals.map((f) => f.id));
-        const dedupedExternal = externalArrivals.filter((f) => !ownIds.has(f.id));
+        const dedupedExternal = externalArrivals.filter(
+          (f) => !ownIds.has(f.id)
+        );
         baseFlights = [...ownArrivals, ...dedupedExternal];
       } else {
         baseFlights = ownArrivals;
@@ -705,7 +803,9 @@ export default function Flights() {
       baseFlights = [...baseFlights, ...customArrivalFlights];
     } else {
       baseFlights = flights.filter(
-        (flight) => flight.departure?.toUpperCase() === session?.airportIcao?.toUpperCase(),
+        (flight) =>
+          flight.departure?.toUpperCase() ===
+          session?.airportIcao?.toUpperCase()
       );
 
       baseFlights = [...baseFlights, ...customDepartureFlights];
@@ -713,7 +813,9 @@ export default function Flights() {
 
     if (currentView === "departures" && position !== "ALL") {
       const allowedStatuses = getAllowedStatuses(position);
-      baseFlights = baseFlights.filter((flight) => allowedStatuses.includes(flight.status || ""));
+      baseFlights = baseFlights.filter((flight) =>
+        allowedStatuses.includes(flight.status || "")
+      );
     }
 
     return baseFlights.map((flight) => ({
@@ -754,9 +856,14 @@ export default function Flights() {
     } else if (selectedImage === "favorites") {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== "random" && favImageUrl !== "favorites") {
+        if (
+          favImageUrl &&
+          favImageUrl !== "random" &&
+          favImageUrl !== "favorites"
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
@@ -774,7 +881,8 @@ export default function Flights() {
     availableImages,
   ]);
 
-  const showCombinedView = !isMobile && settings?.layout?.showCombinedView && !startTutorial;
+  const showCombinedView =
+    !isMobile && settings?.layout?.showCombinedView && !startTutorial;
   const flightRowOpacity = settings?.layout?.flightRowOpacity ?? 100;
 
   const getBackgroundStyle = (opacity: number) => {
@@ -838,13 +946,19 @@ export default function Flights() {
     ...settings?.arrivalsTableColumns,
   };
 
-  const handleFieldEditingStart = (flightId: string | number, fieldName: string) => {
+  const handleFieldEditingStart = (
+    flightId: string | number,
+    fieldName: string
+  ) => {
     if (sessionUsersSocket?.emitFieldEditingStart) {
       sessionUsersSocket.emitFieldEditingStart(flightId, fieldName);
     }
   };
 
-  const handleFieldEditingStop = (flightId: string | number, fieldName: string) => {
+  const handleFieldEditingStop = (
+    flightId: string | number,
+    fieldName: string
+  ) => {
     if (sessionUsersSocket?.emitFieldEditingStop) {
       sessionUsersSocket.emitFieldEditingStop(flightId, fieldName);
     }
@@ -882,9 +996,16 @@ export default function Flights() {
         chartDragStart,
         setChartDragStart,
         containerRef as React.RefObject<HTMLDivElement>,
-        imageSize,
+        imageSize
       ),
-    [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize.width, imageSize.height],
+    [
+      chartZoom,
+      chartPan,
+      isChartDragging,
+      chartDragStart,
+      imageSize.width,
+      imageSize.height,
+    ]
   );
 
   const {
@@ -911,7 +1032,13 @@ export default function Flights() {
   }
 
   if (accessError) {
-    return <AccessDenied message={accessError} sessionId={sessionId} accessId={accessId} />;
+    return (
+      <AccessDenied
+        message={accessError}
+        sessionId={sessionId}
+        accessId={accessId}
+      />
+    );
   }
 
   const handleCloseAllSidebars = () => {
@@ -964,7 +1091,9 @@ export default function Flights() {
           />
           <div className="-mt-4">
             {loading ? (
-              <div className="text-center py-12 text-gray-400">Loading {currentView}...</div>
+              <div className="text-center py-12 text-gray-400">
+                Loading {currentView}...
+              </div>
             ) : showCombinedView ? (
               <>
                 <CombinedFlightsTable
@@ -991,7 +1120,12 @@ export default function Flights() {
                     className="flex items-center space-x-2"
                     id="add-departure-btn"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1007,7 +1141,12 @@ export default function Flights() {
                     size="sm"
                     className="flex items-center space-x-2"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"

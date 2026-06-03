@@ -1,16 +1,16 @@
-import { mainDb } from './connection.js';
-import { sql } from 'kysely';
+import { mainDb } from "./connection.js";
+import { sql } from "kysely";
 
 export async function getAllNotifications() {
   try {
     const notifications = await mainDb
-      .selectFrom('notifications')
+      .selectFrom("notifications")
       .selectAll()
-      .orderBy('created_at', 'desc')
+      .orderBy("created_at", "desc")
       .execute();
     return notifications;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error("Error fetching notifications:", error);
     throw error;
   }
 }
@@ -18,14 +18,14 @@ export async function getAllNotifications() {
 export async function getActiveNotifications() {
   try {
     const notifications = await mainDb
-      .selectFrom('notifications')
+      .selectFrom("notifications")
       .selectAll()
-      .where('show', '=', true)
-      .orderBy('created_at', 'desc')
+      .where("show", "=", true)
+      .orderBy("created_at", "desc")
       .execute();
     return notifications;
   } catch (error) {
-    console.error('Error fetching active notifications:', error);
+    console.error("Error fetching active notifications:", error);
     throw error;
   }
 }
@@ -43,7 +43,7 @@ export async function addNotification({
 }) {
   try {
     const [notification] = await mainDb
-      .insertInto('notifications')
+      .insertInto("notifications")
       .values({
         id: sql`DEFAULT`,
         type,
@@ -55,7 +55,7 @@ export async function addNotification({
       .execute();
     return notification;
   } catch (error) {
-    console.error('Error adding notification:', error);
+    console.error("Error adding notification:", error);
     throw error;
   }
 }
@@ -88,22 +88,22 @@ export async function updateNotification(
     updateData.updated_at = new Date();
 
     if (Object.keys(updateData).length === 0) {
-      throw new Error('No fields provided for update');
+      throw new Error("No fields provided for update");
     }
 
     const [notification] = await mainDb
-      .updateTable('notifications')
+      .updateTable("notifications")
       .set(updateData)
-      .where('id', '=', id)
+      .where("id", "=", id)
       .returningAll()
       .execute();
 
     if (!notification) {
-      throw new Error('Notification not found');
+      throw new Error("Notification not found");
     }
     return notification;
   } catch (error) {
-    console.error('Error updating notification:', error);
+    console.error("Error updating notification:", error);
     throw error;
   }
 }
@@ -111,13 +111,13 @@ export async function updateNotification(
 export async function deleteNotification(id: number) {
   try {
     const [notification] = await mainDb
-      .deleteFrom('notifications')
-      .where('id', '=', id)
+      .deleteFrom("notifications")
+      .where("id", "=", id)
       .returningAll()
       .execute();
     return notification;
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    console.error("Error deleting notification:", error);
     throw error;
   }
 }

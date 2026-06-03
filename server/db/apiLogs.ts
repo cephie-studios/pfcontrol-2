@@ -1,7 +1,7 @@
-import { mainDb } from './connection.js';
-import { decrypt } from '../utils/encryption.js';
-import { redisConnection } from './connection.js';
-import { sql } from 'kysely';
+import { mainDb } from "./connection.js";
+import { decrypt } from "../utils/encryption.js";
+import { redisConnection } from "./connection.js";
+import { sql } from "kysely";
 
 // Decrypts the raw text field in the api_logs table
 function readApiLogTextField(raw: string | null): string | null {
@@ -10,16 +10,16 @@ function readApiLogTextField(raw: string | null): string | null {
     const parsed: unknown = JSON.parse(raw);
     if (
       parsed &&
-      typeof parsed === 'object' &&
-      'iv' in parsed &&
-      'data' in parsed &&
-      'authTag' in parsed
+      typeof parsed === "object" &&
+      "iv" in parsed &&
+      "data" in parsed &&
+      "authTag" in parsed
     ) {
       const decrypted = decrypt(
         parsed as { iv: string; data: string; authTag: string }
       );
       if (decrypted == null) return null;
-      return typeof decrypted === 'string'
+      return typeof decrypted === "string"
         ? decrypted
         : JSON.stringify(decrypted);
     }
@@ -70,108 +70,108 @@ export async function getApiLogs(
     const offset = (page - 1) * limit;
 
     let query = mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .select([
-        'id',
-        'user_id',
-        'username',
-        'method',
-        'path',
-        'status_code',
-        'response_time',
-        'ip_address',
-        'user_agent',
-        'request_body',
-        'response_body',
-        'error_message',
-        'created_at',
+        "id",
+        "user_id",
+        "username",
+        "method",
+        "path",
+        "status_code",
+        "response_time",
+        "ip_address",
+        "user_agent",
+        "request_body",
+        "response_body",
+        "error_message",
+        "created_at",
       ])
-      .orderBy('created_at', 'desc');
+      .orderBy("created_at", "desc");
 
     if (filters.userId) {
       query = query.where((q) =>
         q.or([
-          q('user_id', 'ilike', `%${filters.userId}%`),
-          q('username', 'ilike', `%${filters.userId}%`),
+          q("user_id", "ilike", `%${filters.userId}%`),
+          q("username", "ilike", `%${filters.userId}%`),
         ])
       );
     }
 
     if (filters.method) {
-      query = query.where('method', '=', filters.method.toUpperCase());
+      query = query.where("method", "=", filters.method.toUpperCase());
     }
 
     if (filters.path) {
-      query = query.where('path', 'ilike', `%${filters.path}%`);
+      query = query.where("path", "ilike", `%${filters.path}%`);
     }
 
     if (filters.statusCode) {
-      query = query.where('status_code', '=', filters.statusCode);
+      query = query.where("status_code", "=", filters.statusCode);
     }
 
     if (filters.dateFrom) {
-      query = query.where('created_at', '>=', new Date(filters.dateFrom));
+      query = query.where("created_at", ">=", new Date(filters.dateFrom));
     }
 
     if (filters.dateTo) {
-      query = query.where('created_at', '<=', new Date(filters.dateTo));
+      query = query.where("created_at", "<=", new Date(filters.dateTo));
     }
 
     if (filters.search) {
       query = query.where((q) =>
         q.or([
-          q('path', 'ilike', `%${filters.search}%`),
-          q('username', 'ilike', `%${filters.search}%`),
-          q('method', 'ilike', `%${filters.search}%`),
+          q("path", "ilike", `%${filters.search}%`),
+          q("username", "ilike", `%${filters.search}%`),
+          q("method", "ilike", `%${filters.search}%`),
         ])
       );
     }
 
     let countQuery = mainDb
-      .selectFrom('api_logs')
-      .select(sql<number>`count(*)`.as('count'));
+      .selectFrom("api_logs")
+      .select(sql<number>`count(*)`.as("count"));
 
     if (filters.userId) {
       countQuery = countQuery.where((q) =>
         q.or([
-          q('user_id', 'ilike', `%${filters.userId}%`),
-          q('username', 'ilike', `%${filters.userId}%`),
+          q("user_id", "ilike", `%${filters.userId}%`),
+          q("username", "ilike", `%${filters.userId}%`),
         ])
       );
     }
     if (filters.method) {
       countQuery = countQuery.where(
-        'method',
-        '=',
+        "method",
+        "=",
         filters.method.toUpperCase()
       );
     }
     if (filters.path) {
-      countQuery = countQuery.where('path', 'ilike', `%${filters.path}%`);
+      countQuery = countQuery.where("path", "ilike", `%${filters.path}%`);
     }
     if (filters.statusCode) {
-      countQuery = countQuery.where('status_code', '=', filters.statusCode);
+      countQuery = countQuery.where("status_code", "=", filters.statusCode);
     }
     if (filters.dateFrom) {
       countQuery = countQuery.where(
-        'created_at',
-        '>=',
+        "created_at",
+        ">=",
         new Date(filters.dateFrom)
       );
     }
     if (filters.dateTo) {
       countQuery = countQuery.where(
-        'created_at',
-        '<=',
+        "created_at",
+        "<=",
         new Date(filters.dateTo)
       );
     }
     if (filters.search) {
       countQuery = countQuery.where((q) =>
         q.or([
-          q('path', 'ilike', `%${filters.search}%`),
-          q('username', 'ilike', `%${filters.search}%`),
-          q('method', 'ilike', `%${filters.search}%`),
+          q("path", "ilike", `%${filters.search}%`),
+          q("username", "ilike", `%${filters.search}%`),
+          q("method", "ilike", `%${filters.search}%`),
         ])
       );
     }
@@ -199,7 +199,7 @@ export async function getApiLogs(
       },
     };
   } catch (error) {
-    console.error('Error fetching API logs:', error);
+    console.error("Error fetching API logs:", error);
     throw error;
   }
 }
@@ -207,9 +207,9 @@ export async function getApiLogs(
 export async function getApiLogById(logId: number | string) {
   try {
     const log = await mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .selectAll()
-      .where('id', '=', typeof logId === 'string' ? parseInt(logId) : logId)
+      .where("id", "=", typeof logId === "string" ? parseInt(logId) : logId)
       .executeTakeFirst();
 
     if (!log) return null;
@@ -222,7 +222,7 @@ export async function getApiLogById(logId: number | string) {
       error_message: readApiLogTextField(log.error_message),
     };
   } catch (error) {
-    console.error('Error fetching API log by ID:', error);
+    console.error("Error fetching API log by ID:", error);
     throw error;
   }
 }
@@ -234,15 +234,15 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
 
     // Total requests and average response time
     const totalStatsResult = await mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .select([
-        sql<number>`count(*)`.as('totalRequests'),
-        sql<number>`avg(response_time)`.as('averageResponseTime'),
+        sql<number>`count(*)`.as("totalRequests"),
+        sql<number>`avg(response_time)`.as("averageResponseTime"),
         sql<number>`count(case when status_code >= 400 then 1 end)`.as(
-          'errorCount'
+          "errorCount"
         ),
       ])
-      .where('created_at', '>=', cutoffDate)
+      .where("created_at", ">=", cutoffDate)
       .executeTakeFirst();
 
     const totalRequests = Number(totalStatsResult?.totalRequests || 0);
@@ -255,41 +255,41 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
 
     // Top endpoints
     const topEndpoints = await mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .select([
-        'path',
-        sql<number>`count(*)`.as('count'),
-        sql<number>`avg(response_time)`.as('avgResponseTime'),
+        "path",
+        sql<number>`count(*)`.as("count"),
+        sql<number>`avg(response_time)`.as("avgResponseTime"),
       ])
-      .where('created_at', '>=', cutoffDate)
-      .groupBy('path')
-      .orderBy('count', 'desc')
+      .where("created_at", ">=", cutoffDate)
+      .groupBy("path")
+      .orderBy("count", "desc")
       .limit(10)
       .execute();
 
     // Status code distribution
     const statusCodeDistribution = await mainDb
-      .selectFrom('api_logs')
-      .select(['status_code', sql<number>`count(*)`.as('count')])
-      .where('created_at', '>=', cutoffDate)
-      .groupBy('status_code')
-      .orderBy('count', 'desc')
+      .selectFrom("api_logs")
+      .select(["status_code", sql<number>`count(*)`.as("count")])
+      .where("created_at", ">=", cutoffDate)
+      .groupBy("status_code")
+      .orderBy("count", "desc")
       .execute();
 
     // Daily stats
     const dailyStats = await mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .select([
-        sql<string>`date(created_at)`.as('date'),
-        sql<number>`count(*)`.as('requestCount'),
+        sql<string>`date(created_at)`.as("date"),
+        sql<number>`count(*)`.as("requestCount"),
         sql<number>`count(case when status_code >= 400 then 1 end)`.as(
-          'errorCount'
+          "errorCount"
         ),
-        sql<number>`avg(response_time)`.as('avgResponseTime'),
+        sql<number>`avg(response_time)`.as("avgResponseTime"),
       ])
-      .where('created_at', '>=', cutoffDate)
+      .where("created_at", ">=", cutoffDate)
       .groupBy(sql`date(created_at)`)
-      .orderBy('date', 'desc')
+      .orderBy("date", "desc")
       .execute();
 
     return {
@@ -313,7 +313,7 @@ export async function getApiLogStats(days: number = 7): Promise<ApiLogStats> {
       })),
     };
   } catch (error) {
-    console.error('Error fetching API log stats:', error);
+    console.error("Error fetching API log stats:", error);
     throw error;
   }
 }
@@ -327,7 +327,7 @@ export async function getApiLogStatsLast24Hours(): Promise<
     other: number;
   }>
 > {
-  const cacheKey = 'api_logs:stats_24h_hourly';
+  const cacheKey = "api_logs:stats_24h_hourly";
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -336,7 +336,7 @@ export async function getApiLogStatsLast24Hours(): Promise<
     }
   } catch (error) {
     console.warn(
-      '[Redis] Failed to read cache for 24h hourly stats:',
+      "[Redis] Failed to read cache for 24h hourly stats:",
       (error as Error)?.message
     );
   }
@@ -346,25 +346,25 @@ export async function getApiLogStatsLast24Hours(): Promise<
     cutoffDate.setHours(cutoffDate.getHours() - 24);
 
     const hourlyStats = await mainDb
-      .selectFrom('api_logs')
+      .selectFrom("api_logs")
       .select([
-        sql<string>`date_trunc('hour', created_at)`.as('hour'),
+        sql<string>`date_trunc('hour', created_at)`.as("hour"),
         sql<number>`count(case when status_code >= 200 and status_code < 300 then 1 end)`.as(
-          'successful'
+          "successful"
         ),
         sql<number>`count(case when status_code >= 400 and status_code < 500 then 1 end)`.as(
-          'clientErrors'
+          "clientErrors"
         ),
         sql<number>`count(case when status_code >= 500 then 1 end)`.as(
-          'serverErrors'
+          "serverErrors"
         ),
         sql<number>`count(case when (status_code < 200 or (status_code >= 300 and status_code < 400)) then 1 end)`.as(
-          'other'
+          "other"
         ),
       ])
-      .where('created_at', '>=', cutoffDate)
+      .where("created_at", ">=", cutoffDate)
       .groupBy(sql`date_trunc('hour', created_at)`)
-      .orderBy('hour', 'asc')
+      .orderBy("hour", "asc")
       .execute();
 
     const result = hourlyStats.map((stat) => ({
@@ -376,10 +376,10 @@ export async function getApiLogStatsLast24Hours(): Promise<
     }));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 900);
+      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 900);
     } catch (error) {
       console.warn(
-        '[Redis] Failed to set cache for 24h hourly stats:',
+        "[Redis] Failed to set cache for 24h hourly stats:",
         (error as Error)?.message
       );
     }
@@ -387,7 +387,7 @@ export async function getApiLogStatsLast24Hours(): Promise<
     return result;
   } catch (error) {
     console.error(
-      'Error fetching API log stats for last 24 hours (hourly):',
+      "Error fetching API log stats for last 24 hours (hourly):",
       error
     );
     throw error;

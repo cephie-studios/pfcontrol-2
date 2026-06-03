@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
-import { X, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import { X, AlertCircle, CheckCircle, Info } from "lucide-react";
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = "success" | "error" | "info";
 
 interface ToastProps {
   message: string;
@@ -12,7 +12,7 @@ interface ToastProps {
 
 export default function Toast({
   message,
-  type = 'info',
+  type = "info",
   onClose,
   duration = 2000,
 }: ToastProps) {
@@ -34,9 +34,9 @@ export default function Toast({
   }, [duration, handleClose]);
 
   const styles = {
-    success: 'bg-green-500/20 border-green-500/50 text-green-400',
-    error: 'bg-red-500/20 border-red-500/50 text-red-400',
-    info: 'bg-blue-500/20 border-blue-500/50 text-blue-400',
+    success: "bg-green-500/20 border-green-500/50 text-green-400",
+    error: "bg-red-500/20 border-red-500/50 text-red-400",
+    info: "bg-blue-500/20 border-blue-500/50 text-blue-400",
   };
 
   const icons = {
@@ -51,8 +51,8 @@ export default function Toast({
         styles[type]
       } backdrop-blur-md shadow-2xl ${
         isVisible
-          ? 'animate-in slide-in-from-right-2'
-          : 'animate-out slide-out-to-right-2'
+          ? "animate-in slide-in-from-right-2"
+          : "animate-out slide-out-to-right-2"
       } duration-300`}
       role="alert"
     >

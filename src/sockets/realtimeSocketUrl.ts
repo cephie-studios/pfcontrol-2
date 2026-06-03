@@ -2,7 +2,7 @@ function resolveSocketUrl(
   dedicated: string | undefined,
   fallback: string | undefined
 ): string | undefined {
-  if (dedicated === '' || dedicated === 'same-origin') {
+  if (dedicated === "" || dedicated === "same-origin") {
     return undefined;
   }
   if (dedicated) {
@@ -13,7 +13,7 @@ function resolveSocketUrl(
 
 export function usesViteSocketProxy(): boolean {
   const v = import.meta.env.VITE_REALTIME_URL as string | undefined;
-  return v === '' || v === 'same-origin';
+  return v === "" || v === "same-origin";
 }
 
 export function getRealtimeSocketUrl(): string | undefined {

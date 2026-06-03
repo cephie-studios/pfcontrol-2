@@ -8,11 +8,11 @@ import {
   Shield,
   Cookie,
   BookPlus,
-} from 'lucide-react';
-import { FaDiscord, FaYoutube } from 'react-icons/fa';
-import { SiGithub } from 'react-icons/si';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useState, useEffect } from 'react';
+} from "lucide-react";
+import { FaDiscord, FaYoutube } from "react-icons/fa";
+import { SiGithub } from "react-icons/si";
+import { useAuth } from "../hooks/auth/useAuth";
+import { useState, useEffect } from "react";
 
 interface VersionData {
   version: string;
@@ -24,9 +24,9 @@ export default function Footer() {
   const { user } = useAuth();
   const year = new Date().getFullYear();
   const [versionData, setVersionData] = useState<VersionData>({
-    version: '2.0.0.3',
+    version: "2.0.0.3",
     updated_at: null,
-    updated_by: 'system',
+    updated_by: "system",
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,14 +34,14 @@ export default function Footer() {
     const fetchVersion = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_SERVER_URL || ''}/api/version`
+          `${import.meta.env.VITE_SERVER_URL || ""}/api/version`
         );
         if (response.ok) {
           const data: VersionData = await response.json();
           setVersionData(data);
         }
       } catch (error) {
-        console.error('Failed to fetch version:', error);
+        console.error("Failed to fetch version:", error);
       } finally {
         setIsLoading(false);
       }
@@ -51,26 +51,26 @@ export default function Footer() {
   }, []);
 
   const quickLinks = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/create', label: 'Create Session', icon: BookPlus },
-    { href: '/sessions', label: 'My Sessions', icon: FolderOpen },
-    { href: '/pfatc', label: 'PFATC Overview', icon: TowerControl },
+    { href: "/", label: "Home", icon: Home },
+    { href: "/create", label: "Create Session", icon: BookPlus },
+    { href: "/sessions", label: "My Sessions", icon: FolderOpen },
+    { href: "/pfatc", label: "PFATC Overview", icon: TowerControl },
   ];
 
   const legalLinks = [
     {
-      href: 'https://cephie.app/legal/terms',
-      label: 'Terms of Use',
+      href: "https://cephie.app/legal/terms",
+      label: "Terms of Use",
       icon: ScrollText,
     },
     {
-      href: 'https://cephie.app/legal/privacy',
-      label: 'Privacy Policy',
+      href: "https://cephie.app/legal/privacy",
+      label: "Privacy Policy",
       icon: Shield,
     },
     {
-      href: 'https://cephie.app/legal/cookies',
-      label: 'Cookies Policy',
+      href: "https://cephie.app/legal/cookies",
+      label: "Cookies Policy",
       icon: Cookie,
     },
   ];
@@ -220,7 +220,7 @@ export default function Footer() {
         {/* Bottom row */}
         <div className="mt-8 border-t border-zinc-700/50 pt-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div className="text-gray-500 text-sm text-center md:text-left space-x-2">
-            METAR by{' '}
+            METAR by{" "}
             <a
               href="https://aviationweather.gov"
               target="_blank"
@@ -228,8 +228,8 @@ export default function Footer() {
               className="text-blue-400 hover:text-blue-300 underline"
             >
               aviationweather.gov
-            </a>{' '}
-            ATIS by{' '}
+            </a>{" "}
+            ATIS by{" "}
             <a
               href="https://atisgenerator.com"
               target="_blank"
@@ -239,7 +239,7 @@ export default function Footer() {
             >
               atisgenerator.com
             </a>
-            Charts by{' '}
+            Charts by{" "}
             <a
               href="https://discord.gg/pfatc"
               target="_blank"
@@ -252,7 +252,7 @@ export default function Footer() {
 
           <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-end gap-4 w-full">
             <div className="text-gray-400 text-sm">
-              &copy; {year} PFControl by{' '}
+              &copy; {year} PFControl by{" "}
               <a
                 href="https://cephie.app"
                 target="_blank"
@@ -266,7 +266,7 @@ export default function Footer() {
             <div className="bg-zinc-900/40 p-3 flex items-center gap-4 whitespace-nowrap">
               <div className="text-gray-400 text-sm">Version</div>
               <div className="text-white font-mono text-sm truncate">
-                {isLoading ? '...' : versionData.version}
+                {isLoading ? "..." : versionData.version}
               </div>
             </div>
           </div>

@@ -1,9 +1,9 @@
-import { createElement } from 'react';
-import satori from 'satori';
-import type { PublicSubmitSession } from '../services/publicSubmitSession.js';
-import { SubmitOgCard, type SubmitOgCardProps } from './SubmitOgCard.js';
-import { getInterFontsForSatori } from './loadInterFonts.js';
-import { toSatoriSafeDataUrl } from './toSatoriSafeDataUrl.js';
+import { createElement } from "react";
+import satori from "satori";
+import type { PublicSubmitSession } from "../services/publicSubmitSession.js";
+import { SubmitOgCard, type SubmitOgCardProps } from "./SubmitOgCard.js";
+import { getInterFontsForSatori } from "./loadInterFonts.js";
+import { toSatoriSafeDataUrl } from "./toSatoriSafeDataUrl.js";
 
 const OG_W = 1200;
 const OG_H = 630;
@@ -14,46 +14,46 @@ function truncate(s: string, max: number): string {
 }
 
 function networkLabel(session: PublicSubmitSession): string {
-  if (session.isPFATC) return 'PFATC';
-  if (session.isAdvancedATC) return 'Advanced ATC';
-  return 'ATC';
+  if (session.isPFATC) return "PFATC";
+  if (session.isAdvancedATC) return "Advanced ATC";
+  return "ATC";
 }
 
 export function buildSubmitOgCardProps(
   session: PublicSubmitSession,
   backgroundDataUrl: string | null
 ): SubmitOgCardProps {
-  const icao = session.airportIcao?.toUpperCase() ?? '----';
+  const icao = session.airportIcao?.toUpperCase() ?? "----";
   const runway = session.activeRunway?.trim();
   const controller = session.controllerUsername?.trim();
   const atisLetter = session.atisLetter?.trim();
-  const atisText = session.atisText?.replace(/\s+/g, ' ').trim();
+  const atisText = session.atisText?.replace(/\s+/g, " ").trim();
   const flightsN = session.flightCount ?? 0;
 
-  const stats: SubmitOgCardProps['stats'] = [];
+  const stats: SubmitOgCardProps["stats"] = [];
 
   if (runway) {
     stats.push({
-      label: 'Active runway',
+      label: "Active runway",
       value: runway,
     });
   }
 
   if (atisLetter) {
     stats.push({
-      label: 'ATIS',
+      label: "ATIS",
       value: atisLetter,
     });
   }
 
   stats.push({
-    label: 'Flights',
-    value: flightsN.toLocaleString('en-US'),
+    label: "Flights",
+    value: flightsN.toLocaleString("en-US"),
   });
 
   if (controller) {
     stats.push({
-      label: 'Controller',
+      label: "Controller",
       value: controller,
     });
   }
@@ -85,10 +85,10 @@ export async function renderPublicSubmitOgPng(
     fonts,
   });
 
-  const { Resvg } = await import('@resvg/resvg-js');
+  const { Resvg } = await import("@resvg/resvg-js");
   const resvg = new Resvg(svg, {
     fitTo: {
-      mode: 'width',
+      mode: "width",
       value: OG_W,
     },
   });

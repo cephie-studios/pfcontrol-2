@@ -1,4 +1,4 @@
-import type { IncomingMessage } from 'http';
+import type { IncomingMessage } from "http";
 
 interface HandshakeBucket {
   count: number;
@@ -18,21 +18,21 @@ const bucketsByScope = new Map<string, Map<string, HandshakeBucket>>();
 const cleanupTimersByScope = new Map<string, NodeJS.Timeout>();
 
 function getRequestIp(req: IncomingMessage): string {
-  const cfIp = req.headers['cf-connecting-ip'];
-  if (typeof cfIp === 'string' && cfIp.trim()) return cfIp.trim();
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (typeof cfIp === "string" && cfIp.trim()) return cfIp.trim();
 
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.trim()) {
-    return forwarded.split(',')[0].trim();
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.trim()) {
+    return forwarded.split(",")[0].trim();
   }
   if (Array.isArray(forwarded) && forwarded[0]?.trim()) {
-    return forwarded[0].split(',')[0].trim();
+    return forwarded[0].split(",")[0].trim();
   }
 
-  const realIp = req.headers['x-real-ip'];
-  if (typeof realIp === 'string' && realIp.trim()) return realIp.trim();
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp.trim()) return realIp.trim();
 
-  return req.socket.remoteAddress ?? 'unknown';
+  return req.socket.remoteAddress ?? "unknown";
 }
 
 function getScopeBuckets(scope: string): Map<string, HandshakeBucket> {
@@ -62,7 +62,7 @@ function ensureCleanupTimer(scope: string, windowMs: number): void {
 }
 
 function isExistingSocketSession(url: string): boolean {
-  return url.includes('sid=');
+  return url.includes("sid=");
 }
 
 export function createHandshakeRateLimiter(
@@ -78,7 +78,7 @@ export function createHandshakeRateLimiter(
     req: IncomingMessage,
     callback: (err: string | null, success: boolean) => void
   ) => {
-    if (isExistingSocketSession(req.url ?? '')) {
+    if (isExistingSocketSession(req.url ?? "")) {
       callback(null, true);
       return;
     }
@@ -94,7 +94,7 @@ export function createHandshakeRateLimiter(
     }
 
     if (bucket.count >= maxAttempts) {
-      callback('Too many socket connection attempts', false);
+      callback("Too many socket connection attempts", false);
       return;
     }
 

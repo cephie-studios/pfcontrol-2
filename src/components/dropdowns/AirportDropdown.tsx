@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { useData } from '../../hooks/data/useData';
-import Dropdown from '../common/Dropdown';
+import { useMemo } from "react";
+import { useData } from "../../hooks/data/useData";
+import Dropdown from "../common/Dropdown";
 
 interface AirportDropdownProps {
   onChange: (value: string) => void;
   value?: string;
   disabled?: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   showFullName?: boolean;
   className?: string;
   excludeCenterPositions?: boolean;
@@ -19,7 +19,7 @@ export default function AirportDropdown({
   onChange,
   value,
   disabled = false,
-  size = 'md',
+  size = "md",
   showFullName = true,
   className,
   excludeCenterPositions = true,
@@ -38,7 +38,7 @@ export default function AirportDropdown({
 
     if (excludeCenterPositions) {
       filteredAirports = airports.filter(
-        (airport) => !airport.controlName?.includes('Center')
+        (airport) => !airport.controlName?.includes("Center")
       );
     }
 
@@ -49,7 +49,7 @@ export default function AirportDropdown({
   }, [airports, showFullName, excludeCenterPositions]);
 
   const getDisplayValue = (selectedValue: string) => {
-    if (!selectedValue) return loading ? 'Loading...' : 'Select Airport';
+    if (!selectedValue) return loading ? "Loading..." : "Select Airport";
 
     if (!Array.isArray(airports)) {
       return selectedValue;
@@ -66,7 +66,7 @@ export default function AirportDropdown({
   return (
     <Dropdown
       options={dropdownOptions}
-      placeholder={loading ? 'Loading...' : (placeholder ?? 'Select Airport')}
+      placeholder={loading ? "Loading..." : (placeholder ?? "Select Airport")}
       value={value}
       onChange={onChange}
       disabled={disabled || loading}

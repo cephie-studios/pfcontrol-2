@@ -1,5 +1,5 @@
-import { useContext, createContext } from 'react';
-import type { Settings } from '../../types/settings';
+import { useContext, createContext } from "react";
+import type { Settings } from "../../types/settings";
 
 export interface SettingsContextType {
   settings: Settings | null;
@@ -14,7 +14,7 @@ export const SettingsContext = createContext<SettingsContextType | undefined>(
 export function useSettings() {
   const context = useContext(SettingsContext);
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
 }

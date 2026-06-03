@@ -1,13 +1,13 @@
-import { Volume2, VolumeX, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { Volume2, VolumeX, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import {
   SOUNDS,
   linearToLogVolume,
   playAudioWithGain,
-} from '../../utils/playSound';
-import type { Settings } from '../../types/settings';
-import AudioVisualizerButton from './AudioVisualizerButton';
-import Button from '../common/Button';
+} from "../../utils/playSound";
+import type { Settings } from "../../types/settings";
+import AudioVisualizerButton from "./AudioVisualizerButton";
+import Button from "../common/Button";
 
 interface SoundSettingsProps {
   settings: Settings | null;
@@ -16,39 +16,39 @@ interface SoundSettingsProps {
 
 const soundConfigs = [
   {
-    key: 'startupSound' as const,
-    label: 'Session Startup Sound',
-    description: 'Plays when you join a session',
+    key: "startupSound" as const,
+    label: "Session Startup Sound",
+    description: "Plays when you join a session",
     sound: SOUNDS.SESSION_STARTUP,
-    color: 'blue',
+    color: "blue",
   },
   {
-    key: 'chatNotificationSound' as const,
-    label: 'Chat Notification Sound',
-    description: 'Plays when you receive a chat message',
+    key: "chatNotificationSound" as const,
+    label: "Chat Notification Sound",
+    description: "Plays when you receive a chat message",
     sound: SOUNDS.CHAT_NOTIFICATION,
-    color: 'green',
+    color: "green",
   },
   {
-    key: 'newStripSound' as const,
-    label: 'New Strip Sound',
-    description: 'Plays when a new flight strip appears',
+    key: "newStripSound" as const,
+    label: "New Strip Sound",
+    description: "Plays when a new flight strip appears",
     sound: SOUNDS.NEW_STRIP,
-    color: 'purple',
+    color: "purple",
   },
   {
-    key: 'acarsBeep' as const,
-    label: 'ACARS Alert Sound (BEEP BEEP)',
-    description: 'Plays for PDC, warnings, and contact messages in ACARS',
+    key: "acarsBeep" as const,
+    label: "ACARS Alert Sound (BEEP BEEP)",
+    description: "Plays for PDC, warnings, and contact messages in ACARS",
     sound: SOUNDS.ACARS_BEEP,
-    color: 'cyan',
+    color: "cyan",
   },
   {
-    key: 'acarsChatPop' as const,
-    label: 'ACARS Chat Sound',
-    description: 'Plays for system messages and ATIS in ACARS',
+    key: "acarsChatPop" as const,
+    label: "ACARS Chat Sound",
+    description: "Plays for system messages and ATIS in ACARS",
     sound: SOUNDS.ACARS_CHAT_POP,
-    color: 'orange',
+    color: "orange",
   },
 ];
 
@@ -57,11 +57,11 @@ export default function SoundSettings({
   onChange,
 }: SoundSettingsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [playingKey, setPlayingKey] = useState<keyof Settings['sounds'] | null>(
+  const [playingKey, setPlayingKey] = useState<keyof Settings["sounds"] | null>(
     null
   );
 
-  const handleToggle = (soundKey: keyof Settings['sounds']) => {
+  const handleToggle = (soundKey: keyof Settings["sounds"]) => {
     if (!settings) return;
     const updatedSettings = {
       ...settings,
@@ -77,7 +77,7 @@ export default function SoundSettings({
   };
 
   const handleVolumeChange = (
-    soundKey: keyof Settings['sounds'],
+    soundKey: keyof Settings["sounds"],
     volume: number
   ) => {
     if (!settings) return;
@@ -94,7 +94,7 @@ export default function SoundSettings({
     onChange(updatedSettings);
   };
 
-  const handlePlayTest = (soundKey: keyof Settings['sounds']) => {
+  const handlePlayTest = (soundKey: keyof Settings["sounds"]) => {
     const soundSetting = settings?.sounds[soundKey];
     const config = soundConfigs.find((c) => c.key === soundKey);
     if (!soundSetting?.enabled || !config?.sound) return;
@@ -105,25 +105,25 @@ export default function SoundSettings({
       const logVolume = linearToLogVolume(soundSetting.volume);
 
       const onCanPlay = () => {
-        audio.removeEventListener('canplaythrough', onCanPlay);
-        audio.removeEventListener('error', onError);
+        audio.removeEventListener("canplaythrough", onCanPlay);
+        audio.removeEventListener("error", onError);
 
         playAudioWithGain(audio, logVolume);
       };
 
       const onError = (error: Event) => {
-        audio.removeEventListener('canplaythrough', onCanPlay);
-        audio.removeEventListener('error', onError);
-        console.warn('Failed to play test sound:', error);
+        audio.removeEventListener("canplaythrough", onCanPlay);
+        audio.removeEventListener("error", onError);
+        console.warn("Failed to play test sound:", error);
         setPlayingKey(null);
       };
 
-      audio.addEventListener('canplaythrough', onCanPlay);
-      audio.addEventListener('error', onError);
+      audio.addEventListener("canplaythrough", onCanPlay);
+      audio.addEventListener("error", onError);
       audio.onended = () => setPlayingKey(null);
       audio.load();
     } catch (error) {
-      console.warn('Failed to play test sound:', error);
+      console.warn("Failed to play test sound:", error);
       setPlayingKey(null);
     }
   };
@@ -132,47 +132,47 @@ export default function SoundSettings({
 
   const getColorClasses = (color: string) => {
     switch (color) {
-      case 'blue':
+      case "blue":
         return {
-          bg: 'bg-blue-500/20',
-          text: 'text-blue-400',
-          border: 'border-blue-500/30',
-          hover: 'hover:bg-blue-500/30',
+          bg: "bg-blue-500/20",
+          text: "text-blue-400",
+          border: "border-blue-500/30",
+          hover: "hover:bg-blue-500/30",
         };
-      case 'green':
+      case "green":
         return {
-          bg: 'bg-green-500/20',
-          text: 'text-green-400',
-          border: 'border-green-500/30',
-          hover: 'hover:bg-green-500/30',
+          bg: "bg-green-500/20",
+          text: "text-green-400",
+          border: "border-green-500/30",
+          hover: "hover:bg-green-500/30",
         };
-      case 'purple':
+      case "purple":
         return {
-          bg: 'bg-purple-500/20',
-          text: 'text-purple-400',
-          border: 'border-purple-500/30',
-          hover: 'hover:bg-purple-500/30',
+          bg: "bg-purple-500/20",
+          text: "text-purple-400",
+          border: "border-purple-500/30",
+          hover: "hover:bg-purple-500/30",
         };
-      case 'cyan':
+      case "cyan":
         return {
-          bg: 'bg-cyan-500/20',
-          text: 'text-cyan-400',
-          border: 'border-cyan-500/30',
-          hover: 'hover:bg-cyan-500/30',
+          bg: "bg-cyan-500/20",
+          text: "text-cyan-400",
+          border: "border-cyan-500/30",
+          hover: "hover:bg-cyan-500/30",
         };
-      case 'orange':
+      case "orange":
         return {
-          bg: 'bg-orange-500/20',
-          text: 'text-orange-400',
-          border: 'border-orange-500/30',
-          hover: 'hover:bg-orange-500/30',
+          bg: "bg-orange-500/20",
+          text: "text-orange-400",
+          border: "border-orange-500/30",
+          hover: "hover:bg-orange-500/30",
         };
       default:
         return {
-          bg: 'bg-zinc-500/20',
-          text: 'text-zinc-400',
-          border: 'border-zinc-500/30',
-          hover: 'hover:bg-zinc-500/30',
+          bg: "bg-zinc-500/20",
+          text: "text-zinc-400",
+          border: "border-zinc-500/30",
+          hover: "hover:bg-zinc-500/30",
         };
     }
   };
@@ -217,8 +217,8 @@ export default function SoundSettings({
       <div
         className={`transition-all duration-300 ease-in-out ${
           isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
+            ? "max-h-[2000px] opacity-100"
+            : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="p-4 sm:p-6">
@@ -233,7 +233,7 @@ export default function SoundSettings({
                   className={`bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-5 transition-all ${
                     soundSetting.enabled
                       ? `hover:${colors.border}`
-                      : 'opacity-75'
+                      : "opacity-75"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -244,7 +244,7 @@ export default function SoundSettings({
                         className={`relative p-2 rounded-lg mr-4 mt-0.5 transition-all duration-200 cursor-pointer group ${
                           soundSetting.enabled
                             ? `${colors.bg} ${colors.hover}`
-                            : 'bg-zinc-700/30 hover:bg-zinc-600/30'
+                            : "bg-zinc-700/30 hover:bg-zinc-600/30"
                         }`}
                       >
                         {soundSetting.enabled ? (
@@ -259,8 +259,8 @@ export default function SoundSettings({
                         <div
                           className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-zinc-800 transition-all ${
                             soundSetting.enabled
-                              ? 'bg-emerald-500'
-                              : 'bg-zinc-600'
+                              ? "bg-emerald-500"
+                              : "bg-zinc-600"
                           }`}
                         />
                       </button>
@@ -279,17 +279,17 @@ export default function SoundSettings({
                         onClick={() => handlePlayTest(key)}
                         label="Test"
                         variant={
-                          key === 'startupSound'
-                            ? 'default'
-                            : key === 'chatNotificationSound'
-                              ? 'notification'
-                              : key === 'newStripSound'
-                                ? 'newstrip'
-                                : key === 'acarsBeep'
-                                  ? 'acars-beep'
-                                  : key === 'acarsChatPop'
-                                    ? 'acars-chat'
-                                    : 'custom'
+                          key === "startupSound"
+                            ? "default"
+                            : key === "chatNotificationSound"
+                              ? "notification"
+                              : key === "newStripSound"
+                                ? "newstrip"
+                                : key === "acarsBeep"
+                                  ? "acars-beep"
+                                  : key === "acarsChatPop"
+                                    ? "acars-chat"
+                                    : "custom"
                         }
                       />
                     </div>
@@ -299,8 +299,8 @@ export default function SoundSettings({
                   <div
                     className={`transition-all ${
                       soundSetting.enabled
-                        ? 'opacity-100'
-                        : 'opacity-50 pointer-events-none'
+                        ? "opacity-100"
+                        : "opacity-50 pointer-events-none"
                     }`}
                   >
                     <div className="flex items-center space-x-4">
@@ -322,14 +322,11 @@ export default function SoundSettings({
                         <div
                           className={`absolute top-0 left-0 h-2 rounded-lg pointer-events-none ${
                             soundSetting.volume <= 100
-                              ? 'bg-gradient-to-r from-green-500 to-yellow-500'
-                              : 'bg-gradient-to-r from-yellow-500 to-red-500'
+                              ? "bg-gradient-to-r from-green-500 to-yellow-500"
+                              : "bg-gradient-to-r from-yellow-500 to-red-500"
                           }`}
                           style={{
-                            width: `${Math.min(
-                              ((soundSetting.volume - 10) / 190) * 100,
-                              100
-                            )}%`,
+                            width: `${Math.min(((soundSetting.volume - 10) / 190) * 100, 100)}%`,
                           }}
                         ></div>
                       </div>
@@ -339,8 +336,8 @@ export default function SoundSettings({
                       <span
                         className={`text-sm font-medium w-16 text-center px-2 py-1 rounded ${
                           soundSetting.volume <= 100
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-red-500/20 text-red-400'
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400"
                         }`}
                       >
                         {soundSetting.volume}%

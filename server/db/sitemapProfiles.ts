@@ -1,13 +1,13 @@
-import { Kysely, PostgresDialect } from 'kysely';
-import pg from 'pg';
-import type { MainDatabase } from './types/connection/MainDatabase.js';
+import { Kysely, PostgresDialect } from "kysely";
+import pg from "pg";
+import type { MainDatabase } from "./types/connection/MainDatabase.js";
 
 function sslForConnectionString(connectionString: string) {
   const url = new URL(connectionString);
   const isLocalhost =
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    url.hostname === 'postgres';
+    url.hostname === "localhost" ||
+    url.hostname === "127.0.0.1" ||
+    url.hostname === "postgres";
   return isLocalhost ? false : { rejectUnauthorized: false };
 }
 
@@ -16,9 +16,9 @@ export async function getSitemapProfileUsernames(
   adminIds: string[]
 ): Promise<string[]> {
   const withRoles = await db
-    .selectFrom('users as u')
-    .innerJoin('user_roles as ur', 'ur.user_id', 'u.id')
-    .select('u.username')
+    .selectFrom("users as u")
+    .innerJoin("user_roles as ur", "ur.user_id", "u.id")
+    .select("u.username")
     .distinct()
     .execute();
 
@@ -30,9 +30,9 @@ export async function getSitemapProfileUsernames(
 
   if (adminIds.length > 0) {
     const admins = await db
-      .selectFrom('users')
-      .select('username')
-      .where('id', 'in', adminIds)
+      .selectFrom("users")
+      .select("username")
+      .where("id", "in", adminIds)
       .execute();
     for (const row of admins) {
       if (row.username) usernames.add(row.username);

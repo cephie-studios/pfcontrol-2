@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchActiveUpdateModal,
   type UpdateModal,
-} from '../utils/fetch/updateModal';
-import { getTesterSettings } from '../utils/fetch/data';
+} from "../utils/fetch/updateModal";
+import { getTesterSettings } from "../utils/fetch/data";
 
 function shouldBypassTesterGate() {
-  return window.location.hostname === 'pfcontrol.com';
+  return window.location.hostname === "pfcontrol.com";
 }
 
-export function useActiveUpdateModal(user: { isTester?: boolean; isAdmin?: boolean } | null) {
+export function useActiveUpdateModal(
+  user: { isTester?: boolean; isAdmin?: boolean } | null
+) {
   const [testerGateEnabled, setTesterGateEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);
@@ -27,18 +29,18 @@ export function useActiveUpdateModal(user: { isTester?: boolean; isAdmin?: boole
 
         try {
           const seenModals = JSON.parse(
-            localStorage.getItem('seenUpdateModals') || '[]'
+            localStorage.getItem("seenUpdateModals") || "[]"
           );
           if (seenModals.includes(modal.id)) return;
         } catch (error) {
-          console.warn('localStorage not available, showing modal:', error);
+          console.warn("localStorage not available, showing modal:", error);
         }
 
         setActiveModal(modal);
         setShowUpdateModal(true);
       })
       .catch((error) => {
-        console.error('Error fetching active update modal:', error);
+        console.error("Error fetching active update modal:", error);
       });
   }, [user]);
 
@@ -57,7 +59,7 @@ export function useActiveUpdateModal(user: { isTester?: boolean; isAdmin?: boole
           setTesterGateEnabled(true);
         }
       } catch (error) {
-        console.error('Error fetching tester settings:', error);
+        console.error("Error fetching tester settings:", error);
         setTesterGateEnabled(true);
       }
     };
@@ -72,14 +74,14 @@ export function useActiveUpdateModal(user: { isTester?: boolean; isAdmin?: boole
 
     try {
       const seenModals = JSON.parse(
-        localStorage.getItem('seenUpdateModals') || '[]'
+        localStorage.getItem("seenUpdateModals") || "[]"
       );
       if (!seenModals.includes(activeModal.id)) {
         seenModals.push(activeModal.id);
-        localStorage.setItem('seenUpdateModals', JSON.stringify(seenModals));
+        localStorage.setItem("seenUpdateModals", JSON.stringify(seenModals));
       }
     } catch (error) {
-      console.warn('Could not save to localStorage:', error);
+      console.warn("Could not save to localStorage:", error);
     }
   }, [activeModal]);
 

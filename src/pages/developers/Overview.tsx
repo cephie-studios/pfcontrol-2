@@ -86,7 +86,7 @@ export default function DeveloperOverview() {
 
   const catalogForNewScopes = useMemo(
     () => catalog.filter((c) => !approvedScopes.includes(c.id)),
-    [catalog, approvedScopes],
+    [catalog, approvedScopes]
   );
 
   const scopeRequestPending = appState?.latestApplication?.status === "pending";
@@ -133,18 +133,24 @@ export default function DeveloperOverview() {
         {showAdminNotice && (
           <div
             className={
-              adminNoticeParsed.variant === "success" ? devNoticeSuccessClass : devNoticeClass
+              adminNoticeParsed.variant === "success"
+                ? devNoticeSuccessClass
+                : devNoticeClass
             }
           >
             <Bell
               className={`w-5 h-5 shrink-0 mt-0.5 ${
-                adminNoticeParsed.variant === "success" ? "text-emerald-400" : "text-amber-400"
+                adminNoticeParsed.variant === "success"
+                  ? "text-emerald-400"
+                  : "text-amber-400"
               }`}
             />
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm font-semibold ${
-                  adminNoticeParsed.variant === "success" ? "text-emerald-100" : "text-amber-100"
+                  adminNoticeParsed.variant === "success"
+                    ? "text-emerald-100"
+                    : "text-amber-100"
                 }`}
               >
                 {adminNoticeParsed.variant === "success"
@@ -159,7 +165,9 @@ export default function DeveloperOverview() {
                 }`}
               >
                 {adminNoticeParagraphs.length > 0 ? (
-                  adminNoticeParagraphs.map((para, i) => <p key={i}>{para.trim()}</p>)
+                  adminNoticeParagraphs.map((para, i) => (
+                    <p key={i}>{para.trim()}</p>
+                  ))
                 ) : (
                   <p>
                     {adminNoticeDetail?.trim() ||
@@ -190,14 +198,15 @@ export default function DeveloperOverview() {
                 We&apos;re reviewing a scope request
               </p>
               <p className="text-sm text-sky-200/85 mt-1 leading-relaxed">
-                Hang tight — your current access still works while we take a look. We&apos;ll follow
-                up when it&apos;s sorted.
+                Hang tight — your current access still works while we take a
+                look. We&apos;ll follow up when it&apos;s sorted.
               </p>
             </div>
           </div>
         )}
         <p className="text-zinc-400 text-sm sm:text-base max-w-2xl">
-          You&apos;re all set. Jump into usage, keys, or the live API reference whenever you like.
+          You&apos;re all set. Jump into usage, keys, or the live API reference
+          whenever you like.
         </p>
 
         {catalogForNewScopes.length > 0 && !scopeRequestOpen && (
@@ -260,7 +269,9 @@ export default function DeveloperOverview() {
               </div>
               <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
             </div>
-            <h2 className="text-base font-semibold text-zinc-100">API reference</h2>
+            <h2 className="text-base font-semibold text-zinc-100">
+              API reference
+            </h2>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
               Routes, parameters, and curl examples.
             </p>
@@ -274,10 +285,13 @@ export default function DeveloperOverview() {
             </div>
             <div className="min-w-0 flex-1 space-y-3">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-100">Email alerts</h2>
+                <h2 className="text-lg font-semibold text-zinc-100">
+                  Email alerts
+                </h2>
                 <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  (Optional) We&apos;ll email you when an administrator updates your scopes, API
-                  keys, rate limits, or account status (same summary as the in-portal notice).
+                  (Optional) We&apos;ll email you when an administrator updates
+                  your scopes, API keys, rate limits, or account status (same
+                  summary as the in-portal notice).
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
@@ -298,7 +312,8 @@ export default function DeveloperOverview() {
                   disabled={
                     notificationEmailSaving ||
                     (emailDraft.trim() === "" && notificationEmail === null) ||
-                    (emailDraft.trim() !== "" && emailDraft.trim() === (notificationEmail ?? ""))
+                    (emailDraft.trim() !== "" &&
+                      emailDraft.trim() === (notificationEmail ?? ""))
                   }
                   onClick={() => {
                     setError(null);
@@ -306,7 +321,11 @@ export default function DeveloperOverview() {
                   }}
                   className="inline-flex justify-center items-center gap-2 shrink-0 px-6 py-2.5 rounded-xl border border-violet-600/50 bg-violet-950/40 text-violet-100 text-sm font-semibold hover:bg-violet-900/45 hover:border-violet-500/55 transition-colors disabled:opacity-40 disabled:pointer-events-none ring-1 ring-violet-900/25"
                 >
-                  {notificationEmailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                  {notificationEmailSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Save"
+                  )}
                 </button>
               </div>
             </div>
@@ -346,8 +365,8 @@ export default function DeveloperOverview() {
           Your developer access is on pause
         </h2>
         <p className="text-sm text-zinc-400 leading-relaxed">
-          API keys won&apos;t work until an administrator turns access back on. If this looks wrong,
-          reach out{" "}
+          API keys won&apos;t work until an administrator turns access back on.
+          If this looks wrong, reach out{" "}
           <a
             href="https://cephie.app/discord"
             target="_blank"
@@ -367,7 +386,9 @@ export default function DeveloperOverview() {
       <div className={devPendingCardClass}>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-          <h2 className="text-lg font-semibold text-zinc-50">Application in the queue</h2>
+          <h2 className="text-lg font-semibold text-zinc-50">
+            Application in the queue
+          </h2>
           <span
             className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass("pending")}`}
           >
@@ -375,13 +396,15 @@ export default function DeveloperOverview() {
           </span>
         </div>
         <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-          Thanks for applying! A human will read it soon. When you&apos;re approved you&apos;ll be
-          able to create keys from the Keys tab.
+          Thanks for applying! A human will read it soon. When you&apos;re
+          approved you&apos;ll be able to create keys from the Keys tab.
         </p>
         {appState?.latestApplication && (
           <div className="space-y-5 text-sm border-t border-zinc-700/80 pt-5">
             <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">About you</p>
+              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">
+                About you
+              </p>
               <p className="text-zinc-200 whitespace-pre-wrap leading-relaxed">
                 {appState.latestApplication.whoText}
               </p>
@@ -395,7 +418,9 @@ export default function DeveloperOverview() {
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-2.5">Scopes you asked for</p>
+              <p className="text-xs font-semibold text-sky-400/90 mb-2.5">
+                Scopes you asked for
+              </p>
               <div className="flex flex-wrap gap-2">
                 {appState.latestApplication.requestedScopes.map((id) => (
                   <span

@@ -1,7 +1,7 @@
-import React from 'react';
-import Button from '../common/Button';
-import type { TooltipRenderProps } from 'react-joyride-react19-compat';
-import { X } from 'lucide-react';
+import React from "react";
+import Button from "../common/Button";
+import type { TooltipRenderProps } from "react-joyride-react19-compat";
+import { X } from "lucide-react";
 
 interface CustomStep {
   target: string;
@@ -24,11 +24,11 @@ export default function CustomTooltip({
 }: TooltipRenderProps) {
   const customStep = step as CustomStep;
   if (
-    step.target === '#settings-button' ||
-    step.target === '#departure-table .edit-del' ||
-    (step.target === '#start-session-btn' &&
-      step.title === '' &&
-      step.content === '')
+    step.target === "#settings-button" ||
+    step.target === "#departure-table .edit-del" ||
+    (step.target === "#start-session-btn" &&
+      step.title === "" &&
+      step.content === "")
   ) {
     return null;
   }

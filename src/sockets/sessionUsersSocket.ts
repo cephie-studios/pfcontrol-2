@@ -1,6 +1,6 @@
-import { io, Socket } from 'socket.io-client';
-import type { SessionUser } from '../types/session';
-import type { ChatMention } from '../types/session';
+import { io, Socket } from "socket.io-client";
+import type { SessionUser } from "../types/session";
+import type { ChatMention } from "../types/session";
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -38,14 +38,14 @@ export function createSessionUsersSocket(
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
-    path: '/sockets/session-users',
+    path: "/sockets/session-users",
     query: {
       sessionId,
       accessId,
       user: JSON.stringify(user),
-      position: position || 'APP',
+      position: position || "APP",
     },
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     upgrade: true,
     reconnection: true,
     reconnectionDelay: 1000,
@@ -54,57 +54,57 @@ export function createSessionUsersSocket(
   }) as CustomSocket;
 
   if (onConnect) {
-    socket.on('connect', onConnect);
+    socket.on("connect", onConnect);
   }
   if (onDisconnect) {
-    socket.on('disconnect', onDisconnect);
+    socket.on("disconnect", onDisconnect);
   }
   if (onReconnecting) {
-    socket.on('reconnecting', onReconnecting);
+    socket.on("reconnecting", onReconnecting);
   }
   if (onReconnect) {
-    socket.on('reconnect', onReconnect);
+    socket.on("reconnect", onReconnect);
   }
 
-  socket.on('sessionUsersUpdate', onUsersUpdate);
+  socket.on("sessionUsersUpdate", onUsersUpdate);
 
   if (onMention) {
-    socket.on('chatMention', onMention);
+    socket.on("chatMention", onMention);
   }
 
   if (onFieldEditingUpdate) {
-    socket.on('fieldEditingUpdate', onFieldEditingUpdate);
+    socket.on("fieldEditingUpdate", onFieldEditingUpdate);
   }
 
   socket.emitAtisGenerated = (data: unknown) => {
-    socket.emit('atisGenerated', data);
+    socket.emit("atisGenerated", data);
   };
 
   socket.emitFieldEditingStart = (
     flightId: string | number,
     fieldName: string
   ) => {
-    socket.emit('fieldEditingStart', { flightId, fieldName });
+    socket.emit("fieldEditingStart", { flightId, fieldName });
   };
 
   socket.emitFieldEditingStop = (
     flightId: string | number,
     fieldName: string
   ) => {
-    socket.emit('fieldEditingStop', { flightId, fieldName });
+    socket.emit("fieldEditingStop", { flightId, fieldName });
   };
 
   socket.emitPositionChange = (position: string) => {
-    socket.emit('positionChange', { position });
+    socket.emit("positionChange", { position });
   };
 
   let activityTimer: NodeJS.Timeout;
-  const sendActivityPing = () => socket.emit('activityPing');
-  document.addEventListener('mousemove', () => {
+  const sendActivityPing = () => socket.emit("activityPing");
+  document.addEventListener("mousemove", () => {
     clearTimeout(activityTimer);
     activityTimer = setTimeout(sendActivityPing, 1000);
   });
-  document.addEventListener('keydown', () => {
+  document.addEventListener("keydown", () => {
     clearTimeout(activityTimer);
     activityTimer = setTimeout(sendActivityPing, 1000);
   });

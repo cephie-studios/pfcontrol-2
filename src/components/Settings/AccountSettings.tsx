@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAuth } from '../../hooks/auth/useAuth';
+import { useState } from "react";
+import { useAuth } from "../../hooks/auth/useAuth";
 import {
   Link2,
   ExternalLink,
@@ -11,14 +11,14 @@ import {
   AlertTriangle,
   FileText,
   MessageSquare,
-} from 'lucide-react';
-import { SiRoblox, SiDiscord } from 'react-icons/si';
-import { updateTutorialStatus } from '../../utils/fetch/auth';
-import Button from '../common/Button';
-import { useNavigate } from 'react-router-dom';
-import type { Settings } from '../../types/settings';
-import PrivacySettings from './PrivacySettings';
-import ConfirmationDialog from '../common/ConfirmationDialog';
+} from "lucide-react";
+import { SiRoblox, SiDiscord } from "react-icons/si";
+import { updateTutorialStatus } from "../../utils/fetch/auth";
+import Button from "../common/Button";
+import { useNavigate } from "react-router-dom";
+import type { Settings } from "../../types/settings";
+import PrivacySettings from "./PrivacySettings";
+import ConfirmationDialog from "../common/ConfirmationDialog";
 
 interface AccountSettingsProps {
   settings: Settings | null;
@@ -56,18 +56,18 @@ export default function AccountSettings({
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/unlink`,
         {
-          method: 'POST',
-          credentials: 'include',
+          method: "POST",
+          credentials: "include",
         }
       );
       if (res.ok) {
         await refreshUser();
       } else {
-        alert('Failed to unlink VATSIM account');
+        alert("Failed to unlink VATSIM account");
       }
     } catch (e) {
-      console.error('Unlink VATSIM error:', e);
-      alert('Failed to unlink VATSIM account');
+      console.error("Unlink VATSIM error:", e);
+      alert("Failed to unlink VATSIM account");
     }
   };
 
@@ -77,19 +77,19 @@ export default function AccountSettings({
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox/unlink`,
         {
-          method: 'POST',
-          credentials: 'include',
+          method: "POST",
+          credentials: "include",
         }
       );
 
       if (res.ok) {
         await refreshUser();
       } else {
-        alert('Failed to unlink Roblox account');
+        alert("Failed to unlink Roblox account");
       }
     } catch (error) {
-      console.error('Error unlinking Roblox:', error);
-      alert('Failed to unlink Roblox account');
+      console.error("Error unlinking Roblox:", error);
+      alert("Failed to unlink Roblox account");
     }
   };
 
@@ -98,12 +98,12 @@ export default function AccountSettings({
       const success = await updateTutorialStatus(false);
       if (success) {
         await refreshUser();
-        navigate('/?tutorial=true');
+        navigate("/?tutorial=true");
       } else {
-        console.error('Failed to reset tutorial.');
+        console.error("Failed to reset tutorial.");
       }
     } catch (error) {
-      console.error('Error resetting tutorial:', error);
+      console.error("Error resetting tutorial:", error);
     }
   };
 
@@ -124,29 +124,29 @@ export default function AccountSettings({
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/api/auth/delete-account`,
         {
-          method: 'DELETE',
-          credentials: 'include',
+          method: "DELETE",
+          credentials: "include",
         }
       );
 
       if (res.ok) {
         localStorage.clear();
         sessionStorage.clear();
-        window.location.href = '/';
+        window.location.href = "/";
       } else {
         const error = await res.json();
-        alert(`Failed to delete account: ${error.message || 'Unknown error'}`);
+        alert(`Failed to delete account: ${error.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Please try again.");
     } finally {
       setDeleteInProgress(false);
     }
   };
 
   const handleJoinDiscord = () => {
-    window.open('https://cephie.app/discord', '_blank');
+    window.open("https://cephie.app/discord", "_blank");
   };
 
   return (
@@ -219,7 +219,7 @@ export default function AccountSettings({
             </div>
           </div>
           <textarea
-            value={settings?.bio ?? ''}
+            value={settings?.bio ?? ""}
             onChange={(e) => handleBioChange(e.target.value)}
             placeholder="Tell others about yourself, your aviation interests, or anything you'd like to share..."
             maxLength={500}
@@ -231,7 +231,7 @@ export default function AccountSettings({
               Your biography is always visible to others on your profile
             </p>
             <p className="text-xs text-zinc-400 flex-shrink-0">
-              {(settings?.bio ?? '').length}/500
+              {(settings?.bio ?? "").length}/500
             </p>
           </div>
         </div>
@@ -275,8 +275,8 @@ export default function AccountSettings({
           <div
             className={`transition-all duration-300 ease-in-out ${
               isPrivacyExpanded
-                ? 'max-h-[1000px] opacity-100'
-                : 'max-h-0 opacity-0 overflow-hidden'
+                ? "max-h-[1000px] opacity-100"
+                : "max-h-0 opacity-0 overflow-hidden"
             }`}
           >
             <div className="p-3 sm:p-4 md:p-6">

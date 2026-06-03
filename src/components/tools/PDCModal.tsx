@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { X, Copy, CheckCircle, Loader, Info, Plane } from 'lucide-react';
-import { useData } from '../../hooks/data/useData';
-import type { Flight } from '../../types/flight';
-import type { AirportFrequencies } from '../../types/airports';
-import Button from '../common/Button';
-import TextInput from '../common/TextInput';
-import Checkbox from '../common/Checkbox';
+import { useEffect, useState } from "react";
+import { X, Copy, CheckCircle, Loader, Info, Plane } from "lucide-react";
+import { useData } from "../../hooks/data/useData";
+import type { Flight } from "../../types/flight";
+import type { AirportFrequencies } from "../../types/airports";
+import Button from "../common/Button";
+import TextInput from "../common/TextInput";
+import Checkbox from "../common/Checkbox";
 
 interface PDCModalProps {
   isOpen: boolean;
@@ -26,32 +26,32 @@ const PDCModal: React.FC<PDCModalProps> = ({
   const { frequencies, fetchAirportData, fetchedAirports } = useData();
   const [airportFreqs, setAirportFreqs] = useState<AirportFrequencies>({});
   const [customFreqs, setCustomFreqs] = useState<AirportFrequencies>(() => {
-    const savedFreqs = localStorage.getItem('customPDCFrequencies');
+    const savedFreqs = localStorage.getItem("customPDCFrequencies");
     return savedFreqs ? JSON.parse(savedFreqs) : {};
   });
   const [loading, setLoading] = useState(false);
   const [useCustomFreqs, setUseCustomFreqs] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [customSquawk, setCustomSquawk] = useState('');
-  const [customIdentifier, setCustomIdentifier] = useState('');
+  const [customSquawk, setCustomSquawk] = useState("");
+  const [customIdentifier, setCustomIdentifier] = useState("");
   const [useCustomSquawk, setUseCustomSquawk] = useState(false);
   const [useCustomIdentifier, setUseCustomIdentifier] = useState(false);
-  const [pdcFormat, setPdcFormat] = useState<'standard' | 'simplified'>(
-    'standard'
+  const [pdcFormat, setPdcFormat] = useState<"standard" | "simplified">(
+    "standard"
   );
   const [error, setError] = useState<string | null>(null);
-  const [customRemarks, setCustomRemarks] = useState<string>('');
+  const [customRemarks, setCustomRemarks] = useState<string>("");
 
   const generateRandomSquawk = (): string => {
     return Array.from({ length: 4 }, () => Math.floor(Math.random() * 8)).join(
-      ''
+      ""
     );
   };
 
   const generateIdentifier = (squawk: string, callsign?: string): string => {
     const firstThreeNumbers = squawk.substring(0, 3);
 
-    let firstLetter = 'A';
+    let firstLetter = "A";
     if (callsign) {
       const letters = callsign.match(/[A-Z]/i);
       if (letters && letters.length > 0) {
@@ -65,7 +65,7 @@ const PDCModal: React.FC<PDCModalProps> = ({
   const [autoSquawk] = useState(() => generateRandomSquawk());
 
   useEffect(() => {
-    localStorage.setItem('customPDCFrequencies', JSON.stringify(customFreqs));
+    localStorage.setItem("customPDCFrequencies", JSON.stringify(customFreqs));
   }, [customFreqs]);
 
   useEffect(() => {
@@ -76,10 +76,10 @@ const PDCModal: React.FC<PDCModalProps> = ({
 
   useEffect(() => {
     if (isOpen && flight) {
-      const sidText = flight.sid || 'DCT';
-      const isVFR = flight.flight_type === 'VFR';
-      const isRadarVectors = sidText === 'RADAR VECTORS';
-      const clearedAlt = flight.clearedFL || '030';
+      const sidText = flight.sid || "DCT";
+      const isVFR = flight.flight_type === "VFR";
+      const isRadarVectors = sidText === "RADAR VECTORS";
+      const clearedAlt = flight.clearedFL || "030";
 
       let climbInstruction;
       if (isVFR || isRadarVectors) {
@@ -93,7 +93,7 @@ const PDCModal: React.FC<PDCModalProps> = ({
     }
 
     if (!isOpen) {
-      setCustomRemarks('');
+      setCustomRemarks("");
     }
   }, [isOpen, flight]);
 
@@ -113,7 +113,7 @@ const PDCModal: React.FC<PDCModalProps> = ({
       );
 
       if (!airport) {
-        setError('Airport frequencies not found');
+        setError("Airport frequencies not found");
         return;
       }
 
@@ -121,13 +121,13 @@ const PDCModal: React.FC<PDCModalProps> = ({
       if (Array.isArray(airport.frequencies)) {
         airport.frequencies.forEach((f) => {
           const freqType = f.type?.toLowerCase();
-          if (freqType?.includes('del')) {
+          if (freqType?.includes("del")) {
             freqMap.clearanceDelivery = f.freq;
-          } else if (freqType?.includes('app')) {
+          } else if (freqType?.includes("app")) {
             freqMap.approach = f.freq;
-          } else if (freqType?.includes('gnd')) {
+          } else if (freqType?.includes("gnd")) {
             freqMap.ground = f.freq;
-          } else if (freqType?.includes('twr')) {
+          } else if (freqType?.includes("twr")) {
             freqMap.tower = f.freq;
           }
         });
@@ -139,8 +139,8 @@ const PDCModal: React.FC<PDCModalProps> = ({
 
       setAirportFreqs(freqMap);
     } catch (error) {
-      console.error('Error fetching airport frequencies:', error);
-      setError('Failed to load airport frequencies');
+      console.error("Error fetching airport frequencies:", error);
+      setError("Failed to load airport frequencies");
     } finally {
       setLoading(false);
     }
@@ -157,22 +157,22 @@ const PDCModal: React.FC<PDCModalProps> = ({
   };
 
   const getEquipment = (): string => {
-    const acType = flight?.aircraft || 'UNKN';
+    const acType = flight?.aircraft || "UNKN";
     return `${acType}/L`;
   };
 
   const getFrequencies = () => {
     if (useCustomFreqs) {
       return {
-        clearance: customFreqs.clearanceDelivery || '122.800',
-        departure: customFreqs.departure || '122.800',
+        clearance: customFreqs.clearanceDelivery || "122.800",
+        departure: customFreqs.departure || "122.800",
       };
     }
 
     const clearanceFreq =
-      airportFreqs.clearanceDelivery || airportFreqs.ground || '122.800';
+      airportFreqs.clearanceDelivery || airportFreqs.ground || "122.800";
     const departureFreq =
-      airportFreqs.departure || airportFreqs.tower || '122.800';
+      airportFreqs.departure || airportFreqs.tower || "122.800";
 
     return {
       clearance: clearanceFreq,
@@ -181,28 +181,26 @@ const PDCModal: React.FC<PDCModalProps> = ({
   };
 
   const generatePDCText = (): string => {
-    if (!flight) return '';
+    if (!flight) return "";
 
     const squawk = getSquawk();
     const identifier = getIdentifier(squawk);
     const equipment = getEquipment();
-    const sidText = flight.sid || 'DCT';
+    const sidText = flight.sid || "DCT";
     const freqs = getFrequencies();
-    const clearedAlt = flight.clearedFL || '030';
+    const clearedAlt = flight.clearedFL || "030";
 
-    if (pdcFormat === 'simplified') {
+    if (pdcFormat === "simplified") {
       return `PDC FOR ${flight.callsign}
 CLEARED TO ${flight.arrival} VIA ${sidText}
 CLIMB AND MAINTAIN ${clearedAlt}
 SQUAWK ${squawk}
 DEPARTURE ${freqs.departure}
 CLEARANCE ${freqs.clearance}
-IDENTIFIER ${identifier}${customRemarks ? `\nREMARKS: ${customRemarks}` : ''}`;
+IDENTIFIER ${identifier}${customRemarks ? `\nREMARKS: ${customRemarks}` : ""}`;
     }
 
-    return `ACARS: PDC | CALLSIGN: ${
-      flight.callsign
-    } | EQUIPMENT: ${equipment} |
+    return `ACARS: PDC | CALLSIGN: ${flight.callsign} | EQUIPMENT: ${equipment} |
 DEPARTURE: ${flight.departure} | DESTINATION: ${flight.arrival} |
 ROUTE: ${flight.departure}.${sidText}..${flight.arrival} |
 ALTITUDE: ${clearedAlt} | TRANSPONDER: ${squawk} | REMARKS:
@@ -214,19 +212,19 @@ IDENTIFIER: ${identifier}`;
     type: keyof AirportFrequencies,
     value: string
   ) => {
-    const filtered = value.replace(/[^0-9.]/g, '');
+    const filtered = value.replace(/[^0-9.]/g, "");
     setCustomFreqs((prev) => ({ ...prev, [type]: filtered }));
     setUseCustomFreqs(true);
   };
 
   const handleSquawkChange = (value: string) => {
-    const filtered = value.replace(/[^0-7]/g, '').slice(0, 4);
+    const filtered = value.replace(/[^0-7]/g, "").slice(0, 4);
     setCustomSquawk(filtered);
   };
 
   const handleIdentifierChange = (value: string) => {
     const filtered = value
-      .replace(/[^A-Z0-9]/gi, '')
+      .replace(/[^A-Z0-9]/gi, "")
       .slice(0, 4)
       .toUpperCase();
     setCustomIdentifier(filtered);
@@ -241,8 +239,8 @@ IDENTIFIER: ${identifier}`;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy PDC:', error);
-      setError('Failed to copy to clipboard');
+      console.error("Failed to copy PDC:", error);
+      setError("Failed to copy to clipboard");
     }
   };
 
@@ -297,8 +295,8 @@ IDENTIFIER: ${identifier}`;
                 variant="outline"
                 className={`flex items-center gap-1 transition-all duration-300 ${
                   copied
-                    ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white'
-                    : ''
+                    ? "bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white"
+                    : ""
                 }`}
               >
                 {copied ? (
@@ -324,21 +322,21 @@ IDENTIFIER: ${identifier}`;
             <h3 className="text-lg font-semibold text-blue-300">PDC Format</h3>
             <div className="flex gap-2">
               <button
-                onClick={() => setPdcFormat('standard')}
+                onClick={() => setPdcFormat("standard")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'standard'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                  pdcFormat === "standard"
+                    ? "bg-blue-600 text-white border border-blue-500"
+                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700"
                 }`}
               >
                 Standard ACARS
               </button>
               <button
-                onClick={() => setPdcFormat('simplified')}
+                onClick={() => setPdcFormat("simplified")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'simplified'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                  pdcFormat === "simplified"
+                    ? "bg-blue-600 text-white border border-blue-500"
+                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700"
                 }`}
               >
                 Simplified
@@ -358,23 +356,23 @@ IDENTIFIER: ${identifier}`;
               </div>
               <div>
                 <span className="text-xs text-gray-400">Aircraft</span>
-                <div className="font-mono">{flight.aircraft || 'N/A'}</div>
+                <div className="font-mono">{flight.aircraft || "N/A"}</div>
               </div>
               <div>
                 <span className="text-xs text-gray-400">Departure</span>
-                <div className="font-mono">{flight.departure || 'N/A'}</div>
+                <div className="font-mono">{flight.departure || "N/A"}</div>
               </div>
               <div>
                 <span className="text-xs text-gray-400">Arrival</span>
-                <div className="font-mono">{flight.arrival || 'N/A'}</div>
+                <div className="font-mono">{flight.arrival || "N/A"}</div>
               </div>
               <div>
                 <span className="text-xs text-gray-400">SID</span>
-                <div className="font-mono">{flight.sid || 'DCT'}</div>
+                <div className="font-mono">{flight.sid || "DCT"}</div>
               </div>
               <div>
                 <span className="text-xs text-gray-400">Cruising FL</span>
-                <div className="font-mono">{flight.cruisingFL || 'N/A'}</div>
+                <div className="font-mono">{flight.cruisingFL || "N/A"}</div>
               </div>
             </div>
           </div>
@@ -417,11 +415,11 @@ IDENTIFIER: ${identifier}`;
                 <TextInput
                   value={
                     useCustomFreqs
-                      ? customFreqs.clearanceDelivery || ''
-                      : airportFreqs.clearanceDelivery || '122.800'
+                      ? customFreqs.clearanceDelivery || ""
+                      : airportFreqs.clearanceDelivery || "122.800"
                   }
                   onChange={(value) =>
-                    handleCustomFreqChange('clearanceDelivery', value)
+                    handleCustomFreqChange("clearanceDelivery", value)
                   }
                   placeholder="e.g. 121.65"
                   className="w-full bg-zinc-800 border border-zinc-700"
@@ -435,11 +433,11 @@ IDENTIFIER: ${identifier}`;
                 <TextInput
                   value={
                     useCustomFreqs
-                      ? customFreqs.departure || ''
-                      : airportFreqs.departure || '122.800'
+                      ? customFreqs.departure || ""
+                      : airportFreqs.departure || "122.800"
                   }
                   onChange={(value) =>
-                    handleCustomFreqChange('departure', value)
+                    handleCustomFreqChange("departure", value)
                   }
                   placeholder="e.g. 133.0"
                   className="w-full bg-zinc-800 border border-zinc-700"
@@ -461,10 +459,10 @@ IDENTIFIER: ${identifier}`;
                   <button
                     onClick={() => setUseCustomSquawk(!useCustomSquawk)}
                     className={`text-xs px-2 py-1 rounded ${
-                      useCustomSquawk ? 'bg-blue-600' : 'bg-gray-700'
+                      useCustomSquawk ? "bg-blue-600" : "bg-gray-700"
                     }`}
                   >
-                    {useCustomSquawk ? 'Custom' : 'Auto'}
+                    {useCustomSquawk ? "Custom" : "Auto"}
                   </button>
                 </div>
                 <TextInput
@@ -489,10 +487,10 @@ IDENTIFIER: ${identifier}`;
                   <button
                     onClick={() => setUseCustomIdentifier(!useCustomIdentifier)}
                     className={`text-xs px-2 py-1 rounded ${
-                      useCustomIdentifier ? 'bg-blue-600' : 'bg-gray-700'
+                      useCustomIdentifier ? "bg-blue-600" : "bg-gray-700"
                     }`}
                   >
-                    {useCustomIdentifier ? 'Custom' : 'Auto'}
+                    {useCustomIdentifier ? "Custom" : "Auto"}
                   </button>
                 </div>
                 <TextInput
@@ -543,7 +541,7 @@ IDENTIFIER: ${identifier}`;
               </Button>
 
               {/* NEW: Issue PDC to pilot via flights websocket */}
-              {typeof onIssuePDC === 'function' && (
+              {typeof onIssuePDC === "function" && (
                 <Button
                   onClick={async () => {
                     if (!flight) return;
@@ -552,8 +550,8 @@ IDENTIFIER: ${identifier}`;
                       await onIssuePDC(flight.id, pdcText);
                       onClose();
                     } catch (err) {
-                      console.error('Issue PDC failed', err);
-                      setError('Failed to issue PDC');
+                      console.error("Issue PDC failed", err);
+                      setError("Failed to issue PDC");
                     }
                   }}
                   disabled={loading}

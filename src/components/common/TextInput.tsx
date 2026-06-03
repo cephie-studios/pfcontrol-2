@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import type { ChangeEvent } from 'react';
+import { memo } from "react";
+import type { ChangeEvent } from "react";
 
 interface TextInputProps {
   value: string;
@@ -22,9 +22,9 @@ interface TextInputProps {
 function TextInput({
   value,
   onChange,
-  placeholder = '',
+  placeholder = "",
   disabled = false,
-  className = '',
+  className = "",
   maxLength,
   autoFocus = false,
   onKeyDown,
@@ -60,10 +60,10 @@ function TextInput({
         <div className="absolute -top-1 -right-1 z-10 group">
           <img
             src={editingAvatar}
-            alt={editingUsername || 'User editing'}
+            alt={editingUsername || "User editing"}
             className="w-5 h-5 rounded-full border border-blue-400 shadow-md"
             onError={(e) => {
-              e.currentTarget.src = '/assets/app/default/avatar.webp';
+              e.currentTarget.src = "/assets/app/default/avatar.webp";
             }}
           />
           {editingUsername && (

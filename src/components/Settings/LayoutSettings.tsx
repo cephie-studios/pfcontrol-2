@@ -7,12 +7,12 @@ import {
   ChevronDown,
   ChevronUp,
   Map,
-} from 'lucide-react';
-import { BiSidebar } from 'react-icons/bi';
-import { HiOutlineQueueList } from 'react-icons/hi2';
-import { useState } from 'react';
-import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
+} from "lucide-react";
+import { BiSidebar } from "react-icons/bi";
+import { HiOutlineQueueList } from "react-icons/hi2";
+import { useState } from "react";
+import type { Settings } from "../../types/settings";
+import Button from "../common/Button";
 
 interface LayoutSettingsProps {
   settings: Settings | null;
@@ -49,7 +49,7 @@ export default function LayoutSettings({
     onChange(updatedSettings);
   };
 
-  const handleChartViewModeChange = (mode: 'list' | 'legacy') => {
+  const handleChartViewModeChange = (mode: "list" | "legacy") => {
     if (!settings) return;
     const updatedSettings = {
       ...settings,
@@ -103,8 +103,8 @@ export default function LayoutSettings({
       <div
         className={`transition-all duration-300 ease-in-out ${
           isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
+            ? "max-h-[2000px] opacity-100"
+            : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="p-4 sm:p-6">
@@ -148,13 +148,13 @@ export default function LayoutSettings({
                 <span
                   className={`text-sm font-medium ${
                     settings.layout.showCombinedView
-                      ? 'text-green-400'
-                      : 'text-zinc-400'
+                      ? "text-green-400"
+                      : "text-zinc-400"
                   }`}
                 >
                   {settings.layout.showCombinedView
-                    ? 'Combined view enabled'
-                    : 'Separate tabs (default)'}
+                    ? "Combined view enabled"
+                    : "Separate tabs (default)"}
                 </span>
               </div>
             </div>
@@ -207,8 +207,8 @@ export default function LayoutSettings({
                   <span
                     className={`text-sm font-medium w-16 text-center px-2 py-1 rounded ${
                       settings.layout.flightRowOpacity <= 50
-                        ? 'bg-purple-500/20 text-purple-400'
-                        : 'bg-green-500/20 text-green-400'
+                        ? "bg-purple-500/20 text-purple-400"
+                        : "bg-green-500/20 text-green-400"
                     }`}
                   >
                     {settings.layout.flightRowOpacity}%
@@ -307,23 +307,23 @@ export default function LayoutSettings({
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleChartViewModeChange('legacy')}
+                  onClick={() => handleChartViewModeChange("legacy")}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                    (settings.layout.chartDrawerViewMode || 'legacy') ===
-                    'legacy'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    (settings.layout.chartDrawerViewMode || "legacy") ===
+                    "legacy"
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                   }`}
                 >
                   <BiSidebar className="text-base" />
                   Legacy View
                 </button>
                 <button
-                  onClick={() => handleChartViewModeChange('list')}
+                  onClick={() => handleChartViewModeChange("list")}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                    settings.layout.chartDrawerViewMode === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    settings.layout.chartDrawerViewMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                   }`}
                 >
                   <HiOutlineQueueList className="text-base" />

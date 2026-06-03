@@ -1,38 +1,38 @@
-import express from 'express';
-import { createAuditLogger } from '../../middleware/auditLogger.js';
-import { logAdminAction } from '../../db/audit.js';
+import express from "express";
+import { createAuditLogger } from "../../middleware/auditLogger.js";
+import { logAdminAction } from "../../db/audit.js";
 import {
   getAllNotifications,
   addNotification,
   updateNotification,
   deleteNotification,
-} from '../../db/notifications.js';
-import { getClientIp } from '../../utils/getIpAddress.js';
-import { broadcastNotificationsUpdate } from '../../websockets/notificationsWebsocket.js';
+} from "../../db/notifications.js";
+import { getClientIp } from "../../utils/getIpAddress.js";
+import { broadcastNotificationsUpdate } from "../../websockets/notificationsWebsocket.js";
 
 const router = express.Router();
 
 // GET: /api/admin/notifications - Get all notifications
 router.get(
-  '/',
-  createAuditLogger('ADMIN_NOTIFICATIONS_ACCESSED'),
+  "/",
+  createAuditLogger("ADMIN_NOTIFICATIONS_ACCESSED"),
   async (req, res) => {
     try {
       const notifications = await getAllNotifications();
       res.json(notifications);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
-      res.status(500).json({ error: 'Failed to fetch notifications' });
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
     }
   }
 );
 
 // POST: /api/admin/notifications - Add a new notification
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { type, text, show, customColor, custom_color } = req.body;
     if (!type || !text) {
-      return res.status(400).json({ error: 'Type and text are required' });
+      return res.status(400).json({ error: "Type and text are required" });
     }
 
     const colorValue = custom_color !== undefined ? custom_color : customColor;
@@ -49,10 +49,10 @@ router.post('/', async (req, res) => {
       const ip = getClientIp(req);
       await logAdminAction({
         adminId: req.user.userId,
-        adminUsername: req.user.username || 'Unknown',
-        actionType: 'NOTIFICATION_ADDED',
-        ipAddress: Array.isArray(ip) ? ip.join(', ') : ip,
-        userAgent: req.get('User-Agent'),
+        adminUsername: req.user.username || "Unknown",
+        actionType: "NOTIFICATION_ADDED",
+        ipAddress: Array.isArray(ip) ? ip.join(", ") : ip,
+        userAgent: req.get("User-Agent"),
         details: {
           type,
           text,
@@ -66,13 +66,13 @@ router.post('/', async (req, res) => {
     broadcastNotificationsUpdate();
     res.json(notification);
   } catch (error) {
-    console.error('Error adding notification:', error);
-    res.status(500).json({ error: 'Failed to add notification' });
+    console.error("Error adding notification:", error);
+    res.status(500).json({ error: "Failed to add notification" });
   }
 });
 
 // PUT: /api/admin/notifications/:id - Update a notification
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { type, text, show, customColor, custom_color } = req.body;
@@ -92,10 +92,10 @@ router.put('/:id', async (req, res) => {
       const ip = getClientIp(req);
       await logAdminAction({
         adminId: req.user.userId,
-        adminUsername: req.user.username || 'Unknown',
-        actionType: 'NOTIFICATION_UPDATED',
-        ipAddress: Array.isArray(ip) ? ip.join(', ') : ip,
-        userAgent: req.get('User-Agent'),
+        adminUsername: req.user.username || "Unknown",
+        actionType: "NOTIFICATION_UPDATED",
+        ipAddress: Array.isArray(ip) ? ip.join(", ") : ip,
+        userAgent: req.get("User-Agent"),
         details: {
           notificationId: id,
           type,
@@ -109,18 +109,18 @@ router.put('/:id', async (req, res) => {
     broadcastNotificationsUpdate();
     res.json(notification);
   } catch (error) {
-    console.error('Error updating notification:', error);
-    res.status(500).json({ error: 'Failed to update notification' });
+    console.error("Error updating notification:", error);
+    res.status(500).json({ error: "Failed to update notification" });
   }
 });
 
 // DELETE: /api/admin/notifications/:id - Delete a notification
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const numericId = Number(id);
     if (isNaN(numericId)) {
-      return res.status(400).json({ error: 'Invalid notification ID' });
+      return res.status(400).json({ error: "Invalid notification ID" });
     }
     const deleted = await deleteNotification(numericId);
 
@@ -128,19 +128,19 @@ router.delete('/:id', async (req, res) => {
       const ip = getClientIp(req);
       await logAdminAction({
         adminId: req.user.userId,
-        adminUsername: req.user.username || 'Unknown',
-        actionType: 'NOTIFICATION_DELETED',
-        ipAddress: Array.isArray(ip) ? ip.join(', ') : ip,
-        userAgent: req.get('User-Agent'),
+        adminUsername: req.user.username || "Unknown",
+        actionType: "NOTIFICATION_DELETED",
+        ipAddress: Array.isArray(ip) ? ip.join(", ") : ip,
+        userAgent: req.get("User-Agent"),
         details: { notificationId: id },
       });
     }
 
     broadcastNotificationsUpdate();
-    res.json({ message: 'Notification deleted', deleted });
+    res.json({ message: "Notification deleted", deleted });
   } catch (error) {
-    console.error('Error deleting notification:', error);
-    res.status(500).json({ error: 'Failed to delete notification' });
+    console.error("Error deleting notification:", error);
+    res.status(500).json({ error: "Failed to delete notification" });
   }
 });
 

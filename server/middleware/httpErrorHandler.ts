@@ -26,7 +26,7 @@ export function httpErrorHandler(
   err: unknown,
   req: Request,
   res: Response,
-  _next: NextFunction,
+  _next: NextFunction
 ): void {
   if (res.headersSent) return;
 
@@ -56,5 +56,11 @@ export function httpErrorHandler(
   res
     .status(status >= 500 ? 500 : status)
     .type("text/plain")
-    .send(isProd ? "Something went wrong" : err instanceof Error ? err.message : "Error");
+    .send(
+      isProd
+        ? "Something went wrong"
+        : err instanceof Error
+          ? err.message
+          : "Error"
+    );
 }

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useData } from '../../hooks/data/useData';
-import { ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { useData } from "../../hooks/data/useData";
+import { ChevronDown } from "lucide-react";
 
 interface CallsignInputProps {
   value: string;
@@ -13,15 +13,15 @@ interface CallsignInputProps {
 export default function CallsignInput({
   value,
   onChange,
-  placeholder = 'e.g. DLH123',
+  placeholder = "e.g. DLH123",
   required = false,
   maxLength = 16,
 }: CallsignInputProps) {
   const { airlines } = useData();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredAirlines, setFilteredAirlines] = useState(airlines);
-  const [dropdownSearch, setDropdownSearch] = useState('');
-  const [validationError, setValidationError] = useState<string>('');
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const [validationError, setValidationError] = useState<string>("");
   const [hasBlurred, setHasBlurred] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,20 +81,20 @@ export default function CallsignInput({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const validateCallsign = (callsign: string): string => {
     if (!callsign) {
-      return '';
+      return "";
     }
 
     if (!/\d/.test(callsign)) {
-      return 'Callsign must contain at least one number';
+      return "Callsign must contain at least one number";
     }
 
-    return '';
+    return "";
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +107,7 @@ export default function CallsignInput({
     onChange(icao);
     setShowSuggestions(false);
     setHasBlurred(false);
-    setValidationError('');
+    setValidationError("");
     // Keep focus so the user can immediately type the flight number
     setTimeout(() => {
       if (inputRef.current) {
@@ -135,11 +135,11 @@ export default function CallsignInput({
     <div className="relative">
       <div
         className={`relative bg-gray-800 border-2 transition-all duration-75 z-10 ${
-          shouldShowError ? 'border-red-600' : 'border-blue-600'
+          shouldShowError ? "border-red-600" : "border-blue-600"
         } ${
           showSuggestions && filteredAirlines.length > 0
-            ? 'rounded-t-3xl rounded-b-none border-b-0'
-            : 'rounded-3xl'
+            ? "rounded-t-3xl rounded-b-none border-b-0"
+            : "rounded-3xl"
         }`}
       >
         <input
@@ -156,7 +156,7 @@ export default function CallsignInput({
         />
         {filteredAirlines.length > 0 && (
           <ChevronDown
-            className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 transition-transform duration-300 ${showSuggestions ? 'rotate-180' : ''}`}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 transition-transform duration-300 ${showSuggestions ? "rotate-180" : ""}`}
           />
         )}
       </div>
@@ -177,8 +177,8 @@ export default function CallsignInput({
           <div
             className="no-scrollbar max-h-64 overflow-y-auto py-2"
             style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
             }}
           >
             {filteredAirlines.slice(0, 50).map((airline, index) => (
@@ -187,7 +187,7 @@ export default function CallsignInput({
                 type="button"
                 onClick={() => handleAirlineSelect(airline.icao)}
                 className="w-full text-left px-4 py-2 hover:bg-blue-600 transition-colors rounded-2xl mx-2"
-                style={{ width: 'calc(100% - 1rem)' }}
+                style={{ width: "calc(100% - 1rem)" }}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-white font-bold">{airline.icao}</span>

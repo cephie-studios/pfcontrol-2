@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
-import { redisConnection } from '../db/connection.js';
-import type { PublicPilotProfile } from '../services/publicPilotProfile.js';
+import { createHash } from "node:crypto";
+import { redisConnection } from "../db/connection.js";
+import type { PublicPilotProfile } from "../services/publicPilotProfile.js";
 
 // 7d - invalidate on profile changes
 const REDIS_TTL_SEC = Math.min(
@@ -11,7 +11,7 @@ const REDIS_TTL_SEC = Math.min(
   30 * 24 * 60 * 60
 );
 
-const REDIS_KEY_PREFIX = 'og:profile:png:v7:';
+const REDIS_KEY_PREFIX = "og:profile:png:v7:";
 
 const HTTP_MAX_AGE_SEC = Math.min(
   REDIS_TTL_SEC,
@@ -42,41 +42,41 @@ function getLru(key: string): Buffer | null {
 
 export function profileOgFingerprint(profile: PublicPilotProfile): string {
   const { user, privacySettings } = profile;
-  const h = createHash('sha256');
+  const h = createHash("sha256");
   h.update(user.id);
-  h.update('\n');
+  h.update("\n");
   h.update(user.username);
-  h.update('\n');
-  h.update(user.avatar ?? '');
-  h.update('\n');
-  h.update(user.bio ?? '');
-  h.update('\n');
-  h.update(user.is_admin ? '1' : '0');
-  h.update('\n');
+  h.update("\n");
+  h.update(user.avatar ?? "");
+  h.update("\n");
+  h.update(user.bio ?? "");
+  h.update("\n");
+  h.update(user.is_admin ? "1" : "0");
+  h.update("\n");
   h.update(
     (user.roles ?? [])
-      .map((r) => `${r.id}:${r.name}:${r.color ?? ''}:${r.priority ?? 0}`)
-      .join('|')
+      .map((r) => `${r.id}:${r.name}:${r.color ?? ""}:${r.priority ?? 0}`)
+      .join("|")
   );
-  h.update('\n');
+  h.update("\n");
   h.update(JSON.stringify(user.statistics ?? {}));
-  h.update('\n');
+  h.update("\n");
   h.update(
     user.rating
       ? `${user.rating.averageRating.toFixed(3)}:${user.rating.ratingCount}`
-      : '-'
+      : "-"
   );
-  h.update('\n');
+  h.update("\n");
   h.update(JSON.stringify(privacySettings));
-  h.update('\n');
-  h.update(user.roblox_username ?? '');
-  h.update('\n');
-  h.update(user.vatsim_cid ?? '');
-  h.update('\n');
-  h.update(user.vatsim_rating_short ?? '');
-  h.update('\n');
+  h.update("\n");
+  h.update(user.roblox_username ?? "");
+  h.update("\n");
+  h.update(user.vatsim_cid ?? "");
+  h.update("\n");
+  h.update(user.vatsim_rating_short ?? "");
+  h.update("\n");
   h.update(JSON.stringify(user.background_image ?? null));
-  return h.digest('hex').slice(0, 32);
+  return h.digest("hex").slice(0, 32);
 }
 
 export function profileOgRedisKey(profile: PublicPilotProfile): string {
@@ -98,12 +98,12 @@ export async function getCachedProfileOgPng(
   try {
     const b64 = await redisConnection.get(redisKey);
     if (!b64) return null;
-    const buf = Buffer.from(b64, 'base64');
+    const buf = Buffer.from(b64, "base64");
     touchLru(redisKey, buf);
     return buf;
   } catch (err) {
     if (err instanceof Error) {
-      console.warn('[og] profile cache read:', err.message);
+      console.warn("[og] profile cache read:", err.message);
     }
     return null;
   }
@@ -117,13 +117,13 @@ export async function setCachedProfileOgPng(
   try {
     await redisConnection.set(
       redisKey,
-      png.toString('base64'),
-      'EX',
+      png.toString("base64"),
+      "EX",
       REDIS_TTL_SEC
     );
   } catch (err) {
     if (err instanceof Error) {
-      console.warn('[og] profile cache write:', err.message);
+      console.warn("[og] profile cache write:", err.message);
     }
   }
 }

@@ -93,7 +93,9 @@ export default function ScopeTagSelector({
 
   if (groups.length === 0) {
     return (
-      <p className={`text-sm py-2 ${light ? "text-slate-500" : "text-zinc-500"}`}>
+      <p
+        className={`text-sm py-2 ${light ? "text-slate-500" : "text-zinc-500"}`}
+      >
         No scopes available.
       </p>
     );

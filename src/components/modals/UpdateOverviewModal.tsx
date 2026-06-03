@@ -1,8 +1,8 @@
-import { X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import Button from '../common/Button';
-import { useEffect, useState } from 'react';
+import { X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import Button from "../common/Button";
+import { useEffect, useState } from "react";
 
 interface UpdateOverviewModalProps {
   isOpen: boolean;
@@ -23,13 +23,13 @@ export default function UpdateOverviewModal({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
@@ -62,7 +62,7 @@ export default function UpdateOverviewModal({
 
         <div
           className={`absolute top-48 left-0 right-0 h-24 bg-gradient-to-b from-black via-black/40 to-transparent pointer-events-none transition-opacity duration-300 z-10 ${
-            isScrolled ? 'opacity-100' : 'opacity-0'
+            isScrolled ? "opacity-100" : "opacity-0"
           }`}
         />
 

@@ -1,27 +1,24 @@
-import type { KeyboardEventHandler, RefObject } from 'react';
-import { MapPin, Send } from 'lucide-react';
-import type { SessionUser } from '../../types/session';
-import type { ConnectedGlobalChatUser } from '../../sockets/globalChatSocket';
-import { formatStationDisplay, isUserInActiveChat } from '../../utils/chats';
-import Button from '../common/Button';
+import type { KeyboardEventHandler, RefObject } from "react";
+import { MapPin, Send } from "lucide-react";
+import type { SessionUser } from "../../types/session";
+import type { ConnectedGlobalChatUser } from "../../sockets/globalChatSocket";
+import { formatStationDisplay, isUserInActiveChat } from "../../utils/chats";
+import Button from "../common/Button";
 
 export type GlobalChatSuggestion = {
-  type: 'user' | 'airport';
-  data:
-    | SessionUser
-    | { icao: string; name: string }
-    | ConnectedGlobalChatUser;
+  type: "user" | "airport";
+  data: SessionUser | { icao: string; name: string } | ConnectedGlobalChatUser;
 };
 
 const mentionListClass =
-  'absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-40 overflow-y-auto';
+  "absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-40 overflow-y-auto";
 
 function typingText(users: Map<string, string>): string | null {
   const names = Array.from(users.values());
   if (names.length === 0) return null;
   if (names.length === 1) return `${names[0]} is typing…`;
   if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
-  return 'Several people are typing…';
+  return "Several people are typing…";
 }
 
 /** Single floating composer for session + PFATC: gradient, @-mentions, textarea, send. */
@@ -80,7 +77,7 @@ export function ChatTextComposer({
               globalSuggestions.length > 0 && (
                 <div className={mentionListClass}>
                   {globalSuggestions.map((suggestion, index) => {
-                    if (suggestion.type === 'airport') {
+                    if (suggestion.type === "airport") {
                       const airport = suggestion.data as {
                         icao: string;
                         name: string;
@@ -91,8 +88,8 @@ export function ChatTextComposer({
                           type="button"
                           className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
                             index === selectedGlobalSuggestionIndex
-                              ? 'bg-blue-600/40'
-                              : ''
+                              ? "bg-blue-600/40"
+                              : ""
                           }`}
                           onClick={() =>
                             insertGlobalMention(airport.icao.toLowerCase())
@@ -120,12 +117,12 @@ export function ChatTextComposer({
                           station?: string;
                         };
                     const sugStation =
-                      'station' in userSuggestion
+                      "station" in userSuggestion
                         ? userSuggestion.station
                         : undefined;
                     const sugPosition =
-                      'position' in userSuggestion &&
-                      typeof userSuggestion.position === 'string'
+                      "position" in userSuggestion &&
+                      typeof userSuggestion.position === "string"
                         ? userSuggestion.position
                         : undefined;
                     const displayStation = formatStationDisplay(
@@ -139,8 +136,8 @@ export function ChatTextComposer({
                         type="button"
                         className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
                           index === selectedGlobalSuggestionIndex
-                            ? 'bg-blue-600/40'
-                            : ''
+                            ? "bg-blue-600/40"
+                            : ""
                         }`}
                         onClick={() =>
                           insertGlobalMention(userSuggestion.username)
@@ -149,7 +146,7 @@ export function ChatTextComposer({
                         <img
                           src={
                             userSuggestion.avatar ||
-                            '/assets/app/default/avatar.webp'
+                            "/assets/app/default/avatar.webp"
                           }
                           alt={userSuggestion.username}
                           className="w-6 h-6 rounded-full"
@@ -178,15 +175,15 @@ export function ChatTextComposer({
                       type="button"
                       className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
                         index === selectedSuggestionIndex
-                          ? 'bg-blue-600/40'
-                          : ''
+                          ? "bg-blue-600/40"
+                          : ""
                       }`}
                       onClick={() => insertMention(suggestedUser.username)}
                     >
                       <img
                         src={
                           suggestedUser.avatar ||
-                          '/assets/app/default/avatar.webp'
+                          "/assets/app/default/avatar.webp"
                         }
                         alt={suggestedUser.username}
                         className="w-6 h-6 rounded-full"
@@ -203,12 +200,9 @@ export function ChatTextComposer({
                       </div>
                       <div
                         className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          isUserInActiveChat(
-                            suggestedUser.id,
-                            activeChatUsers
-                          )
-                            ? 'bg-green-400'
-                            : 'bg-gray-400'
+                          isUserInActiveChat(suggestedUser.id, activeChatUsers)
+                            ? "bg-green-400"
+                            : "bg-gray-400"
                         }`}
                       />
                     </button>

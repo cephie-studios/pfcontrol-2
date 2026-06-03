@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Star,
   Check,
@@ -6,11 +6,11 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
-import { submitFeedback } from '../../utils/fetch/feedback';
-import { Portal } from './Portal';
-import Button from '../common/Button';
-import Toast from '../common/Toast';
+} from "lucide-react";
+import { submitFeedback } from "../../utils/fetch/feedback";
+import { Portal } from "./Portal";
+import Button from "../common/Button";
+import Toast from "../common/Toast";
 
 interface FeedbackBannerProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ export default function FeedbackBanner({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: 'success' | 'error' | 'info';
+    type: "success" | "error" | "info";
   } | null>(null);
   const [showDetailedModal, setShowDetailedModal] = useState(false);
   const [detailedRatings, setDetailedRatings] = useState({
@@ -36,7 +36,7 @@ export default function FeedbackBanner({
     easeOfUse: 0,
     overall: 0,
   });
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [hoveredBannerRating, setHoveredBannerRating] = useState(0);
@@ -60,12 +60,12 @@ export default function FeedbackBanner({
 
   useEffect(() => {
     if (showDetailedModal) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [showDetailedModal]);
 
@@ -93,14 +93,14 @@ export default function FeedbackBanner({
 
   const handleRatingClick = (
     categoryKey:
-      | 'userInterface'
-      | 'performance'
-      | 'features'
-      | 'easeOfUse'
-      | 'overall',
+      | "userInterface"
+      | "performance"
+      | "features"
+      | "easeOfUse"
+      | "overall",
     rating: number
   ) => {
-    if (categoryKey === 'overall') {
+    if (categoryKey === "overall") {
       setOverallManuallySet(true);
     }
     setDetailedRatings((prev) => ({ ...prev, [categoryKey]: rating }));
@@ -136,15 +136,15 @@ export default function FeedbackBanner({
             easeOfUse: 0,
             overall: 0,
           });
-          setComment('');
+          setComment("");
           setIsCommentExpanded(false);
         }, 300);
       }, 1500);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error("Error submitting feedback:", error);
       setToast({
-        message: 'Failed to submit feedback. Please try again later.',
-        type: 'error',
+        message: "Failed to submit feedback. Please try again later.",
+        type: "error",
       });
       setIsSubmitting(false);
     }
@@ -171,10 +171,10 @@ export default function FeedbackBanner({
         }, 300);
       }, 1500);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error("Error submitting feedback:", error);
       setToast({
-        message: 'Failed to submit feedback. Please try again later.',
-        type: 'error',
+        message: "Failed to submit feedback. Please try again later.",
+        type: "error",
       });
       setIsSubmitting(false);
     }
@@ -212,7 +212,7 @@ export default function FeedbackBanner({
         easeOfUse: 0,
         overall: 0,
       });
-      setComment('');
+      setComment("");
       setHoveredCategory(null);
       setHoveredRating(0);
     }, 300);
@@ -220,29 +220,29 @@ export default function FeedbackBanner({
 
   const categories = [
     {
-      key: 'userInterface' as const,
-      label: 'User Interface',
-      description: 'Design and visual appeal',
+      key: "userInterface" as const,
+      label: "User Interface",
+      description: "Design and visual appeal",
     },
     {
-      key: 'performance' as const,
-      label: 'Performance',
-      description: 'Speed and reliability',
+      key: "performance" as const,
+      label: "Performance",
+      description: "Speed and reliability",
     },
     {
-      key: 'features' as const,
-      label: 'Global Chat and ACARS',
-      description: 'Communication features',
+      key: "features" as const,
+      label: "Global Chat and ACARS",
+      description: "Communication features",
     },
     {
-      key: 'easeOfUse' as const,
-      label: 'Ease of Use',
-      description: 'Intuitiveness and simplicity',
+      key: "easeOfUse" as const,
+      label: "Ease of Use",
+      description: "Intuitiveness and simplicity",
     },
     {
-      key: 'overall' as const,
-      label: 'Overall Experience',
-      description: 'Your overall satisfaction',
+      key: "overall" as const,
+      label: "Overall Experience",
+      description: "Your overall satisfaction",
     },
   ];
 
@@ -280,7 +280,7 @@ export default function FeedbackBanner({
                         <div className="flex flex-col justify-center text-left">
                           <span className="text-white text-md font-medium mb-0.5">
                             {category.label}
-                            {category.key === 'overall' && (
+                            {category.key === "overall" && (
                               <span className="text-red-400 ml-1">*</span>
                             )}
                           </span>
@@ -313,8 +313,8 @@ export default function FeedbackBanner({
                               <Star
                                 className={`w-8 h-8 transition-colors duration-200 ${
                                   star <= displayRating
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-zinc-600'
+                                    ? "text-yellow-400 fill-yellow-400"
+                                    : "text-zinc-600"
                                 }`}
                               />
                             </button>
@@ -336,7 +336,7 @@ export default function FeedbackBanner({
                   disabled={isSubmitting}
                 >
                   <span>
-                    Additional Comments{' '}
+                    Additional Comments{" "}
                     <span className="text-zinc-500 text-xs">(Optional)</span>
                   </span>
                   <ChevronDown className="w-4 h-4 text-zinc-400" />
@@ -344,7 +344,7 @@ export default function FeedbackBanner({
               ) : (
                 <>
                   <label className="text-white font-semibold text-sm block mb-3 ml-1">
-                    Additional Comments{' '}
+                    Additional Comments{" "}
                     <span className="text-zinc-500 text-xs">(Optional)</span>
                   </label>
                   <div className="relative">
@@ -454,8 +454,8 @@ export default function FeedbackBanner({
                       <Star
                         className={`w-8 h-8 transition-colors duration-200 ${
                           star <= displayRating
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-zinc-600'
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-zinc-600"
                         }`}
                       />
                     </button>
@@ -550,7 +550,7 @@ export default function FeedbackBanner({
                       <div className="flex flex-row items-center justify-between">
                         <span className="text-white text-sm font-medium">
                           {category.label}
-                          {category.key === 'overall' && (
+                          {category.key === "overall" && (
                             <span className="text-red-400 ml-1">*</span>
                           )}
                         </span>
@@ -579,8 +579,8 @@ export default function FeedbackBanner({
                               <Star
                                 className={`w-6 h-6 transition-colors duration-200 ${
                                   star <= displayRating
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-zinc-600'
+                                    ? "text-yellow-400 fill-yellow-400"
+                                    : "text-zinc-600"
                                 }`}
                               />
                             </button>
@@ -602,7 +602,7 @@ export default function FeedbackBanner({
                   disabled={isSubmitting}
                 >
                   <span>
-                    Additional Comments{' '}
+                    Additional Comments{" "}
                     <span className="text-zinc-500 text-xs">(Optional)</span>
                   </span>
                   <ChevronDown className="w-4 h-4 text-zinc-400" />
@@ -610,7 +610,7 @@ export default function FeedbackBanner({
               ) : (
                 <>
                   <label className="text-white font-semibold text-sm block mb-2">
-                    Additional Comments{' '}
+                    Additional Comments{" "}
                     <span className="text-zinc-500 text-xs">(Optional)</span>
                   </label>
                   <div className="relative">
@@ -725,8 +725,8 @@ export default function FeedbackBanner({
                       <Star
                         className={`w-6 h-6 transition-colors duration-200 ${
                           star <= displayRating
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-zinc-600'
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-zinc-600"
                         }`}
                       />
                     </button>

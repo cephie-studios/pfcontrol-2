@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   User,
   Plane,
@@ -24,33 +24,33 @@ import {
   MessageCircle,
   Edit,
   Users,
-} from 'lucide-react';
-import { SiRoblox } from 'react-icons/si';
-import { fetchPilotProfile } from '../utils/fetch/pilot';
-import { parseCallsign } from '../utils/callsignParser';
-import { getCurrentUser } from '../utils/fetch/auth';
-import { useAuth } from '../hooks/auth/useAuth';
-import { fetchBackgrounds, fetchUserRanks } from '../utils/fetch/data';
-import { useData } from '../hooks/data/useData';
-import type { PilotProfile, Role, FeaturedFlight } from '../types/pilot';
-import Button from '../components/common/Button';
-import Loader from '../components/common/Loader';
-import Navbar from '../components/Navbar';
-import AccessDenied from '../components/AccessDenied';
+} from "lucide-react";
+import { SiRoblox } from "react-icons/si";
+import { fetchPilotProfile } from "../utils/fetch/pilot";
+import { parseCallsign } from "../utils/callsignParser";
+import { getCurrentUser } from "../utils/fetch/auth";
+import { useAuth } from "../hooks/auth/useAuth";
+import { fetchBackgrounds, fetchUserRanks } from "../utils/fetch/data";
+import { useData } from "../hooks/data/useData";
+import type { PilotProfile, Role, FeaturedFlight } from "../types/pilot";
+import Button from "../components/common/Button";
+import Loader from "../components/common/Loader";
+import Navbar from "../components/Navbar";
+import AccessDenied from "../components/AccessDenied";
 
 type Ranks = Record<string, number | string | null>;
 
 const isRankOne = (ranks: Ranks): boolean => {
   const statKeys = [
-    'total_sessions_created',
-    'total_flights_submitted.total',
-    'total_time_controlling_minutes',
-    'total_chat_messages_sent',
-    'total_flight_edits.total_edit_actions',
+    "total_sessions_created",
+    "total_flights_submitted.total",
+    "total_time_controlling_minutes",
+    "total_chat_messages_sent",
+    "total_flight_edits.total_edit_actions",
   ];
   return statKeys.some((key) => {
     const rank = ranks[key];
-    return typeof rank === 'number' && rank === 1;
+    return typeof rank === "number" && rank === 1;
   });
 };
 
@@ -89,7 +89,7 @@ export default function PilotProfile({
   const [profile, setProfile] = useState<PilotProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStatistics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [shareClicked, setShareClicked] = useState(false);
   const [ranks, setRanks] = useState<Ranks>({});
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
@@ -128,10 +128,10 @@ export default function PilotProfile({
           // ignore
         }
       } else {
-        setError('Pilot not found');
+        setError("Pilot not found");
       }
     } catch {
-      setError('Failed to load pilot profile');
+      setError("Failed to load pilot profile");
     } finally {
       setLoading(false);
     }
@@ -153,7 +153,7 @@ export default function PilotProfile({
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error('Error loading available images:', error);
+        console.error("Error loading available images:", error);
       }
     };
     loadImages();
@@ -177,19 +177,19 @@ export default function PilotProfile({
     const selectedImage = profile.user.background_image.selectedImage;
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
+      if (!filename || filename === "random" || filename === "favorites") {
         return filename;
       }
-      if (filename.startsWith('https://api.cephie.app/')) {
+      if (filename.startsWith("https://api.cephie.app/")) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === 'random' && availableImages.length > 0) {
+    if (selectedImage === "random" && availableImages.length > 0) {
       const randomIndex = Math.floor(Math.random() * availableImages.length);
       return `${API_BASE_URL}${availableImages[randomIndex].path}`;
-    } else if (selectedImage === 'favorites') {
+    } else if (selectedImage === "favorites") {
       const favorites = profile.user.background_image.favorites || [];
       if (favorites.length > 0) {
         const randomFav =
@@ -197,15 +197,15 @@ export default function PilotProfile({
         const favImageUrl = getImageUrl(randomFav);
         if (
           favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
+          favImageUrl !== "random" &&
+          favImageUrl !== "favorites"
         ) {
           return favImageUrl;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
+      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
         return imageUrl;
       }
     }
@@ -217,9 +217,7 @@ export default function PilotProfile({
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
-      return `https://cdn.discordapp.com/embed/avatars/${
-        parseInt(userId) % 5
-      }.png`;
+      return `https://cdn.discordapp.com/embed/avatars/${parseInt(userId) % 5}.png`;
     }
     return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
   };
@@ -291,23 +289,23 @@ export default function PilotProfile({
   const mapLongToShort = (longName: string | null): string | null => {
     if (!longName) return null;
     const key = longName.toLowerCase();
-    if (key.includes('observer')) return 'OBS';
-    if (key.includes('student') && key.includes('1')) return 'S1';
-    if (key.includes('student') && key.includes('2')) return 'S2';
-    if (key.includes('student') && key.includes('3')) return 'S3';
+    if (key.includes("observer")) return "OBS";
+    if (key.includes("student") && key.includes("1")) return "S1";
+    if (key.includes("student") && key.includes("2")) return "S2";
+    if (key.includes("student") && key.includes("3")) return "S3";
     if (
-      key.startsWith('c1') ||
-      key.includes('controller 1') ||
-      key.includes('controller i')
+      key.startsWith("c1") ||
+      key.includes("controller 1") ||
+      key.includes("controller i")
     )
-      return 'C1';
-    if (key.startsWith('c2') || key.includes('controller 2')) return 'C2';
-    if (key.startsWith('c3') || key.includes('controller 3')) return 'C3';
-    if (key.includes('instructor') && key.includes('1')) return 'I1';
-    if (key.includes('instructor') && key.includes('2')) return 'I2';
-    if (key.includes('instructor') && key.includes('3')) return 'I3';
-    if (key.includes('supervisor')) return 'SUP';
-    if (key.includes('administrator')) return 'ADM';
+      return "C1";
+    if (key.startsWith("c2") || key.includes("controller 2")) return "C2";
+    if (key.startsWith("c3") || key.includes("controller 3")) return "C3";
+    if (key.includes("instructor") && key.includes("1")) return "I1";
+    if (key.includes("instructor") && key.includes("2")) return "I2";
+    if (key.includes("instructor") && key.includes("3")) return "I3";
+    if (key.includes("supervisor")) return "SUP";
+    if (key.includes("administrator")) return "ADM";
     return null;
   };
 
@@ -328,14 +326,14 @@ export default function PilotProfile({
       {standalone && <Navbar />}
 
       <div
-        className={`relative ${!backgroundImage ? 'bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50' : ''}`}
+        className={`relative ${!backgroundImage ? "bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700/50" : ""}`}
         style={
           backgroundImage
             ? {
                 backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
               }
             : {}
         }
@@ -365,8 +363,8 @@ export default function PilotProfile({
                       <Crown
                         className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
                         style={{
-                          color: '#fbbf24',
-                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                          color: "#fbbf24",
+                          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
                         }}
                       />
                     )}
@@ -388,18 +386,18 @@ export default function PilotProfile({
                         <div
                           className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
                           style={{
-                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                            borderColor: 'rgba(59, 130, 246, 0.5)',
-                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
+                            backgroundColor: "rgba(59, 130, 246, 0.2)",
+                            borderColor: "rgba(59, 130, 246, 0.5)",
+                            boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.2)",
                           }}
                         >
                           <Braces
                             className="h-4 w-4"
-                            style={{ color: '#3B82F6' }}
+                            style={{ color: "#3B82F6" }}
                           />
                           <span
                             className="text-sm font-semibold"
-                            style={{ color: '#3B82F6' }}
+                            style={{ color: "#3B82F6" }}
                           >
                             Developer
                           </span>
@@ -442,12 +440,12 @@ export default function PilotProfile({
                     <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
                       <Calendar className="h-5 w-5" />
                       <span className="text-base md:text-lg">
-                        Member since{' '}
+                        Member since{" "}
                         {new Date(profile.user.member_since).toLocaleDateString(
-                          'en-US',
+                          "en-US",
                           {
-                            month: 'long',
-                            year: 'numeric',
+                            month: "long",
+                            year: "numeric",
                           }
                         )}
                       </span>
@@ -467,14 +465,14 @@ export default function PilotProfile({
                                     Math.round(
                                       profile.user.rating!.averageRating
                                     )
-                                      ? 'fill-yellow-500 text-yellow-500'
-                                      : 'text-zinc-700'
+                                      ? "fill-yellow-500 text-yellow-500"
+                                      : "text-zinc-700"
                                   }`}
                                 />
                               ))}
                             </div>
                             <span className="text-base md:text-lg font-medium text-zinc-300">
-                              {profile.user.rating.averageRating.toFixed(1)}{' '}
+                              {profile.user.rating.averageRating.toFixed(1)}{" "}
                               <span className="text-zinc-500 font-normal">
                                 ({profile.user.rating.ratingCount})
                               </span>
@@ -555,14 +553,14 @@ export default function PilotProfile({
                 <Button
                   onClick={handleShareProfile}
                   className="flex items-center gap-2 self-center md:self-auto"
-                  variant={shareClicked ? 'success' : 'outline'}
+                  variant={shareClicked ? "success" : "outline"}
                 >
                   <Share2 className="w-4 h-4" />
-                  <span>{shareClicked ? 'Copied!' : 'Share'}</span>
+                  <span>{shareClicked ? "Copied!" : "Share"}</span>
                 </Button>
                 {isCurrentUser && (
                   <Button
-                    onClick={() => (window.location.href = '/my-flights')}
+                    onClick={() => (window.location.href = "/my-flights")}
                     className="flex items-center gap-2 self-center md:self-auto"
                     variant="outline"
                   >
@@ -578,7 +576,7 @@ export default function PilotProfile({
 
       {/* Stats Grid */}
       <div className="max-w-7xl mx-auto px-4 mt-8">
-        {profile.user.bio && profile.user.bio.trim() !== '' && (
+        {profile.user.bio && profile.user.bio.trim() !== "" && (
           <div className="mb-8 p-5 bg-zinc-800/50 rounded-3xl border-2 border-zinc-700/50">
             <p className="text-zinc-300 text-md font-medium leading-relaxed whitespace-pre-wrap">
               {profile.user.bio}
@@ -600,8 +598,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.10))',
-                      animationDelay: '800ms',
+                        "linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.10))",
+                      animationDelay: "800ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -624,7 +622,7 @@ export default function PilotProfile({
                           Rank
                         </p>
                         <p className="text-lg font-bold text-emerald-300">
-                          #{ranks.total_sessions_created || 'N/A'}
+                          #{ranks.total_sessions_created || "N/A"}
                         </p>
                       </div>
                     )}
@@ -635,8 +633,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(239, 68, 68, 0.08))',
-                      animationDelay: '1300ms',
+                        "linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(239, 68, 68, 0.08))",
+                      animationDelay: "1300ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -658,7 +656,7 @@ export default function PilotProfile({
                           Rank
                         </p>
                         <p className="text-lg font-bold text-amber-300">
-                          #{ranks['total_flights_submitted.total'] || 'N/A'}
+                          #{ranks["total_flights_submitted.total"] || "N/A"}
                         </p>
                       </div>
                     )}
@@ -669,8 +667,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(124, 58, 237, 0.10))',
-                      animationDelay: '1100ms',
+                        "linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(124, 58, 237, 0.10))",
+                      animationDelay: "1100ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -681,7 +679,7 @@ export default function PilotProfile({
                         <h3 className="text-2xl font-bold text-white">
                           {(
                             userStats.total_time_controlling_minutes || 0
-                          ).toFixed(2)}{' '}
+                          ).toFixed(2)}{" "}
                           min
                         </h3>
                         <p className="text-zinc-400 text-sm">
@@ -694,7 +692,7 @@ export default function PilotProfile({
                         Rank
                       </p>
                       <p className="text-lg font-bold text-indigo-300">
-                        #{ranks.total_time_controlling_minutes || 'N/A'}
+                        #{ranks.total_time_controlling_minutes || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -704,8 +702,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(96, 165, 250, 0.08))',
-                      animationDelay: '1200ms',
+                        "linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(96, 165, 250, 0.08))",
+                      animationDelay: "1200ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -728,8 +726,8 @@ export default function PilotProfile({
                       </p>
                       <p className="text-lg font-bold text-sky-300">
                         #
-                        {ranks['total_flight_edits.total_edit_actions'] ||
-                          'N/A'}
+                        {ranks["total_flight_edits.total_edit_actions"] ||
+                          "N/A"}
                       </p>
                     </div>
                   </div>
@@ -739,8 +737,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(234, 88, 126, 0.10))',
-                      animationDelay: '1000ms',
+                        "linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(234, 88, 126, 0.10))",
+                      animationDelay: "1000ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -763,8 +761,8 @@ export default function PilotProfile({
                     className="group relative overflow-hidden rounded-3xl p-8 backdrop-blur-xl border-2 border-white/10 transition-all duration-500 animate-fade-in-up flex items-center justify-between"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(168, 85, 247, 0.10), rgba(236, 72, 153, 0.06))',
-                      animationDelay: '1400ms',
+                        "linear-gradient(135deg, rgba(168, 85, 247, 0.10), rgba(236, 72, 153, 0.06))",
+                      animationDelay: "1400ms",
                     }}
                   >
                     <div className="flex items-center gap-4">
@@ -775,16 +773,16 @@ export default function PilotProfile({
                         <h3 className="text-lg font-bold text-white">
                           {userStats.last_updated
                             ? new Date(userStats.last_updated).toLocaleString(
-                                'en-US',
+                                "en-US",
                                 {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 }
                               )
-                            : 'Never'}
+                            : "Never"}
                         </h3>
                         <p className="text-zinc-400 text-sm">Last Updated</p>
                       </div>
@@ -831,13 +829,13 @@ export default function PilotProfile({
 function FeaturedFlightCard({ flight }: { flight: FeaturedFlight }) {
   const { airlines } = useData();
   const coverSnap = flight.snap_images?.[0];
-  const spoken = parseCallsign(flight.callsign || '', airlines);
+  const spoken = parseCallsign(flight.callsign || "", airlines);
 
   const formattedDate = flight.created_at
     ? new Date(flight.created_at).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       })
     : null;
 

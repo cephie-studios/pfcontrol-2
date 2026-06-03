@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchActiveNotifications } from '../utils/fetch/data';
-import type { Notification as AdminNotification } from '../utils/fetch/admin';
-import { createNotificationsSocket } from '../sockets/notificationsSocket';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { fetchActiveNotifications } from "../utils/fetch/data";
+import type { Notification as AdminNotification } from "../utils/fetch/admin";
+import { createNotificationsSocket } from "../sockets/notificationsSocket";
 
 type AppNotification = AdminNotification & { custom_icon?: React.ReactNode };
 
@@ -11,25 +11,25 @@ export function useNotifications() {
   const [hiddenNotifications, setHiddenNotifications] = useState<string[]>([]);
 
   useEffect(() => {
-    const storedHidden = localStorage.getItem('hiddenNotifications');
+    const storedHidden = localStorage.getItem("hiddenNotifications");
     if (storedHidden) {
       try {
         setHiddenNotifications(JSON.parse(storedHidden));
       } catch (error) {
         console.error(
-          'Error parsing hidden notifications from localStorage:',
+          "Error parsing hidden notifications from localStorage:",
           error
         );
       }
     }
 
-    const storedNotifications = localStorage.getItem('cachedNotifications');
+    const storedNotifications = localStorage.getItem("cachedNotifications");
     if (storedNotifications) {
       try {
         setNotifications(JSON.parse(storedNotifications));
       } catch (error) {
         console.error(
-          'Error parsing cached notifications from localStorage:',
+          "Error parsing cached notifications from localStorage:",
           error
         );
       }
@@ -49,9 +49,9 @@ export function useNotifications() {
         (n) => ({ ...n }) as AppNotification
       );
       setNotifications(mapped);
-      localStorage.setItem('cachedNotifications', JSON.stringify(mapped));
+      localStorage.setItem("cachedNotifications", JSON.stringify(mapped));
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error("Failed to fetch notifications:", error);
     }
   }, []);
 
@@ -86,7 +86,7 @@ export function useNotifications() {
     setHiddenNotifications((prev) => {
       const updatedHidden = [...prev, idStr];
       localStorage.setItem(
-        'hiddenNotifications',
+        "hiddenNotifications",
         JSON.stringify(updatedHidden)
       );
       return updatedHidden;

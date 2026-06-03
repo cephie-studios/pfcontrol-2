@@ -1,22 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchSids } from '../../utils/fetch/data';
-import { X, Plane } from 'lucide-react';
-import Button from '../common/Button';
-import TextInput from '../common/TextInput';
-import Dropdown from '../common/Dropdown';
-import AircraftDropdown from '../dropdowns/AircraftDropdown';
-import AirportDropdown from '../dropdowns/AirportDropdown';
-import RunwayDropdown from '../dropdowns/RunwayDropdown';
-import SidDropdown from '../dropdowns/SidDropdown';
-import StarDropdown from '../dropdowns/StarDropdown';
-import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
-import type { Flight } from '../../types/flight';
+import { useState, useEffect, useCallback } from "react";
+import { fetchSids } from "../../utils/fetch/data";
+import { X, Plane } from "lucide-react";
+import Button from "../common/Button";
+import TextInput from "../common/TextInput";
+import Dropdown from "../common/Dropdown";
+import AircraftDropdown from "../dropdowns/AircraftDropdown";
+import AirportDropdown from "../dropdowns/AirportDropdown";
+import RunwayDropdown from "../dropdowns/RunwayDropdown";
+import SidDropdown from "../dropdowns/SidDropdown";
+import StarDropdown from "../dropdowns/StarDropdown";
+import AltitudeDropdown from "../dropdowns/AltitudeDropdown";
+import type { Flight } from "../../types/flight";
 
 interface AddCustomFlightModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (flightData: Partial<Flight>) => void;
-  flightType: 'departure' | 'arrival';
+  flightType: "departure" | "arrival";
   airportIcao?: string;
 }
 
@@ -25,25 +25,25 @@ export default function AddCustomFlightModal({
   onClose,
   onAdd,
   flightType,
-  airportIcao = '',
+  airportIcao = "",
 }: AddCustomFlightModalProps) {
   const [formData, setFormData] = useState<Partial<Flight>>({
-    callsign: '',
-    aircraft: '',
-    flight_type: 'IFR',
-    departure: flightType === 'departure' ? airportIcao : '',
-    arrival: flightType === 'arrival' ? airportIcao : '',
-    stand: flightType === 'departure' ? '' : undefined,
-    gate: flightType === 'arrival' ? '' : undefined,
-    runway: '',
-    sid: flightType === 'departure' ? '' : undefined,
-    star: flightType === 'arrival' ? '' : undefined,
-    cruisingFL: '',
-    clearedFL: '',
-    squawk: '',
-    wtc: 'M',
-    remark: '',
-    status: flightType === 'departure' ? 'PENDING' : 'APPR',
+    callsign: "",
+    aircraft: "",
+    flight_type: "IFR",
+    departure: flightType === "departure" ? airportIcao : "",
+    arrival: flightType === "arrival" ? airportIcao : "",
+    stand: flightType === "departure" ? "" : undefined,
+    gate: flightType === "arrival" ? "" : undefined,
+    runway: "",
+    sid: flightType === "departure" ? "" : undefined,
+    star: flightType === "arrival" ? "" : undefined,
+    cruisingFL: "",
+    clearedFL: "",
+    squawk: "",
+    wtc: "M",
+    remark: "",
+    status: flightType === "departure" ? "PENDING" : "APPR",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,16 +52,18 @@ export default function AddCustomFlightModal({
     if (isOpen && airportIcao) {
       setFormData((prev) => ({
         ...prev,
-        departure: flightType === 'departure' ? airportIcao : prev.departure,
-        arrival: flightType === 'arrival' ? airportIcao : prev.arrival,
+        departure: flightType === "departure" ? airportIcao : prev.departure,
+        arrival: flightType === "arrival" ? airportIcao : prev.arrival,
       }));
     }
   }, [isOpen, airportIcao, flightType]);
 
   const isLocalArrival = useCallback(
     (arrival: string) =>
-      !!arrival && !!airportIcao && arrival.toUpperCase() === airportIcao.toUpperCase(),
-    [airportIcao],
+      !!arrival &&
+      !!airportIcao &&
+      arrival.toUpperCase() === airportIcao.toUpperCase(),
+    [airportIcao]
   );
 
   const handleChange = useCallback(
@@ -78,26 +80,39 @@ export default function AddCustomFlightModal({
       }
 
       // Auto-update SID when arrival or flight type changes (departures only)
-      if (flightType === 'departure' && (field === 'arrival' || field === 'flight_type')) {
-        const arrival = field === 'arrival' ? value : formData.arrival || '';
-        const flType = field === 'flight_type' ? value : formData.flight_type || 'IFR';
+      if (
+        flightType === "departure" &&
+        (field === "arrival" || field === "flight_type")
+      ) {
+        const arrival = field === "arrival" ? value : formData.arrival || "";
+        const flType =
+          field === "flight_type" ? value : formData.flight_type || "IFR";
 
-        if (flType === 'VFR' || isLocalArrival(arrival)) {
-          setFormData((prev) => ({ ...prev, sid: 'RADAR VECTORS' }));
+        if (flType === "VFR" || isLocalArrival(arrival)) {
+          setFormData((prev) => ({ ...prev, sid: "RADAR VECTORS" }));
         } else if (arrival) {
           try {
             const sids = await fetchSids(airportIcao);
-            const preferred = sids.find((s) => s.length > 0 && !s.includes(' '));
-            setFormData((prev) => ({ ...prev, sid: preferred || '' }));
+            const preferred = sids.find(
+              (s) => s.length > 0 && !s.includes(" ")
+            );
+            setFormData((prev) => ({ ...prev, sid: preferred || "" }));
           } catch {
-            setFormData((prev) => ({ ...prev, sid: '' }));
+            setFormData((prev) => ({ ...prev, sid: "" }));
           }
         } else {
-          setFormData((prev) => ({ ...prev, sid: '' }));
+          setFormData((prev) => ({ ...prev, sid: "" }));
         }
       }
     },
-    [airportIcao, flightType, formData.arrival, formData.flight_type, errors, isLocalArrival],
+    [
+      airportIcao,
+      flightType,
+      formData.arrival,
+      formData.flight_type,
+      errors,
+      isLocalArrival,
+    ]
   );
 
   if (!isOpen) return null;
@@ -106,16 +121,16 @@ export default function AddCustomFlightModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.callsign?.trim()) {
-      newErrors.callsign = 'Callsign is required';
+      newErrors.callsign = "Callsign is required";
     }
     if (!formData.aircraft?.trim()) {
-      newErrors.aircraft = 'Aircraft type is required';
+      newErrors.aircraft = "Aircraft type is required";
     }
-    if (flightType === 'departure' && !formData.arrival?.trim()) {
-      newErrors.arrival = 'Destination is required';
+    if (flightType === "departure" && !formData.arrival?.trim()) {
+      newErrors.arrival = "Destination is required";
     }
-    if (flightType === 'arrival' && !formData.departure?.trim()) {
-      newErrors.departure = 'Origin is required';
+    if (flightType === "arrival" && !formData.departure?.trim()) {
+      newErrors.departure = "Origin is required";
     }
 
     setErrors(newErrors);
@@ -126,70 +141,72 @@ export default function AddCustomFlightModal({
     if (!validateForm()) return;
 
     const isRadarVectors =
-      formData.flight_type === 'VFR' ||
+      formData.flight_type === "VFR" ||
       (!!formData.arrival &&
         !!airportIcao &&
         formData.arrival.toUpperCase() === airportIcao.toUpperCase());
 
     onAdd({
       ...formData,
-      ...(flightType === 'departure' ? { sid: isRadarVectors ? 'RADAR VECTORS' : formData.sid } : {}),
+      ...(flightType === "departure"
+        ? { sid: isRadarVectors ? "RADAR VECTORS" : formData.sid }
+        : {}),
     });
     handleClose();
   };
 
   const handleClose = () => {
     setFormData({
-      callsign: '',
-      aircraft: '',
-      flight_type: 'IFR',
-      departure: flightType === 'departure' ? airportIcao : '',
-      arrival: flightType === 'arrival' ? airportIcao : '',
-      stand: flightType === 'departure' ? '' : undefined,
-      gate: flightType === 'arrival' ? '' : undefined,
-      runway: '',
-      sid: flightType === 'departure' ? '' : undefined,
-      star: flightType === 'arrival' ? '' : undefined,
-      cruisingFL: '',
-      clearedFL: '',
-      squawk: '',
-      wtc: 'M',
-      remark: '',
-      status: flightType === 'departure' ? 'PENDING' : 'APPR',
+      callsign: "",
+      aircraft: "",
+      flight_type: "IFR",
+      departure: flightType === "departure" ? airportIcao : "",
+      arrival: flightType === "arrival" ? airportIcao : "",
+      stand: flightType === "departure" ? "" : undefined,
+      gate: flightType === "arrival" ? "" : undefined,
+      runway: "",
+      sid: flightType === "departure" ? "" : undefined,
+      star: flightType === "arrival" ? "" : undefined,
+      cruisingFL: "",
+      clearedFL: "",
+      squawk: "",
+      wtc: "M",
+      remark: "",
+      status: flightType === "departure" ? "PENDING" : "APPR",
     });
     setErrors({});
     onClose();
   };
 
   const flightTypeOptions = [
-    { value: 'IFR', label: 'IFR' },
-    { value: 'VFR', label: 'VFR' },
-    { value: 'SVFR', label: 'SVFR' },
+    { value: "IFR", label: "IFR" },
+    { value: "VFR", label: "VFR" },
+    { value: "SVFR", label: "SVFR" },
   ];
 
   const statusOptions =
-    flightType === 'departure'
+    flightType === "departure"
       ? [
-          { value: 'PENDING', label: 'PENDING' },
-          { value: 'STUP', label: 'STUP' },
-          { value: 'PUSH', label: 'PUSH' },
-          { value: 'TAXI', label: 'TAXI' },
-          { value: 'RWY', label: 'RWY' },
-          { value: 'DEPA', label: 'DEPA' },
+          { value: "PENDING", label: "PENDING" },
+          { value: "STUP", label: "STUP" },
+          { value: "PUSH", label: "PUSH" },
+          { value: "TAXI", label: "TAXI" },
+          { value: "RWY", label: "RWY" },
+          { value: "DEPA", label: "DEPA" },
         ]
       : [
-          { value: 'APPR', label: 'APPR' },
-          { value: 'LAND', label: 'LAND' },
-          { value: 'TAXI', label: 'TAXI' },
-          { value: 'RYW', label: 'RWY' },
-          { value: 'GATE', label: 'GATE' },
+          { value: "APPR", label: "APPR" },
+          { value: "LAND", label: "LAND" },
+          { value: "TAXI", label: "TAXI" },
+          { value: "RYW", label: "RWY" },
+          { value: "GATE", label: "GATE" },
         ];
 
   const wtcOptions = [
-    { value: 'L', label: 'L (Light)' },
-    { value: 'M', label: 'M (Medium)' },
-    { value: 'H', label: 'H (Heavy)' },
-    { value: 'J', label: 'J (Super)' },
+    { value: "L", label: "L (Light)" },
+    { value: "M", label: "M (Medium)" },
+    { value: "H", label: "H (Heavy)" },
+    { value: "J", label: "J (Super)" },
   ];
 
   return (
@@ -206,11 +223,11 @@ export default function AddCustomFlightModal({
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">
-                Add Custom{' '}
-                {flightType === 'departure' ? 'Departure' : 'Arrival'}
+                Add Custom{" "}
+                {flightType === "departure" ? "Departure" : "Arrival"}
               </h2>
               <p className="text-sm text-gray-400">
-                {flightType === 'departure'
+                {flightType === "departure"
                   ? `Departing from ${airportIcao}`
                   : `Arriving at ${airportIcao}`}
               </p>
@@ -236,8 +253,8 @@ export default function AddCustomFlightModal({
                   Callsign *
                 </label>
                 <TextInput
-                  value={formData.callsign || ''}
-                  onChange={(value) => handleChange('callsign', value)}
+                  value={formData.callsign || ""}
+                  onChange={(value) => handleChange("callsign", value)}
                   placeholder="ABC123"
                   maxLength={16}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -251,8 +268,8 @@ export default function AddCustomFlightModal({
                   Aircraft Type *
                 </label>
                 <AircraftDropdown
-                  value={formData.aircraft || ''}
-                  onChange={(value) => handleChange('aircraft', value)}
+                  value={formData.aircraft || ""}
+                  onChange={(value) => handleChange("aircraft", value)}
                   size="sm"
                   searchable
                 />
@@ -269,8 +286,8 @@ export default function AddCustomFlightModal({
                 </label>
                 <Dropdown
                   options={flightTypeOptions}
-                  value={formData.flight_type || 'IFR'}
-                  onChange={(value) => handleChange('flight_type', value)}
+                  value={formData.flight_type || "IFR"}
+                  onChange={(value) => handleChange("flight_type", value)}
                   placeholder="Select Flight Type"
                   size="sm"
                 />
@@ -281,8 +298,8 @@ export default function AddCustomFlightModal({
                 </label>
                 <Dropdown
                   options={statusOptions}
-                  value={formData.status || ''}
-                  onChange={(value) => handleChange('status', value)}
+                  value={formData.status || ""}
+                  onChange={(value) => handleChange("status", value)}
                   placeholder="Select Status"
                   size="sm"
                 />
@@ -296,14 +313,14 @@ export default function AddCustomFlightModal({
               Route Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {flightType === 'departure' ? (
+              {flightType === "departure" ? (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Departure (ADEP)
                     </label>
                     <div className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
-                      {airportIcao || 'N/A'}
+                      {airportIcao || "N/A"}
                     </div>
                   </div>
                   <div>
@@ -311,8 +328,8 @@ export default function AddCustomFlightModal({
                       Destination (ADES) *
                     </label>
                     <AirportDropdown
-                      value={formData.arrival || ''}
-                      onChange={(value) => handleChange('arrival', value)}
+                      value={formData.arrival || ""}
+                      onChange={(value) => handleChange("arrival", value)}
                       size="sm"
                       searchable
                     />
@@ -330,8 +347,8 @@ export default function AddCustomFlightModal({
                       Origin (ADEP) *
                     </label>
                     <AirportDropdown
-                      value={formData.departure || ''}
-                      onChange={(value) => handleChange('departure', value)}
+                      value={formData.departure || ""}
+                      onChange={(value) => handleChange("departure", value)}
                       size="sm"
                       searchable
                     />
@@ -346,7 +363,7 @@ export default function AddCustomFlightModal({
                       Arrival (ADES)
                     </label>
                     <div className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-gray-400 cursor-not-allowed">
-                      {airportIcao || 'N/A'}
+                      {airportIcao || "N/A"}
                     </div>
                   </div>
                 </>
@@ -362,21 +379,21 @@ export default function AddCustomFlightModal({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {flightType === 'departure' ? 'Stand' : 'Gate'}
+                  {flightType === "departure" ? "Stand" : "Gate"}
                 </label>
                 <TextInput
                   value={
-                    flightType === 'departure'
-                      ? formData.stand || ''
-                      : formData.gate || ''
+                    flightType === "departure"
+                      ? formData.stand || ""
+                      : formData.gate || ""
                   }
                   onChange={(value) =>
                     handleChange(
-                      flightType === 'departure' ? 'stand' : 'gate',
+                      flightType === "departure" ? "stand" : "gate",
                       value.toUpperCase()
                     )
                   }
-                  placeholder={flightType === 'departure' ? 'A12' : 'B5'}
+                  placeholder={flightType === "departure" ? "A12" : "B5"}
                   maxLength={8}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
@@ -387,29 +404,29 @@ export default function AddCustomFlightModal({
                 </label>
                 <RunwayDropdown
                   airportIcao={airportIcao}
-                  value={formData.runway || ''}
-                  onChange={(value) => handleChange('runway', value)}
+                  value={formData.runway || ""}
+                  onChange={(value) => handleChange("runway", value)}
                   placeholder="Select Runway"
                   size="sm"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {flightType === 'departure' ? 'SID' : 'STAR'}
+                  {flightType === "departure" ? "SID" : "STAR"}
                 </label>
-                {flightType === 'departure' ? (
+                {flightType === "departure" ? (
                   <SidDropdown
                     airportIcao={airportIcao}
-                    value={formData.sid || ''}
-                    onChange={(value) => handleChange('sid', value)}
+                    value={formData.sid || ""}
+                    onChange={(value) => handleChange("sid", value)}
                     placeholder="Select SID"
                     size="sm"
                   />
                 ) : (
                   <StarDropdown
                     airportIcao={airportIcao}
-                    value={formData.star || ''}
-                    onChange={(value) => handleChange('star', value)}
+                    value={formData.star || ""}
+                    onChange={(value) => handleChange("star", value)}
                     placeholder="Select STAR"
                     size="sm"
                   />
@@ -420,8 +437,8 @@ export default function AddCustomFlightModal({
                   Squawk
                 </label>
                 <TextInput
-                  value={formData.squawk || ''}
-                  onChange={(value) => handleChange('squawk', value)}
+                  value={formData.squawk || ""}
+                  onChange={(value) => handleChange("squawk", value)}
                   placeholder="2000"
                   maxLength={4}
                   pattern="[0-9]*"
@@ -436,8 +453,8 @@ export default function AddCustomFlightModal({
                   Requested FL (RFL)
                 </label>
                 <AltitudeDropdown
-                  value={formData.cruisingFL || ''}
-                  onChange={(value) => handleChange('cruisingFL', value)}
+                  value={formData.cruisingFL || ""}
+                  onChange={(value) => handleChange("cruisingFL", value)}
                   placeholder="Select RFL"
                   size="sm"
                 />
@@ -447,8 +464,8 @@ export default function AddCustomFlightModal({
                   Cleared FL (CFL)
                 </label>
                 <AltitudeDropdown
-                  value={formData.clearedFL || ''}
-                  onChange={(value) => handleChange('clearedFL', value)}
+                  value={formData.clearedFL || ""}
+                  onChange={(value) => handleChange("clearedFL", value)}
                   placeholder="Select CFL"
                   size="sm"
                 />
@@ -466,8 +483,8 @@ export default function AddCustomFlightModal({
                 Remark
               </label>
               <TextInput
-                value={formData.remark || ''}
-                onChange={(value) => handleChange('remark', value)}
+                value={formData.remark || ""}
+                onChange={(value) => handleChange("remark", value)}
                 placeholder="Optional notes..."
                 maxLength={50}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

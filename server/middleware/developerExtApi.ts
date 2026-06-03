@@ -25,11 +25,13 @@ function extractApiSecret(req: Request): string | null {
 }
 
 function parseScopesFromKey(scopes: unknown): string[] {
-  if (Array.isArray(scopes)) return scopes.filter((s): s is string => typeof s === "string");
+  if (Array.isArray(scopes))
+    return scopes.filter((s): s is string => typeof s === "string");
   if (typeof scopes === "string") {
     try {
       const p = JSON.parse(scopes) as unknown;
-      if (Array.isArray(p)) return p.filter((s): s is string => typeof s === "string");
+      if (Array.isArray(p))
+        return p.filter((s): s is string => typeof s === "string");
     } catch {
       // ignore
     }
@@ -37,7 +39,11 @@ function parseScopesFromKey(scopes: unknown): string[] {
   return [];
 }
 
-export function developerExtUsageLifecycle(req: Request, res: Response, next: NextFunction) {
+export function developerExtUsageLifecycle(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   req.developerExtStartedAt = Date.now();
   res.on("finish", () => {
     const ext = req.developerExt;
@@ -65,7 +71,11 @@ export function developerExtUsageLifecycle(req: Request, res: Response, next: Ne
   next();
 }
 
-export async function developerExtApiAuth(req: Request, res: Response, next: NextFunction) {
+export async function developerExtApiAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const secret = extractApiSecret(req);
     if (!secret || !isSupportedDeveloperApiKeySecretFormat(secret)) {
@@ -99,7 +109,11 @@ export function getDeveloperExtPath(req: Request): string {
   return raw.startsWith("/") ? raw : `/${raw}`;
 }
 
-export async function developerExtScopeGuard(req: Request, res: Response, next: NextFunction) {
+export async function developerExtScopeGuard(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const ext = req.developerExt;
     if (!ext) {
@@ -111,7 +125,9 @@ export async function developerExtScopeGuard(req: Request, res: Response, next: 
       return res.status(404).json({ error: "Not found" });
     }
     if (!ext.scopes.includes(scopeId)) {
-      return res.status(403).json({ error: "This API key is not allowed to access this endpoint" });
+      return res
+        .status(403)
+        .json({ error: "This API key is not allowed to access this endpoint" });
     }
     ext.matchedScopeId = scopeId;
     ext.matchedPath = path;
@@ -131,13 +147,19 @@ export function getDeveloperApiDefaultRateLimitPerMinute(): number {
   return Number.isFinite(envDefault) && envDefault > 0 ? envDefault : 120;
 }
 
-export async function developerExtRateLimit(req: Request, res: Response, next: NextFunction) {
+export async function developerExtRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ext = req.developerExt;
   if (!ext?.keyId) return next();
   const fallback = getDeveloperApiDefaultRateLimitPerMinute();
   const perKey = ext.rateLimitPerMinute;
   const raw =
-    perKey != null && Number.isFinite(perKey) && perKey > 0 ? Math.floor(perKey) : fallback;
+    perKey != null && Number.isFinite(perKey) && perKey > 0
+      ? Math.floor(perKey)
+      : fallback;
   const max = Math.max(RPM_FLOOR, raw);
   const windowStart = Math.floor(Date.now() / 60_000);
   const rkey = `devapi:rl:${ext.keyId}:${windowStart}`;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   Info,
   MessageCircle,
@@ -25,24 +25,24 @@ import {
   Braces,
   Radio,
   Map,
-} from 'lucide-react';
-import { io } from 'socket.io-client';
-import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
-import { useAuth } from '../../hooks/auth/useAuth';
-import { playSoundWithSettings } from '../../utils/playSound';
+} from "lucide-react";
+import { io } from "socket.io-client";
+import { createSessionUsersSocket } from "../../sockets/sessionUsersSocket";
+import { useAuth } from "../../hooks/auth/useAuth";
+import { playSoundWithSettings } from "../../utils/playSound";
 import type {
   Position,
   SessionUser,
   ChatMention as SessionChatMention,
-} from '../../types/session';
-import type { ChatMention } from '../../types/chats';
-import WindDisplay from './WindDisplay';
-import Button from '../common/Button';
-import RunwayDropdown from '../dropdowns/RunwayDropdown';
-import Dropdown from '../common/Dropdown';
-import FrequencyDisplay from './FrequencyDisplay';
-import { ChatSidebar } from '../chat';
-import ATIS from './ATIS';
+} from "../../types/session";
+import type { ChatMention } from "../../types/chats";
+import WindDisplay from "./WindDisplay";
+import Button from "../common/Button";
+import RunwayDropdown from "../dropdowns/RunwayDropdown";
+import Dropdown from "../common/Dropdown";
+import FrequencyDisplay from "./FrequencyDisplay";
+import { ChatSidebar } from "../chat";
+import ATIS from "./ATIS";
 
 interface ToolbarProps {
   sessionId?: string;
@@ -52,8 +52,8 @@ interface ToolbarProps {
   onRunwayChange?: (runway: string) => void;
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
-  currentView?: 'departures' | 'arrivals';
-  onViewChange?: (view: 'departures' | 'arrivals') => void;
+  currentView?: "departures" | "arrivals";
+  onViewChange?: (view: "departures" | "arrivals") => void;
   showViewTabs?: boolean;
   position: Position;
   onPositionChange: (position: Position) => void;
@@ -110,7 +110,7 @@ export default function Toolbar({
   onRunwayChange,
   isPFATC = false,
   isAdvancedATC = false,
-  currentView = 'departures',
+  currentView = "departures",
   onViewChange,
   showViewTabs = true,
   position,
@@ -121,7 +121,7 @@ export default function Toolbar({
   showContactAcarsModal = false,
   onCloseAllSidebars,
 }: ToolbarProps) {
-  const [runway, setRunway] = useState(activeRunway || '');
+  const [runway, setRunway] = useState(activeRunway || "");
   const [chatOpen, setChatOpen] = useState(false);
   const [isInVoice, setIsInVoice] = useState(false);
   const [atisOpen, setAtisOpen] = useState(false);
@@ -134,9 +134,9 @@ export default function Toolbar({
     ChatMention[]
   >([]);
   const [connectionStatus, setConnectionStatus] = useState<
-    'Connected' | 'Reconnecting' | 'Disconnected'
-  >('Disconnected');
-  const [atisLetter, setAtisLetter] = useState<string>('A');
+    "Connected" | "Reconnecting" | "Disconnected"
+  >("Disconnected");
+  const [atisLetter, setAtisLetter] = useState<string>("A");
   const [atisFlash, setAtisFlash] = useState<boolean>(false);
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const { user } = useAuth();
@@ -145,17 +145,17 @@ export default function Toolbar({
     const loadInitialAtisData = async () => {
       if (!sessionId || !accessId) return;
       try {
-        const { fetchSession } = await import('../../utils/fetch/sessions');
+        const { fetchSession } = await import("../../utils/fetch/sessions");
         const session = await fetchSession(sessionId, accessId);
         if (session.atis) {
           let atisObj = session.atis;
-          if (typeof atisObj === 'string') {
+          if (typeof atisObj === "string") {
             try {
               atisObj = JSON.parse(atisObj);
             } catch {
               atisObj = {
-                letter: 'A',
-                text: '',
+                letter: "A",
+                text: "",
                 timestamp: new Date().toISOString(),
               };
             }
@@ -165,7 +165,7 @@ export default function Toolbar({
           }
         }
       } catch {
-        console.error('Error loading initial ATIS data');
+        console.error("Error loading initial ATIS data");
       }
     };
     loadInitialAtisData();
@@ -182,14 +182,14 @@ export default function Toolbar({
     onPositionChange(selectedPosition as Position);
   };
 
-  const handleViewChange = (view: 'departures' | 'arrivals') => {
+  const handleViewChange = (view: "departures" | "arrivals") => {
     if (onViewChange) {
       onViewChange(view);
     }
   };
 
   const getAvatarUrl = (avatar: string | null) => {
-    if (!avatar) return '/assets/app/default/avatar.webp';
+    if (!avatar) return "/assets/app/default/avatar.webp";
     return avatar;
   };
 
@@ -204,9 +204,9 @@ export default function Toolbar({
     };
     setUnreadMentions((prev) => [...prev, chatMention]);
     if (user) {
-      playSoundWithSettings('chatNotificationSound', user.settings, 0.7).catch(
+      playSoundWithSettings("chatNotificationSound", user.settings, 0.7).catch(
         (error) => {
-          console.warn('Failed to play chat notification sound:', error);
+          console.warn("Failed to play chat notification sound:", error);
         }
       );
     }
@@ -215,16 +215,16 @@ export default function Toolbar({
   const handleChatSidebarMention = (mention: ChatMention) => {
     setUnreadMentions((prev) => [...prev, mention]);
 
-    if (mention.sessionId === 'global-chat') {
+    if (mention.sessionId === "global-chat") {
       setUnreadGlobalMentions((prev) => [...prev, mention]);
     } else {
       setUnreadSessionMentions((prev) => [...prev, mention]);
     }
 
     if (user) {
-      playSoundWithSettings('chatNotificationSound', user.settings, 0.7).catch(
+      playSoundWithSettings("chatNotificationSound", user.settings, 0.7).catch(
         (error) => {
-          console.warn('Failed to play chat notification sound:', error);
+          console.warn("Failed to play chat notification sound:", error);
         }
       );
     }
@@ -313,22 +313,22 @@ export default function Toolbar({
         avatar: user.avatar,
       },
       (users: SessionUser[]) => setActiveUsers(users),
-      () => setConnectionStatus('Connected'),
-      () => setConnectionStatus('Disconnected'),
-      () => setConnectionStatus('Reconnecting'),
-      () => setConnectionStatus('Connected'),
+      () => setConnectionStatus("Connected"),
+      () => setConnectionStatus("Disconnected"),
+      () => setConnectionStatus("Reconnecting"),
+      () => setConnectionStatus("Connected"),
       handleMentionReceived,
       undefined,
       position
     );
 
     if (socketRef.current) {
-      socketRef.current.on('atisUpdate', handleAtisUpdateFromSocket);
+      socketRef.current.on("atisUpdate", handleAtisUpdateFromSocket);
     }
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.off('atisUpdate', handleAtisUpdateFromSocket);
+        socketRef.current.off("atisUpdate", handleAtisUpdateFromSocket);
         socketRef.current.disconnect();
       }
     };
@@ -336,7 +336,7 @@ export default function Toolbar({
 
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.emit('positionChange', position);
+      socketRef.current.emit("positionChange", position);
     }
   }, [position]);
 
@@ -356,11 +356,11 @@ export default function Toolbar({
 
   const getStatusIcon = () => {
     switch (connectionStatus) {
-      case 'Connected':
+      case "Connected":
         return <Wifi className="w-5 h-5 text-green-500" />;
-      case 'Reconnecting':
+      case "Reconnecting":
         return <RefreshCw className="w-5 h-5 text-yellow-500 animate-spin" />;
-      case 'Disconnected':
+      case "Disconnected":
         return <WifiOff className="w-5 h-5 text-red-500" />;
     }
   };
@@ -377,7 +377,7 @@ export default function Toolbar({
                 "
       >
         <WindDisplay icao={icao} size="small" />
-        <FrequencyDisplay airportIcao={icao ?? ''} />
+        <FrequencyDisplay airportIcao={icao ?? ""} />
       </div>
 
       <div className="toolbar-secondary">
@@ -397,7 +397,7 @@ export default function Toolbar({
                   key={user.id}
                   className="relative group"
                   style={{
-                    position: 'relative',
+                    position: "relative",
                     left: `${index * -10}px`,
                     zIndex: 40,
                   }}
@@ -407,16 +407,16 @@ export default function Toolbar({
                     alt={user.username}
                     className="w-8 h-8 rounded-full shadow-md cursor-pointer transition-all"
                     onError={(e) => {
-                      e.currentTarget.src = '/assets/app/default/avatar.webp';
+                      e.currentTarget.src = "/assets/app/default/avatar.webp";
                     }}
                     style={{
-                      border: `2px solid ${highestRole?.color || '#ffffff'}`,
+                      border: `2px solid ${highestRole?.color || "#ffffff"}`,
                     }}
                   />
                   <div
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-0.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
                     style={{
-                      borderColor: highestRole?.color || '#71717a',
+                      borderColor: highestRole?.color || "#71717a",
                       zIndex: 998,
                     }}
                   >
@@ -451,7 +451,7 @@ export default function Toolbar({
             {activeUsers.length > 5 && (
               <div
                 className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold"
-                style={{ position: 'relative', left: '-50px' }}
+                style={{ position: "relative", left: "-50px" }}
               >
                 +{activeUsers.length - 5}
               </div>
@@ -484,11 +484,11 @@ export default function Toolbar({
             <div id="view-tabs" className="flex items-center gap-2">
               <Button
                 className={`p-1 rounded ${
-                  currentView === 'departures'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-transparent text-gray-400 hover:text-white'
+                  currentView === "departures"
+                    ? "bg-blue-600 text-white"
+                    : "bg-transparent text-gray-400 hover:text-white"
                 }`}
-                onClick={() => handleViewChange('departures')}
+                onClick={() => handleViewChange("departures")}
                 size="sm"
                 aria-label="Departures"
               >
@@ -496,11 +496,11 @@ export default function Toolbar({
               </Button>
               <Button
                 className={`p-1 rounded ${
-                  currentView === 'arrivals'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-transparent text-gray-400 hover:text-white'
+                  currentView === "arrivals"
+                    ? "bg-blue-600 text-white"
+                    : "bg-transparent text-gray-400 hover:text-white"
                 }`}
-                onClick={() => handleViewChange('arrivals')}
+                onClick={() => handleViewChange("arrivals")}
                 size="sm"
                 aria-label="Arrivals"
               >
@@ -511,11 +511,11 @@ export default function Toolbar({
 
           <Dropdown
             options={[
-              { value: 'ALL', label: 'All' },
-              { value: 'DEL', label: 'Delivery' },
-              { value: 'GND', label: 'Ground' },
-              { value: 'TWR', label: 'Tower' },
-              { value: 'APP', label: 'Approach' },
+              { value: "ALL", label: "All" },
+              { value: "DEL", label: "Delivery" },
+              { value: "GND", label: "Ground" },
+              { value: "TWR", label: "Tower" },
+              { value: "APP", label: "Approach" },
             ]}
             value={position}
             onChange={handlePositionChange}
@@ -527,7 +527,7 @@ export default function Toolbar({
           />
 
           <RunwayDropdown
-            airportIcao={icao ?? ''}
+            airportIcao={icao ?? ""}
             onChange={handleRunwayChange}
             value={runway}
             size="sm"
@@ -537,8 +537,8 @@ export default function Toolbar({
           <Button
             className={`flex items-center gap-2 px-4 py-2 transition-all duration-300 ${
               atisFlash
-                ? 'bg-yellow-600 border-yellow-600 text-white animate-pulse'
-                : ''
+                ? "bg-yellow-600 border-yellow-600 text-white animate-pulse"
+                : ""
             }`}
             aria-label="ATIS"
             size="sm"
@@ -605,9 +605,9 @@ export default function Toolbar({
             aria-label="Settings"
             size="sm"
             onClick={() => {
-              const isTutorial = window.location.search.includes('tutorial');
+              const isTutorial = window.location.search.includes("tutorial");
               window.location.href =
-                '/settings' + (isTutorial ? '?tutorial=true' : '');
+                "/settings" + (isTutorial ? "?tutorial=true" : "");
             }}
             id="settings-button"
           >
@@ -616,8 +616,8 @@ export default function Toolbar({
           </Button>
 
           <ChatSidebar
-            sessionId={sessionId ?? ''}
-            accessId={accessId ?? ''}
+            sessionId={sessionId ?? ""}
+            accessId={accessId ?? ""}
             open={chatOpen}
             onClose={handleChatClose}
             sessionUsers={activeUsers}
@@ -632,9 +632,9 @@ export default function Toolbar({
           />
 
           <ATIS
-            icao={icao ?? ''}
-            sessionId={sessionId ?? ''}
-            accessId={accessId ?? ''}
+            icao={icao ?? ""}
+            sessionId={sessionId ?? ""}
+            accessId={accessId ?? ""}
             activeRunway={activeRunway}
             open={atisOpen}
             onClose={handleAtisClose}

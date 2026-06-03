@@ -1,9 +1,9 @@
-import { PostHogProvider } from '@posthog/react';
-import type { ReactNode } from 'react';
+import { PostHogProvider } from "@posthog/react";
+import type { ReactNode } from "react";
 
 const posthogOptions = {
-  api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
-  persistence: 'memory' as const,
+  api_host: import.meta.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com",
+  persistence: "memory" as const,
 } as const;
 
 export function PostHogProviderWrapper({ children }: { children: ReactNode }) {

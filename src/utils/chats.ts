@@ -1,10 +1,10 @@
-import type { SessionUser } from '../types/session';
-import type { Airport } from '../types/airports';
-import type { ChatMessage } from '../types/chats';
+import type { SessionUser } from "../types/session";
+import type { Airport } from "../types/airports";
+import type { ChatMessage } from "../types/chats";
 import type {
   GlobalChatMessage,
   ConnectedGlobalChatUser,
-} from '../sockets/globalChatSocket';
+} from "../sockets/globalChatSocket";
 
 interface MentionSuggestionsResult {
   suggestions: SessionUser[];
@@ -14,7 +14,7 @@ interface MentionSuggestionsResult {
 
 interface GlobalMentionSuggestionsResult {
   suggestions: Array<{
-    type: 'user' | 'airport';
+    type: "user" | "airport";
     data:
       | SessionUser
       | { icao: string; name: string }
@@ -33,18 +33,18 @@ export const formatStationDisplay = (
   station: string | null,
   position: string | null
 ): string => {
-  if (!station) return '';
+  if (!station) return "";
 
-  const showablePositions = ['DEL', 'GND', 'TWR', 'ALL'];
+  const showablePositions = ["DEL", "GND", "TWR", "ALL"];
 
   if (
     station &&
-    !station.includes('_') &&
+    !station.includes("_") &&
     position &&
     showablePositions.includes(position.toUpperCase())
   ) {
     const displayPosition =
-      position.toUpperCase() === 'ALL' ? 'APP' : position.toUpperCase();
+      position.toUpperCase() === "ALL" ? "APP" : position.toUpperCase();
     return `${station}_${displayPosition}`;
   }
 
@@ -90,7 +90,7 @@ export const handleMentionSuggestions = (
   return {
     suggestions: [],
     shouldShow: false,
-    searchTerm: '',
+    searchTerm: "",
   };
 };
 
@@ -125,7 +125,7 @@ export const handleGlobalMentionSuggestions = (
       )
       .slice(0, 10)
       .map((a) => ({
-        type: 'airport' as const,
+        type: "airport" as const,
         data: { icao: a.icao, name: a.name },
       }));
 
@@ -147,7 +147,7 @@ export const handleGlobalMentionSuggestions = (
           u.id !== currentUserId
       )
       .slice(0, 10)
-      .map((u) => ({ type: 'user' as const, data: u }));
+      .map((u) => ({ type: "user" as const, data: u }));
 
     const combinedSuggestions = [...airportSugs, ...userSugs].slice(0, 10);
 
@@ -161,7 +161,7 @@ export const handleGlobalMentionSuggestions = (
   return {
     suggestions: [],
     shouldShow: false,
-    searchTerm: '',
+    searchTerm: "",
   };
 };
 
@@ -204,32 +204,32 @@ export const isMessageMentioned = (
   station?: string
 ): boolean => {
   const isMentionedByUser = Boolean(
-    'mentions' in message &&
-      message.mentions &&
-      Array.isArray(message.mentions) &&
-      currentUserId &&
-      message.mentions.includes(currentUserId)
+    "mentions" in message &&
+    message.mentions &&
+    Array.isArray(message.mentions) &&
+    currentUserId &&
+    message.mentions.includes(currentUserId)
   );
 
   const isMentionedByUserInGlobal = Boolean(
-    'userMentions' in message &&
-      message.userMentions &&
-      Array.isArray(message.userMentions) &&
-      currentUserId &&
-      message.userMentions.some(
-        (username: string) =>
-          username.toLowerCase() === currentUserId.toLowerCase()
-      )
+    "userMentions" in message &&
+    message.userMentions &&
+    Array.isArray(message.userMentions) &&
+    currentUserId &&
+    message.userMentions.some(
+      (username: string) =>
+        username.toLowerCase() === currentUserId.toLowerCase()
+    )
   );
 
   const isMentionedByAirport = Boolean(
-    'airportMentions' in message &&
-      message.airportMentions &&
-      Array.isArray(message.airportMentions) &&
-      station &&
-      message.airportMentions.some(
-        (icao: string) => icao.toUpperCase() === station.toUpperCase()
-      )
+    "airportMentions" in message &&
+    message.airportMentions &&
+    Array.isArray(message.airportMentions) &&
+    station &&
+    message.airportMentions.some(
+      (icao: string) => icao.toUpperCase() === station.toUpperCase()
+    )
   );
 
   return isMentionedByUser || isMentionedByUserInGlobal || isMentionedByAirport;
@@ -237,13 +237,13 @@ export const isMessageMentioned = (
 
 export const getMessageTimeString = (timestamp: string | Date): string => {
   const date =
-    typeof timestamp === 'string'
-      ? new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z')
+    typeof timestamp === "string"
+      ? new Date(timestamp.endsWith("Z") ? timestamp : timestamp + "Z")
       : timestamp;
 
   return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 

@@ -1,10 +1,10 @@
-import type { Airline } from '../types/airlines';
+import type { Airline } from "../types/airlines";
 
 export function parseCallsign(
   callsign: string | undefined,
   airlines: Airline[]
 ): string {
-  if (!callsign) return '';
+  if (!callsign) return "";
 
   const match = callsign.match(/^([A-Z]{2,3})(.+)$/);
 
@@ -18,9 +18,9 @@ export function parseCallsign(
 
   if (airline) {
     const formattedName = airline.callsign
-      .split(' ')
+      .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+      .join(" ");
 
     return `${formattedName} ${flightNumber}`;
   }
@@ -31,7 +31,7 @@ export function getAirportName(
   icao: string | undefined,
   airports: { icao: string; name: string }[]
 ): string {
-  if (!icao) return '';
+  if (!icao) return "";
 
   const airport = airports.find((a) => a.icao === icao);
   return airport ? `${icao} ${airport.name}` : icao;

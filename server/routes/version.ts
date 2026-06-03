@@ -26,7 +26,10 @@ router.get("/", async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for app version:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for app version:",
+        error.message
+      );
     }
   }
 
@@ -34,10 +37,18 @@ router.get("/", async (req, res) => {
     const versionData = await getAppVersion();
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(versionData), "EX", APP_VERSION_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(versionData),
+        "EX",
+        APP_VERSION_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for app version:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for app version:",
+          error.message
+        );
       }
     }
 

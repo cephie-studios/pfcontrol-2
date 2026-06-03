@@ -18,7 +18,10 @@ const posthogOptions = {
 } as const;
 
 createRoot(document.getElementById("root")!).render(
-  <PostHogProvider apiKey={import.meta.env.VITE_POSTHOG_KEY} options={posthogOptions}>
+  <PostHogProvider
+    apiKey={import.meta.env.VITE_POSTHOG_KEY}
+    options={posthogOptions}
+  >
     <PostHogErrorBoundary fallback={PostHogErrorFallback}>
       <AuthProvider>
         <DataProvider>
@@ -28,5 +31,5 @@ createRoot(document.getElementById("root")!).render(
         </DataProvider>
       </AuthProvider>
     </PostHogErrorBoundary>
-  </PostHogProvider>,
+  </PostHogProvider>
 );

@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Copy, Check, Loader2, ChevronRight, Search } from "lucide-react";
-import type { DeveloperApiDocEndpoint, DeveloperApiPublicSpec } from "../../types/developerApiSpec";
+import {
+  BookOpen,
+  Copy,
+  Check,
+  Loader2,
+  ChevronRight,
+  Search,
+} from "lucide-react";
+import type {
+  DeveloperApiDocEndpoint,
+  DeveloperApiPublicSpec,
+} from "../../types/developerApiSpec";
 import { fetchDeveloperApiDocs } from "../../utils/fetch/developer";
 import { cardClass } from "./constants";
 
@@ -61,7 +71,13 @@ function methodStyle(method: string) {
   };
 }
 
-function ParamTable({ title, rows }: { title: string; rows: { cells: string[] }[] }) {
+function ParamTable({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: { cells: string[] }[];
+}) {
   if (rows.length === 0) return null;
   const showTitle = Boolean(title?.trim());
   return (
@@ -108,13 +124,16 @@ function EndpointCard({
 }) {
   const rowKey = e.endpointKey ?? `${e.method}:${e.pathTemplate}`;
   const ms = methodStyle(e.method);
-  const base = import.meta.env.VITE_SERVER_URL || "https://your-host.example.com";
+  const base =
+    import.meta.env.VITE_SERVER_URL || "https://your-host.example.com";
 
   const pathRows =
     e.pathParams?.map((p) => ({
       cells: [
         p.name,
-        [p.description, p.example ? `e.g. ${p.example}` : ""].filter(Boolean).join(" · "),
+        [p.description, p.example ? `e.g. ${p.example}` : ""]
+          .filter(Boolean)
+          .join(" · "),
       ],
     })) ?? [];
 
@@ -127,7 +146,10 @@ function EndpointCard({
     })) ?? [];
 
   const headerRows = e.requestHeaders.map((h) => ({
-    cells: [h.name, `${h.required ? "Required" : "Optional"} · ${h.description}`],
+    cells: [
+      h.name,
+      `${h.required ? "Required" : "Optional"} · ${h.description}`,
+    ],
   }));
 
   return (
@@ -146,11 +168,17 @@ function EndpointCard({
             {e.scopeId}
           </span>
         </div>
-        <h3 className="text-lg font-semibold text-zinc-50 mt-4 leading-snug">{e.title}</h3>
+        <h3 className="text-lg font-semibold text-zinc-50 mt-4 leading-snug">
+          {e.title}
+        </h3>
         {(() => {
           const body = endpointBodySummary(e.summary);
           if (!body) return null;
-          return <p className="text-sm text-zinc-400 mt-2 leading-relaxed line-clamp-4">{body}</p>;
+          return (
+            <p className="text-sm text-zinc-400 mt-2 leading-relaxed line-clamp-4">
+              {body}
+            </p>
+          );
         })()}
 
         <details className="mt-4 group">
@@ -160,10 +188,16 @@ function EndpointCard({
           </summary>
           <div className="mt-4 space-y-4">
             <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-3 py-2.5 shadow-inner ring-1 ring-zinc-800/40">
-              <p className="text-xs font-semibold text-zinc-400 mb-1">Response</p>
+              <p className="text-xs font-semibold text-zinc-400 mb-1">
+                Response
+              </p>
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <code className="text-sm text-emerald-400/95">{e.responseContentType}</code>
-                <span className="text-sm text-zinc-500">{e.responseSummary}</span>
+                <code className="text-sm text-emerald-400/95">
+                  {e.responseContentType}
+                </code>
+                <span className="text-sm text-zinc-500">
+                  {e.responseSummary}
+                </span>
               </div>
             </div>
             <ParamTable title="Path" rows={pathRows} />
@@ -175,7 +209,9 @@ function EndpointCard({
                   Request body
                 </p>
                 {e.requestBodySummary ? (
-                  <p className="text-sm text-zinc-400 leading-relaxed">{e.requestBodySummary}</p>
+                  <p className="text-sm text-zinc-400 leading-relaxed">
+                    {e.requestBodySummary}
+                  </p>
                 ) : null}
                 {e.requestBodyExampleJson ? (
                   <pre className="text-xs sm:text-sm leading-relaxed bg-black/35 border border-zinc-700 rounded-xl p-3 overflow-x-auto text-zinc-300 mt-2 font-mono whitespace-pre-wrap ring-1 ring-zinc-800/40">
@@ -193,8 +229,11 @@ function EndpointCard({
                   type="button"
                   onClick={() =>
                     void onCopy(
-                      e.exampleCurl.replace("https://your-host.example.com", base),
-                      rowKey,
+                      e.exampleCurl.replace(
+                        "https://your-host.example.com",
+                        base
+                      ),
+                      rowKey
                     )
                   }
                   className="flex items-center gap-1.5 text-sm font-medium text-sky-400/95 hover:text-sky-300 mr-2"
@@ -234,7 +273,8 @@ export default function DeveloperDocs() {
         const s = await fetchDeveloperApiDocs();
         if (!cancelled) setSpec(s);
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Failed to load API docs");
+        if (!cancelled)
+          setErr(e instanceof Error ? e.message : "Failed to load API docs");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -263,12 +303,14 @@ export default function DeveloperDocs() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <BookOpen className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-semibold text-zinc-50">API reference</h2>
+            <h2 className="text-lg font-semibold text-zinc-50">
+              API reference
+            </h2>
           </div>
           <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl">
-            Built from the same route definitions as production. Each route needs a key that
-            includes its scope. Open &quot;Overview and authentication&quot; for surface area, keys,
-            and header styles.
+            Built from the same route definitions as production. Each route
+            needs a key that includes its scope. Open &quot;Overview and
+            authentication&quot; for surface area, keys, and header styles.
           </p>
         </div>
       </div>
@@ -283,8 +325,9 @@ export default function DeveloperDocs() {
         <div className="rounded-2xl border border-amber-900/40 bg-amber-950/20 px-4 py-3 text-amber-200 text-sm">
           {err}{" "}
           <span className="text-zinc-500">
-            (Fallback: open <code className="text-zinc-400">/developer-api-docs.json</code> from the
-            last build.)
+            (Fallback: open{" "}
+            <code className="text-zinc-400">/developer-api-docs.json</code> from
+            the last build.)
           </span>
         </div>
       )}
@@ -296,7 +339,9 @@ export default function DeveloperDocs() {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                 Spec
               </p>
-              <p className="text-sm font-medium text-zinc-100 mt-1">v{spec.specVersion}</p>
+              <p className="text-sm font-medium text-zinc-100 mt-1">
+                v{spec.specVersion}
+              </p>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 {new Date(spec.generatedAt).toLocaleString()}
               </p>
@@ -324,7 +369,9 @@ export default function DeveloperDocs() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/35 p-4 shadow-inner ring-1 ring-zinc-800/45 min-w-0">
-              <p className="text-xs font-semibold text-zinc-300 mb-2">Auth headers</p>
+              <p className="text-xs font-semibold text-zinc-300 mb-2">
+                Auth headers
+              </p>
               <ParamTable
                 title=""
                 rows={spec.authentication.headers.map((h) => ({
@@ -333,7 +380,9 @@ export default function DeveloperDocs() {
               />
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/35 p-4 shadow-inner ring-1 ring-zinc-800/45">
-              <p className="text-xs font-semibold text-zinc-300 mb-2">Rate limits</p>
+              <p className="text-xs font-semibold text-zinc-300 mb-2">
+                Rate limits
+              </p>
               <p className="text-xs text-zinc-500 leading-relaxed">
                 {spec.rateLimiting.description}
               </p>
@@ -344,7 +393,9 @@ export default function DeveloperDocs() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-zinc-300 mb-2">Endpoints</h3>
+            <h3 className="text-sm font-semibold text-zinc-300 mb-2">
+              Endpoints
+            </h3>
             <div className="relative group w-full mb-3">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none group-focus-within:text-blue-400/90 transition-colors" />
               <input
@@ -358,7 +409,8 @@ export default function DeveloperDocs() {
             </div>
             {endpointQuery ? (
               <p className="text-xs text-zinc-500 mb-3">
-                Showing {filteredEndpoints.length} of {spec.endpoints.length} endpoints
+                Showing {filteredEndpoints.length} of {spec.endpoints.length}{" "}
+                endpoints
                 {filteredEndpoints.length === 0
                   ? ` — no matches for "${endpointSearch.trim()}".`
                   : null}{" "}

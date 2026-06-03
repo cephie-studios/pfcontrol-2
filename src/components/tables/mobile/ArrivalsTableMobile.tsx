@@ -1,13 +1,13 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { EyeOff, Eye, Route } from 'lucide-react';
-import type { Flight } from '../../../types/flight';
-import type { ArrivalsTableColumnSettings } from '../../../types/settings';
-import TextInput from '../../common/TextInput';
-import StarDropdown from '../../dropdowns/StarDropdown';
-import AltitudeDropdown from '../../dropdowns/AltitudeDropdown';
-import StatusDropdown from '../../dropdowns/StatusDropdown';
-import Button from '../../common/Button';
-import RouteModal from '../../tools/RouteModal';
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { EyeOff, Eye, Route } from "lucide-react";
+import type { Flight } from "../../../types/flight";
+import type { ArrivalsTableColumnSettings } from "../../../types/settings";
+import TextInput from "../../common/TextInput";
+import StarDropdown from "../../dropdowns/StarDropdown";
+import AltitudeDropdown from "../../dropdowns/AltitudeDropdown";
+import StatusDropdown from "../../dropdowns/StatusDropdown";
+import Button from "../../common/Button";
+import RouteModal from "../../tools/RouteModal";
 
 interface ArrivalsTableMobileProps {
   flights: Flight[];
@@ -58,12 +58,12 @@ export default function ArrivalsTableMobile({
   >([]);
 
   useEffect(() => {
-    const savedOrder = localStorage.getItem('arrival-strip-order-mobile');
+    const savedOrder = localStorage.getItem("arrival-strip-order-mobile");
     if (savedOrder) {
       try {
         setCustomFlightOrder(JSON.parse(savedOrder));
       } catch (error) {
-        console.error('Failed to parse saved arrival order:', error);
+        console.error("Failed to parse saved arrival order:", error);
       }
     }
   }, []);
@@ -91,7 +91,7 @@ export default function ArrivalsTableMobile({
 
   const saveFlightOrder = useCallback((flightIds: (string | number)[]) => {
     localStorage.setItem(
-      'arrival-strip-order-mobile',
+      "arrival-strip-order-mobile",
       JSON.stringify(flightIds)
     );
     setCustomFlightOrder(flightIds);
@@ -100,15 +100,15 @@ export default function ArrivalsTableMobile({
   const handleDragStart = useCallback(
     (e: React.DragEvent, flightId: string | number) => {
       setDraggedFlightId(flightId);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(flightId));
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(flightId));
     },
     []
   );
 
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
     setDragOverIndex(index);
   }, []);
 
@@ -194,7 +194,7 @@ export default function ArrivalsTableMobile({
             ) : (
               <EyeOff className="w-4 h-4" />
             )}
-            {showHidden ? 'Hide hidden flights' : 'Show hidden flights'}
+            {showHidden ? "Hide hidden flights" : "Show hidden flights"}
           </Button>
         </div>
       )}
@@ -218,10 +218,10 @@ export default function ArrivalsTableMobile({
                 onDragEnd={handleDragEnd}
                 className={`flight-card p-4 rounded-lg border cursor-move select-none ${
                   flight.hidden
-                    ? 'opacity-60 text-gray-400 border-gray-600'
-                    : 'border-gray-700'
-                } ${isDragging ? 'opacity-50' : ''} ${
-                  isDragOver ? 'border-t-4 border-green-400' : ''
+                    ? "opacity-60 text-gray-400 border-gray-600"
+                    : "border-gray-700"
+                } ${isDragging ? "opacity-50" : ""} ${
+                  isDragOver ? "border-t-4 border-green-400" : ""
                 }`}
                 style={backgroundStyle}
               >
@@ -229,7 +229,7 @@ export default function ArrivalsTableMobile({
                   <div>
                     {arrivalsColumns.callsign !== false && (
                       <h3 className="text-lg font-bold text-green-400">
-                        {flight.callsign || 'Unknown'}
+                        {flight.callsign || "Unknown"}
                       </h3>
                     )}
                     {(arrivalsColumns.departure !== false ||
@@ -239,7 +239,7 @@ export default function ArrivalsTableMobile({
                           flight.departure}
                         {arrivalsColumns.departure !== false &&
                           arrivalsColumns.callsign !== false &&
-                          ' → '}
+                          " → "}
                         {flight.arrival}
                       </p>
                     )}
@@ -249,14 +249,14 @@ export default function ArrivalsTableMobile({
                       <button
                         className={`px-2 py-1 rounded transition-colors ${
                           flight.route && flight.route.trim()
-                            ? 'text-gray-400 hover:text-blue-500'
-                            : 'text-red-500'
+                            ? "text-gray-400 hover:text-blue-500"
+                            : "text-red-500"
                         }`}
                         onClick={() => handleRouteClick(flight)}
                         title={
                           flight.route && flight.route.trim()
-                            ? 'View Route'
-                            : 'No route specified'
+                            ? "View Route"
+                            : "No route specified"
                         }
                       >
                         <Route className="w-5 h-5" />
@@ -286,7 +286,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">Gate</label>
                       <TextInput
-                        value={flight.gate || ''}
+                        value={flight.gate || ""}
                         onChange={(value) =>
                           onFlightChange?.(flight.id, {
                             gate: value,
@@ -304,7 +304,7 @@ export default function ArrivalsTableMobile({
                         Aircraft
                       </label>
                       <span className="text-white font-mono">
-                        {flight.aircraft || '-'}
+                        {flight.aircraft || "-"}
                       </span>
                     </div>
                   )}
@@ -312,7 +312,7 @@ export default function ArrivalsTableMobile({
                   {arrivalsColumns.wakeTurbulence !== false && (
                     <div>
                       <label className="block text-gray-400 mb-1">WTC</label>
-                      <span className="text-white">{flight.wtc || '-'}</span>
+                      <span className="text-white">{flight.wtc || "-"}</span>
                     </div>
                   )}
 
@@ -320,7 +320,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">Type</label>
                       <span className="text-white">
-                        {flight.flight_type || '-'}
+                        {flight.flight_type || "-"}
                       </span>
                     </div>
                   )}
@@ -329,7 +329,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">Runway</label>
                       <span className="text-white font-mono">
-                        {flight.runway || '-'}
+                        {flight.runway || "-"}
                       </span>
                     </div>
                   )}
@@ -338,7 +338,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">STAR</label>
                       <StarDropdown
-                        airportIcao={flight.arrival || ''}
+                        airportIcao={flight.arrival || ""}
                         value={flight.star}
                         onChange={(star) =>
                           onFlightChange?.(flight.id, {
@@ -355,7 +355,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">RFL</label>
                       <span className="text-white font-mono">
-                        {flight.cruisingFL || '-'}
+                        {flight.cruisingFL || "-"}
                       </span>
                     </div>
                   )}
@@ -397,7 +397,7 @@ export default function ArrivalsTableMobile({
                     <div>
                       <label className="block text-gray-400 mb-1">Squawk</label>
                       <TextInput
-                        value={flight.squawk || ''}
+                        value={flight.squawk || ""}
                         onChange={(value) =>
                           onFlightChange?.(flight.id, {
                             squawk: value,
@@ -416,7 +416,7 @@ export default function ArrivalsTableMobile({
                         Remarks
                       </label>
                       <TextInput
-                        value={remarkValues[flight.id] ?? (flight.remark || '')}
+                        value={remarkValues[flight.id] ?? (flight.remark || "")}
                         onChange={(value) => {
                           setRemarkValues((prev) => ({
                             ...prev,
@@ -434,16 +434,15 @@ export default function ArrivalsTableMobile({
                   <div>
                     <label className="block text-gray-400 mb-1">Time</label>
                     <span className="text-white font-mono">
-                      {(flight.timestamp || flight.created_at)
-                        ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
-                            'en-GB',
-                            {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            }
-                          )
-                        : '--'}
+                      {flight.timestamp || flight.created_at
+                        ? new Date(
+                            flight.timestamp || flight.created_at!
+                          ).toLocaleTimeString("en-GB", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "UTC",
+                          })
+                        : "--"}
                     </span>
                   </div>
                 </div>

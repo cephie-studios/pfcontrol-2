@@ -29,7 +29,8 @@ export function adminTableShellClass(extra = "") {
   return `rounded-xl border border-zinc-800/60 overflow-hidden bg-zinc-900/30${extra ? ` ${extra}` : ""}`;
 }
 
-export const ADMIN_SECTION_TITLE = "text-sm xl:text-base font-semibold text-zinc-200 mb-3";
+export const ADMIN_SECTION_TITLE =
+  "text-sm xl:text-base font-semibold text-zinc-200 mb-3";
 
 export function adminDownsizeButtonSize(
   size?: "icon" | "xs" | "sm" | "md" | "lg"
@@ -108,7 +109,8 @@ export const ADMIN_TABLE_HEAD = "bg-zinc-900";
 export const ADMIN_TH =
   "py-2 px-3 xl:py-3 xl:px-4 text-left text-xs xl:text-sm font-medium text-zinc-400 uppercase tracking-wider";
 
-export const ADMIN_TD = "py-2 px-3 xl:py-3 xl:px-4 text-sm xl:text-base text-zinc-300";
+export const ADMIN_TD =
+  "py-2 px-3 xl:py-3 xl:px-4 text-sm xl:text-base text-zinc-300";
 
 export const NAV_ACTIVE_COLORS: Record<string, string> = {
   "green-400": "text-green-400",

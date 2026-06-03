@@ -1,4 +1,4 @@
-import { apiFetch } from '../apiFetch.js';
+import { apiFetch } from "../apiFetch.js";
 export interface Feedback {
   id: number;
   user_id: string;
@@ -27,14 +27,14 @@ export async function submitFeedback(
   comment?: string
 ): Promise<Feedback> {
   const res = await apiFetch(`${API_BASE_URL}/api/feedback`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rating, comment }),
   });
 
   if (!res.ok) {
-    throw new Error('Failed to submit feedback');
+    throw new Error("Failed to submit feedback");
   }
 
   return res.json();
@@ -42,11 +42,11 @@ export async function submitFeedback(
 
 export async function fetchFeedback(): Promise<Feedback[]> {
   const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!res.ok) {
-    throw new Error('Failed to fetch feedback');
+    throw new Error("Failed to fetch feedback");
   }
 
   return res.json();
@@ -54,11 +54,11 @@ export async function fetchFeedback(): Promise<Feedback[]> {
 
 export async function fetchFeedbackStats(): Promise<FeedbackStats> {
   const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback/stats`, {
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!res.ok) {
-    throw new Error('Failed to fetch feedback stats');
+    throw new Error("Failed to fetch feedback stats");
   }
 
   return res.json();
@@ -66,12 +66,12 @@ export async function fetchFeedbackStats(): Promise<FeedbackStats> {
 
 export async function deleteFeedback(id: number): Promise<Feedback> {
   const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
   });
 
   if (!res.ok) {
-    throw new Error('Failed to delete feedback');
+    throw new Error("Failed to delete feedback");
   }
 
   return res.json();

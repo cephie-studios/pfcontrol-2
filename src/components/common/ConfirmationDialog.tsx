@@ -1,6 +1,6 @@
-import React from 'react';
-import { createPortal } from 'react-dom';
-import { AlertCircle } from 'lucide-react';
+import React from "react";
+import { createPortal } from "react-dom";
+import { AlertCircle } from "lucide-react";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface ConfirmationDialogProps {
   description?: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'primary' | 'danger' | 'success';
+  variant?: "primary" | "danger" | "success";
   icon?: React.ReactNode;
 }
 
@@ -18,30 +18,30 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   isOpen,
   onConfirm,
   onCancel,
-  title = 'Confirm Action',
-  description = 'Are you sure you want to proceed?',
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'primary',
+  title = "Confirm Action",
+  description = "Are you sure you want to proceed?",
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "primary",
   icon,
 }) => {
   if (!isOpen) return null;
 
   const variantStyles = {
     primary: {
-      border: 'border-blue-600',
-      confirmButton: 'bg-blue-600 hover:bg-blue-700',
-      icon: 'text-blue-400',
+      border: "border-blue-600",
+      confirmButton: "bg-blue-600 hover:bg-blue-700",
+      icon: "text-blue-400",
     },
     danger: {
-      border: 'border-red-600',
-      confirmButton: 'bg-red-600 hover:bg-red-700',
-      icon: 'text-red-400',
+      border: "border-red-600",
+      confirmButton: "bg-red-600 hover:bg-red-700",
+      icon: "text-red-400",
     },
     success: {
-      border: 'border-green-600',
-      confirmButton: 'bg-green-600 hover:bg-green-700',
-      icon: 'text-green-400',
+      border: "border-green-600",
+      confirmButton: "bg-green-600 hover:bg-green-700",
+      icon: "text-green-400",
     },
   };
 

@@ -31,6 +31,8 @@ export function buildNewDeveloperKeyCredentials(): {
   };
 }
 
-export function isSupportedDeveloperApiKeySecretFormat(secret: string): boolean {
+export function isSupportedDeveloperApiKeySecretFormat(
+  secret: string
+): boolean {
   return secret.startsWith(DEVELOPER_KEY_PREFIX);
 }

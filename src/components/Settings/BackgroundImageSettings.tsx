@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import {
   Upload,
   Trash2,
@@ -12,10 +12,10 @@ import {
   Loader2,
   Camera,
   ExternalLink,
-} from 'lucide-react';
-import { fetchBackgrounds } from '../../utils/fetch/data';
-import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
+} from "lucide-react";
+import { fetchBackgrounds } from "../../utils/fetch/data";
+import type { Settings } from "../../types/settings";
+import Button from "../common/Button";
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -81,7 +81,7 @@ function BackgroundImageItem({
           observer.disconnect();
         }
       },
-      { rootMargin: '50px' }
+      { rootMargin: "50px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -92,8 +92,8 @@ function BackgroundImageItem({
       ref={containerRef}
       className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
         isSelected
-          ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-          : 'border-zinc-700 hover:border-zinc-600'
+          ? "border-cyan-500 shadow-lg shadow-cyan-500/25"
+          : "border-zinc-700 hover:border-zinc-600"
       }`}
     >
       <div
@@ -108,7 +108,7 @@ function BackgroundImageItem({
             src={fullImageUrl}
             alt={`Background option ${index + 1}`}
             className={`w-full h-full object-cover transition-all duration-300 ${
-              isImageLoaded ? 'opacity-100' : 'opacity-0'
+              isImageLoaded ? "opacity-100" : "opacity-0"
             } group-hover:brightness-110`}
             onLoad={() => onImageLoad(image.path)}
           />
@@ -127,11 +127,11 @@ function BackgroundImageItem({
         }}
         className={`absolute top-2 left-2 p-1 rounded-full transition-colors ${
           isFavorite
-            ? 'bg-yellow-500 text-white'
-            : 'bg-black/50 text-gray-300 hover:text-yellow-400'
+            ? "bg-yellow-500 text-white"
+            : "bg-black/50 text-gray-300 hover:text-yellow-400"
         }`}
       >
-        <Star className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} />
+        <Star className={`h-3 w-3 ${isFavorite ? "fill-current" : ""}`} />
       </button>
       {photoCredit && isImageLoaded && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
@@ -150,12 +150,14 @@ export default function BackgroundImageSettings({
   onChange,
 }: BackgroundImageSettingsProps) {
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>([]);
+  const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>(
+    []
+  );
   const [loadingImages, setLoadingImages] = useState(false);
   const [loadingCephieSnap, setLoadingCephieSnap] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
@@ -167,10 +169,13 @@ export default function BackgroundImageSettings({
   const loadCephieSnapImages = async () => {
     try {
       setLoadingCephieSnap(true);
-      const res = await fetch(`${API_BASE_URL}/api/uploads/cephie-snap-images`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to load');
+      const res = await fetch(
+        `${API_BASE_URL}/api/uploads/cephie-snap-images`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!res.ok) throw new Error("Failed to load");
       const data = await res.json();
       setCephieSnapImages(data.images ?? []);
     } catch {
@@ -186,8 +191,8 @@ export default function BackgroundImageSettings({
       const data = await fetchBackgrounds();
       setAvailableImages(data);
     } catch (error) {
-      console.error('Error loading available images:', error);
-      setError('Failed to load background images');
+      console.error("Error loading available images:", error);
+      setError("Failed to load background images");
     } finally {
       setLoadingImages(false);
     }
@@ -197,12 +202,12 @@ export default function BackgroundImageSettings({
     if (!settings) return;
 
     let selectedValue: string | null = imageUrl;
-    if (imageUrl === '') {
+    if (imageUrl === "") {
       selectedValue = null;
     }
 
     const isUserUploaded =
-      selectedValue && selectedValue.startsWith('https://api.cephie.app/');
+      selectedValue && selectedValue.startsWith("https://api.cephie.app/");
 
     const updatedSettings = {
       ...settings,
@@ -236,24 +241,24 @@ export default function BackgroundImageSettings({
   };
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file');
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file");
       return;
     }
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append("image", file);
 
     setUploading(true);
-    setError('');
+    setError("");
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/uploads/upload-background`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) throw new Error("Upload failed");
 
       const uploadResult = await res.json();
       const newImageUrl = uploadResult.url;
@@ -273,7 +278,7 @@ export default function BackgroundImageSettings({
       await loadAvailableImages();
       await loadCephieSnapImages();
     } catch {
-      setError('Failed to upload image');
+      setError("Failed to upload image");
     } finally {
       setUploading(false);
     }
@@ -307,13 +312,13 @@ export default function BackgroundImageSettings({
 
   const handleDelete = async () => {
     setDeleting(true);
-    setError('');
+    setError("");
     try {
       const res = await fetch(`${API_BASE_URL}/api/uploads/delete-background`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
       });
-      if (!res.ok) throw new Error('Delete failed');
+      if (!res.ok) throw new Error("Delete failed");
 
       if (settings) {
         const updatedSettings = {
@@ -329,7 +334,7 @@ export default function BackgroundImageSettings({
 
       await loadAvailableImages();
     } catch {
-      setError('Failed to delete image');
+      setError("Failed to delete image");
     } finally {
       setDeleting(false);
     }
@@ -355,10 +360,10 @@ export default function BackgroundImageSettings({
   };
 
   const getImageUrl = (filename: string | null): string | null => {
-    if (!filename || filename === 'random' || filename === 'favorites') {
+    if (!filename || filename === "random" || filename === "favorites") {
       return filename;
     }
-    if (filename.startsWith('https://api.cephie.app/')) {
+    if (filename.startsWith("https://api.cephie.app/")) {
       return filename;
     }
     return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
@@ -393,7 +398,7 @@ export default function BackgroundImageSettings({
             <X className="h-5 w-5 text-red-400 mr-3 flex-shrink-0" />
             <p className="text-red-300 text-sm flex-1">{error}</p>
             <button
-              onClick={() => setError('')}
+              onClick={() => setError("")}
               className="text-red-400 hover:text-red-300 ml-3"
             >
               <X className="h-4 w-4" />
@@ -403,7 +408,7 @@ export default function BackgroundImageSettings({
 
         {/* Current Background Display - Only for user-uploaded images */}
         {settings?.backgroundImage?.selectedImage &&
-          !['random', 'favorites'].includes(
+          !["random", "favorites"].includes(
             settings.backgroundImage.selectedImage
           ) &&
           settings.backgroundImage.selectedImage !== null &&
@@ -432,7 +437,7 @@ export default function BackgroundImageSettings({
                     className="bg-red-600/90 hover:bg-red-700 backdrop-blur-sm"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {deleting ? 'Deleting...' : 'Delete'}
+                    {deleting ? "Deleting..." : "Delete"}
                   </Button>
                 </div>
               </div>
@@ -454,8 +459,8 @@ export default function BackgroundImageSettings({
                                 relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
                                 ${
                                   dragActive
-                                    ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
-                                    : 'border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50'
+                                    ? "border-blue-400 bg-blue-500/10 scale-[1.02]"
+                                    : "border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50"
                                 }
                             `}
             >
@@ -470,10 +475,10 @@ export default function BackgroundImageSettings({
                 <div
                   className={`p-4 rounded-xl transition-colors duration-300 ${
                     dragActive
-                      ? 'bg-blue-500/20'
+                      ? "bg-blue-500/20"
                       : uploading
-                        ? 'bg-blue-500/20'
-                        : 'bg-zinc-700/50'
+                        ? "bg-blue-500/20"
+                        : "bg-zinc-700/50"
                   }`}
                 >
                   {uploading ? (
@@ -485,10 +490,10 @@ export default function BackgroundImageSettings({
                 <div>
                   <p className="text-lg font-medium text-white mb-2">
                     {dragActive
-                      ? 'Drop your image here'
+                      ? "Drop your image here"
                       : uploading
-                        ? 'Uploading...'
-                        : 'Upload Background Image'}
+                        ? "Uploading..."
+                        : "Upload Background Image"}
                   </p>
                   <p className="text-zinc-400 text-sm">
                     Drag and drop an image here, or click to browse
@@ -509,7 +514,7 @@ export default function BackgroundImageSettings({
             Your Cephie Snap pictures
           </h4>
           <p className="text-zinc-400 text-xs mb-3">
-            Images you uploaded at{' '}
+            Images you uploaded at{" "}
             <a
               href="https://snap.cephie.app"
               target="_blank"
@@ -518,18 +523,22 @@ export default function BackgroundImageSettings({
             >
               snap.cephie.app
               <ExternalLink className="h-3 w-3" />
-            </a>{' '}
+            </a>{" "}
             - select one as your background.
           </p>
           {loadingCephieSnap ? (
             <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
               <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
-              <span className="text-zinc-400 text-sm">Loading your Snap pictures...</span>
+              <span className="text-zinc-400 text-sm">
+                Loading your Snap pictures...
+              </span>
             </div>
           ) : cephieSnapImages.length === 0 ? (
             <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
               <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
-              <p className="text-zinc-400 text-sm">No Cephie Snap pictures yet.</p>
+              <p className="text-zinc-400 text-sm">
+                No Cephie Snap pictures yet.
+              </p>
               <a
                 href="https://snap.cephie.app"
                 target="_blank"
@@ -543,34 +552,34 @@ export default function BackgroundImageSettings({
           ) : (
             <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {cephieSnapImages.map((img) => {
-                const isSelected = selectedImage === img.url;
-                return (
-                  <div
-                    key={img.id}
-                    className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                      isSelected
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-                        : 'border-zinc-700 hover:border-zinc-600'
-                    }`}
-                    onClick={() => handleSelectImage(img.url)}
-                  >
-                    <div className="aspect-video relative bg-zinc-800">
-                      <img
-                        src={img.url}
-                        alt="Cephie Snap"
-                        className="w-full h-full object-cover group-hover:brightness-110 transition-all"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-                          <Eye className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {cephieSnapImages.map((img) => {
+                  const isSelected = selectedImage === img.url;
+                  return (
+                    <div
+                      key={img.id}
+                      className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
+                        isSelected
+                          ? "border-cyan-500 shadow-lg shadow-cyan-500/25"
+                          : "border-zinc-700 hover:border-zinc-600"
+                      }`}
+                      onClick={() => handleSelectImage(img.url)}
+                    >
+                      <div className="aspect-video relative bg-zinc-800">
+                        <img
+                          src={img.url}
+                          alt="Cephie Snap"
+                          className="w-full h-full object-cover group-hover:brightness-110 transition-all"
+                        />
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
+                            <Eye className="h-3 w-3 text-white" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -593,11 +602,11 @@ export default function BackgroundImageSettings({
               {/* No Background */}
               <div
                 className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === null || selectedImage === ''
-                    ? 'border-emerald-500 shadow-lg shadow-emerald-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
+                  selectedImage === null || selectedImage === ""
+                    ? "border-emerald-500 shadow-lg shadow-emerald-500/25"
+                    : "border-zinc-700 hover:border-zinc-600"
                 }`}
-                onClick={() => handleSelectImage('')}
+                onClick={() => handleSelectImage("")}
               >
                 <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
                   <div className="text-center">
@@ -607,7 +616,7 @@ export default function BackgroundImageSettings({
                     </span>
                   </div>
                 </div>
-                {(selectedImage === null || selectedImage === '') && (
+                {(selectedImage === null || selectedImage === "") && (
                   <div className="absolute top-2 right-2 bg-emerald-500 rounded-full p-1">
                     <Eye className="h-3 w-3 text-white" />
                   </div>
@@ -617,11 +626,11 @@ export default function BackgroundImageSettings({
               {/* Random */}
               <div
                 className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'random'
-                    ? 'border-purple-500 shadow-lg shadow-purple-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
+                  selectedImage === "random"
+                    ? "border-purple-500 shadow-lg shadow-purple-500/25"
+                    : "border-zinc-700 hover:border-zinc-600"
                 }`}
-                onClick={() => handleSelectImage('random')}
+                onClick={() => handleSelectImage("random")}
               >
                 <div className="aspect-video bg-gradient-to-br from-purple-800 to-purple-900 flex items-center justify-center">
                   <div className="text-center">
@@ -631,7 +640,7 @@ export default function BackgroundImageSettings({
                     </span>
                   </div>
                 </div>
-                {selectedImage === 'random' && (
+                {selectedImage === "random" && (
                   <div className="absolute top-2 right-2 bg-purple-500 rounded-full p-1">
                     <Eye className="h-3 w-3 text-white" />
                   </div>
@@ -641,14 +650,14 @@ export default function BackgroundImageSettings({
               {/* Favorites */}
               <div
                 className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'favorites'
-                    ? 'border-yellow-500 shadow-lg shadow-yellow-500/25'
+                  selectedImage === "favorites"
+                    ? "border-yellow-500 shadow-lg shadow-yellow-500/25"
                     : favoriteCount === 0
-                      ? 'border-zinc-600 opacity-50 cursor-not-allowed'
-                      : 'border-zinc-700 hover:border-zinc-600'
+                      ? "border-zinc-600 opacity-50 cursor-not-allowed"
+                      : "border-zinc-700 hover:border-zinc-600"
                 }`}
                 onClick={() =>
-                  favoriteCount > 0 && handleSelectImage('favorites')
+                  favoriteCount > 0 && handleSelectImage("favorites")
                 }
               >
                 <div className="aspect-video bg-gradient-to-br from-yellow-800 to-yellow-900 flex items-center justify-center">
@@ -659,7 +668,7 @@ export default function BackgroundImageSettings({
                     </span>
                   </div>
                 </div>
-                {selectedImage === 'favorites' && (
+                {selectedImage === "favorites" && (
                   <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
                     <Eye className="h-3 w-3 text-white" />
                   </div>

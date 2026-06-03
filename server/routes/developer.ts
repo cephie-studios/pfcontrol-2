@@ -123,9 +123,11 @@ router.patch("/profile/notification-email", async (req, res) => {
       }
     }
     const row = await updateDeveloperNotificationEmail(userId, next);
-    if (!row) return res.status(404).json({ error: "Developer profile not found" });
+    if (!row)
+      return res.status(404).json({ error: "Developer profile not found" });
     const saved =
-      typeof row.notification_email === "string" && row.notification_email.trim()
+      typeof row.notification_email === "string" &&
+      row.notification_email.trim()
         ? row.notification_email.trim()
         : null;
     res.json({ ok: true, notificationEmail: saved });
@@ -164,16 +166,22 @@ router.get("/application", async (req, res) => {
             status: profile.status,
             approvedScopes: normalizeScopes(profile.approved_scopes),
             defaultRateLimitPerMinute: (() => {
-              const raw = (profile as { default_rate_limit_per_minute?: number | null })
-                .default_rate_limit_per_minute;
-              return typeof raw === "number" && Number.isFinite(raw) && raw > 0 ? raw : null;
+              const raw = (
+                profile as { default_rate_limit_per_minute?: number | null }
+              ).default_rate_limit_per_minute;
+              return typeof raw === "number" && Number.isFinite(raw) && raw > 0
+                ? raw
+                : null;
             })(),
             adminNoticeSeq: Number(profile.admin_notice_seq ?? 0),
             noticeDismissedSeq: Number(profile.notice_dismissed_seq ?? 0),
             adminNoticeDetail:
-              typeof profile.admin_notice_detail === "string" ? profile.admin_notice_detail : null,
+              typeof profile.admin_notice_detail === "string"
+                ? profile.admin_notice_detail
+                : null,
             notificationEmail:
-              typeof profile.notification_email === "string" && profile.notification_email.trim()
+              typeof profile.notification_email === "string" &&
+              profile.notification_email.trim()
                 ? profile.notification_email.trim()
                 : null,
           }
@@ -184,7 +192,9 @@ router.get("/application", async (req, res) => {
             status: latestApplication.status,
             whoText: latestApplication.who_text,
             whyText: latestApplication.why_text,
-            requestedScopes: normalizeScopes(latestApplication.requested_scopes),
+            requestedScopes: normalizeScopes(
+              latestApplication.requested_scopes
+            ),
             approvedScopes: latestApplication.approved_scopes
               ? normalizeScopes(latestApplication.approved_scopes)
               : null,
@@ -224,19 +234,21 @@ router.post("/application", async (req, res) => {
       return res.status(400).json({ error: "who / why length out of range" });
     }
     if (!isValidScopeList(requestedScopes)) {
-      return res
-        .status(400)
-        .json({ error: "requestedScopes must be a non-empty array of valid scope ids" });
+      return res.status(400).json({
+        error: "requestedScopes must be a non-empty array of valid scope ids",
+      });
     }
 
     const profile = await getDeveloperProfile(userId);
     if (profile?.status === "active") {
-      return res.status(400).json({ error: "You already have an active developer account" });
-    }
-    if (profile?.status === "suspended") {
       return res
         .status(400)
-        .json({ error: "Your developer access is suspended. Contact an administrator." });
+        .json({ error: "You already have an active developer account" });
+    }
+    if (profile?.status === "suspended") {
+      return res.status(400).json({
+        error: "Your developer access is suspended. Contact an administrator.",
+      });
     }
 
     const pending = await mainDb
@@ -246,7 +258,9 @@ router.post("/application", async (req, res) => {
       .where("status", "=", "pending")
       .executeTakeFirst();
     if (pending) {
-      return res.status(400).json({ error: "You already have a pending application" });
+      return res
+        .status(400)
+        .json({ error: "You already have a pending application" });
     }
 
     const row = await createDeveloperApplication({
@@ -262,7 +276,9 @@ router.post("/application", async (req, res) => {
   } catch (e: unknown) {
     const err = e as { code?: string };
     if (err.code === "23505") {
-      return res.status(400).json({ error: "You already have a pending application" });
+      return res
+        .status(400)
+        .json({ error: "You already have a pending application" });
     }
     console.error("[developer/application POST]", e);
     res.status(500).json({ error: "Failed to submit application" });
@@ -288,7 +304,9 @@ router.post("/application/scope-expansion", async (req, res) => {
       return res.status(400).json({ error: "who / why length out of range" });
     }
     if (!Array.isArray(additionalScopes)) {
-      return res.status(400).json({ error: "additionalScopes must be an array" });
+      return res
+        .status(400)
+        .json({ error: "additionalScopes must be an array" });
     }
     if (!isValidScopeList(additionalScopes)) {
       return res.status(400).json({
@@ -315,7 +333,9 @@ router.post("/application/scope-expansion", async (req, res) => {
       .where("status", "=", "pending")
       .executeTakeFirst();
     if (pending) {
-      return res.status(400).json({ error: "You already have a pending application" });
+      return res
+        .status(400)
+        .json({ error: "You already have a pending application" });
     }
 
     const requestedUnion = [...new Set([...current, ...additional])];
@@ -332,7 +352,9 @@ router.post("/application/scope-expansion", async (req, res) => {
   } catch (e: unknown) {
     const err = e as { code?: string };
     if (err.code === "23505") {
-      return res.status(400).json({ error: "You already have a pending application" });
+      return res
+        .status(400)
+        .json({ error: "You already have a pending application" });
     }
     console.error("[developer/application scope-expansion POST]", e);
     res.status(500).json({ error: "Failed to submit scope request" });
@@ -347,10 +369,13 @@ router.get("/keys", async (req, res) => {
       return res.status(403).json({ error: "Developer access not active" });
     }
     const keys = await listDeveloperKeysForUser(req.user.userId);
-    const profileDefault = (profile as { default_rate_limit_per_minute?: number | null })
-      .default_rate_limit_per_minute;
+    const profileDefault = (
+      profile as { default_rate_limit_per_minute?: number | null }
+    ).default_rate_limit_per_minute;
     const effectiveDefault =
-      typeof profileDefault === "number" && Number.isFinite(profileDefault) && profileDefault > 0
+      typeof profileDefault === "number" &&
+      Number.isFinite(profileDefault) &&
+      profileDefault > 0
         ? profileDefault
         : getDeveloperApiDefaultRateLimitPerMinute();
     res.json({
@@ -361,7 +386,9 @@ router.get("/keys", async (req, res) => {
         prefix: k.prefix,
         status: k.status ?? "active",
         scopes: normalizeScopes(k.scopes),
-        requestedScopes: k.requested_scopes ? normalizeScopes(k.requested_scopes) : [],
+        requestedScopes: k.requested_scopes
+          ? normalizeScopes(k.requested_scopes)
+          : [],
         rateLimitPerMinute: k.rate_limit_per_minute,
         reviewedAt: k.reviewed_at,
         reviewerNote: k.reviewer_note,
@@ -390,18 +417,26 @@ router.post("/keys", async (req, res) => {
       return res.status(400).json({ error: "name is required" });
     }
     const nameTrim = name.trim();
-    if (nameTrim.length < KEY_NAME_LEN.min || nameTrim.length > KEY_NAME_LEN.max) {
+    if (
+      nameTrim.length < KEY_NAME_LEN.min ||
+      nameTrim.length > KEY_NAME_LEN.max
+    ) {
       return res.status(400).json({ error: "invalid name length" });
     }
     if (!isValidScopeList(scopes)) {
-      return res.status(400).json({ error: "scopes must be a non-empty array of valid scope ids" });
+      return res
+        .status(400)
+        .json({ error: "scopes must be a non-empty array of valid scope ids" });
     }
 
     if (isScopeSubset(scopes, approved)) {
-      const profileDefault = (profile as { default_rate_limit_per_minute?: number | null })
-        .default_rate_limit_per_minute;
+      const profileDefault = (
+        profile as { default_rate_limit_per_minute?: number | null }
+      ).default_rate_limit_per_minute;
       const keyRpm =
-        typeof profileDefault === "number" && Number.isFinite(profileDefault) && profileDefault > 0
+        typeof profileDefault === "number" &&
+        Number.isFinite(profileDefault) &&
+        profileDefault > 0
           ? Math.floor(profileDefault)
           : null;
       const { secret, prefix, secretHash } = buildNewDeveloperKeyCredentials();
@@ -472,7 +507,9 @@ router.post("/keys/:id/rotate", async (req, res) => {
       secretHash,
     });
     if (!row) {
-      return res.status(404).json({ error: "Key not found or already revoked" });
+      return res
+        .status(404)
+        .json({ error: "Key not found or already revoked" });
     }
     res.status(200).json({
       id: String(row.id),
@@ -499,7 +536,9 @@ router.post("/keys/:id/revoke", async (req, res) => {
     if (!id) return res.status(400).json({ error: "Missing id" });
     const row = await revokeDeveloperApiKey(id, req.user.userId);
     if (!row) {
-      return res.status(404).json({ error: "Key not found or already revoked" });
+      return res
+        .status(404)
+        .json({ error: "Key not found or already revoked" });
     }
     res.json({ ok: true, id: String(row.id) });
   } catch (e) {
@@ -519,7 +558,9 @@ router.delete("/keys/:id", async (req, res) => {
     if (!id) return res.status(400).json({ error: "Missing id" });
     const row = await deleteRevokedDeveloperApiKey(id, req.user.userId);
     if (!row) {
-      return res.status(404).json({ error: "Key not found or not yet revoked" });
+      return res
+        .status(404)
+        .json({ error: "Key not found or not yet revoked" });
     }
     res.json({ ok: true });
   } catch (e) {

@@ -1,7 +1,10 @@
 import { mainDb } from "./connection.js";
 import { sql } from "kysely";
 
-export async function getDeveloperUsageDailyCounts(userId: string, since: Date) {
+export async function getDeveloperUsageDailyCounts(
+  userId: string,
+  since: Date
+) {
   const result = await sql<{ date: string; count: number }>`
     SELECT
       to_char(day_bucket, 'YYYY-MM-DD') AS date,
@@ -27,7 +30,10 @@ export async function getDeveloperUsageDailyCounts(userId: string, since: Date) 
   }));
 }
 
-export async function getDeveloperUsageHourlyCounts(userId: string, since: Date) {
+export async function getDeveloperUsageHourlyCounts(
+  userId: string,
+  since: Date
+) {
   const result = await sql<{ date: string; count: number }>`
     SELECT
       to_char(hour_bucket, 'YYYY-MM-DD"T"HH24:00:00') AS date,
@@ -64,7 +70,11 @@ export async function getDeveloperUsageByScope(userId: string, since: Date) {
     .execute();
 }
 
-export async function getDeveloperRecentUsage(userId: string, limit: number, offset: number) {
+export async function getDeveloperRecentUsage(
+  userId: string,
+  limit: number,
+  offset: number
+) {
   return mainDb
     .selectFrom("developer_api_usage")
     .selectAll()

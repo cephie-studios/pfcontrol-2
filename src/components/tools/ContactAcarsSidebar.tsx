@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
-import { X, Radio, Plane, MapPin, Search } from 'lucide-react';
-import { fetchFrequencies } from '../../utils/fetch/data';
-import type { AirportFrequency } from '../../types/airports';
-import type { Flight } from '../../types/flight';
-import Button from '../common/Button';
-import Dropdown from '../common/Dropdown';
+import { useState, useEffect, useMemo } from "react";
+import { X, Radio, Plane, MapPin, Search } from "lucide-react";
+import { fetchFrequencies } from "../../utils/fetch/data";
+import type { AirportFrequency } from "../../types/airports";
+import type { Flight } from "../../types/flight";
+import Button from "../common/Button";
+import Dropdown from "../common/Dropdown";
 import {
   containsHateSpeech,
   containsProfanity,
-} from '../../utils/hateSpeechFilter';
+} from "../../utils/hateSpeechFilter";
 
 interface ContactAcarsSidebarProps {
   open: boolean;
@@ -35,28 +35,28 @@ export default function ContactAcarsSidebar({
   fallbackFrequency,
 }: ContactAcarsSidebarProps) {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
-  const [customMessage, setCustomMessage] = useState('');
+  const [customMessage, setCustomMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [selectedPosition, setSelectedPosition] = useState<string>('TWR');
+  const [selectedPosition, setSelectedPosition] = useState<string>("TWR");
   const [frequencies, setFrequencies] = useState<
     { type: string; freq: string }[]
   >([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const flightsWithAcars = flights;
 
-  const isCenterStation = airportIcao.includes('_CTR');
+  const isCenterStation = airportIcao.includes("_CTR");
 
   const filteredFlights = useMemo(() => {
     if (!searchTerm.trim()) return flightsWithAcars;
     const lowerSearch = searchTerm.toLowerCase();
     return flightsWithAcars.filter(
       (flight) =>
-        (flight.callsign?.toLowerCase() || '').includes(lowerSearch) ||
+        (flight.callsign?.toLowerCase() || "").includes(lowerSearch) ||
         flight.user?.discord_username?.toLowerCase().includes(lowerSearch) ||
         flight.aircraft?.toLowerCase().includes(lowerSearch) ||
-        (flight.departure?.toLowerCase() || '').includes(lowerSearch) ||
-        (flight.arrival?.toLowerCase() || '').includes(lowerSearch)
+        (flight.departure?.toLowerCase() || "").includes(lowerSearch) ||
+        (flight.arrival?.toLowerCase() || "").includes(lowerSearch)
     );
   }, [flightsWithAcars, searchTerm]);
 
@@ -77,7 +77,7 @@ export default function ContactAcarsSidebar({
       }
       return `CONTACT ME ON ${airportIcao}`;
     }
-    return 'CONTACT ME ON FREQUENCY';
+    return "CONTACT ME ON FREQUENCY";
   };
 
   const currentMessage = useMemo(() => {
@@ -107,8 +107,8 @@ export default function ContactAcarsSidebar({
         setFrequencies(freqs);
 
         if (freqs.length > 0) {
-          const twr = freqs.find((f) => f.type === 'TWR');
-          setSelectedPosition(twr ? 'TWR' : freqs[0].type);
+          const twr = freqs.find((f) => f.type === "TWR");
+          setSelectedPosition(twr ? "TWR" : freqs[0].type);
         }
       } catch {
         setFrequencies([]);
@@ -131,7 +131,7 @@ export default function ContactAcarsSidebar({
         airportIcao,
         selectedPosition
       );
-      setCustomMessage('');
+      setCustomMessage("");
       setSelectedFlight(null);
       onClose();
     } finally {
@@ -142,9 +142,9 @@ export default function ContactAcarsSidebar({
   return (
     <div
       className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
-        open ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
+        open ? "translate-x-0 shadow-2xl" : "translate-x-full"
       } rounded-l-3xl border-l-2 border-blue-800 flex flex-col ${
-        open ? '' : 'pointer-events-none'
+        open ? "" : "pointer-events-none"
       }`}
       style={{ zIndex: 10000 }}
     >
@@ -208,8 +208,8 @@ export default function ContactAcarsSidebar({
                     onClick={() => setSelectedFlight(flight)}
                     className={`w-full text-left p-4 rounded-xl border transition-all ${
                       selectedFlight?.id === flight.id
-                        ? 'border-blue-500 bg-blue-950 shadow-lg shadow-blue-500/20'
-                        : 'border-gray-800 hover:border-gray-700 bg-gray-950 hover:bg-gray-900'
+                        ? "border-blue-500 bg-blue-950 shadow-lg shadow-blue-500/20"
+                        : "border-gray-800 hover:border-gray-700 bg-gray-950 hover:bg-gray-900"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -217,7 +217,7 @@ export default function ContactAcarsSidebar({
                       {flight.user?.discord_avatar_url ? (
                         <img
                           src={flight.user.discord_avatar_url}
-                          alt={flight.user.discord_username || 'User'}
+                          alt={flight.user.discord_username || "User"}
                           className="w-12 h-12 rounded-full border-2 border-gray-700"
                         />
                       ) : (
@@ -234,7 +234,7 @@ export default function ContactAcarsSidebar({
                               {flight.callsign}
                             </div>
                             <div className="text-xs text-gray-400 mt-0.5">
-                              {flight.user?.discord_username || 'Unknown Pilot'}
+                              {flight.user?.discord_username || "Unknown Pilot"}
                             </div>
                           </div>
                           {selectedFlight?.id === flight.id && (
@@ -288,7 +288,7 @@ export default function ContactAcarsSidebar({
                 />
                 <div className="mt-3 bg-gray-950 border border-gray-800 rounded-lg p-3">
                   <p className="text-xs text-gray-500 font-mono">
-                    Default:{' '}
+                    Default:{" "}
                     <span className="text-blue-400">
                       "{getDefaultMessage()}"
                     </span>
@@ -302,7 +302,7 @@ export default function ContactAcarsSidebar({
               <div className="mb-6">
                 <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
                   <p className="text-xs text-gray-500 font-mono">
-                    Default:{' '}
+                    Default:{" "}
                     <span className="text-blue-400">
                       "{getDefaultMessage()}"
                     </span>
@@ -322,15 +322,15 @@ export default function ContactAcarsSidebar({
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && canSendMessage()) {
+                    if (e.key === "Enter" && canSendMessage()) {
                       handleSend();
                     }
                   }}
                   placeholder={getDefaultMessage()}
                   className={`w-full px-4 py-3 bg-gray-950 border rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent font-mono text-sm ${
                     hasContentViolation
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-800 focus:ring-blue-500'
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-800 focus:ring-blue-500"
                   }`}
                   maxLength={100}
                 />
@@ -365,7 +365,7 @@ export default function ContactAcarsSidebar({
           disabled={!canSendMessage()}
           className="disabled:bg-gray-600"
         >
-          {sending ? 'Sending...' : 'Send ACARS Message'}
+          {sending ? "Sending..." : "Send ACARS Message"}
         </Button>
       </div>
     </div>

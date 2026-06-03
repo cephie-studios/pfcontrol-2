@@ -1,6 +1,9 @@
 import { PostHog } from "posthog-node";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
+import {
+  BatchLogRecordProcessor,
+  LoggerProvider,
+} from "@opentelemetry/sdk-logs";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { logs, type AnyValueMap } from "@opentelemetry/api-logs";
 import type { Request } from "express";
@@ -57,7 +60,7 @@ export function capture(req: Request, params: CaptureParams): void {
 export function captureRequestException(
   req: Request,
   error: unknown,
-  additional?: Record<string, unknown>,
+  additional?: Record<string, unknown>
 ): void {
   if (!posthogServerEnabled) return;
   const distinctId =
@@ -67,7 +70,8 @@ export function captureRequestException(
       : undefined) ??
     "server-anonymous";
   const sessionId = req.headers["x-posthog-session-id"];
-  const currentUrl = req.headers.referer || req.headers.origin || req.originalUrl;
+  const currentUrl =
+    req.headers.referer || req.headers.origin || req.originalUrl;
   client.captureException(error, distinctId, {
     ...additional,
     ...(sessionId ? { $session_id: String(sessionId) } : {}),
@@ -97,7 +101,7 @@ export function initTelemetry() {
         new OTLPLogExporter({
           url: `${host}/i/v1/logs`,
           headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
-        }),
+        })
       ),
     ],
   });

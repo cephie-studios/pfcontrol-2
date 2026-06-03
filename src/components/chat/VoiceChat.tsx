@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
-import { useAuth } from '../../hooks/auth/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { useAuth } from "../../hooks/auth/useAuth";
 import {
   type VoiceUser,
   createVoiceChatSocket,
-} from '../../sockets/voiceChatSocket';
-import Button from '../common/Button';
-import Dropdown from '../common/Dropdown';
+} from "../../sockets/voiceChatSocket";
+import Button from "../common/Button";
+import Dropdown from "../common/Dropdown";
 
 interface VoiceChatProps {
   open: boolean;
@@ -35,26 +35,28 @@ export default function VoiceChat({
 }: VoiceChatProps) {
   const { user } = useAuth();
 
-  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
+    []
+  );
   const [selectedAudioInput, setSelectedAudioInput] = useState<string>(() => {
     try {
-      return localStorage.getItem('voice-chat-audio-input') || 'default';
+      return localStorage.getItem("voice-chat-audio-input") || "default";
     } catch {
-      return 'default';
+      return "default";
     }
   });
   const [isMuted, setIsMuted] = useState(() => {
     try {
-      const saved = localStorage.getItem('voice-chat-muted');
-      return saved === 'true';
+      const saved = localStorage.getItem("voice-chat-muted");
+      return saved === "true";
     } catch {
       return false;
     }
   });
   const [isDeafened, setIsDeafened] = useState(() => {
     try {
-      const saved = localStorage.getItem('voice-chat-deafened');
-      return saved === 'true';
+      const saved = localStorage.getItem("voice-chat-deafened");
+      return saved === "true";
     } catch {
       return false;
     }
@@ -62,24 +64,27 @@ export default function VoiceChat({
 
   const refreshDevices = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) {
-      console.warn('Media devices API not available');
+      console.warn("Media devices API not available");
       return;
     }
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter((d) => d.kind === 'audioinput');
+      const audioInputs = devices.filter((d) => d.kind === "audioinput");
       setAudioInputDevices(audioInputs);
     } catch (err) {
-      console.warn('Failed to enumerate audio devices:', err);
+      console.warn("Failed to enumerate audio devices:", err);
     }
   }, []);
 
   useEffect(() => {
     if (!isInVoice) return;
     if (!navigator.mediaDevices) return;
-    navigator.mediaDevices.addEventListener('devicechange', refreshDevices);
+    navigator.mediaDevices.addEventListener("devicechange", refreshDevices);
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', refreshDevices);
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        refreshDevices
+      );
     };
   }, [isInVoice, refreshDevices]);
 
@@ -91,20 +96,26 @@ export default function VoiceChat({
 
   useEffect(() => {
     try {
-      localStorage.setItem('voice-chat-audio-input', selectedAudioInput);
-    } catch {/* ignore */}
+      localStorage.setItem("voice-chat-audio-input", selectedAudioInput);
+    } catch {
+      /* ignore */
+    }
   }, [selectedAudioInput]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('voice-chat-muted', isMuted.toString());
-    } catch {/* ignore */}
+      localStorage.setItem("voice-chat-muted", isMuted.toString());
+    } catch {
+      /* ignore */
+    }
   }, [isMuted]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('voice-chat-deafened', isDeafened.toString());
-    } catch {/* ignore */}
+      localStorage.setItem("voice-chat-deafened", isDeafened.toString());
+    } catch {
+      /* ignore */
+    }
   }, [isDeafened]);
 
   useEffect(() => {
@@ -167,10 +178,10 @@ export default function VoiceChat({
         <div
           className={`h-full transition-all duration-100 ${
             percentage > 70
-              ? 'bg-red-400'
+              ? "bg-red-400"
               : percentage > 40
-                ? 'bg-yellow-400'
-                : 'bg-green-400'
+                ? "bg-yellow-400"
+                : "bg-green-400"
           }`}
           style={{ width: `${percentage}%` }}
         />
@@ -186,9 +197,9 @@ export default function VoiceChat({
   };
 
   const deviceOptions = [
-    { label: 'Default', value: 'default' },
+    { label: "Default", value: "default" },
     ...audioInputDevices
-      .filter((d) => d.deviceId && d.deviceId !== 'default')
+      .filter((d) => d.deviceId && d.deviceId !== "default")
       .map((device, index) => ({
         label: device.label || `Microphone ${index + 1}`,
         value: device.deviceId,
@@ -232,11 +243,11 @@ export default function VoiceChat({
                         <img
                           src={
                             voiceUser.avatar ||
-                            '/assets/app/default/avatar.webp'
+                            "/assets/app/default/avatar.webp"
                           }
                           alt={voiceUser.username}
                           className={`w-10 h-10 rounded-full border-2 transition-colors duration-200 ${
-                            isTalking ? 'border-green-400' : 'border-zinc-600'
+                            isTalking ? "border-green-400" : "border-zinc-600"
                           }`}
                         />
                         {voiceUser.isMuted && (
@@ -254,7 +265,7 @@ export default function VoiceChat({
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-white truncate">
                           {voiceUser.username}
-                          {isCurrentUser && ' (You)'}
+                          {isCurrentUser && " (You)"}
                         </div>
                         {isCurrentUser && getAudioLevelBar(voiceUser.userId)}
                       </div>
@@ -314,7 +325,7 @@ export default function VoiceChat({
 
           <div className="grid grid-cols-3 gap-2">
             <Button
-              variant={isMuted ? 'danger' : 'outline'}
+              variant={isMuted ? "danger" : "outline"}
               size="sm"
               onClick={toggleMute}
               className="flex-1"
@@ -328,7 +339,7 @@ export default function VoiceChat({
             </Button>
 
             <Button
-              variant={isDeafened ? 'danger' : 'outline'}
+              variant={isDeafened ? "danger" : "outline"}
               size="sm"
               onClick={toggleDeafen}
               className="flex-1"

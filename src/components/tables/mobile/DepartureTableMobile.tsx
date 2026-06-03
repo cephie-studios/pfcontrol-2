@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   EyeOff,
   Eye,
@@ -6,20 +6,20 @@ import {
   FileSpreadsheet,
   RefreshCw,
   Route,
-} from 'lucide-react';
-import type { Flight } from '../../../types/flight';
-import type { DepartureTableColumnSettings } from '../../../types/settings';
-import Checkbox from '../../common/Checkbox';
-import TextInput from '../../common/TextInput';
-import AirportDropdown from '../../dropdowns/AirportDropdown';
-import RunwayDropdown from '../../dropdowns/RunwayDropdown';
-import AircraftDropdown from '../../dropdowns/AircraftDropdown';
-import SidDropdown from '../../dropdowns/SidDropdown';
-import AltitudeDropdown from '../../dropdowns/AltitudeDropdown';
-import StatusDropdown from '../../dropdowns/StatusDropdown';
-import Button from '../../common/Button';
-import PDCModal from '../../tools/PDCModal';
-import RouteModal from '../../tools/RouteModal';
+} from "lucide-react";
+import type { Flight } from "../../../types/flight";
+import type { DepartureTableColumnSettings } from "../../../types/settings";
+import Checkbox from "../../common/Checkbox";
+import TextInput from "../../common/TextInput";
+import AirportDropdown from "../../dropdowns/AirportDropdown";
+import RunwayDropdown from "../../dropdowns/RunwayDropdown";
+import AircraftDropdown from "../../dropdowns/AircraftDropdown";
+import SidDropdown from "../../dropdowns/SidDropdown";
+import AltitudeDropdown from "../../dropdowns/AltitudeDropdown";
+import StatusDropdown from "../../dropdowns/StatusDropdown";
+import Button from "../../common/Button";
+import PDCModal from "../../tools/PDCModal";
+import RouteModal from "../../tools/RouteModal";
 
 interface DepartureTableProps {
   flights: Flight[];
@@ -85,14 +85,23 @@ export default function DepartureTableMobile({
       let changed = false;
       for (const [id, opt] of prev) {
         const flight = flights.find((f) => f.id === id);
-        if (!flight) { next.delete(id); changed = true; continue; }
+        if (!flight) {
+          next.delete(id);
+          changed = true;
+          continue;
+        }
         const serverAt = flight.req_at ?? null;
         const optAt = opt.req_at ?? null;
         const synced =
           (serverAt === null && optAt === null) ||
-          (serverAt !== null && optAt !== null &&
-            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) < 5000);
-        if (synced) { next.delete(id); changed = true; }
+          (serverAt !== null &&
+            optAt !== null &&
+            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) <
+              5000);
+        if (synced) {
+          next.delete(id);
+          changed = true;
+        }
       }
       return changed ? next : prev;
     });
@@ -106,11 +115,14 @@ export default function DepartureTableMobile({
   };
 
   const reqPositions = useMemo(() => {
-    const byPhase: Record<string, Array<{ id: string | number; req_at: string }>> = {};
+    const byPhase: Record<
+      string,
+      Array<{ id: string | number; req_at: string }>
+    > = {};
     for (const f of flights) {
       const { req_at, req_phase } = getReqData(f);
       if (!req_at) continue;
-      const phase = req_phase || 'G';
+      const phase = req_phase || "G";
       if (!byPhase[phase]) byPhase[phase] = [];
       byPhase[phase].push({ id: f.id, req_at });
     }
@@ -121,22 +133,28 @@ export default function DepartureTableMobile({
     for (const [phase, list] of Object.entries(byPhase)) {
       list.forEach(({ id }, idx) => {
         const pos = idx + 1;
-        result.set(id, phase === 'G' ? `REQ${pos}` : `R${pos}${phase}`);
+        result.set(id, phase === "G" ? `REQ${pos}` : `R${pos}${phase}`);
       });
     }
     return result;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flights, reqOptimistic]);
 
   const formatReqElapsed = (req_at: string) => {
-    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(req_at).getTime()) / 1000));
+    const elapsed = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(req_at).getTime()) / 1000)
+    );
     const m = Math.floor(elapsed / 60);
     const s = elapsed % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const getReqColor = (req_at: string): string => {
-    const elapsed = Math.max(0, (Date.now() - new Date(req_at).getTime()) / 1000);
+    const elapsed = Math.max(
+      0,
+      (Date.now() - new Date(req_at).getTime()) / 1000
+    );
     const progress = Math.min(1, elapsed / 300);
     const hue = Math.round(48 * (1 - progress));
     return `hsl(${hue}, 90%, 58%)`;
@@ -158,12 +176,12 @@ export default function DepartureTableMobile({
   >([]);
 
   useEffect(() => {
-    const savedOrder = localStorage.getItem('flight-strip-order-mobile');
+    const savedOrder = localStorage.getItem("flight-strip-order-mobile");
     if (savedOrder) {
       try {
         setCustomFlightOrder(JSON.parse(savedOrder));
       } catch (error) {
-        console.error('Failed to parse saved flight order:', error);
+        console.error("Failed to parse saved flight order:", error);
       }
     }
   }, []);
@@ -191,7 +209,7 @@ export default function DepartureTableMobile({
 
   const saveFlightOrder = useCallback((flightIds: (string | number)[]) => {
     localStorage.setItem(
-      'flight-strip-order-mobile',
+      "flight-strip-order-mobile",
       JSON.stringify(flightIds)
     );
     setCustomFlightOrder(flightIds);
@@ -200,15 +218,15 @@ export default function DepartureTableMobile({
   const handleDragStart = useCallback(
     (e: React.DragEvent, flightId: string | number) => {
       setDraggedFlightId(flightId);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', String(flightId));
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(flightId));
     },
     []
   );
 
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
     setDragOverIndex(index);
   }, []);
 
@@ -305,7 +323,9 @@ export default function DepartureTableMobile({
       if (checked && flight && getReqData(flight).req_at) {
         updates.req_at = null;
         updates.req_phase = null;
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
       }
       onFlightChange(flightId, updates);
     }
@@ -314,30 +334,35 @@ export default function DepartureTableMobile({
   const handleReqToggle = (flight: Flight) => {
     if (!onFlightChange) return;
     const isClearanceCheckedLocal = (v: boolean | string | undefined) => {
-      if (typeof v === 'boolean') return v;
-      if (typeof v === 'string') return ['true', 'c', 'yes', '1'].includes(v.trim().toLowerCase());
+      if (typeof v === "boolean") return v;
+      if (typeof v === "string")
+        return ["true", "c", "yes", "1"].includes(v.trim().toLowerCase());
       return false;
     };
     const current = getReqData(flight);
     if (current.req_at) {
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: null, req_phase: null }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: null, req_phase: null })
+      );
       onFlightChange(flight.id, { req_at: null, req_phase: null });
     } else {
-      const status = (flight.status || '').toLowerCase();
+      const status = (flight.status || "").toLowerCase();
       const cleared = isClearanceCheckedLocal(flight.clearance);
       let phase: string;
-      if (status === 'pending' && !cleared) phase = 'C';
-      else if (status === 'pending' && cleared) phase = 'P';
-      else if (status === 'push') phase = 'T';
-      else phase = 'G';
+      if (status === "pending" && !cleared) phase = "C";
+      else if (status === "pending" && cleared) phase = "P";
+      else if (status === "push") phase = "T";
+      else phase = "G";
       const newReqAt = new Date().toISOString();
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase })
+      );
       onFlightChange(flight.id, { req_at: newReqAt, req_phase: phase });
     }
   };
 
   const generateRandomSquawk = (): string => {
-    let squawk = '';
+    let squawk = "";
     for (let i = 0; i < 4; i++) {
       squawk += Math.floor(Math.random() * 6) + 1;
     }
@@ -430,7 +455,9 @@ export default function DepartureTableMobile({
       if (flight && getReqData(flight).req_at) {
         updates.req_at = null;
         updates.req_phase = null;
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
       }
       onFlightChange(flightId, updates);
     }
@@ -451,11 +478,11 @@ export default function DepartureTableMobile({
   const isClearanceChecked = (
     clearance: boolean | string | undefined
   ): boolean => {
-    if (typeof clearance === 'boolean') {
+    if (typeof clearance === "boolean") {
       return clearance;
     }
-    if (typeof clearance === 'string') {
-      return clearance.toLowerCase() === 'true';
+    if (typeof clearance === "string") {
+      return clearance.toLowerCase() === "true";
     }
     return false;
   };
@@ -475,7 +502,7 @@ export default function DepartureTableMobile({
             ) : (
               <EyeOff className="w-4 h-4" />
             )}
-            {showHidden ? 'Hide hidden flights' : 'Show hidden flights'}
+            {showHidden ? "Hide hidden flights" : "Show hidden flights"}
           </Button>
         </div>
       )}
@@ -495,19 +522,19 @@ export default function DepartureTableMobile({
               onDragEnd={handleDragEnd}
               className={`flight-card p-4 rounded-lg border cursor-move select-none ${
                 flight.hidden
-                  ? 'opacity-60 text-gray-400 border-gray-600'
-                  : 'border-zinc-700'
-              } ${isDragging ? 'opacity-50' : ''} ${
-                isDragOver ? 'border-t-4 border-blue-400' : ''
+                  ? "opacity-60 text-gray-400 border-gray-600"
+                  : "border-zinc-700"
+              } ${isDragging ? "opacity-50" : ""} ${
+                isDragOver ? "border-t-4 border-blue-400" : ""
               }`}
               style={backgroundStyle}
             >
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {departureColumns.callsign !== false && (
                   <div>
-                    <strong>Callsign:</strong>{' '}
+                    <strong>Callsign:</strong>{" "}
                     <TextInput
-                      value={flight.callsign || ''}
+                      value={flight.callsign || ""}
                       onChange={(value) =>
                         handleCallsignChange(flight.id, value)
                       }
@@ -515,48 +542,61 @@ export default function DepartureTableMobile({
                       placeholder="-"
                       maxLength={16}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.currentTarget.blur();
                         }
                       }}
                     />
                   </div>
                 )}
-                {departureColumns.req !== false && (() => {
-                  const { req_at } = getReqData(flight);
-                  return (
-                    <div
-                      className="flex flex-col justify-center cursor-pointer select-none"
-                      onClick={() => handleReqToggle(flight)}
-                      title={req_at ? 'Click to clear request' : 'Click to mark as on-request'}
-                    >
-                      <strong>REQ:</strong>
-                      {req_at ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-xs font-bold" style={{ color: getReqColor(req_at) }}>
-                            {reqPositions.get(flight.id) ?? 'REQ'}
+                {departureColumns.req !== false &&
+                  (() => {
+                    const { req_at } = getReqData(flight);
+                    return (
+                      <div
+                        className="flex flex-col justify-center cursor-pointer select-none"
+                        onClick={() => handleReqToggle(flight)}
+                        title={
+                          req_at
+                            ? "Click to clear request"
+                            : "Click to mark as on-request"
+                        }
+                      >
+                        <strong>REQ:</strong>
+                        {req_at ? (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                              className="text-xs font-bold"
+                              style={{ color: getReqColor(req_at) }}
+                            >
+                              {reqPositions.get(flight.id) ?? "REQ"}
+                            </span>
+                            <span
+                              className="text-xs"
+                              style={{ color: getReqColor(req_at) }}
+                            >
+                              {formatReqElapsed(req_at)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-zinc-400 mt-0.5 opacity-40">
+                            —
                           </span>
-                          <span className="text-xs" style={{ color: getReqColor(req_at) }}>
-                            {formatReqElapsed(req_at)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-zinc-400 mt-0.5 opacity-40">—</span>
-                      )}
-                    </div>
-                  );
-                })()}
+                        )}
+                      </div>
+                    );
+                  })()}
                 {departureColumns.stand !== false && (
                   <div>
-                    <strong>Stand:</strong>{' '}
+                    <strong>Stand:</strong>{" "}
                     <TextInput
-                      value={flight.stand || ''}
+                      value={flight.stand || ""}
                       onChange={(value) => handleStandChange(flight.id, value)}
                       className="bg-transparent border-none focus:bg-gray-800 px-1 rounded text-white"
                       placeholder="-"
                       maxLength={8}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.currentTarget.blur();
                         }
                       }}
@@ -565,7 +605,7 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.aircraft !== false && (
                   <div>
-                    <strong>Aircraft:</strong>{' '}
+                    <strong>Aircraft:</strong>{" "}
                     <AircraftDropdown
                       value={flight.aircraft}
                       onChange={(type) => handleAircraftChange(flight.id, type)}
@@ -576,17 +616,17 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.wakeTurbulence !== false && (
                   <div>
-                    <strong>WTC:</strong> {flight.wtc || '-'}
+                    <strong>WTC:</strong> {flight.wtc || "-"}
                   </div>
                 )}
                 {departureColumns.flightType !== false && (
                   <div>
-                    <strong>Type:</strong> {flight.flight_type || '-'}
+                    <strong>Type:</strong> {flight.flight_type || "-"}
                   </div>
                 )}
                 {departureColumns.arrival !== false && (
                   <div>
-                    <strong>ADES:</strong>{' '}
+                    <strong>ADES:</strong>{" "}
                     <AirportDropdown
                       value={flight.arrival}
                       onChange={(icao) => handleArrivalChange(flight.id, icao)}
@@ -597,9 +637,9 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.runway !== false && (
                   <div>
-                    <strong>Runway:</strong>{' '}
+                    <strong>Runway:</strong>{" "}
                     <RunwayDropdown
-                      airportIcao={flight.departure || ''}
+                      airportIcao={flight.departure || ""}
                       value={flight.runway}
                       onChange={(runway) =>
                         handleRunwayChange(flight.id, runway)
@@ -611,9 +651,9 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.sid !== false && (
                   <div>
-                    <strong>SID:</strong>{' '}
+                    <strong>SID:</strong>{" "}
                     <SidDropdown
-                      airportIcao={flight.departure || ''}
+                      airportIcao={flight.departure || ""}
                       value={flight.sid}
                       onChange={(sid) => handleSidChange(flight.id, sid)}
                       size="xs"
@@ -623,7 +663,7 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.rfl !== false && (
                   <div>
-                    <strong>RFL:</strong>{' '}
+                    <strong>RFL:</strong>{" "}
                     <AltitudeDropdown
                       value={flight.cruisingFL}
                       onChange={(alt) => handleCruisingFLChange(flight.id, alt)}
@@ -634,7 +674,7 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.cfl !== false && (
                   <div>
-                    <strong>CFL:</strong>{' '}
+                    <strong>CFL:</strong>{" "}
                     <AltitudeDropdown
                       value={flight.clearedFL}
                       onChange={(alt) => handleClearedFLChange(flight.id, alt)}
@@ -645,10 +685,10 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.squawk !== false && (
                   <div>
-                    <strong>Squawk:</strong>{' '}
+                    <strong>Squawk:</strong>{" "}
                     <div className="flex items-center gap-0.5 mt-1">
                       <TextInput
-                        value={flight.squawk || ''}
+                        value={flight.squawk || ""}
                         onChange={(value) =>
                           handleSquawkChange(flight.id, value)
                         }
@@ -657,7 +697,7 @@ export default function DepartureTableMobile({
                         maxLength={4}
                         pattern="[0-9]*"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.currentTarget.blur();
                           }
                         }}
@@ -675,7 +715,7 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.clearance !== false && (
                   <div>
-                    <strong>Clearance:</strong>{' '}
+                    <strong>Clearance:</strong>{" "}
                     <Checkbox
                       checked={isClearanceChecked(flight.clearance)}
                       onChange={(checked) =>
@@ -689,7 +729,7 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.status !== false && (
                   <div>
-                    <strong>Status:</strong>{' '}
+                    <strong>Status:</strong>{" "}
                     <StatusDropdown
                       value={flight.status}
                       onChange={(status) =>
@@ -703,9 +743,9 @@ export default function DepartureTableMobile({
                 )}
                 {departureColumns.remark !== false && (
                   <div className="col-span-2">
-                    <strong>Remark:</strong>{' '}
+                    <strong>Remark:</strong>{" "}
                     <TextInput
-                      value={remarkValues[flight.id] ?? (flight.remark || '')}
+                      value={remarkValues[flight.id] ?? (flight.remark || "")}
                       onChange={(value) => {
                         setRemarkValues((prev) => ({
                           ...prev,
@@ -717,7 +757,7 @@ export default function DepartureTableMobile({
                       placeholder="-"
                       maxLength={50}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.currentTarget.blur();
                         }
                       }}
@@ -726,14 +766,16 @@ export default function DepartureTableMobile({
                 )}
                 {/* Time is always visible */}
                 <div>
-                  <strong>Time:</strong>{' '}
-                  {(flight.timestamp || flight.created_at)
-                    ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString('en-GB', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'UTC',
+                  <strong>Time:</strong>{" "}
+                  {flight.timestamp || flight.created_at
+                    ? new Date(
+                        flight.timestamp || flight.created_at!
+                      ).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "UTC",
                       })
-                    : '--'}
+                    : "--"}
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
@@ -741,14 +783,14 @@ export default function DepartureTableMobile({
                   <button
                     className={`px-2 py-1 rounded transition-colors ${
                       flight.route && flight.route.trim()
-                        ? 'text-gray-400 hover:text-blue-500'
-                        : 'text-red-500'
+                        ? "text-gray-400 hover:text-blue-500"
+                        : "text-red-500"
                     }`}
                     onClick={() => handleRouteClick(flight)}
                     title={
                       flight.route && flight.route.trim()
-                        ? 'View Route'
-                        : 'No route specified'
+                        ? "View Route"
+                        : "No route specified"
                     }
                   >
                     <Route className="w-4 h-4" />
@@ -759,8 +801,8 @@ export default function DepartureTableMobile({
                     className={`text-gray-400 hover:text-blue-500 px-2 py-1 rounded transition-colors ${
                       flashingPDCIds.has(String(flight.id)) &&
                       !isClearanceChecked(flight.clearance)
-                        ? 'animate-pulse'
-                        : ''
+                        ? "animate-pulse"
+                        : ""
                     }`}
                     onClick={() => handlePDCClick(flight)}
                     title="Generate PDC"
@@ -769,15 +811,15 @@ export default function DepartureTableMobile({
                       className={`w-4 h-4 ${
                         flashingPDCIds.has(String(flight.id)) &&
                         !isClearanceChecked(flight.clearance)
-                          ? 'text-orange-400'
-                          : ''
+                          ? "text-orange-400"
+                          : ""
                       }`}
                     />
                   </button>
                 )}
                 {departureColumns.hide !== false && (
                   <button
-                    title={flight.hidden ? 'Unhide' : 'Hide'}
+                    title={flight.hidden ? "Unhide" : "Hide"}
                     className="text-gray-400 hover:text-blue-500 px-2 py-1 rounded"
                     onClick={() =>
                       flight.hidden

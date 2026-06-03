@@ -1,28 +1,31 @@
-import crypto from 'crypto';
-import dotenv from 'dotenv';
+import crypto from "crypto";
+import dotenv from "dotenv";
 
 const envFile =
-  process.env.NODE_ENV === 'production'
-    ? '.env.production'
-    : '.env.development';
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
 dotenv.config({ path: envFile });
 
 const ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY;
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 const IP_HASH_SECRET = process.env.IP_HASH_SECRET;
 
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 128) {
-  throw new Error('DB_ENCRYPTION_KEY must be 128 characters long');
+  throw new Error("DB_ENCRYPTION_KEY must be 128 characters long");
 }
 
 if (!IP_HASH_SECRET) {
-  throw new Error('IP_HASH_SECRET env var is required');
+  throw new Error("IP_HASH_SECRET env var is required");
 }
 
-const key = Buffer.from(ENCRYPTION_KEY, 'utf8').subarray(0, 32);
+const key = Buffer.from(ENCRYPTION_KEY, "utf8").subarray(0, 32);
 
 export function hashIp(plaintextIp: string): string {
-  return crypto.createHmac('sha256', IP_HASH_SECRET!).update(plaintextIp).digest('hex');
+  return crypto
+    .createHmac("sha256", IP_HASH_SECRET!)
+    .update(plaintextIp)
+    .digest("hex");
 }
 
 export function encrypt(text: unknown) {
@@ -30,20 +33,20 @@ export function encrypt(text: unknown) {
 
   try {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
 
-    let encrypted = cipher.update(JSON.stringify(text), 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    let encrypted = cipher.update(JSON.stringify(text), "utf8", "hex");
+    encrypted += cipher.final("hex");
 
     const authTag = cipher.getAuthTag();
 
     return {
-      iv: iv.toString('hex'),
+      iv: iv.toString("hex"),
       data: encrypted,
-      authTag: authTag.toString('hex'),
+      authTag: authTag.toString("hex"),
     };
   } catch (error) {
-    console.error('Encryption error:', error);
+    console.error("Encryption error:", error);
     return null;
   }
 }
@@ -55,7 +58,7 @@ export function decrypt(encryptedData: {
 }) {
   if (
     !encryptedData ||
-    typeof encryptedData !== 'object' ||
+    typeof encryptedData !== "object" ||
     !encryptedData.iv ||
     !encryptedData.data ||
     !encryptedData.authTag
@@ -68,13 +71,13 @@ export function decrypt(encryptedData: {
     const decipher = crypto.createDecipheriv(
       ALGORITHM,
       key,
-      Buffer.from(iv, 'hex')
+      Buffer.from(iv, "hex")
     );
 
-    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTag, "hex"));
 
-    let decrypted = decipher.update(data, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(data, "hex", "utf8");
+    decrypted += decipher.final("utf8");
 
     try {
       return JSON.parse(decrypted);
@@ -82,7 +85,7 @@ export function decrypt(encryptedData: {
       return decrypted;
     }
   } catch (error) {
-    console.error('Decryption error:', error);
+    console.error("Decryption error:", error);
     return null;
   }
 }

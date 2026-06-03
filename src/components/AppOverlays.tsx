@@ -1,7 +1,7 @@
-import CanaryModal from './modals/CanaryModal';
-import UpdateOverviewModal from './modals/UpdateOverviewModal';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useActiveUpdateModal } from '../hooks/useActiveUpdateModal';
+import CanaryModal from "./modals/CanaryModal";
+import UpdateOverviewModal from "./modals/UpdateOverviewModal";
+import { useAuth } from "../hooks/auth/useAuth";
+import { useActiveUpdateModal } from "../hooks/useActiveUpdateModal";
 
 export default function AppOverlays() {
   const { user } = useAuth();

@@ -1,8 +1,8 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, GripHorizontal, Wand2, Loader2, Check } from 'lucide-react';
-import type { Flight } from '../../types/flight';
-import RouteMap from '../map/RouteMap';
-import { fetchRoute } from '../../utils/fetch/data';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { X, GripHorizontal, Wand2, Loader2, Check } from "lucide-react";
+import type { Flight } from "../../types/flight";
+import RouteMap from "../map/RouteMap";
+import { fetchRoute } from "../../utils/fetch/data";
 
 interface RouteModalProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ interface RouteModalProps {
 function parseSidStar(
   route: string,
   departure?: string,
-  arrival?: string,
+  arrival?: string
 ): { sid?: string; star?: string } {
   const tokens = route.trim().split(/\s+/).filter(Boolean);
   if (tokens.length < 2) return {};
@@ -31,7 +31,8 @@ function parseSidStar(
   let start = 0;
   let end = tokens.length - 1;
 
-  if (departure && tokens[0].toUpperCase() === departure.toUpperCase()) start = 1;
+  if (departure && tokens[0].toUpperCase() === departure.toUpperCase())
+    start = 1;
   if (arrival && tokens[end].toUpperCase() === arrival.toUpperCase()) end -= 1;
 
   const relevant = tokens.slice(start, end + 1);
@@ -45,7 +46,9 @@ function parseSidStar(
       : undefined;
   const last = relevant[relevant.length - 1];
   const star =
-    relevant.length > 1 && looksLikeProcedure(last) && last.toUpperCase() !== sid
+    relevant.length > 1 &&
+    looksLikeProcedure(last) &&
+    last.toUpperCase() !== sid
       ? last.toUpperCase()
       : undefined;
 
@@ -59,30 +62,32 @@ export default function RouteModal({
   activeRunway,
   onFlightChange,
 }: RouteModalProps) {
-  const [editedRoute, setEditedRoute] = useState(flight?.route || '');
+  const [editedRoute, setEditedRoute] = useState(flight?.route || "");
   const [displaySid, setDisplaySid] = useState<string | undefined>(flight?.sid);
-  const [displayStar, setDisplayStar] = useState<string | undefined>(flight?.star);
+  const [displayStar, setDisplayStar] = useState<string | undefined>(
+    flight?.star
+  );
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [mapRoute, setMapRoute] = useState(flight?.route || '');
+  const [mapRoute, setMapRoute] = useState(flight?.route || "");
   const modalRef = useRef<HTMLDivElement>(null);
   const mapDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setEditedRoute(flight?.route || '');
-    setMapRoute(flight?.route || '');
+    setEditedRoute(flight?.route || "");
+    setMapRoute(flight?.route || "");
     setDisplaySid(flight?.sid);
     setDisplayStar(flight?.star);
     setGenerateError(null);
   }, [flight?.id, flight?.route, flight?.sid, flight?.star]);
 
   const isDirty =
-    editedRoute !== (flight?.route || '') ||
-    (displaySid || '') !== (flight?.sid || '') ||
-    (displayStar || '') !== (flight?.star || '');
+    editedRoute !== (flight?.route || "") ||
+    (displaySid || "") !== (flight?.sid || "") ||
+    (displayStar || "") !== (flight?.star || "");
 
   const handleAmend = () => {
     if (!flight || !onFlightChange) return;
@@ -96,7 +101,11 @@ export default function RouteModal({
   const handleRouteChange = (value: string) => {
     setEditedRoute(value);
 
-    const { sid, star } = parseSidStar(value, flight?.departure, flight?.arrival);
+    const { sid, star } = parseSidStar(
+      value,
+      flight?.departure,
+      flight?.arrival
+    );
     setDisplaySid(sid);
     setDisplayStar(star);
 
@@ -113,7 +122,7 @@ export default function RouteModal({
         y: e.clientY - translate.y,
       });
     },
-    [translate],
+    [translate]
   );
 
   useEffect(() => {
@@ -127,12 +136,12 @@ export default function RouteModal({
     const handleMouseUp = () => setIsDragging(false);
 
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
     }
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, dragStart]);
 
@@ -144,7 +153,7 @@ export default function RouteModal({
       const result = await fetchRoute(
         flight.departure,
         flight.arrival,
-        activeRunway ?? undefined,
+        activeRunway ?? undefined
       );
       if (result.success && result.route) {
         setEditedRoute(result.route);
@@ -152,10 +161,10 @@ export default function RouteModal({
         setDisplaySid(result.sid);
         setDisplayStar(result.star);
       } else {
-        setGenerateError('Failed to generate route');
+        setGenerateError("Failed to generate route");
       }
     } catch {
-      setGenerateError('Failed to generate route');
+      setGenerateError("Failed to generate route");
     } finally {
       setGenerating(false);
     }
@@ -179,13 +188,13 @@ export default function RouteModal({
       {/* Header — only this area is draggable */}
       <div
         className="flex justify-between items-center px-5 pt-4 pb-3 border-b border-zinc-700"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ cursor: isDragging ? "grabbing" : "grab" }}
         onMouseDown={handleGripMouseDown}
       >
         <div className="flex items-center gap-3">
           <GripHorizontal className="h-5 w-5 text-zinc-400" />
           <h3 className="text-lg font-semibold text-white">
-            {flight.callsign || 'Unknown'} &mdash; {flight.aircraft || 'N/A'}
+            {flight.callsign || "Unknown"} &mdash; {flight.aircraft || "N/A"}
           </h3>
         </div>
         <button
@@ -202,20 +211,34 @@ export default function RouteModal({
         {/* Dep / Arr / SID / STAR */}
         <div className="grid grid-cols-4 gap-3 mb-4">
           <div>
-            <div className="text-xs font-medium text-green-400 mb-0.5">Departure</div>
-            <div className="text-white font-mono text-sm">{flight.departure || '—'}</div>
+            <div className="text-xs font-medium text-green-400 mb-0.5">
+              Departure
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.departure || "—"}
+            </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-red-400 mb-0.5">Arrival</div>
-            <div className="text-white font-mono text-sm">{flight.arrival || '—'}</div>
+            <div className="text-xs font-medium text-red-400 mb-0.5">
+              Arrival
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.arrival || "—"}
+            </div>
           </div>
           <div>
             <div className="text-xs font-medium text-blue-400 mb-0.5">SID</div>
-            <div className="text-white font-mono text-sm">{displaySid || '—'}</div>
+            <div className="text-white font-mono text-sm">
+              {displaySid || "—"}
+            </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-purple-400 mb-0.5">STAR</div>
-            <div className="text-white font-mono text-sm">{displayStar || '—'}</div>
+            <div className="text-xs font-medium text-purple-400 mb-0.5">
+              STAR
+            </div>
+            <div className="text-white font-mono text-sm">
+              {displayStar || "—"}
+            </div>
           </div>
         </div>
 
@@ -233,7 +256,7 @@ export default function RouteModal({
               ) : (
                 <Wand2 className="w-3.5 h-3.5" />
               )}
-              {generating ? 'Generating…' : 'Generate'}
+              {generating ? "Generating…" : "Generate"}
             </button>
             <button
               onClick={handleAmend}
@@ -259,7 +282,10 @@ export default function RouteModal({
 
         {/* Route Map preview */}
         {showMap && (
-          <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
+          <div
+            className="mt-3 rounded-lg overflow-hidden border border-zinc-700"
+            style={{ height: 220 }}
+          >
             <RouteMap
               route={mapRoute}
               departure={flight.departure}
@@ -274,8 +300,12 @@ export default function RouteModal({
         {/* Alternate */}
         {flight.alternate && (
           <div className="mt-3">
-            <div className="text-xs font-medium text-zinc-400 mb-0.5">Alternate</div>
-            <div className="text-white font-mono text-sm">{flight.alternate}</div>
+            <div className="text-xs font-medium text-zinc-400 mb-0.5">
+              Alternate
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.alternate}
+            </div>
           </div>
         )}
       </div>

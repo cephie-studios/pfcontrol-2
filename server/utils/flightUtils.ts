@@ -1,5 +1,5 @@
-import { getAirportData, getAircraftData } from './getData.js';
-import { generateFlightId } from './ids.js';
+import { getAirportData, getAircraftData } from "./getData.js";
+import { generateFlightId } from "./ids.js";
 
 export interface Flight {
   flightType?: string;
@@ -12,9 +12,9 @@ export interface Flight {
 export const generateRandomId = generateFlightId;
 
 export async function generateSquawk(flight: Flight) {
-  let squawk = '';
-  if (flight.flightType === 'VFR' || flight.flight_type === 'VFR') {
-    squawk = '7000';
+  let squawk = "";
+  if (flight.flightType === "VFR" || flight.flight_type === "VFR") {
+    squawk = "7000";
   } else {
     for (let i = 0; i < 4; i++) {
       squawk += Math.floor(Math.random() * 6) + 1;
@@ -31,7 +31,7 @@ export async function generateSID(flight: Flight) {
   const airport = airportData.find((ap: Airport) => ap.icao === icao);
 
   if (!airport) {
-    throw new Error('Airport not found');
+    throw new Error("Airport not found");
   }
 
   let selectedRunway: string | undefined = runway;
@@ -49,19 +49,19 @@ export async function generateSID(flight: Flight) {
     !airport.departures ||
     !airport.departures[selectedRunway]
   ) {
-    throw new Error('No SIDs available for this runway');
+    throw new Error("No SIDs available for this runway");
   }
 
   const runwayData = airport.departures[selectedRunway];
-  let sid = '';
+  let sid = "";
 
   if (arrival && runwayData[arrival]) {
     sid = runwayData[arrival];
   } else {
     const firstAvailableSid = Object.values(runwayData).find(
-      (val) => val !== ''
+      (val) => val !== ""
     );
-    sid = typeof firstAvailableSid === 'string' ? firstAvailableSid : '';
+    sid = typeof firstAvailableSid === "string" ? firstAvailableSid : "";
   }
 
   return { sid };
@@ -81,7 +81,7 @@ export async function getWakeTurbulence(aircraftType: string) {
     aircraftArray = aircraftDataRaw as AircraftInfo[];
   } else {
     aircraftArray = Object.entries(aircraftDataRaw).map(([type, info]) => {
-      if (typeof info === 'object' && info !== null) {
+      if (typeof info === "object" && info !== null) {
         return {
           type,
           ...(info as object),
@@ -93,7 +93,7 @@ export async function getWakeTurbulence(aircraftType: string) {
   }
 
   if (!aircraftArray || aircraftArray.length === 0) {
-    return 'N/A';
+    return "N/A";
   }
 
   const normalizedAircraftType = aircraftType.toUpperCase();
@@ -101,5 +101,5 @@ export async function getWakeTurbulence(aircraftType: string) {
     (ac) => ac.type.toUpperCase() === normalizedAircraftType
   );
 
-  return aircraft?.wtc || 'N/A';
+  return aircraft?.wtc || "N/A";
 }

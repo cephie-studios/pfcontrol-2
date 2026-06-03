@@ -26,7 +26,10 @@ import {
 } from "../utils/cacheTtl.js";
 
 import dotenv from "dotenv";
-const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
 dotenv.config({ path: envFile });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +40,13 @@ const aircraftPath = path.join(__dirname, "..", "data", "aircraftData.json");
 const airlinesPath = path.join(__dirname, "..", "data", "airlineData.json");
 const waypointsPath = path.join(__dirname, "..", "data", "waypointData.json");
 const islandsPath = path.join(__dirname, "..", "data", "islandData.json");
-const backgroundsPath = path.join(process.cwd(), "public", "assets", "app", "backgrounds");
+const backgroundsPath = path.join(
+  process.cwd(),
+  "public",
+  "assets",
+  "app",
+  "backgrounds"
+);
 
 if (
   !fs.existsSync(airportsPath) ||
@@ -104,10 +113,18 @@ router.get("/airports", async (req, res) => {
     const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(data),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for airports:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for airports:",
+          error.message
+        );
       }
     }
 
@@ -140,7 +157,10 @@ router.get("/aircrafts", async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for aircrafts:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for aircrafts:",
+        error.message
+      );
     }
   }
 
@@ -152,10 +172,18 @@ router.get("/aircrafts", async (req, res) => {
     const data = JSON.parse(fs.readFileSync(aircraftPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(data),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for aircrafts:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for aircrafts:",
+          error.message
+        );
       }
     }
 
@@ -200,10 +228,18 @@ router.get("/airlines", async (req, res) => {
     const data = JSON.parse(fs.readFileSync(airlinesPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(data),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for airlines:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for airlines:",
+          error.message
+        );
       }
     }
 
@@ -236,7 +272,10 @@ router.get("/waypoints", async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for waypoints:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for waypoints:",
+        error.message
+      );
     }
   }
 
@@ -248,10 +287,18 @@ router.get("/waypoints", async (req, res) => {
     const data = JSON.parse(fs.readFileSync(waypointsPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(data),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for waypoints:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for waypoints:",
+          error.message
+        );
       }
     }
 
@@ -296,7 +343,12 @@ router.get("/islands", async (req, res) => {
     const data = JSON.parse(fs.readFileSync(islandsPath, "utf8"));
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(data), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(data),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
         console.warn("[Redis] Failed to set cache for islands:", error.message);
@@ -332,7 +384,10 @@ router.get("/frequencies", async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for frequencies:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for frequencies:",
+        error.message
+      );
     }
   }
 
@@ -375,12 +430,15 @@ router.get("/frequencies", async (req, res) => {
             !usedTypes.has(key) &&
             !Object.keys(freqMapping).includes(key) &&
             value &&
-            value.toLowerCase() !== "n/a",
+            value.toLowerCase() !== "n/a"
         )
         .slice(0, 4 - displayFreqs.length)
         .map(([type, freq]) => ({ type: type.toUpperCase(), freq }));
 
-      const allDisplayFreqs = [...displayFreqs.filter(Boolean), ...remainingFreqs].slice(0, 4);
+      const allDisplayFreqs = [
+        ...displayFreqs.filter(Boolean),
+        ...remainingFreqs,
+      ].slice(0, 4);
 
       return {
         icao: airport.icao,
@@ -390,10 +448,18 @@ router.get("/frequencies", async (req, res) => {
     });
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(frequencies), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(frequencies),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for frequencies:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for frequencies:",
+          error.message
+        );
       }
     }
 
@@ -419,7 +485,15 @@ router.get("/backgrounds", (req, res) => {
     }
 
     const files = fs.readdirSync(backgroundsPath);
-    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"];
+    const imageExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".gif",
+      ".bmp",
+      ".webp",
+      ".svg",
+    ];
 
     const backgroundImages = files
       .filter((file) => {
@@ -536,7 +610,10 @@ router.get("/statistics", async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for homepage stats:", error.message);
+      console.warn(
+        "[Redis] Failed to read cache for homepage stats:",
+        error.message
+      );
     }
   }
 
@@ -570,10 +647,18 @@ router.get("/statistics", async (req, res) => {
     };
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", HOMEPAGE_STATS_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(result),
+        "EX",
+        HOMEPAGE_STATS_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for homepage stats:", error.message);
+        console.warn(
+          "[Redis] Failed to set cache for homepage stats:",
+          error.message
+        );
       }
     }
 
@@ -716,14 +801,18 @@ router.get("/tester-settings", async (req, res) => {
 });
 
 router.get("/findRoute", async (req, res) => {
-  const from = typeof req.query.from === "string" ? req.query.from.toUpperCase() : "";
+  const from =
+    typeof req.query.from === "string" ? req.query.from.toUpperCase() : "";
   const to = typeof req.query.to === "string" ? req.query.to.toUpperCase() : "";
   // Normalize runway: strip trailing letter suffix so "26L" → "26", "08R" → "08"
-  const runwayRaw = typeof req.query.runway === "string" ? req.query.runway.toUpperCase() : "";
+  const runwayRaw =
+    typeof req.query.runway === "string" ? req.query.runway.toUpperCase() : "";
   const runway = runwayRaw.replace(/[A-Z]+$/, "");
 
   if (!from || !to) {
-    return res.status(400).json({ error: "Missing required query parameters: from, to" });
+    return res
+      .status(400)
+      .json({ error: "Missing required query parameters: from, to" });
   }
 
   const cacheKey = prefixKey(`routev2:${from}:${to}:${runway}`);
@@ -759,8 +848,8 @@ router.get("/findRoute", async (req, res) => {
     const allPoints = [...waypointData];
 
     // Look up SID and STAR from airport data (runway-agnostic: use first runway key)
-    const depAirport = airportData.find(a => a.icao === from);
-    const arrAirport = airportData.find(a => a.icao === to);
+    const depAirport = airportData.find((a) => a.icao === from);
+    const arrAirport = airportData.find((a) => a.icao === to);
 
     let sid: string | undefined;
     let star: string | undefined;
@@ -768,9 +857,10 @@ router.get("/findRoute", async (req, res) => {
 
     if (depAirport?.departures) {
       // Use the supplied runway if it matches a key, otherwise fall back to the first available
-      const runwayKey = (runway && depAirport.departures[runway])
-        ? runway
-        : Object.keys(depAirport.departures)[0];
+      const runwayKey =
+        runway && depAirport.departures[runway]
+          ? runway
+          : Object.keys(depAirport.departures)[0];
       if (runwayKey) {
         const procedure = depAirport.departures[runwayKey][to];
         if (procedure === "RADAR VECTORS") {
@@ -782,7 +872,8 @@ router.get("/findRoute", async (req, res) => {
     }
 
     if (arrAirport?.arrivals) {
-      const firstRunway = arrAirport.runways?.[0] ?? Object.keys(arrAirport.arrivals)[0];
+      const firstRunway =
+        arrAirport.runways?.[0] ?? Object.keys(arrAirport.arrivals)[0];
       if (firstRunway) {
         const procedure = arrAirport.arrivals[firstRunway][from];
         if (procedure && procedure !== "RADAR VECTORS") star = procedure;
@@ -790,8 +881,12 @@ router.get("/findRoute", async (req, res) => {
     }
 
     // Calculate bearing for odd/even FL recommendation (shared by both paths)
-    const depPoint = allPoints.find(p => p.name === from && p.type === "AIRPORT");
-    const arrPoint = allPoints.find(p => p.name === to && p.type === "AIRPORT");
+    const depPoint = allPoints.find(
+      (p) => p.name === from && p.type === "AIRPORT"
+    );
+    const arrPoint = allPoints.find(
+      (p) => p.name === to && p.type === "AIRPORT"
+    );
     let flParity: "ODD" | "EVEN" | undefined;
     if (depPoint && arrPoint) {
       const dx = arrPoint.x - depPoint.x;
@@ -804,10 +899,22 @@ router.get("/findRoute", async (req, res) => {
     // Radar vectors: skip pathfinding, return direct route
     if (isRadarVectors) {
       const path = [depPoint, arrPoint].filter(Boolean);
-      const routeData = { path, distance: 0, route: `${from} ${to}`, sid: undefined, star: undefined, flParity };
+      const routeData = {
+        path,
+        distance: 0,
+        route: `${from} ${to}`,
+        sid: undefined,
+        star: undefined,
+        flParity,
+      };
 
       try {
-        await redisConnection.set(cacheKey, JSON.stringify(routeData), "EX", DATA_STATIC_REDIS_SEC);
+        await redisConnection.set(
+          cacheKey,
+          JSON.stringify(routeData),
+          "EX",
+          DATA_STATIC_REDIS_SEC
+        );
       } catch (error) {
         if (error instanceof Error) {
           console.warn("[Redis] Failed to set cache for route:", error.message);
@@ -822,10 +929,23 @@ router.get("/findRoute", async (req, res) => {
     }
 
     // Extract exit/entry fixes from SID/STAR names (e.g. KATOK2T → KATOK)
-    const startFix = sid ? extractFixFromProcedure(sid) ?? undefined : undefined;
-    const endFix = star ? extractFixFromProcedure(star) ?? undefined : undefined;
+    const startFix = sid
+      ? (extractFixFromProcedure(sid) ?? undefined)
+      : undefined;
+    const endFix = star
+      ? (extractFixFromProcedure(star) ?? undefined)
+      : undefined;
 
-    const { path, distance, success } = findPath(from, to, allPoints, 35, 7, 2, startFix, endFix);
+    const { path, distance, success } = findPath(
+      from,
+      to,
+      allPoints,
+      35,
+      7,
+      2,
+      startFix,
+      endFix
+    );
 
     if (!success) {
       return res.status(404).json({ error: "Route not found" });
@@ -833,8 +953,8 @@ router.get("/findRoute", async (req, res) => {
 
     // Build formatted route string: DEP SID ...waypoints... STAR ARR
     const midWaypoints = path
-      .filter(p => p.type !== "AIRPORT")
-      .map(p => p.name);
+      .filter((p) => p.type !== "AIRPORT")
+      .map((p) => p.name);
 
     const routeParts: string[] = [from];
     if (sid) routeParts.push(sid);
@@ -847,7 +967,12 @@ router.get("/findRoute", async (req, res) => {
     const routeData = { path, distance, route, sid, star, flParity };
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(routeData), "EX", DATA_STATIC_REDIS_SEC);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(routeData),
+        "EX",
+        DATA_STATIC_REDIS_SEC
+      );
     } catch (error) {
       if (error instanceof Error) {
         console.warn("[Redis] Failed to set cache for route:", error.message);
@@ -873,10 +998,15 @@ router.get("/findRoute", async (req, res) => {
 router.get("/airports/:icao/status", async (req, res) => {
   try {
     const icao = req.params.icao.toUpperCase();
-    const network = typeof req.query.network === "string" ? req.query.network.toLowerCase() : "pfatc";
+    const network =
+      typeof req.query.network === "string"
+        ? req.query.network.toLowerCase()
+        : "pfatc";
 
     if (network !== "pfatc" && network !== "aatc") {
-      return res.status(400).json({ error: "Invalid network. Must be 'pfatc' or 'aatc'." });
+      return res
+        .status(400)
+        .json({ error: "Invalid network. Must be 'pfatc' or 'aatc'." });
     }
 
     const networkLabel = network === "aatc" ? "Advanced ATC" : "PFATC";

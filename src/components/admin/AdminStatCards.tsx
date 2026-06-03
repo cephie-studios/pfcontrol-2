@@ -30,7 +30,9 @@ export default function AdminStatCards({
               : item.value}
           </p>
           {item.sub ? (
-            <p className="text-xs xl:text-sm text-zinc-500 mt-1 truncate">{item.sub}</p>
+            <p className="text-xs xl:text-sm text-zinc-500 mt-1 truncate">
+              {item.sub}
+            </p>
           ) : null}
         </div>
       ))}

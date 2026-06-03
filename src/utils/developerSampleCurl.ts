@@ -1,9 +1,29 @@
 const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
-  { scopeId: "data.airports", path: "/data/airports", label: "GET /data/airports" },
-  { scopeId: "data.aircrafts", path: "/data/aircrafts", label: "GET /data/aircrafts" },
-  { scopeId: "data.airlines", path: "/data/airlines", label: "GET /data/airlines" },
-  { scopeId: "data.frequencies", path: "/data/frequencies", label: "GET /data/frequencies" },
-  { scopeId: "data.backgrounds", path: "/data/backgrounds", label: "GET /data/backgrounds" },
+  {
+    scopeId: "data.airports",
+    path: "/data/airports",
+    label: "GET /data/airports",
+  },
+  {
+    scopeId: "data.aircrafts",
+    path: "/data/aircrafts",
+    label: "GET /data/aircrafts",
+  },
+  {
+    scopeId: "data.airlines",
+    path: "/data/airlines",
+    label: "GET /data/airlines",
+  },
+  {
+    scopeId: "data.frequencies",
+    path: "/data/frequencies",
+    label: "GET /data/frequencies",
+  },
+  {
+    scopeId: "data.backgrounds",
+    path: "/data/backgrounds",
+    label: "GET /data/backgrounds",
+  },
   {
     scopeId: "data.find_route",
     path: "/data/findRoute?from=EGLL&to=LFPG",
@@ -34,7 +54,11 @@ const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
     path: "/notifications/active",
     label: "GET /notifications/active",
   },
-  { scopeId: "flight_logs.read", path: "/flight-logs", label: "GET /flight-logs" },
+  {
+    scopeId: "flight_logs.read",
+    path: "/flight-logs",
+    label: "GET /flight-logs",
+  },
   {
     scopeId: "sessions.network_pfatc",
     path: "/sessions/network/pfatc",
@@ -83,7 +107,11 @@ const FLIGHT_CREATE_BODY = JSON.stringify({
   arrival: "LFPG",
 });
 
-const FLIGHT_UPDATE_BODY = JSON.stringify({ status: "ACTIVE", runway: "27L", squawk: "1234" });
+const FLIGHT_UPDATE_BODY = JSON.stringify({
+  status: "ACTIVE",
+  runway: "27L",
+  squawk: "1234",
+});
 
 export type SampleCurlResult = {
   command: string;
@@ -93,7 +121,7 @@ export type SampleCurlResult = {
 export function buildSampleCurlForScopes(
   secret: string,
   apiExtBase: string,
-  scopes: string[],
+  scopes: string[]
 ): SampleCurlResult {
   const base = apiExtBase.replace(/\/$/, "");
   const set = new Set(scopes);

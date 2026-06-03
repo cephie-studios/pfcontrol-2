@@ -1,13 +1,13 @@
-import { createHash } from 'node:crypto';
-import { redisConnection } from '../db/connection.js';
-import type { PublicSubmitSession } from '../services/publicSubmitSession.js';
+import { createHash } from "node:crypto";
+import { redisConnection } from "../db/connection.js";
+import type { PublicSubmitSession } from "../services/publicSubmitSession.js";
 
 const REDIS_TTL_SEC = Math.min(
   Math.max(60, Number(process.env.OG_SUBMIT_CACHE_TTL_SEC) || 60 * 60),
   7 * 24 * 60 * 60
 );
 
-const REDIS_KEY_PREFIX = 'og:submit:png:v1:';
+const REDIS_KEY_PREFIX = "og:submit:png:v1:";
 
 const HTTP_MAX_AGE_SEC = Math.min(
   REDIS_TTL_SEC,
@@ -37,25 +37,25 @@ function getLru(key: string): Buffer | null {
 }
 
 export function submitOgFingerprint(session: PublicSubmitSession): string {
-  const h = createHash('sha256');
+  const h = createHash("sha256");
   h.update(session.sessionId);
-  h.update('\n');
+  h.update("\n");
   h.update(session.airportIcao);
-  h.update('\n');
-  h.update(session.activeRunway ?? '');
-  h.update('\n');
-  h.update(session.isPFATC ? '1' : '0');
-  h.update('\n');
-  h.update(session.isAdvancedATC ? '1' : '0');
-  h.update('\n');
+  h.update("\n");
+  h.update(session.activeRunway ?? "");
+  h.update("\n");
+  h.update(session.isPFATC ? "1" : "0");
+  h.update("\n");
+  h.update(session.isAdvancedATC ? "1" : "0");
+  h.update("\n");
   h.update(String(session.flightCount));
-  h.update('\n');
-  h.update(session.atisLetter ?? '');
-  h.update('\n');
-  h.update(session.atisText ?? '');
-  h.update('\n');
-  h.update(session.controllerUsername ?? '');
-  return h.digest('hex').slice(0, 32);
+  h.update("\n");
+  h.update(session.atisLetter ?? "");
+  h.update("\n");
+  h.update(session.atisText ?? "");
+  h.update("\n");
+  h.update(session.controllerUsername ?? "");
+  return h.digest("hex").slice(0, 32);
 }
 
 export function submitOgRedisKey(session: PublicSubmitSession): string {
@@ -76,12 +76,12 @@ export async function getCachedSubmitOgPng(
   try {
     const b64 = await redisConnection.get(redisKey);
     if (!b64) return null;
-    const buf = Buffer.from(b64, 'base64');
+    const buf = Buffer.from(b64, "base64");
     touchLru(redisKey, buf);
     return buf;
   } catch (err) {
     if (err instanceof Error) {
-      console.warn('[og] submit cache read:', err.message);
+      console.warn("[og] submit cache read:", err.message);
     }
     return null;
   }
@@ -95,13 +95,13 @@ export async function setCachedSubmitOgPng(
   try {
     await redisConnection.set(
       redisKey,
-      png.toString('base64'),
-      'EX',
+      png.toString("base64"),
+      "EX",
       REDIS_TTL_SEC
     );
   } catch (err) {
     if (err instanceof Error) {
-      console.warn('[og] submit cache write:', err.message);
+      console.warn("[og] submit cache write:", err.message);
     }
   }
 }

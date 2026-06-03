@@ -37,7 +37,9 @@ export default function AdminStatStrip({
               : item.value}
           </p>
           {item.sub && (
-            <p className="text-xs xl:text-sm text-zinc-500 mt-0.5 truncate">{item.sub}</p>
+            <p className="text-xs xl:text-sm text-zinc-500 mt-0.5 truncate">
+              {item.sub}
+            </p>
           )}
         </div>
       ))}

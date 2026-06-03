@@ -1,10 +1,10 @@
-import { encrypt, decrypt, hashIp } from '../utils/encryption.js';
-import type { Settings } from './types/Settings.js';
-import { mainDb } from './connection.js';
-import { sql } from 'kysely';
-import { redisConnection } from './connection.js';
-import { incrementStat } from '../utils/statisticsCache.js';
-import { getUserRoles } from './roles.js';
+import { encrypt, decrypt, hashIp } from "../utils/encryption.js";
+import type { Settings } from "./types/Settings.js";
+import { mainDb } from "./connection.js";
+import { sql } from "kysely";
+import { redisConnection } from "./connection.js";
+import { incrementStat } from "../utils/statisticsCache.js";
+import { getUserRoles } from "./roles.js";
 
 export async function invalidateUserCache(userId: string) {
   try {
@@ -53,7 +53,7 @@ export async function getUserById(userId: string) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to read cache for user:', error.message);
+      console.warn("[Redis] Failed to read cache for user:", error.message);
     }
   }
 
@@ -63,12 +63,12 @@ export async function getUserById(userId: string) {
   }
 
   const user = await mainDb
-    .selectFrom('users')
-    .leftJoin('roles', 'users.role_id', 'roles.id')
-    .selectAll('users')
-    .select('roles.permissions as role_permissions')
-    .select('roles.name as role_name')
-    .where('users.id', '=', userId)
+    .selectFrom("users")
+    .leftJoin("roles", "users.role_id", "roles.id")
+    .selectAll("users")
+    .select("roles.permissions as role_permissions")
+    .select("roles.name as role_name")
+    .where("users.id", "=", userId)
     .executeTakeFirst();
 
   if (!user) return null;
@@ -85,14 +85,11 @@ export async function getUserById(userId: string) {
     Object.assign(mergedPermissions, user.role_permissions);
   }
 
-  const safeDecrypt = (
-    encryptedData: unknown,
-    fieldName: string
-  ) => {
+  const safeDecrypt = (encryptedData: unknown, fieldName: string) => {
     if (!encryptedData) return null;
     try {
       const parsed =
-        typeof encryptedData === 'string'
+        typeof encryptedData === "string"
           ? JSON.parse(encryptedData)
           : encryptedData;
       return decrypt(parsed);
@@ -107,13 +104,13 @@ export async function getUserById(userId: string) {
 
   const result = {
     ...user,
-    access_token: safeDecrypt(user.access_token, 'access_token'),
-    refresh_token: safeDecrypt(user.refresh_token, 'refresh_token'),
+    access_token: safeDecrypt(user.access_token, "access_token"),
+    refresh_token: safeDecrypt(user.refresh_token, "refresh_token"),
     settings: user.settings
       ? (() => {
           try {
             const settingsObj =
-              typeof user.settings === 'string'
+              typeof user.settings === "string"
                 ? JSON.parse(user.settings)
                 : user.settings;
             return decrypt(settingsObj);
@@ -122,16 +119,16 @@ export async function getUserById(userId: string) {
           }
         })()
       : null,
-    ip_address: safeDecrypt(user.ip_address, 'ip_address'),
+    ip_address: safeDecrypt(user.ip_address, "ip_address"),
     role_permissions: mergedPermissions,
     statistics: user.statistics || {},
   };
 
   try {
-    await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 86400);
+    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 86400);
   } catch (error) {
     if (error instanceof Error) {
-      console.warn('[Redis] Failed to set cache for user:', error.message);
+      console.warn("[Redis] Failed to set cache for user:", error.message);
     }
   }
 
@@ -167,11 +164,11 @@ export async function getUserByUsername(username: string) {
   }
 
   const user = await mainDb
-    .selectFrom('users')
-    .leftJoin('roles', 'users.role_id', 'roles.id')
-    .selectAll('users')
-    .select('roles.permissions as role_permissions')
-    .where('users.username', '=', username)
+    .selectFrom("users")
+    .leftJoin("roles", "users.role_id", "roles.id")
+    .selectAll("users")
+    .select("roles.permissions as role_permissions")
+    .where("users.username", "=", username)
     .executeTakeFirst();
 
   if (!user) return null;
@@ -180,24 +177,28 @@ export async function getUserByUsername(username: string) {
     ...user,
     access_token: user.access_token
       ? decrypt(
-          typeof user.access_token === 'string'
+          typeof user.access_token === "string"
             ? JSON.parse(user.access_token)
             : user.access_token
         )
       : null,
     refresh_token: user.refresh_token
       ? decrypt(
-          typeof user.refresh_token === 'string'
+          typeof user.refresh_token === "string"
             ? JSON.parse(user.refresh_token)
             : user.refresh_token
         )
       : null,
     settings: user.settings
-      ? decrypt(typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings)
+      ? decrypt(
+          typeof user.settings === "string"
+            ? JSON.parse(user.settings)
+            : user.settings
+        )
       : null,
     ip_address: user.ip_address
       ? decrypt(
-          typeof user.ip_address === 'string'
+          typeof user.ip_address === "string"
             ? JSON.parse(user.ip_address)
             : user.ip_address
         )
@@ -207,7 +208,7 @@ export async function getUserByUsername(username: string) {
   };
 
   try {
-    await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 60 * 30);
+    await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 60 * 30);
   } catch (error) {
     if (error instanceof Error) {
       console.warn(
@@ -238,7 +239,7 @@ export async function createOrUpdateUser(userData: {
   const {
     id,
     username,
-    discriminator = '0',
+    discriminator = "0",
     avatar,
     accessToken,
     refreshToken,
@@ -262,7 +263,7 @@ export async function createOrUpdateUser(userData: {
     layout: {
       showCombinedView: false,
       flightRowOpacity: 100,
-      chartDrawerViewMode: 'legacy' as const,
+      chartDrawerViewMode: "legacy" as const,
     },
     departureTableColumns: {
       time: true as const,
@@ -316,7 +317,7 @@ export async function createOrUpdateUser(userData: {
     displayLinkedAccountsOnProfile: true,
     hideFromLeaderboard: false,
     displayBackgroundOnProfile: true,
-    bio: '',
+    bio: "",
   };
 
   const encryptedAccessToken = encrypt(accessToken);
@@ -327,7 +328,7 @@ export async function createOrUpdateUser(userData: {
   const ipHash = ipAddress ? hashIp(ipAddress) : null;
 
   await mainDb
-    .insertInto('users')
+    .insertInto("users")
     .values({
       id,
       username,
@@ -344,7 +345,7 @@ export async function createOrUpdateUser(userData: {
       created_at: sql`NOW()`,
     })
     .onConflict((oc) =>
-      oc.column('id').doUpdateSet({
+      oc.column("id").doUpdateSet({
         username,
         discriminator,
         avatar,
@@ -366,20 +367,20 @@ export async function createOrUpdateUser(userData: {
 export async function updateUserSettings(id: string, settings: Settings) {
   const existingUser = await getUserById(id);
   if (!existingUser) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   const mergedSettings = { ...existingUser.settings, ...settings };
   const encryptedSettings = encrypt(mergedSettings);
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       settings: JSON.stringify(encryptedSettings),
       settings_updated_at: sql`NOW()`,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', id)
+    .where("id", "=", id)
     .execute();
 
   await invalidateUserCache(id);
@@ -389,28 +390,31 @@ export async function updateUserSettings(id: string, settings: Settings) {
 
 export async function addSessionToUser(userId: string, _sessionId: string) {
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       last_session_created: sql`NOW()`,
       total_sessions_created: sql`total_sessions_created + 1`,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
-  incrementStat(userId, 'total_sessions_created');
+  incrementStat(userId, "total_sessions_created");
   await invalidateUserCache(userId);
   return await getUserById(userId);
 }
 
-export async function removeSessionFromUser(userId: string, _sessionId: string) {
+export async function removeSessionFromUser(
+  userId: string,
+  _sessionId: string
+) {
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       last_session_deleted: sql`NOW()`,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -432,10 +436,10 @@ export async function updateRobloxAccount(
   }
 ) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       roblox_user_id: robloxUserId,
       roblox_username: robloxUsername,
@@ -443,7 +447,7 @@ export async function updateRobloxAccount(
       roblox_refresh_token: refreshToken,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -453,10 +457,10 @@ export async function updateRobloxAccount(
 
 export async function unlinkRobloxAccount(userId: string) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       roblox_user_id: null,
       roblox_username: null,
@@ -464,7 +468,7 @@ export async function unlinkRobloxAccount(userId: string) {
       roblox_refresh_token: null,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -487,10 +491,10 @@ export async function updateVatsimAccount(
   }
 ) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       vatsim_cid: vatsimCid,
       vatsim_rating_id: ratingId,
@@ -498,7 +502,7 @@ export async function updateVatsimAccount(
       vatsim_rating_long: ratingLong ?? undefined,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -508,10 +512,10 @@ export async function updateVatsimAccount(
 
 export async function unlinkVatsimAccount(userId: string) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       vatsim_cid: null,
       vatsim_rating_id: null,
@@ -519,7 +523,7 @@ export async function unlinkVatsimAccount(userId: string) {
       vatsim_rating_long: null,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -529,7 +533,7 @@ export async function unlinkVatsimAccount(userId: string) {
 
 export async function updateTutorialStatus(id: string, completed: boolean) {
   const existingUser = await getUserById(id);
-  if (!existingUser) throw new Error('User not found');
+  if (!existingUser) throw new Error("User not found");
 
   const mergedSettings = {
     ...existingUser.settings,
@@ -538,13 +542,13 @@ export async function updateTutorialStatus(id: string, completed: boolean) {
   const encryptedSettings = encrypt(mergedSettings);
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       settings: JSON.stringify(encryptedSettings),
       settings_updated_at: sql`NOW()`,
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', id)
+    .where("id", "=", id)
     .execute();
 
   await invalidateUserCache(id);
@@ -557,7 +561,7 @@ export async function updateUserStatistics(
   stats: Record<string, unknown>
 ) {
   const existingUser = await getUserById(userId);
-  if (!existingUser) throw new Error('User not found');
+  if (!existingUser) throw new Error("User not found");
 
   const existingStats = (existingUser.statistics ?? {}) as Record<
     string,
@@ -570,22 +574,25 @@ export async function updateUserStatistics(
   };
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({
       statistics: JSON.stringify(mergedStats),
       updated_at: sql`NOW()`,
     })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
 }
 
-export async function updateUserFingerprint(userId: string, fingerprintId: string) {
+export async function updateUserFingerprint(
+  userId: string,
+  fingerprintId: string
+) {
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({ fingerprint_id: fingerprintId, updated_at: sql`NOW()` })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -593,12 +600,12 @@ export async function updateUserFingerprint(userId: string, fingerprintId: strin
 
 export async function setUserVpnFlag(userId: string, isVpn: boolean) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
   await mainDb
-    .updateTable('users')
+    .updateTable("users")
     .set({ is_vpn: isVpn, updated_at: sql`NOW()` })
-    .where('id', '=', userId)
+    .where("id", "=", userId)
     .execute();
 
   await invalidateUserCache(userId);
@@ -607,9 +614,9 @@ export async function setUserVpnFlag(userId: string, isVpn: boolean) {
 
 export async function deleteUser(userId: string) {
   const user = await getUserById(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw new Error("User not found");
 
-  await mainDb.deleteFrom('users').where('id', '=', userId).execute();
+  await mainDb.deleteFrom("users").where("id", "=", userId).execute();
 
   await invalidateUserCache(userId);
   await invalidateUsernameCache(user.username);

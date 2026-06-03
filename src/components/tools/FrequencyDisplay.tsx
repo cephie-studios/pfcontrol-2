@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Radio, ChevronDown, ChevronUp } from 'lucide-react';
-import { fetchFrequencies } from '../../utils/fetch/data';
+import React, { useState, useEffect } from "react";
+import { Radio, ChevronDown, ChevronUp } from "lucide-react";
+import { fetchFrequencies } from "../../utils/fetch/data";
 
 interface FrequencyDisplayProps {
   airportIcao: string;
@@ -58,8 +58,8 @@ const FrequencyDisplay: React.FC<FrequencyDisplayProps> = ({
         <div
           className={`w-full bg-gray-800 rounded-2xl border border-gray-700 p-3 ${
             hasMoreFrequencies
-              ? 'cursor-pointer hover:bg-gray-700 transition-colors'
-              : ''
+              ? "cursor-pointer hover:bg-gray-700 transition-colors"
+              : ""
           }`}
           onClick={
             hasMoreFrequencies ? () => setIsTableOpen(!isTableOpen) : undefined
@@ -135,8 +135,8 @@ const FrequencyDisplay: React.FC<FrequencyDisplayProps> = ({
       <div
         className={`flex items-center gap-3 rounded-2xl border border-gray-700 px-4 py-3 bg-gray-800 ${
           hasMoreFrequencies
-            ? 'cursor-pointer hover:bg-gray-900 transition-colors'
-            : ''
+            ? "cursor-pointer hover:bg-gray-900 transition-colors"
+            : ""
         }`}
         onClick={
           hasMoreFrequencies ? () => setIsTableOpen(!isTableOpen) : undefined

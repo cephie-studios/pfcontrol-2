@@ -1,8 +1,8 @@
-import { useAuth } from '../hooks/auth/useAuth';
-import { Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getTesterSettings } from '../utils/fetch/data';
-import AccessDenied from './AccessDenied';
+import { useAuth } from "../hooks/auth/useAuth";
+import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getTesterSettings } from "../utils/fetch/data";
+import AccessDenied from "./AccessDenied";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export default function ProtectedRoute({
   );
 
   const shouldBypassTesterGate = () => {
-    return window.location.hostname === 'pfcontrol.com';
+    return window.location.hostname === "pfcontrol.com";
   };
 
   useEffect(() => {
@@ -48,13 +48,13 @@ export default function ProtectedRoute({
           setTesterGateEnabled(settings.tester_gate_enabled);
         } else {
           console.error(
-            'Failed to fetch tester settings or invalid response:',
+            "Failed to fetch tester settings or invalid response:",
             settings
           );
           setTesterGateEnabled(true);
         }
       } catch (error) {
-        console.error('Error fetching tester settings:', error);
+        console.error("Error fetching tester settings:", error);
         setTesterGateEnabled(true);
       }
     };

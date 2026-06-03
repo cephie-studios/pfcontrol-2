@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import Modal from '../common/Modal';
-import Button from '../common/Button';
+import { useState, useEffect } from "react";
+import { AlertTriangle } from "lucide-react";
+import Modal from "../common/Modal";
+import Button from "../common/Button";
 
 export default function CanaryModal() {
   const [showEarlyReleaseModal, setShowEarlyReleaseModal] = useState(false);
 
   const isEarlyReleaseVersion = () => {
     return (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === 'canary.pfcontrol.com'
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "canary.pfcontrol.com"
     );
   };
 
   const getCookie = (name: string): string | null => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
     return null;
   };
 
@@ -29,7 +29,7 @@ export default function CanaryModal() {
 
   useEffect(() => {
     if (isEarlyReleaseVersion()) {
-      const hasSeenEarlyReleaseModal = getCookie('seenEarlyReleaseModal');
+      const hasSeenEarlyReleaseModal = getCookie("seenEarlyReleaseModal");
       if (!hasSeenEarlyReleaseModal) {
         setShowEarlyReleaseModal(true);
       }
@@ -38,7 +38,7 @@ export default function CanaryModal() {
 
   const handleEarlyReleaseModalClose = () => {
     setShowEarlyReleaseModal(false);
-    setCookie('seenEarlyReleaseModal', 'true', 24);
+    setCookie("seenEarlyReleaseModal", "true", 24);
   };
 
   if (!showEarlyReleaseModal) return null;
@@ -54,7 +54,7 @@ export default function CanaryModal() {
         <div className="flex justify-between space-x-3 w-full">
           <Button
             size="sm"
-            onClick={() => (window.location.href = 'https://pfcontrol.com')}
+            onClick={() => (window.location.href = "https://pfcontrol.com")}
           >
             Go to Stable Version
           </Button>
@@ -70,10 +70,10 @@ export default function CanaryModal() {
     >
       <div className="space-y-3">
         <p className="text-gray-300">
-          You're currently on the{' '}
+          You're currently on the{" "}
           <span className="font-semibold text-blue-400">
             early release version
-          </span>{' '}
+          </span>{" "}
           of PFControl, which may contain bugs and incomplete features.
         </p>
       </div>

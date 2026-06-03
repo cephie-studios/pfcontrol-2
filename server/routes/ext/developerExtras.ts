@@ -12,24 +12,27 @@ function extCtx(req: Request) {
   return ext;
 }
 
-router.get("/ratings/controllers/:controllerId/stats", async (req: Request, res: Response) => {
-  try {
-    extCtx(req);
-    const { controllerId } = req.params;
-    if (!controllerId?.trim()) {
-      return res.status(400).json({ error: "controllerId required" });
+router.get(
+  "/ratings/controllers/:controllerId/stats",
+  async (req: Request, res: Response) => {
+    try {
+      extCtx(req);
+      const { controllerId } = req.params;
+      if (!controllerId?.trim()) {
+        return res.status(400).json({ error: "controllerId required" });
+      }
+      const stats = await getControllerRatingStats(controllerId.trim());
+      res.json({
+        controllerId: controllerId.trim(),
+        averageRating: stats.averageRating,
+        ratingCount: stats.ratingCount,
+      });
+    } catch (e) {
+      console.error("[ext/ratings stats]", e);
+      res.status(500).json({ error: "Failed to load rating stats" });
     }
-    const stats = await getControllerRatingStats(controllerId.trim());
-    res.json({
-      controllerId: controllerId.trim(),
-      averageRating: stats.averageRating,
-      ratingCount: stats.ratingCount,
-    });
-  } catch (e) {
-    console.error("[ext/ratings stats]", e);
-    res.status(500).json({ error: "Failed to load rating stats" });
   }
-});
+);
 
 router.get("/notifications/active", async (req: Request, res: Response) => {
   try {
@@ -43,7 +46,7 @@ router.get("/notifications/active", async (req: Request, res: Response) => {
         show: n.show,
         customColor: n.custom_color,
         createdAt: n.created_at,
-      })),
+      }))
     );
   } catch (e) {
     console.error("[ext/notifications]", e);
@@ -54,10 +57,21 @@ router.get("/notifications/active", async (req: Request, res: Response) => {
 router.get("/flight-logs", async (req: Request, res: Response) => {
   try {
     const ext = extCtx(req);
-    const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId : undefined;
-    const page = typeof req.query.page === "string" ? parseInt(req.query.page, 10) || 1 : 1;
-    const limit = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) || 50 : 50;
-    const data = await listDeveloperFlightLogsMetadata(ext.userId, { sessionId, page, limit });
+    const sessionId =
+      typeof req.query.sessionId === "string" ? req.query.sessionId : undefined;
+    const page =
+      typeof req.query.page === "string"
+        ? parseInt(req.query.page, 10) || 1
+        : 1;
+    const limit =
+      typeof req.query.limit === "string"
+        ? parseInt(req.query.limit, 10) || 50
+        : 50;
+    const data = await listDeveloperFlightLogsMetadata(ext.userId, {
+      sessionId,
+      page,
+      limit,
+    });
     res.json(data);
   } catch (e) {
     console.error("[ext/flight-logs]", e);

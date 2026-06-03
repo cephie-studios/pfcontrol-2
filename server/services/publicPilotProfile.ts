@@ -1,8 +1,8 @@
-import { getUserByUsername } from '../db/users.js';
-import { mainDb } from '../db/connection.js';
-import { isAdmin } from '../middleware/admin.js';
-import { getControllerRatingStats } from '../db/ratings.js';
-import { getFeaturedFlightsByUser } from '../db/flights.js';
+import { getUserByUsername } from "../db/users.js";
+import { mainDb } from "../db/connection.js";
+import { isAdmin } from "../middleware/admin.js";
+import { getControllerRatingStats } from "../db/ratings.js";
+import { getFeaturedFlightsByUser } from "../db/flights.js";
 
 export interface PublicPilotProfile {
   user: {
@@ -54,27 +54,27 @@ export async function getPublicPilotProfile(
   }
 
   const rolesResult = await mainDb
-    .selectFrom('roles as r')
-    .innerJoin('user_roles as ur', 'ur.role_id', 'r.id')
+    .selectFrom("roles as r")
+    .innerJoin("user_roles as ur", "ur.role_id", "r.id")
     .select([
-      'r.id',
-      'r.name',
-      'r.description',
-      'r.color',
-      'r.icon',
-      'r.priority',
+      "r.id",
+      "r.name",
+      "r.description",
+      "r.color",
+      "r.icon",
+      "r.priority",
     ])
-    .where('ur.user_id', '=', userResult.id)
-    .orderBy('r.priority', 'desc')
-    .orderBy('r.created_at', 'desc')
+    .where("ur.user_id", "=", userResult.id)
+    .orderBy("r.priority", "desc")
+    .orderBy("r.created_at", "desc")
     .execute();
 
-  const roles: PublicPilotProfile['user']['roles'] = rolesResult.map((r) => ({
+  const roles: PublicPilotProfile["user"]["roles"] = rolesResult.map((r) => ({
     id: r.id,
     name: r.name,
     description: r.description ?? null,
-    color: r.color ?? '',
-    icon: r.icon ?? '',
+    color: r.color ?? "",
+    icon: r.icon ?? "",
     priority: r.priority ?? 0,
   }));
 
@@ -128,7 +128,7 @@ export async function getPublicPilotProfile(
       roles,
       role_name: roles[0]?.name || null,
       role_description: roles[0]?.description ?? null,
-      bio: userResult.settings?.bio ?? '',
+      bio: userResult.settings?.bio ?? "",
       statistics: shouldIncludeStats ? userResult.statistics || {} : {},
       rating: ratingStats,
       background_image: shouldIncludeBackground
