@@ -1,4 +1,4 @@
-export const DEPLOYMENT = process.env.DEPLOYMENT ?? "development";
+export const DEPLOYMENT = process.env.DEPLOYMENT ?? 'development';
 
 export const prefixKey = (key: string) => `${DEPLOYMENT}:${key}`;
 

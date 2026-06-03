@@ -1,11 +1,11 @@
-import { sql } from "kysely";
-import { mainDb } from "../db/connection.js";
-import { redisConnection } from "../db/connection.js";
-import { sanitizeFlightForClient, type ClientFlight } from "../db/flights.js";
-import { validateSessionId } from "../utils/validation.js";
-import { keys, TTL } from "./keys.js";
-import { perfAsync } from "./perf.js";
-import { getUserBadgesByIds } from "./userCache.js";
+import { sql } from 'kysely';
+import { mainDb } from '../db/connection.js';
+import { redisConnection } from '../db/connection.js';
+import { sanitizeFlightForClient, type ClientFlight } from '../db/flights.js';
+import { validateSessionId } from '../utils/validation.js';
+import { keys, TTL } from './keys.js';
+import { perfAsync } from './perf.js';
+import { getUserBadgesByIds } from './userCache.js';
 
 function createUTCDate(): Date {
   const now = new Date();
@@ -35,7 +35,7 @@ async function attachUsersToFlights(
     ...new Set(
       rows
         .map((r) => r.userId)
-        .filter((id): id is string => typeof id === "string")
+        .filter((id): id is string => typeof id === 'string')
     ),
   ];
 
@@ -48,7 +48,7 @@ async function attachUsersToFlights(
       ...flight,
       user: {
         id: userId,
-        discord_username: badge.username ?? "Unknown",
+        discord_username: badge.username ?? 'Unknown',
         discord_avatar_url: badge.avatar,
       },
     };
@@ -66,22 +66,22 @@ export async function getFlightsForSessions(
   const sinceIso = sinceIsoHours(hoursBack);
 
   return perfAsync(
-    "getFlightsForSessions",
+    'getFlightsForSessions',
     async () => {
       const rows = await mainDb
-        .selectFrom("flights")
+        .selectFrom('flights')
         .selectAll()
-        .where("session_id", "in", validIds)
+        .where('session_id', 'in', validIds)
         .where((eb) =>
           eb.or([
-            eb("flight_plan_time", ">=", sinceIso),
-            eb("updated_at", ">=", sql<Date>`${sinceIso}`),
-            eb("created_at", ">=", sql<Date>`${sinceIso}`),
+            eb('flight_plan_time', '>=', sinceIso),
+            eb('updated_at', '>=', sql<Date>`${sinceIso}`),
+            eb('created_at', '>=', sql<Date>`${sinceIso}`),
           ])
         )
         .orderBy(
           sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`,
-          "desc"
+          'desc'
         )
         .execute();
 
@@ -140,12 +140,12 @@ export async function getAllFlightsForSession(
   const validSessionId = validateSessionId(sessionId);
 
   const rows = await mainDb
-    .selectFrom("flights")
+    .selectFrom('flights')
     .selectAll()
-    .where("session_id", "=", validSessionId)
+    .where('session_id', '=', validSessionId)
     .orderBy(
       sql`COALESCE(flight_plan_time::timestamp, created_at, updated_at)`,
-      "desc"
+      'desc'
     )
     .execute();
 

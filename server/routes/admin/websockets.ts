@@ -1,10 +1,10 @@
-import express from "express";
-import { requirePermission } from "../../middleware/rolePermissions.js";
-import { getAdminSocketStatsWithHistory } from "../../realtime/socketRegistry.js";
+import express from 'express';
+import { requirePermission } from '../../middleware/rolePermissions.js';
+import { getAdminSocketStatsWithHistory } from '../../realtime/socketRegistry.js';
 
 const router = express.Router();
 
-router.get("/", requirePermission("admin"), async (_req, res) => {
+router.get('/', requirePermission('admin'), async (_req, res) => {
   try {
     const namespaces = await getAdminSocketStatsWithHistory();
     const totalConnected = namespaces.reduce((sum, n) => sum + n.connected, 0);
@@ -14,8 +14,8 @@ router.get("/", requirePermission("admin"), async (_req, res) => {
       polledAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error fetching websocket stats:", error);
-    res.status(500).json({ error: "Failed to fetch websocket stats" });
+    console.error('Error fetching websocket stats:', error);
+    res.status(500).json({ error: 'Failed to fetch websocket stats' });
   }
 });
 

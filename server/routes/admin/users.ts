@@ -94,7 +94,9 @@ router.post(
 router.post('/:userId/set-vpn', async (req, res) => {
   try {
     if (!req.user?.userId || !isAdmin(req.user.userId)) {
-      return res.status(403).json({ error: 'Access denied - insufficient permissions' });
+      return res
+        .status(403)
+        .json({ error: 'Access denied - insufficient permissions' });
     }
 
     const { userId } = req.params;
@@ -123,7 +125,11 @@ router.post('/:userId/set-vpn', async (req, res) => {
         details: { isVpn },
       });
     } catch (auditErr) {
-      console.error('[audit] Failed to log VPN_FLAG_SET for user', userId, auditErr);
+      console.error(
+        '[audit] Failed to log VPN_FLAG_SET for user',
+        userId,
+        auditErr
+      );
     }
 
     res.json({ success: true, userId, isVpn });

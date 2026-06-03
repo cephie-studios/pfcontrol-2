@@ -1,15 +1,15 @@
-import express from "express";
-import { requirePermission } from "../../middleware/rolePermissions.js";
-import { getDailyStatistics } from "../../db/admin.js";
+import express from 'express';
+import { requirePermission } from '../../middleware/rolePermissions.js';
+import { getDailyStatistics } from '../../db/admin.js';
 import {
   fetchPgTableSizes,
   getActivitySummary,
   refreshTodayMetrics,
-} from "../../db/databaseMetrics.js";
+} from '../../db/databaseMetrics.js';
 import {
   buildDatabaseProjection,
   DATABASE_RETENTION_POLICIES,
-} from "../../db/databaseProjection.js";
+} from '../../db/databaseProjection.js';
 
 const router = express.Router();
 
@@ -20,13 +20,13 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 }
 
-router.get("/", requirePermission("admin"), async (_req, res) => {
+router.get('/', requirePermission('admin'), async (_req, res) => {
   try {
     try {
       await refreshTodayMetrics();
     } catch (metricsError) {
       console.error(
-        "[admin/database] refreshTodayMetrics failed:",
+        '[admin/database] refreshTodayMetrics failed:',
         metricsError
       );
     }
@@ -96,8 +96,8 @@ router.get("/", requirePermission("admin"), async (_req, res) => {
       polledAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error fetching database stats:", error);
-    res.status(500).json({ error: "Failed to fetch database statistics" });
+    console.error('Error fetching database stats:', error);
+    res.status(500).json({ error: 'Failed to fetch database statistics' });
   }
 });
 

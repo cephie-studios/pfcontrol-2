@@ -1,7 +1,7 @@
-import { mainDb } from "../db/connection.js";
-import { redisConnection } from "../db/connection.js";
-import { getUserRoles } from "../db/roles.js";
-import { keys, TTL } from "./keys.js";
+import { mainDb } from '../db/connection.js';
+import { redisConnection } from '../db/connection.js';
+import { getUserRoles } from '../db/roles.js';
+import { keys, TTL } from './keys.js';
 
 function hasPermission(
   roles: Awaited<ReturnType<typeof getUserRoles>>,
@@ -9,7 +9,7 @@ function hasPermission(
 ): boolean {
   return roles.some((role) => {
     let perms = role.permissions;
-    if (typeof perms === "string") {
+    if (typeof perms === 'string') {
       try {
         perms = JSON.parse(perms);
       } catch {
@@ -18,12 +18,12 @@ function hasPermission(
     }
     return (
       perms &&
-      typeof perms === "object" &&
+      typeof perms === 'object' &&
       (perms as Record<string, boolean>)[permKey] === true
     );
   });
 }
-import { perfAsync } from "./perf.js";
+import { perfAsync } from './perf.js';
 
 export type UserBadgeDto = {
   username: string | null;
@@ -36,17 +36,17 @@ export type UserBadgeDto = {
 
 async function loadBadge(userId: string): Promise<UserBadgeDto> {
   const user = await mainDb
-    .selectFrom("users")
-    .select(["username", "avatar", "vatsim_rating_id"])
-    .where("id", "=", userId)
+    .selectFrom('users')
+    .select(['username', 'avatar', 'vatsim_rating_id'])
+    .where('id', '=', userId)
     .executeTakeFirst();
 
   let isPFATCSector = false;
   let isAATCSector = false;
   try {
     const roles = await getUserRoles(userId);
-    isPFATCSector = hasPermission(roles, "pfatc_sector");
-    isAATCSector = hasPermission(roles, "aatc_sector");
+    isPFATCSector = hasPermission(roles, 'pfatc_sector');
+    isAATCSector = hasPermission(roles, 'aatc_sector');
   } catch {
     // ignore
   }
@@ -97,7 +97,7 @@ export async function getUserBadgesByIds(
   if (unique.length === 0) return result;
 
   return perfAsync(
-    "getUserBadgesByIds",
+    'getUserBadgesByIds',
     async () => {
       const cacheKeys = unique.map((id) => keys.userBadge(id));
       let cachedValues: (string | null)[] = [];

@@ -434,15 +434,14 @@ export default function ArrivalsTableMobile({
                   <div>
                     <label className="block text-gray-400 mb-1">Time</label>
                     <span className="text-white font-mono">
-                      {(flight.timestamp || flight.created_at)
-                        ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString(
-                            'en-GB',
-                            {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            }
-                          )
+                      {flight.timestamp || flight.created_at
+                        ? new Date(
+                            flight.timestamp || flight.created_at!
+                          ).toLocaleTimeString('en-GB', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: 'UTC',
+                          })
                         : '--'}
                     </span>
                   </div>

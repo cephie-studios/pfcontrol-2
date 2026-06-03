@@ -46,8 +46,12 @@ export default function ControllerRatingPopup({
       className={`${isInline ? 'bg-zinc-900/70 backdrop-blur-md mb-6' : 'bg-zinc-900 max-w-md mx-auto mb-8 shadow-2xl'} border border-zinc-800 rounded-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200`}
     >
       <div className="p-6">
-        <div className={`flex ${isInline ? 'justify-center' : 'justify-between'} items-center mb-4`}>
-          <h3 className="text-xl font-bold text-white italic">Rate your Controller</h3>
+        <div
+          className={`flex ${isInline ? 'justify-center' : 'justify-between'} items-center mb-4`}
+        >
+          <h3 className="text-xl font-bold text-white italic">
+            Rate your Controller
+          </h3>
           {!isInline && (
             <button
               onClick={onClose}

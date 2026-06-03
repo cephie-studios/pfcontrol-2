@@ -337,7 +337,10 @@ export default function FlightDetailsModal({
               rows={4}
             />
             {flight.route && flight.route.trim().length > 0 && (
-              <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
+              <div
+                className="mt-3 rounded-lg overflow-hidden border border-zinc-700"
+                style={{ height: 220 }}
+              >
                 <RouteMap
                   route={flight.route}
                   departure={flight.departure}

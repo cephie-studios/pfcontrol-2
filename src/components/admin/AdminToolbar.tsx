@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type AdminToolbarProps = {
   children: ReactNode;
@@ -7,7 +7,7 @@ type AdminToolbarProps = {
 
 export default function AdminToolbar({
   children,
-  className = "",
+  className = '',
 }: AdminToolbarProps) {
   return (
     <div

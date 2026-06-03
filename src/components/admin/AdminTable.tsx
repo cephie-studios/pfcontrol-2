@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { adminTableShellClass } from "./adminConstants";
+import type { ReactNode } from 'react';
+import { adminTableShellClass } from './adminConstants';
 
 type AdminTableProps = {
   children: ReactNode;
@@ -9,8 +9,8 @@ type AdminTableProps = {
 
 export default function AdminTable({
   children,
-  className = "",
-  minWidth = "640px",
+  className = '',
+  minWidth = '640px',
 }: AdminTableProps) {
   return (
     <div className={adminTableShellClass(className)}>

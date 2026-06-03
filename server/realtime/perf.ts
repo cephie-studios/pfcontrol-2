@@ -1,6 +1,6 @@
 const PERF_ENABLED =
-  process.env.PERF_LOG !== "0" &&
-  (process.env.PERF_LOG === "1" || process.env.NODE_ENV !== "production");
+  process.env.PERF_LOG !== '0' &&
+  (process.env.PERF_LOG === '1' || process.env.NODE_ENV !== 'production');
 
 export async function perfAsync<T>(
   label: string,
@@ -13,7 +13,7 @@ export async function perfAsync<T>(
     return await fn();
   } finally {
     const duration_ms = Math.round(performance.now() - start);
-    console.log("[perf]", JSON.stringify({ label, duration_ms, ...meta }));
+    console.log('[perf]', JSON.stringify({ label, duration_ms, ...meta }));
   }
 }
 
@@ -28,6 +28,6 @@ export function perfSync<T>(
     return fn();
   } finally {
     const duration_ms = Math.round(performance.now() - start);
-    console.log("[perf]", JSON.stringify({ label, duration_ms, ...meta }));
+    console.log('[perf]', JSON.stringify({ label, duration_ms, ...meta }));
   }
 }

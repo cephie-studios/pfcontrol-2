@@ -21,7 +21,10 @@ vi.mock('../../../server/db/connection.js', () => ({
   redisConnection: {},
 }));
 
-import { addControllerRating, getControllerRatingStats } from '../../../server/db/ratings.js';
+import {
+  addControllerRating,
+  getControllerRatingStats,
+} from '../../../server/db/ratings.js';
 
 describe('addControllerRating', () => {
   beforeEach(() => {

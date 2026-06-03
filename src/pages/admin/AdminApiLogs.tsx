@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MdMonitorHeart,
   MdVisibility,
@@ -6,15 +6,15 @@ import {
   MdPerson,
   MdLink,
   MdCalendarToday,
-} from "react-icons/md";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminIconInput from "../../components/admin/AdminIconInput";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminTable from "../../components/admin/AdminTable";
+} from 'react-icons/md';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminIconInput from '../../components/admin/AdminIconInput';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminDownsizeButtonSize,
   ADMIN_TOOLBAR_HEIGHT,
@@ -26,10 +26,10 @@ import {
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
   ADMIN_TOOLBAR_MOBILE_STACK_ITEM,
-} from "../../components/admin/adminConstants";
-import Dropdown from "../../components/common/Dropdown";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../components/admin/adminConstants';
+import Dropdown from '../../components/common/Dropdown';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchApiLogs,
   fetchApiLogStats,
@@ -37,44 +37,44 @@ import {
   type ApiLogsResponse,
   type ApiLog,
   type ApiLogStats,
-} from "../../utils/fetch/admin";
+} from '../../utils/fetch/admin';
 
 const methodOptions = [
-  { value: "", label: "All Methods" },
-  { value: "GET", label: "GET" },
-  { value: "POST", label: "POST" },
-  { value: "PUT", label: "PUT" },
-  { value: "DELETE", label: "DELETE" },
-  { value: "PATCH", label: "PATCH" },
+  { value: '', label: 'All Methods' },
+  { value: 'GET', label: 'GET' },
+  { value: 'POST', label: 'POST' },
+  { value: 'PUT', label: 'PUT' },
+  { value: 'DELETE', label: 'DELETE' },
+  { value: 'PATCH', label: 'PATCH' },
 ];
 
 const statusCodeOptions = [
-  { value: "", label: "All Status Codes" },
-  { value: "200", label: "200 - OK" },
-  { value: "304", label: "304 - Not Modified" },
-  { value: "400", label: "400 - Bad Request" },
-  { value: "401", label: "401 - Unauthorized" },
-  { value: "403", label: "403 - Forbidden" },
-  { value: "404", label: "404 - Not Found" },
-  { value: "500", label: "500 - Internal Server Error" },
+  { value: '', label: 'All Status Codes' },
+  { value: '200', label: '200 - OK' },
+  { value: '304', label: '304 - Not Modified' },
+  { value: '400', label: '400 - Bad Request' },
+  { value: '401', label: '401 - Unauthorized' },
+  { value: '403', label: '403 - Forbidden' },
+  { value: '404', label: '404 - Not Found' },
+  { value: '500', label: '500 - Internal Server Error' },
 ];
 
 export default function AdminApiLogs() {
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [stats, setStats] = useState<ApiLogStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchFilter, setSearchFilter] = useState("");
-  const [userFilter, setUserFilter] = useState("");
-  const [methodFilter, setMethodFilter] = useState("");
-  const [pathFilter, setPathFilter] = useState("");
-  const [statusCodeFilter, setStatusCodeFilter] = useState("");
-  const [dateFromFilter, setDateFromFilter] = useState("");
-  const [dateToFilter, setDateToFilter] = useState("");
+  const [searchFilter, setSearchFilter] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [methodFilter, setMethodFilter] = useState('');
+  const [pathFilter, setPathFilter] = useState('');
+  const [statusCodeFilter, setStatusCodeFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
   const [clientPage, setClientPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -133,9 +133,9 @@ export default function AdminApiLogs() {
       setTotalPages(data.pagination.pages);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch API logs";
+        err instanceof Error ? err.message : 'Failed to fetch API logs';
       setError(errorMessage);
-      setToast({ message: errorMessage, type: "error" });
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -144,7 +144,7 @@ export default function AdminApiLogs() {
       const statsData = await fetchApiLogStats(7);
       setStats(statsData);
     } catch (err) {
-      console.error("Failed to fetch API log stats:", err);
+      console.error('Failed to fetch API log stats:', err);
     }
   };
 
@@ -155,20 +155,20 @@ export default function AdminApiLogs() {
       setShowDetails(true);
     } catch {
       setToast({
-        message: "Failed to fetch log details",
-        type: "error",
+        message: 'Failed to fetch log details',
+        type: 'error',
       });
     }
   };
 
   const clearFilters = () => {
-    setSearchFilter("");
-    setUserFilter("");
-    setMethodFilter("");
-    setPathFilter("");
-    setStatusCodeFilter("");
-    setDateFromFilter("");
-    setDateToFilter("");
+    setSearchFilter('');
+    setUserFilter('');
+    setMethodFilter('');
+    setPathFilter('');
+    setStatusCodeFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
     setClientPage(1);
   };
 
@@ -177,7 +177,7 @@ export default function AdminApiLogs() {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
 
-    if (isNaN(diffMs)) return "Invalid date";
+    if (isNaN(diffMs)) return 'Invalid date';
 
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
@@ -187,43 +187,43 @@ export default function AdminApiLogs() {
     if (diffDays > 0) return `${diffDays}d ago`;
     if (diffHours > 0) return `${diffHours}h ago`;
     if (diffMins > 0) return `${diffMins}m ago`;
-    return "Just now";
+    return 'Just now';
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "UTC",
-      timeZoneName: "short",
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
     });
   };
 
   const getStatusColor = (statusCode: number) => {
-    if (statusCode >= 200 && statusCode < 300) return "text-green-400";
-    if (statusCode >= 300 && statusCode < 400) return "text-yellow-400";
-    if (statusCode >= 400 && statusCode < 500) return "text-orange-400";
-    if (statusCode >= 500) return "text-red-400";
-    return "text-gray-400";
+    if (statusCode >= 200 && statusCode < 300) return 'text-green-400';
+    if (statusCode >= 300 && statusCode < 400) return 'text-yellow-400';
+    if (statusCode >= 400 && statusCode < 500) return 'text-orange-400';
+    if (statusCode >= 500) return 'text-red-400';
+    return 'text-gray-400';
   };
 
   const getMethodColor = (method: string) => {
     switch (method) {
-      case "GET":
-        return "text-blue-400 bg-blue-400/10 border border-blue-400/30";
-      case "POST":
-        return "text-green-400 bg-green-400/10 border border-green-400/30";
-      case "PUT":
-        return "text-yellow-400 bg-yellow-400/10 border border-yellow-400/30";
-      case "DELETE":
-        return "text-red-400 bg-red-400/10 border border-red-400/30";
-      case "PATCH":
-        return "text-purple-400 bg-purple-400/10 border border-purple-400/30";
+      case 'GET':
+        return 'text-blue-400 bg-blue-400/10 border border-blue-400/30';
+      case 'POST':
+        return 'text-green-400 bg-green-400/10 border border-green-400/30';
+      case 'PUT':
+        return 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/30';
+      case 'DELETE':
+        return 'text-red-400 bg-red-400/10 border border-red-400/30';
+      case 'PATCH':
+        return 'text-purple-400 bg-purple-400/10 border border-purple-400/30';
       default:
-        return "text-gray-400 bg-gray-400/10 border border-gray-400/30";
+        return 'text-gray-400 bg-gray-400/10 border border-gray-400/30';
     }
   };
 
@@ -234,15 +234,15 @@ export default function AdminApiLogs() {
       {stats && (
         <AdminStatStrip
           items={[
-            { label: "Total Requests", value: stats.totalRequests },
+            { label: 'Total Requests', value: stats.totalRequests },
             {
-              label: "Avg Response Time",
+              label: 'Avg Response Time',
               value: `${stats.averageResponseTime}ms`,
             },
-            { label: "Error Rate", value: `${stats.errorRate.toFixed(1)}%` },
+            { label: 'Error Rate', value: `${stats.errorRate.toFixed(1)}%` },
             {
-              label: "Top Endpoint",
-              value: stats.topEndpoints[0]?.path.split("?")[0] || "N/A",
+              label: 'Top Endpoint',
+              value: stats.topEndpoints[0]?.path.split('?')[0] || 'N/A',
             },
           ]}
         />
@@ -377,7 +377,7 @@ export default function AdminApiLogs() {
                   </td>
                   <td className={ADMIN_TD}>
                     <div className="text-sm text-white">
-                      {log.username || "Unknown"}
+                      {log.username || 'Unknown'}
                     </div>
                     {log.user_id && (
                       <div className="text-xs text-zinc-500">{log.user_id}</div>
@@ -387,7 +387,7 @@ export default function AdminApiLogs() {
                     <Button
                       onClick={() => handleLogClick(log)}
                       variant="ghost"
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       className="flex items-center space-x-2"
                     >
                       <MdVisibility size={16} />
@@ -422,7 +422,7 @@ export default function AdminApiLogs() {
                   </div>
                   <div className="text-zinc-300 text-sm">
                     <p>
-                      <strong>User:</strong> {log.username || "Unknown"}
+                      <strong>User:</strong> {log.username || 'Unknown'}
                     </p>
                     <p>
                       <strong>Response Time:</strong> {log.response_time}ms
@@ -434,7 +434,7 @@ export default function AdminApiLogs() {
                   <Button
                     onClick={() => handleLogClick(log)}
                     variant="ghost"
-                    size={adminDownsizeButtonSize("sm")}
+                    size={adminDownsizeButtonSize('sm')}
                     className="w-full flex items-center justify-center space-x-2"
                   >
                     <MdVisibility size={16} />
@@ -527,7 +527,7 @@ export default function AdminApiLogs() {
               <div className="bg-zinc-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-zinc-400 mb-2">User</h3>
                 <p className="text-white">
-                  {selectedLog.username || "Unknown"}
+                  {selectedLog.username || 'Unknown'}
                 </p>
                 {selectedLog.user_id && (
                   <p className="text-xs text-zinc-500">{selectedLog.user_id}</p>
@@ -560,7 +560,7 @@ export default function AdminApiLogs() {
                 </h3>
                 <pre className="bg-zinc-900 p-4 rounded-lg text-sm overflow-x-auto">
                   <code className="text-white">
-                    {typeof selectedLog.request_body === "string"
+                    {typeof selectedLog.request_body === 'string'
                       ? (() => {
                           try {
                             return JSON.stringify(
@@ -585,7 +585,7 @@ export default function AdminApiLogs() {
                 </h3>
                 <pre className="bg-zinc-900 p-4 rounded-lg text-sm overflow-x-auto max-h-60">
                   <code className="text-white">
-                    {typeof selectedLog.response_body === "string"
+                    {typeof selectedLog.response_body === 'string'
                       ? (() => {
                           try {
                             return JSON.stringify(

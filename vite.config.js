@@ -1,28 +1,28 @@
-import { defineConfig } from "vite-plus";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from 'vite-plus';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   fmt: {
     printWidth: 80,
-    singleQuote: false,
-    trailingComma: "es5",
+    singleQuote: true,
+    trailingComma: 'es5',
     tabWidth: 2,
   },
   build: {
-    sourcemap: "hidden",
+    sourcemap: 'hidden',
   },
   staged: {
-    "*.{js,jsx,ts,tsx}": "vp check --fix",
+    '*.{js,jsx,ts,tsx}': 'vp check --fix',
   },
   server: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
   },
   preview: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
   },

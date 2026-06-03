@@ -3,59 +3,59 @@ import {
   Route,
   Routes,
   Navigate,
-} from "react-router-dom";
-import { lazy, Suspense } from "react";
-import { useAuth } from "./hooks/auth/useAuth";
+} from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { useAuth } from './hooks/auth/useAuth';
 
-import Home from "./pages/Home";
-import Create from "./pages/Create";
-import Sessions from "./pages/Sessions";
-import Submit from "./pages/Submit";
-import Flights from "./pages/Flights";
-import MyFlights from "./pages/MyFlights";
-import MyFlightDetail from "./pages/MyFlightDetail";
-import Settings from "./pages/Settings";
-import PFATCFlights from "./pages/PFATCFlights";
-import ACARS from "./pages/ACARS";
-import PilotProfile from "./pages/PilotProfile";
-import PublicFlightView from "./pages/PublicFlightView";
+import Home from './pages/Home';
+import Create from './pages/Create';
+import Sessions from './pages/Sessions';
+import Submit from './pages/Submit';
+import Flights from './pages/Flights';
+import MyFlights from './pages/MyFlights';
+import MyFlightDetail from './pages/MyFlightDetail';
+import Settings from './pages/Settings';
+import PFATCFlights from './pages/PFATCFlights';
+import ACARS from './pages/ACARS';
+import PilotProfile from './pages/PilotProfile';
+import PublicFlightView from './pages/PublicFlightView';
 
-import Login from "./pages/Login";
-import VatsimCallback from "./pages/VatsimCallback";
-import NotFound from "./pages/NotFound";
+import Login from './pages/Login';
+import VatsimCallback from './pages/VatsimCallback';
+import NotFound from './pages/NotFound';
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import AccessDenied from "./components/AccessDenied";
-import Loader from "./components/common/Loader";
-import AppOverlays from "./components/AppOverlays";
-import PostHogPageView from "./components/PostHogPageView";
+import ProtectedRoute from './components/ProtectedRoute';
+import AccessDenied from './components/AccessDenied';
+import Loader from './components/common/Loader';
+import AppOverlays from './components/AppOverlays';
+import PostHogPageView from './components/PostHogPageView';
 
-const Admin = lazy(() => import("./pages/Admin"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
-const AdminBan = lazy(() => import("./pages/admin/AdminBan"));
-const AdminSessions = lazy(() => import("./pages/admin/AdminSessions"));
-const AdminTesters = lazy(() => import("./pages/admin/AdminTesters"));
+const Admin = lazy(() => import('./pages/Admin'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAudit = lazy(() => import('./pages/admin/AdminAudit'));
+const AdminBan = lazy(() => import('./pages/admin/AdminBan'));
+const AdminSessions = lazy(() => import('./pages/admin/AdminSessions'));
+const AdminTesters = lazy(() => import('./pages/admin/AdminTesters'));
 const AdminNotifications = lazy(
-  () => import("./pages/admin/AdminNotifications")
+  () => import('./pages/admin/AdminNotifications')
 );
-const AdminRoles = lazy(() => import("./pages/admin/AdminRoles"));
-const AdminChatReports = lazy(() => import("./pages/admin/AdminChatReports"));
-const AdminFlightLogs = lazy(() => import("./pages/admin/AdminFlightLogs"));
-const AdminFeedback = lazy(() => import("./pages/admin/AdminFeedback"));
-const AdminApiLogs = lazy(() => import("./pages/admin/AdminApiLogs"));
-const AdminRatings = lazy(() => import("./pages/admin/AdminRatings"));
-const AdminAltDetection = lazy(() => import("./pages/admin/AdminAltDetection"));
-const AdminDevelopers = lazy(() => import("./pages/admin/AdminDevelopers"));
-const AdminWebsockets = lazy(() => import("./pages/admin/AdminWebsockets"));
-const AdminDatabase = lazy(() => import("./pages/admin/AdminDatabase"));
+const AdminRoles = lazy(() => import('./pages/admin/AdminRoles'));
+const AdminChatReports = lazy(() => import('./pages/admin/AdminChatReports'));
+const AdminFlightLogs = lazy(() => import('./pages/admin/AdminFlightLogs'));
+const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
+const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
+const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
+const AdminAltDetection = lazy(() => import('./pages/admin/AdminAltDetection'));
+const AdminDevelopers = lazy(() => import('./pages/admin/AdminDevelopers'));
+const AdminWebsockets = lazy(() => import('./pages/admin/AdminWebsockets'));
+const AdminDatabase = lazy(() => import('./pages/admin/AdminDatabase'));
 const DeveloperLayout = lazy(
-  () => import("./pages/developers/DeveloperLayout")
+  () => import('./pages/developers/DeveloperLayout')
 );
-const DeveloperOverview = lazy(() => import("./pages/developers/Overview"));
-const DeveloperConsole = lazy(() => import("./pages/developers/Console"));
-const DeveloperKeys = lazy(() => import("./pages/developers/Keys"));
-const DeveloperDocs = lazy(() => import("./pages/developers/Docs"));
+const DeveloperOverview = lazy(() => import('./pages/developers/Overview'));
+const DeveloperConsole = lazy(() => import('./pages/developers/Console'));
+const DeveloperKeys = lazy(() => import('./pages/developers/Keys'));
+const DeveloperDocs = lazy(() => import('./pages/developers/Docs'));
 
 export default function App() {
   const { user } = useAuth();

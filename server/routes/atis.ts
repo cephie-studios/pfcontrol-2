@@ -146,7 +146,12 @@ router.post('/generate', requireAuth, async (req, res) => {
       throw new Error('Failed to update session with ATIS data');
     }
 
-    if (req.user?.userId) capture(req, { distinctId: req.user.userId, event: 'atis_generated', properties: { session_id: sessionId, icao, ident } });
+    if (req.user?.userId)
+      capture(req, {
+        distinctId: req.user.userId,
+        event: 'atis_generated',
+        properties: { session_id: sessionId, icao, ident },
+      });
 
     res.json({
       text: generatedAtis,

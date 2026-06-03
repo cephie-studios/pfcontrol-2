@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import {
   Loader2,
   Copy,
@@ -13,10 +13,10 @@ import {
   ChevronRight,
   Terminal,
   Gauge,
-} from "lucide-react";
-import ScopeTagSelector from "../../components/developers/ScopeTagSelector";
-import { API_EXT_BASE, cardClass, statusBadgeClass } from "./constants";
-import { useDeveloperPortal } from "./developerPortalContext";
+} from 'lucide-react';
+import ScopeTagSelector from '../../components/developers/ScopeTagSelector';
+import { API_EXT_BASE, cardClass, statusBadgeClass } from './constants';
+import { useDeveloperPortal } from './developerPortalContext';
 
 export default function DeveloperKeys() {
   const {
@@ -61,7 +61,7 @@ export default function DeveloperKeys() {
 
   const allowedCatalog = useMemo(
     () => catalog.filter((c) => approvedScopes.includes(c.id)),
-    [catalog, approvedScopes],
+    [catalog, approvedScopes]
   );
 
   const activeKeys = useMemo(() => keys.filter((k) => !k.revokedAt), [keys]);
@@ -81,7 +81,8 @@ export default function DeveloperKeys() {
       <div className={cardClass()}>
         <h2 className="text-lg font-semibold text-zinc-100 mb-2">API keys</h2>
         <p className="text-sm text-zinc-400 mb-4">
-          Scoped keys are available after your developer application is approved.
+          Scoped keys are available after your developer application is
+          approved.
         </p>
         <Link
           to="/developers"
@@ -99,7 +100,9 @@ export default function DeveloperKeys() {
         <div
           className={`${cardClass()} border-sky-800/50 bg-sky-950/25 flex items-start justify-between gap-3`}
         >
-          <p className="text-sm text-sky-100/95 leading-relaxed">{infoMessage}</p>
+          <p className="text-sm text-sky-100/95 leading-relaxed">
+            {infoMessage}
+          </p>
           <button
             type="button"
             onClick={() => setInfoMessage(null)}
@@ -113,7 +116,9 @@ export default function DeveloperKeys() {
       {createdSecret && (
         <div className={`${cardClass()} border-blue-900/40 bg-blue-950/20`}>
           <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-sm font-semibold text-blue-200">Copy your API key now</p>
+            <p className="text-sm font-semibold text-blue-200">
+              Copy your API key now
+            </p>
             <button
               type="button"
               onClick={() => setCreatedSecret(null)}
@@ -123,8 +128,9 @@ export default function DeveloperKeys() {
             </button>
           </div>
           <p className="text-xs text-zinc-400 mb-3 leading-relaxed">
-            After you close this message, you cannot open this page again to copy the same secret.
-            Copy it now and store it in a password manager or other safe place.
+            After you close this message, you cannot open this page again to
+            copy the same secret. Copy it now and store it in a password manager
+            or other safe place.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <code className="flex min-h-10 w-full items-center overflow-x-auto text-xs sm:text-sm break-all rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-zinc-200 ring-1 ring-zinc-700/40 sm:flex-1 sm:min-w-0 sm:whitespace-nowrap sm:break-normal sm:py-0">
@@ -156,7 +162,7 @@ export default function DeveloperKeys() {
                   ) : (
                     <Terminal className="h-4 w-4 shrink-0" />
                   )}
-                  {curlCopied ? "Copied" : "Sample curl"}
+                  {curlCopied ? 'Copied' : 'Sample curl'}
                 </span>
                 {curlSample ? (
                   <span className="max-w-full truncate text-center text-[10px] leading-tight text-zinc-500">
@@ -183,20 +189,29 @@ export default function DeveloperKeys() {
             onClick={() => setCreateOpen((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold transition-colors"
           >
-            {createOpen ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-            {createOpen ? "Cancel" : "New key"}
+            {createOpen ? (
+              <X className="w-3.5 h-3.5" />
+            ) : (
+              <Plus className="w-3.5 h-3.5" />
+            )}
+            {createOpen ? 'Cancel' : 'New key'}
           </button>
         </div>
         <p className="text-[11px] text-zinc-400 mb-5 flex items-center gap-1.5">
           <Gauge className="w-3.5 h-3.5 shrink-0 text-zinc-500" aria-hidden />
-          Each key lists its max requests per minute (sliding window; 429 when exceeded).
+          Each key lists its max requests per minute (sliding window; 429 when
+          exceeded).
         </p>
 
         {createOpen && (
           <div className="mb-6 rounded-xl border border-zinc-700 bg-zinc-950/60 p-4 space-y-4 ring-1 ring-zinc-800/50">
-            <p className="text-sm font-medium text-zinc-300">Create a new API key</p>
+            <p className="text-sm font-medium text-zinc-300">
+              Create a new API key
+            </p>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Key label</label>
+              <label className="block text-xs text-zinc-500 mb-1.5">
+                Key label
+              </label>
               <input
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
@@ -208,7 +223,9 @@ export default function DeveloperKeys() {
               <label className="block text-xs text-zinc-500 mb-2.5">
                 Scopes
                 {newKeyScopes.size > 0 && (
-                  <span className="ml-2 text-blue-400">{newKeyScopes.size} selected</span>
+                  <span className="ml-2 text-blue-400">
+                    {newKeyScopes.size} selected
+                  </span>
                 )}
               </label>
               <ScopeTagSelector
@@ -218,17 +235,21 @@ export default function DeveloperKeys() {
               />
             </div>
             <p className="text-[11px] text-zinc-600">
-              Keys using only your approved scopes are issued immediately. Extra scopes require
-              admin approval.
+              Keys using only your approved scopes are issued immediately. Extra
+              scopes require admin approval.
             </p>
             <div className="flex items-center gap-3 pt-1">
               <button
                 type="button"
-                disabled={keyBusy || !newKeyName.trim() || newKeyScopes.size === 0}
-                onClick={() => void handleCreateKey().then(() => setCreateOpen(false))}
+                disabled={
+                  keyBusy || !newKeyName.trim() || newKeyScopes.size === 0
+                }
+                onClick={() =>
+                  void handleCreateKey().then(() => setCreateOpen(false))
+                }
                 className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-50 text-sm font-semibold transition-colors"
               >
-                {keyBusy ? "Creating…" : "Generate key"}
+                {keyBusy ? 'Creating…' : 'Generate key'}
               </button>
               <p className="text-[11px] text-zinc-600">
                 Base URL: <code className="text-zinc-400">{API_EXT_BASE}</code>
@@ -254,12 +275,16 @@ export default function DeveloperKeys() {
           )}
 
           {visibleKeys.map((k) => {
-            const st = k.revokedAt ? "revoked" : (k.status ?? "active");
+            const st = k.revokedAt ? 'revoked' : (k.status ?? 'active');
             const isRevoked = !!k.revokedAt;
             const expanded = expandedKeyIds.has(k.id);
             const scopeIdsForKey =
-              st === "pending" && k.requestedScopes?.length ? k.requestedScopes : (k.scopes ?? []);
-            const keyScopeCatalog = catalog.filter((c) => scopeIdsForKey.includes(c.id));
+              st === 'pending' && k.requestedScopes?.length
+                ? k.requestedScopes
+                : (k.scopes ?? []);
+            const keyScopeCatalog = catalog.filter((c) =>
+              scopeIdsForKey.includes(c.id)
+            );
             const rpmEffective =
               k.rateLimitPerMinute != null &&
               Number.isFinite(k.rateLimitPerMinute) &&
@@ -276,26 +301,28 @@ export default function DeveloperKeys() {
                 key={k.id}
                 className={`overflow-hidden rounded-xl border transition-colors ${
                   isRevoked
-                    ? "border-zinc-800/60 bg-zinc-900/20 opacity-60"
-                    : "border-zinc-800 bg-zinc-800/30"
+                    ? 'border-zinc-800/60 bg-zinc-900/20 opacity-60'
+                    : 'border-zinc-800 bg-zinc-800/30'
                 }`}
               >
                 <div className="flex min-h-13 items-stretch">
                   <button
                     type="button"
                     aria-expanded={expanded}
-                    aria-label={expanded ? "Collapse key details" : "Expand key details"}
+                    aria-label={
+                      expanded ? 'Collapse key details' : 'Expand key details'
+                    }
                     onClick={() => toggleKeyExpand(k.id)}
-                    title={expanded ? "Collapse" : "Show scopes"}
+                    title={expanded ? 'Collapse' : 'Show scopes'}
                     className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pl-2 pr-2 text-left transition-colors sm:gap-3 sm:pl-3 sm:pr-2 ${
                       isRevoked
-                        ? "text-zinc-600 hover:bg-zinc-900/40"
-                        : "text-zinc-100 hover:bg-zinc-800/40"
+                        ? 'text-zinc-600 hover:bg-zinc-900/40'
+                        : 'text-zinc-100 hover:bg-zinc-800/40'
                     }`}
                   >
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                        isRevoked ? "text-zinc-600" : "text-zinc-400"
+                        isRevoked ? 'text-zinc-600' : 'text-zinc-400'
                       }`}
                       aria-hidden
                     >
@@ -323,7 +350,7 @@ export default function DeveloperKeys() {
                           </p>
                           <div className="shrink-0 text-right text-[11px] tabular-nums min-[520px]:flex min-[520px]:min-w-30 min-[520px]:flex-col min-[520px]:items-end min-[520px]:gap-0.5 mr-2">
                             <p className="text-blue-400/95">
-                              <span className="text-zinc-500">Rate limit</span>{" "}
+                              <span className="text-zinc-500">Rate limit</span>{' '}
                               <span className="text-zinc-300">
                                 {rpmEffective.toLocaleString()}/min
                               </span>
@@ -333,7 +360,8 @@ export default function DeveloperKeys() {
                             </p>
                             {isRevoked && k.revokedAt && (
                               <p className="mt-0.5 text-zinc-600 min-[520px]:mt-0">
-                                Revoked {new Date(k.revokedAt).toLocaleDateString()}
+                                Revoked{' '}
+                                {new Date(k.revokedAt).toLocaleDateString()}
                               </p>
                             )}
                           </div>
@@ -343,7 +371,7 @@ export default function DeveloperKeys() {
                   </button>
 
                   <div className="flex shrink-0 items-center gap-0.5 self-stretch border-l border-zinc-800/80 bg-zinc-900/20 py-1 pr-1.5 pl-1 sm:pr-2">
-                    {!isRevoked && st === "active" && (
+                    {!isRevoked && st === 'active' && (
                       <button
                         type="button"
                         disabled={keyBusy}
@@ -382,13 +410,15 @@ export default function DeveloperKeys() {
                 {expanded && (
                   <div className="border-t border-zinc-800/90 bg-zinc-950/40 px-3 pb-3 pt-2 pl-13 sm:pl-15">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">
-                      {st === "pending" ? "Requested scopes" : "Scopes this key can use"}
+                      {st === 'pending'
+                        ? 'Requested scopes'
+                        : 'Scopes this key can use'}
                     </p>
                     {keyScopeCatalog.length === 0 ? (
                       <p className="text-xs text-zinc-600">
-                        {st === "pending"
-                          ? "No scope list yet."
-                          : "No scopes assigned (key may still be provisioning)."}
+                        {st === 'pending'
+                          ? 'No scope list yet.'
+                          : 'No scopes assigned (key may still be provisioning).'}
                       </p>
                     ) : (
                       <ScopeTagSelector
@@ -412,11 +442,11 @@ export default function DeveloperKeys() {
             className="mt-3 flex items-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform ${showRevoked ? "rotate-180" : ""}`}
+              className={`w-3.5 h-3.5 transition-transform ${showRevoked ? 'rotate-180' : ''}`}
             />
             {showRevoked
-              ? "Hide revoked keys"
-              : `Show ${revokedKeys.length} revoked key${revokedKeys.length !== 1 ? "s" : ""}`}
+              ? 'Hide revoked keys'
+              : `Show ${revokedKeys.length} revoked key${revokedKeys.length !== 1 ? 's' : ''}`}
           </button>
         )}
       </div>

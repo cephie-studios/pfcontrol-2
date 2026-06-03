@@ -1,5 +1,8 @@
 import type { Flight } from '../../types/flight';
-import type { DepartureTableColumnSettings, ArrivalsTableColumnSettings } from '../../types/settings';
+import type {
+  DepartureTableColumnSettings,
+  ArrivalsTableColumnSettings,
+} from '../../types/settings';
 import DepartureTable from './DepartureTable';
 import ArrivalsTable from './ArrivalsTable';
 

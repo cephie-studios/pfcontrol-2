@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "oxc",
-    "typescript",
-    "unicorn",
-    "react"
-  ],
+  "plugins": ["oxc", "typescript", "unicorn", "react"],
   "categories": {
     "correctness": "warn"
   },
@@ -19,9 +14,7 @@
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.{ts,tsx}"
-      ],
+      "files": ["**/*.{ts,tsx}"],
       "rules": {
         "constructor-super": "error",
         "for-direction": "error",
@@ -126,6 +119,13 @@
     },
     {
       "files": ["server/**/*.ts"],
+      "env": {
+        "node": true,
+        "es2020": true
+      }
+    },
+    {
+      "files": ["tests/**/*.{ts,tsx}", "scripts/**/*.{ts,tsx}"],
       "env": {
         "node": true,
         "es2020": true

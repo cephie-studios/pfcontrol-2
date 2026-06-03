@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 import {
   MdSave,
   MdVpnKey,
@@ -7,19 +7,19 @@ import {
   MdContentCopy,
   MdRefresh,
   MdDelete,
-} from "react-icons/md";
-import AdminModal from "./AdminModal";
-import AdminTable from "./AdminTable";
-import DeveloperDiscordAvatar from "./DeveloperDiscordAvatar";
+} from 'react-icons/md';
+import AdminModal from './AdminModal';
+import AdminTable from './AdminTable';
+import DeveloperDiscordAvatar from './DeveloperDiscordAvatar';
 import {
   statusBadgeClass,
   adminDownsizeButtonSize,
   ADMIN_TABLE_HEAD,
   ADMIN_TH,
   ADMIN_TD,
-} from "./adminConstants";
-import Button from "../common/Button";
-import ScopeTagSelector from "../developers/ScopeTagSelector";
+} from './adminConstants';
+import Button from '../common/Button';
+import ScopeTagSelector from '../developers/ScopeTagSelector';
 import {
   approveAdminDeveloperKey,
   fetchAdminDeveloperCatalog,
@@ -31,9 +31,9 @@ import {
   type AdminDeveloperKeyRow,
   type AdminDeveloperSummary,
   type AdminScopeCatalogEntry,
-} from "../../utils/fetch/adminDevelopers";
+} from '../../utils/fetch/adminDevelopers';
 
-type Tab = "ceiling" | "keys";
+type Tab = 'ceiling' | 'keys';
 
 type Props = {
   developer: AdminDeveloperSummary;
@@ -56,7 +56,7 @@ export default function AdminDeveloperEditModal({
   onDeleteDeveloper,
   deleteDeveloperBusy,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("ceiling");
+  const [tab, setTab] = useState<Tab>('ceiling');
   const [catalog, setCatalog] = useState<AdminScopeCatalogEntry[]>([]);
   const [keys, setKeys] = useState<AdminDeveloperKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(true);
@@ -73,12 +73,12 @@ export default function AdminDeveloperEditModal({
     null
   );
   const [approveScopes, setApproveScopes] = useState<Set<string>>(new Set());
-  const [approveRpm, setApproveRpm] = useState("");
-  const [approveNote, setApproveNote] = useState("");
+  const [approveRpm, setApproveRpm] = useState('');
+  const [approveNote, setApproveNote] = useState('');
 
   const [editKey, setEditKey] = useState<AdminDeveloperKeyRow | null>(null);
   const [editScopes, setEditScopes] = useState<Set<string>>(new Set());
-  const [editRpm, setEditRpm] = useState("");
+  const [editRpm, setEditRpm] = useState('');
 
   useEffect(() => {
     setCeiling(new Set(developer.approvedScopes));
@@ -126,7 +126,7 @@ export default function AdminDeveloperEditModal({
       setTimeout(() => setCeilingSaved(false), 2000);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Save failed");
+      alert(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setCeilingBusy(false);
     }
@@ -135,8 +135,8 @@ export default function AdminDeveloperEditModal({
   const openApprove = (k: AdminDeveloperKeyRow) => {
     setApproveKey(k);
     setApproveScopes(new Set(k.requestedScopes));
-    setApproveRpm("");
-    setApproveNote("");
+    setApproveRpm('');
+    setApproveNote('');
   };
 
   const submitApprove = async () => {
@@ -144,7 +144,7 @@ export default function AdminDeveloperEditModal({
     setRowBusy(approveKey.id);
     try {
       const rpm =
-        approveRpm.trim() === ""
+        approveRpm.trim() === ''
           ? null
           : Math.max(0, parseInt(approveRpm, 10) || 0);
       const res = await approveAdminDeveloperKey(
@@ -161,21 +161,21 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Approve failed");
+      alert(e instanceof Error ? e.message : 'Approve failed');
     } finally {
       setRowBusy(null);
     }
   };
 
   const submitRejectKey = async (k: AdminDeveloperKeyRow) => {
-    if (!confirm("Reject this key request?")) return;
+    if (!confirm('Reject this key request?')) return;
     setRowBusy(k.id);
     try {
       await rejectAdminDeveloperKey(developer.userId, k.id);
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Reject failed");
+      alert(e instanceof Error ? e.message : 'Reject failed');
     } finally {
       setRowBusy(null);
     }
@@ -185,7 +185,7 @@ export default function AdminDeveloperEditModal({
     setEditKey(k);
     setEditScopes(new Set(k.scopes));
     setEditRpm(
-      k.rateLimitPerMinute != null ? String(k.rateLimitPerMinute) : ""
+      k.rateLimitPerMinute != null ? String(k.rateLimitPerMinute) : ''
     );
   };
 
@@ -194,7 +194,7 @@ export default function AdminDeveloperEditModal({
     setRowBusy(editKey.id);
     try {
       const rpm =
-        editRpm.trim() === "" ? null : Math.max(0, parseInt(editRpm, 10) || 0);
+        editRpm.trim() === '' ? null : Math.max(0, parseInt(editRpm, 10) || 0);
       await patchAdminDeveloperKey(developer.userId, editKey.id, {
         scopes: [...editScopes],
         rateLimitPerMinute: rpm,
@@ -203,7 +203,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Save failed");
+      alert(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setRowBusy(null);
     }
@@ -217,7 +217,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Revoke failed");
+      alert(e instanceof Error ? e.message : 'Revoke failed');
     } finally {
       setRowBusy(null);
     }
@@ -230,7 +230,7 @@ export default function AdminDeveloperEditModal({
     setTimeout(() => setRevealedCopied(false), 2000);
   };
 
-  const activeIndex = tab === "ceiling" ? 0 : 1;
+  const activeIndex = tab === 'ceiling' ? 0 : 1;
 
   const approveKeyFromCatalog = useMemo(
     () =>
@@ -296,7 +296,7 @@ export default function AdminDeveloperEditModal({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {developer.status === "active" && onProfileSuspend && (
+            {developer.status === 'active' && onProfileSuspend && (
               <button
                 type="button"
                 disabled={profileActionBusy}
@@ -309,7 +309,7 @@ export default function AdminDeveloperEditModal({
                 Suspend
               </button>
             )}
-            {developer.status !== "active" && onProfileReactivate && (
+            {developer.status !== 'active' && onProfileReactivate && (
               <button
                 type="button"
                 disabled={profileActionBusy}
@@ -332,23 +332,23 @@ export default function AdminDeveloperEditModal({
           <div
             className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
             style={{
-              width: "calc(50% - 0.25rem)",
-              left: activeIndex === 0 ? "0.25rem" : "calc(50%)",
+              width: 'calc(50% - 0.25rem)',
+              left: activeIndex === 0 ? '0.25rem' : 'calc(50%)',
             }}
             aria-hidden
           />
           <button
             type="button"
-            onClick={() => setTab("ceiling")}
-            className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${tab === "ceiling" ? "text-white" : "text-zinc-400 hover:text-zinc-200"}`}
+            onClick={() => setTab('ceiling')}
+            className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${tab === 'ceiling' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
           >
             <MdShield className="w-3.5 h-3.5" />
             Scope ceiling
           </button>
           <button
             type="button"
-            onClick={() => setTab("keys")}
-            className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${tab === "keys" ? "text-white" : "text-zinc-400 hover:text-zinc-200"}`}
+            onClick={() => setTab('keys')}
+            className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${tab === 'keys' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
           >
             <MdVpnKey className="w-3.5 h-3.5" />
             Keys
@@ -360,7 +360,7 @@ export default function AdminDeveloperEditModal({
           </button>
         </nav>
 
-        {tab === "ceiling" && (
+        {tab === 'ceiling' && (
           <div className="space-y-4">
             <p className="text-xs text-zinc-500">
               Scopes checked here are the maximum this developer can assign to
@@ -383,15 +383,15 @@ export default function AdminDeveloperEditModal({
                 </>
               ) : (
                 <>
-                  <MdSave className="w-4 h-4" />{" "}
-                  {ceilingBusy ? "Saving…" : "Save ceiling"}
+                  <MdSave className="w-4 h-4" />{' '}
+                  {ceilingBusy ? 'Saving…' : 'Save ceiling'}
                 </>
               )}
             </button>
           </div>
         )}
 
-        {tab === "keys" && (
+        {tab === 'keys' && (
           <div>
             {keysLoading ? (
               <div className="flex justify-center py-12">
@@ -414,7 +414,7 @@ export default function AdminDeveloperEditModal({
                 </thead>
                 <tbody className="divide-y divide-zinc-800/80">
                   {keys.map((k) => {
-                    const st = k.revokedAt ? "revoked" : (k.status ?? "active");
+                    const st = k.revokedAt ? 'revoked' : (k.status ?? 'active');
                     return (
                       <tr key={k.id} className="hover:bg-zinc-800/20">
                         <td className={ADMIN_TD}>
@@ -433,24 +433,24 @@ export default function AdminDeveloperEditModal({
                           </span>
                         </td>
                         <td className={ADMIN_TD}>
-                          {k.rateLimitPerMinute ?? "—"}
+                          {k.rateLimitPerMinute ?? '—'}
                         </td>
                         <td className={`${ADMIN_TD} whitespace-nowrap`}>
                           {k.lastUsedAt
                             ? new Date(k.lastUsedAt).toLocaleDateString()
-                            : "—"}
+                            : '—'}
                         </td>
                         <td className={`${ADMIN_TD} whitespace-nowrap`}>
                           {k.revokedAt ? (
                             <span className="text-xs text-zinc-600">
                               Revoked
                             </span>
-                          ) : k.status === "pending" ? (
+                          ) : k.status === 'pending' ? (
                             <div className="flex gap-1">
                               <Button
                                 type="button"
                                 variant="primary"
-                                size={adminDownsizeButtonSize("xs")}
+                                size={adminDownsizeButtonSize('xs')}
                                 disabled={rowBusy === k.id}
                                 onClick={() => openApprove(k)}
                                 className="!bg-emerald-800/80 hover:!bg-emerald-700"
@@ -460,19 +460,19 @@ export default function AdminDeveloperEditModal({
                               <Button
                                 type="button"
                                 variant="outline"
-                                size={adminDownsizeButtonSize("xs")}
+                                size={adminDownsizeButtonSize('xs')}
                                 disabled={rowBusy === k.id}
                                 onClick={() => void submitRejectKey(k)}
                               >
                                 Reject
                               </Button>
                             </div>
-                          ) : k.status === "active" ? (
+                          ) : k.status === 'active' ? (
                             <div className="flex gap-1">
                               <Button
                                 type="button"
                                 variant="outline"
-                                size={adminDownsizeButtonSize("xs")}
+                                size={adminDownsizeButtonSize('xs')}
                                 disabled={rowBusy === k.id}
                                 onClick={() => openEdit(k)}
                               >
@@ -481,7 +481,7 @@ export default function AdminDeveloperEditModal({
                               <Button
                                 type="button"
                                 variant="danger"
-                                size={adminDownsizeButtonSize("xs")}
+                                size={adminDownsizeButtonSize('xs')}
                                 disabled={rowBusy === k.id}
                                 onClick={() => void doRevoke(k)}
                               >
@@ -510,7 +510,7 @@ export default function AdminDeveloperEditModal({
             <Button
               type="button"
               variant="ghost"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               onClick={() => setApproveKey(null)}
             >
               Cancel
@@ -518,7 +518,7 @@ export default function AdminDeveloperEditModal({
             <Button
               type="button"
               variant="primary"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               disabled={approveScopes.size === 0 || rowBusy != null}
               onClick={() => void submitApprove()}
               className="!bg-emerald-600 hover:!bg-emerald-500"
@@ -578,7 +578,7 @@ export default function AdminDeveloperEditModal({
             <Button
               type="button"
               variant="primary"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               onClick={() => void copyRevealed()}
               className="flex-1 !bg-emerald-700 hover:!bg-emerald-600"
             >
@@ -587,12 +587,12 @@ export default function AdminDeveloperEditModal({
               ) : (
                 <MdContentCopy className="w-4 h-4 inline mr-1" />
               )}
-              {revealedCopied ? "Copied" : "Copy secret"}
+              {revealedCopied ? 'Copied' : 'Copy secret'}
             </Button>
             <Button
               type="button"
               variant="outline"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               onClick={() => setRevealedSecret(null)}
             >
               Done
@@ -609,14 +609,14 @@ export default function AdminDeveloperEditModal({
       <AdminModal
         open={!!editKey}
         onClose={() => setEditKey(null)}
-        title={editKey ? `Edit key — ${editKey.name}` : "Edit key"}
+        title={editKey ? `Edit key — ${editKey.name}` : 'Edit key'}
         size="md"
         footer={
           <>
             <Button
               type="button"
               variant="ghost"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               onClick={() => setEditKey(null)}
             >
               Cancel
@@ -624,7 +624,7 @@ export default function AdminDeveloperEditModal({
             <Button
               type="button"
               variant="primary"
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               disabled={editScopes.size === 0 || rowBusy != null}
               onClick={() => void saveEdit()}
             >

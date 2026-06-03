@@ -1,0 +1,7 @@
+dist
+server/dist
+node_modules
+package-lock.json
+server/data
+*.md
+docker-compose*.yml

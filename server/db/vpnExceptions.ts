@@ -60,7 +60,11 @@ export async function isVpnException(userId: string): Promise<boolean> {
     .executeTakeFirst();
 
   const isException = !!result;
-  await redisConnection.setex(`vpn_exception:${userId}`, CACHE_TTL, isException ? '1' : '0');
+  await redisConnection.setex(
+    `vpn_exception:${userId}`,
+    CACHE_TTL,
+    isException ? '1' : '0'
+  );
   return isException;
 }
 
@@ -169,6 +173,10 @@ export async function isVpnGateEnabled(): Promise<boolean> {
 
   const settings = await getVpnGateSettings();
   const enabled = settings['vpn_gate_enabled'] ?? false;
-  await redisConnection.setex('vpn_gate_enabled', GATE_CACHE_TTL, enabled ? '1' : '0');
+  await redisConnection.setex(
+    'vpn_gate_enabled',
+    GATE_CACHE_TTL,
+    enabled ? '1' : '0'
+  );
   return enabled;
 }

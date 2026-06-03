@@ -1,30 +1,30 @@
-import { Server as SocketServer, Socket } from "socket.io";
-import type { Server as HttpServer } from "http";
-import { updateFlight, type ClientFlight } from "../db/flights.js";
-import { validateSessionAccess } from "../middleware/sessionAccess.js";
-import { getSessionById } from "../db/sessions.js";
-import { getFlightsIO } from "../realtime/socketRegistry.js";
+import { Server as SocketServer, Socket } from 'socket.io';
+import type { Server as HttpServer } from 'http';
+import { updateFlight, type ClientFlight } from '../db/flights.js';
+import { validateSessionAccess } from '../middleware/sessionAccess.js';
+import { getSessionById } from '../db/sessions.js';
+import { getFlightsIO } from '../realtime/socketRegistry.js';
 import {
   validateSessionId,
   validateAccessId,
   validateFlightId,
-} from "../utils/validation.js";
+} from '../utils/validation.js';
 import {
   sanitizeString,
   sanitizeSquawk,
   sanitizeFlightLevel,
-} from "../utils/sanitization.js";
-import { mainDb } from "../db/connection.js";
-import { createHandshakeRateLimiter } from "./handshakeRateLimit.js";
+} from '../utils/sanitization.js';
+import { mainDb } from '../db/connection.js';
+import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 import {
   isAdvancedNetworkSession,
   getNetworkKind,
   type NetworkKind,
-} from "../utils/advancedNetworkSession.js";
-import { getCachedExternalArrivals } from "../realtime/arrivals.js";
-import { getFlightSourceSessionId } from "../realtime/flightsRead.js";
-import { setArrivalsIO as registerArrivalsIO } from "../realtime/socketRegistry.js";
-import { setSessionMetaFromRow } from "../realtime/activeSessions.js";
+} from '../utils/advancedNetworkSession.js';
+import { getCachedExternalArrivals } from '../realtime/arrivals.js';
+import { getFlightSourceSessionId } from '../realtime/flightsRead.js';
+import { setArrivalsIO as registerArrivalsIO } from '../realtime/socketRegistry.js';
+import { setSessionMetaFromRow } from '../realtime/activeSessions.js';
 
 interface ArrivalUpdateData {
   flightId: string | number;
@@ -34,14 +34,14 @@ interface ArrivalUpdateData {
 let io: SocketServer;
 export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
   io = new SocketServer(httpServer, {
-    path: "/sockets/arrivals",
-    allowRequest: createHandshakeRateLimiter({ scope: "arrivals" }),
+    path: '/sockets/arrivals',
+    allowRequest: createHandshakeRateLimiter({ scope: 'arrivals' }),
     cors: {
       origin: [
-        "http://localhost:5173",
-        "http://localhost:9901",
-        "https://pfcontrol.com",
-        "https://canary.pfcontrol.com",
+        'http://localhost:5173',
+        'http://localhost:9901',
+        'https://pfcontrol.com',
+        'https://canary.pfcontrol.com',
       ],
       credentials: true,
     },
@@ -50,7 +50,7 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
     },
   });
 
-  io.on("connection", async (socket: Socket) => {
+  io.on('connection', async (socket: Socket) => {
     try {
       const sessionId = validateSessionId(
         socket.handshake.query.sessionId as string
@@ -86,14 +86,14 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
             session.airport_icao,
             networkKind
           );
-          socket.emit("initialExternalArrivals", externalArrivals);
+          socket.emit('initialExternalArrivals', externalArrivals);
         }
       } catch (error) {
-        console.error("Error fetching external arrivals:", error);
+        console.error('Error fetching external arrivals:', error);
       }
 
       socket.on(
-        "updateArrival",
+        'updateArrival',
         async ({ flightId, updates }: ArrivalUpdateData) => {
           const sessionId = socket.data.sessionId;
           const session = socket.data.session;
@@ -107,21 +107,21 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
             );
 
             if (!sourceSessionId) {
-              socket.emit("arrivalError", {
-                action: "update",
+              socket.emit('arrivalError', {
+                action: 'update',
                 flightId,
-                error: "Flight not found in any session",
+                error: 'Flight not found in any session',
               });
               return;
             }
 
             const allowedFields = [
-              "clearedfl",
-              "status",
-              "star",
-              "remark",
-              "squawk",
-              "gate",
+              'clearedfl',
+              'status',
+              'star',
+              'remark',
+              'squawk',
+              'gate',
             ];
             const filteredUpdates: Record<string, unknown> = {};
 
@@ -132,29 +132,29 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
             }
 
             if (Object.keys(filteredUpdates).length === 0) {
-              socket.emit("arrivalError", {
-                action: "update",
+              socket.emit('arrivalError', {
+                action: 'update',
                 flightId,
-                error: "No valid fields to update",
+                error: 'No valid fields to update',
               });
               return;
             }
 
             if (
               filteredUpdates.clearedfl &&
-              typeof filteredUpdates.clearedfl === "string"
+              typeof filteredUpdates.clearedfl === 'string'
             )
               filteredUpdates.clearedfl = sanitizeFlightLevel(
                 filteredUpdates.clearedfl
               );
             if (
               filteredUpdates.star &&
-              typeof filteredUpdates.star === "string"
+              typeof filteredUpdates.star === 'string'
             )
               filteredUpdates.star = sanitizeString(filteredUpdates.star, 16);
             if (
               filteredUpdates.remark &&
-              typeof filteredUpdates.remark === "string"
+              typeof filteredUpdates.remark === 'string'
             )
               filteredUpdates.remark = sanitizeString(
                 filteredUpdates.remark,
@@ -162,12 +162,12 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
               );
             if (
               filteredUpdates.squawk &&
-              typeof filteredUpdates.squawk === "string"
+              typeof filteredUpdates.squawk === 'string'
             )
               filteredUpdates.squawk = sanitizeSquawk(filteredUpdates.squawk);
             if (
               filteredUpdates.gate &&
-              typeof filteredUpdates.gate === "string"
+              typeof filteredUpdates.gate === 'string'
             )
               filteredUpdates.gate = sanitizeString(filteredUpdates.gate, 8);
 
@@ -182,23 +182,23 @@ export function setupArrivalsWebsocket(httpServer: HttpServer): SocketServer {
               if (flightsIO) {
                 flightsIO
                   .to(sourceSessionId)
-                  .emit("flightUpdated", updatedFlight);
+                  .emit('flightUpdated', updatedFlight);
               }
 
-              io.to(sessionId).emit("arrivalUpdated", updatedFlight);
+              io.to(sessionId).emit('arrivalUpdated', updatedFlight);
             } else {
-              socket.emit("arrivalError", {
-                action: "update",
+              socket.emit('arrivalError', {
+                action: 'update',
                 flightId,
-                error: "Flight not found",
+                error: 'Flight not found',
               });
             }
           } catch (error) {
-            console.error("Error updating arrival via websocket:", error);
-            socket.emit("arrivalError", {
-              action: "update",
+            console.error('Error updating arrival via websocket:', error);
+            socket.emit('arrivalError', {
+              action: 'update',
               flightId,
-              error: "Failed to update arrival",
+              error: 'Failed to update arrival',
             });
           }
         }
@@ -222,16 +222,16 @@ async function findFlightSourceSession(
 
   try {
     let query = mainDb
-      .selectFrom("flights as f")
-      .innerJoin("sessions as s", "s.session_id", "f.session_id")
-      .select("f.session_id")
-      .where("f.id", "=", flightId)
-      .where("s.airport_icao", "!=", arrivalAirport.toUpperCase());
+      .selectFrom('flights as f')
+      .innerJoin('sessions as s', 's.session_id', 'f.session_id')
+      .select('f.session_id')
+      .where('f.id', '=', flightId)
+      .where('s.airport_icao', '!=', arrivalAirport.toUpperCase());
 
-    if (networkKind === "pfatc") {
-      query = query.where("s.is_pfatc", "=", true);
-    } else if (networkKind === "advanced_atc") {
-      query = query.where("s.is_advanced_atc", "=", true);
+    if (networkKind === 'pfatc') {
+      query = query.where('s.is_pfatc', '=', true);
+    } else if (networkKind === 'advanced_atc') {
+      query = query.where('s.is_advanced_atc', '=', true);
     } else {
       return null;
     }
@@ -239,7 +239,7 @@ async function findFlightSourceSession(
     const row = await query.executeTakeFirst();
     return row?.session_id ?? null;
   } catch (error) {
-    console.error("Error finding flight source session:", error);
+    console.error('Error finding flight source session:', error);
     return null;
   }
 }

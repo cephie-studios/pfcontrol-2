@@ -1,21 +1,21 @@
-import { useEffect, type ReactNode } from "react";
-import { MdClose } from "react-icons/md";
+import { useEffect, type ReactNode } from 'react';
+import { MdClose } from 'react-icons/md';
 
 type AdminModalProps = {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
-  size?: "sm" | "md" | "lg" | "xl" | "full";
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   footer?: ReactNode;
 };
 
 const SIZE_CLASS = {
-  sm: "max-w-md",
-  md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
-  full: "max-w-6xl",
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+  full: 'max-w-6xl',
 };
 
 export default function AdminModal({
@@ -23,19 +23,19 @@ export default function AdminModal({
   onClose,
   title,
   children,
-  size = "lg",
+  size = 'lg',
   footer,
 }: AdminModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
     };
   }, [open, onClose]);
 

@@ -1,5 +1,5 @@
-import type { Server as SocketServer } from "socket.io";
-import { persistWebsocketSnapshots } from "../db/websocketSnapshots.js";
+import type { Server as SocketServer } from 'socket.io';
+import { persistWebsocketSnapshots } from '../db/websocketSnapshots.js';
 
 export type RegisteredSocketNamespace = {
   id: string;
@@ -105,7 +105,7 @@ export async function getAdminSocketStatsWithHistory(): Promise<
   }>
 > {
   const { getWebsocketHourlyHistory } =
-    await import("../db/websocketSnapshots.js");
+    await import('../db/websocketSnapshots.js');
   const hourly = await getWebsocketHourlyHistory();
   return getAdminSocketStats().map((ns) => ({
     ...ns,

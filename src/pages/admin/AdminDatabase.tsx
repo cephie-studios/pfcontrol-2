@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { MdStorage } from "react-icons/md";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MdStorage } from 'react-icons/md';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import {
   Bar,
   BarChart,
@@ -10,24 +10,24 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminSectionTitle from "../../components/admin/AdminSectionTitle";
-import AdminTable from "../../components/admin/AdminTable";
+} from 'recharts';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminSectionClass,
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchAdminDatabaseStats,
   type AdminDatabaseStatsResponse,
-} from "../../utils/fetch/admin";
+} from '../../utils/fetch/admin';
 
 export default function AdminDatabase() {
   const [data, setData] = useState<AdminDatabaseStatsResponse | null>(null);
@@ -40,7 +40,7 @@ export default function AdminDatabase() {
       setData(await fetchAdminDatabaseStats());
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load database stats"
+        err instanceof Error ? err.message : 'Failed to load database stats'
       );
     } finally {
       setLoading(false);
@@ -94,10 +94,10 @@ export default function AdminDatabase() {
   );
 
   const growthPercent = Math.max(0, data?.growthPercent30d ?? 0);
-  const dailyNetGrowthLabel = data?.dailyNetGrowthFormatted ?? "—";
+  const dailyNetGrowthLabel = data?.dailyNetGrowthFormatted ?? '—';
 
-  const todayLabel = data?.activitySummary?.today ?? "Today";
-  const yesterdayLabel = data?.activitySummary?.yesterday ?? "Yesterday";
+  const todayLabel = data?.activitySummary?.today ?? 'Today';
+  const yesterdayLabel = data?.activitySummary?.yesterday ?? 'Yesterday';
 
   return (
     <AdminLayout>
@@ -124,14 +124,14 @@ export default function AdminDatabase() {
         <>
           <AdminStatStrip
             items={[
-              { label: "Total size", value: data.totalFormatted },
+              { label: 'Total size', value: data.totalFormatted },
               {
-                label: "Est. daily net growth",
+                label: 'Est. daily net growth',
                 value: dailyNetGrowthLabel,
                 sub: data.projectionMethodology,
               },
               {
-                label: "30-day projection",
+                label: '30-day projection',
                 value: data.projected30dFormatted,
                 sub: `+${growthPercent}% vs today`,
               },
@@ -140,7 +140,7 @@ export default function AdminDatabase() {
           />
 
           <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${adminSectionClass("!mt-0 !pt-0 !border-t-0")}`}
+            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
           >
             <div>
               <AdminSectionTitle>Table sizes (top 12)</AdminSectionTitle>
@@ -157,16 +157,16 @@ export default function AdminDatabase() {
                       type="category"
                       dataKey="name"
                       width={120}
-                      tick={{ fill: "#a1a1aa", fontSize: 10 }}
+                      tick={{ fill: '#a1a1aa', fontSize: 10 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip
-                      formatter={(v: number) => [`${v} MB`, "Size"]}
+                      formatter={(v: number) => [`${v} MB`, 'Size']}
                       labelFormatter={(name) => String(name)}
                       contentStyle={{
-                        background: "#09090b",
-                        border: "1px solid #3f3f46",
+                        background: '#09090b',
+                        border: '1px solid #3f3f46',
                         borderRadius: 8,
                       }}
                     />
@@ -190,11 +190,11 @@ export default function AdminDatabase() {
                     <XAxis dataKey="date" hide />
                     <YAxis hide />
                     <Tooltip
-                      formatter={(v: number) => [`${v} GB`, "Projected"]}
+                      formatter={(v: number) => [`${v} GB`, 'Projected']}
                       labelFormatter={(label) => String(label)}
                       contentStyle={{
-                        background: "#09090b",
-                        border: "1px solid #3f3f46",
+                        background: '#09090b',
+                        border: '1px solid #3f3f46',
                         borderRadius: 8,
                       }}
                     />

@@ -1,26 +1,26 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
-import { recordTableDeletes } from "./databaseMetrics.js";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
+import { recordTableDeletes } from './databaseMetrics.js';
 
 function parseStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((x): x is string => typeof x === "string");
+  return value.filter((x): x is string => typeof x === 'string');
 }
 
 export async function getDeveloperProfile(userId: string) {
   return mainDb
-    .selectFrom("developer_profiles")
+    .selectFrom('developer_profiles')
     .selectAll()
-    .where("user_id", "=", userId)
+    .where('user_id', '=', userId)
     .executeTakeFirst();
 }
 
 export async function getLatestDeveloperApplication(userId: string) {
   return mainDb
-    .selectFrom("developer_applications")
+    .selectFrom('developer_applications')
     .selectAll()
-    .where("user_id", "=", userId)
-    .orderBy("created_at", "desc")
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
     .executeTakeFirst();
 }
 
@@ -31,14 +31,14 @@ export async function createDeveloperApplication(input: {
   requestedScopes: string[];
 }) {
   return mainDb
-    .insertInto("developer_applications")
+    .insertInto('developer_applications')
     .values({
       id: sql`DEFAULT`,
       user_id: input.userId,
       who_text: input.whoText,
       why_text: input.whyText,
       requested_scopes: sql`CAST(${JSON.stringify(input.requestedScopes)} AS jsonb)`,
-      status: "pending",
+      status: 'pending',
       created_at: new Date(),
       updated_at: new Date(),
     })
@@ -48,13 +48,13 @@ export async function createDeveloperApplication(input: {
 
 export async function updateApplicationReview(input: {
   applicationId: number;
-  status: "approved" | "rejected";
+  status: 'approved' | 'rejected';
   reviewedBy: string;
   reviewerNote: string | null;
   approvedScopes: string[] | null;
 }) {
   return mainDb
-    .updateTable("developer_applications")
+    .updateTable('developer_applications')
     .set({
       status: input.status,
       reviewed_by: input.reviewedBy,
@@ -66,7 +66,7 @@ export async function updateApplicationReview(input: {
           : null,
       updated_at: new Date(),
     })
-    .where("id", "=", input.applicationId)
+    .where('id', '=', input.applicationId)
     .returningAll()
     .executeTakeFirst();
 }
@@ -74,10 +74,10 @@ export async function updateApplicationReview(input: {
 export async function upsertDeveloperProfile(input: {
   userId: string;
   approvedScopes: string[];
-  status?: "active" | "suspended";
+  status?: 'active' | 'suspended';
   defaultRateLimitPerMinute?: number | null;
 }) {
-  const status = input.status ?? "active";
+  const status = input.status ?? 'active';
   const insertRpm =
     input.defaultRateLimitPerMinute !== undefined
       ? input.defaultRateLimitPerMinute
@@ -93,7 +93,7 @@ export async function upsertDeveloperProfile(input: {
   };
 
   return mainDb
-    .insertInto("developer_profiles")
+    .insertInto('developer_profiles')
     .values({
       user_id: input.userId,
       approved_scopes: sql`CAST(${JSON.stringify(input.approvedScopes)} AS jsonb)`,
@@ -104,7 +104,7 @@ export async function upsertDeveloperProfile(input: {
       created_at: new Date(),
       updated_at: new Date(),
     })
-    .onConflict((oc) => oc.column("user_id").doUpdateSet(updatePatch))
+    .onConflict((oc) => oc.column('user_id').doUpdateSet(updatePatch))
     .returningAll()
     .executeTakeFirst();
 }
@@ -123,7 +123,7 @@ export async function bumpDeveloperAdminNoticeSeq(
   const text =
     clipped.length > 0
       ? clipped
-      : "An administrator updated your developer settings.";
+      : 'An administrator updated your developer settings.';
   await sql`
     UPDATE developer_profiles
     SET
@@ -147,24 +147,24 @@ export async function updateDeveloperProfileApprovedScopes(
   approvedScopes: string[]
 ) {
   return mainDb
-    .updateTable("developer_profiles")
+    .updateTable('developer_profiles')
     .set({
       approved_scopes: sql`CAST(${JSON.stringify(approvedScopes)} AS jsonb)`,
       updated_at: new Date(),
     })
-    .where("user_id", "=", userId)
+    .where('user_id', '=', userId)
     .returningAll()
     .executeTakeFirst();
 }
 
 export async function setDeveloperProfileStatus(
   userId: string,
-  status: "active" | "suspended"
+  status: 'active' | 'suspended'
 ) {
   return mainDb
-    .updateTable("developer_profiles")
+    .updateTable('developer_profiles')
     .set({ status, updated_at: new Date() })
-    .where("user_id", "=", userId)
+    .where('user_id', '=', userId)
     .returningAll()
     .executeTakeFirst();
 }
@@ -174,12 +174,12 @@ export async function updateDeveloperNotificationEmail(
   email: string | null
 ) {
   return mainDb
-    .updateTable("developer_profiles")
+    .updateTable('developer_profiles')
     .set({
       notification_email: email,
       updated_at: new Date(),
     })
-    .where("user_id", "=", userId)
+    .where('user_id', '=', userId)
     .returningAll()
     .executeTakeFirst();
 }
@@ -191,18 +191,18 @@ export async function listDeveloperApplications(filters: {
 }) {
   const offset = (filters.page - 1) * filters.limit;
   let q = mainDb
-    .selectFrom("developer_applications")
+    .selectFrom('developer_applications')
     .selectAll()
-    .orderBy("created_at", "desc");
+    .orderBy('created_at', 'desc');
   if (filters.status) {
-    q = q.where("status", "=", filters.status);
+    q = q.where('status', '=', filters.status);
   }
   const rows = await q.limit(filters.limit).offset(offset).execute();
   let countQ = mainDb
-    .selectFrom("developer_applications")
-    .select(sql<number>`count(*)::int`.as("c"));
+    .selectFrom('developer_applications')
+    .select(sql<number>`count(*)::int`.as('c'));
   if (filters.status) {
-    countQ = countQ.where("status", "=", filters.status);
+    countQ = countQ.where('status', '=', filters.status);
   }
   const countRow = await countQ.executeTakeFirst();
   return { applications: rows, total: Number(countRow?.c ?? 0) };
@@ -210,50 +210,50 @@ export async function listDeveloperApplications(filters: {
 
 export async function getDeveloperApplicationById(id: number) {
   return mainDb
-    .selectFrom("developer_applications")
+    .selectFrom('developer_applications')
     .selectAll()
-    .where("id", "=", id)
+    .where('id', '=', id)
     .executeTakeFirst();
 }
 
 export async function listDeveloperKeysForUser(userId: string) {
   return mainDb
-    .selectFrom("developer_api_keys")
+    .selectFrom('developer_api_keys')
     .select([
-      "id",
-      "user_id",
-      "name",
-      "prefix",
-      "scopes",
-      "status",
-      "requested_scopes",
-      "rate_limit_per_minute",
-      "reviewed_at",
-      "reviewer_note",
-      "created_at",
-      "last_used_at",
-      "revoked_at",
+      'id',
+      'user_id',
+      'name',
+      'prefix',
+      'scopes',
+      'status',
+      'requested_scopes',
+      'rate_limit_per_minute',
+      'reviewed_at',
+      'reviewer_note',
+      'created_at',
+      'last_used_at',
+      'revoked_at',
     ])
-    .where("user_id", "=", userId)
-    .orderBy("created_at", "desc")
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
     .execute();
 }
 
 export async function listDeveloperApiKeysForAdmin(userId: string) {
   return mainDb
-    .selectFrom("developer_api_keys")
+    .selectFrom('developer_api_keys')
     .selectAll()
-    .where("user_id", "=", userId)
-    .orderBy("created_at", "desc")
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
     .execute();
 }
 
 export async function getDeveloperApiKeyForUser(keyId: string, userId: string) {
   return mainDb
-    .selectFrom("developer_api_keys")
+    .selectFrom('developer_api_keys')
     .selectAll()
-    .where("id", "=", keyId)
-    .where("user_id", "=", userId)
+    .where('id', '=', keyId)
+    .where('user_id', '=', userId)
     .executeTakeFirst();
 }
 
@@ -266,14 +266,14 @@ export async function createDeveloperApiKey(input: {
   rateLimitPerMinute?: number | null;
 }) {
   return mainDb
-    .insertInto("developer_api_keys")
+    .insertInto('developer_api_keys')
     .values({
       user_id: input.userId,
       name: input.name,
       prefix: input.prefix,
       secret_hash: input.secretHash,
       scopes: sql`CAST(${JSON.stringify(input.scopes)} AS jsonb)`,
-      status: "active",
+      status: 'active',
       requested_scopes: null,
       rate_limit_per_minute: input.rateLimitPerMinute ?? null,
       created_at: new Date(),
@@ -289,14 +289,14 @@ export async function insertPendingDeveloperApiKey(input: {
   requestedScopes: string[];
 }) {
   return mainDb
-    .insertInto("developer_api_keys")
+    .insertInto('developer_api_keys')
     .values({
       user_id: input.userId,
       name: input.name,
       prefix: input.prefix,
       secret_hash: null,
       scopes: sql`'[]'::jsonb`,
-      status: "pending",
+      status: 'pending',
       requested_scopes: sql`CAST(${JSON.stringify(input.requestedScopes)} AS jsonb)`,
       created_at: new Date(),
     })
@@ -315,9 +315,9 @@ export async function approvePendingDeveloperApiKey(input: {
   reviewerNote: string | null;
 }) {
   return mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({
-      status: "active",
+      status: 'active',
       scopes: sql`CAST(${JSON.stringify(input.approvedScopes)} AS jsonb)`,
       requested_scopes: null,
       prefix: input.prefix,
@@ -327,10 +327,10 @@ export async function approvePendingDeveloperApiKey(input: {
       reviewed_at: new Date(),
       reviewer_note: input.reviewerNote,
     })
-    .where("id", "=", input.keyId)
-    .where("user_id", "=", input.userId)
-    .where("status", "=", "pending")
-    .where("revoked_at", "is", null)
+    .where('id', '=', input.keyId)
+    .where('user_id', '=', input.userId)
+    .where('status', '=', 'pending')
+    .where('revoked_at', 'is', null)
     .returningAll()
     .executeTakeFirst();
 }
@@ -342,17 +342,17 @@ export async function rejectPendingDeveloperApiKey(input: {
   reviewerNote: string | null;
 }) {
   return mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({
-      status: "rejected",
+      status: 'rejected',
       reviewed_by: input.reviewedBy,
       reviewed_at: new Date(),
       reviewer_note: input.reviewerNote,
     })
-    .where("id", "=", input.keyId)
-    .where("user_id", "=", input.userId)
-    .where("status", "=", "pending")
-    .where("revoked_at", "is", null)
+    .where('id', '=', input.keyId)
+    .where('user_id', '=', input.userId)
+    .where('status', '=', 'pending')
+    .where('revoked_at', 'is', null)
     .returningAll()
     .executeTakeFirst();
 }
@@ -364,26 +364,26 @@ export async function updateDeveloperApiKeyScopesAndRate(input: {
   rateLimitPerMinute: number | null;
 }) {
   return mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({
       scopes: sql`CAST(${JSON.stringify(input.scopes)} AS jsonb)`,
       rate_limit_per_minute: input.rateLimitPerMinute,
     })
-    .where("id", "=", input.keyId)
-    .where("user_id", "=", input.userId)
-    .where("status", "=", "active")
-    .where("revoked_at", "is", null)
+    .where('id', '=', input.keyId)
+    .where('user_id', '=', input.userId)
+    .where('status', '=', 'active')
+    .where('revoked_at', 'is', null)
     .returningAll()
     .executeTakeFirst();
 }
 
 export async function revokeDeveloperApiKey(keyId: string, userId: string) {
   return mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({ revoked_at: new Date() })
-    .where("id", "=", keyId)
-    .where("user_id", "=", userId)
-    .where("revoked_at", "is", null)
+    .where('id', '=', keyId)
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
     .returningAll()
     .executeTakeFirst();
 }
@@ -393,10 +393,10 @@ export async function deleteRevokedDeveloperApiKey(
   userId: string
 ) {
   return mainDb
-    .deleteFrom("developer_api_keys")
-    .where("id", "=", keyId)
-    .where("user_id", "=", userId)
-    .where("revoked_at", "is not", null)
+    .deleteFrom('developer_api_keys')
+    .where('id', '=', keyId)
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is not', null)
     .returningAll()
     .executeTakeFirst();
 }
@@ -408,25 +408,25 @@ export async function rotateDeveloperApiKey(input: {
   secretHash: string;
 }) {
   return mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({
       prefix: input.prefix,
       secret_hash: input.secretHash,
     })
-    .where("id", "=", input.keyId)
-    .where("user_id", "=", input.userId)
-    .where("status", "=", "active")
-    .where("secret_hash", "is not", null)
-    .where("revoked_at", "is", null)
+    .where('id', '=', input.keyId)
+    .where('user_id', '=', input.userId)
+    .where('status', '=', 'active')
+    .where('secret_hash', 'is not', null)
+    .where('revoked_at', 'is', null)
     .returningAll()
     .executeTakeFirst();
 }
 
 export async function touchDeveloperApiKeyLastUsed(keyId: string) {
   await mainDb
-    .updateTable("developer_api_keys")
+    .updateTable('developer_api_keys')
     .set({ last_used_at: new Date() })
-    .where("id", "=", keyId)
+    .where('id', '=', keyId)
     .execute();
 }
 
@@ -458,19 +458,19 @@ export async function findActiveDeveloperKeyBySecretHash(
   secretHash: string
 ): Promise<DeveloperKeyWithProfile | null> {
   const key = await mainDb
-    .selectFrom("developer_api_keys")
+    .selectFrom('developer_api_keys')
     .selectAll()
-    .where("secret_hash", "=", secretHash)
-    .where("status", "=", "active")
-    .where("revoked_at", "is", null)
+    .where('secret_hash', '=', secretHash)
+    .where('status', '=', 'active')
+    .where('revoked_at', 'is', null)
     .executeTakeFirst();
   if (!key || key.secret_hash == null) return null;
   const profile = await mainDb
-    .selectFrom("developer_profiles")
+    .selectFrom('developer_profiles')
     .selectAll()
-    .where("user_id", "=", key.user_id)
+    .where('user_id', '=', key.user_id)
     .executeTakeFirst();
-  if (!profile || profile.status !== "active") return null;
+  if (!profile || profile.status !== 'active') return null;
   const profileApprovedScopes = parseStringArray(profile.approved_scopes);
   const keyScopes = parseStringArray(key.scopes);
   const allowed = new Set(profileApprovedScopes);
@@ -495,7 +495,7 @@ export async function insertDeveloperApiUsage(input: {
 }) {
   try {
     await mainDb
-      .insertInto("developer_api_usage")
+      .insertInto('developer_api_usage')
       .values({
         key_id: input.keyId,
         user_id: input.userId,
@@ -510,23 +510,23 @@ export async function insertDeveloperApiUsage(input: {
       })
       .execute();
   } catch (e) {
-    console.error("[developer_api_usage] insert failed:", e);
+    console.error('[developer_api_usage] insert failed:', e);
   }
 }
 
 export async function listApprovedDevelopersSummary() {
   const profiles = await mainDb
-    .selectFrom("developer_profiles")
+    .selectFrom('developer_profiles')
     .selectAll()
     .execute();
   const keys = await mainDb
-    .selectFrom("developer_api_keys")
-    .select(["user_id", "id", "revoked_at", "status", "secret_hash"])
+    .selectFrom('developer_api_keys')
+    .select(['user_id', 'id', 'revoked_at', 'status', 'secret_hash'])
     .execute();
   const lastUsage = await mainDb
-    .selectFrom("developer_api_usage")
-    .select(["user_id", sql<string>`max(created_at)`.as("last_at")])
-    .groupBy("user_id")
+    .selectFrom('developer_api_usage')
+    .select(['user_id', sql<string>`max(created_at)`.as('last_at')])
+    .groupBy('user_id')
     .execute();
   const lastByUser = new Map(lastUsage.map((r) => [r.user_id, r.last_at]));
   const keyCounts = new Map<
@@ -537,8 +537,8 @@ export async function listApprovedDevelopersSummary() {
     const cur = keyCounts.get(k.user_id) ?? { usable: 0, total: 0, pending: 0 };
     cur.total += 1;
     if (!k.revoked_at) {
-      if (k.status === "pending") cur.pending += 1;
-      if (k.status === "active" && k.secret_hash != null) cur.usable += 1;
+      if (k.status === 'pending') cur.pending += 1;
+      if (k.status === 'active' && k.secret_hash != null) cur.usable += 1;
     }
     keyCounts.set(k.user_id, cur);
   }
@@ -563,15 +563,15 @@ export async function cleanupOldDeveloperUsage(
   cutoff.setDate(cutoff.getDate() - daysToKeep);
   try {
     const result = await mainDb
-      .deleteFrom("developer_api_usage")
-      .where("created_at", "<", cutoff)
+      .deleteFrom('developer_api_usage')
+      .where('created_at', '<', cutoff)
       .executeTakeFirst();
     await recordTableDeletes(
-      "developer_api_usage",
+      'developer_api_usage',
       Number(result?.numDeletedRows ?? 0)
     );
   } catch (e) {
-    console.error("[cleanupOldDeveloperUsage]", e);
+    console.error('[cleanupOldDeveloperUsage]', e);
   }
 }
 
@@ -582,16 +582,16 @@ export async function deleteDeveloperAllDataForUser(
   if (!profile) return false;
   await mainDb.transaction().execute(async (trx) => {
     await trx
-      .deleteFrom("developer_api_keys")
-      .where("user_id", "=", userId)
+      .deleteFrom('developer_api_keys')
+      .where('user_id', '=', userId)
       .execute();
     await trx
-      .deleteFrom("developer_applications")
-      .where("user_id", "=", userId)
+      .deleteFrom('developer_applications')
+      .where('user_id', '=', userId)
       .execute();
     await trx
-      .deleteFrom("developer_profiles")
-      .where("user_id", "=", userId)
+      .deleteFrom('developer_profiles')
+      .where('user_id', '=', userId)
       .execute();
   });
   return true;

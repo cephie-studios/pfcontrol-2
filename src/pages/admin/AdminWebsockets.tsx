@@ -1,28 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
-import { MdCable } from "react-icons/md";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import { adminSectionClass } from "../../components/admin/adminConstants";
-import { AdminSparkline } from "../../components/admin/AdminChart";
-import Loader from "../../components/common/Loader";
-import ErrorScreen from "../../components/common/ErrorScreen";
+import { useCallback, useEffect, useState } from 'react';
+import { MdCable } from 'react-icons/md';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import { adminSectionClass } from '../../components/admin/adminConstants';
+import { AdminSparkline } from '../../components/admin/AdminChart';
+import Loader from '../../components/common/Loader';
+import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchAdminWebsocketStats,
   type AdminWebsocketStatsResponse,
-} from "../../utils/fetch/admin";
+} from '../../utils/fetch/admin';
 
 const NS_COLORS: Record<string, string> = {
-  flights: "#60a5fa",
-  chat: "#34d399",
-  "global-chat": "#a78bfa",
-  overview: "#fbbf24",
-  arrivals: "#f472b6",
-  "session-users": "#2dd4bf",
-  "sector-controller": "#fb7185",
-  "voice-chat": "#94a3b8",
-  notifications: "#38bdf8",
+  flights: '#60a5fa',
+  chat: '#34d399',
+  'global-chat': '#a78bfa',
+  overview: '#fbbf24',
+  arrivals: '#f472b6',
+  'session-users': '#2dd4bf',
+  'sector-controller': '#fb7185',
+  'voice-chat': '#94a3b8',
+  notifications: '#38bdf8',
 };
 
 export default function AdminWebsockets() {
@@ -36,7 +36,7 @@ export default function AdminWebsockets() {
       setData(await fetchAdminWebsocketStats());
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load websocket stats"
+        err instanceof Error ? err.message : 'Failed to load websocket stats'
       );
     } finally {
       setLoading(false);
@@ -85,10 +85,10 @@ export default function AdminWebsockets() {
         <>
           <AdminStatStrip
             items={[
-              { label: "Total connections", value: data.totalConnected },
-              { label: "Namespaces", value: data.namespaces.length },
+              { label: 'Total connections', value: data.totalConnected },
+              { label: 'Namespaces', value: data.namespaces.length },
               {
-                label: "Last updated",
+                label: 'Last updated',
                 value: new Date(data.polledAt).toLocaleTimeString(),
               },
             ]}
@@ -96,10 +96,10 @@ export default function AdminWebsockets() {
           />
 
           <div
-            className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-5 ${adminSectionClass("!mt-0 !pt-0 !border-t-0")}`}
+            className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-5 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
           >
             {data.namespaces.map((ns) => {
-              const color = NS_COLORS[ns.id] ?? "#60a5fa";
+              const color = NS_COLORS[ns.id] ?? '#60a5fa';
               const pct = Math.min(100, (ns.connected / maxConnected) * 100);
               return (
                 <div key={ns.id} className="border-b border-zinc-800/60 pb-4">

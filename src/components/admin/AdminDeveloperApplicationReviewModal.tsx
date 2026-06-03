@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
-import { MdRefresh } from "react-icons/md";
-import AdminModal from "./AdminModal";
-import AdminSectionTitle from "./AdminSectionTitle";
-import { adminDownsizeButtonSize, adminSectionClass } from "./adminConstants";
-import Button from "../common/Button";
-import ScopeTagSelector from "../developers/ScopeTagSelector";
+import { useEffect, useState } from 'react';
+import { MdRefresh } from 'react-icons/md';
+import AdminModal from './AdminModal';
+import AdminSectionTitle from './AdminSectionTitle';
+import { adminDownsizeButtonSize, adminSectionClass } from './adminConstants';
+import Button from '../common/Button';
+import ScopeTagSelector from '../developers/ScopeTagSelector';
 import {
   fetchAdminDeveloperCatalog,
   type AdminDeveloperApplication,
   type AdminScopeCatalogEntry,
-} from "../../utils/fetch/adminDevelopers";
+} from '../../utils/fetch/adminDevelopers';
 
 type Props = {
   application: AdminDeveloperApplication;
@@ -37,8 +37,8 @@ export default function AdminDeveloperApplicationReviewModal({
     () => new Set(application.requestedScopes)
   );
   const [touchDefaultRpm, setTouchDefaultRpm] = useState(false);
-  const [rpmText, setRpmText] = useState("");
-  const [note, setNote] = useState("");
+  const [rpmText, setRpmText] = useState('');
+  const [note, setNote] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,15 +56,15 @@ export default function AdminDeveloperApplicationReviewModal({
   useEffect(() => {
     setApprovedScopes(new Set(application.requestedScopes));
     setTouchDefaultRpm(false);
-    setRpmText("");
-    setNote("");
+    setRpmText('');
+    setNote('');
     setLocalError(null);
   }, [application.id, application.requestedScopes]);
 
   const submitApprove = async () => {
     setLocalError(null);
     if (approvedScopes.size === 0) {
-      setLocalError("Select at least one scope to approve.");
+      setLocalError('Select at least one scope to approve.');
       return;
     }
     const body: {
@@ -76,13 +76,13 @@ export default function AdminDeveloperApplicationReviewModal({
       note: note.trim() ? note.trim() : undefined,
     };
     if (touchDefaultRpm) {
-      if (rpmText.trim() === "") {
+      if (rpmText.trim() === '') {
         body.rateLimitPerMinute = null;
       } else {
         const n = Math.floor(Number(rpmText.trim()));
         if (!Number.isFinite(n) || n < 0) {
           setLocalError(
-            "Default RPM must be a non-negative number, or leave blank for site default."
+            'Default RPM must be a non-negative number, or leave blank for site default.'
           );
           return;
         }
@@ -92,7 +92,7 @@ export default function AdminDeveloperApplicationReviewModal({
     try {
       await onApprove(body);
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : "Approve failed");
+      setLocalError(e instanceof Error ? e.message : 'Approve failed');
     }
   };
 
@@ -107,7 +107,7 @@ export default function AdminDeveloperApplicationReviewModal({
           <Button
             type="button"
             variant="ghost"
-            size={adminDownsizeButtonSize("sm")}
+            size={adminDownsizeButtonSize('sm')}
             disabled={busy}
             onClick={onClose}
           >
@@ -116,7 +116,7 @@ export default function AdminDeveloperApplicationReviewModal({
           <Button
             type="button"
             variant="danger"
-            size={adminDownsizeButtonSize("sm")}
+            size={adminDownsizeButtonSize('sm')}
             disabled={busy}
             onClick={onRequestReject}
           >
@@ -125,7 +125,7 @@ export default function AdminDeveloperApplicationReviewModal({
           <Button
             type="button"
             variant="primary"
-            size={adminDownsizeButtonSize("sm")}
+            size={adminDownsizeButtonSize('sm')}
             disabled={busy || catalog.length === 0}
             onClick={() => void submitApprove()}
             className="!bg-emerald-600 hover:!bg-emerald-500"
@@ -143,7 +143,7 @@ export default function AdminDeveloperApplicationReviewModal({
       </p>
 
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm ${adminSectionClass("!mt-0 !pt-0 !border-t-0")}`}
+        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
       >
         <div>
           <AdminSectionTitle className="!text-[10px] !font-semibold !uppercase !tracking-wider !text-zinc-500 !mb-1">
@@ -158,7 +158,7 @@ export default function AdminDeveloperApplicationReviewModal({
             Why
           </AdminSectionTitle>
           <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
-            {application.whyText || "—"}
+            {application.whyText || '—'}
           </p>
         </div>
       </div>

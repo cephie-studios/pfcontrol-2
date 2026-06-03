@@ -85,12 +85,14 @@ export const AVAILABLE_PERMISSIONS = [
   {
     key: 'pfatc_sector',
     label: 'PFATC Sector Controller',
-    description: 'Edit flights across all PFATC network sessions during events and create PFATC sessions in event mode',
+    description:
+      'Edit flights across all PFATC network sessions during events and create PFATC sessions in event mode',
   },
   {
     key: 'aatc_sector',
     label: 'AATC Sector Controller',
-    description: 'Edit flights across all Advanced ATC sessions during events and create AATC sessions in event mode',
+    description:
+      'Edit flights across all Advanced ATC sessions during events and create AATC sessions in event mode',
   },
 ];
 

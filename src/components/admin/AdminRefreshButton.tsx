@@ -1,6 +1,6 @@
-import { MdRefresh } from "react-icons/md";
-import Button from "../common/Button";
-import { ADMIN_TOOLBAR_HEIGHT } from "./adminConstants";
+import { MdRefresh } from 'react-icons/md';
+import Button from '../common/Button';
+import { ADMIN_TOOLBAR_HEIGHT } from './adminConstants';
 
 type AdminRefreshButtonProps = {
   onClick: () => void;
@@ -15,9 +15,9 @@ export default function AdminRefreshButton({
   onClick,
   disabled,
   loading = false,
-  label = "Refresh",
+  label = 'Refresh',
   iconOnly = false,
-  className = "",
+  className = '',
 }: AdminRefreshButtonProps) {
   return (
     <Button
@@ -34,7 +34,7 @@ export default function AdminRefreshButton({
     >
       <MdRefresh
         size={16}
-        className={`shrink-0 ${iconOnly ? "" : "inline mr-1"} ${loading ? "animate-spin" : ""}`}
+        className={`shrink-0 ${iconOnly ? '' : 'inline mr-1'} ${loading ? 'animate-spin' : ''}`}
       />
       {!iconOnly ? label : null}
     </Button>

@@ -60,8 +60,10 @@ export default function AddCustomFlightModal({
 
   const isLocalArrival = useCallback(
     (arrival: string) =>
-      !!arrival && !!airportIcao && arrival.toUpperCase() === airportIcao.toUpperCase(),
-    [airportIcao],
+      !!arrival &&
+      !!airportIcao &&
+      arrival.toUpperCase() === airportIcao.toUpperCase(),
+    [airportIcao]
   );
 
   const handleChange = useCallback(
@@ -78,16 +80,22 @@ export default function AddCustomFlightModal({
       }
 
       // Auto-update SID when arrival or flight type changes (departures only)
-      if (flightType === 'departure' && (field === 'arrival' || field === 'flight_type')) {
+      if (
+        flightType === 'departure' &&
+        (field === 'arrival' || field === 'flight_type')
+      ) {
         const arrival = field === 'arrival' ? value : formData.arrival || '';
-        const flType = field === 'flight_type' ? value : formData.flight_type || 'IFR';
+        const flType =
+          field === 'flight_type' ? value : formData.flight_type || 'IFR';
 
         if (flType === 'VFR' || isLocalArrival(arrival)) {
           setFormData((prev) => ({ ...prev, sid: 'RADAR VECTORS' }));
         } else if (arrival) {
           try {
             const sids = await fetchSids(airportIcao);
-            const preferred = sids.find((s) => s.length > 0 && !s.includes(' '));
+            const preferred = sids.find(
+              (s) => s.length > 0 && !s.includes(' ')
+            );
             setFormData((prev) => ({ ...prev, sid: preferred || '' }));
           } catch {
             setFormData((prev) => ({ ...prev, sid: '' }));
@@ -97,7 +105,14 @@ export default function AddCustomFlightModal({
         }
       }
     },
-    [airportIcao, flightType, formData.arrival, formData.flight_type, errors, isLocalArrival],
+    [
+      airportIcao,
+      flightType,
+      formData.arrival,
+      formData.flight_type,
+      errors,
+      isLocalArrival,
+    ]
   );
 
   if (!isOpen) return null;
@@ -133,7 +148,9 @@ export default function AddCustomFlightModal({
 
     onAdd({
       ...formData,
-      ...(flightType === 'departure' ? { sid: isRadarVectors ? 'RADAR VECTORS' : formData.sid } : {}),
+      ...(flightType === 'departure'
+        ? { sid: isRadarVectors ? 'RADAR VECTORS' : formData.sid }
+        : {}),
     });
     handleClose();
   };

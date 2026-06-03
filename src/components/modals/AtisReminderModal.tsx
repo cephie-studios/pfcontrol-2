@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Copy, Check, Loader2 } from "lucide-react";
-import Button from "../common/Button";
+import { useState } from 'react';
+import { Copy, Check, Loader2 } from 'lucide-react';
+import Button from '../common/Button';
 
-export type AtisReminderNetworkKind = "pfatc" | "advanced_atc";
+export type AtisReminderNetworkKind = 'pfatc' | 'advanced_atc';
 
 interface AtisReminderModalProps {
   onContinue: () => void;
@@ -30,22 +30,22 @@ export default function AtisReminderModal({
   airportFrequencyType,
   networkSessionKind,
 }: AtisReminderModalProps) {
-  const isAdvancedAtc = networkSessionKind === "advanced_atc";
+  const isAdvancedAtc = networkSessionKind === 'advanced_atc';
   const submitLink = `${window.location?.origin}/submit/${sessionId}`;
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const getFormattedControlName = () => {
     if (!airportControlName) return null;
-    if (airportFrequencyType === "APP") {
-      if (airportIcao === "EGKK") {
+    if (airportFrequencyType === 'APP') {
+      if (airportIcao === 'EGKK') {
         return `${airportControlName} Director`;
       }
       return `${airportControlName} Approach`;
-    } else if (airportFrequencyType === "TWR") {
+    } else if (airportFrequencyType === 'TWR') {
       return `${airportControlName} Tower`;
-    } else if (airportFrequencyType === "GND") {
+    } else if (airportFrequencyType === 'GND') {
       return `${airportControlName} Ground`;
-    } else if (airportFrequencyType === "DEL") {
+    } else if (airportFrequencyType === 'DEL') {
       return `${airportControlName} Delivery`;
     }
     return null;
@@ -63,7 +63,7 @@ export default function AtisReminderModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      console.error('Failed to copy:', err);
     }
   };
 
@@ -74,7 +74,7 @@ export default function AtisReminderModal({
       await navigator.clipboard.writeText(`${airportName}\n\n${formattedAtis}`);
       setCopied(true);
     } catch (err) {
-      console.error("Failed to copy:", err);
+      console.error('Failed to copy:', err);
     }
 
     setTimeout(() => {
@@ -85,10 +85,10 @@ export default function AtisReminderModal({
     }, 500);
   };
 
-  const accentTitle = "text-blue-400";
-  const accentBorder = "border-zinc-500/50";
-  const accentLabel = "text-blue-400";
-  const buttonClass = "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800";
+  const accentTitle = 'text-blue-400';
+  const accentBorder = 'border-zinc-500/50';
+  const accentLabel = 'text-blue-400';
+  const buttonClass = 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800';
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -97,21 +97,22 @@ export default function AtisReminderModal({
       >
         <h2 className={`text-3xl font-bold ${accentTitle} mb-4`}>
           {isAdvancedAtc
-            ? "Advanced ATC ATIS format reminder"
-            : "PFATC Network ATIS format reminder"}
+            ? 'Advanced ATC ATIS format reminder'
+            : 'PFATC Network ATIS format reminder'}
         </h2>
 
         <p className="text-gray-300 mb-6">
           {isAdvancedAtc ? (
             <>
-              For an <strong className="text-blue-300">Advanced ATC</strong> session, use the same
-              public-network ATIS layout as PFATC (shown below) so pilots and overview stay
-              consistent.
+              For an <strong className="text-blue-300">Advanced ATC</strong>{' '}
+              session, use the same public-network ATIS layout as PFATC (shown
+              below) so pilots and overview stay consistent.
             </>
           ) : (
             <>
-              If you want to use this on the{" "}
-              <strong className="text-blue-300">PFATC Network</strong>, use the ATIS format below:
+              If you want to use this on the{' '}
+              <strong className="text-blue-300">PFATC Network</strong>, use the
+              ATIS format below:
             </>
           )}
         </p>
@@ -129,7 +130,9 @@ export default function AtisReminderModal({
             )}
           </button>
           <div className={`${accentLabel} font-bold mb-3`}>{airportName}</div>
-          <pre className="whitespace-pre-wrap break-words pr-10">{formattedAtis}</pre>
+          <pre className="whitespace-pre-wrap break-words pr-10">
+            {formattedAtis}
+          </pre>
         </div>
 
         <Button

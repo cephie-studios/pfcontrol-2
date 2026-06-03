@@ -28,7 +28,7 @@ router.get('/daily', requirePermission('admin'), async (req, res) => {
         : Array.isArray(daysParam) && typeof daysParam[0] === 'string'
           ? parseInt(daysParam[0])
           : 30;
-          
+
     const dailyStats = await getControllerRatingsDailyStats(days);
     res.json(dailyStats);
   } catch (error) {

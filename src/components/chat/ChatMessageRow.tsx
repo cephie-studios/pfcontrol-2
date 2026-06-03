@@ -70,14 +70,12 @@ export function ChatMessageRow({
         {showHeader && (
           <div className="text-xs text-gray-400 mb-1">
             <span className="font-semibold text-blue-300">{displayName}</span>
-            {isGlobal &&
-              'station' in msg &&
-              msg.station && (
-                <span className="text-green-400">
-                  {' - '}
-                  {formatStationDisplay(msg.station, msg.position)}
-                </span>
-              )}
+            {isGlobal && 'station' in msg && msg.station && (
+              <span className="text-green-400">
+                {' - '}
+                {formatStationDisplay(msg.station, msg.position)}
+              </span>
+            )}
             {' • '}
             {getMessageTimeString(msg.sent_at)}
           </div>

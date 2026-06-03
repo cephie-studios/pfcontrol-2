@@ -1,5 +1,5 @@
-import { MdRefresh, MdSearch } from "react-icons/md";
-import { ADMIN_INPUT_ICON_CLASS, ADMIN_SEARCH_INPUT } from "./adminConstants";
+import { MdRefresh, MdSearch } from 'react-icons/md';
+import { ADMIN_INPUT_ICON_CLASS, ADMIN_SEARCH_INPUT } from './adminConstants';
 
 type AdminSearchInputProps = {
   value: string;
@@ -13,14 +13,14 @@ type AdminSearchInputProps = {
 export default function AdminSearchInput({
   value,
   onChange,
-  placeholder = "Search…",
+  placeholder = 'Search…',
   loading = false,
-  className = "",
+  className = '',
   grow = true,
 }: AdminSearchInputProps) {
   return (
     <div
-      className={`relative flex items-center ${grow ? "flex-1 min-w-[12rem] max-w-md" : "w-full sm:w-56"} ${className}`}
+      className={`relative flex items-center ${grow ? 'flex-1 min-w-[12rem] max-w-md' : 'w-full sm:w-56'} ${className}`}
     >
       <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
         <MdSearch size={18} />
@@ -37,7 +37,7 @@ export default function AdminSearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`${ADMIN_SEARCH_INPUT} ${loading ? "!pr-10" : ""}`}
+        className={`${ADMIN_SEARCH_INPUT} ${loading ? '!pr-10' : ''}`}
       />
     </div>
   );

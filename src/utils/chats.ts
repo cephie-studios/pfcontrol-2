@@ -205,31 +205,31 @@ export const isMessageMentioned = (
 ): boolean => {
   const isMentionedByUser = Boolean(
     'mentions' in message &&
-      message.mentions &&
-      Array.isArray(message.mentions) &&
-      currentUserId &&
-      message.mentions.includes(currentUserId)
+    message.mentions &&
+    Array.isArray(message.mentions) &&
+    currentUserId &&
+    message.mentions.includes(currentUserId)
   );
 
   const isMentionedByUserInGlobal = Boolean(
     'userMentions' in message &&
-      message.userMentions &&
-      Array.isArray(message.userMentions) &&
-      currentUserId &&
-      message.userMentions.some(
-        (username: string) =>
-          username.toLowerCase() === currentUserId.toLowerCase()
-      )
+    message.userMentions &&
+    Array.isArray(message.userMentions) &&
+    currentUserId &&
+    message.userMentions.some(
+      (username: string) =>
+        username.toLowerCase() === currentUserId.toLowerCase()
+    )
   );
 
   const isMentionedByAirport = Boolean(
     'airportMentions' in message &&
-      message.airportMentions &&
-      Array.isArray(message.airportMentions) &&
-      station &&
-      message.airportMentions.some(
-        (icao: string) => icao.toUpperCase() === station.toUpperCase()
-      )
+    message.airportMentions &&
+    Array.isArray(message.airportMentions) &&
+    station &&
+    message.airportMentions.some(
+      (icao: string) => icao.toUpperCase() === station.toUpperCase()
+    )
   );
 
   return isMentionedByUser || isMentionedByUserInGlobal || isMentionedByAirport;

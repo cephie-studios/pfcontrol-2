@@ -213,7 +213,12 @@ router.post('/assign', requirePermission('roles'), async (req, res) => {
 
     const result = await assignRoleToUser(userId, roleId);
 
-    if (req.user?.userId) capture(req,{ distinctId: req.user.userId, event: 'admin_role_assigned', properties: { target_user_id: userId, role_id: roleId } });
+    if (req.user?.userId)
+      capture(req, {
+        distinctId: req.user.userId,
+        event: 'admin_role_assigned',
+        properties: { target_user_id: userId, role_id: roleId },
+      });
 
     if (req.user?.userId) {
       try {
@@ -268,7 +273,12 @@ router.post(
       }
 
       const result = await removeRoleFromUser(userId, roleId);
-      if (req.user?.userId) capture(req,{ distinctId: req.user.userId, event: 'admin_role_removed', properties: { target_user_id: userId, role_id: roleId } });
+      if (req.user?.userId)
+        capture(req, {
+          distinctId: req.user.userId,
+          event: 'admin_role_removed',
+          properties: { target_user_id: userId, role_id: roleId },
+        });
       res.json(result);
     } catch (error) {
       console.error('Error removing role:', error);

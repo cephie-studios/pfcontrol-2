@@ -85,10 +85,7 @@ export async function getUserById(userId: string) {
     Object.assign(mergedPermissions, user.role_permissions);
   }
 
-  const safeDecrypt = (
-    encryptedData: unknown,
-    fieldName: string
-  ) => {
+  const safeDecrypt = (encryptedData: unknown, fieldName: string) => {
     if (!encryptedData) return null;
     try {
       const parsed =
@@ -193,7 +190,11 @@ export async function getUserByUsername(username: string) {
         )
       : null,
     settings: user.settings
-      ? decrypt(typeof user.settings === 'string' ? JSON.parse(user.settings) : user.settings)
+      ? decrypt(
+          typeof user.settings === 'string'
+            ? JSON.parse(user.settings)
+            : user.settings
+        )
       : null,
     ip_address: user.ip_address
       ? decrypt(
@@ -403,7 +404,10 @@ export async function addSessionToUser(userId: string, _sessionId: string) {
   return await getUserById(userId);
 }
 
-export async function removeSessionFromUser(userId: string, _sessionId: string) {
+export async function removeSessionFromUser(
+  userId: string,
+  _sessionId: string
+) {
   await mainDb
     .updateTable('users')
     .set({
@@ -581,7 +585,10 @@ export async function updateUserStatistics(
   await invalidateUserCache(userId);
 }
 
-export async function updateUserFingerprint(userId: string, fingerprintId: string) {
+export async function updateUserFingerprint(
+  userId: string,
+  fingerprintId: string
+) {
   await mainDb
     .updateTable('users')
     .set({ fingerprint_id: fingerprintId, updated_at: sql`NOW()` })

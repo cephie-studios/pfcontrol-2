@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useId, useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -10,20 +10,20 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 
 const CHART_TOOLTIP_PANEL =
-  "rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 shadow-2xl shadow-black/50";
+  'rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 shadow-2xl shadow-black/50';
 
 const SCOPE_COLORS = [
-  "#60a5fa",
-  "#34d399",
-  "#fbbf24",
-  "#f472b6",
-  "#a78bfa",
-  "#fb7185",
-  "#2dd4bf",
-  "#94a3b8",
+  '#60a5fa',
+  '#34d399',
+  '#fbbf24',
+  '#f472b6',
+  '#a78bfa',
+  '#fb7185',
+  '#2dd4bf',
+  '#94a3b8',
 ];
 
 type UsageTooltipContentProps = {
@@ -39,43 +39,43 @@ function shortAxisDate(iso: string): string {
   const raw = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso;
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return iso;
-  if (iso.includes("T")) {
+  if (iso.includes('T')) {
     return d.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   }
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function fullTooltipDate(iso: string): string {
   const raw = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso;
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return iso;
-  if (iso.includes("T")) {
+  if (iso.includes('T')) {
     return d.toLocaleString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   }
   return d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 }
 
 type DailyRow = { date: string; count: number };
 
 export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
-  const gid = useId().replace(/:/g, "");
+  const gid = useId().replace(/:/g, '');
   const gradientId = `reqFill-${gid}`;
 
   const points = useMemo(
@@ -85,17 +85,22 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
         label: shortAxisDate(d.date),
         requests: d.count,
       })),
-    [data],
+    [data]
   );
 
-  const maxRequests = useMemo(() => points.reduce((m, p) => Math.max(m, p.requests), 0), [points]);
+  const maxRequests = useMemo(
+    () => points.reduce((m, p) => Math.max(m, p.requests), 0),
+    [points]
+  );
 
   const yAxisMax = maxRequests === 0 ? 8 : Math.ceil(maxRequests * 1.12);
 
   if (points.length === 0) {
     return (
       <div className="h-full min-h-[200px] flex items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 shadow-inner ring-1 ring-zinc-800/40">
-        <p className="text-sm text-zinc-500">No usage data for this period yet.</p>
+        <p className="text-sm text-zinc-500">
+          No usage data for this period yet.
+        </p>
       </div>
     );
   }
@@ -107,7 +112,10 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
       aria-label="Request volume over time"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.45} />
@@ -124,8 +132,8 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
           <XAxis
             dataKey="label"
             tickLine={false}
-            axisLine={{ stroke: "#3f3f46" }}
-            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+            axisLine={{ stroke: '#3f3f46' }}
+            tick={{ fill: '#a1a1aa', fontSize: 11 }}
             dy={6}
             interval="preserveStartEnd"
             minTickGap={28}
@@ -133,13 +141,13 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
           <YAxis
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+            tick={{ fill: '#a1a1aa', fontSize: 11 }}
             width={40}
             allowDecimals={false}
             domain={[0, yAxisMax]}
           />
           <Tooltip
-            cursor={{ stroke: "rgba(96, 165, 250, 0.35)", strokeWidth: 1 }}
+            cursor={{ stroke: 'rgba(96, 165, 250, 0.35)', strokeWidth: 1 }}
             wrapperStyle={{ zIndex: 20 }}
             content={({ active, payload }: UsageTooltipContentProps) => {
               if (!active || !payload?.length) return null;
@@ -153,7 +161,7 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
                     {fullTooltipDate(row.date)}
                   </p>
                   <p className="text-sm font-semibold tabular-nums text-zinc-50">
-                    {row.requests.toLocaleString()}{" "}
+                    {row.requests.toLocaleString()}{' '}
                     <span className="text-zinc-500 font-normal">requests</span>
                   </p>
                 </div>
@@ -169,8 +177,8 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
             activeDot={{
               r: 6,
               strokeWidth: 0,
-              fill: "#bae6fd",
-              className: "drop-shadow-[0_0_8px_rgba(125,211,252,0.65)]",
+              fill: '#bae6fd',
+              className: 'drop-shadow-[0_0_8px_rgba(125,211,252,0.65)]',
             }}
             dot={false}
             isAnimationActive={points.length <= 96}
@@ -198,10 +206,13 @@ export function DeveloperScopeDonutChart({
         name: scopeLabelMap.get(r.scope_id) ?? r.scope_id,
         value: r.count,
       })),
-    [rows, scopeLabelMap],
+    [rows, scopeLabelMap]
   );
 
-  const total = useMemo(() => pieData.reduce((s, d) => s + d.value, 0), [pieData]);
+  const total = useMemo(
+    () => pieData.reduce((s, d) => s + d.value, 0),
+    [pieData]
+  );
 
   return (
     <div className="flex h-full w-full min-h-[220px] min-w-0 flex-row [&_.recharts-surface]:outline-none">
@@ -227,7 +238,10 @@ export function DeveloperScopeDonutChart({
                 animationEasing="ease-out"
               >
                 {pieData.map((_, i) => (
-                  <Cell key={`cell-${i}`} fill={SCOPE_COLORS[i % SCOPE_COLORS.length]} />
+                  <Cell
+                    key={`cell-${i}`}
+                    fill={SCOPE_COLORS[i % SCOPE_COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip
@@ -236,14 +250,15 @@ export function DeveloperScopeDonutChart({
                   if (!active || !payload?.length) return null;
                   const p = payload[0];
                   const v = Number(p.value);
-                  const pct = total > 0 ? Math.round((v / total) * 1000) / 10 : 0;
+                  const pct =
+                    total > 0 ? Math.round((v / total) * 1000) / 10 : 0;
                   return (
                     <div className={`${CHART_TOOLTIP_PANEL} max-w-[240px]`}>
                       <p className="text-xs font-medium text-zinc-100 leading-snug">
                         {String(p.name)}
                       </p>
                       <p className="text-[11px] text-zinc-400 mt-1 tabular-nums">
-                        {v.toLocaleString()} call{v === 1 ? "" : "s"} · {pct}%
+                        {v.toLocaleString()} call{v === 1 ? '' : 's'} · {pct}%
                       </p>
                     </div>
                   );

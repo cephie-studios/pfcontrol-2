@@ -1,15 +1,15 @@
-import { sql } from "kysely";
-import { mainDb } from "./connection.js";
+import { sql } from 'kysely';
+import { mainDb } from './connection.js';
 import {
   DATABASE_RETENTION_POLICIES,
   RETENTION_DAYS_BY_TABLE,
-} from "./databaseRetention.js";
+} from './databaseRetention.js';
 import {
   getDailyTotalsHistory,
   getTableActivityHistory,
   type TrackedActivityTable,
   TRACKED_ACTIVITY_TABLES,
-} from "./databaseMetrics.js";
+} from './databaseMetrics.js';
 
 type TableSizeInput = {
   name: string;
@@ -29,13 +29,13 @@ type DailyStatRow = {
 const STAT_TABLE_MAP: Array<{
   stat: keyof Pick<
     DailyStatRow,
-    "new_users_count" | "new_sessions_count" | "new_flights_count"
+    'new_users_count' | 'new_sessions_count' | 'new_flights_count'
   >;
   table: TrackedActivityTable;
 }> = [
-  { stat: "new_users_count", table: "users" },
-  { stat: "new_sessions_count", table: "sessions" },
-  { stat: "new_flights_count", table: "flights" },
+  { stat: 'new_users_count', table: 'users' },
+  { stat: 'new_sessions_count', table: 'sessions' },
+  { stat: 'new_flights_count', table: 'flights' },
 ];
 
 function avg(nums: number[]): number {
@@ -51,16 +51,16 @@ function bytesPerRow(bytes: number, rows: number): number {
 async function getRecentDailyStatistics(days: number): Promise<DailyStatRow[]> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   return mainDb
-    .selectFrom("daily_statistics")
+    .selectFrom('daily_statistics')
     .select([
-      "date",
-      mainDb.fn.coalesce("logins_count", sql`0`).as("logins_count"),
-      mainDb.fn.coalesce("new_sessions_count", sql`0`).as("new_sessions_count"),
-      mainDb.fn.coalesce("new_flights_count", sql`0`).as("new_flights_count"),
-      mainDb.fn.coalesce("new_users_count", sql`0`).as("new_users_count"),
+      'date',
+      mainDb.fn.coalesce('logins_count', sql`0`).as('logins_count'),
+      mainDb.fn.coalesce('new_sessions_count', sql`0`).as('new_sessions_count'),
+      mainDb.fn.coalesce('new_flights_count', sql`0`).as('new_flights_count'),
+      mainDb.fn.coalesce('new_users_count', sql`0`).as('new_users_count'),
     ])
-    .where("date", ">=", since)
-    .orderBy("date", "asc")
+    .where('date', '>=', since)
+    .orderBy('date', 'asc')
     .execute();
 }
 
@@ -104,7 +104,7 @@ export async function buildDatabaseProjection(
   }
 
   let logsPerFlight = 8;
-  const flightLogActivity = activityByTable.get("flight_logs") ?? [];
+  const flightLogActivity = activityByTable.get('flight_logs') ?? [];
   const flightStatSum = dailyStats.reduce(
     (s, d) => s + Number(d.new_flights_count ?? 0),
     0
@@ -141,7 +141,7 @@ export async function buildDatabaseProjection(
       continue;
     }
 
-    if (tableName === "flight_logs" && dailyStats.length > 0) {
+    if (tableName === 'flight_logs' && dailyStats.length > 0) {
       const flightsAvg = avg(
         dailyStats.map((d) => Number(d.new_flights_count ?? 0))
       );
@@ -168,24 +168,24 @@ export async function buildDatabaseProjection(
   if (netFromTotals.length >= 7) {
     dailyNetGrowthBytes = measuredDailyNet;
     methodology =
-      "30-day forecast from measured daily database size changes (last 7+ days), blended with per-table insert/delete activity.";
+      '30-day forecast from measured daily database size changes (last 7+ days), blended with per-table insert/delete activity.';
   } else if (activityNetSum !== 0 && activityHistory.length >= 14) {
     dailyNetGrowthBytes = activityNetSum;
     methodology =
-      "30-day forecast from per-table daily insert/delete history and row-size estimates.";
+      '30-day forecast from per-table daily insert/delete history and row-size estimates.';
   } else {
     const statDriven = [...tableDailyNet.values()].reduce((s, v) => s + v, 0);
     dailyNetGrowthBytes = statDriven !== 0 ? statDriven : totalBytes * 0.001;
     methodology =
       statDriven !== 0
-        ? "30-day forecast from admin daily statistics (users, sessions, flights) and table activity, with retention adjustments."
-        : "Limited history; using conservative 0.1% daily growth estimate until metrics accumulate.";
+        ? '30-day forecast from admin daily statistics (users, sessions, flights) and table activity, with retention adjustments.'
+        : 'Limited history; using conservative 0.1% daily growth estimate until metrics accumulate.';
   }
 
   if (netFromTotals.length >= 3 && activityNetSum !== 0) {
     dailyNetGrowthBytes = measuredDailyNet * 0.6 + activityNetSum * 0.4;
     methodology =
-      "Blended forecast: 60% measured total DB delta, 40% per-table activity and statistics.";
+      'Blended forecast: 60% measured total DB delta, 40% per-table activity and statistics.';
   }
 
   dailyNetGrowthBytes = Math.max(0, dailyNetGrowthBytes);

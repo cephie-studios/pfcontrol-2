@@ -22,12 +22,20 @@ router.post('/', requireAuth, generalApiLimiter, async (req, res) => {
     const pilotId = req.user!.userId;
 
     if (pilotId === controllerId) {
-        return res.status(400).json({ error: 'You cannot rate yourself' });
+      return res.status(400).json({ error: 'You cannot rate yourself' });
     }
 
     await addControllerRating(controllerId, pilotId, Number(rating), flightId);
 
-    capture(req, { distinctId: pilotId, event: 'controller_rated', properties: { controller_id: controllerId, rating: Number(rating), flight_id: flightId } });
+    capture(req, {
+      distinctId: pilotId,
+      event: 'controller_rated',
+      properties: {
+        controller_id: controllerId,
+        rating: Number(rating),
+        flight_id: flightId,
+      },
+    });
 
     res.json({ success: true });
   } catch (error) {

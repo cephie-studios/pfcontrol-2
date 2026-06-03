@@ -22,13 +22,17 @@ vi.mock('../../../server/db/connection.js', () => ({
     }),
     insertInto: vi.fn(() => ({
       values: vi.fn(() => ({
-        returningAll: vi.fn(() => ({ executeTakeFirst: mocks.executeTakeFirst })),
+        returningAll: vi.fn(() => ({
+          executeTakeFirst: mocks.executeTakeFirst,
+        })),
       })),
     })),
     updateTable: vi.fn(() => ({
       set: vi.fn(() => ({
         where: vi.fn(() => ({
-          returningAll: vi.fn(() => ({ executeTakeFirst: mocks.executeTakeFirst })),
+          returningAll: vi.fn(() => ({
+            executeTakeFirst: mocks.executeTakeFirst,
+          })),
         })),
       })),
     })),
@@ -39,7 +43,11 @@ vi.mock('../../../server/db/connection.js', () => ({
   redisConnection: {},
 }));
 
-import { createRole, getAllRoles, getRoleById } from '../../../server/db/roles.js';
+import {
+  createRole,
+  getAllRoles,
+  getRoleById,
+} from '../../../server/db/roles.js';
 
 describe('getRoleById', () => {
   beforeEach(() => {

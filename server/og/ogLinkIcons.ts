@@ -87,7 +87,8 @@ export async function loadOgLinkIcons(): Promise<{
   }
 
   const vatsim =
-    (await rasterizeVatsim(vatsimPath)) ?? (await rasterizeSvg(ROBLOX_ICON_SVG));
+    (await rasterizeVatsim(vatsimPath)) ??
+    (await rasterizeSvg(ROBLOX_ICON_SVG));
   const star = await rasterizeSvg(STAR_ICON_SVG);
 
   cached = { roblox, vatsim, star };

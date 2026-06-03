@@ -20,24 +20,24 @@ import {
   Plane,
   HelpCircle,
   TowerControl,
-} from "lucide-react";
-import { createFlightsSocket } from "../sockets/flightsSocket";
-import { addFlight } from "../utils/fetch/flights";
-import { useAuth } from "../hooks/auth/useAuth";
-import { useSettings } from "../hooks/settings/useSettings";
-import { fetchBackgrounds, fetchRoute } from "../utils/fetch/data";
-import type { Flight } from "../types/flight";
-import AirportDropdown from "../components/dropdowns/AirportDropdown";
-import Dropdown from "../components/common/Dropdown";
-import AircraftDropdown from "../components/dropdowns/AircraftDropdown";
-import Loader from "../components/common/Loader";
-import AccessDenied from "../components/AccessDenied";
-import CallsignInput from "../components/common/CallsignInput";
-import ControllerRatingPopup from "../components/tools/ControllerRatingPopup";
-import Modal from "../components/common/Modal";
-import { getDiscordLoginUrl } from "../utils/fetch/auth";
-import { hasAdvancedNetworkFeatures } from "../utils/sessionKind";
-import RouteMap from "../components/map/RouteMap";
+} from 'lucide-react';
+import { createFlightsSocket } from '../sockets/flightsSocket';
+import { addFlight } from '../utils/fetch/flights';
+import { useAuth } from '../hooks/auth/useAuth';
+import { useSettings } from '../hooks/settings/useSettings';
+import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
+import type { Flight } from '../types/flight';
+import AirportDropdown from '../components/dropdowns/AirportDropdown';
+import Dropdown from '../components/common/Dropdown';
+import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
+import Loader from '../components/common/Loader';
+import AccessDenied from '../components/AccessDenied';
+import CallsignInput from '../components/common/CallsignInput';
+import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
+import Modal from '../components/common/Modal';
+import { getDiscordLoginUrl } from '../utils/fetch/auth';
+import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
+import RouteMap from '../components/map/RouteMap';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -65,7 +65,10 @@ interface SubmitProps {
   initialAirportIcao?: string;
 }
 
-export default function Submit({ standalone = true, initialAirportIcao }: SubmitProps) {
+export default function Submit({
+  standalone = true,
+  initialAirportIcao,
+}: SubmitProps) {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
@@ -105,11 +108,15 @@ export default function Submit({ standalone = true, initialAirportIcao }: Submit
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
-  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(null);
+  const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(
+    null
+  );
   const [routeSid, setRouteSid] = useState<string | undefined>();
   const [routeStar, setRouteStar] = useState<string | undefined>();
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-  const [flightsSocket, setFlightsSocket] = useState<ReturnType<typeof createFlightsSocket> | null>(null);
+  const [flightsSocket, setFlightsSocket] = useState<ReturnType<
+    typeof createFlightsSocket
+  > | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
@@ -281,7 +288,9 @@ export default function Submit({ standalone = true, initialAirportIcao }: Submit
 
   const needsRadarVectors = (arrival: string, flightType: string) =>
     flightType === 'VFR' ||
-    (!!arrival && !!form.departure && arrival.toUpperCase() === form.departure.toUpperCase());
+    (!!arrival &&
+      !!form.departure &&
+      arrival.toUpperCase() === form.departure.toUpperCase());
 
   const handleArrivalChange = (value: string) => {
     setForm((f) => ({ ...f, arrival: value }));
@@ -780,9 +789,9 @@ export default function Submit({ standalone = true, initialAirportIcao }: Submit
                     name="route"
                     value={form.route}
                     onChange={(e) => {
-                      handleChange("route")(e.target.value)
-                      setRouteSid(undefined)
-                      setRouteStar(undefined)
+                      handleChange('route')(e.target.value);
+                      setRouteSid(undefined);
+                      setRouteStar(undefined);
                     }}
                     placeholder="e.g. HAZEL NOVMA LEDGO"
                     className="flex items-center w-full pl-6 pr-28 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
@@ -804,7 +813,10 @@ export default function Submit({ standalone = true, initialAirportIcao }: Submit
                 </div>
               </div>
               {form.route.trim() && (
-                <div className="rounded-2xl overflow-hidden border border-gray-700" style={{ height: '320px' }}>
+                <div
+                  className="rounded-2xl overflow-hidden border border-gray-700"
+                  style={{ height: '320px' }}
+                >
                   <RouteMap
                     route={form.route}
                     departure={form.departure}

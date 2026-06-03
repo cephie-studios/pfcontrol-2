@@ -2,14 +2,14 @@ import {
   getExternalArrivalFlights,
   type ClientFlight,
   type ExternalArrivalFlight,
-} from "../db/flights.js";
-import { getSessionsByAirportAndNetwork } from "../db/sessions.js";
-import { redisConnection } from "../db/connection.js";
-import type { NetworkKind } from "../utils/advancedNetworkSession.js";
-import { keys, TTL } from "./keys.js";
-import { perfAsync } from "./perf.js";
-import { getSessionMeta } from "./activeSessions.js";
-import { getArrivalsIO } from "./socketRegistry.js";
+} from '../db/flights.js';
+import { getSessionsByAirportAndNetwork } from '../db/sessions.js';
+import { redisConnection } from '../db/connection.js';
+import type { NetworkKind } from '../utils/advancedNetworkSession.js';
+import { keys, TTL } from './keys.js';
+import { perfAsync } from './perf.js';
+import { getSessionMeta } from './activeSessions.js';
+import { getArrivalsIO } from './socketRegistry.js';
 
 export async function getCachedExternalArrivals(
   airportIcao: string,
@@ -24,7 +24,7 @@ export async function getCachedExternalArrivals(
   }
 
   return perfAsync(
-    "getExternalArrivalFlights",
+    'getExternalArrivalFlights',
     async () => {
       const flights = await getExternalArrivalFlights(airportIcao, networkKind);
       try {
@@ -106,9 +106,9 @@ export async function broadcastArrivalChange(
   try {
     const sessionIds = await getArrivalSessionIds(arrivalIcao, kind);
     for (const sessionId of sessionIds) {
-      arrivalsIO.to(sessionId).emit("arrivalUpdated", flight);
+      arrivalsIO.to(sessionId).emit('arrivalUpdated', flight);
     }
   } catch (err) {
-    console.error("[arrivals] broadcast failed:", err);
+    console.error('[arrivals] broadcast failed:', err);
   }
 }

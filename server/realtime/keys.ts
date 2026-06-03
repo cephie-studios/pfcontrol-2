@@ -1,4 +1,4 @@
-import { prefixKey } from "../utils/cacheTtl.js";
+import { prefixKey } from '../utils/cacheTtl.js';
 
 export const TTL = {
   USER_SESSIONS_SEC: 5 * 60,
@@ -15,23 +15,23 @@ export const TTL = {
 
 export const keys = {
   userSessions: (userId: string) => prefixKey(`user:sessions:${userId}`),
-  activeNetwork: (network: "pfatc" | "advanced_atc") =>
+  activeNetwork: (network: 'pfatc' | 'advanced_atc') =>
     prefixKey(`active:network:${network}`),
   sessionMeta: (sessionId: string) => prefixKey(`session:meta:${sessionId}`),
   sessionFlights: (sessionId: string) =>
     prefixKey(`flights:session:${sessionId}`),
-  overviewSnapshot: () => prefixKey("overview:snapshot"),
-  overviewVersion: () => prefixKey("overview:version"),
-  arrivals: (network: "pfatc" | "advanced_atc", icao: string) =>
+  overviewSnapshot: () => prefixKey('overview:snapshot'),
+  overviewVersion: () => prefixKey('overview:version'),
+  arrivals: (network: 'pfatc' | 'advanced_atc', icao: string) =>
     prefixKey(`arrivals:${network}:${icao.toUpperCase()}`),
-  sessionsByAirport: (network: "pfatc" | "advanced_atc", icao: string) =>
+  sessionsByAirport: (network: 'pfatc' | 'advanced_atc', icao: string) =>
     prefixKey(`sessions:airport:${network}:${icao.toUpperCase()}`),
   flightSource: (flightId: string) => prefixKey(`flight:source:${flightId}`),
   atisDecrypted: (sessionId: string) => prefixKey(`session:atis:${sessionId}`),
   userBadge: (userId: string) => prefixKey(`users:badge:${userId}`),
   chatRecent: (sessionId: string) => prefixKey(`chat:recent:${sessionId}`),
-  chatGlobal: (networkKind: "pfatc" | "aatc") =>
+  chatGlobal: (networkKind: 'pfatc' | 'aatc') =>
     prefixKey(`chat:global:${networkKind}`),
   activeUsers: (sessionId: string) => `activeUsers:${sessionId}`,
-  activeUsersIndex: () => prefixKey("activeUsers:index"),
+  activeUsersIndex: () => prefixKey('activeUsers:index'),
 } as const;

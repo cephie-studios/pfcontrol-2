@@ -16,10 +16,18 @@ describe('validateSessionId', () => {
   });
 
   it('rejects wrong length or characters', () => {
-    expect(() => validateSessionId(undefined)).toThrow('Session ID is required');
-    expect(() => validateSessionId('short')).toThrow('Invalid session ID format');
-    expect(() => validateSessionId('toolonggg')).toThrow('Invalid session ID format');
-    expect(() => validateSessionId('Ab12Cd3!')).toThrow('Invalid session ID format');
+    expect(() => validateSessionId(undefined)).toThrow(
+      'Session ID is required'
+    );
+    expect(() => validateSessionId('short')).toThrow(
+      'Invalid session ID format'
+    );
+    expect(() => validateSessionId('toolonggg')).toThrow(
+      'Invalid session ID format'
+    );
+    expect(() => validateSessionId('Ab12Cd3!')).toThrow(
+      'Invalid session ID format'
+    );
   });
 });
 
@@ -31,7 +39,9 @@ describe('validateAccessId', () => {
 
   it('rejects invalid access ids', () => {
     expect(() => validateAccessId(undefined)).toThrow('Access ID is required');
-    expect(() => validateAccessId('gg'.repeat(32))).toThrow('Invalid access ID format');
+    expect(() => validateAccessId('gg'.repeat(32))).toThrow(
+      'Invalid access ID format'
+    );
   });
 });
 
@@ -42,7 +52,9 @@ describe('validateFlightId', () => {
 
   it('rejects empty or invalid characters', () => {
     expect(() => validateFlightId('')).toThrow('Flight ID cannot be empty');
-    expect(() => validateFlightId('bad id')).toThrow('Invalid flight ID format');
+    expect(() => validateFlightId('bad id')).toThrow(
+      'Invalid flight ID format'
+    );
   });
 });
 

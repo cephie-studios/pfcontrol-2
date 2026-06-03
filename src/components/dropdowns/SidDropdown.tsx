@@ -34,8 +34,8 @@ export default function SidDropdown({
   const isLoading = useMemo(() => {
     return Boolean(
       airportIcao &&
-        fetchedAirports.has(airportIcao) &&
-        !airportSids[airportIcao]
+      fetchedAirports.has(airportIcao) &&
+      !airportSids[airportIcao]
     );
   }, [airportIcao, fetchedAirports, airportSids]);
 

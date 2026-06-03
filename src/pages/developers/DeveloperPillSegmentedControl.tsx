@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
 export type PillTab<T extends string | number> = {
   id: T;
@@ -9,16 +9,18 @@ type Props<T extends string | number> = {
   tabs: PillTab<T>[];
   value: T;
   onChange: (id: T) => void;
-  "aria-label": string;
+  'aria-label': string;
   className?: string;
 };
 
-export default function DeveloperPillSegmentedControl<T extends string | number>({
+export default function DeveloperPillSegmentedControl<
+  T extends string | number,
+>({
   tabs,
   value,
   onChange,
-  "aria-label": ariaLabel,
-  className = "",
+  'aria-label': ariaLabel,
+  className = '',
 }: Props<T>) {
   const activeIndex = useMemo(() => {
     const i = tabs.findIndex((t) => t.id === value);
@@ -29,7 +31,7 @@ export default function DeveloperPillSegmentedControl<T extends string | number>
 
   const btnClass = (active: boolean) =>
     `relative z-10 flex flex-1 min-w-0 items-center justify-center rounded-full px-2 py-2 text-xs font-semibold transition-colors sm:px-3 ${
-      active ? "text-white" : "text-zinc-400 hover:text-zinc-200"
+      active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
     }`;
 
   return (
@@ -41,7 +43,8 @@ export default function DeveloperPillSegmentedControl<T extends string | number>
       <div
         className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
         style={{
-          width: tabCount > 0 ? `calc((100% - 0.5rem) / ${tabCount})` : undefined,
+          width:
+            tabCount > 0 ? `calc((100% - 0.5rem) / ${tabCount})` : undefined,
           left:
             tabCount > 0
               ? `calc(0.25rem + ${activeIndex} * ((100% - 0.5rem) / ${tabCount}))`

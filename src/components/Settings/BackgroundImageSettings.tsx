@@ -150,7 +150,9 @@ export default function BackgroundImageSettings({
   onChange,
 }: BackgroundImageSettingsProps) {
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>([]);
+  const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>(
+    []
+  );
   const [loadingImages, setLoadingImages] = useState(false);
   const [loadingCephieSnap, setLoadingCephieSnap] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -167,9 +169,12 @@ export default function BackgroundImageSettings({
   const loadCephieSnapImages = async () => {
     try {
       setLoadingCephieSnap(true);
-      const res = await fetch(`${API_BASE_URL}/api/uploads/cephie-snap-images`, {
-        credentials: 'include',
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/uploads/cephie-snap-images`,
+        {
+          credentials: 'include',
+        }
+      );
       if (!res.ok) throw new Error('Failed to load');
       const data = await res.json();
       setCephieSnapImages(data.images ?? []);
@@ -524,12 +529,16 @@ export default function BackgroundImageSettings({
           {loadingCephieSnap ? (
             <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
               <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
-              <span className="text-zinc-400 text-sm">Loading your Snap pictures...</span>
+              <span className="text-zinc-400 text-sm">
+                Loading your Snap pictures...
+              </span>
             </div>
           ) : cephieSnapImages.length === 0 ? (
             <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
               <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
-              <p className="text-zinc-400 text-sm">No Cephie Snap pictures yet.</p>
+              <p className="text-zinc-400 text-sm">
+                No Cephie Snap pictures yet.
+              </p>
               <a
                 href="https://snap.cephie.app"
                 target="_blank"
@@ -543,34 +552,34 @@ export default function BackgroundImageSettings({
           ) : (
             <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {cephieSnapImages.map((img) => {
-                const isSelected = selectedImage === img.url;
-                return (
-                  <div
-                    key={img.id}
-                    className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                      isSelected
-                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-                        : 'border-zinc-700 hover:border-zinc-600'
-                    }`}
-                    onClick={() => handleSelectImage(img.url)}
-                  >
-                    <div className="aspect-video relative bg-zinc-800">
-                      <img
-                        src={img.url}
-                        alt="Cephie Snap"
-                        className="w-full h-full object-cover group-hover:brightness-110 transition-all"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-                          <Eye className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {cephieSnapImages.map((img) => {
+                  const isSelected = selectedImage === img.url;
+                  return (
+                    <div
+                      key={img.id}
+                      className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
+                        isSelected
+                          ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                      onClick={() => handleSelectImage(img.url)}
+                    >
+                      <div className="aspect-video relative bg-zinc-800">
+                        <img
+                          src={img.url}
+                          alt="Cephie Snap"
+                          className="w-full h-full object-cover group-hover:brightness-110 transition-all"
+                        />
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
+                            <Eye className="h-3 w-3 text-white" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           )}

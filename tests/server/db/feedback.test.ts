@@ -28,7 +28,11 @@ vi.mock('../../../server/db/connection.js', () => ({
   redisConnection: {},
 }));
 
-import { addFeedback, deleteFeedback, getAllFeedback } from '../../../server/db/feedback.js';
+import {
+  addFeedback,
+  deleteFeedback,
+  getAllFeedback,
+} from '../../../server/db/feedback.js';
 
 describe('getAllFeedback', () => {
   beforeEach(() => {

@@ -18,7 +18,9 @@ vi.mock('../../../server/db/connection.js', () => ({
     })),
     deleteFrom: vi.fn(() => ({
       where: vi.fn(() => ({
-        returningAll: vi.fn(() => ({ executeTakeFirst: mocks.executeTakeFirst })),
+        returningAll: vi.fn(() => ({
+          executeTakeFirst: mocks.executeTakeFirst,
+        })),
       })),
     })),
     selectFrom: vi.fn(() => {

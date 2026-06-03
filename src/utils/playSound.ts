@@ -21,11 +21,13 @@ export function playAudioWithGain(
     return;
   }
 
-  const audioContext = new (window.AudioContext ||
+  const audioContext = new (
+    window.AudioContext ||
     (
       window as Window &
         typeof globalThis & { webkitAudioContext?: typeof AudioContext }
-    ).webkitAudioContext!)();
+    ).webkitAudioContext!
+  )();
   const source = audioContext.createMediaElementSource(audioElement);
   const gainNode = audioContext.createGain();
 

@@ -5,31 +5,31 @@ import {
   TowerControl,
   Users,
   Crown,
-} from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+} from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   fetchStatistics,
   fetchLeaderboard,
   fetchBackgrounds,
-} from "../utils/fetch/data";
-import { useSearchParams } from "react-router-dom";
-import { updateTutorialStatus } from "../utils/fetch/auth";
-import { useAuth } from "../hooks/auth/useAuth";
-import { useSettings } from "../hooks/settings/useSettings";
-import { steps } from "../components/tutorial/TutorialStepsHome";
+} from '../utils/fetch/data';
+import { useSearchParams } from 'react-router-dom';
+import { updateTutorialStatus } from '../utils/fetch/auth';
+import { useAuth } from '../hooks/auth/useAuth';
+import { useSettings } from '../hooks/settings/useSettings';
+import { steps } from '../components/tutorial/TutorialStepsHome';
 import Joyride, {
   type CallBackProps,
   STATUS,
-} from "react-joyride-react19-compat";
-import { trackTutorialEvent } from "../utils/tutorialTracking";
-import { posthog } from "../utils/posthog";
-import Modal from "../components/common/Modal";
-import CustomTooltip from "../components/tutorial/CustomTooltip";
-import Footer from "../components/Footer";
-import Button from "../components/common/Button";
-import Navbar from "../components/Navbar";
-import ProductShowcase from "../components/home/ProductShowcase";
-import { useCountUp } from "../hooks/useCountUp";
+} from 'react-joyride-react19-compat';
+import { trackTutorialEvent } from '../utils/tutorialTracking';
+import { posthog } from '../utils/posthog';
+import Modal from '../components/common/Modal';
+import CustomTooltip from '../components/tutorial/CustomTooltip';
+import Footer from '../components/Footer';
+import Button from '../components/common/Button';
+import Navbar from '../components/Navbar';
+import ProductShowcase from '../components/home/ProductShowcase';
+import { useCountUp } from '../hooks/useCountUp';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -64,7 +64,7 @@ export default function Home({ standalone = true }: HomeProps) {
   const [customLoaded, setCustomLoaded] = useState(false);
 
   const [searchParams] = useSearchParams();
-  const startTutorial = searchParams.get("tutorial") === "true";
+  const startTutorial = searchParams.get('tutorial') === 'true';
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
@@ -74,32 +74,32 @@ export default function Home({ standalone = true }: HomeProps) {
   const [flightsCount, flightsRef] = useCountUp(stats.flightsLogged);
 
   const statTitles: Record<string, string> = {
-    total_sessions_created: "Sessions Created",
-    "total_flights_submitted.total": "Flights Submitted",
-    total_time_controlling_minutes: "Time Controlling",
-    "total_flight_edits.total_edit_actions": "Flight Edits",
+    total_sessions_created: 'Sessions Created',
+    'total_flights_submitted.total': 'Flights Submitted',
+    total_time_controlling_minutes: 'Time Controlling',
+    'total_flight_edits.total_edit_actions': 'Flight Edits',
   };
 
   useEffect(() => {
     if (user && !user.settings?.tutorialCompleted && !startTutorial) {
       setShowTutorialPrompt(true);
-      posthog.capture("tutorial_prompt_shown");
+      posthog.capture('tutorial_prompt_shown');
     }
   }, [user, startTutorial]);
 
   const handleTutorialChoice = (start: boolean) => {
     setShowTutorialPrompt(false);
     if (start) {
-      posthog.capture("tutorial_prompt_accepted");
-      window.location.href = "/?tutorial=true";
+      posthog.capture('tutorial_prompt_accepted');
+      window.location.href = '/?tutorial=true';
     } else {
-      posthog.capture("tutorial_prompt_declined");
+      posthog.capture('tutorial_prompt_declined');
       updateTutorialStatus(true);
     }
   };
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    trackTutorialEvent("home", data);
+    trackTutorialEvent('home', data);
     const { status } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       updateTutorialStatus(true);
@@ -128,7 +128,7 @@ export default function Home({ standalone = true }: HomeProps) {
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error("Error loading available images:", error);
+        console.error('Error loading available images:', error);
       }
     };
     loadImages();
@@ -139,21 +139,21 @@ export default function Home({ standalone = true }: HomeProps) {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === "random" || filename === "favorites") {
+      if (!filename || filename === 'random' || filename === 'favorites') {
         return filename;
       }
-      if (filename.startsWith("https://api.cephie.app/")) {
+      if (filename.startsWith('https://api.cephie.app/')) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === "random") {
+    if (selectedImage === 'random') {
       if (availableImages.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
       }
-    } else if (selectedImage === "favorites") {
+    } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
         const randomFav =
@@ -161,15 +161,15 @@ export default function Home({ standalone = true }: HomeProps) {
         const favImageUrl = getImageUrl(randomFav);
         if (
           favImageUrl &&
-          favImageUrl !== "random" &&
-          favImageUrl !== "favorites"
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
         ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
         bgImage = `url(${imageUrl})`;
       }
     }
@@ -189,7 +189,7 @@ export default function Home({ standalone = true }: HomeProps) {
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
-      return "/assets/app/default/avatar.webp";
+      return '/assets/app/default/avatar.webp';
     }
     return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.png?size=256`;
   };
@@ -203,11 +203,11 @@ export default function Home({ standalone = true }: HomeProps) {
           className="absolute inset-0"
           style={{
             backgroundImage,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
             opacity: customLoaded ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
+            transition: 'opacity 0.5s ease-in-out',
           }}
         />
         <div className="absolute inset-0 backdrop-blur-[5px]"></div>
@@ -227,8 +227,8 @@ export default function Home({ standalone = true }: HomeProps) {
               <Button
                 onClick={() =>
                   (window.location.href = startTutorial
-                    ? "/create?tutorial=true"
-                    : "/create")
+                    ? '/create?tutorial=true'
+                    : '/create')
                 }
                 variant="outline"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
@@ -238,7 +238,7 @@ export default function Home({ standalone = true }: HomeProps) {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
-                onClick={() => (window.location.href = "/pfatc")}
+                onClick={() => (window.location.href = '/pfatc')}
                 variant="ghost"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
                 id="pfatc-flights-btn"
@@ -315,7 +315,7 @@ export default function Home({ standalone = true }: HomeProps) {
           </h2>
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 mt-4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-28 pt-24">
-            {" "}
+            {' '}
             {Object.entries(leaderboard)
               .filter(([key]) => !/chat|message/i.test(key))
               .map(([key, users]) => (
@@ -326,8 +326,8 @@ export default function Home({ standalone = true }: HomeProps) {
                   >
                     {statTitles[key] ||
                       key
-                        .replace(/total_|_/g, " ")
-                        .replace("submitted total", "Flights Submitted")
+                        .replace(/total_|_/g, ' ')
+                        .replace('submitted total', 'Flights Submitted')
                         .trim()}
                   </h3>
                   {/* Podium — order: 2nd | 1st | 3rd */}
@@ -336,11 +336,11 @@ export default function Home({ standalone = true }: HomeProps) {
                       const u = users[rank];
                       if (!u) return null;
                       const podiumHeights = [80, 52, 36]; // 1st, 2nd, 3rd bar heights (px)
-                      const podiumColors = ["#fbbf24", "#c0c0c0", "#ad6823"];
+                      const podiumColors = ['#fbbf24', '#c0c0c0', '#ad6823'];
                       const avatarSizes = [
-                        "w-24 h-24",
-                        "w-20 h-20",
-                        "w-16 h-16",
+                        'w-24 h-24',
+                        'w-20 h-20',
+                        'w-16 h-16',
                       ];
                       const barHeight = podiumHeights[rank];
                       const barColor = podiumColors[rank];
@@ -364,7 +364,7 @@ export default function Home({ standalone = true }: HomeProps) {
                               style={{
                                 color: barColor,
                                 filter:
-                                  "drop-shadow(0 1px 3px rgba(0,0,0,0.6))",
+                                  'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
                               }}
                             />
                           </div>
@@ -375,7 +375,7 @@ export default function Home({ standalone = true }: HomeProps) {
                             className="font-mono font-bold text-sm mb-2"
                             style={{ color: barColor }}
                           >
-                            {key === "total_time_controlling_minutes"
+                            {key === 'total_time_controlling_minutes'
                               ? (() => {
                                   const mins = Math.floor(u.score);
                                   if (mins >= 60) {
@@ -478,11 +478,11 @@ export default function Home({ standalone = true }: HomeProps) {
           className="absolute inset-0"
           style={{
             backgroundImage,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
             opacity: customLoaded ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
+            transition: 'opacity 0.5s ease-in-out',
           }}
         />
         <div className="absolute inset-0 backdrop-blur-[5px]"></div>
@@ -517,8 +517,8 @@ export default function Home({ standalone = true }: HomeProps) {
               <Button
                 onClick={() => {
                   window.location.href = startTutorial
-                    ? "/create?tutorial=true"
-                    : "/create";
+                    ? '/create?tutorial=true'
+                    : '/create';
                 }}
                 variant="outline"
                 className="px-8 py-4 text-base sm:text-lg font-semibold"
@@ -541,15 +541,15 @@ export default function Home({ standalone = true }: HomeProps) {
         tooltipComponent={CustomTooltip}
         styles={{
           options: {
-            primaryColor: "#3b82f6",
-            textColor: "#ffffff",
-            backgroundColor: "#1f2937",
+            primaryColor: '#3b82f6',
+            textColor: '#ffffff',
+            backgroundColor: '#1f2937',
             zIndex: 1000,
           },
           spotlight: {
-            border: "2px solid #fbbf24",
-            borderRadius: "24px",
-            boxShadow: "0 0 20px rgba(251, 191, 36, 0.5)",
+            border: '2px solid #fbbf24',
+            borderRadius: '24px',
+            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
           },
         }}
       />

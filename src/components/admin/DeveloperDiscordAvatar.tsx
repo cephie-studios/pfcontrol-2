@@ -1,4 +1,4 @@
-import { MdPeople } from "react-icons/md";
+import { MdPeople } from 'react-icons/md';
 
 type Props = {
   userId: string;
@@ -11,7 +11,7 @@ export default function DeveloperDiscordAvatar({
   userId,
   username,
   avatar,
-  className = "h-8 w-8",
+  className = 'h-8 w-8',
 }: Props) {
   if (avatar) {
     return (

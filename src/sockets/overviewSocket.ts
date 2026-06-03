@@ -1,5 +1,5 @@
-import io from "socket.io-client";
-import type { Flight } from "../types/flight";
+import io from 'socket.io-client';
+import type { Flight } from '../types/flight';
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -45,15 +45,22 @@ export function createOverviewSocket(
   userId?: string,
   username?: string,
   onFlightUpdated?: (data: { sessionId: string; flight: Flight }) => void,
-  onFlightUpdateAck?: (_data: { flightId: string | number; updates: Partial<Flight> }) => void,
-  onFlightError?: (error: { action: string; flightId?: string | number; error: string }) => void,
+  onFlightUpdateAck?: (_data: {
+    flightId: string | number;
+    updates: Partial<Flight>;
+  }) => void,
+  onFlightError?: (error: {
+    action: string;
+    flightId?: string | number;
+    error: string;
+  }) => void
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
-    path: "/sockets/overview",
+    path: '/sockets/overview',
     query: {
       ...(isEventController && {
-        isEventController: "true",
+        isEventController: 'true',
         userId,
         username,
       }),
@@ -63,15 +70,18 @@ export function createOverviewSocket(
     reconnectionDelayMax: 5000,
     reconnectionAttempts: 10,
     timeout: 20000,
-    transports: ["websocket", "polling"],
+    transports: ['websocket', 'polling'],
     upgrade: true,
     autoConnect: true,
   });
 
-  socket.on("connect_error", (error) => {
-    console.error("[Overview Socket] Connection error:", error.message);
+  socket.on('connect_error', (error) => {
+    console.error('[Overview Socket] Connection error:', error.message);
 
-    if (error.message.includes("Session ID") || error.message.includes("session")) {
+    if (
+      error.message.includes('Session ID') ||
+      error.message.includes('session')
+    ) {
       socket.disconnect();
       setTimeout(() => {
         socket.connect();
@@ -80,42 +90,42 @@ export function createOverviewSocket(
 
     if (onOverviewError) {
       onOverviewError({
-        error: error.message || "Failed to connect to overview socket",
+        error: error.message || 'Failed to connect to overview socket',
       });
     }
   });
 
-  socket.on("disconnect", (reason) => {
-    if (reason === "io server disconnect" || reason === "transport close") {
+  socket.on('disconnect', (reason) => {
+    if (reason === 'io server disconnect' || reason === 'transport close') {
       socket.connect();
     }
   });
 
-  socket.on("error", (error) => {
-    console.error("[Overview Socket] Socket error:", error);
+  socket.on('error', (error) => {
+    console.error('[Overview Socket] Socket error:', error);
     if (onOverviewError) {
       onOverviewError({
-        error: typeof error === "string" ? error : "Socket error occurred",
+        error: typeof error === 'string' ? error : 'Socket error occurred',
       });
     }
   });
 
-  socket.on("overviewData", onOverviewData);
+  socket.on('overviewData', onOverviewData);
 
   if (onOverviewError) {
-    socket.on("overviewError", onOverviewError);
+    socket.on('overviewError', onOverviewError);
   }
 
   if (isEventController && onFlightUpdated) {
-    socket.on("flightUpdated", onFlightUpdated);
+    socket.on('flightUpdated', onFlightUpdated);
   }
 
   if (onFlightUpdateAck) {
-    socket.on("flightUpdateAck", onFlightUpdateAck);
+    socket.on('flightUpdateAck', onFlightUpdateAck);
   }
 
   if (onFlightError) {
-    socket.on("flightError", onFlightError);
+    socket.on('flightError', onFlightError);
   }
 
   return {
@@ -123,17 +133,21 @@ export function createOverviewSocket(
     disconnect: () => {
       socket.disconnect();
     },
-    updateFlight: (sessionId: string, flightId: string | number, updates: Partial<Flight>) => {
-      socket.emit("updateFlight", { sessionId, flightId, updates });
+    updateFlight: (
+      sessionId: string,
+      flightId: string | number,
+      updates: Partial<Flight>
+    ) => {
+      socket.emit('updateFlight', { sessionId, flightId, updates });
     },
     sendContact: (
       sessionId: string,
       flightId: string | number,
       message: string,
       station: string,
-      position: string,
+      position: string
     ) => {
-      socket.emit("contactMe", {
+      socket.emit('contactMe', {
         sessionId,
         flightId,
         message,
