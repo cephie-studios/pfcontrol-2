@@ -123,6 +123,13 @@
         "node": true,
         "es2020": true
       }
+    },
+    {
+      "files": ["tests/**/*.{ts,tsx}", "scripts/**/*.{ts,tsx}"],
+      "env": {
+        "node": true,
+        "es2020": true
+      }
     }
   ]
 }
