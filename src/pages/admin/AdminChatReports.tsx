@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MdReport,
   MdVisibility,
@@ -6,14 +6,14 @@ import {
   MdBlock,
   MdOpenInNew,
   MdTaskAlt,
-} from "react-icons/md";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminTable from "../../components/admin/AdminTable";
+} from 'react-icons/md';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminDownsizeButtonSize,
   ADMIN_TH,
@@ -22,17 +22,17 @@ import {
   ADMIN_TOOLBAR_MOBILE_COL,
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import Dropdown from "../../components/common/Dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchChatReports,
   updateChatReportStatus,
   deleteChatReport,
   type ChatReport,
-} from "../../utils/fetch/admin";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../utils/fetch/admin';
+import ErrorScreen from '../../components/common/ErrorScreen';
 
 export default function AdminChatReports() {
   const [reports, setReports] = useState<ChatReport[]>([]);
@@ -41,19 +41,19 @@ export default function AdminChatReports() {
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState("");
-  const [filterReporter, setFilterReporter] = useState<string>("all");
+  const [search, setSearch] = useState('');
+  const [filterReporter, setFilterReporter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<ChatReport | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const filterOptions = [
-    { value: "all", label: "All Reports" },
-    { value: "automod", label: "Automod Only" },
-    { value: "user", label: "User Reports Only" },
+    { value: 'all', label: 'All Reports' },
+    { value: 'automod', label: 'Automod Only' },
+    { value: 'user', label: 'User Reports Only' },
   ];
 
   useEffect(() => {
@@ -67,15 +67,15 @@ export default function AdminChatReports() {
       const data = await fetchChatReports(
         page,
         limit,
-        filterReporter === "all" ? undefined : filterReporter
+        filterReporter === 'all' ? undefined : filterReporter
       );
       setReports(data.reports);
       setTotalPages(data.pagination.pages);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch reports";
+        err instanceof Error ? err.message : 'Failed to fetch reports';
       setError(errorMessage);
-      setToast({ message: errorMessage, type: "error" });
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -87,23 +87,23 @@ export default function AdminChatReports() {
   };
 
   const handleDismissReport = async (reportId: number) => {
-    if (!confirm("Are you sure you want to dismiss this report?")) return;
+    if (!confirm('Are you sure you want to dismiss this report?')) return;
     try {
       await deleteChatReport(reportId);
-      setToast({ message: "Report dismissed", type: "success" });
+      setToast({ message: 'Report dismissed', type: 'success' });
       fetchReports();
     } catch {
-      setToast({ message: "Failed to dismiss report", type: "error" });
+      setToast({ message: 'Failed to dismiss report', type: 'error' });
     }
   };
 
   const handleMarkResolved = async (reportId: number) => {
     try {
-      await updateChatReportStatus(reportId, "resolved");
-      setToast({ message: "Report marked as resolved", type: "success" });
+      await updateChatReportStatus(reportId, 'resolved');
+      setToast({ message: 'Report marked as resolved', type: 'success' });
       fetchReports();
     } catch {
-      setToast({ message: "Failed to update report", type: "error" });
+      setToast({ message: 'Failed to update report', type: 'error' });
     }
   };
 
@@ -118,7 +118,7 @@ export default function AdminChatReports() {
       r.reported_user_id.includes(search)
   );
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
@@ -183,11 +183,11 @@ export default function AdminChatReports() {
                       <div className="flex items-center gap-2">
                         <img
                           src={
-                            report.avatar || "/assets/app/default/avatar.webp"
+                            report.avatar || '/assets/app/default/avatar.webp'
                           }
                           alt={
-                            report.reporter_user_id === "automod"
-                              ? "Automod"
+                            report.reporter_user_id === 'automod'
+                              ? 'Automod'
                               : report.reporter_username ||
                                 report.reporter_user_id
                           }
@@ -195,11 +195,11 @@ export default function AdminChatReports() {
                         />
                         <div className="flex flex-col min-w-0">
                           <span className="text-white font-medium truncate">
-                            {report.reporter_user_id === "automod"
-                              ? "Automod"
-                              : report.reporter_username || "Unknown"}
+                            {report.reporter_user_id === 'automod'
+                              ? 'Automod'
+                              : report.reporter_username || 'Unknown'}
                           </span>
-                          {report.reporter_user_id !== "automod" && (
+                          {report.reporter_user_id !== 'automod' && (
                             <span className="text-zinc-500 text-xs truncate">
                               {report.reporter_user_id}
                             </span>
@@ -212,7 +212,7 @@ export default function AdminChatReports() {
                         <img
                           src={
                             report.reported_avatar ||
-                            "/assets/app/default/avatar.webp"
+                            '/assets/app/default/avatar.webp'
                           }
                           alt={
                             report.reported_username || report.reported_user_id
@@ -221,7 +221,7 @@ export default function AdminChatReports() {
                         />
                         <div className="flex flex-col min-w-0">
                           <span className="text-white font-medium truncate">
-                            {report.reported_username || "Unknown"}
+                            {report.reported_username || 'Unknown'}
                           </span>
                           <span className="text-zinc-500 text-xs truncate">
                             {report.reported_user_id}
@@ -236,12 +236,12 @@ export default function AdminChatReports() {
                     <td className={ADMIN_TD}>
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs ${
-                          report.status === "resolved"
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-yellow-500/20 text-yellow-400"
+                          report.status === 'resolved'
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-yellow-500/20 text-yellow-400'
                         }`}
                       >
-                        {report.status || "pending"}
+                        {report.status || 'pending'}
                       </span>
                     </td>
                     <td className={ADMIN_TD}>
@@ -286,21 +286,21 @@ export default function AdminChatReports() {
               >
                 <div className="flex items-center gap-2">
                   <img
-                    src={report.avatar || "/assets/app/default/avatar.webp"}
+                    src={report.avatar || '/assets/app/default/avatar.webp'}
                     alt={
-                      report.reporter_user_id === "automod"
-                        ? "Automod"
+                      report.reporter_user_id === 'automod'
+                        ? 'Automod'
                         : report.reporter_username || report.reporter_user_id
                     }
                     className="w-7 h-7 rounded-full"
                   />
                   <div className="min-w-0">
                     <p className="text-white font-medium text-sm truncate">
-                      {report.reporter_user_id === "automod"
-                        ? "Automod"
-                        : report.reporter_username || "Unknown"}
+                      {report.reporter_user_id === 'automod'
+                        ? 'Automod'
+                        : report.reporter_username || 'Unknown'}
                     </p>
-                    {report.reporter_user_id !== "automod" && (
+                    {report.reporter_user_id !== 'automod' && (
                       <p className="text-zinc-500 text-xs truncate">
                         {report.reporter_user_id}
                       </p>
@@ -312,14 +312,14 @@ export default function AdminChatReports() {
                   <img
                     src={
                       report.reported_avatar ||
-                      "/assets/app/default/avatar.webp"
+                      '/assets/app/default/avatar.webp'
                     }
                     alt={report.reported_username || report.reported_user_id}
                     className="w-7 h-7 rounded-full"
                   />
                   <div className="min-w-0">
                     <p className="text-white font-medium text-sm truncate">
-                      {report.reported_username || "Unknown"}
+                      {report.reported_username || 'Unknown'}
                     </p>
                     <p className="text-zinc-500 text-xs truncate">
                       {report.reported_user_id}
@@ -328,7 +328,7 @@ export default function AdminChatReports() {
                 </div>
 
                 <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Message:</span>{" "}
+                  <span className="text-zinc-500">Message:</span>{' '}
                   {report.message}
                 </p>
                 <p className="text-zinc-300 text-sm">
@@ -338,12 +338,12 @@ export default function AdminChatReports() {
                 <div className="flex justify-between items-center">
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs ${
-                      report.status === "resolved"
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-yellow-500/20 text-yellow-400"
+                      report.status === 'resolved'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
                     }`}
                   >
-                    {report.status || "pending"}
+                    {report.status || 'pending'}
                   </span>
                   <p className="text-zinc-500 text-xs">
                     {formatTimestamp(report.created_at)}
@@ -412,17 +412,17 @@ export default function AdminChatReports() {
               <Button
                 onClick={() => {
                   setShowModal(false);
-                  window.location.href = `/admin/bans?userId=${selectedReport.reported_user_id}&username=${encodeURIComponent(selectedReport.reported_username || "")}&reason=${encodeURIComponent(selectedReport.reason)}`;
+                  window.location.href = `/admin/bans?userId=${selectedReport.reported_user_id}&username=${encodeURIComponent(selectedReport.reported_username || '')}&reason=${encodeURIComponent(selectedReport.reason)}`;
                 }}
                 variant="danger"
-                size={adminDownsizeButtonSize("md")}
+                size={adminDownsizeButtonSize('md')}
               >
                 <MdBlock size={16} className="mr-2" /> Ban User
               </Button>
               <Button
                 onClick={() => handleMarkResolved(selectedReport.id)}
                 variant="primary"
-                size={adminDownsizeButtonSize("md")}
+                size={adminDownsizeButtonSize('md')}
               >
                 Mark Resolved
               </Button>
@@ -434,27 +434,27 @@ export default function AdminChatReports() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <img
-                src={selectedReport.avatar || "/assets/app/default/avatar.webp"}
+                src={selectedReport.avatar || '/assets/app/default/avatar.webp'}
                 alt={
-                  selectedReport.reporter_user_id === "automod"
-                    ? "Automod"
+                  selectedReport.reporter_user_id === 'automod'
+                    ? 'Automod'
                     : selectedReport.reporter_username ||
                       selectedReport.reporter_user_id
                 }
                 className="w-10 h-10 rounded-full"
               />
               <p>
-                <strong>Reporter:</strong>{" "}
-                {selectedReport.reporter_user_id === "automod"
-                  ? "Automod"
-                  : `${selectedReport.reporter_username || "Unknown"} (${selectedReport.reporter_user_id})`}
+                <strong>Reporter:</strong>{' '}
+                {selectedReport.reporter_user_id === 'automod'
+                  ? 'Automod'
+                  : `${selectedReport.reporter_username || 'Unknown'} (${selectedReport.reporter_user_id})`}
               </p>
             </div>
             <div className="flex items-center space-x-2">
               <img
                 src={
                   selectedReport.reported_avatar ||
-                  "/assets/app/default/avatar.webp"
+                  '/assets/app/default/avatar.webp'
                 }
                 alt={
                   selectedReport.reported_username ||
@@ -463,8 +463,8 @@ export default function AdminChatReports() {
                 className="w-10 h-10 rounded-full"
               />
               <p>
-                <strong>Reported User:</strong>{" "}
-                {selectedReport.reported_username || "Unknown"} (
+                <strong>Reported User:</strong>{' '}
+                {selectedReport.reported_username || 'Unknown'} (
                 {selectedReport.reported_user_id})
               </p>
             </div>
@@ -475,17 +475,17 @@ export default function AdminChatReports() {
               <strong>Reason:</strong> {selectedReport.reason}
             </p>
             <p>
-              <strong>Session:</strong>{" "}
+              <strong>Session:</strong>{' '}
               <a
                 href={`/admin/sessions?search=${selectedReport.session_id}`}
                 className="text-blue-400"
               >
-                {selectedReport.session_id}{" "}
+                {selectedReport.session_id}{' '}
                 <MdOpenInNew size={16} className="inline" />
               </a>
             </p>
             <p>
-              <strong>Timestamp:</strong>{" "}
+              <strong>Timestamp:</strong>{' '}
               {formatTimestamp(selectedReport.created_at)}
             </p>
           </div>

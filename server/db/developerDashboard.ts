@@ -1,7 +1,10 @@
-import { mainDb } from "./connection.js";
-import { sql } from "kysely";
+import { mainDb } from './connection.js';
+import { sql } from 'kysely';
 
-export async function getDeveloperUsageDailyCounts(userId: string, since: Date) {
+export async function getDeveloperUsageDailyCounts(
+  userId: string,
+  since: Date
+) {
   const result = await sql<{ date: string; count: number }>`
     SELECT
       to_char(day_bucket, 'YYYY-MM-DD') AS date,
@@ -27,7 +30,10 @@ export async function getDeveloperUsageDailyCounts(userId: string, since: Date) 
   }));
 }
 
-export async function getDeveloperUsageHourlyCounts(userId: string, since: Date) {
+export async function getDeveloperUsageHourlyCounts(
+  userId: string,
+  since: Date
+) {
   const result = await sql<{ date: string; count: number }>`
     SELECT
       to_char(hour_bucket, 'YYYY-MM-DD"T"HH24:00:00') AS date,
@@ -55,21 +61,25 @@ export async function getDeveloperUsageHourlyCounts(userId: string, since: Date)
 
 export async function getDeveloperUsageByScope(userId: string, since: Date) {
   return mainDb
-    .selectFrom("developer_api_usage")
-    .select(["scope_id", sql<number>`count(*)::int`.as("count")])
-    .where("user_id", "=", userId)
-    .where("created_at", ">=", since)
-    .groupBy("scope_id")
-    .orderBy("count", "desc")
+    .selectFrom('developer_api_usage')
+    .select(['scope_id', sql<number>`count(*)::int`.as('count')])
+    .where('user_id', '=', userId)
+    .where('created_at', '>=', since)
+    .groupBy('scope_id')
+    .orderBy('count', 'desc')
     .execute();
 }
 
-export async function getDeveloperRecentUsage(userId: string, limit: number, offset: number) {
+export async function getDeveloperRecentUsage(
+  userId: string,
+  limit: number,
+  offset: number
+) {
   return mainDb
-    .selectFrom("developer_api_usage")
+    .selectFrom('developer_api_usage')
     .selectAll()
-    .where("user_id", "=", userId)
-    .orderBy("created_at", "desc")
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
     .limit(limit)
     .offset(offset)
     .execute();

@@ -1,11 +1,11 @@
-import { redisConnection } from "../db/connection.js";
-import { getSessionById } from "../db/sessions.js";
+import { redisConnection } from '../db/connection.js';
+import { getSessionById } from '../db/sessions.js';
 import {
   getNetworkKind,
   isAdvancedNetworkSession,
   type NetworkKind,
-} from "../utils/advancedNetworkSession.js";
-import { keys, TTL } from "./keys.js";
+} from '../utils/advancedNetworkSession.js';
+import { keys, TTL } from './keys.js';
 
 export type SessionMeta = {
   sessionId: string;
@@ -161,8 +161,8 @@ export async function unregisterActiveSession(
     }
   } else {
     try {
-      await redisConnection.srem(keys.activeNetwork("pfatc"), sessionId);
-      await redisConnection.srem(keys.activeNetwork("advanced_atc"), sessionId);
+      await redisConnection.srem(keys.activeNetwork('pfatc'), sessionId);
+      await redisConnection.srem(keys.activeNetwork('advanced_atc'), sessionId);
     } catch {
       // ignore
     }
@@ -173,8 +173,8 @@ export async function unregisterActiveSession(
 export async function getActiveNetworkSessionIds(): Promise<string[]> {
   try {
     const [pfatc, aatc] = await Promise.all([
-      redisConnection.smembers(keys.activeNetwork("pfatc")),
-      redisConnection.smembers(keys.activeNetwork("advanced_atc")),
+      redisConnection.smembers(keys.activeNetwork('pfatc')),
+      redisConnection.smembers(keys.activeNetwork('advanced_atc')),
     ]);
     return [...new Set([...pfatc, ...aatc])];
   } catch {
@@ -186,8 +186,8 @@ export async function getActiveNetworkSessionIds(): Promise<string[]> {
 export async function rebuildActiveNetworkSetsFromRedis(): Promise<void> {
   try {
     await redisConnection.del(
-      keys.activeNetwork("pfatc"),
-      keys.activeNetwork("advanced_atc")
+      keys.activeNetwork('pfatc'),
+      keys.activeNetwork('advanced_atc')
     );
 
     const sessionIds = await redisConnection.smembers(keys.activeUsersIndex());
@@ -203,9 +203,9 @@ export async function rebuildActiveNetworkSetsFromRedis(): Promise<void> {
       return;
     }
 
-    const activeKeys = await redisConnection.keys("activeUsers:*");
+    const activeKeys = await redisConnection.keys('activeUsers:*');
     for (const key of activeKeys) {
-      const sessionId = key.replace("activeUsers:", "");
+      const sessionId = key.replace('activeUsers:', '');
       const count = await redisConnection.hlen(key);
       if (count > 0) {
         await redisConnection.sadd(keys.activeUsersIndex(), sessionId);
@@ -213,7 +213,7 @@ export async function rebuildActiveNetworkSetsFromRedis(): Promise<void> {
       }
     }
   } catch (err) {
-    console.error("[activeSessions] rebuild failed:", err);
+    console.error('[activeSessions] rebuild failed:', err);
   }
 }
 

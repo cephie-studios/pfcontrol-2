@@ -2,27 +2,27 @@ import {
   ADMIN_SEGMENT_ACTIVE,
   ADMIN_SEGMENT_INACTIVE,
   ADMIN_TOOLBAR_HEIGHT,
-} from "./adminConstants";
-import { ADMIN_DURATION_PRESETS } from "./adminDurationPresetConfig";
-import type { AdminDurationPresetId } from "./adminDurationPresetConfig";
+} from './adminConstants';
+import { ADMIN_DURATION_PRESETS } from './adminDurationPresetConfig';
+import type { AdminDurationPresetId } from './adminDurationPresetConfig';
 
 type AdminDurationPresetsProps = {
   label?: string;
   activePreset: AdminDurationPresetId | null;
   onPreset: (
     durationMs: number,
-    presetId: (typeof ADMIN_DURATION_PRESETS)[number]["id"]
+    presetId: (typeof ADMIN_DURATION_PRESETS)[number]['id']
   ) => void;
   onPermanent: () => void;
   className?: string;
 };
 
 export default function AdminDurationPresets({
-  label = "Quick duration",
+  label = 'Quick duration',
   activePreset,
   onPreset,
   onPermanent,
-  className = "",
+  className = '',
 }: AdminDurationPresetsProps) {
   return (
     <div className={className}>
@@ -51,10 +51,10 @@ export default function AdminDurationPresets({
         ))}
         <button
           type="button"
-          aria-pressed={activePreset === "permanent"}
+          aria-pressed={activePreset === 'permanent'}
           onClick={onPermanent}
           className={`flex-1 h-full text-sm font-medium transition-colors ${
-            activePreset === "permanent"
+            activePreset === 'permanent'
               ? ADMIN_SEGMENT_ACTIVE
               : ADMIN_SEGMENT_INACTIVE
           }`}

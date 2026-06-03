@@ -1,10 +1,10 @@
-import { Resend } from "resend";
-import { getDeveloperProfile } from "../db/developer.js";
-import { createDeveloperNotificationUnsubscribeUrl } from "./developerNotificationUnsubscribeToken.js";
+import { Resend } from 'resend';
+import { getDeveloperProfile } from '../db/developer.js';
+import { createDeveloperNotificationUnsubscribeUrl } from './developerNotificationUnsubscribeToken.js';
 
-const NOTICE_SUCCESS_PREFIX = "[[success]]";
+const NOTICE_SUCCESS_PREFIX = '[[success]]';
 const EMAIL_MAX_LEN = 320;
-const DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID = "pfcontrol-devs";
+const DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID = 'pfcontrol-devs';
 
 function isPlausibleDeveloperNotificationEmail(s: string): boolean {
   const t = s.trim();
@@ -17,9 +17,9 @@ function isPlausibleDeveloperNotificationEmail(s: string): boolean {
 function subjectForNotice(detail: string): string {
   const d = detail.trim();
   if (d.startsWith(NOTICE_SUCCESS_PREFIX)) {
-    return "Your developer application was approved";
+    return 'Your developer application was approved';
   }
-  return "Your developer account was updated";
+  return 'Your developer account was updated';
 }
 
 function bodyForNotice(detail: string): string {
@@ -27,13 +27,13 @@ function bodyForNotice(detail: string): string {
   if (text.startsWith(NOTICE_SUCCESS_PREFIX)) {
     text = text
       .slice(NOTICE_SUCCESS_PREFIX.length)
-      .replace(/^\s*\n+/, "")
+      .replace(/^\s*\n+/, '')
       .trim();
   }
   if (!text) {
-    text = "An administrator updated your developer settings.";
+    text = 'An administrator updated your developer settings.';
   }
-  const base = process.env.FRONTEND_URL?.replace(/\/$/, "");
+  const base = process.env.FRONTEND_URL?.replace(/\/$/, '');
   if (base) {
     return `${text}\n\nOpen your developer portal: ${base}/developers`;
   }
@@ -42,11 +42,15 @@ function bodyForNotice(detail: string): string {
 
 function developerNoticeTemplateId(): string {
   return (
-    process.env.RESEND_DEVELOPER_NOTICE_TEMPLATE_ID?.trim() || DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID
+    process.env.RESEND_DEVELOPER_NOTICE_TEMPLATE_ID?.trim() ||
+    DEFAULT_DEVELOPER_NOTICE_TEMPLATE_ID
   );
 }
 
-export async function sendDeveloperAdminNoticeEmail(userId: string, detail: string): Promise<void> {
+export async function sendDeveloperAdminNoticeEmail(
+  userId: string,
+  detail: string
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) return;
 
@@ -56,7 +60,7 @@ export async function sendDeveloperAdminNoticeEmail(userId: string, detail: stri
   if (!profile) return;
 
   const raw = profile.notification_email;
-  const to = typeof raw === "string" ? raw.trim() : "";
+  const to = typeof raw === 'string' ? raw.trim() : '';
   if (!to || !isPlausibleDeveloperNotificationEmail(to)) return;
 
   const subject = subjectForNotice(detail);
@@ -66,7 +70,10 @@ export async function sendDeveloperAdminNoticeEmail(userId: string, detail: stri
   try {
     unsubscribeUrl = createDeveloperNotificationUnsubscribeUrl(userId, to);
   } catch (e) {
-    console.error("[developer admin notice email] failed to build unsubscribe URL", e);
+    console.error(
+      '[developer admin notice email] failed to build unsubscribe URL',
+      e
+    );
     return;
   }
 
@@ -86,6 +93,6 @@ export async function sendDeveloperAdminNoticeEmail(userId: string, detail: stri
     },
   });
   if (error) {
-    console.error("[developer admin notice email] Resend error:", error);
+    console.error('[developer admin notice email] Resend error:', error);
   }
 }

@@ -5,12 +5,7 @@ import {
   useSearchParams,
   useNavigate,
 } from 'react-router-dom';
-import {
-  Save,
-  AlertTriangle,
-  Check,
-  RotateCcw,
-} from 'lucide-react';
+import { Save, AlertTriangle, Check, RotateCcw } from 'lucide-react';
 import type {
   Settings,
   DepartureTableColumnSettings,

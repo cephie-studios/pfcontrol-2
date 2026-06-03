@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useId, useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -8,10 +8,10 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 
 const TOOLTIP_PANEL =
-  "rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 shadow-2xl shadow-black/50 text-sm text-zinc-200";
+  'rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 shadow-2xl shadow-black/50 text-sm text-zinc-200';
 
 export type AdminChartPoint = {
   label: string;
@@ -55,9 +55,9 @@ function shortDateLabel(raw: string | Date | number): string {
     const d = new Date(`${s}T12:00:00`);
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       });
     }
   }
@@ -67,32 +67,32 @@ function shortDateLabel(raw: string | Date | number): string {
     const d = new Date(`${ymd}T12:00:00`);
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       });
     }
   }
 
-  if (s.includes("T") || /^\d{4}-\d{2}-\d{2}/.test(s)) {
+  if (s.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(s)) {
     const d = new Date(s);
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       });
     }
   }
 
-  if (s.includes(":")) {
+  if (s.includes(':')) {
     const d = new Date(s);
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
+        hour: '2-digit',
+        minute: '2-digit',
       });
     }
   }
@@ -112,7 +112,7 @@ function ChartLegend({ series }: { series: AdminChartSeries[] }) {
             className="inline-block w-4 shrink-0 border-t-2"
             style={{
               borderColor: s.color,
-              borderStyle: s.strokeDasharray ? "dashed" : "solid",
+              borderStyle: s.strokeDasharray ? 'dashed' : 'solid',
             }}
           />
           {s.label}
@@ -124,21 +124,21 @@ function ChartLegend({ series }: { series: AdminChartSeries[] }) {
 
 export function AdminAreaChart({
   data,
-  dataKey = "value",
-  color = "#60a5fa",
+  dataKey = 'value',
+  color = '#60a5fa',
   height = 280,
-  emptyLabel = "No data for this period",
-  valueLabel = "Count",
+  emptyLabel = 'No data for this period',
+  valueLabel = 'Count',
   hideAxes = true,
 }: AdminAreaChartProps) {
-  const gid = useId().replace(/:/g, "");
+  const gid = useId().replace(/:/g, '');
   const gradientId = `adminFill-${gid}`;
 
   const points = useMemo(
     () =>
       data.map((d) => ({
         ...d,
-        label: d.label ?? String(d[dataKey] ?? ""),
+        label: d.label ?? String(d[dataKey] ?? ''),
       })),
     [data, dataKey]
   );
@@ -185,14 +185,14 @@ export function AdminAreaChart({
           <XAxis
             dataKey="label"
             hide={hideAxes}
-            tick={{ fill: "#71717a", fontSize: 11 }}
+            tick={{ fill: '#71717a', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => shortDateLabel(String(v))}
           />
           <YAxis
             hide={hideAxes}
-            tick={{ fill: "#71717a", fontSize: 11 }}
+            tick={{ fill: '#71717a', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             width={hideAxes ? 0 : 36}
@@ -209,7 +209,7 @@ export function AdminAreaChart({
                     {shortDateLabel(String(row?.label))}
                   </p>
                   <p className="font-medium text-white">
-                    {valueLabel}:{" "}
+                    {valueLabel}:{' '}
                     {Number(payload[0]?.value ?? 0).toLocaleString()}
                   </p>
                 </div>
@@ -223,7 +223,7 @@ export function AdminAreaChart({
             strokeWidth={2}
             fill={`url(#${gradientId})`}
             dot={false}
-            activeDot={{ r: 4, fill: color, stroke: "#18181b", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: color, stroke: '#18181b', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -234,14 +234,14 @@ export function AdminAreaChart({
 export function AdminMultiSeriesAreaChart({
   data,
   series,
-  xKey = "label",
+  xKey = 'label',
   height = 280,
-  emptyLabel = "No data for this period",
+  emptyLabel = 'No data for this period',
   hideAxes = true,
   showLegend = false,
   filled = true,
 }: AdminMultiSeriesChartProps) {
-  const gid = useId().replace(/:/g, "");
+  const gid = useId().replace(/:/g, '');
   const gradientPrefix = `adminMultiFill-${gid}`;
   const Chart = filled ? AreaChart : LineChart;
   const margin = {
@@ -291,14 +291,14 @@ export function AdminMultiSeriesAreaChart({
             <XAxis
               dataKey={xKey}
               hide={hideAxes}
-              tick={{ fill: "#71717a", fontSize: 11 }}
+              tick={{ fill: '#71717a', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => shortDateLabel(String(v))}
             />
             <YAxis
               hide={hideAxes}
-              tick={{ fill: "#71717a", fontSize: 11 }}
+              tick={{ fill: '#71717a', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={hideAxes ? 0 : 36}
@@ -340,7 +340,7 @@ export function AdminMultiSeriesAreaChart({
                   activeDot={{
                     r: 3,
                     fill: s.color,
-                    stroke: "#18181b",
+                    stroke: '#18181b',
                     strokeWidth: 2,
                   }}
                 />
@@ -357,7 +357,7 @@ export function AdminMultiSeriesAreaChart({
                   activeDot={{
                     r: 3,
                     strokeWidth: 2,
-                    stroke: "#18181b",
+                    stroke: '#18181b',
                   }}
                 />
               )
@@ -372,7 +372,7 @@ export function AdminMultiSeriesAreaChart({
 
 export function AdminSparkline({
   data,
-  color = "#60a5fa",
+  color = '#60a5fa',
   height = 48,
 }: {
   data: number[];

@@ -1,6 +1,6 @@
-import { sql } from "kysely";
-import { mainDb } from "./connection.js";
-import { recordTableDeletes } from "./databaseMetrics.js";
+import { sql } from 'kysely';
+import { mainDb } from './connection.js';
+import { recordTableDeletes } from './databaseMetrics.js';
 
 export const WEBSOCKET_SNAPSHOT_RETENTION_DAYS = 1;
 
@@ -12,7 +12,7 @@ export async function persistWebsocketSnapshots(
   const sampledAt = new Date();
   try {
     await mainDb
-      .insertInto("websocket_snapshots")
+      .insertInto('websocket_snapshots')
       .values(
         samples.map((s) => ({
           namespace_id: s.namespaceId,
@@ -22,7 +22,7 @@ export async function persistWebsocketSnapshots(
       )
       .execute();
   } catch (error) {
-    console.error("[websocketSnapshots] persist failed:", error);
+    console.error('[websocketSnapshots] persist failed:', error);
   }
 }
 
@@ -32,16 +32,16 @@ export async function cleanupOldWebsocketSnapshots(
   const cutoff = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000);
   try {
     const result = await mainDb
-      .deleteFrom("websocket_snapshots")
-      .where("sampled_at", "<", cutoff)
+      .deleteFrom('websocket_snapshots')
+      .where('sampled_at', '<', cutoff)
       .executeTakeFirst();
 
     await recordTableDeletes(
-      "websocket_snapshots",
+      'websocket_snapshots',
       Number(result?.numDeletedRows ?? 0)
     );
   } catch (error) {
-    console.error("[websocketSnapshots] cleanup failed:", error);
+    console.error('[websocketSnapshots] cleanup failed:', error);
   }
 }
 
@@ -72,7 +72,7 @@ export async function getWebsocketHourlyHistory(): Promise<
 
     return result;
   } catch (error) {
-    console.error("[websocketSnapshots] hourly history failed:", error);
+    console.error('[websocketSnapshots] hourly history failed:', error);
     return new Map();
   }
 }

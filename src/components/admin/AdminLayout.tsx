@@ -1,12 +1,12 @@
-import { useState, type ReactNode } from "react";
-import { MdMenu } from "react-icons/md";
-import Navbar from "../Navbar";
-import AdminSidebar from "./AdminSidebar";
-import Toast from "../common/Toast";
+import { useState, type ReactNode } from 'react';
+import { MdMenu } from 'react-icons/md';
+import Navbar from '../Navbar';
+import AdminSidebar from './AdminSidebar';
+import Toast from '../common/Toast';
 
 export type AdminToast = {
   message: string;
-  type: "success" | "error" | "info";
+  type: 'success' | 'error' | 'info';
 } | null;
 
 type AdminLayoutProps = {
@@ -45,7 +45,7 @@ export default function AdminLayout({
 
         <div
           className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:hidden ${
-            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <AdminSidebar

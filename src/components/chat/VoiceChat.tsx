@@ -35,7 +35,9 @@ export default function VoiceChat({
 }: VoiceChatProps) {
   const { user } = useAuth();
 
-  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
+    []
+  );
   const [selectedAudioInput, setSelectedAudioInput] = useState<string>(() => {
     try {
       return localStorage.getItem('voice-chat-audio-input') || 'default';
@@ -79,7 +81,10 @@ export default function VoiceChat({
     if (!navigator.mediaDevices) return;
     navigator.mediaDevices.addEventListener('devicechange', refreshDevices);
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', refreshDevices);
+      navigator.mediaDevices.removeEventListener(
+        'devicechange',
+        refreshDevices
+      );
     };
   }, [isInVoice, refreshDevices]);
 
@@ -92,19 +97,25 @@ export default function VoiceChat({
   useEffect(() => {
     try {
       localStorage.setItem('voice-chat-audio-input', selectedAudioInput);
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }, [selectedAudioInput]);
 
   useEffect(() => {
     try {
       localStorage.setItem('voice-chat-muted', isMuted.toString());
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }, [isMuted]);
 
   useEffect(() => {
     try {
       localStorage.setItem('voice-chat-deafened', isDeafened.toString());
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
   }, [isDeafened]);
 
   useEffect(() => {

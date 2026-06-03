@@ -13,7 +13,12 @@ export interface DeveloperApiDocEndpoint {
   pathTemplate: string;
   fullUrlExample: string;
   pathParams?: { name: string; description: string; example?: string }[];
-  queryParams?: { name: string; required: boolean; description: string; example?: string }[];
+  queryParams?: {
+    name: string;
+    required: boolean;
+    description: string;
+    example?: string;
+  }[];
   requestBodySummary?: string;
   requestBodyExampleJson?: string;
   requestHeaders: DeveloperApiDocHeader[];

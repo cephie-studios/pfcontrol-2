@@ -1,12 +1,12 @@
-import { mainDb } from "./connection.js";
-import { encrypt, decrypt } from "../utils/encryption.js";
-import { validateSessionId } from "../utils/validation.js";
-import { incrementStat } from "../utils/statisticsCache.js";
+import { mainDb } from './connection.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
+import { validateSessionId } from '../utils/validation.js';
+import { incrementStat } from '../utils/statisticsCache.js';
 import {
   containsHateSpeech,
   getHateSpeechReason,
-} from "../utils/hateSpeechFilter.js";
-import { sql } from "kysely";
+} from '../utils/hateSpeechFilter.js';
+import { sql } from 'kysely';
 
 export async function addChatMessage(
   sessionId: string,
@@ -26,17 +26,17 @@ export async function addChatMessage(
 ) {
   const validSessionId = validateSessionId(sessionId);
   const encryptedMsg = encrypt(message);
-  if (!encryptedMsg) throw new Error("Encryption failed for chat message.");
+  if (!encryptedMsg) throw new Error('Encryption failed for chat message.');
 
   if (
     !Array.isArray(mentions) ||
-    !mentions.every((m) => typeof m === "string")
+    !mentions.every((m) => typeof m === 'string')
   ) {
-    throw new Error("Invalid mentions format: must be an array of strings");
+    throw new Error('Invalid mentions format: must be an array of strings');
   }
 
   const result = await mainDb
-    .insertInto("session_chat")
+    .insertInto('session_chat')
     .values({
       id: sql`DEFAULT`,
       session_id: validSessionId,
@@ -49,7 +49,7 @@ export async function addChatMessage(
     .returningAll()
     .executeTakeFirst();
 
-  incrementStat(userId, "total_chat_messages_sent");
+  incrementStat(userId, 'total_chat_messages_sent');
 
   let automodded = false;
   let automodReason: string | undefined;
@@ -58,19 +58,19 @@ export async function addChatMessage(
     automodded = true;
     automodReason = getHateSpeechReason(message);
     await mainDb
-      .insertInto("chat_report")
+      .insertInto('chat_report')
       .values({
         id: sql`DEFAULT`,
         session_id: validSessionId,
         message_id: result!.id,
-        reporter_user_id: "automod",
-        reporter_username: "Automod",
+        reporter_user_id: 'automod',
+        reporter_username: 'Automod',
         reported_user_id: userId,
         reported_username: username,
-        reported_avatar: avatar || "/assets/app/default/avatar.webp",
+        reported_avatar: avatar || '/assets/app/default/avatar.webp',
         message,
         reason: `${automodReason} (automod)`,
-        reporter_avatar: "/assets/images/automod.webp",
+        reporter_avatar: '/assets/images/automod.webp',
       })
       .execute();
   }
@@ -88,13 +88,13 @@ export async function addChatMessage(
   };
 
   void (async () => {
-    const { pushSessionChatMessage } = await import("../realtime/chatCache.js");
-    const { onChatMessage } = await import("../realtime/invalidate.js");
+    const { pushSessionChatMessage } = await import('../realtime/chatCache.js');
+    const { onChatMessage } = await import('../realtime/invalidate.js');
     await pushSessionChatMessage(validSessionId, {
       id: formatted.id,
       userId: formatted.userId,
-      username: formatted.username ?? "",
-      avatar: formatted.avatar ?? "",
+      username: formatted.username ?? '',
+      avatar: formatted.avatar ?? '',
       message: formatted.message,
       mentions: formatted.mentions,
       sent_at: formatted.sent_at,
@@ -107,7 +107,7 @@ export async function addChatMessage(
 
 export async function getChatMessages(sessionId: string, limit = 50) {
   const { getCachedSessionChatMessages } =
-    await import("../realtime/chatCache.js");
+    await import('../realtime/chatCache.js');
   return getCachedSessionChatMessages(sessionId, limit);
 }
 
@@ -115,24 +115,24 @@ export async function getChatMessagesFromDb(sessionId: string, limit = 50) {
   const validSessionId = validateSessionId(sessionId);
 
   const rows = await mainDb
-    .selectFrom("session_chat")
+    .selectFrom('session_chat')
     .selectAll()
-    .where("session_id", "=", validSessionId)
-    .orderBy("sent_at", "asc")
+    .where('session_id', '=', validSessionId)
+    .orderBy('sent_at', 'asc')
     .limit(limit)
     .execute();
 
   return rows.map((row) => {
-    let decryptedMsg = "";
+    let decryptedMsg = '';
     try {
-      if (row.message) decryptedMsg = decrypt(JSON.parse(row.message)) ?? "";
+      if (row.message) decryptedMsg = decrypt(JSON.parse(row.message)) ?? '';
     } catch {
-      decryptedMsg = "";
+      decryptedMsg = '';
     }
 
     let parsedMentions: string[] = [];
     if (row.mentions) {
-      if (typeof row.mentions === "string") {
+      if (typeof row.mentions === 'string') {
         try {
           const parsed = JSON.parse(row.mentions);
           parsedMentions = Array.isArray(parsed) ? parsed : [];
@@ -163,15 +163,15 @@ export async function deleteChatMessage(
 ) {
   const validSessionId = validateSessionId(sessionId);
   const result = await mainDb
-    .deleteFrom("session_chat")
-    .where("session_id", "=", validSessionId)
-    .where("id", "=", messageId)
-    .where("user_id", "=", userId)
+    .deleteFrom('session_chat')
+    .where('session_id', '=', validSessionId)
+    .where('id', '=', messageId)
+    .where('user_id', '=', userId)
     .executeTakeFirst();
 
   void (async () => {
     const { invalidateSessionChatCache } =
-      await import("../realtime/chatCache.js");
+      await import('../realtime/chatCache.js');
     await invalidateSessionChatCache(validSessionId);
   })();
   return (result?.numDeletedRows ?? 0) > 0;
@@ -186,52 +186,52 @@ export async function reportChatMessage(
   const validSessionId = validateSessionId(sessionId);
 
   const messageRow = await mainDb
-    .selectFrom("session_chat")
-    .select(["user_id", "message"])
-    .where("session_id", "=", validSessionId)
-    .where("id", "=", messageId)
+    .selectFrom('session_chat')
+    .select(['user_id', 'message'])
+    .where('session_id', '=', validSessionId)
+    .where('id', '=', messageId)
     .executeTakeFirst();
 
-  if (!messageRow) throw new Error("Message not found");
+  if (!messageRow) throw new Error('Message not found');
 
-  let plainMessage = "";
+  let plainMessage = '';
   try {
     plainMessage = decrypt(JSON.parse(messageRow.message));
   } catch {
-    plainMessage = "";
+    plainMessage = '';
   }
 
-  let reporterUsername = "";
-  let reporterAvatar = "/assets/images/automod.webp";
-  if (reporterUserId !== "automod") {
+  let reporterUsername = '';
+  let reporterAvatar = '/assets/images/automod.webp';
+  if (reporterUserId !== 'automod') {
     const reporter = await mainDb
-      .selectFrom("users")
-      .select(["username", "avatar"])
-      .where("id", "=", reporterUserId)
+      .selectFrom('users')
+      .select(['username', 'avatar'])
+      .where('id', '=', reporterUserId)
       .executeTakeFirst();
-    reporterUsername = reporter?.username || "";
+    reporterUsername = reporter?.username || '';
     reporterAvatar = reporter?.avatar
-      ? reporter.avatar.startsWith("http")
+      ? reporter.avatar.startsWith('http')
         ? reporter.avatar
         : `https://cdn.discordapp.com/avatars/${reporterUserId}/${reporter.avatar}.png`
-      : "/assets/app/default/avatar.webp";
+      : '/assets/app/default/avatar.webp';
   }
 
   const reportedUser = await mainDb
-    .selectFrom("users")
-    .select(["username", "avatar"])
-    .where("id", "=", messageRow.user_id)
+    .selectFrom('users')
+    .select(['username', 'avatar'])
+    .where('id', '=', messageRow.user_id)
     .executeTakeFirst();
 
-  const reportedUsername = reportedUser?.username || "";
+  const reportedUsername = reportedUser?.username || '';
   const reportedAvatar = reportedUser?.avatar
-    ? reportedUser.avatar.startsWith("http")
+    ? reportedUser.avatar.startsWith('http')
       ? reportedUser.avatar
       : `https://cdn.discordapp.com/avatars/${messageRow.user_id}/${reportedUser.avatar}.png`
-    : "/assets/app/default/avatar.webp";
+    : '/assets/app/default/avatar.webp';
 
   await mainDb
-    .insertInto("chat_report")
+    .insertInto('chat_report')
     .values({
       id: sql`DEFAULT`,
       session_id: validSessionId,
@@ -254,60 +254,60 @@ export async function reportGlobalChatMessage(
   reason: string
 ) {
   const messageRow = await mainDb
-    .selectFrom("global_chat")
-    .select(["user_id", "message"])
-    .where("id", "=", messageId)
+    .selectFrom('global_chat')
+    .select(['user_id', 'message'])
+    .where('id', '=', messageId)
     .executeTakeFirst();
 
-  if (!messageRow) throw new Error("Message not found");
+  if (!messageRow) throw new Error('Message not found');
 
-  let plainMessage = "";
+  let plainMessage = '';
   try {
     if (messageRow.message) {
       const encryptedData =
-        typeof messageRow.message === "string"
+        typeof messageRow.message === 'string'
           ? JSON.parse(messageRow.message)
           : messageRow.message;
-      plainMessage = decrypt(encryptedData) || "";
+      plainMessage = decrypt(encryptedData) || '';
     }
   } catch (e) {
-    console.error("[Report Global Chat] Error decrypting message:", e);
+    console.error('[Report Global Chat] Error decrypting message:', e);
   }
 
-  let reporterUsername = "";
-  let reporterAvatar = "/assets/images/automod.webp";
-  if (reporterUserId !== "automod") {
+  let reporterUsername = '';
+  let reporterAvatar = '/assets/images/automod.webp';
+  if (reporterUserId !== 'automod') {
     const reporter = await mainDb
-      .selectFrom("users")
-      .select(["username", "avatar"])
-      .where("id", "=", reporterUserId)
+      .selectFrom('users')
+      .select(['username', 'avatar'])
+      .where('id', '=', reporterUserId)
       .executeTakeFirst();
-    reporterUsername = reporter?.username || "";
+    reporterUsername = reporter?.username || '';
     reporterAvatar = reporter?.avatar
-      ? reporter.avatar.startsWith("http")
+      ? reporter.avatar.startsWith('http')
         ? reporter.avatar
         : `https://cdn.discordapp.com/avatars/${reporterUserId}/${reporter.avatar}.png`
-      : "/assets/app/default/avatar.webp";
+      : '/assets/app/default/avatar.webp';
   }
 
   const reportedUser = await mainDb
-    .selectFrom("users")
-    .select(["username", "avatar"])
-    .where("id", "=", messageRow.user_id)
+    .selectFrom('users')
+    .select(['username', 'avatar'])
+    .where('id', '=', messageRow.user_id)
     .executeTakeFirst();
 
-  const reportedUsername = reportedUser?.username || "";
+  const reportedUsername = reportedUser?.username || '';
   const reportedAvatar = reportedUser?.avatar
-    ? reportedUser.avatar.startsWith("http")
+    ? reportedUser.avatar.startsWith('http')
       ? reportedUser.avatar
       : `https://cdn.discordapp.com/avatars/${messageRow.user_id}/${reportedUser.avatar}.png`
-    : "/assets/app/default/avatar.webp";
+    : '/assets/app/default/avatar.webp';
 
   await mainDb
-    .insertInto("chat_report")
+    .insertInto('chat_report')
     .values({
       id: sql`DEFAULT`,
-      session_id: "global-chat",
+      session_id: 'global-chat',
       message_id: messageId,
       reporter_user_id: reporterUserId,
       reporter_username: reporterUsername,

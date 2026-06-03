@@ -1,7 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Calendar, Check, ExternalLink, MoreVertical, Plane, Route, Search, Share2, Star, Workflow } from 'lucide-react';
-import { claimSubmittedFlight, fetchMyFlights, toggleFeaturedOnProfile } from '../utils/fetch/flights';
+import {
+  ArrowRight,
+  Calendar,
+  Check,
+  ExternalLink,
+  MoreVertical,
+  Plane,
+  Route,
+  Search,
+  Share2,
+  Star,
+  Workflow,
+} from 'lucide-react';
+import {
+  claimSubmittedFlight,
+  fetchMyFlights,
+  toggleFeaturedOnProfile,
+} from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
 import { useSettings } from '../hooks/settings/useSettings';
@@ -132,20 +148,32 @@ function FlightCard({
             atCap
               ? 'text-zinc-600 cursor-not-allowed'
               : featured
-              ? 'text-amber-400 hover:bg-amber-600/20'
-              : 'text-zinc-400 hover:bg-blue-800 hover:text-zinc-50'
+                ? 'text-amber-400 hover:bg-amber-600/20'
+                : 'text-zinc-400 hover:bg-blue-800 hover:text-zinc-50'
           }`}
         >
-          <Star className={`h-4 w-4 shrink-0 ${featured ? 'fill-amber-400' : ''}`} />
+          <Star
+            className={`h-4 w-4 shrink-0 ${featured ? 'fill-amber-400' : ''}`}
+          />
           <span className="font-medium">
-            {featured ? 'Unfeature' : atCap ? 'Max 3 featured' : 'Feature flight'}
+            {featured
+              ? 'Unfeature'
+              : atCap
+                ? 'Max 3 featured'
+                : 'Feature flight'}
           </span>
         </button>
-        <button onClick={handleShare} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+        <button
+          onClick={handleShare}
+          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+        >
           <Share2 className="h-4 w-4 shrink-0" />
           <span className="font-medium">Share flight</span>
         </button>
-        <button onClick={handleOpenAcars} className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm">
+        <button
+          onClick={handleOpenAcars}
+          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+        >
           <ExternalLink className="h-4 w-4 shrink-0" />
           <span className="font-medium">Open ACARS</span>
         </button>
@@ -174,14 +202,20 @@ function FlightCard({
             <div className="flex items-center mb-3">
               <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
               <span className="font-medium truncate text-md">{callsign}</span>
-              {featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />}
+              {featured && (
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />
+              )}
             </div>
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-center">
                 <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
-                <span className="font-mono font-medium text-white">{flight.departure || '----'}</span>
+                <span className="font-mono font-medium text-white">
+                  {flight.departure || '----'}
+                </span>
                 <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
-                <span className="font-mono font-medium text-white">{flight.arrival || '----'}</span>
+                <span className="font-mono font-medium text-white">
+                  {flight.arrival || '----'}
+                </span>
               </div>
               <div className="flex items-center">
                 <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
@@ -190,24 +224,34 @@ function FlightCard({
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
                 {flight.created_at
-                  ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                  ? new Date(flight.created_at).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
                   : 'Unknown date'}
               </div>
               <div className="flex items-center">
                 {flight.isAdvancedATC ? (
                   <>
                     <Workflow className="h-4 w-4 mr-2 text-purple-400" />
-                    <span className="text-purple-400 font-medium">Advanced ATC Session</span>
+                    <span className="text-purple-400 font-medium">
+                      Advanced ATC Session
+                    </span>
                   </>
                 ) : flight.isPFATC ? (
                   <>
                     <Workflow className="h-4 w-4 mr-2 text-blue-400" />
-                    <span className="text-blue-400 font-medium">PFATC Session</span>
+                    <span className="text-blue-400 font-medium">
+                      PFATC Session
+                    </span>
                   </>
                 ) : (
                   <>
                     <Workflow className="h-4 w-4 mr-2 text-green-400" />
-                    <span className="text-green-400 font-medium">Standard Session</span>
+                    <span className="text-green-400 font-medium">
+                      Standard Session
+                    </span>
                   </>
                 )}
               </div>
@@ -215,15 +259,22 @@ function FlightCard({
           </div>
         </Link>
 
-        <div className="absolute top-4 right-4 flex items-center gap-2" ref={menuRef}>
-{acarsUrl && (
+        <div
+          className="absolute top-4 right-4 flex items-center gap-2"
+          ref={menuRef}
+        >
+          {acarsUrl && (
             <>
               <button
                 onClick={toggleMenu}
                 className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                 aria-label="Flight options"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <MoreVertical className="h-4 w-6" />
+                )}
               </button>
               {dropdown}
             </>
@@ -244,16 +295,22 @@ function FlightCard({
         <div className="flex items-center mb-3">
           <Plane className="h-5 w-5 text-blue-500 mr-2 shrink-0" />
           <span className="font-medium truncate text-md">{callsign}</span>
-          {featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />}
+          {featured && (
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />
+          )}
         </div>
 
         {/* Details */}
         <div className="space-y-2 text-sm text-gray-300">
           <div className="flex items-center">
             <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
-            <span className="font-mono font-medium text-white">{flight.departure || '----'}</span>
+            <span className="font-mono font-medium text-white">
+              {flight.departure || '----'}
+            </span>
             <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
-            <span className="font-mono font-medium text-white">{flight.arrival || '----'}</span>
+            <span className="font-mono font-medium text-white">
+              {flight.arrival || '----'}
+            </span>
           </div>
           <div className="flex items-center">
             <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
@@ -262,14 +319,20 @@ function FlightCard({
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
             {flight.created_at
-              ? new Date(flight.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+              ? new Date(flight.created_at).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
               : 'Unknown date'}
           </div>
           <div className="flex items-center">
             {flight.isAdvancedATC ? (
               <>
                 <Workflow className="h-4 w-4 mr-2 text-purple-400" />
-                <span className="text-purple-400 font-medium">Advanced ATC Session</span>
+                <span className="text-purple-400 font-medium">
+                  Advanced ATC Session
+                </span>
               </>
             ) : flight.isPFATC ? (
               <>
@@ -279,12 +342,13 @@ function FlightCard({
             ) : (
               <>
                 <Workflow className="h-4 w-4 mr-2 text-green-400" />
-                <span className="text-green-400 font-medium">Standard Session</span>
+                <span className="text-green-400 font-medium">
+                  Standard Session
+                </span>
               </>
             )}
           </div>
         </div>
-
       </Link>
 
       {/* 3-dot menu */}
@@ -295,7 +359,11 @@ function FlightCard({
             className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
             aria-label="Flight options"
           >
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <MoreVertical className="h-4 w-6" />}
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <MoreVertical className="h-4 w-6" />
+            )}
           </button>
           {dropdown}
         </div>
@@ -362,7 +430,9 @@ export default function MyFlights() {
 
   const handleFeaturedToggle = (id: string, newFeatured: boolean) => {
     setFlights((prev) =>
-      prev.map((f) => (String(f.id) === id ? { ...f, featured_on_profile: newFeatured } : f))
+      prev.map((f) =>
+        String(f.id) === id ? { ...f, featured_on_profile: newFeatured } : f
+      )
     );
   };
 

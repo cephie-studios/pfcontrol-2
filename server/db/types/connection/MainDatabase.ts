@@ -1,35 +1,35 @@
-import { AppSettingsTable } from "./main/AppSettingsTable";
-import { UsersTable } from "./main/UsersTable";
-import { SessionsTable } from "./main/SessionsTable";
-import { RolesTable } from "./main/RolesTable";
-import { UserRolesTable } from "./main/UserRolesTable";
-import { AuditLogTable } from "./main/AuditLogTable";
-import { BansTable } from "./main/BansTable";
-import { NotificationsTable } from "./main/NotificationsTable";
-import { UserNotificationsTable } from "./main/UserNotificationsTable";
-import { TestersTable } from "./main/TestersTable";
-import { TesterSettingsTable } from "./main/TesterSettingsTable";
-import { DailyStatisticsTable } from "./main/DailyStatisticsTable";
-import { ChatReportsTable } from "./main/ChatReportsTable";
-import { UpdateModalsTable } from "./main/UpdateModalsTable";
-import { FlightLogsTable } from "./main/FlightLogsTable";
-import { FeedbackTable } from "./main/FeedbackTable";
-import { ApiLogsTable } from "./main/ApiLogsTable";
-import { ControllerRatingsTable } from "./main/ControllerRatingsTable";
-import { FlightsTable } from "./main/FlightsTable";
-import { SessionChatTable } from "./main/SessionChatTable";
-import { GlobalChatTable } from "./main/GlobalChatTable";
-import { VpnExceptionsTable } from "./main/VpnExceptionsTable";
-import { VpnGateSettingsTable } from "./main/VpnGateSettingsTable";
-import { DeveloperApplicationsTable } from "./main/DeveloperApplicationsTable";
-import { DeveloperProfilesTable } from "./main/DeveloperProfilesTable";
-import { DeveloperApiKeysTable } from "./main/DeveloperApiKeysTable";
-import { DeveloperApiUsageTable } from "./main/DeveloperApiUsageTable";
+import { AppSettingsTable } from './main/AppSettingsTable';
+import { UsersTable } from './main/UsersTable';
+import { SessionsTable } from './main/SessionsTable';
+import { RolesTable } from './main/RolesTable';
+import { UserRolesTable } from './main/UserRolesTable';
+import { AuditLogTable } from './main/AuditLogTable';
+import { BansTable } from './main/BansTable';
+import { NotificationsTable } from './main/NotificationsTable';
+import { UserNotificationsTable } from './main/UserNotificationsTable';
+import { TestersTable } from './main/TestersTable';
+import { TesterSettingsTable } from './main/TesterSettingsTable';
+import { DailyStatisticsTable } from './main/DailyStatisticsTable';
+import { ChatReportsTable } from './main/ChatReportsTable';
+import { UpdateModalsTable } from './main/UpdateModalsTable';
+import { FlightLogsTable } from './main/FlightLogsTable';
+import { FeedbackTable } from './main/FeedbackTable';
+import { ApiLogsTable } from './main/ApiLogsTable';
+import { ControllerRatingsTable } from './main/ControllerRatingsTable';
+import { FlightsTable } from './main/FlightsTable';
+import { SessionChatTable } from './main/SessionChatTable';
+import { GlobalChatTable } from './main/GlobalChatTable';
+import { VpnExceptionsTable } from './main/VpnExceptionsTable';
+import { VpnGateSettingsTable } from './main/VpnGateSettingsTable';
+import { DeveloperApplicationsTable } from './main/DeveloperApplicationsTable';
+import { DeveloperProfilesTable } from './main/DeveloperProfilesTable';
+import { DeveloperApiKeysTable } from './main/DeveloperApiKeysTable';
+import { DeveloperApiUsageTable } from './main/DeveloperApiUsageTable';
 import {
   DailyDatabaseTotalsTable,
   DailyTableActivityTable,
-} from "./main/DailyTableActivityTable";
-import { WebsocketSnapshotsTable } from "./main/WebsocketSnapshotsTable";
+} from './main/DailyTableActivityTable';
+import { WebsocketSnapshotsTable } from './main/WebsocketSnapshotsTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;

@@ -22,7 +22,10 @@ if (!IP_HASH_SECRET) {
 const key = Buffer.from(ENCRYPTION_KEY, 'utf8').subarray(0, 32);
 
 export function hashIp(plaintextIp: string): string {
-  return crypto.createHmac('sha256', IP_HASH_SECRET!).update(plaintextIp).digest('hex');
+  return crypto
+    .createHmac('sha256', IP_HASH_SECRET!)
+    .update(plaintextIp)
+    .digest('hex');
 }
 
 export function encrypt(text: unknown) {

@@ -95,26 +95,34 @@ router.post(
         const userRolesForEvent = await getUserRoles(createdBy);
 
         const hasPfatcSector = userRolesForEvent.some((r) => {
-          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          const p =
+            typeof r.permissions === 'string'
+              ? JSON.parse(r.permissions)
+              : r.permissions;
           return p?.pfatc_sector === true;
         });
 
         const hasAatcSector = userRolesForEvent.some((r) => {
-          const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+          const p =
+            typeof r.permissions === 'string'
+              ? JSON.parse(r.permissions)
+              : r.permissions;
           return p?.aatc_sector === true;
         });
 
         if (pfatc && eventModeRow?.pfatc_event_mode && !hasPfatcSector) {
           return res.status(403).json({
             error: 'Event mode active',
-            message: 'PFATC event mode is active. Only PFATC Event Controllers can create PFATC sessions.',
+            message:
+              'PFATC event mode is active. Only PFATC Event Controllers can create PFATC sessions.',
           });
         }
 
         if (advancedAtc && eventModeRow?.aatc_event_mode && !hasAatcSector) {
           return res.status(403).json({
             error: 'Event mode active',
-            message: 'AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.',
+            message:
+              'AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.',
           });
         }
       }
@@ -125,9 +133,14 @@ router.post(
       const isTester =
         isAdmin(createdBy) ||
         userRoles.some(
-          (role) => role.name === 'Tester' || role.name === 'Event Controller' ||
+          (role) =>
+            role.name === 'Tester' ||
+            role.name === 'Event Controller' ||
             (() => {
-              const p = typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
+              const p =
+                typeof role.permissions === 'string'
+                  ? JSON.parse(role.permissions)
+                  : role.permissions;
               return p?.pfatc_sector === true || p?.aatc_sector === true;
             })()
         );
@@ -240,10 +253,7 @@ router.get('/mine', requireAuth, async (req, res) => {
     if (sessionIds.length > 0) {
       const counts = await mainDb
         .selectFrom('flights')
-        .select([
-          'session_id',
-          sql<number>`count(*)::int`.as('count'),
-        ])
+        .select(['session_id', sql<number>`count(*)::int`.as('count')])
         .where('session_id', 'in', sessionIds)
         .groupBy('session_id')
         .execute();
@@ -266,7 +276,11 @@ router.get('/mine', requireAuth, async (req, res) => {
     }));
 
     try {
-      await redisConnection.setex(cacheKey, TTL.USER_SESSIONS_SEC, JSON.stringify(result));
+      await redisConnection.setex(
+        cacheKey,
+        TTL.USER_SESSIONS_SEC,
+        JSON.stringify(result)
+      );
     } catch {
       // ignore cache errors
     }

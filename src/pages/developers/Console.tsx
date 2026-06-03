@@ -1,26 +1,36 @@
-import { Link } from "react-router-dom";
-import { useCallback, useMemo, useState } from "react";
-import { Loader2, Eye, EyeOff, ChevronRight, ChevronDown, Search } from "lucide-react";
+import { Link } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  ChevronRight,
+  ChevronDown,
+  Search,
+} from 'lucide-react';
 import {
   DeveloperRequestsAreaChart,
   DeveloperScopeDonutChart,
-} from "../../components/developers/DeveloperUsageCharts";
-import DeveloperPillSegmentedControl from "./DeveloperPillSegmentedControl";
-import { cardClass } from "./constants";
-import { useDeveloperPortal, type DeveloperUsageChartWindow } from "./developerPortalContext";
+} from '../../components/developers/DeveloperUsageCharts';
+import DeveloperPillSegmentedControl from './DeveloperPillSegmentedControl';
+import { cardClass } from './constants';
+import {
+  useDeveloperPortal,
+  type DeveloperUsageChartWindow,
+} from './developerPortalContext';
 
 function formatMaskedIp(ip: string): string {
-  if (ip.includes(".") && !ip.includes(":")) {
-    const parts = ip.split(".");
+  if (ip.includes('.') && !ip.includes(':')) {
+    const parts = ip.split('.');
     if (parts.length === 4) {
       return `${parts[0]}.${parts[1]}.*.*`;
     }
   }
-  if (ip.includes(":")) {
-    const first = ip.split(":").find((s) => s.length > 0);
-    return first ? `${first}:****` : "****";
+  if (ip.includes(':')) {
+    const first = ip.split(':').find((s) => s.length > 0);
+    return first ? `${first}:****` : '****';
   }
-  return "••••••••";
+  return '••••••••';
 }
 
 export default function DeveloperConsole() {
@@ -34,9 +44,13 @@ export default function DeveloperConsole() {
     scopeLabelMap,
   } = useDeveloperPortal();
 
-  const [revealedCallIds, setRevealedCallIds] = useState<Set<string>>(new Set());
-  const [expandedCallIds, setExpandedCallIds] = useState<Set<string>>(new Set());
-  const [callsSearch, setCallsSearch] = useState("");
+  const [revealedCallIds, setRevealedCallIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedCallIds, setExpandedCallIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [callsSearch, setCallsSearch] = useState('');
 
   const callsQuery = callsSearch.trim().toLowerCase();
   const filteredRecent = useMemo(() => {
@@ -51,9 +65,9 @@ export default function DeveloperConsole() {
         scopeLabel,
         String(r.statusCode),
         String(r.durationMs),
-        r.clientIp ?? "",
+        r.clientIp ?? '',
       ]
-        .join(" ")
+        .join(' ')
         .toLowerCase();
       return hay.includes(callsQuery);
     });
@@ -78,10 +92,10 @@ export default function DeveloperConsole() {
   }, []);
 
   const rangeButtons: { id: DeveloperUsageChartWindow; label: string }[] = [
-    { id: "24h", label: "24h" },
-    { id: 7, label: "7d" },
-    { id: 14, label: "14d" },
-    { id: 30, label: "30d" },
+    { id: '24h', label: '24h' },
+    { id: 7, label: '7d' },
+    { id: 14, label: '14d' },
+    { id: 30, label: '30d' },
   ];
 
   if (loading) {
@@ -95,9 +109,12 @@ export default function DeveloperConsole() {
   if (!profileActive) {
     return (
       <div className={`${cardClass()} max-w-lg`}>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-2">Usage dashboard</h2>
+        <h2 className="text-lg font-semibold text-zinc-100 mb-2">
+          Usage dashboard
+        </h2>
         <p className="text-sm text-zinc-400 mb-4">
-          Charts and request logs appear here once your developer application is approved.
+          Charts and request logs appear here once your developer application is
+          approved.
         </p>
         <Link
           to="/developers"
@@ -115,7 +132,9 @@ export default function DeveloperConsole() {
     <div className="space-y-6">
       <div className={cardClass()}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-semibold text-zinc-100">Request volume</h2>
+          <h2 className="text-lg font-semibold text-zinc-100">
+            Request volume
+          </h2>
           <DeveloperPillSegmentedControl
             aria-label="Request volume time range"
             className="w-full max-w-[min(100%,22rem)] sm:w-auto sm:min-w-[20rem]"
@@ -135,9 +154,9 @@ export default function DeveloperConsole() {
         </div>
         <p className="text-xs text-zinc-500 mt-2">
           {summary?.totalInRange ?? 0} requests
-          {summary?.granularity === "hour"
-            ? " in the rolling window."
-            : " in the selected calendar days."}
+          {summary?.granularity === 'hour'
+            ? ' in the rolling window.'
+            : ' in the selected calendar days.'}
         </p>
       </div>
 
@@ -146,10 +165,15 @@ export default function DeveloperConsole() {
         <div className="h-72 sm:h-80 flex flex-col">
           {!summary?.byScope.length ? (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-sm text-zinc-500">No usage in this period yet.</p>
+              <p className="text-sm text-zinc-500">
+                No usage in this period yet.
+              </p>
             </div>
           ) : (
-            <DeveloperScopeDonutChart rows={summary.byScope} scopeLabelMap={scopeLabelMap} />
+            <DeveloperScopeDonutChart
+              rows={summary.byScope}
+              scopeLabelMap={scopeLabelMap}
+            />
           )}
         </div>
       </div>
@@ -157,10 +181,13 @@ export default function DeveloperConsole() {
       <div className={cardClass()}>
         <div className="mb-4 space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Latest API calls</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">
+              Latest API calls
+            </h2>
             <p className="text-xs text-zinc-500 mt-1">
-              One line per call for a quick scan. Click a row to expand scope, full path, timing,
-              and IP (use the eye to show or hide the full address).
+              One line per call for a quick scan. Click a row to expand scope,
+              full path, timing, and IP (use the eye to show or hide the full
+              address).
             </p>
           </div>
           <div className="relative group w-full">
@@ -182,14 +209,16 @@ export default function DeveloperConsole() {
           </div>
         ) : recent.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
-            <p className="text-sm text-zinc-500">No calls logged in this period yet.</p>
+            <p className="text-sm text-zinc-500">
+              No calls logged in this period yet.
+            </p>
           </div>
         ) : filteredRecent.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
             <p className="text-sm text-zinc-500">No calls match your search.</p>
             <button
               type="button"
-              onClick={() => setCallsSearch("")}
+              onClick={() => setCallsSearch('')}
               className="mt-2 text-xs font-medium text-blue-400 hover:text-blue-300"
             >
               Clear filter
@@ -204,12 +233,15 @@ export default function DeveloperConsole() {
               const ip = r.clientIp ?? null;
               const ok = r.statusCode >= 200 && r.statusCode < 300;
               const err = r.statusCode >= 400;
-              const shortTime = new Date(r.createdAt).toLocaleString(undefined, {
-                month: "numeric",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+              const shortTime = new Date(r.createdAt).toLocaleString(
+                undefined,
+                {
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }
+              );
 
               return (
                 <li key={r.id}>
@@ -219,7 +251,7 @@ export default function DeveloperConsole() {
                     aria-expanded={expanded}
                     onClick={() => toggleCallExpand(r.id)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
+                      if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         toggleCallExpand(r.id);
                       }
@@ -242,10 +274,10 @@ export default function DeveloperConsole() {
                     <span
                       className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums sm:text-[11px] ${
                         ok
-                          ? "bg-emerald-950/55 text-emerald-300"
+                          ? 'bg-emerald-950/55 text-emerald-300'
                           : err
-                            ? "bg-red-950/50 text-red-300"
-                            : "bg-zinc-800 text-zinc-300"
+                            ? 'bg-red-950/50 text-red-300'
+                            : 'bg-zinc-800 text-zinc-300'
                       }`}
                     >
                       {r.statusCode}
@@ -261,11 +293,13 @@ export default function DeveloperConsole() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       {!ip ? (
-                        <span className="truncate text-[10px] text-zinc-600 sm:text-xs">—</span>
+                        <span className="truncate text-[10px] text-zinc-600 sm:text-xs">
+                          —
+                        </span>
                       ) : (
                         <>
                           <span
-                            className={`min-w-0 flex-1 truncate text-right font-mono text-[10px] text-zinc-400 sm:text-xs ${revealed ? "" : "filter blur-sm select-none"}`}
+                            className={`min-w-0 flex-1 truncate text-right font-mono text-[10px] text-zinc-400 sm:text-xs ${revealed ? '' : 'filter blur-sm select-none'}`}
                             title={revealed ? ip : undefined}
                           >
                             {revealed ? ip : formatMaskedIp(ip)}
@@ -274,7 +308,9 @@ export default function DeveloperConsole() {
                             type="button"
                             onClick={() => toggleIpReveal(r.id)}
                             className="shrink-0 rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-                            aria-label={revealed ? "Hide IP address" : "Show IP address"}
+                            aria-label={
+                              revealed ? 'Hide IP address' : 'Show IP address'
+                            }
                           >
                             {revealed ? (
                               <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -304,7 +340,9 @@ export default function DeveloperConsole() {
                           {new Date(r.createdAt).toLocaleString()}
                         </dd>
                         <dt className="text-zinc-600">Duration</dt>
-                        <dd className="tabular-nums text-zinc-300">{r.durationMs} ms</dd>
+                        <dd className="tabular-nums text-zinc-300">
+                          {r.durationMs} ms
+                        </dd>
                         <dt className="text-zinc-600">Client IP</dt>
                         <dd className="font-mono text-zinc-300">
                           {!ip ? (
@@ -312,7 +350,7 @@ export default function DeveloperConsole() {
                           ) : (
                             <span className="inline-flex flex-wrap items-center gap-2">
                               <span
-                                className={`break-all ${revealed ? "" : "filter blur-sm select-none"}`}
+                                className={`break-all ${revealed ? '' : 'filter blur-sm select-none'}`}
                               >
                                 {revealed ? ip : formatMaskedIp(ip)}
                               </span>

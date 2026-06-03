@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 import {
   ADMIN_DATETIME_INPUT,
   ADMIN_DATETIME_INPUT_ICON,
   ADMIN_FIELD_INPUT,
   ADMIN_FIELD_INPUT_ICON,
   ADMIN_INPUT_ICON_CLASS,
-} from "./adminConstants";
+} from './adminConstants';
 
 type AdminTextInputProps = {
   label?: string;
@@ -13,7 +13,7 @@ type AdminTextInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  type?: "text" | "datetime-local" | "date";
+  type?: 'text' | 'datetime-local' | 'date';
   disabled?: boolean;
   className?: string;
   required?: boolean;
@@ -25,12 +25,12 @@ export default function AdminTextInput({
   value,
   onChange,
   placeholder,
-  type = "text",
+  type = 'text',
   disabled = false,
-  className = "",
+  className = '',
   required = false,
 }: AdminTextInputProps) {
-  const isDate = type === "datetime-local" || type === "date";
+  const isDate = type === 'datetime-local' || type === 'date';
   const inputClass = icon
     ? isDate
       ? ADMIN_DATETIME_INPUT_ICON

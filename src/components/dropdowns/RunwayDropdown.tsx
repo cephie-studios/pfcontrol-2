@@ -36,8 +36,8 @@ export default function RunwayDropdown({
   const isLoading = useMemo(() => {
     return Boolean(
       airportIcao &&
-        fetchedAirports.has(airportIcao) &&
-        !airportRunways[airportIcao]
+      fetchedAirports.has(airportIcao) &&
+      !airportRunways[airportIcao]
     );
   }, [airportIcao, fetchedAirports, airportRunways]);
 

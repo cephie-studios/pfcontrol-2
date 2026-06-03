@@ -9,7 +9,9 @@ function shouldBypassTesterGate() {
   return window.location.hostname === 'pfcontrol.com';
 }
 
-export function useActiveUpdateModal(user: { isTester?: boolean; isAdmin?: boolean } | null) {
+export function useActiveUpdateModal(
+  user: { isTester?: boolean; isAdmin?: boolean } | null
+) {
   const [testerGateEnabled, setTesterGateEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [activeModal, setActiveModal] = useState<UpdateModal | null>(null);

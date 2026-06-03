@@ -1,8 +1,8 @@
-import { ADMIN_SECTION_TITLE } from "./adminConstants";
+import { ADMIN_SECTION_TITLE } from './adminConstants';
 
 export default function AdminSectionTitle({
   children,
-  className = "",
+  className = '',
 }: {
   children: React.ReactNode;
   className?: string;

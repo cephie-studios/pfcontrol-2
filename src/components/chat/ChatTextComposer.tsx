@@ -7,10 +7,7 @@ import Button from '../common/Button';
 
 export type GlobalChatSuggestion = {
   type: 'user' | 'airport';
-  data:
-    | SessionUser
-    | { icao: string; name: string }
-    | ConnectedGlobalChatUser;
+  data: SessionUser | { icao: string; name: string } | ConnectedGlobalChatUser;
 };
 
 const mentionListClass =
@@ -203,10 +200,7 @@ export function ChatTextComposer({
                       </div>
                       <div
                         className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          isUserInActiveChat(
-                            suggestedUser.id,
-                            activeChatUsers
-                          )
+                          isUserInActiveChat(suggestedUser.id, activeChatUsers)
                             ? 'bg-green-400'
                             : 'bg-gray-400'
                         }`}

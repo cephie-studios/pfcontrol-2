@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { getCurrentUser, logout as apiLogout } from "../../utils/fetch/auth";
-import { AuthContext } from "./useAuth";
-import { useFingerprint } from "./useFingerprint";
-import type { User } from "../../types/user";
-import { usePostHog } from "@posthog/react";
+import React, { useState, useEffect, useRef } from 'react';
+import { getCurrentUser, logout as apiLogout } from '../../utils/fetch/auth';
+import { AuthContext } from './useAuth';
+import { useFingerprint } from './useFingerprint';
+import type { User } from '../../types/user';
+import { usePostHog } from '@posthog/react';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const posthog = usePostHog();
@@ -47,8 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         rolePermissions: currentUser.rolePermissions || {},
       });
     } catch (error) {
-      console.error("Error refreshing user:", error);
-      posthog?.captureException?.(error, { source: "AuthProvider.refreshUser" });
+      console.error('Error refreshing user:', error);
+      posthog?.captureException?.(error, {
+        source: 'AuthProvider.refreshUser',
+      });
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -65,8 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await apiLogout();
       setUser(null);
     } catch (error) {
-      console.error("Error logging out:", error);
-      posthog?.captureException?.(error, { source: "AuthProvider.logout" });
+      console.error('Error logging out:', error);
+      posthog?.captureException?.(error, { source: 'AuthProvider.logout' });
     }
   };
 
@@ -76,8 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handler = () => refreshUser();
-    window.addEventListener("auth:forbidden", handler);
-    return () => window.removeEventListener("auth:forbidden", handler);
+    window.addEventListener('auth:forbidden', handler);
+    return () => window.removeEventListener('auth:forbidden', handler);
   }, []);
 
   return (

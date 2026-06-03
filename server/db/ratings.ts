@@ -28,7 +28,11 @@ export async function getControllerRatingStats(controllerId: string) {
     .executeTakeFirst();
 
   return {
-    averageRating: result?.averageRating ? parseFloat(result.averageRating.toString()) : 0,
-    ratingCount: result?.ratingCount ? parseInt(result.ratingCount.toString()) : 0,
+    averageRating: result?.averageRating
+      ? parseFloat(result.averageRating.toString())
+      : 0,
+    ratingCount: result?.ratingCount
+      ? parseInt(result.ratingCount.toString())
+      : 0,
   };
 }

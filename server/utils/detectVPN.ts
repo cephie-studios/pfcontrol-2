@@ -61,9 +61,14 @@ function expandIPv6(ip: string): string {
     const left = halves[0] ? halves[0].split(':') : [];
     const right = halves[1] ? halves[1].split(':') : [];
     const fill = Array(8 - left.length - right.length).fill('0000');
-    return [...left, ...fill, ...right].map((g) => g.padStart(4, '0')).join(':');
+    return [...left, ...fill, ...right]
+      .map((g) => g.padStart(4, '0'))
+      .join(':');
   }
-  return ip.split(':').map((g) => g.padStart(4, '0')).join(':');
+  return ip
+    .split(':')
+    .map((g) => g.padStart(4, '0'))
+    .join(':');
 }
 
 /**
@@ -160,7 +165,11 @@ export async function isIpVpn(ip: string): Promise<boolean> {
   const promise = queryProxycheck(ip)
     .then(async (isVpn) => {
       try {
-        await redisConnection.setex(cacheKey, VPN_IP_CACHE_TTL, isVpn ? '1' : '0');
+        await redisConnection.setex(
+          cacheKey,
+          VPN_IP_CACHE_TTL,
+          isVpn ? '1' : '0'
+        );
       } catch {
         // Redis unavailable — skip caching
       }

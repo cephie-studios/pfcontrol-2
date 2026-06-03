@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MdPeople,
   MdDelete,
@@ -7,15 +7,15 @@ import {
   MdCheck,
   MdGppBad,
   MdNotes,
-} from "react-icons/md";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminIconInput from "../../components/admin/AdminIconInput";
-import AdminTable from "../../components/admin/AdminTable";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminSectionTitle from "../../components/admin/AdminSectionTitle";
+} from 'react-icons/md';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminIconInput from '../../components/admin/AdminIconInput';
+import AdminTable from '../../components/admin/AdminTable';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -23,37 +23,37 @@ import {
   ADMIN_TABLE_HEAD,
   ADMIN_TH,
   ADMIN_TD,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchTesters,
   addTester,
   removeTester,
   updateTesterSettings,
   type Tester,
-} from "../../utils/fetch/testers";
-import { getTesterSettings } from "../../utils/fetch/data";
+} from '../../utils/fetch/testers';
+import { getTesterSettings } from '../../utils/fetch/data';
 
 export default function AdminTesters() {
   const [testers, setTesters] = useState<Tester[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalTesters, setTotalTesters] = useState(0);
   const [addingTester, setAddingTester] = useState(false);
   const [removingTester, setRemovingTester] = useState<string | null>(null);
-  const [newTesterUserId, setNewTesterUserId] = useState("");
-  const [newTesterNotes, setNewTesterNotes] = useState("");
+  const [newTesterUserId, setNewTesterUserId] = useState('');
+  const [newTesterNotes, setNewTesterNotes] = useState('');
   const [gateEnabled, setGateEnabled] = useState(true);
   const [updatingGate, setUpdatingGate] = useState(false);
 
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const fetchTestersData = async () => {
@@ -71,7 +71,7 @@ export default function AdminTesters() {
       setTotalTesters(testersData.pagination.total);
       setGateEnabled(settings.tester_gate_enabled);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch testers");
+      setError(err instanceof Error ? err.message : 'Failed to fetch testers');
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function AdminTesters() {
 
   const handleAddTester = async () => {
     if (!newTesterUserId.trim()) {
-      setToast({ message: "User ID is required", type: "error" });
+      setToast({ message: 'User ID is required', type: 'error' });
       return;
     }
 
@@ -91,14 +91,14 @@ export default function AdminTesters() {
       setAddingTester(true);
       await addTester(newTesterUserId.trim(), newTesterNotes.trim());
 
-      setToast({ message: "Tester added successfully", type: "success" });
-      setNewTesterUserId("");
-      setNewTesterNotes("");
+      setToast({ message: 'Tester added successfully', type: 'success' });
+      setNewTesterUserId('');
+      setNewTesterNotes('');
       fetchTestersData();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to add tester",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to add tester',
+        type: 'error',
       });
     } finally {
       setAddingTester(false);
@@ -111,14 +111,14 @@ export default function AdminTesters() {
       await removeTester(userId);
 
       setToast({
-        message: "Tester removed successfully",
-        type: "success",
+        message: 'Tester removed successfully',
+        type: 'success',
       });
       fetchTestersData();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to remove tester",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to remove tester',
+        type: 'error',
       });
     } finally {
       setRemovingTester(null);
@@ -132,14 +132,14 @@ export default function AdminTesters() {
       setGateEnabled(!gateEnabled);
 
       setToast({
-        message: `Tester gate ${!gateEnabled ? "enabled" : "disabled"}`,
-        type: "success",
+        message: `Tester gate ${!gateEnabled ? 'enabled' : 'disabled'}`,
+        type: 'success',
       });
     } catch (err) {
       setToast({
         message:
-          err instanceof Error ? err.message : "Failed to update settings",
-        type: "error",
+          err instanceof Error ? err.message : 'Failed to update settings',
+        type: 'error',
       });
     } finally {
       setUpdatingGate(false);
@@ -155,17 +155,17 @@ export default function AdminTesters() {
       />
 
       <AdminStatStrip
-        items={[{ label: "Total testers", value: totalTesters }]}
+        items={[{ label: 'Total testers', value: totalTesters }]}
         columns={2}
       />
 
-      <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+      <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
         <AdminSectionTitle>Tester gate</AdminSectionTitle>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={`p-2.5 rounded-lg shrink-0 ${
-                gateEnabled ? "bg-emerald-950/40" : "bg-red-950/40"
+                gateEnabled ? 'bg-emerald-950/40' : 'bg-red-950/40'
               }`}
             >
               {gateEnabled ? (
@@ -176,27 +176,27 @@ export default function AdminTesters() {
             </div>
             <div>
               <p className="text-sm font-medium text-zinc-200">
-                {gateEnabled ? "Gate enabled" : "Gate disabled"}
+                {gateEnabled ? 'Gate enabled' : 'Gate disabled'}
               </p>
               <p className="text-xs text-zinc-500 mt-0.5">
                 {gateEnabled
-                  ? "Only approved testers can access the application"
-                  : "All users can access the application"}
+                  ? 'Only approved testers can access the application'
+                  : 'All users can access the application'}
               </p>
             </div>
           </div>
           <Button
             onClick={handleToggleGate}
             disabled={updatingGate}
-            variant={gateEnabled ? "danger" : "primary"}
-            size={adminDownsizeButtonSize("sm")}
+            variant={gateEnabled ? 'danger' : 'primary'}
+            size={adminDownsizeButtonSize('sm')}
           >
             {updatingGate ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : gateEnabled ? (
-              "Disable gate"
+              'Disable gate'
             ) : (
-              "Enable gate"
+              'Enable gate'
             )}
           </Button>
         </div>
@@ -321,13 +321,13 @@ export default function AdminTesters() {
                         <td className={ADMIN_TD}>
                           {new Date(tester.created_at).toLocaleDateString()}
                         </td>
-                        <td className={ADMIN_TD}>{tester.notes || "—"}</td>
+                        <td className={ADMIN_TD}>{tester.notes || '—'}</td>
                         <td className={ADMIN_TD}>
                           <Button
                             onClick={() => handleRemoveTester(tester.user_id)}
                             disabled={removingTester === tester.user_id}
                             variant="danger"
-                            size={adminDownsizeButtonSize("sm")}
+                            size={adminDownsizeButtonSize('sm')}
                           >
                             {removingTester === tester.user_id ? (
                               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -378,23 +378,23 @@ export default function AdminTesters() {
                     </div>
                     <dl className="space-y-1 text-sm text-zinc-400 mb-3">
                       <div>
-                        <span className="text-zinc-500">Added by:</span>{" "}
+                        <span className="text-zinc-500">Added by:</span>{' '}
                         {tester.added_by_username}
                       </div>
                       <div>
-                        <span className="text-zinc-500">Date:</span>{" "}
+                        <span className="text-zinc-500">Date:</span>{' '}
                         {new Date(tester.created_at).toLocaleDateString()}
                       </div>
                       <div>
-                        <span className="text-zinc-500">Notes:</span>{" "}
-                        {tester.notes || "—"}
+                        <span className="text-zinc-500">Notes:</span>{' '}
+                        {tester.notes || '—'}
                       </div>
                     </dl>
                     <Button
                       onClick={() => handleRemoveTester(tester.user_id)}
                       disabled={removingTester === tester.user_id}
                       variant="danger"
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                     >
                       {removingTester === tester.user_id ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -416,8 +416,8 @@ export default function AdminTesters() {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                         currentPage === page
-                          ? "bg-blue-600 text-white"
-                          : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700"
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
                       }`}
                     >
                       {page}

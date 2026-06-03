@@ -72,7 +72,9 @@ function discordCreatedAt(userId: string): Date {
 }
 
 function daysBetween(a: Date, b: Date): number {
-  return Math.floor(Math.abs(b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(
+    Math.abs(b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24)
+  );
 }
 
 function scoreLabel(score: number): 'low' | 'medium' | 'high' | 'critical' {
@@ -84,15 +86,15 @@ function scoreLabel(score: number): 'low' | 'medium' | 'high' | 'critical' {
 
 function computeScore(signals: ClusterSignals, memberCount: number): number {
   let base = 0;
-  if (signals.shared_fingerprint && signals.shared_ip) base = 0.80;
+  if (signals.shared_fingerprint && signals.shared_ip) base = 0.8;
   else if (signals.shared_fingerprint) base = 0.55;
-  else base = 0.50; // shared IP alone is a strong signal — raised from 0.35
+  else base = 0.5; // shared IP alone is a strong signal — raised from 0.35
 
   if (signals.has_banned_member) base += 0.15;
-  if (signals.young_account_joined_after_ban) base += 0.10;
+  if (signals.young_account_joined_after_ban) base += 0.1;
 
   // More accounts sharing a signal = higher confidence
-  if (memberCount >= 5) base += 0.10;
+  if (memberCount >= 5) base += 0.1;
   else if (memberCount >= 3) base += 0.05;
 
   if (signals.vpn_overlap) {
@@ -131,11 +133,18 @@ class UnionFind {
     else this.ipEdges.add(this.find(a));
   }
 
-  components(): Map<string, { members: string[]; hasFp: boolean; hasIp: boolean }> {
-    const map = new Map<string, { members: string[]; hasFp: boolean; hasIp: boolean }>();
+  components(): Map<
+    string,
+    { members: string[]; hasFp: boolean; hasIp: boolean }
+  > {
+    const map = new Map<
+      string,
+      { members: string[]; hasFp: boolean; hasIp: boolean }
+    >();
     for (const id of this.parent.keys()) {
       const root = this.find(id);
-      if (!map.has(root)) map.set(root, { members: [], hasFp: false, hasIp: false });
+      if (!map.has(root))
+        map.set(root, { members: [], hasFp: false, hasIp: false });
       map.get(root)!.members.push(id);
     }
     // propagate signals to final roots
@@ -221,7 +230,11 @@ router.get('/', async (req, res) => {
     if (allMemberIds.size === 0) {
       const response: AltClustersResponse = {
         clusters: [],
-        stats: { total_clusters: 0, total_flagged_accounts: 0, scan_duration_ms: Date.now() - startTime },
+        stats: {
+          total_clusters: 0,
+          total_flagged_accounts: 0,
+          scan_duration_ms: Date.now() - startTime,
+        },
       };
       return res.json(response);
     }
@@ -237,12 +250,18 @@ router.get('/', async (req, res) => {
         .where('user_id', 'in', memberIdArray)
         .where('active', '=', true)
         .where((eb) =>
-          eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', new Date())])
+          eb.or([
+            eb('expires_at', 'is', null),
+            eb('expires_at', '>', new Date()),
+          ])
         )
         .execute(),
     ]);
 
-    const userMap = new Map<string, ReturnType<typeof getUserById> extends Promise<infer T> ? T : never>();
+    const userMap = new Map<
+      string,
+      ReturnType<typeof getUserById> extends Promise<infer T> ? T : never
+    >();
     for (let i = 0; i < memberIdArray.length; i++) {
       const u = userResults[i];
       if (u) userMap.set(memberIdArray[i], u);
@@ -254,8 +273,12 @@ router.get('/', async (req, res) => {
         banMap.set(ban.user_id, {
           active: ban.active ?? true,
           reason: ban.reason ?? null,
-          expires_at: ban.expires_at ? new Date(ban.expires_at as unknown as string).toISOString() : null,
-          banned_at: ban.banned_at ? new Date(ban.banned_at as unknown as string).toISOString() : null,
+          expires_at: ban.expires_at
+            ? new Date(ban.expires_at as unknown as string).toISOString()
+            : null,
+          banned_at: ban.banned_at
+            ? new Date(ban.banned_at as unknown as string).toISOString()
+            : null,
         });
       }
     }
@@ -272,7 +295,9 @@ router.get('/', async (req, res) => {
         if (!u) continue;
 
         const discordCreated = discordCreatedAt(id);
-        const platformJoined = u.created_at ? new Date(u.created_at as unknown as string) : null;
+        const platformJoined = u.created_at
+          ? new Date(u.created_at as unknown as string)
+          : null;
         const discordAgeDays = platformJoined
           ? daysBetween(discordCreated, platformJoined)
           : 0;
@@ -285,7 +310,9 @@ router.get('/', async (req, res) => {
           created_at: platformJoined ? platformJoined.toISOString() : '',
           discord_created_at: discordCreated.toISOString(),
           discord_account_age_days: discordAgeDays,
-          last_login: u.last_login ? new Date(u.last_login as unknown as string).toISOString() : null,
+          last_login: u.last_login
+            ? new Date(u.last_login as unknown as string).toISOString()
+            : null,
           is_vpn: u.is_vpn ?? false,
           fingerprint_id: u.fingerprint_id ?? null,
           ip_hash: u.ip_hash ?? null,
@@ -310,7 +337,8 @@ router.get('/', async (req, res) => {
           if (!m.created_at) return false; // skip members without join date
           const joinedMs = new Date(m.created_at).getTime();
           const discordMs = new Date(m.discord_created_at).getTime();
-          const discordAgeDaysAtJoin = (joinedMs - discordMs) / (1000 * 60 * 60 * 24);
+          const discordAgeDaysAtJoin =
+            (joinedMs - discordMs) / (1000 * 60 * 60 * 24);
           return joinedMs > earliestBanDate && discordAgeDaysAtJoin <= 90;
         });
 
@@ -331,7 +359,9 @@ router.get('/', async (req, res) => {
       members.sort((a, b) => {
         if (a.ban && !b.ban) return -1;
         if (!a.ban && b.ban) return 1;
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
       });
 
       const clusterId = [...comp.members].sort().join(':');
@@ -348,9 +378,13 @@ router.get('/', async (req, res) => {
     }
 
     // Sort by score desc, then member count desc
-    clusters.sort((a, b) => b.score - a.score || b.member_count - a.member_count);
+    clusters.sort(
+      (a, b) => b.score - a.score || b.member_count - a.member_count
+    );
 
-    const flaggedIds = new Set(clusters.flatMap((c) => c.members.map((m) => m.id)));
+    const flaggedIds = new Set(
+      clusters.flatMap((c) => c.members.map((m) => m.id))
+    );
 
     const response: AltClustersResponse = {
       clusters,

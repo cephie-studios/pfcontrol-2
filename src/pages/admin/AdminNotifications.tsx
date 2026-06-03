@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MdNotifications,
   MdAdd,
@@ -7,33 +7,33 @@ import {
   MdCheck,
   MdClose,
   MdVisibility,
-} from "react-icons/md";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminTable from "../../components/admin/AdminTable";
-import AdminSectionTitle from "../../components/admin/AdminSectionTitle";
+} from 'react-icons/md';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminTable from '../../components/admin/AdminTable';
+import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
   ADMIN_TABLE_HEAD,
   ADMIN_TH,
   ADMIN_TD,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
-import Dropdown from "../../components/common/Dropdown";
-import TextInput from "../../components/common/TextInput";
-import Checkbox from "../../components/common/Checkbox";
-import UpdateModalsSection from "../../components/admin/UpdateModalsSection";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
+import Dropdown from '../../components/common/Dropdown';
+import TextInput from '../../components/common/TextInput';
+import Checkbox from '../../components/common/Checkbox';
+import UpdateModalsSection from '../../components/admin/UpdateModalsSection';
 import {
   fetchNotifications,
   addNotification,
   updateNotification,
   deleteNotification,
   type Notification,
-} from "../../utils/fetch/admin";
+} from '../../utils/fetch/admin';
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -44,21 +44,21 @@ export default function AdminNotifications() {
     useState<Notification | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const [newNotification, setNewNotification] = useState({
-    type: "info" as "info" | "warning" | "success" | "error",
-    text: "",
+    type: 'info' as 'info' | 'warning' | 'success' | 'error',
+    text: '',
     show: false,
-    customColor: "",
+    customColor: '',
   });
 
   const typeOptions = [
-    { value: "info", label: "Info" },
-    { value: "warning", label: "Warning" },
-    { value: "success", label: "Success" },
-    { value: "error", label: "Error" },
+    { value: 'info', label: 'Info' },
+    { value: 'warning', label: 'Warning' },
+    { value: 'success', label: 'Success' },
+    { value: 'error', label: 'Error' },
   ];
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function AdminNotifications() {
       setNotifications(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch notifications"
+        err instanceof Error ? err.message : 'Failed to fetch notifications'
       );
     } finally {
       setLoading(false);
@@ -88,19 +88,19 @@ export default function AdminNotifications() {
         custom_color: newNotification.customColor?.trim() || null,
       });
       setToast({
-        message: "Notification added successfully",
-        type: "success",
+        message: 'Notification added successfully',
+        type: 'success',
       });
       setShowAddModal(false);
       setNewNotification({
-        type: "info",
-        text: "",
+        type: 'info',
+        text: '',
         show: false,
-        customColor: "",
+        customColor: '',
       });
       fetchAllNotifications();
     } catch {
-      setToast({ message: "Failed to add notification", type: "error" });
+      setToast({ message: 'Failed to add notification', type: 'error' });
     }
   };
 
@@ -115,15 +115,15 @@ export default function AdminNotifications() {
       };
       await updateNotification(id, cleanedUpdates);
       setToast({
-        message: "Notification updated successfully",
-        type: "success",
+        message: 'Notification updated successfully',
+        type: 'success',
       });
       setEditingNotification(null);
       fetchAllNotifications();
     } catch {
       setToast({
-        message: "Failed to update notification",
-        type: "error",
+        message: 'Failed to update notification',
+        type: 'error',
       });
     }
   };
@@ -132,27 +132,27 @@ export default function AdminNotifications() {
     try {
       await deleteNotification(id);
       setToast({
-        message: "Notification deleted successfully",
-        type: "success",
+        message: 'Notification deleted successfully',
+        type: 'success',
       });
       fetchAllNotifications();
     } catch {
       setToast({
-        message: "Failed to delete notification",
-        type: "error",
+        message: 'Failed to delete notification',
+        type: 'error',
       });
     }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "info":
+      case 'info':
         return <MdVisibility size={18} className="text-blue-400" />;
-      case "warning":
+      case 'warning':
         return <MdVisibility size={18} className="text-yellow-400" />;
-      case "success":
+      case 'success':
         return <MdVisibility size={18} className="text-green-400" />;
-      case "error":
+      case 'error':
         return <MdVisibility size={18} className="text-red-400" />;
       default:
         return <MdNotifications size={18} className="text-zinc-400" />;
@@ -174,7 +174,7 @@ export default function AdminNotifications() {
           <Button
             onClick={() => setShowAddModal(true)}
             variant="outline"
-            size={adminDownsizeButtonSize("sm")}
+            size={adminDownsizeButtonSize('sm')}
           >
             <MdAdd size={16} className="mr-1.5" />
             Add
@@ -194,7 +194,7 @@ export default function AdminNotifications() {
         />
       ) : (
         <>
-          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
             <AdminSectionTitle>Site notifications</AdminSectionTitle>
 
             <div className="hidden md:block">
@@ -219,7 +219,7 @@ export default function AdminNotifications() {
                       <td className={ADMIN_TD}>{notif.text}</td>
                       <td className={ADMIN_TD}>
                         <Button
-                          size={adminDownsizeButtonSize("sm")}
+                          size={adminDownsizeButtonSize('sm')}
                           variant="ghost"
                           onClick={() =>
                             handleUpdateNotification(notif.id, {
@@ -237,14 +237,14 @@ export default function AdminNotifications() {
                       <td className={ADMIN_TD}>
                         <div className="flex space-x-2">
                           <Button
-                            size={adminDownsizeButtonSize("sm")}
+                            size={adminDownsizeButtonSize('sm')}
                             variant="outline"
                             onClick={() => setEditingNotification(notif)}
                           >
                             <MdEdit size={16} />
                           </Button>
                           <Button
-                            size={adminDownsizeButtonSize("sm")}
+                            size={adminDownsizeButtonSize('sm')}
                             variant="danger"
                             onClick={() => handleDeleteNotification(notif.id)}
                           >
@@ -300,7 +300,7 @@ export default function AdminNotifications() {
 
                   <div className="space-y-2">
                     <Button
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       variant="outline"
                       onClick={() => setEditingNotification(notif)}
                       className="w-full justify-center"
@@ -309,7 +309,7 @@ export default function AdminNotifications() {
                       Edit
                     </Button>
                     <Button
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       variant="danger"
                       onClick={() => handleDeleteNotification(notif.id)}
                       className="w-full justify-center"
@@ -332,19 +332,19 @@ export default function AdminNotifications() {
       <AdminModal
         open={showAddModal || !!editingNotification}
         onClose={closeModal}
-        title={`${editingNotification ? "Edit" : "Add"} Notification`}
+        title={`${editingNotification ? 'Edit' : 'Add'} Notification`}
         size="md"
         footer={
           <>
             <Button
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               variant="outline"
               onClick={closeModal}
             >
               Cancel
             </Button>
             <Button
-              size={adminDownsizeButtonSize("sm")}
+              size={adminDownsizeButtonSize('sm')}
               onClick={
                 editingNotification
                   ? () =>
@@ -355,7 +355,7 @@ export default function AdminNotifications() {
                   : handleAddNotification
               }
             >
-              {editingNotification ? "Update" : "Add"}
+              {editingNotification ? 'Update' : 'Add'}
             </Button>
           </>
         }
@@ -368,11 +368,11 @@ export default function AdminNotifications() {
               editingNotification
                 ? setEditingNotification({
                     ...editingNotification,
-                    type: value as "info" | "warning" | "success" | "error",
+                    type: value as 'info' | 'warning' | 'success' | 'error',
                   })
                 : setNewNotification({
                     ...newNotification,
-                    type: value as "info" | "warning" | "success" | "error",
+                    type: value as 'info' | 'warning' | 'success' | 'error',
                   })
             }
             placeholder="Select type"
@@ -407,7 +407,7 @@ export default function AdminNotifications() {
           <TextInput
             value={
               editingNotification
-                ? editingNotification.custom_color || ""
+                ? editingNotification.custom_color || ''
                 : newNotification.customColor
             }
             onChange={(value) =>

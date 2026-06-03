@@ -35,13 +35,16 @@ export async function deleteOldImage(url: string | undefined, userId?: string) {
     return;
   }
   try {
-    const response = await axios.delete(`${CEPHIE_API_BASE}/api/v1/images/${id}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CEPHIE_API_KEY,
-      },
-      data: userId != null ? { userId } : {},
-    });
+    const response = await axios.delete(
+      `${CEPHIE_API_BASE}/api/v1/images/${id}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': CEPHIE_API_KEY,
+        },
+        data: userId != null ? { userId } : {},
+      }
+    );
     if (response.status !== 200) {
       console.error(
         'Failed to delete old image:',
@@ -231,12 +234,18 @@ router.get(
       if (axios.isAxiosError(err)) {
         const status = err.response?.status ?? 500;
         const data = err.response?.data;
-        return res.status(status).json(
-          data && typeof data === 'object' ? data : { error: 'Failed to load Cephie Snap images' }
-        );
+        return res
+          .status(status)
+          .json(
+            data && typeof data === 'object'
+              ? data
+              : { error: 'Failed to load Cephie Snap images' }
+          );
       }
       console.error('Error fetching Cephie Snap images:', err);
-      return res.status(500).json({ error: 'Failed to load Cephie Snap images' });
+      return res
+        .status(500)
+        .json({ error: 'Failed to load Cephie Snap images' });
     }
   }
 );

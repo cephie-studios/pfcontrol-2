@@ -1,4 +1,4 @@
-import io from "socket.io-client";
+import io from 'socket.io-client';
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -46,18 +46,18 @@ export function createGlobalChatSocket(
   onAirportMention?: (mention: GlobalChatMention) => void,
   onConnectedGlobalChatUsers?: (users: ConnectedGlobalChatUser[]) => void,
   onUserTyping?: (data: { userId: string; username: string }) => void,
-  networkKind: "pfatc" | "aatc" = "pfatc",
+  networkKind: 'pfatc' | 'aatc' = 'pfatc'
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,
-    path: "/sockets/global-chat",
+    path: '/sockets/global-chat',
     query: {
       userId,
-      station: station || "",
-      position: position || "",
+      station: station || '',
+      position: position || '',
       networkKind,
     },
-    transports: ["websocket", "polling"],
+    transports: ['websocket', 'polling'],
     upgrade: true,
     reconnection: true,
     reconnectionDelay: 1000,
@@ -65,47 +65,47 @@ export function createGlobalChatSocket(
     timeout: 10000,
   });
 
-  socket.on("globalChatMessage", onMessage);
+  socket.on('globalChatMessage', onMessage);
 
   if (onMessageDeleted) {
-    socket.on("globalMessageDeleted", onMessageDeleted);
+    socket.on('globalMessageDeleted', onMessageDeleted);
   }
 
   if (onDeleteError) {
-    socket.on("deleteError", onDeleteError);
+    socket.on('deleteError', onDeleteError);
   }
 
   if (onActiveGlobalChatUsers) {
-    socket.on("activeGlobalChatUsers", onActiveGlobalChatUsers);
+    socket.on('activeGlobalChatUsers', onActiveGlobalChatUsers);
   }
 
   if (onMessageAutomodded) {
-    socket.on("messageAutomodded", onMessageAutomodded);
+    socket.on('messageAutomodded', onMessageAutomodded);
   }
 
   if (onMention) {
-    socket.on("globalChatMention", onMention);
+    socket.on('globalChatMention', onMention);
   }
 
   if (onAirportMention) {
-    socket.on("airportMention", onAirportMention);
+    socket.on('airportMention', onAirportMention);
   }
 
   if (onConnectedGlobalChatUsers) {
-    socket.on("connectedGlobalChatUsers", onConnectedGlobalChatUsers);
+    socket.on('connectedGlobalChatUsers', onConnectedGlobalChatUsers);
   }
 
   if (onUserTyping) {
-    socket.on("globalUserTyping", onUserTyping);
+    socket.on('globalUserTyping', onUserTyping);
   }
 
   return {
     socket,
     deleteMessage: (messageId: number, userId: string) => {
-      socket.emit("deleteGlobalMessage", { messageId, userId });
+      socket.emit('deleteGlobalMessage', { messageId, userId });
     },
     sendTyping: (username: string) => {
-      socket.emit("globalTyping", { username });
+      socket.emit('globalTyping', { username });
     },
   };
 }

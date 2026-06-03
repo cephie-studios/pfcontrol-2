@@ -21,7 +21,11 @@ router.post('/', requireAuth, async (req, res) => {
       comment: comment?.trim() || undefined,
     });
 
-    capture(req, { distinctId: req.user!.userId, event: 'feedback_submitted', properties: { rating: Number(rating), has_comment: !!comment?.trim() } });
+    capture(req, {
+      distinctId: req.user!.userId,
+      event: 'feedback_submitted',
+      properties: { rating: Number(rating), has_comment: !!comment?.trim() },
+    });
 
     res.json(feedback);
   } catch (error) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   MapPin,
   Plane,
@@ -16,36 +16,36 @@ import {
   Eye,
   EyeOff,
   FileText,
-} from "lucide-react";
-import { createPortal } from "react-dom";
-import { createOverviewSocket } from "../sockets/overviewSocket";
-import { useAuth } from "../hooks/auth/useAuth";
-import { useData } from "../hooks/data/useData";
-import { useSettings } from "../hooks/settings/useSettings";
-import { getChartsForAirport } from "../utils/acars";
-import { parseCallsign } from "../utils/callsignParser";
-import { createChartHandlers } from "../utils/charts";
-import { createSectorControllerSocket } from "../sockets/sectorControllerSocket";
-import { fetchBackgrounds } from "../utils/fetch/data";
-import type { OverviewData, OverviewSession } from "../types/overview";
-import type { Flight } from "../types/flight";
-import Navbar from "../components/Navbar";
-import WindDisplay from "../components/tools/WindDisplay";
-import FrequencyDisplay from "../components/tools/FrequencyDisplay";
-import ChartDrawer from "../components/tools/ChartDrawer";
-import ContactAcarsSidebar from "../components/tools/ContactAcarsSidebar";
-import { ChatSidebar } from "../components/chat";
-import Button from "../components/common/Button";
-import Dropdown from "../components/common/Dropdown";
-import TextInput from "../components/common/TextInput";
-import StatusDropdown from "../components/dropdowns/StatusDropdown";
-import AirportDropdown from "../components/dropdowns/AirportDropdown";
-import AircraftDropdown from "../components/dropdowns/AircraftDropdown";
-import AltitudeDropdown from "../components/dropdowns/AltitudeDropdown";
-import SidDropdown from "../components/dropdowns/SidDropdown";
-import StarDropdown from "../components/dropdowns/StarDropdown";
-import ErrorScreen from "../components/common/ErrorScreen";
-import FlightDetailsModal from "../components/tools/FlightDetailModal";
+} from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { createOverviewSocket } from '../sockets/overviewSocket';
+import { useAuth } from '../hooks/auth/useAuth';
+import { useData } from '../hooks/data/useData';
+import { useSettings } from '../hooks/settings/useSettings';
+import { getChartsForAirport } from '../utils/acars';
+import { parseCallsign } from '../utils/callsignParser';
+import { createChartHandlers } from '../utils/charts';
+import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
+import { fetchBackgrounds } from '../utils/fetch/data';
+import type { OverviewData, OverviewSession } from '../types/overview';
+import type { Flight } from '../types/flight';
+import Navbar from '../components/Navbar';
+import WindDisplay from '../components/tools/WindDisplay';
+import FrequencyDisplay from '../components/tools/FrequencyDisplay';
+import ChartDrawer from '../components/tools/ChartDrawer';
+import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
+import { ChatSidebar } from '../components/chat';
+import Button from '../components/common/Button';
+import Dropdown from '../components/common/Dropdown';
+import TextInput from '../components/common/TextInput';
+import StatusDropdown from '../components/dropdowns/StatusDropdown';
+import AirportDropdown from '../components/dropdowns/AirportDropdown';
+import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
+import AltitudeDropdown from '../components/dropdowns/AltitudeDropdown';
+import SidDropdown from '../components/dropdowns/SidDropdown';
+import StarDropdown from '../components/dropdowns/StarDropdown';
+import ErrorScreen from '../components/common/ErrorScreen';
+import FlightDetailsModal from '../components/tools/FlightDetailModal';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -69,26 +69,39 @@ export default function PFATCFlights() {
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAirport, setSelectedAirport] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedFlightType, setSelectedFlightType] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAirport, setSelectedAirport] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedFlightType, setSelectedFlightType] = useState<string>('');
   const [networkSessionFilter, setNetworkSessionFilter] = useState<
-    "all" | "pfatc" | "advanced_atc"
-  >("all");
-  const [expandedAirports, setExpandedAirports] = useState<Set<string>>(new Set());
+    'all' | 'pfatc' | 'advanced_atc'
+  >('all');
+  const [expandedAirports, setExpandedAirports] = useState<Set<string>>(
+    new Set()
+  );
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
-  const [debounceTimers, setDebounceTimers] = useState<Map<string, NodeJS.Timeout>>(new Map());
-  const [pendingUpdates, setPendingUpdates] = useState<Map<string, Partial<Flight>>>(new Map());
-  const [updatingFlights, setUpdatingFlights] = useState<Set<string>>(new Set());
+  const [debounceTimers, setDebounceTimers] = useState<
+    Map<string, NodeJS.Timeout>
+  >(new Map());
+  const [pendingUpdates, setPendingUpdates] = useState<
+    Map<string, Partial<Flight>>
+  >(new Map());
+  const [updatingFlights, setUpdatingFlights] = useState<Set<string>>(
+    new Set()
+  );
   const debounceTimersRef = useRef(debounceTimers);
   const updatingFlightsRef = useRef(updatingFlights);
 
-  const [openActionMenuId, setOpenActionMenuId] = useState<string | number | null>(null);
-  const [selectedFlightForModal, setSelectedFlightForModal] = useState<Flight | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<
+    string | number | null
+  >(null);
+  const [selectedFlightForModal, setSelectedFlightForModal] =
+    useState<Flight | null>(null);
   const [isFlightDetailModalOpen, setIsFlightDetailModalOpen] = useState(false);
-  const actionButtonRefs = useRef<Record<string | number, HTMLButtonElement | null>>({});
+  const actionButtonRefs = useRef<
+    Record<string | number, HTMLButtonElement | null>
+  >({});
 
   const handleOpenFlightDetails = (flight: Flight) => {
     setSelectedFlightForModal(flight);
@@ -115,7 +128,7 @@ export default function PFATCFlights() {
         const data = await fetchBackgrounds();
         setAvailableImages(data);
       } catch (error) {
-        console.error("Error loading available images:", error);
+        console.error('Error loading available images:', error);
       }
     };
     loadImages();
@@ -126,32 +139,37 @@ export default function PFATCFlights() {
     let bgImage = 'url("/assets/images/hero.webp")';
 
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === "random" || filename === "favorites") {
+      if (!filename || filename === 'random' || filename === 'favorites') {
         return filename;
       }
-      if (filename.startsWith("https://api.cephie.app/")) {
+      if (filename.startsWith('https://api.cephie.app/')) {
         return filename;
       }
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
 
-    if (selectedImage === "random") {
+    if (selectedImage === 'random') {
       if (availableImages.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
       }
-    } else if (selectedImage === "favorites") {
+    } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
-        const randomFav = favorites[Math.floor(Math.random() * favorites.length)];
+        const randomFav =
+          favorites[Math.floor(Math.random() * favorites.length)];
         const favImageUrl = getImageUrl(randomFav);
-        if (favImageUrl && favImageUrl !== "random" && favImageUrl !== "favorites") {
+        if (
+          favImageUrl &&
+          favImageUrl !== 'random' &&
+          favImageUrl !== 'favorites'
+        ) {
           bgImage = `url(${favImageUrl})`;
         }
       }
     } else if (selectedImage) {
       const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== "random" && imageUrl !== "favorites") {
+      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
         bgImage = `url(${imageUrl})`;
       }
     }
@@ -169,7 +187,7 @@ export default function PFATCFlights() {
     }
   }, [backgroundImage]);
 
-  const [selectedStation, setSelectedStation] = useState<string>("");
+  const [selectedStation, setSelectedStation] = useState<string>('');
 
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<string | null>(null);
@@ -182,9 +200,14 @@ export default function PFATCFlights() {
   const containerRef = useRef<HTMLDivElement>(null!);
 
   const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
-  const [activeAcarsFlights, setActiveAcarsFlights] = useState<Set<string | number>>(new Set());
-  const [activeAcarsFlightsData, setActiveAcarsFlightsData] = useState<Flight[]>([]);
-  const [eventControllerViewEnabled, setEventControllerViewEnabled] = useState(false);
+  const [activeAcarsFlights, setActiveAcarsFlights] = useState<
+    Set<string | number>
+  >(new Set());
+  const [activeAcarsFlightsData, setActiveAcarsFlightsData] = useState<
+    Flight[]
+  >([]);
+  const [eventControllerViewEnabled, setEventControllerViewEnabled] =
+    useState(false);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMentions, setUnreadMentions] = useState(0);
@@ -201,20 +224,25 @@ export default function PFATCFlights() {
     }
   }, [selectedStation, chatOpen]);
 
-  const overviewSocketRef = useRef<ReturnType<typeof createOverviewSocket> | null>(null);
+  const overviewSocketRef = useRef<ReturnType<
+    typeof createOverviewSocket
+  > | null>(null);
 
   const isPFATCSectorController = Boolean(
-    user?.rolePermissions?.["pfatc_sector"] || user?.isAdmin,
+    user?.rolePermissions?.['pfatc_sector'] || user?.isAdmin
   );
 
   const isAATCSectorController = Boolean(
-    user?.rolePermissions?.["aatc_sector"] || user?.isAdmin,
+    user?.rolePermissions?.['aatc_sector'] || user?.isAdmin
   );
 
   // Combined — used for showing toolbar controls and connecting the overview socket
   const isEventController = isPFATCSectorController || isAATCSectorController;
 
-  const canEditFlight = (flight: { sessionIsPFATC?: boolean; sessionIsAdvancedATC?: boolean }) => {
+  const canEditFlight = (flight: {
+    sessionIsPFATC?: boolean;
+    sessionIsAdvancedATC?: boolean;
+  }) => {
     if (isPFATCSectorController && flight.sessionIsPFATC) return true;
     if (isAATCSectorController && flight.sessionIsAdvancedATC) return true;
     return false;
@@ -232,9 +260,9 @@ export default function PFATCFlights() {
         chartDragStart,
         setChartDragStart,
         containerRef,
-        imageSize,
+        imageSize
       ),
-    [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize],
+    [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize]
   );
 
   const handleMentionReceived = useCallback(() => {
@@ -250,15 +278,17 @@ export default function PFATCFlights() {
         > = {};
 
         if (data.arrivalsByAirport && data.activeSessions) {
-          for (const [icao, flights] of Object.entries(data.arrivalsByAirport)) {
+          for (const [icao, flights] of Object.entries(
+            data.arrivalsByAirport
+          )) {
             transformedArrivalsByAirport[icao] = flights.map((flight) => {
               const session = data.activeSessions.find((s) =>
-                s.flights.some((f) => f.id === flight.id),
+                s.flights.some((f) => f.id === flight.id)
               );
               return {
                 ...flight,
-                sessionId: session?.sessionId || "",
-                departureAirport: flight.departure || "",
+                sessionId: session?.sessionId || '',
+                departureAirport: flight.departure || '',
               };
             });
           }
@@ -274,7 +304,7 @@ export default function PFATCFlights() {
 
           const flightsWithPendingChanges = new Set<string>();
           debounceTimersRef.current.forEach((_, timerKey) => {
-            const flightId = timerKey.split("-")[0];
+            const flightId = timerKey.split('-')[0];
             flightsWithPendingChanges.add(flightId);
           });
 
@@ -298,7 +328,9 @@ export default function PFATCFlights() {
                 ?.flights.find((f) => f.id === flight.id);
 
               if (existingFlight?.updated_at && flight.updated_at) {
-                const existingTime = new Date(existingFlight.updated_at).getTime();
+                const existingTime = new Date(
+                  existingFlight.updated_at
+                ).getTime();
                 const newTime = new Date(flight.updated_at).getTime();
                 if (existingTime > newTime) {
                   return existingFlight;
@@ -318,15 +350,19 @@ export default function PFATCFlights() {
                 flightsWithPendingChanges.has(flightId)
               ) {
                 const existingFlight = prev.arrivalsByAirport[icao]?.find(
-                  (f) => f.id === flight.id,
+                  (f) => f.id === flight.id
                 );
                 return existingFlight || flight;
               }
 
-              const existingFlight = prev.arrivalsByAirport[icao]?.find((f) => f.id === flight.id);
+              const existingFlight = prev.arrivalsByAirport[icao]?.find(
+                (f) => f.id === flight.id
+              );
 
               if (existingFlight?.updated_at && flight.updated_at) {
-                const existingTime = new Date(existingFlight.updated_at).getTime();
+                const existingTime = new Date(
+                  existingFlight.updated_at
+                ).getTime();
                 const newTime = new Date(flight.updated_at).getTime();
                 if (existingTime > newTime) {
                   return existingFlight;
@@ -347,8 +383,8 @@ export default function PFATCFlights() {
         setError(null);
       },
       (error) => {
-        console.error("Overview socket error:", error);
-        setError(error.error || "Failed to connect to overview data");
+        console.error('Overview socket error:', error);
+        setError(error.error || 'Failed to connect to overview data');
         setLoading(false);
       },
       isEventController,
@@ -362,7 +398,9 @@ export default function PFATCFlights() {
             if (s.sessionId === sessionId) {
               return {
                 ...s,
-                flights: s.flights.map((f) => (f.id === flight.id ? flight : f)),
+                flights: s.flights.map((f) =>
+                  f.id === flight.id ? flight : f
+                ),
               };
             }
             return s;
@@ -372,15 +410,16 @@ export default function PFATCFlights() {
           if (flight.arrival) {
             const arrivalIcao = flight.arrival.toUpperCase();
             if (updatedArrivalsByAirport[arrivalIcao]) {
-              updatedArrivalsByAirport[arrivalIcao] = updatedArrivalsByAirport[arrivalIcao].map(
-                (f) =>
-                  f.id === flight.id
-                    ? {
-                        ...flight,
-                        sessionId,
-                        departureAirport: flight.departure || "",
-                      }
-                    : f,
+              updatedArrivalsByAirport[arrivalIcao] = updatedArrivalsByAirport[
+                arrivalIcao
+              ].map((f) =>
+                f.id === flight.id
+                  ? {
+                      ...flight,
+                      sessionId,
+                      departureAirport: flight.departure || '',
+                    }
+                  : f
               );
             }
           }
@@ -410,7 +449,7 @@ export default function PFATCFlights() {
         });
       },
       (error) => {
-        console.error("Flight operation error:", error);
+        console.error('Flight operation error:', error);
         if (error.flightId) {
           setPendingUpdates((prev) => {
             const next = new Map(prev);
@@ -432,7 +471,7 @@ export default function PFATCFlights() {
             // The socket will automatically send new data
           }
         }
-      },
+      }
     );
 
     overviewSocketRef.current = socket;
@@ -451,8 +490,8 @@ export default function PFATCFlights() {
         const response = await fetch(
           `${import.meta.env.VITE_SERVER_URL}/api/flights/acars/active`,
           {
-            credentials: "include",
-          },
+            credentials: 'include',
+          }
         );
 
         if (response.ok) {
@@ -468,7 +507,9 @@ export default function PFATCFlights() {
     fetchActiveAcars();
   }, [isContactSidebarOpen]);
 
-  const sectorSocketRef = useRef<ReturnType<typeof createSectorControllerSocket> | null>(null);
+  const sectorSocketRef = useRef<ReturnType<
+    typeof createSectorControllerSocket
+  > | null>(null);
 
   useEffect(() => {
     if (!isEventController || !eventControllerViewEnabled || !user?.userId) {
@@ -482,7 +523,7 @@ export default function PFATCFlights() {
     if (!sectorSocketRef.current) {
       sectorSocketRef.current = createSectorControllerSocket({
         userId: user.userId,
-        username: user.username || "Unknown",
+        username: user.username || 'Unknown',
         avatar: user.avatar || null,
       });
     }
@@ -493,7 +534,13 @@ export default function PFATCFlights() {
         sectorSocketRef.current = null;
       }
     };
-  }, [isEventController, eventControllerViewEnabled, user?.userId, user?.username, user?.avatar]);
+  }, [
+    isEventController,
+    eventControllerViewEnabled,
+    user?.userId,
+    user?.username,
+    user?.avatar,
+  ]);
 
   useEffect(() => {
     if (!sectorSocketRef.current) return;
@@ -506,8 +553,9 @@ export default function PFATCFlights() {
   }, [selectedStation]);
 
   const activeAirports = useMemo(
-    () => overviewData?.activeSessions.map((session) => session.airportIcao) || [],
-    [overviewData?.activeSessions],
+    () =>
+      overviewData?.activeSessions.map((session) => session.airportIcao) || [],
+    [overviewData?.activeSessions]
   );
 
   const allFlights: FlightWithDetails[] = useMemo(() => {
@@ -534,7 +582,7 @@ export default function PFATCFlights() {
         flightsMap.set(f.id, {
           ...f,
           sessionId: f.session_id,
-          departureAirport: f.departure || "",
+          departureAirport: f.departure || '',
         });
       }
     });
@@ -542,20 +590,31 @@ export default function PFATCFlights() {
   }, [allFlights, activeAcarsFlightsData]);
 
   const handleSendContact = useCallback(
-    async (flightId: string | number, message: string, station: string, position: string) => {
+    async (
+      flightId: string | number,
+      message: string,
+      station: string,
+      position: string
+    ) => {
       const flight = allPossibleFlights.find((f) => f.id === flightId);
       if (!flight) {
-        throw new Error("Flight not found");
+        throw new Error('Flight not found');
       }
 
       if (!overviewSocketRef.current) {
-        throw new Error("Overview socket not available");
+        throw new Error('Overview socket not available');
       }
       //...
       //...
-      overviewSocketRef.current.sendContact(flight.sessionId, flightId, message, station, position);
+      overviewSocketRef.current.sendContact(
+        flight.sessionId,
+        flightId,
+        message,
+        station,
+        position
+      );
     },
-    [allPossibleFlights],
+    [allPossibleFlights]
   );
 
   const [showHidden, setShowHidden] = useState(false);
@@ -580,14 +639,16 @@ export default function PFATCFlights() {
         flight.arrival === selectedAirport;
 
       const matchesStatus = !selectedStatus || flight.status === selectedStatus;
-      const matchesFlightType = !selectedFlightType || flight.flight_type === selectedFlightType;
+      const matchesFlightType =
+        !selectedFlightType || flight.flight_type === selectedFlightType;
 
       const matchesNetworkSession =
-        networkSessionFilter === "all" ||
-        (networkSessionFilter === "pfatc" &&
+        networkSessionFilter === 'all' ||
+        (networkSessionFilter === 'pfatc' &&
           flight.sessionIsPFATC &&
           !flight.sessionIsAdvancedATC) ||
-        (networkSessionFilter === "advanced_atc" && Boolean(flight.sessionIsAdvancedATC));
+        (networkSessionFilter === 'advanced_atc' &&
+          Boolean(flight.sessionIsAdvancedATC));
 
       return (
         matchesSearch &&
@@ -610,7 +671,7 @@ export default function PFATCFlights() {
   const airportSessions = useMemo(() => {
     return (
       overviewData?.activeSessions
-        .filter((session) => !session.sessionId.startsWith("sector-"))
+        .filter((session) => !session.sessionId.startsWith('sector-'))
         .reduce(
           (acc, session) => {
             if (!acc[session.airportIcao]) {
@@ -619,104 +680,106 @@ export default function PFATCFlights() {
             acc[session.airportIcao].push(session);
             return acc;
           },
-          {} as Record<string, OverviewSession[]>,
+          {} as Record<string, OverviewSession[]>
         ) || {}
     );
   }, [overviewData?.activeSessions]);
 
   const statusOptions = [
-    { label: "All Statuses", value: "" },
-    { label: "PENDING", value: "PENDING" },
-    { label: "STUP", value: "STUP" },
-    { label: "PUSH", value: "PUSH" },
-    { label: "TAXI (Departure)", value: "TAXI_ORIG" },
-    { label: "RWY (Departure)", value: "RWY_ORIG" },
-    { label: "DEPA", value: "DEPA" },
-    { label: "ENROUTE", value: "ENROUTE" },
-    { label: "APP", value: "APP" },
-    { label: "RWY (Arrival)", value: "RWY_ARRV" },
-    { label: "TAXI (Arrival)", value: "TAXI_ARRV" },
-    { label: "GATE", value: "GATE" },
+    { label: 'All Statuses', value: '' },
+    { label: 'PENDING', value: 'PENDING' },
+    { label: 'STUP', value: 'STUP' },
+    { label: 'PUSH', value: 'PUSH' },
+    { label: 'TAXI (Departure)', value: 'TAXI_ORIG' },
+    { label: 'RWY (Departure)', value: 'RWY_ORIG' },
+    { label: 'DEPA', value: 'DEPA' },
+    { label: 'ENROUTE', value: 'ENROUTE' },
+    { label: 'APP', value: 'APP' },
+    { label: 'RWY (Arrival)', value: 'RWY_ARRV' },
+    { label: 'TAXI (Arrival)', value: 'TAXI_ARRV' },
+    { label: 'GATE', value: 'GATE' },
   ];
 
   const flightTypeOptions = [
-    { label: "All Types", value: "" },
-    { label: "IFR", value: "IFR" },
-    { label: "VFR", value: "VFR" },
+    { label: 'All Types', value: '' },
+    { label: 'IFR', value: 'IFR' },
+    { label: 'VFR', value: 'VFR' },
   ];
 
   const sectorStations = [
-    { label: "Select Station", value: "", frequency: "" },
-    { label: "LECB CTR", value: "LECB_CTR", frequency: "132.355" },
-    { label: "GCCC R6 CTR", value: "GCCC_R6_CTR", frequency: "123.650" },
-    { label: "EGTT CTR", value: "EGTT_CTR", frequency: "127.830" },
-    { label: "EFIN D CTR", value: "EFIN_D_CTR", frequency: "121.300" },
-    { label: "LCCC CTR", value: "LCCC_CTR", frequency: "128.600" },
-    { label: "MDCS CTR", value: "MDCS_CTR", frequency: "124.300" },
+    { label: 'Select Station', value: '', frequency: '' },
+    { label: 'LECB CTR', value: 'LECB_CTR', frequency: '132.355' },
+    { label: 'GCCC R6 CTR', value: 'GCCC_R6_CTR', frequency: '123.650' },
+    { label: 'EGTT CTR', value: 'EGTT_CTR', frequency: '127.830' },
+    { label: 'EFIN D CTR', value: 'EFIN_D_CTR', frequency: '121.300' },
+    { label: 'LCCC CTR', value: 'LCCC_CTR', frequency: '128.600' },
+    { label: 'MDCS CTR', value: 'MDCS_CTR', frequency: '124.300' },
   ];
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "PENDING":
-        return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
-      case "CLEARED":
-        return "bg-green-500/20 text-green-400 border border-green-500/30";
-      case "TAXI":
-        return "bg-pink-500/20 text-pink-400 border border-pink-500/30";
-      case "TAXI_ORIG":
-        return "bg-pink-500/20 text-pink-400 border border-pink-500/30";
-      case "TAXI_ARRV":
-        return "bg-pink-500/20 text-pink-400 border border-pink-500/30";
-      case "DEPARTED":
-        return "bg-purple-500/20 text-purple-400 border border-purple-500/30";
-      case "STUP":
-        return "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30";
-      case "PUSH":
-        return "bg-blue-500/20 text-blue-400 border border-blue-500/30";
-      case "RWY":
-        return "bg-red-500/20 text-red-400 border border-red-500/30";
-      case "RWY_ORIG":
-        return "bg-red-500/20 text-red-400 border border-red-500/30";
-      case "RWY_ARRV":
-        return "bg-orange-500/20 text-orange-400 border border-orange-500/30";
-      case "DEPA":
-        return "bg-green-500/20 text-green-400 border border-green-500/30";
-      case "ENROUTE":
-        return "bg-purple-500/20 text-purple-400 border border-purple-500/30";
-      case "APP":
-        return "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30";
-      case "GATE":
-        return "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+      case 'PENDING':
+        return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
+      case 'CLEARED':
+        return 'bg-green-500/20 text-green-400 border border-green-500/30';
+      case 'TAXI':
+        return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
+      case 'TAXI_ORIG':
+        return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
+      case 'TAXI_ARRV':
+        return 'bg-pink-500/20 text-pink-400 border border-pink-500/30';
+      case 'DEPARTED':
+        return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+      case 'STUP':
+        return 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
+      case 'PUSH':
+        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      case 'RWY':
+        return 'bg-red-500/20 text-red-400 border border-red-500/30';
+      case 'RWY_ORIG':
+        return 'bg-red-500/20 text-red-400 border border-red-500/30';
+      case 'RWY_ARRV':
+        return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
+      case 'DEPA':
+        return 'bg-green-500/20 text-green-400 border border-green-500/30';
+      case 'ENROUTE':
+        return 'bg-purple-500/20 text-purple-400 border border-purple-500/30';
+      case 'APP':
+        return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
+      case 'GATE':
+        return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
       default:
-        return "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30";
+        return 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30';
     }
   };
 
   const getFlightTypeColor = (flightType: string) => {
     switch (flightType) {
-      case "IFR":
-        return "text-blue-400";
-      case "VFR":
-        return "text-green-400";
+      case 'IFR':
+        return 'text-blue-400';
+      case 'VFR':
+        return 'text-green-400';
       default:
-        return "text-zinc-400";
+        return 'text-zinc-400';
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusClass = getStatusClass(status);
     const displayStatus =
-      status === "TAXI_ORIG"
-        ? "TAXI"
-        : status === "TAXI_ARRV"
-          ? "TAXI"
-          : status === "RWY_ORIG"
-            ? "RWY"
-            : status === "RWY_ARRV"
-              ? "RWY"
+      status === 'TAXI_ORIG'
+        ? 'TAXI'
+        : status === 'TAXI_ARRV'
+          ? 'TAXI'
+          : status === 'RWY_ORIG'
+            ? 'RWY'
+            : status === 'RWY_ARRV'
+              ? 'RWY'
               : status;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-semibold ${statusClass}`}
+      >
         {displayStatus}
       </span>
     );
@@ -740,17 +803,22 @@ export default function PFATCFlights() {
   };
 
   const handleAutoSave = useCallback(
-    async (flightId: string | number, field: string, value: string, originalValue: string) => {
+    async (
+      flightId: string | number,
+      field: string,
+      value: string,
+      originalValue: string
+    ) => {
       if (value === originalValue) return;
 
       const flight = allFlights.find((f) => f.id === flightId);
       if (!flight) {
-        console.error("Flight not found for editing");
+        console.error('Flight not found for editing');
         return;
       }
 
       if (!overviewSocketRef.current) {
-        console.error("Overview socket not available");
+        console.error('Overview socket not available');
         return;
       }
 
@@ -759,16 +827,20 @@ export default function PFATCFlights() {
       try {
         const updates: Partial<Flight> = { [field]: value };
 
-        if (field === "departure" && flight.departure !== value) {
-          updates.sid = "";
+        if (field === 'departure' && flight.departure !== value) {
+          updates.sid = '';
         }
-        if (field === "arrival" && flight.arrival !== value) {
-          updates.star = "";
+        if (field === 'arrival' && flight.arrival !== value) {
+          updates.star = '';
         }
 
-        overviewSocketRef.current.updateFlight(flight.sessionId, flightId, updates);
+        overviewSocketRef.current.updateFlight(
+          flight.sessionId,
+          flightId,
+          updates
+        );
       } catch (error) {
-        console.error("Failed to update flight:", error);
+        console.error('Failed to update flight:', error);
         setUpdatingFlights((prev) => {
           const next = new Set(prev);
           next.delete(String(flightId));
@@ -776,23 +848,33 @@ export default function PFATCFlights() {
         });
       }
     },
-    [allFlights],
+    [allFlights]
   );
 
   const handleToggleHidden = (flight: Flight) => {
-    handleFieldChange(flight.id, "hidden", String(!flight.hidden), String(flight.hidden || false));
+    handleFieldChange(
+      flight.id,
+      'hidden',
+      String(!flight.hidden),
+      String(flight.hidden || false)
+    );
     setOpenActionMenuId(null);
   };
 
   const handleFieldChange = useCallback(
-    (flightId: string | number, field: string, value: string, originalValue: string) => {
+    (
+      flightId: string | number,
+      field: string,
+      value: string,
+      originalValue: string
+    ) => {
       if (!isEventController) {
         return;
       }
 
       let processedValue: string | boolean = value;
-      if (field === "clearance" || field === "hidden") {
-        processedValue = value === "true";
+      if (field === 'clearance' || field === 'hidden') {
+        processedValue = value === 'true';
       }
 
       setOverviewData((prev) => {
@@ -801,14 +883,14 @@ export default function PFATCFlights() {
         const updatedSessions = prev.activeSessions.map((s) => ({
           ...s,
           flights: s.flights.map((f) =>
-            f.id === flightId ? { ...f, [field]: processedValue } : f,
+            f.id === flightId ? { ...f, [field]: processedValue } : f
           ),
         }));
 
         const updatedArrivalsByAirport = { ...prev.arrivalsByAirport };
         Object.keys(updatedArrivalsByAirport).forEach((icao) => {
-          updatedArrivalsByAirport[icao] = updatedArrivalsByAirport[icao].map((f) =>
-            f.id === flightId ? { ...f, [field]: processedValue } : f,
+          updatedArrivalsByAirport[icao] = updatedArrivalsByAirport[icao].map(
+            (f) => (f.id === flightId ? { ...f, [field]: processedValue } : f)
           );
         });
 
@@ -840,25 +922,35 @@ export default function PFATCFlights() {
         return next;
       });
     },
-    [debounceTimers, handleAutoSave, isEventController, setOverviewData],
+    [debounceTimers, handleAutoSave, isEventController, setOverviewData]
   );
 
-  const getCurrentValue = useCallback((flight: FlightWithDetails, field: string) => {
-    return String(flight[field as keyof FlightWithDetails] || "");
-  }, []);
+  const getCurrentValue = useCallback(
+    (flight: FlightWithDetails, field: string) => {
+      return String(flight[field as keyof FlightWithDetails] || '');
+    },
+    []
+  );
 
   const renderEditableCell = (
     flight: FlightWithDetails,
     field: string,
-    cellType: "text" | "status" | "airport" | "aircraft" | "altitude" | "sid" | "star" = "text",
+    cellType:
+      | 'text'
+      | 'status'
+      | 'airport'
+      | 'aircraft'
+      | 'altitude'
+      | 'sid'
+      | 'star' = 'text'
   ) => {
     const getMaxLength = (fieldName: string) => {
       switch (fieldName) {
-        case "callsign":
+        case 'callsign':
           return 16;
-        case "remark":
+        case 'remark':
           return 500;
-        case "squawk":
+        case 'squawk':
           return 4;
         default:
           return 50;
@@ -867,19 +959,25 @@ export default function PFATCFlights() {
 
     const isUpdating = updatingFlights.has(String(flight.id));
     const currentValue = getCurrentValue(flight, field);
-    const originalValue = String(flight[field as keyof FlightWithDetails] || "");
+    const originalValue = String(
+      flight[field as keyof FlightWithDetails] || ''
+    );
     const canEdit = canEditFlight(flight);
     const isDisabled = !canEdit || !selectedStation;
 
     if (!canEdit) {
-      return <span className="font-mono text-zinc-300">{currentValue || "N/A"}</span>;
+      return (
+        <span className="font-mono text-zinc-300">{currentValue || 'N/A'}</span>
+      );
     }
 
-    if (cellType === "status") {
+    if (cellType === 'status') {
       return (
         <StatusDropdown
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           placeholder="-"
           controllerType="event"
@@ -888,11 +986,13 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "airport") {
+    if (cellType === 'airport') {
       return (
         <AirportDropdown
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           showFullName={false}
           className="w-full"
@@ -901,11 +1001,13 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "aircraft") {
+    if (cellType === 'aircraft') {
       return (
         <AircraftDropdown
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           showFullName={false}
           disabled={isDisabled}
@@ -913,11 +1015,13 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "altitude") {
+    if (cellType === 'altitude') {
       return (
         <AltitudeDropdown
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           placeholder="-"
           disabled={isDisabled}
@@ -925,12 +1029,14 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "sid") {
+    if (cellType === 'sid') {
       return (
         <SidDropdown
-          airportIcao={flight.departure || ""}
+          airportIcao={flight.departure || ''}
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           placeholder="-"
           disabled={isDisabled}
@@ -938,12 +1044,14 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "star") {
+    if (cellType === 'star') {
       return (
         <StarDropdown
-          airportIcao={flight.arrival || ""}
+          airportIcao={flight.arrival || ''}
           value={currentValue}
-          onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+          onChange={(value) =>
+            handleFieldChange(flight.id, field, value, originalValue)
+          }
           size="xs"
           placeholder="-"
           disabled={isDisabled}
@@ -951,21 +1059,25 @@ export default function PFATCFlights() {
       );
     }
 
-    if (cellType === "text" && field === "callsign") {
+    if (cellType === 'text' && field === 'callsign') {
       return (
         <div
           title={
-            !airlinesLoading ? parseCallsign(flight.callsign, airlines) : flight.callsign || ""
+            !airlinesLoading
+              ? parseCallsign(flight.callsign, airlines)
+              : flight.callsign || ''
           }
         >
           <TextInput
             value={currentValue}
-            onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+            onChange={(value) =>
+              handleFieldChange(flight.id, field, value, originalValue)
+            }
             className={`bg-zinc-900 border border-zinc-900 rounded px-2 py-1 text-white text-xs w-full ${
-              isDisabled ? "opacity-50 cursor-not-allowed" : ""
-            } ${isUpdating ? "border-blue-500" : ""}`}
+              isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+            } ${isUpdating ? 'border-blue-500' : ''}`}
             maxLength={getMaxLength(field)}
-            placeholder={currentValue ? "" : "N/A"}
+            placeholder={currentValue ? '' : 'N/A'}
             disabled={isDisabled}
           />
         </div>
@@ -975,12 +1087,14 @@ export default function PFATCFlights() {
     return (
       <TextInput
         value={currentValue}
-        onChange={(value) => handleFieldChange(flight.id, field, value, originalValue)}
+        onChange={(value) =>
+          handleFieldChange(flight.id, field, value, originalValue)
+        }
         className={`bg-zinc-900 border border-zinc-900 rounded px-2 py-1 text-white text-xs w-full ${
-          isDisabled ? "opacity-50 cursor-not-allowed" : ""
-        } ${isUpdating ? "border-blue-500" : ""}`}
+          isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+        } ${isUpdating ? 'border-blue-500' : ''}`}
         maxLength={getMaxLength(field)}
-        placeholder={currentValue ? "" : "N/A"}
+        placeholder={currentValue ? '' : 'N/A'}
         disabled={isDisabled}
       />
     );
@@ -1007,14 +1121,17 @@ export default function PFATCFlights() {
       return timestampB - timestampA;
     }
 
-    const callsignA = (a.callsign || "").toLowerCase();
-    const callsignB = (b.callsign || "").toLowerCase();
+    const callsignA = (a.callsign || '').toLowerCase();
+    const callsignB = (b.callsign || '').toLowerCase();
     return callsignA.localeCompare(callsignB);
   });
 
   const flightForModal = useMemo(() => {
     if (!selectedFlightForModal) return null;
-    return allFlights.find((f) => f.id === selectedFlightForModal.id) || selectedFlightForModal;
+    return (
+      allFlights.find((f) => f.id === selectedFlightForModal.id) ||
+      selectedFlightForModal
+    );
   }, [allFlights, selectedFlightForModal]);
 
   if (loading) {
@@ -1024,16 +1141,20 @@ export default function PFATCFlights() {
         {/* Hero with user's banner */}
         <div className="relative w-full h-80 md:h-96 overflow-hidden">
           <div className="absolute inset-0">
-            <img src="/assets/images/hero.webp" alt="Banner" className="object-cover w-full h-full scale-110" />
+            <img
+              src="/assets/images/hero.webp"
+              alt="Banner"
+              className="object-cover w-full h-full scale-110"
+            />
             <div
               className="absolute inset-0"
               style={{
                 backgroundImage,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
                 opacity: customLoaded ? 1 : 0,
-                transition: "opacity 0.5s ease-in-out",
+                transition: 'opacity 0.5s ease-in-out',
               }}
             />
             <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
@@ -1056,14 +1177,29 @@ export default function PFATCFlights() {
               {/* Header row */}
               <div className="bg-zinc-800 px-6 py-4 flex gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-4 rounded-full bg-zinc-700" style={{ width: `${[60, 80, 60, 70, 70, 80, 50, 50][i]}px` }} />
+                  <div
+                    key={i}
+                    className="h-4 rounded-full bg-zinc-700"
+                    style={{
+                      width: `${[60, 80, 60, 70, 70, 80, 50, 50][i]}px`,
+                    }}
+                  />
                 ))}
               </div>
               {/* Body rows */}
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="border-t border-zinc-700/50 px-6 py-4 flex gap-6 items-center">
+                <div
+                  key={i}
+                  className="border-t border-zinc-700/50 px-6 py-4 flex gap-6 items-center"
+                >
                   {Array.from({ length: 8 }).map((_, j) => (
-                    <div key={j} className="h-3.5 rounded-full bg-zinc-700/60" style={{ width: `${[60, 80, 60, 70, 70, 80, 50, 50][j]}px` }} />
+                    <div
+                      key={j}
+                      className="h-3.5 rounded-full bg-zinc-700/60"
+                      style={{
+                        width: `${[60, 80, 60, 70, 70, 80, 50, 50][j]}px`,
+                      }}
+                    />
                   ))}
                 </div>
               ))}
@@ -1073,7 +1209,10 @@ export default function PFATCFlights() {
               <div className="h-7 w-36 rounded-full bg-gray-700 mb-4 animate-pulse" />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-6 animate-pulse">
+                  <div
+                    key={i}
+                    className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-6 animate-pulse"
+                  >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="h-9 w-9 rounded-lg bg-zinc-700" />
                       <div className="space-y-1.5">
@@ -1087,7 +1226,10 @@ export default function PFATCFlights() {
                     </div>
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       {Array.from({ length: 3 }).map((_, j) => (
-                        <div key={j} className="space-y-1 flex flex-col items-center">
+                        <div
+                          key={j}
+                          className="space-y-1 flex flex-col items-center"
+                        >
                           <div className="h-5 w-8 rounded-full bg-zinc-700" />
                           <div className="h-3 w-16 rounded-full bg-zinc-700" />
                         </div>
@@ -1134,11 +1276,11 @@ export default function PFATCFlights() {
             className="absolute inset-0"
             style={{
               backgroundImage,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               opacity: customLoaded ? 1 : 0,
-              transition: "opacity 0.5s ease-in-out",
+              transition: 'opacity 0.5s ease-in-out',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
@@ -1155,14 +1297,14 @@ export default function PFATCFlights() {
               <TowerControl className="h-5 w-5 text-blue-400" />
               <span className="text-blue-400 text-sm font-semibold tracking-wider">
                 {overviewData?.totalActiveSessions || 0} ACTIVE SESSION
-                {(overviewData?.totalActiveSessions || 0) === 1 ? "" : "S"}
+                {(overviewData?.totalActiveSessions || 0) === 1 ? '' : 'S'}
               </span>
             </div>
             <div className="flex items-center gap-2 px-6 py-2 bg-green-600/20 backdrop-blur-md border border-green-500/30 rounded-full shadow-lg">
               <Plane className="h-5 w-5 text-green-400" />
               <span className="text-green-400 text-sm font-semibold tracking-wider">
                 {overviewData?.totalFlights || 0} FLIGHT
-                {(overviewData?.totalFlights || 0) === 1 ? "" : "S"}
+                {(overviewData?.totalFlights || 0) === 1 ? '' : 'S'}
               </span>
             </div>
             {isPFATCSectorController && (
@@ -1204,7 +1346,10 @@ export default function PFATCFlights() {
 
                   {selectedStation && (
                     <div className="z-100">
-                      <FrequencyDisplay airportIcao={selectedStation} showExpandedTable={false} />
+                      <FrequencyDisplay
+                        airportIcao={selectedStation}
+                        showExpandedTable={false}
+                      />
                     </div>
                   )}
 
@@ -1222,7 +1367,9 @@ export default function PFATCFlights() {
                     disabled={!selectedStation}
                   >
                     <Radio className="w-5 h-5" />
-                    <span className="hidden sm:inline font-medium">Contact</span>
+                    <span className="hidden sm:inline font-medium">
+                      Contact
+                    </span>
                   </Button>
 
                   <Button
@@ -1281,7 +1428,7 @@ export default function PFATCFlights() {
                     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400 z-10 ml-3 pointer-events-none" />
                     <Dropdown
                       options={[
-                        { label: "All Airports", value: "" },
+                        { label: 'All Airports', value: '' },
                         ...activeAirports.map((icao) => ({
                           label: icao,
                           value: icao,
@@ -1312,12 +1459,16 @@ export default function PFATCFlights() {
 
                   <Dropdown
                     options={[
-                      { label: "All session types", value: "all" },
-                      { label: "PFATC Network", value: "pfatc" },
-                      { label: "Advanced ATC", value: "advanced_atc" },
+                      { label: 'All session types', value: 'all' },
+                      { label: 'PFATC Network', value: 'pfatc' },
+                      { label: 'Advanced ATC', value: 'advanced_atc' },
                     ]}
                     value={networkSessionFilter}
-                    onChange={(v) => setNetworkSessionFilter(v as "all" | "pfatc" | "advanced_atc")}
+                    onChange={(v) =>
+                      setNetworkSessionFilter(
+                        v as 'all' | 'pfatc' | 'advanced_atc'
+                      )
+                    }
                     placeholder="Session type"
                     size="md"
                   />
@@ -1326,8 +1477,12 @@ export default function PFATCFlights() {
 
               {allFlights.some((f) => f.hidden) && (
                 <div className="mb-4">
-                  <Button onClick={() => setShowHidden((s) => !s)} variant="outline" size="sm">
-                    {showHidden ? "Hide Hidden Flights" : "Show Hidden Flights"}
+                  <Button
+                    onClick={() => setShowHidden((s) => !s)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {showHidden ? 'Hide Hidden Flights' : 'Show Hidden Flights'}
                   </Button>
                 </div>
               )}
@@ -1338,16 +1493,36 @@ export default function PFATCFlights() {
                   <table className="w-full min-w-[1400px]">
                     <thead className="bg-zinc-800">
                       <tr>
-                        <th className="px-3 pl-6 py-4 text-left text-zinc-400 font-medium">Time</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">Callsign</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">Status</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">Departure</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">Arrival</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">Aircraft</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">RFL</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">CFL</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">SID</th>
-                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">STAR</th>
+                        <th className="px-3 pl-6 py-4 text-left text-zinc-400 font-medium">
+                          Time
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          Callsign
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          Status
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          Departure
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          Arrival
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          Aircraft
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          RFL
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          CFL
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          SID
+                        </th>
+                        <th className="px-3 py-4 text-left text-zinc-400 font-medium">
+                          STAR
+                        </th>
                         <th className="px-3 pr-6 py-4 text-left text-zinc-400 font-medium">
                           Remark
                         </th>
@@ -1361,10 +1536,16 @@ export default function PFATCFlights() {
                     <tbody>
                       {sortedFlights.length === 0 ? (
                         <tr>
-                          <td colSpan={12} className="text-center py-12 text-zinc-400">
-                            {searchTerm || selectedAirport || selectedStatus || selectedFlightType
-                              ? "No flights found matching your criteria"
-                              : "No flights currently active"}
+                          <td
+                            colSpan={12}
+                            className="text-center py-12 text-zinc-400"
+                          >
+                            {searchTerm ||
+                            selectedAirport ||
+                            selectedStatus ||
+                            selectedFlightType
+                              ? 'No flights found matching your criteria'
+                              : 'No flights currently active'}
                           </td>
                         </tr>
                       ) : (
@@ -1376,26 +1557,36 @@ export default function PFATCFlights() {
                             <td className="px-3 pl-6 py-4">
                               <div className="text-zinc-300 text-sm">
                                 {flight.timestamp
-                                  ? new Date(flight.timestamp).toLocaleTimeString("en-GB", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      timeZone: "UTC",
+                                  ? new Date(
+                                      flight.timestamp
+                                    ).toLocaleTimeString('en-GB', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      timeZone: 'UTC',
                                     })
                                   : flight.created_at
-                                    ? new Date(flight.created_at).toLocaleTimeString("en-GB", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        timeZone: "UTC",
+                                    ? new Date(
+                                        flight.created_at
+                                      ).toLocaleTimeString('en-GB', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        timeZone: 'UTC',
                                       })
-                                    : "N/A"}
+                                    : 'N/A'}
                               </div>
                             </td>
                             <td className="px-3 py-4">
                               <div className="flex items-center gap-2">
                                 {flight.sessionIsAdvancedATC ? (
-                                  <span title="Advanced ATC" className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                                  <span
+                                    title="Advanced ATC"
+                                    className="w-2 h-2 rounded-full bg-purple-500 shrink-0"
+                                  />
                                 ) : flight.sessionIsPFATC ? (
-                                  <span title="PFATC Network" className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                                  <span
+                                    title="PFATC Network"
+                                    className="w-2 h-2 rounded-full bg-blue-500 shrink-0"
+                                  />
                                 ) : null}
                                 {flight.flight_type && (
                                   <span
@@ -1404,85 +1595,97 @@ export default function PFATCFlights() {
                                     {flight.flight_type}
                                   </span>
                                 )}
-                                {renderEditableCell(flight, "callsign", "text")}
+                                {renderEditableCell(flight, 'callsign', 'text')}
                               </div>
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight)
-                                ? renderEditableCell(flight, "status", "status")
-                                : getStatusBadge(flight.status || "")}
+                                ? renderEditableCell(flight, 'status', 'status')
+                                : getStatusBadge(flight.status || '')}
                             </td>
                             <td className="px-3 py-4">
                               <div className="flex items-center gap-1.5">
                                 <PlaneTakeoff className="w-3.5 h-3.5 text-blue-400" />
                                 <span className="font-mono text-blue-300 font-semibold">
-                                  {flight.departure || "N/A"}
+                                  {flight.departure || 'N/A'}
                                 </span>
                               </div>
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "arrival", "airport")
+                                renderEditableCell(flight, 'arrival', 'airport')
                               ) : (
                                 <div className="flex items-center gap-1.5">
                                   <PlaneLanding className="w-3.5 h-3.5 text-green-400" />
                                   <span className="font-mono text-green-300 font-semibold">
-                                    {flight.arrival || "N/A"}
+                                    {flight.arrival || 'N/A'}
                                   </span>
                                 </div>
                               )}
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "aircraft", "aircraft")
+                                renderEditableCell(
+                                  flight,
+                                  'aircraft',
+                                  'aircraft'
+                                )
                               ) : (
                                 <span className="font-mono text-purple-300 font-medium">
-                                  {flight.aircraft || "N/A"}
+                                  {flight.aircraft || 'N/A'}
                                 </span>
                               )}
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "cruisingFL", "altitude")
+                                renderEditableCell(
+                                  flight,
+                                  'cruisingFL',
+                                  'altitude'
+                                )
                               ) : (
                                 <span className="font-mono text-cyan-300 font-medium">
-                                  {flight.cruisingFL || "-"}
+                                  {flight.cruisingFL || '-'}
                                 </span>
                               )}
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "clearedFL", "altitude")
+                                renderEditableCell(
+                                  flight,
+                                  'clearedFL',
+                                  'altitude'
+                                )
                               ) : (
                                 <span className="font-mono text-amber-300 font-medium">
-                                  {flight.clearedFL || "-"}
+                                  {flight.clearedFL || '-'}
                                 </span>
                               )}
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "sid", "sid")
+                                renderEditableCell(flight, 'sid', 'sid')
                               ) : (
                                 <span className="font-mono text-indigo-300 text-xs">
-                                  {flight.sid || "-"}
+                                  {flight.sid || '-'}
                                 </span>
                               )}
                             </td>
                             <td className="px-3 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "star", "star")
+                                renderEditableCell(flight, 'star', 'star')
                               ) : (
                                 <span className="font-mono text-pink-300 text-xs">
-                                  {flight.star || "-"}
+                                  {flight.star || '-'}
                                 </span>
                               )}
                             </td>
                             <td className="px-3 pr-6 py-4">
                               {canEditFlight(flight) ? (
-                                renderEditableCell(flight, "remark", "text")
+                                renderEditableCell(flight, 'remark', 'text')
                               ) : (
                                 <span className="text-zinc-400 text-xs italic">
-                                  {flight.remark || "-"}
+                                  {flight.remark || '-'}
                                 </span>
                               )}
                             </td>
@@ -1495,14 +1698,18 @@ export default function PFATCFlights() {
                                       actionButtonRefs.current[flight.id] = el;
                                     }
                                   }}
-                                  className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!canEditFlight(flight) || !selectedStation ? "opacity-50 cursor-not-allowed" : ""}`}
+                                  className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!canEditFlight(flight) || !selectedStation ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   onClick={() => {
                                     setOpenActionMenuId(
-                                      openActionMenuId === flight.id ? null : flight.id,
+                                      openActionMenuId === flight.id
+                                        ? null
+                                        : flight.id
                                     );
                                   }}
                                   title="Actions"
-                                  disabled={!canEditFlight(flight) || !selectedStation}
+                                  disabled={
+                                    !canEditFlight(flight) || !selectedStation
+                                  }
                                 >
                                   <Menu className="h-6 w-6" strokeWidth={2.5} />
                                 </button>
@@ -1512,27 +1719,37 @@ export default function PFATCFlights() {
                                       <div
                                         className="fixed inset-0"
                                         style={{ zIndex: 9997 }}
-                                        onClick={() => setOpenActionMenuId(null)}
+                                        onClick={() =>
+                                          setOpenActionMenuId(null)
+                                        }
                                       />
                                       <div
                                         className="fixed w-44 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
                                         style={{
                                           zIndex: 9998,
                                           top: (() => {
-                                            const btn = actionButtonRefs.current[flight.id];
+                                            const btn =
+                                              actionButtonRefs.current[
+                                                flight.id
+                                              ];
                                             if (btn) {
-                                              const rect = btn.getBoundingClientRect();
+                                              const rect =
+                                                btn.getBoundingClientRect();
                                               return `${rect.bottom + 4}px`;
                                             }
-                                            return "0px";
+                                            return '0px';
                                           })(),
                                           left: (() => {
-                                            const btn = actionButtonRefs.current[flight.id];
+                                            const btn =
+                                              actionButtonRefs.current[
+                                                flight.id
+                                              ];
                                             if (btn) {
-                                              const rect = btn.getBoundingClientRect();
+                                              const rect =
+                                                btn.getBoundingClientRect();
                                               return `${rect.right - 176}px`;
                                             }
-                                            return "0px";
+                                            return '0px';
                                           })(),
                                         }}
                                       >
@@ -1540,27 +1757,37 @@ export default function PFATCFlights() {
                                           <button
                                             type="button"
                                             className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
-                                            onClick={() => handleOpenFlightDetails(flight)}
+                                            onClick={() =>
+                                              handleOpenFlightDetails(flight)
+                                            }
                                           >
                                             <FileText className="w-4 h-4 shrink-0" />
-                                            <span className="font-medium">Details</span>
+                                            <span className="font-medium">
+                                              Details
+                                            </span>
                                           </button>
                                           <button
                                             type="button"
                                             className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
-                                            onClick={() => handleToggleHidden(flight)}
+                                            onClick={() =>
+                                              handleToggleHidden(flight)
+                                            }
                                           >
                                             {flight.hidden ? (
                                               <Eye className="w-4 h-4 shrink-0" />
                                             ) : (
                                               <EyeOff className="w-4 h-4 shrink-0" />
                                             )}
-                                            <span className="font-medium">{flight.hidden ? "Unhide" : "Hide"}</span>
+                                            <span className="font-medium">
+                                              {flight.hidden
+                                                ? 'Unhide'
+                                                : 'Hide'}
+                                            </span>
                                           </button>
                                         </div>
                                       </div>
                                     </>,
-                                    document.body,
+                                    document.body
                                   )}
                               </td>
                             )}
@@ -1578,172 +1805,189 @@ export default function PFATCFlights() {
                 Active Airports
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
-                {Object.entries(airportSessions).map(([icao, sessions], index) => {
-                  const totalFlights = sessions.reduce(
-                    (sum, session) => sum + session.flightCount,
-                    0,
-                  );
-                  const totalUsers = sessions.reduce(
-                    (sum, session) => sum + session.activeUsers,
-                    0,
-                  );
-                  const isExpanded = expandedAirports.has(icao);
-                  const arrivals = overviewData?.arrivalsByAirport[icao] || [];
-                  const departureFlights = sessions.flatMap((session) => session.flights);
+                {Object.entries(airportSessions).map(
+                  ([icao, sessions], index) => {
+                    const totalFlights = sessions.reduce(
+                      (sum, session) => sum + session.flightCount,
+                      0
+                    );
+                    const totalUsers = sessions.reduce(
+                      (sum, session) => sum + session.activeUsers,
+                      0
+                    );
+                    const isExpanded = expandedAirports.has(icao);
+                    const arrivals =
+                      overviewData?.arrivalsByAirport[icao] || [];
+                    const departureFlights = sessions.flatMap(
+                      (session) => session.flights
+                    );
 
-                  return (
-                    <div
-                      key={`${icao}-${index}`}
-                      className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl overflow-visible h-fit"
-                    >
-                      <div className="p-4 sm:p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-blue-500/20 rounded-lg">
-                              <TowerControl className="w-5 h-5 text-blue-400" />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-white">{icao}</h3>
-                              <div className="flex items-center gap-2 text-sm">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                <span className="text-green-400">Active</span>
+                    return (
+                      <div
+                        key={`${icao}-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl overflow-visible h-fit"
+                      >
+                        <div className="p-4 sm:p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-blue-500/20 rounded-lg">
+                                <TowerControl className="w-5 h-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-bold text-white">
+                                  {icao}
+                                </h3>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                  <span className="text-green-400">Active</span>
+                                </div>
                               </div>
                             </div>
+                            {(arrivals.length > 0 ||
+                              departureFlights.length > 0) && (
+                              <Button
+                                onClick={() => toggleAirportExpansion(icao)}
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 hover:bg-zinc-700/50"
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </Button>
+                            )}
                           </div>
-                          {(arrivals.length > 0 || departureFlights.length > 0) && (
-                            <Button
-                              onClick={() => toggleAirportExpansion(icao)}
-                              variant="ghost"
-                              size="sm"
-                              className="p-2 hover:bg-zinc-700/50"
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                        <div className="space-y-4">
-                          <WindDisplay icao={icao} size="small" />
-                          <div className="z-100">
-                            <FrequencyDisplay airportIcao={icao ?? ""} />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-white">{totalUsers}</div>
-                            <div className="text-zinc-400 text-xs">Controllers</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-white">
-                              {totalFlights + arrivals.length}
+                          <div className="space-y-4">
+                            <WindDisplay icao={icao} size="small" />
+                            <div className="z-100">
+                              <FrequencyDisplay airportIcao={icao ?? ''} />
                             </div>
-                            <div className="text-zinc-400 text-xs">Flights</div>
                           </div>
-                          {sessions[0]?.activeRunway && (
+
+                          <div className="grid grid-cols-3 gap-4 mt-4">
                             <div className="text-center">
-                              <div className="font-mono text-white font-medium">
-                                {sessions[0].activeRunway}
+                              <div className="text-lg font-bold text-white">
+                                {totalUsers}
                               </div>
-                              <div className="text-sm text-zinc-400">Runway</div>
+                              <div className="text-zinc-400 text-xs">
+                                Controllers
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="border-t border-zinc-700/50 bg-zinc-800/50">
-                          <div className="p-4 sm:p-6 space-y-4 max-h-96 overflow-y-auto">
-                            {departureFlights.length > 0 && (
-                              <div>
-                                <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                  <PlaneTakeoff className="w-4 h-4 text-blue-400" />
-                                  Departures ({departureFlights.length})
-                                </h4>
-                                <div className="space-y-2">
-                                  {departureFlights.map((flight) => (
-                                    <div
-                                      key={`departure-${flight.id}`}
-                                      className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
-                                    >
-                                      <div className="flex items-center space-x-3">
-                                        <div className="text-white font-mono text-sm">
-                                          {flight.callsign || "N/A"}
-                                        </div>
-                                        <div className="text-zinc-400 text-xs">
-                                          {flight.aircraft || "N/A"}
-                                        </div>
-                                        <div className="text-zinc-500 text-xs">
-                                          → {flight.arrival || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <span
-                                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
-                                            flight.status || "PENDING",
-                                          )}`}
-                                        >
-                                          {flight.status || "PENDING"}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-white">
+                                {totalFlights + arrivals.length}
                               </div>
-                            )}
-
-                            {arrivals.length > 0 && (
-                              <div>
-                                <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                  <PlaneLanding className="w-4 h-4 text-green-400" />
-                                  Arrivals ({arrivals.length})
-                                </h4>
-                                <div className="space-y-2">
-                                  {arrivals.map((flight) => (
-                                    <div
-                                      key={`arrival-${flight.id}`}
-                                      className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
-                                    >
-                                      <div className="flex items-center space-x-3">
-                                        <div className="text-white font-mono text-sm">
-                                          {flight.callsign || "N/A"}
-                                        </div>
-                                        <div className="text-zinc-400 text-xs">
-                                          {flight.aircraft || "N/A"}
-                                        </div>
-                                        <div className="text-zinc-500 text-xs">
-                                          {flight.departureAirport} →
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <span
-                                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
-                                            flight.status || "ENROUTE",
-                                          )}`}
-                                        >
-                                          {flight.status || "ENROUTE"}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="text-zinc-400 text-xs">
+                                Flights
                               </div>
-                            )}
-
-                            {departureFlights.length === 0 && arrivals.length === 0 && (
-                              <div className="text-center text-zinc-400 py-4">
-                                No active flights at this airport
+                            </div>
+                            {sessions[0]?.activeRunway && (
+                              <div className="text-center">
+                                <div className="font-mono text-white font-medium">
+                                  {sessions[0].activeRunway}
+                                </div>
+                                <div className="text-sm text-zinc-400">
+                                  Runway
+                                </div>
                               </div>
                             )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        {isExpanded && (
+                          <div className="border-t border-zinc-700/50 bg-zinc-800/50">
+                            <div className="p-4 sm:p-6 space-y-4 max-h-96 overflow-y-auto">
+                              {departureFlights.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                    <PlaneTakeoff className="w-4 h-4 text-blue-400" />
+                                    Departures ({departureFlights.length})
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {departureFlights.map((flight) => (
+                                      <div
+                                        key={`departure-${flight.id}`}
+                                        className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <div className="text-white font-mono text-sm">
+                                            {flight.callsign || 'N/A'}
+                                          </div>
+                                          <div className="text-zinc-400 text-xs">
+                                            {flight.aircraft || 'N/A'}
+                                          </div>
+                                          <div className="text-zinc-500 text-xs">
+                                            → {flight.arrival || 'N/A'}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <span
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
+                                              flight.status || 'PENDING'
+                                            )}`}
+                                          >
+                                            {flight.status || 'PENDING'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {arrivals.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                    <PlaneLanding className="w-4 h-4 text-green-400" />
+                                    Arrivals ({arrivals.length})
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {arrivals.map((flight) => (
+                                      <div
+                                        key={`arrival-${flight.id}`}
+                                        className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 border border-zinc-600/30"
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <div className="text-white font-mono text-sm">
+                                            {flight.callsign || 'N/A'}
+                                          </div>
+                                          <div className="text-zinc-400 text-xs">
+                                            {flight.aircraft || 'N/A'}
+                                          </div>
+                                          <div className="text-zinc-500 text-xs">
+                                            {flight.departureAirport} →
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <span
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(
+                                              flight.status || 'ENROUTE'
+                                            )}`}
+                                          >
+                                            {flight.status || 'ENROUTE'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {departureFlights.length === 0 &&
+                                arrivals.length === 0 && (
+                                  <div className="text-center text-zinc-400 py-4">
+                                    No active flights at this airport
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
               </div>
             </div>
           </div>
@@ -1791,7 +2035,9 @@ export default function PFATCFlights() {
         onSendContact={handleSendContact}
         activeAcarsFlights={activeAcarsFlights}
         airportIcao={selectedStation}
-        fallbackFrequency={sectorStations.find((s) => s.value === selectedStation)?.frequency}
+        fallbackFrequency={
+          sectorStations.find((s) => s.value === selectedStation)?.frequency
+        }
       />
 
       <ChatSidebar
@@ -1802,7 +2048,9 @@ export default function PFATCFlights() {
         sessionUsers={[]}
         onMentionReceived={handleMentionReceived}
         station={selectedStation}
-        position={selectedStation ? selectedStation.split("_").slice(1).join("_") : ""}
+        position={
+          selectedStation ? selectedStation.split('_').slice(1).join('_') : ''
+        }
         isPFATC={isPFATCSectorController}
         isAdvancedATC={isAATCSectorController}
         unreadSessionCount={0}

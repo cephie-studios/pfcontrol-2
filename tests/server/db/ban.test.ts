@@ -24,10 +24,10 @@ vi.mock('../../../server/db/connection.js', () => ({
       // dual-mode select: supports .execute() directly (count query)
       // or .orderBy().limit().offset().execute() (list query)
       const inner = {
-        where:   vi.fn(),
+        where: vi.fn(),
         orderBy: vi.fn(),
-        limit:   vi.fn(),
-        offset:  vi.fn(),
+        limit: vi.fn(),
+        offset: vi.fn(),
         execute: mocks.countExecute,
       };
       inner.where.mockReturnValue(inner);
@@ -36,14 +36,14 @@ vi.mock('../../../server/db/connection.js', () => ({
       inner.offset.mockReturnValue({ execute: mocks.listExecute });
 
       const chain = {
-        leftJoin:         vi.fn(),
-        selectAll:        vi.fn(),
-        where:            vi.fn(),
-        orderBy:          vi.fn(),
-        limit:            vi.fn(),
-        offset:           vi.fn(),
+        leftJoin: vi.fn(),
+        selectAll: vi.fn(),
+        where: vi.fn(),
+        orderBy: vi.fn(),
+        limit: vi.fn(),
+        offset: vi.fn(),
         executeTakeFirst: mocks.findExecute,
-        select:           vi.fn().mockReturnValue(inner),
+        select: vi.fn().mockReturnValue(inner),
       };
       chain.leftJoin.mockReturnValue(chain);
       chain.selectAll.mockReturnValue(chain);
@@ -117,7 +117,11 @@ describe('banUser', () => {
       reason: 'spam',
       bannedBy: 'admin',
     });
-    expect(redisConnection.setex).toHaveBeenCalledWith('ban:u42', expect.any(Number), '1');
+    expect(redisConnection.setex).toHaveBeenCalledWith(
+      'ban:u42',
+      expect.any(Number),
+      '1'
+    );
   });
 
   it('caches ip ban in redis when ip is provided', async () => {
@@ -129,7 +133,11 @@ describe('banUser', () => {
       reason: 'spam',
       bannedBy: 'admin',
     });
-    expect(redisConnection.setex).toHaveBeenCalledWith('ban:ip:9.9.9.9', expect.any(Number), '1');
+    expect(redisConnection.setex).toHaveBeenCalledWith(
+      'ban:ip:9.9.9.9',
+      expect.any(Number),
+      '1'
+    );
   });
 
   it('treats empty string expiresAt as undefined', async () => {
@@ -196,7 +204,12 @@ describe('isIpBanned', () => {
   });
 
   it('returns the ban record when ip is banned', async () => {
-    const ban = { id: 2, ip_address: '1.2.3.4', active: true, banned_at: new Date() };
+    const ban = {
+      id: 2,
+      ip_address: '1.2.3.4',
+      active: true,
+      banned_at: new Date(),
+    };
     mocks.findExecute.mockResolvedValue(ban);
     const result = await isIpBanned('1.2.3.4');
     expect(result).toEqual(ban);

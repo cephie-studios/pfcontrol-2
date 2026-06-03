@@ -68,7 +68,11 @@ function Dropdown({
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMeasured, setIsMeasured] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const [panelAbove, setPanelAbove] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -85,7 +89,7 @@ function Dropdown({
       getDisplayValue
         ? getDisplayValue(val)
         : options.find((o) => o.value === val)?.label || '',
-    [getDisplayValue, options],
+    [getDisplayValue, options]
   );
 
   useEffect(() => {
@@ -104,28 +108,37 @@ function Dropdown({
     if (!q) return options;
     return options.filter(
       (o) =>
-        o.label.toLowerCase().includes(q) ||
-        o.value.toLowerCase().includes(q),
+        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)
     );
   }, [options, searchable, isOpen, inputValue]);
 
   const getTriggerEl = useCallback(
     () => (searchable ? triggerWrapperRef.current : buttonRef.current),
-    [searchable],
+    [searchable]
   );
 
   const gap = searchable ? 0 : 4;
 
-  const computePos = useCallback((el: HTMLElement, dd: HTMLElement | null) => {
-    const rect = el.getBoundingClientRect();
-    const vpHeight = window.visualViewport?.height ?? window.innerHeight;
-    const spaceBelow = vpHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const ddHeight = dd ? dd.getBoundingClientRect().height : 0;
-    const above = dd ? ddHeight > spaceBelow && spaceAbove > spaceBelow : false;
-    const top = above ? rect.top - ddHeight - gap : rect.bottom + gap;
-    return { top: Math.round(top), left: Math.floor(rect.left), width: Math.ceil(rect.width), above };
-  }, [gap]);
+  const computePos = useCallback(
+    (el: HTMLElement, dd: HTMLElement | null) => {
+      const rect = el.getBoundingClientRect();
+      const vpHeight = window.visualViewport?.height ?? window.innerHeight;
+      const spaceBelow = vpHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const ddHeight = dd ? dd.getBoundingClientRect().height : 0;
+      const above = dd
+        ? ddHeight > spaceBelow && spaceAbove > spaceBelow
+        : false;
+      const top = above ? rect.top - ddHeight - gap : rect.bottom + gap;
+      return {
+        top: Math.round(top),
+        left: Math.floor(rect.left),
+        width: Math.ceil(rect.width),
+        above,
+      };
+    },
+    [gap]
+  );
 
   const updatePosition = useCallback(() => {
     const el = getTriggerEl();
@@ -135,7 +148,7 @@ function Dropdown({
     setDropdownPosition((prev) =>
       prev.left === pos.left && prev.width === pos.width && prev.top === pos.top
         ? prev
-        : pos,
+        : pos
     );
   }, [getTriggerEl, computePos]);
 
@@ -143,8 +156,12 @@ function Dropdown({
     if (disabled) return;
     const next = !isOpen;
     setIsOpen(next);
-    if (next) { setIsMeasured(false); if (usePortal) updatePosition(); }
-    else { setIsMeasured(false); }
+    if (next) {
+      setIsMeasured(false);
+      if (usePortal) updatePosition();
+    } else {
+      setIsMeasured(false);
+    }
   };
 
   const handleInputFocus = () => {
@@ -202,7 +219,15 @@ function Dropdown({
       return;
     }
     measure(el, dd);
-  }, [usePortal, isOpen, isMeasured, options.length, maxHeight, getTriggerEl, computePos]);
+  }, [
+    usePortal,
+    isOpen,
+    isMeasured,
+    options.length,
+    maxHeight,
+    getTriggerEl,
+    computePos,
+  ]);
 
   // Close on any scroll outside the panel — applies to portal AND absolute dropdowns.
   // A 150 ms timeout lets the browser finish its automatic scroll-to-focused-input
@@ -250,19 +275,40 @@ function Dropdown({
       setPanelAbove(pos.above);
     });
     return () => cancelAnimationFrame(raf);
-  }, [usePortal, isOpen, isMeasured, options.length, maxHeight, getTriggerEl, computePos]);
+  }, [
+    usePortal,
+    isOpen,
+    isMeasured,
+    options.length,
+    maxHeight,
+    getTriggerEl,
+    computePos,
+  ]);
 
   // Scroll selected item into view in the portal panel
   useLayoutEffect(() => {
     if (!usePortal || !isOpen || !isMeasured) return;
     const panel = dropdownRef.current;
     if (!panel || panel.scrollHeight <= panel.clientHeight + 1) return;
-    const selectedEl = panel.querySelector<HTMLElement>('[data-dropdown-selected="true"]');
+    const selectedEl = panel.querySelector<HTMLElement>(
+      '[data-dropdown-selected="true"]'
+    );
     if (!selectedEl) return;
     const panelRect = panel.getBoundingClientRect();
     const itemRect = selectedEl.getBoundingClientRect();
-    const delta = (itemRect.top + itemRect.height / 2) - (panelRect.top + panel.clientHeight / 2);
-    panel.scrollTop = Math.round(Math.max(0, Math.min(panel.scrollTop + delta, panel.scrollHeight - panel.clientHeight)));
+    const delta =
+      itemRect.top +
+      itemRect.height / 2 -
+      (panelRect.top + panel.clientHeight / 2);
+    panel.scrollTop = Math.round(
+      Math.max(
+        0,
+        Math.min(
+          panel.scrollTop + delta,
+          panel.scrollHeight - panel.clientHeight
+        )
+      )
+    );
   }, [usePortal, isOpen, isMeasured, value, options.length, maxHeight]);
 
   // Non-searchable: close on outside click
@@ -270,8 +316,10 @@ function Dropdown({
     if (searchable) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
       ) {
         setIsOpen(false);
         setIsMeasured(false);
@@ -301,7 +349,9 @@ function Dropdown({
           </button>
         )}
         {visibleOptions.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500 text-center">No options found</div>
+          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+            No options found
+          </div>
         ) : (
           visibleOptions.map((option) => {
             const isSelected = option.selected || option.value === value;
@@ -345,7 +395,17 @@ function Dropdown({
           visibility: isMeasured ? 'visible' : 'hidden',
         }}
       >
-        {panelAbove ? <>{optionsList}{divider}</> : <>{divider}{optionsList}</>}
+        {panelAbove ? (
+          <>
+            {optionsList}
+            {divider}
+          </>
+        ) : (
+          <>
+            {divider}
+            {optionsList}
+          </>
+        )}
       </div>
     );
 
@@ -431,7 +491,9 @@ function Dropdown({
         </button>
       )}
       {visibleOptions.length === 0 ? (
-        <div className="px-3 py-3 text-sm text-gray-500 text-center">No options found</div>
+        <div className="px-3 py-3 text-sm text-gray-500 text-center">
+          No options found
+        </div>
       ) : (
         visibleOptions.map((option) => {
           const isSelected = option.selected || option.value === value;
@@ -469,7 +531,11 @@ function Dropdown({
           <span className="truncate ml-2 font-semibold">{displayValue}</span>
           <span
             className="transition-transform duration-200 ml-2 shrink-0"
-            style={{ display: 'flex', alignItems: 'center', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
           >
             <ChevronDown className="h-4 w-4 text-gray-400" />
           </span>

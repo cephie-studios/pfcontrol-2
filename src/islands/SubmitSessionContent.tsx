@@ -10,7 +10,9 @@ interface SubmitSessionContentProps {
   airportIcao?: string;
 }
 
-export default function SubmitSessionContent({ airportIcao }: SubmitSessionContentProps) {
+export default function SubmitSessionContent({
+  airportIcao,
+}: SubmitSessionContentProps) {
   return (
     <PostHogProviderWrapper>
       <AuthProvider>
@@ -20,7 +22,12 @@ export default function SubmitSessionContent({ airportIcao }: SubmitSessionConte
               <Routes>
                 <Route
                   path="/submit/:sessionId"
-                  element={<Submit standalone={false} initialAirportIcao={airportIcao} />}
+                  element={
+                    <Submit
+                      standalone={false}
+                      initialAirportIcao={airportIcao}
+                    />
+                  }
                 />
               </Routes>
             </BrowserRouter>

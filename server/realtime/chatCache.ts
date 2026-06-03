@@ -1,7 +1,7 @@
-import { redisConnection } from "../db/connection.js";
-import { getChatMessagesFromDb } from "../db/chats.js";
-import { keys, TTL } from "./keys.js";
-import { perfAsync } from "./perf.js";
+import { redisConnection } from '../db/connection.js';
+import { getChatMessagesFromDb } from '../db/chats.js';
+import { keys, TTL } from './keys.js';
+import { perfAsync } from './perf.js';
 
 const CHAT_RECENT_LIMIT = 100;
 
@@ -25,7 +25,7 @@ export async function getCachedSessionChatMessages(
   }
 
   return perfAsync(
-    "getChatMessages",
+    'getChatMessages',
     async () => {
       const messages = await getChatMessagesFromDb(sessionId, limit);
       try {
@@ -87,7 +87,7 @@ export type GlobalChatMessageDto = {
 };
 
 export async function getCachedGlobalChatMessages(
-  networkKind: "pfatc" | "aatc",
+  networkKind: 'pfatc' | 'aatc',
   loader: () => Promise<GlobalChatMessageDto[]>
 ): Promise<GlobalChatMessageDto[]> {
   const cacheKey = keys.chatGlobal(networkKind);
@@ -112,7 +112,7 @@ export async function getCachedGlobalChatMessages(
 }
 
 export async function invalidateGlobalChatCache(
-  networkKind: "pfatc" | "aatc"
+  networkKind: 'pfatc' | 'aatc'
 ): Promise<void> {
   try {
     await redisConnection.del(keys.chatGlobal(networkKind));

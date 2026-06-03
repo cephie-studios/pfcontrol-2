@@ -51,14 +51,14 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
   const getSessionUsersData = (sessionId: string) => {
     const users = voiceUsers.get(sessionId);
     if (!users) return [];
-    return Array.from(users.values()).map(u => ({
+    return Array.from(users.values()).map((u) => ({
       userId: u.userId,
       username: u.username,
       avatar: u.avatar,
       isMuted: u.isMuted,
       isDeafened: u.isDeafened,
       isTalking: u.isTalking,
-      audioLevel: u.audioLevel
+      audioLevel: u.audioLevel,
     }));
   };
 
@@ -67,7 +67,11 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
   };
 
   io.on('connection', async (socket) => {
-    const { sessionId: rawSessionId, accessId: rawAccessId, userId } = socket.handshake.query;
+    const {
+      sessionId: rawSessionId,
+      accessId: rawAccessId,
+      userId,
+    } = socket.handshake.query;
 
     try {
       if (!userId || typeof userId !== 'string') {
@@ -75,8 +79,12 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
         return;
       }
 
-      const sessionId = validateSessionId(Array.isArray(rawSessionId) ? rawSessionId[0] : rawSessionId as string);
-      const accessId = validateAccessId(Array.isArray(rawAccessId) ? rawAccessId[0] : rawAccessId as string);
+      const sessionId = validateSessionId(
+        Array.isArray(rawSessionId) ? rawSessionId[0] : (rawSessionId as string)
+      );
+      const accessId = validateAccessId(
+        Array.isArray(rawAccessId) ? rawAccessId[0] : (rawAccessId as string)
+      );
 
       const valid = await validateSessionAccess(sessionId, accessId);
       if (!valid) {
@@ -88,7 +96,8 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       socket.data.userId = userId;
       socket.join(sessionId);
 
-      if (!sessionSocketMap.has(sessionId)) sessionSocketMap.set(sessionId, new Map());
+      if (!sessionSocketMap.has(sessionId))
+        sessionSocketMap.set(sessionId, new Map());
       sessionSocketMap.get(sessionId)!.set(userId, socket.id);
 
       socket.on('get-voice-users', () => {
@@ -110,7 +119,8 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
           }
 
           if (!voiceUsers.has(sessionId)) voiceUsers.set(sessionId, new Map());
-          if (!sessionSocketMap.has(sessionId)) sessionSocketMap.set(sessionId, new Map());
+          if (!sessionSocketMap.has(sessionId))
+            sessionSocketMap.set(sessionId, new Map());
 
           const usersInSession = voiceUsers.get(sessionId)!;
           const socketsInSession = sessionSocketMap.get(sessionId)!;
@@ -152,23 +162,35 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       });
 
       socket.on('voice-offer', ({ targetUserId, offer }) => {
-        const targetSocketId = sessionSocketMap.get(sessionId)?.get(targetUserId);
+        const targetSocketId = sessionSocketMap
+          .get(sessionId)
+          ?.get(targetUserId);
         if (targetSocketId) {
-          socket.to(targetSocketId).emit('voice-offer', { fromUserId: userId, offer });
+          socket
+            .to(targetSocketId)
+            .emit('voice-offer', { fromUserId: userId, offer });
         }
       });
 
       socket.on('voice-answer', ({ targetUserId, answer }) => {
-        const targetSocketId = sessionSocketMap.get(sessionId)?.get(targetUserId);
+        const targetSocketId = sessionSocketMap
+          .get(sessionId)
+          ?.get(targetUserId);
         if (targetSocketId) {
-          socket.to(targetSocketId).emit('voice-answer', { fromUserId: userId, answer });
+          socket
+            .to(targetSocketId)
+            .emit('voice-answer', { fromUserId: userId, answer });
         }
       });
 
       socket.on('ice-candidate', ({ targetUserId, candidate }) => {
-        const targetSocketId = sessionSocketMap.get(sessionId)?.get(targetUserId);
+        const targetSocketId = sessionSocketMap
+          .get(sessionId)
+          ?.get(targetUserId);
         if (targetSocketId) {
-          socket.to(targetSocketId).emit('ice-candidate', { fromUserId: userId, candidate });
+          socket
+            .to(targetSocketId)
+            .emit('ice-candidate', { fromUserId: userId, candidate });
         }
       });
 
@@ -197,7 +219,9 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
           user.lastActivity = Date.now();
 
           if (stateChanged) {
-            socket.to(sessionId).emit('user-talking-state', { userId, isTalking });
+            socket
+              .to(sessionId)
+              .emit('user-talking-state', { userId, isTalking });
           }
         }
       });
@@ -208,7 +232,9 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
         if (users?.has(userId)) {
           // Reconnection guard: only clean up if this socket is the active one
           if (users.get(userId)?.socketId !== socket.id) {
-            console.log(`[VoiceChat] User ${userId} leaving voice from stale socket ${socket.id}, ignoring.`);
+            console.log(
+              `[VoiceChat] User ${userId} leaving voice from stale socket ${socket.id}, ignoring.`
+            );
             return;
           }
 
@@ -235,12 +261,15 @@ export function setupVoiceChatWebsocket(httpServer: Server) {
       socket.on('disconnect', handleDisconnect);
 
       socket.on('request-reconnection', ({ targetUserId }) => {
-        const targetSocketId = sessionSocketMap.get(sessionId)?.get(targetUserId);
+        const targetSocketId = sessionSocketMap
+          .get(sessionId)
+          ?.get(targetUserId);
         if (targetSocketId) {
-          io.to(targetSocketId).emit('reconnection-requested', { fromUserId: userId });
+          io.to(targetSocketId).emit('reconnection-requested', {
+            fromUserId: userId,
+          });
         }
       });
-
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (!msg.startsWith('Invalid') && !msg.endsWith('is required')) {

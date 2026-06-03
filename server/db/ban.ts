@@ -51,7 +51,9 @@ export async function banUser({
   }
 }
 
-export async function isFingerprintBanned(fingerprintId: string): Promise<boolean> {
+export async function isFingerprintBanned(
+  fingerprintId: string
+): Promise<boolean> {
   const cacheKey = `ban:fp:${fingerprintId}`;
   const cached = await redisConnection.get(cacheKey);
   if (cached === '1') return true;

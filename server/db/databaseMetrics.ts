@@ -1,38 +1,38 @@
-import { sql } from "kysely";
-import { mainDb } from "./connection.js";
+import { sql } from 'kysely';
+import { mainDb } from './connection.js';
 
 export const TRACKED_ACTIVITY_TABLES = [
-  "users",
-  "sessions",
-  "flights",
-  "flight_logs",
-  "api_logs",
-  "audit_log",
-  "developer_api_usage",
-  "websocket_snapshots",
-  "daily_statistics",
-  "session_chat",
-  "global_chat",
-  "feedback",
-  "chat_report",
+  'users',
+  'sessions',
+  'flights',
+  'flight_logs',
+  'api_logs',
+  'audit_log',
+  'developer_api_usage',
+  'websocket_snapshots',
+  'daily_statistics',
+  'session_chat',
+  'global_chat',
+  'feedback',
+  'chat_report',
 ] as const;
 
 export type TrackedActivityTable = (typeof TRACKED_ACTIVITY_TABLES)[number];
 
 const TABLE_INSERT_TIME_COLUMN: Record<TrackedActivityTable, string> = {
-  users: "created_at",
-  sessions: "created_at",
-  flights: "created_at",
-  flight_logs: "created_at",
-  api_logs: "created_at",
-  audit_log: "created_at",
-  developer_api_usage: "created_at",
-  websocket_snapshots: "sampled_at",
-  daily_statistics: "created_at",
-  session_chat: "sent_at",
-  global_chat: "sent_at",
-  feedback: "created_at",
-  chat_report: "created_at",
+  users: 'created_at',
+  sessions: 'created_at',
+  flights: 'created_at',
+  flight_logs: 'created_at',
+  api_logs: 'created_at',
+  audit_log: 'created_at',
+  developer_api_usage: 'created_at',
+  websocket_snapshots: 'sampled_at',
+  daily_statistics: 'created_at',
+  session_chat: 'sent_at',
+  global_chat: 'sent_at',
+  feedback: 'created_at',
+  chat_report: 'created_at',
 };
 
 const trackedSet = new Set<string>(TRACKED_ACTIVITY_TABLES);
@@ -157,19 +157,19 @@ async function getActivityRow(
   row_count: number;
 } | null> {
   const row = await mainDb
-    .selectFrom("daily_table_activity")
-    .select(["rows_inserted", "rows_deleted", "table_bytes", "row_count"])
-    .where("activity_date", "=", activityDate)
-    .where("table_name", "=", tableName)
+    .selectFrom('daily_table_activity')
+    .select(['rows_inserted', 'rows_deleted', 'table_bytes', 'row_count'])
+    .where('activity_date', '=', activityDate)
+    .where('table_name', '=', tableName)
     .executeTakeFirst();
   return row ?? null;
 }
 
 export async function hasDailyTotals(activityDate: Date): Promise<boolean> {
   const row = await mainDb
-    .selectFrom("daily_database_totals")
-    .select("activity_date")
-    .where("activity_date", "=", activityDate)
+    .selectFrom('daily_database_totals')
+    .select('activity_date')
+    .where('activity_date', '=', activityDate)
     .executeTakeFirst();
   return !!row;
 }
@@ -240,13 +240,13 @@ export async function captureDailyMetrics(
 
   if (finalize) {
     await mainDb
-      .insertInto("daily_database_totals")
+      .insertInto('daily_database_totals')
       .values({
         activity_date: activityDate,
         total_bytes: totalBytes,
       })
       .onConflict((oc) =>
-        oc.column("activity_date").doUpdateSet({ total_bytes: totalBytes })
+        oc.column('activity_date').doUpdateSet({ total_bytes: totalBytes })
       )
       .execute();
   }
@@ -264,8 +264,8 @@ export async function finalizeYesterdayIfNeeded(): Promise<void> {
 
 export async function backfillRecentActivity(days = 7): Promise<void> {
   const count = await mainDb
-    .selectFrom("daily_database_totals")
-    .select(sql<number>`COUNT(*)::int`.as("cnt"))
+    .selectFrom('daily_database_totals')
+    .select(sql<number>`COUNT(*)::int`.as('cnt'))
     .executeTakeFirst();
   if (Number(count?.cnt ?? 0) > 0) return;
 
@@ -304,16 +304,16 @@ export async function getActivitySummary(): Promise<{
   };
 
   const rows = await mainDb
-    .selectFrom("daily_table_activity")
+    .selectFrom('daily_table_activity')
     .select([
-      "activity_date",
-      "table_name",
-      "rows_inserted",
-      "rows_deleted",
-      "table_bytes",
-      "row_count",
+      'activity_date',
+      'table_name',
+      'rows_inserted',
+      'rows_deleted',
+      'table_bytes',
+      'row_count',
     ])
-    .where("activity_date", "in", [today, yesterday])
+    .where('activity_date', 'in', [today, yesterday])
     .execute();
 
   const byDateTable = new Map<string, TableDayActivity>();
@@ -348,10 +348,10 @@ export async function getDailyTotalsHistory(
 ): Promise<Array<{ date: string; totalBytes: number }>> {
   const since = addUtcDays(utcDateOnly(new Date()), -days);
   const rows = await mainDb
-    .selectFrom("daily_database_totals")
-    .select(["activity_date", "total_bytes"])
-    .where("activity_date", ">=", since)
-    .orderBy("activity_date", "asc")
+    .selectFrom('daily_database_totals')
+    .select(['activity_date', 'total_bytes'])
+    .where('activity_date', '>=', since)
+    .orderBy('activity_date', 'asc')
     .execute();
 
   return rows.map((r) => ({
@@ -371,16 +371,16 @@ export async function getTableActivityHistory(days: number): Promise<
 > {
   const since = addUtcDays(utcDateOnly(new Date()), -days);
   const rows = await mainDb
-    .selectFrom("daily_table_activity")
+    .selectFrom('daily_table_activity')
     .select([
-      "activity_date",
-      "table_name",
-      "rows_inserted",
-      "rows_deleted",
-      "table_bytes",
+      'activity_date',
+      'table_name',
+      'rows_inserted',
+      'rows_deleted',
+      'table_bytes',
     ])
-    .where("activity_date", ">=", since)
-    .orderBy("activity_date", "asc")
+    .where('activity_date', '>=', since)
+    .orderBy('activity_date', 'asc')
     .execute();
 
   return rows.map((r) => ({
@@ -405,7 +405,7 @@ export function startDatabaseMetricsCapture(): void {
         await finalizeYesterdayIfNeeded();
         await refreshTodayMetrics();
       } catch (error) {
-        console.error("[databaseMetrics] initial capture failed:", error);
+        console.error('[databaseMetrics] initial capture failed:', error);
       }
     })();
   }, 90_000);
@@ -413,7 +413,7 @@ export function startDatabaseMetricsCapture(): void {
   metricsInterval = setInterval(
     () => {
       void refreshTodayMetrics().catch((error) => {
-        console.error("[databaseMetrics] refresh today failed:", error);
+        console.error('[databaseMetrics] refresh today failed:', error);
       });
     },
     6 * 60 * 60 * 1000
@@ -422,7 +422,7 @@ export function startDatabaseMetricsCapture(): void {
   metricsFinalizeInterval = setInterval(
     () => {
       void finalizeYesterdayIfNeeded().catch((error) => {
-        console.error("[databaseMetrics] finalize yesterday failed:", error);
+        console.error('[databaseMetrics] finalize yesterday failed:', error);
       });
     },
     24 * 60 * 60 * 1000

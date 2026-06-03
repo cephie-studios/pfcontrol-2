@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MdVpnKey, MdSchedule, MdEdit, MdDelete, MdCode } from "react-icons/md";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MdVpnKey, MdSchedule, MdEdit, MdDelete, MdCode } from 'react-icons/md';
 
 const REFRESH_ICON_MIN_SPIN_MS = 500;
 const APPLICATIONS_FETCH_LIMIT = 100;
 
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminTable from "../../components/admin/AdminTable";
-import AdminDeveloperEditModal from "../../components/admin/AdminDeveloperEditModal";
-import AdminDeveloperApplicationReviewModal from "../../components/admin/AdminDeveloperApplicationReviewModal";
-import DeveloperDiscordAvatar from "../../components/admin/DeveloperDiscordAvatar";
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTable from '../../components/admin/AdminTable';
+import AdminDeveloperEditModal from '../../components/admin/AdminDeveloperEditModal';
+import AdminDeveloperApplicationReviewModal from '../../components/admin/AdminDeveloperApplicationReviewModal';
+import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
 import {
   adminDownsizeButtonSize,
   ADMIN_TABLE_HEAD,
@@ -25,11 +25,11 @@ import {
   ADMIN_TOOLBAR_MOBILE_PAIR,
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import Dropdown from "../../components/common/Dropdown";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
+import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchAdminDeveloperApplications,
   fetchAdminDevelopers,
@@ -40,37 +40,37 @@ import {
   deleteAdminDeveloperAccount,
   type AdminDeveloperApplication,
   type AdminDeveloperSummary,
-} from "../../utils/fetch/adminDevelopers";
+} from '../../utils/fetch/adminDevelopers';
 
-type Section = "applications" | "developers";
+type Section = 'applications' | 'developers';
 
-const APP_FILTERS = ["pending", "approved", "rejected", "all"] as const;
+const APP_FILTERS = ['pending', 'approved', 'rejected', 'all'] as const;
 type AppFilter = (typeof APP_FILTERS)[number];
 
 const sectionOptions = [
-  { value: "applications", label: "Applications" },
-  { value: "developers", label: "Developers" },
+  { value: 'applications', label: 'Applications' },
+  { value: 'developers', label: 'Developers' },
 ];
 
 const appFilterOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "all", label: "All statuses" },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'all', label: 'All statuses' },
 ];
 
 export default function AdminDevelopers() {
-  const [section, setSection] = useState<Section>("applications");
+  const [section, setSection] = useState<Section>('applications');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applications, setApplications] = useState<AdminDeveloperApplication[]>(
     []
   );
-  const [appFilter, setAppFilter] = useState<AppFilter>("pending");
-  const [appSearch, setAppSearch] = useState("");
-  const [devSearch, setDevSearch] = useState("");
+  const [appFilter, setAppFilter] = useState<AppFilter>('pending');
+  const [appSearch, setAppSearch] = useState('');
+  const [devSearch, setDevSearch] = useState('');
   const [developers, setDevelopers] = useState<AdminDeveloperSummary[]>([]);
-  const [rejectNote, setRejectNote] = useState("");
+  const [rejectNote, setRejectNote] = useState('');
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | string | null>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function AdminDevelopers() {
   const [refreshIconBusy, setRefreshIconBusy] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
   const loadSeqRef = useRef(0);
   const refreshIconClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -119,9 +119,9 @@ export default function AdminDevelopers() {
         setApplications(appRes.applications);
         setDevelopers(devRes.developers);
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Failed to load";
+        const message = e instanceof Error ? e.message : 'Failed to load';
         setError(message);
-        setToast({ message, type: "error" });
+        setToast({ message, type: 'error' });
       } finally {
         if (showPageLoader) {
           setLoading(false);
@@ -158,16 +158,16 @@ export default function AdminDevelopers() {
   );
 
   const appCounts = useMemo(() => {
-    const pending = applications.filter((a) => a.status === "pending").length;
-    const approved = applications.filter((a) => a.status === "approved").length;
-    const rejected = applications.filter((a) => a.status === "rejected").length;
+    const pending = applications.filter((a) => a.status === 'pending').length;
+    const approved = applications.filter((a) => a.status === 'approved').length;
+    const rejected = applications.filter((a) => a.status === 'rejected').length;
     return { pending, approved, rejected, total: applications.length };
   }, [applications]);
 
   const filteredApplications = useMemo(() => {
     const q = appSearch.trim().toLowerCase();
     return applications.filter((a) => {
-      if (appFilter !== "all" && a.status !== appFilter) return false;
+      if (appFilter !== 'all' && a.status !== appFilter) return false;
       if (!q) return true;
       return (
         a.username.toLowerCase().includes(q) ||
@@ -193,7 +193,7 @@ export default function AdminDevelopers() {
     [developers, editUserId]
   );
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
 
   const handleApproveFromReview = async (
     appId: number,
@@ -207,10 +207,10 @@ export default function AdminDevelopers() {
     try {
       await approveDeveloperApplication(appId, body);
       setReviewApp(null);
-      setToast({ message: "Application approved", type: "success" });
+      setToast({ message: 'Application approved', type: 'success' });
       await load();
     } catch (e) {
-      throw e instanceof Error ? e : new Error("Approve failed");
+      throw e instanceof Error ? e : new Error('Approve failed');
     } finally {
       setBusyId(null);
     }
@@ -222,13 +222,13 @@ export default function AdminDevelopers() {
     try {
       await rejectDeveloperApplication(rejectId, rejectNote);
       setRejectId(null);
-      setRejectNote("");
-      setToast({ message: "Application rejected", type: "success" });
+      setRejectNote('');
+      setToast({ message: 'Application rejected', type: 'success' });
       await load();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Reject failed",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Reject failed',
+        type: 'error',
       });
     } finally {
       setBusyId(null);
@@ -236,17 +236,17 @@ export default function AdminDevelopers() {
   };
 
   const handleSuspend = async (userId: string) => {
-    if (!confirm("Suspend this developer? Their API keys will stop working."))
+    if (!confirm('Suspend this developer? Their API keys will stop working.'))
       return;
     setBusyId(userId);
     try {
       await suspendDeveloperProfile(userId);
-      setToast({ message: "Developer suspended", type: "success" });
+      setToast({ message: 'Developer suspended', type: 'success' });
       await load();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Suspend failed",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Suspend failed',
+        type: 'error',
       });
     } finally {
       setBusyId(null);
@@ -257,12 +257,12 @@ export default function AdminDevelopers() {
     setBusyId(userId);
     try {
       await reactivateDeveloperProfile(userId);
-      setToast({ message: "Developer reactivated", type: "success" });
+      setToast({ message: 'Developer reactivated', type: 'success' });
       await load();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Reactivate failed",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Reactivate failed',
+        type: 'error',
       });
     } finally {
       setBusyId(null);
@@ -272,7 +272,7 @@ export default function AdminDevelopers() {
   const handleDeleteDeveloper = async (userId: string) => {
     if (
       !confirm(
-        "Permanently delete this developer? This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted."
+        'Permanently delete this developer? This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted.'
       )
     )
       return;
@@ -280,12 +280,12 @@ export default function AdminDevelopers() {
     try {
       await deleteAdminDeveloperAccount(userId);
       setEditUserId((cur) => (cur === userId ? null : cur));
-      setToast({ message: "Developer deleted", type: "success" });
+      setToast({ message: 'Developer deleted', type: 'success' });
       await load();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Delete failed",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Delete failed',
+        type: 'error',
       });
     } finally {
       setBusyId(null);
@@ -294,11 +294,11 @@ export default function AdminDevelopers() {
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
   return (
@@ -330,19 +330,19 @@ export default function AdminDevelopers() {
           <AdminStatStrip
             columns={4}
             items={[
-              { label: "Pending", value: appCounts.pending },
-              { label: "Approved", value: appCounts.approved },
-              { label: "Rejected", value: appCounts.rejected },
+              { label: 'Pending', value: appCounts.pending },
+              { label: 'Approved', value: appCounts.approved },
+              { label: 'Rejected', value: appCounts.rejected },
               {
-                label: "Active developers",
-                value: developers.filter((d) => d.status === "active").length,
+                label: 'Active developers',
+                value: developers.filter((d) => d.status === 'active').length,
                 sub: `${developers.length} total profiles`,
               },
             ]}
           />
 
           <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-            {section === "applications" ? (
+            {section === 'applications' ? (
               <>
                 <AdminSearchInput
                   value={appSearch}
@@ -388,7 +388,7 @@ export default function AdminDevelopers() {
             )}
           </AdminToolbar>
 
-          {section === "applications" ? (
+          {section === 'applications' ? (
             <>
               <div className="hidden lg:block">
                 <AdminTable minWidth="960px">
@@ -461,7 +461,7 @@ export default function AdminDevelopers() {
                             {formatDate(a.createdAt)}
                           </td>
                           <td className={`${ADMIN_TD} text-right`}>
-                            {a.status === "pending" ? (
+                            {a.status === 'pending' ? (
                               <div className="flex flex-wrap justify-end gap-1.5">
                                 <Button
                                   type="button"
@@ -525,7 +525,7 @@ export default function AdminDevelopers() {
                       <p className="text-xs text-zinc-600 mt-2">
                         {formatDate(a.createdAt)}
                       </p>
-                      {a.status === "pending" && (
+                      {a.status === 'pending' && (
                         <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800/80">
                           <Button
                             type="button"
@@ -624,7 +624,7 @@ export default function AdminDevelopers() {
                                 ? new Date(
                                     d.lastApiActivity
                                   ).toLocaleDateString()
-                                : "—"}
+                                : '—'}
                             </span>
                           </td>
                           <td className={`${ADMIN_TD} text-right`}>
@@ -751,7 +751,7 @@ export default function AdminDevelopers() {
         open={rejectId != null}
         onClose={() => {
           setRejectId(null);
-          setRejectNote("");
+          setRejectNote('');
         }}
         title="Reject application"
         size="sm"
@@ -763,7 +763,7 @@ export default function AdminDevelopers() {
               size={btnSize}
               onClick={() => {
                 setRejectId(null);
-                setRejectNote("");
+                setRejectNote('');
               }}
             >
               Cancel

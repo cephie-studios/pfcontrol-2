@@ -91,7 +91,16 @@ router.post('/ban', async (req, res) => {
     },
   });
 
-  capture(req,{ distinctId: req.user.userId, event: 'admin_user_banned', properties: { target_user_id: userId, target_ip: ip, reason, expires_at: expiresAt } });
+  capture(req, {
+    distinctId: req.user.userId,
+    event: 'admin_user_banned',
+    properties: {
+      target_user_id: userId,
+      target_ip: ip,
+      reason,
+      expires_at: expiresAt,
+    },
+  });
 
   res.json({ success: true });
 });
@@ -135,7 +144,11 @@ router.post('/unban', async (req, res) => {
     },
   });
 
-  capture(req,{ distinctId: req.user.userId, event: 'admin_user_unbanned', properties: { target: userIdOrIp } });
+  capture(req, {
+    distinctId: req.user.userId,
+    event: 'admin_user_unbanned',
+    properties: { target: userIdOrIp },
+  });
 
   res.json({ success: true });
 });
@@ -169,10 +182,16 @@ router.post('/vpn-gate/toggle', async (req, res) => {
     return res.status(400).json({ error: 'enabled must be a boolean' });
   }
   if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized: user not found in request' });
+    return res
+      .status(401)
+      .json({ error: 'Unauthorized: user not found in request' });
   }
   await updateVpnGateSetting('vpn_gate_enabled', enabled);
-  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_gate_toggled', properties: { enabled } });
+  capture(req, {
+    distinctId: req.user.userId,
+    event: 'admin_vpn_gate_toggled',
+    properties: { enabled },
+  });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',
@@ -195,7 +214,9 @@ router.post('/vpn-gate/exceptions', async (req, res) => {
     return res.status(400).json({ error: 'userId is required' });
   }
   if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized: user not found in request' });
+    return res
+      .status(401)
+      .json({ error: 'Unauthorized: user not found in request' });
   }
   const targetUser = await getUserById(userId);
   if (!targetUser) {
@@ -209,7 +230,11 @@ router.post('/vpn-gate/exceptions', async (req, res) => {
     req.user.username || 'Unknown',
     notes || ''
   );
-  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_exception_added', properties: { target_user_id: userId, target_username: resolvedUsername } });
+  capture(req, {
+    distinctId: req.user.userId,
+    event: 'admin_vpn_exception_added',
+    properties: { target_user_id: userId, target_username: resolvedUsername },
+  });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',
@@ -221,7 +246,12 @@ router.post('/vpn-gate/exceptions', async (req, res) => {
       return Array.isArray(ip) ? ip[0] : (ip ?? null);
     })(),
     userAgent: req.get('User-Agent'),
-    details: { userId, username: resolvedUsername, notes, timestamp: new Date().toISOString() },
+    details: {
+      userId,
+      username: resolvedUsername,
+      notes,
+      timestamp: new Date().toISOString(),
+    },
   });
   res.json({ success: true, exception });
 });
@@ -229,10 +259,16 @@ router.post('/vpn-gate/exceptions', async (req, res) => {
 router.delete('/vpn-gate/exceptions/:userId', async (req, res) => {
   const { userId } = req.params;
   if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized: user not found in request' });
+    return res
+      .status(401)
+      .json({ error: 'Unauthorized: user not found in request' });
   }
   const removed = await removeVpnException(userId);
-  capture(req,{ distinctId: req.user.userId, event: 'admin_vpn_exception_removed', properties: { target_user_id: userId } });
+  capture(req, {
+    distinctId: req.user.userId,
+    event: 'admin_vpn_exception_removed',
+    properties: { target_user_id: userId },
+  });
   await logAdminAction({
     adminId: req.user.userId,
     adminUsername: req.user.username || 'Unknown',

@@ -23,7 +23,7 @@ interface RouteModalProps {
 function parseSidStar(
   route: string,
   departure?: string,
-  arrival?: string,
+  arrival?: string
 ): { sid?: string; star?: string } {
   const tokens = route.trim().split(/\s+/).filter(Boolean);
   if (tokens.length < 2) return {};
@@ -31,7 +31,8 @@ function parseSidStar(
   let start = 0;
   let end = tokens.length - 1;
 
-  if (departure && tokens[0].toUpperCase() === departure.toUpperCase()) start = 1;
+  if (departure && tokens[0].toUpperCase() === departure.toUpperCase())
+    start = 1;
   if (arrival && tokens[end].toUpperCase() === arrival.toUpperCase()) end -= 1;
 
   const relevant = tokens.slice(start, end + 1);
@@ -45,7 +46,9 @@ function parseSidStar(
       : undefined;
   const last = relevant[relevant.length - 1];
   const star =
-    relevant.length > 1 && looksLikeProcedure(last) && last.toUpperCase() !== sid
+    relevant.length > 1 &&
+    looksLikeProcedure(last) &&
+    last.toUpperCase() !== sid
       ? last.toUpperCase()
       : undefined;
 
@@ -61,7 +64,9 @@ export default function RouteModal({
 }: RouteModalProps) {
   const [editedRoute, setEditedRoute] = useState(flight?.route || '');
   const [displaySid, setDisplaySid] = useState<string | undefined>(flight?.sid);
-  const [displayStar, setDisplayStar] = useState<string | undefined>(flight?.star);
+  const [displayStar, setDisplayStar] = useState<string | undefined>(
+    flight?.star
+  );
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -96,7 +101,11 @@ export default function RouteModal({
   const handleRouteChange = (value: string) => {
     setEditedRoute(value);
 
-    const { sid, star } = parseSidStar(value, flight?.departure, flight?.arrival);
+    const { sid, star } = parseSidStar(
+      value,
+      flight?.departure,
+      flight?.arrival
+    );
     setDisplaySid(sid);
     setDisplayStar(star);
 
@@ -113,7 +122,7 @@ export default function RouteModal({
         y: e.clientY - translate.y,
       });
     },
-    [translate],
+    [translate]
   );
 
   useEffect(() => {
@@ -144,7 +153,7 @@ export default function RouteModal({
       const result = await fetchRoute(
         flight.departure,
         flight.arrival,
-        activeRunway ?? undefined,
+        activeRunway ?? undefined
       );
       if (result.success && result.route) {
         setEditedRoute(result.route);
@@ -202,20 +211,34 @@ export default function RouteModal({
         {/* Dep / Arr / SID / STAR */}
         <div className="grid grid-cols-4 gap-3 mb-4">
           <div>
-            <div className="text-xs font-medium text-green-400 mb-0.5">Departure</div>
-            <div className="text-white font-mono text-sm">{flight.departure || '—'}</div>
+            <div className="text-xs font-medium text-green-400 mb-0.5">
+              Departure
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.departure || '—'}
+            </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-red-400 mb-0.5">Arrival</div>
-            <div className="text-white font-mono text-sm">{flight.arrival || '—'}</div>
+            <div className="text-xs font-medium text-red-400 mb-0.5">
+              Arrival
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.arrival || '—'}
+            </div>
           </div>
           <div>
             <div className="text-xs font-medium text-blue-400 mb-0.5">SID</div>
-            <div className="text-white font-mono text-sm">{displaySid || '—'}</div>
+            <div className="text-white font-mono text-sm">
+              {displaySid || '—'}
+            </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-purple-400 mb-0.5">STAR</div>
-            <div className="text-white font-mono text-sm">{displayStar || '—'}</div>
+            <div className="text-xs font-medium text-purple-400 mb-0.5">
+              STAR
+            </div>
+            <div className="text-white font-mono text-sm">
+              {displayStar || '—'}
+            </div>
           </div>
         </div>
 
@@ -259,7 +282,10 @@ export default function RouteModal({
 
         {/* Route Map preview */}
         {showMap && (
-          <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700" style={{ height: 220 }}>
+          <div
+            className="mt-3 rounded-lg overflow-hidden border border-zinc-700"
+            style={{ height: 220 }}
+          >
             <RouteMap
               route={mapRoute}
               departure={flight.departure}
@@ -274,8 +300,12 @@ export default function RouteModal({
         {/* Alternate */}
         {flight.alternate && (
           <div className="mt-3">
-            <div className="text-xs font-medium text-zinc-400 mb-0.5">Alternate</div>
-            <div className="text-white font-mono text-sm">{flight.alternate}</div>
+            <div className="text-xs font-medium text-zinc-400 mb-0.5">
+              Alternate
+            </div>
+            <div className="text-white font-mono text-sm">
+              {flight.alternate}
+            </div>
           </div>
         )}
       </div>

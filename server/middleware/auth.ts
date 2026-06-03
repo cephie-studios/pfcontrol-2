@@ -115,7 +115,6 @@ export default async function requireAuth(
       }
     }
 
-
     const validIp = ip && ip !== 'unknown' ? ip : null;
     if (!isBanned && validIp) {
       const ipBanCacheKey = `ban:ip:${validIp}`;
@@ -135,11 +134,10 @@ export default async function requireAuth(
       return res.status(403).json({ error: 'Account is banned' });
     }
 
-
     // VPN gate check — block if stored flag OR current IP is detected as VPN
     const gateEnabled = await isVpnGateEnabled();
     if (gateEnabled) {
-      if (user.is_vpn || (validIp && await isIpVpn(validIp))) {
+      if (user.is_vpn || (validIp && (await isIpVpn(validIp)))) {
         const hasException = await isVpnException(decoded.userId);
         if (!hasException) {
           return res.status(403).json({ error: 'VPN access blocked' });

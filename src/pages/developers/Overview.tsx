@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Loader2,
   LayoutDashboard,
@@ -11,39 +11,39 @@ import {
   Clock,
   Sparkles,
   Mail,
-} from "lucide-react";
-import DeveloperAccessRequestForm from "../../components/developers/DeveloperAccessRequestForm";
-import { cardClass, statusBadgeClass } from "./constants";
-import { useDeveloperPortal } from "./developerPortalContext";
+} from 'lucide-react';
+import DeveloperAccessRequestForm from '../../components/developers/DeveloperAccessRequestForm';
+import { cardClass, statusBadgeClass } from './constants';
+import { useDeveloperPortal } from './developerPortalContext';
 
 const devNoticeSuccessClass =
-  "flex items-start gap-3 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-50 ring-1 ring-emerald-900/30";
+  'flex items-start gap-3 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-50 ring-1 ring-emerald-900/30';
 
 const devNoticeClass =
-  "flex items-start gap-3 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-50 ring-1 ring-amber-900/25";
+  'flex items-start gap-3 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-50 ring-1 ring-amber-900/25';
 
-const ADMIN_NOTICE_SUCCESS_PREFIX = "[[success]]";
+const ADMIN_NOTICE_SUCCESS_PREFIX = '[[success]]';
 
 function parseAdminNoticeDetail(raw: string | null | undefined): {
-  variant: "success" | "default";
+  variant: 'success' | 'default';
   body: string;
 } {
-  const text = raw?.trim() ?? "";
+  const text = raw?.trim() ?? '';
   if (text.startsWith(ADMIN_NOTICE_SUCCESS_PREFIX)) {
     const body = text
       .slice(ADMIN_NOTICE_SUCCESS_PREFIX.length)
-      .replace(/^\s*\n+/, "")
+      .replace(/^\s*\n+/, '')
       .trimEnd();
-    return { variant: "success", body };
+    return { variant: 'success', body };
   }
-  return { variant: "default", body: text };
+  return { variant: 'default', body: text };
 }
 
 const devPendingBannerClass =
-  "flex items-start gap-3 rounded-2xl border border-sky-800/40 bg-sky-950/35 px-4 py-3 text-sky-50 ring-1 ring-sky-900/25";
+  'flex items-start gap-3 rounded-2xl border border-sky-800/40 bg-sky-950/35 px-4 py-3 text-sky-50 ring-1 ring-sky-900/25';
 
 const devPendingCardClass =
-  "rounded-3xl border border-zinc-700/80 bg-linear-to-br from-zinc-900/95 via-zinc-900/90 to-sky-950/20 p-6 sm:p-8 shadow-xl ring-1 ring-zinc-700/45 text-zinc-200";
+  'rounded-3xl border border-zinc-700/80 bg-linear-to-br from-zinc-900/95 via-zinc-900/90 to-sky-950/20 p-6 sm:p-8 shadow-xl ring-1 ring-zinc-700/45 text-zinc-200';
 
 export default function DeveloperOverview() {
   const {
@@ -74,27 +74,27 @@ export default function DeveloperOverview() {
     saveNotificationEmail,
   } = useDeveloperPortal();
 
-  const [emailDraft, setEmailDraft] = useState("");
+  const [emailDraft, setEmailDraft] = useState('');
   useEffect(() => {
-    setEmailDraft(notificationEmail ?? "");
+    setEmailDraft(notificationEmail ?? '');
   }, [notificationEmail]);
 
   const [scopeRequestOpen, setScopeRequestOpen] = useState(false);
-  const [rqWho, setRqWho] = useState("");
-  const [rqWhy, setRqWhy] = useState("");
+  const [rqWho, setRqWho] = useState('');
+  const [rqWhy, setRqWhy] = useState('');
   const [rqScopes, setRqScopes] = useState<Set<string>>(new Set());
 
   const catalogForNewScopes = useMemo(
     () => catalog.filter((c) => !approvedScopes.includes(c.id)),
-    [catalog, approvedScopes],
+    [catalog, approvedScopes]
   );
 
-  const scopeRequestPending = appState?.latestApplication?.status === "pending";
+  const scopeRequestPending = appState?.latestApplication?.status === 'pending';
 
   const openScopeRequest = () => {
     setError(null);
-    setRqWho("");
-    setRqWhy("");
+    setRqWho('');
+    setRqWhy('');
     setRqScopes(new Set());
     setScopeRequestOpen(true);
   };
@@ -108,8 +108,8 @@ export default function DeveloperOverview() {
     });
     if (ok) {
       setScopeRequestOpen(false);
-      setRqWho("");
-      setRqWhy("");
+      setRqWho('');
+      setRqWhy('');
       setRqScopes(new Set());
     }
   };
@@ -133,37 +133,45 @@ export default function DeveloperOverview() {
         {showAdminNotice && (
           <div
             className={
-              adminNoticeParsed.variant === "success" ? devNoticeSuccessClass : devNoticeClass
+              adminNoticeParsed.variant === 'success'
+                ? devNoticeSuccessClass
+                : devNoticeClass
             }
           >
             <Bell
               className={`w-5 h-5 shrink-0 mt-0.5 ${
-                adminNoticeParsed.variant === "success" ? "text-emerald-400" : "text-amber-400"
+                adminNoticeParsed.variant === 'success'
+                  ? 'text-emerald-400'
+                  : 'text-amber-400'
               }`}
             />
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm font-semibold ${
-                  adminNoticeParsed.variant === "success" ? "text-emerald-100" : "text-amber-100"
+                  adminNoticeParsed.variant === 'success'
+                    ? 'text-emerald-100'
+                    : 'text-amber-100'
                 }`}
               >
-                {adminNoticeParsed.variant === "success"
-                  ? "Application approved"
-                  : "Something changed on your account"}
+                {adminNoticeParsed.variant === 'success'
+                  ? 'Application approved'
+                  : 'Something changed on your account'}
               </p>
               <div
                 className={`mt-2 space-y-2 text-sm leading-relaxed ${
-                  adminNoticeParsed.variant === "success"
-                    ? "text-emerald-100/90"
-                    : "text-amber-200/90"
+                  adminNoticeParsed.variant === 'success'
+                    ? 'text-emerald-100/90'
+                    : 'text-amber-200/90'
                 }`}
               >
                 {adminNoticeParagraphs.length > 0 ? (
-                  adminNoticeParagraphs.map((para, i) => <p key={i}>{para.trim()}</p>)
+                  adminNoticeParagraphs.map((para, i) => (
+                    <p key={i}>{para.trim()}</p>
+                  ))
                 ) : (
                   <p>
                     {adminNoticeDetail?.trim() ||
-                      "An admin updated your scopes, a key, or rate limits. Peek at Keys or the API reference when you have a minute."}
+                      'An admin updated your scopes, a key, or rate limits. Peek at Keys or the API reference when you have a minute.'}
                   </p>
                 )}
               </div>
@@ -172,9 +180,9 @@ export default function DeveloperOverview() {
               type="button"
               onClick={() => void dismissAdminNotice()}
               className={`shrink-0 p-1.5 rounded-lg transition-colors ${
-                adminNoticeParsed.variant === "success"
-                  ? "text-emerald-200/85 hover:bg-emerald-900/45 hover:text-emerald-50"
-                  : "text-amber-200/80 hover:bg-amber-900/40 hover:text-amber-50"
+                adminNoticeParsed.variant === 'success'
+                  ? 'text-emerald-200/85 hover:bg-emerald-900/45 hover:text-emerald-50'
+                  : 'text-amber-200/80 hover:bg-amber-900/40 hover:text-amber-50'
               }`}
               aria-label="Dismiss notification"
             >
@@ -190,14 +198,15 @@ export default function DeveloperOverview() {
                 We&apos;re reviewing a scope request
               </p>
               <p className="text-sm text-sky-200/85 mt-1 leading-relaxed">
-                Hang tight — your current access still works while we take a look. We&apos;ll follow
-                up when it&apos;s sorted.
+                Hang tight — your current access still works while we take a
+                look. We&apos;ll follow up when it&apos;s sorted.
               </p>
             </div>
           </div>
         )}
         <p className="text-zinc-400 text-sm sm:text-base max-w-2xl">
-          You&apos;re all set. Jump into usage, keys, or the live API reference whenever you like.
+          You&apos;re all set. Jump into usage, keys, or the live API reference
+          whenever you like.
         </p>
 
         {catalogForNewScopes.length > 0 && !scopeRequestOpen && (
@@ -260,7 +269,9 @@ export default function DeveloperOverview() {
               </div>
               <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
             </div>
-            <h2 className="text-base font-semibold text-zinc-100">API reference</h2>
+            <h2 className="text-base font-semibold text-zinc-100">
+              API reference
+            </h2>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
               Routes, parameters, and curl examples.
             </p>
@@ -274,10 +285,13 @@ export default function DeveloperOverview() {
             </div>
             <div className="min-w-0 flex-1 space-y-3">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-100">Email alerts</h2>
+                <h2 className="text-lg font-semibold text-zinc-100">
+                  Email alerts
+                </h2>
                 <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  (Optional) We&apos;ll email you when an administrator updates your scopes, API
-                  keys, rate limits, or account status (same summary as the in-portal notice).
+                  (Optional) We&apos;ll email you when an administrator updates
+                  your scopes, API keys, rate limits, or account status (same
+                  summary as the in-portal notice).
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
@@ -297,8 +311,9 @@ export default function DeveloperOverview() {
                   type="button"
                   disabled={
                     notificationEmailSaving ||
-                    (emailDraft.trim() === "" && notificationEmail === null) ||
-                    (emailDraft.trim() !== "" && emailDraft.trim() === (notificationEmail ?? ""))
+                    (emailDraft.trim() === '' && notificationEmail === null) ||
+                    (emailDraft.trim() !== '' &&
+                      emailDraft.trim() === (notificationEmail ?? ''))
                   }
                   onClick={() => {
                     setError(null);
@@ -306,7 +321,11 @@ export default function DeveloperOverview() {
                   }}
                   className="inline-flex justify-center items-center gap-2 shrink-0 px-6 py-2.5 rounded-xl border border-violet-600/50 bg-violet-950/40 text-violet-100 text-sm font-semibold hover:bg-violet-900/45 hover:border-violet-500/55 transition-colors disabled:opacity-40 disabled:pointer-events-none ring-1 ring-violet-900/25"
                 >
-                  {notificationEmailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                  {notificationEmailSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Save'
+                  )}
                 </button>
               </div>
             </div>
@@ -337,7 +356,7 @@ export default function DeveloperOverview() {
       <div className="rounded-3xl border border-rose-900/45 bg-linear-to-br from-zinc-900/95 via-rose-950/20 to-zinc-900/95 p-6 sm:p-8 shadow-xl ring-1 ring-rose-900/20 text-zinc-200">
         <div className="flex items-center gap-2 mb-3">
           <span
-            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass("suspended")}`}
+            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass('suspended')}`}
           >
             Suspended
           </span>
@@ -346,8 +365,8 @@ export default function DeveloperOverview() {
           Your developer access is on pause
         </h2>
         <p className="text-sm text-zinc-400 leading-relaxed">
-          API keys won&apos;t work until an administrator turns access back on. If this looks wrong,
-          reach out{" "}
+          API keys won&apos;t work until an administrator turns access back on.
+          If this looks wrong, reach out{' '}
           <a
             href="https://cephie.app/discord"
             target="_blank"
@@ -367,21 +386,25 @@ export default function DeveloperOverview() {
       <div className={devPendingCardClass}>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-          <h2 className="text-lg font-semibold text-zinc-50">Application in the queue</h2>
+          <h2 className="text-lg font-semibold text-zinc-50">
+            Application in the queue
+          </h2>
           <span
-            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass("pending")}`}
+            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass('pending')}`}
           >
             Pending
           </span>
         </div>
         <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-          Thanks for applying! A human will read it soon. When you&apos;re approved you&apos;ll be
-          able to create keys from the Keys tab.
+          Thanks for applying! A human will read it soon. When you&apos;re
+          approved you&apos;ll be able to create keys from the Keys tab.
         </p>
         {appState?.latestApplication && (
           <div className="space-y-5 text-sm border-t border-zinc-700/80 pt-5">
             <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">About you</p>
+              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">
+                About you
+              </p>
               <p className="text-zinc-200 whitespace-pre-wrap leading-relaxed">
                 {appState.latestApplication.whoText}
               </p>
@@ -395,7 +418,9 @@ export default function DeveloperOverview() {
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-2.5">Scopes you asked for</p>
+              <p className="text-xs font-semibold text-sky-400/90 mb-2.5">
+                Scopes you asked for
+              </p>
               <div className="flex flex-wrap gap-2">
                 {appState.latestApplication.requestedScopes.map((id) => (
                   <span

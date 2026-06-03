@@ -78,9 +78,12 @@ export interface MyFlightLogsResponse {
 export async function fetchMyFlightLogs(
   flightId: string
 ): Promise<MyFlightLogsResponse> {
-  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
-    credentials: 'include',
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/flights/me/${flightId}/logs`,
+    {
+      credentials: 'include',
+    }
+  );
   if (!res.ok) throw new Error('Failed to fetch flight logs');
   return res.json();
 }
@@ -127,12 +130,15 @@ export async function updateFlightNotes(
   flightId: string,
   notes: string
 ): Promise<void> {
-  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}/notes`, {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ notes }),
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/flights/me/${flightId}/notes`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes }),
+    }
+  );
   if (!res.ok) throw new Error('Failed to save notes');
 }
 
@@ -147,11 +153,14 @@ export async function uploadSnapImage(
 ): Promise<{ url: string; cephie_id: string; snap_images: SnapImage[] }> {
   const formData = new FormData();
   formData.append('image', file);
-  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}/snap`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/flights/me/${flightId}/snap`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    }
+  );
   if (!res.ok) throw new Error('Failed to upload snap');
   return res.json();
 }
@@ -173,10 +182,13 @@ export async function deleteSnapImage(
 export async function toggleFeaturedOnProfile(
   flightId: string
 ): Promise<{ featured: boolean }> {
-  const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}/feature`, {
-    method: 'PATCH',
-    credentials: 'include',
-  });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/flights/me/${flightId}/feature`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+    }
+  );
   if (res.status === 409) throw new Error('CAP_REACHED');
   if (!res.ok) throw new Error('Failed to toggle featured status');
   return res.json();

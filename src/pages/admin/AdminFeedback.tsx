@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { MdStar, MdMessage, MdDelete, MdPeople } from "react-icons/md";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
+import { useState, useEffect } from 'react';
+import { MdStar, MdMessage, MdDelete, MdPeople } from 'react-icons/md';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -13,18 +13,18 @@ import {
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
-import Dropdown from "../../components/common/Dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchFeedback,
   fetchFeedbackStats,
   deleteFeedback,
   type Feedback,
   type FeedbackStats,
-} from "../../utils/fetch/feedback";
+} from '../../utils/fetch/feedback';
 
 export default function AdminFeedback() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -33,20 +33,20 @@ export default function AdminFeedback() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [filterRating, setFilterRating] = useState<string>("all");
+  const [search, setSearch] = useState('');
+  const [filterRating, setFilterRating] = useState<string>('all');
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const filterOptions = [
-    { value: "all", label: "All Ratings" },
-    { value: "5", label: "5 Stars" },
-    { value: "4", label: "4 Stars" },
-    { value: "3", label: "3 Stars" },
-    { value: "2", label: "2 Stars" },
-    { value: "1", label: "1 Star" },
+    { value: 'all', label: 'All Ratings' },
+    { value: '5', label: '5 Stars' },
+    { value: '4', label: '4 Stars' },
+    { value: '3', label: '3 Stars' },
+    { value: '2', label: '2 Stars' },
+    { value: '1', label: '1 Star' },
   ];
 
   useEffect(() => {
@@ -65,11 +65,11 @@ export default function AdminFeedback() {
       setFeedback(feedbackData);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch feedback";
+        err instanceof Error ? err.message : 'Failed to fetch feedback';
       setError(errorMessage);
       setToast({
         message: errorMessage,
-        type: "error",
+        type: 'error',
       });
     } finally {
       setLoading(false);
@@ -82,25 +82,25 @@ export default function AdminFeedback() {
       (item.comment &&
         item.comment.toLowerCase().includes(search.toLowerCase()));
     const matchesRating =
-      filterRating === "all" || item.rating.toString() === filterRating;
+      filterRating === 'all' || item.rating.toString() === filterRating;
     return matchesSearch && matchesRating;
   });
 
   const handleDeleteFeedback = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this feedback?")) return;
+    if (!confirm('Are you sure you want to delete this feedback?')) return;
 
     try {
       await deleteFeedback(id);
       setToast({
-        message: "Feedback deleted successfully",
-        type: "success",
+        message: 'Feedback deleted successfully',
+        type: 'success',
       });
       fetchData();
     } catch (err) {
       setToast({
         message:
-          err instanceof Error ? err.message : "Failed to delete feedback",
-        type: "error",
+          err instanceof Error ? err.message : 'Failed to delete feedback',
+        type: 'error',
       });
     }
   };
@@ -112,7 +112,7 @@ export default function AdminFeedback() {
           <MdStar
             key={star}
             size={16}
-            className={star <= rating ? "text-yellow-400" : "text-zinc-600"}
+            className={star <= rating ? 'text-yellow-400' : 'text-zinc-600'}
           />
         ))}
       </div>
@@ -132,7 +132,7 @@ export default function AdminFeedback() {
         features: parseInt(match[3]),
         easeOfUse: parseInt(match[4]),
         overall: parseInt(match[5]),
-        additionalComment: comment.split("\n\n")[1] || null,
+        additionalComment: comment.split('\n\n')[1] || null,
       };
     }
 
@@ -195,21 +195,21 @@ export default function AdminFeedback() {
               columns={4}
               items={[
                 {
-                  label: "Average",
+                  label: 'Average',
                   value:
-                    Number(feedbackStats.average_rating)?.toFixed(1) || "0.0",
+                    Number(feedbackStats.average_rating)?.toFixed(1) || '0.0',
                 },
-                { label: "Total", value: feedbackStats.total_feedback },
-                { label: "5 stars", value: feedbackStats.five_star },
-                { label: "4 stars", value: feedbackStats.four_star },
-                { label: "3 stars", value: feedbackStats.three_star },
-                { label: "2 stars", value: feedbackStats.two_star },
-                { label: "1 star", value: feedbackStats.one_star },
+                { label: 'Total', value: feedbackStats.total_feedback },
+                { label: '5 stars', value: feedbackStats.five_star },
+                { label: '4 stars', value: feedbackStats.four_star },
+                { label: '3 stars', value: feedbackStats.three_star },
+                { label: '2 stars', value: feedbackStats.two_star },
+                { label: '1 star', value: feedbackStats.one_star },
               ]}
             />
           )}
 
-          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredFeedback.length === 0 ? (
                 <div className="col-span-full text-center py-8 text-zinc-400">
@@ -253,7 +253,7 @@ export default function AdminFeedback() {
                             </div>
                             <Button
                               variant="ghost"
-                              size={adminDownsizeButtonSize("sm")}
+                              size={adminDownsizeButtonSize('sm')}
                               onClick={() => handleDeleteFeedback(item.id)}
                               className="p-1 text-red-400 hover:text-red-300"
                             >

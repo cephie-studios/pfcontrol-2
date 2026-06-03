@@ -1,16 +1,16 @@
-import { redisConnection } from "../db/connection.js";
-import type { ClientFlight } from "../db/flights.js";
-import type { NetworkKind } from "../utils/advancedNetworkSession.js";
-import { keys } from "./keys.js";
+import { redisConnection } from '../db/connection.js';
+import type { ClientFlight } from '../db/flights.js';
+import type { NetworkKind } from '../utils/advancedNetworkSession.js';
+import { keys } from './keys.js';
 import {
   invalidateSessionFlightsCache,
   setFlightSourceCache,
   invalidateFlightSourceCache,
-} from "./flightsRead.js";
-import { invalidateArrivalsCache, broadcastArrivalChange } from "./arrivals.js";
-import { scheduleOverviewRefresh } from "./overview.js";
-import { getOverviewIO } from "./socketRegistry.js";
-import { onSessionUsersChanged } from "./activeSessions.js";
+} from './flightsRead.js';
+import { invalidateArrivalsCache, broadcastArrivalChange } from './arrivals.js';
+import { scheduleOverviewRefresh } from './overview.js';
+import { getOverviewIO } from './socketRegistry.js';
+import { onSessionUsersChanged } from './activeSessions.js';
 
 export type FlightChangePayload = {
   sessionId: string;
@@ -42,7 +42,7 @@ export async function onFlightChanged(
   if (flight && !deleted) {
     const overviewIO = getOverviewIO();
     if (overviewIO) {
-      overviewIO.emit("flightUpdated", { sessionId, flight });
+      overviewIO.emit('flightUpdated', { sessionId, flight });
     }
     void broadcastArrivalChange(flight, sessionId, networkKind);
   }

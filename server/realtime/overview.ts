@@ -1,15 +1,15 @@
-import { redisConnection } from "../db/connection.js";
-import { decrypt } from "../utils/encryption.js";
-import type { ClientFlight } from "../db/flights.js";
-import { keys, TTL } from "./keys.js";
-import { perfAsync } from "./perf.js";
+import { redisConnection } from '../db/connection.js';
+import { decrypt } from '../utils/encryption.js';
+import type { ClientFlight } from '../db/flights.js';
+import { keys, TTL } from './keys.js';
+import { perfAsync } from './perf.js';
 import {
   getActiveNetworkSessionIds,
   getSessionMetas,
   type SessionMeta,
-} from "./activeSessions.js";
-import { getFlightsForSessions } from "./flightsRead.js";
-import { getUserBadgesByIds } from "./userCache.js";
+} from './activeSessions.js';
+import { getFlightsForSessions } from './flightsRead.js';
+import { getUserBadgesByIds } from './userCache.js';
 
 type SectorController = {
   id: string;
@@ -24,7 +24,7 @@ async function getActiveSectorControllersFromRedis(): Promise<
 > {
   try {
     const controllers = await redisConnection.hgetall(
-      "activeSectorControllers"
+      'activeSectorControllers'
     );
     return Object.values(controllers).map(
       (data) => JSON.parse(data as string) as SectorController
@@ -82,7 +82,7 @@ type SessionUsersReader = {
   >;
 };
 
-const OVERVIEW_CACHE_ENABLED = process.env.OVERVIEW_CACHE !== "0";
+const OVERVIEW_CACHE_ENABLED = process.env.OVERVIEW_CACHE !== '0';
 
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight = false;
@@ -101,7 +101,7 @@ async function getDecryptedAtis(
   }
   try {
     const encrypted =
-      typeof encryptedAtis === "string"
+      typeof encryptedAtis === 'string'
         ? JSON.parse(encryptedAtis)
         : encryptedAtis;
     const atisData = decrypt(encrypted);
@@ -114,7 +114,7 @@ async function getDecryptedAtis(
     }
     return atisData;
   } catch (err) {
-    console.error("Error decrypting ATIS:", err);
+    console.error('Error decrypting ATIS:', err);
     return null;
   }
 }
@@ -122,7 +122,7 @@ async function getDecryptedAtis(
 export async function buildOverviewSnapshot(
   sessionUsersIO: SessionUsersReader
 ): Promise<OverviewData> {
-  return perfAsync("buildOverviewSnapshot", async () => {
+  return perfAsync('buildOverviewSnapshot', async () => {
     const sectorControllers = await getActiveSectorControllersFromRedis();
     const activeSessionIds = await getActiveNetworkSessionIds();
     const metas = await getSessionMetas(activeSessionIds);
@@ -156,7 +156,7 @@ export async function buildOverviewSnapshot(
       const flights = flightsBySession.get(sessionId) ?? [];
       let atisData = null;
       if (meta.hasAtis) {
-        const { getSessionById } = await import("../db/sessions.js");
+        const { getSessionById } = await import('../db/sessions.js');
         const fullSession = await getSessionById(sessionId);
         if (fullSession?.atis) {
           atisData = await getDecryptedAtis(sessionId, fullSession.atis);
@@ -166,8 +166,8 @@ export async function buildOverviewSnapshot(
       const controllers: OverviewController[] = users.map((user) => {
         const badge = badges.get(user.id);
         return {
-          username: user.username || "Unknown",
-          role: user.position || "APP",
+          username: user.username || 'Unknown',
+          role: user.position || 'APP',
           avatar: badge?.avatar ?? user.avatar,
           hasVatsimRating: badge?.hasVatsimRating ?? false,
           isEventController: badge?.isEventController ?? false,
@@ -208,8 +208,8 @@ export async function buildOverviewSnapshot(
         activeUsers: 1,
         controllers: [
           {
-            username: sectorController.username || "Unknown",
-            role: "CTR",
+            username: sectorController.username || 'Unknown',
+            role: 'CTR',
             avatar,
             hasVatsimRating: badge?.hasVatsimRating ?? false,
             isEventController: badge?.isEventController ?? false,
@@ -221,7 +221,7 @@ export async function buildOverviewSnapshot(
       });
     }
 
-    const arrivalsByAirport: OverviewData["arrivalsByAirport"] = {};
+    const arrivalsByAirport: OverviewData['arrivalsByAirport'] = {};
     for (const session of activeSessions) {
       for (const flight of session.flights) {
         if (!flight.arrival) continue;
@@ -298,7 +298,7 @@ async function runCoalescedOverviewRefresh(): Promise<void> {
   try {
     await refreshOverviewSnapshot(sessionUsersIORef);
   } catch (err) {
-    console.error("[overview] refresh failed:", err);
+    console.error('[overview] refresh failed:', err);
   } finally {
     refreshInFlight = false;
   }

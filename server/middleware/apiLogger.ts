@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from "express";
-import { mainDb } from "../db/connection.js";
-import { recordTableDeletes } from "../db/databaseMetrics.js";
-import { getClientIp } from "../utils/getIpAddress.js";
-import { JwtPayloadClient } from "../types/JwtPayload.js";
-import { sql } from "kysely";
-import { logger } from "../utils/posthog.js";
+import { Request, Response, NextFunction } from 'express';
+import { mainDb } from '../db/connection.js';
+import { recordTableDeletes } from '../db/databaseMetrics.js';
+import { getClientIp } from '../utils/getIpAddress.js';
+import { JwtPayloadClient } from '../types/JwtPayload.js';
+import { sql } from 'kysely';
+import { logger } from '../utils/posthog.js';
 
 interface RequestWithUser extends Request {
   user?: JwtPayloadClient;
@@ -26,31 +26,31 @@ export interface ApiLogEntry {
 }
 
 const EXCLUDED_PATHS = [
-  "/health",
-  "/api/ext/",
-  "/api/data/metar",
-  "/api/data/airports",
-  "/api/data/airlines",
-  "/api/data/aircrafts",
-  "/api/data/frequencies",
-  "/api/admin/api-logs",
-  "/assets",
-  ".css",
-  ".js",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".webp",
-  ".ico",
-  ".svg",
-  ".woff",
-  ".woff2",
-  ".ttf",
-  ".eot",
+  '/health',
+  '/api/ext/',
+  '/api/data/metar',
+  '/api/data/airports',
+  '/api/data/airlines',
+  '/api/data/aircrafts',
+  '/api/data/frequencies',
+  '/api/admin/api-logs',
+  '/assets',
+  '.css',
+  '.js',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.svg',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
 ];
 
-const SENSITIVE_FIELDS = ["token", "secret", "key", "authorization"];
+const SENSITIVE_FIELDS = ['token', 'secret', 'key', 'authorization'];
 
 function shouldLogRequest(path: string): boolean {
   return !EXCLUDED_PATHS.some((excluded) =>
@@ -59,7 +59,7 @@ function shouldLogRequest(path: string): boolean {
 }
 
 function sanitizeObject(obj: unknown): unknown {
-  if (!obj || typeof obj !== "object") return obj;
+  if (!obj || typeof obj !== 'object') return obj;
 
   if (Array.isArray(obj)) {
     return obj.map((item) => sanitizeObject(item));
@@ -70,7 +70,7 @@ function sanitizeObject(obj: unknown): unknown {
       const lowerKey = key.toLowerCase();
 
       if (SENSITIVE_FIELDS.some((field) => lowerKey.includes(field))) {
-        sanitized[key] = "[REDACTED]";
+        sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeObject(value);
       }
@@ -82,17 +82,17 @@ function sanitizeObject(obj: unknown): unknown {
 
 function truncateString(str: string, maxLength: number = 10000): string {
   if (str.length <= maxLength) return str;
-  return str.substring(0, maxLength) + "... [TRUNCATED]";
+  return str.substring(0, maxLength) + '... [TRUNCATED]';
 }
 
 export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
   try {
     const ipAddress = Array.isArray(logEntry.ip_address)
-      ? logEntry.ip_address.join(", ")
+      ? logEntry.ip_address.join(', ')
       : logEntry.ip_address;
 
     await mainDb
-      .insertInto("api_logs")
+      .insertInto('api_logs')
       .values({
         id: sql`DEFAULT`,
         user_id: logEntry.user_id,
@@ -110,7 +110,7 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<void> {
       })
       .execute();
   } catch (error) {
-    console.error("Failed to log API call:", error);
+    console.error('Failed to log API call:', error);
   }
 }
 
@@ -127,18 +127,18 @@ export function apiLogger() {
 
     res.send = function (data) {
       try {
-        if (data && typeof data === "object") {
+        if (data && typeof data === 'object') {
           responseBody = truncateString(JSON.stringify(sanitizeObject(data)));
-        } else if (typeof data === "string") {
+        } else if (typeof data === 'string') {
           responseBody = truncateString(data);
         }
       } catch {
-        responseBody = "[SERIALIZATION_ERROR]";
+        responseBody = '[SERIALIZATION_ERROR]';
       }
       return originalSend.call(this, data);
     };
 
-    res.on("finish", async () => {
+    res.on('finish', async () => {
       const endTime = Date.now();
       const responseTime = endTime - startTime;
 
@@ -151,13 +151,13 @@ export function apiLogger() {
               JSON.stringify(sanitizeObject(req.body))
             );
           } catch {
-            requestBody = "[SERIALIZATION_ERROR]";
+            requestBody = '[SERIALIZATION_ERROR]';
           }
         }
 
         const ipAddress = getClientIp(req);
         const finalIpAddress = Array.isArray(ipAddress)
-          ? ipAddress.join(", ")
+          ? ipAddress.join(', ')
           : ipAddress;
 
         const logEntry: ApiLogEntry = {
@@ -168,7 +168,7 @@ export function apiLogger() {
           status_code: res.statusCode,
           response_time: responseTime,
           ip_address: finalIpAddress,
-          user_agent: req.get("User-Agent") || null,
+          user_agent: req.get('User-Agent') || null,
           request_body: requestBody,
           response_body: responseBody,
           error_message: errorMessage,
@@ -178,7 +178,7 @@ export function apiLogger() {
         setImmediate(() => logApiCall(logEntry));
 
         if (res.statusCode >= 500) {
-          logger.error("API 5xx response", {
+          logger.error('API 5xx response', {
             method: req.method,
             path: req.originalUrl,
             status_code: res.statusCode,
@@ -187,7 +187,7 @@ export function apiLogger() {
           });
         }
       } catch (error) {
-        console.error("Error creating API log entry:", error);
+        console.error('Error creating API log entry:', error);
       }
     });
 
@@ -204,14 +204,14 @@ export async function cleanupOldApiLogs(
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
     const result = await mainDb
-      .deleteFrom("api_logs")
-      .where("created_at", "<", cutoffDate)
+      .deleteFrom('api_logs')
+      .where('created_at', '<', cutoffDate)
       .executeTakeFirst();
 
     const deleted = Number(result?.numDeletedRows ?? 0);
-    await recordTableDeletes("api_logs", deleted);
+    await recordTableDeletes('api_logs', deleted);
     console.log(`Cleaned up ${deleted} old API log entries`);
   } catch (error) {
-    console.error("Failed to cleanup old API logs:", error);
+    console.error('Failed to cleanup old API logs:', error);
   }
 }

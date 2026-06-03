@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   MdPeople,
   MdFilterList,
@@ -15,22 +15,22 @@ import {
   MdPerson,
   MdCheck,
   MdClose,
-} from "react-icons/md";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminTable from "../../components/admin/AdminTable";
+} from 'react-icons/md';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminDownsizeButtonSize,
   ADMIN_INPUT_ICON_CLASS,
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Dropdown from "../../components/common/Dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchAdminUsers,
   revealUserIP,
@@ -38,17 +38,17 @@ import {
   assignRoleToUser,
   type AdminUser,
   type Role,
-} from "../../utils/fetch/admin";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
-import { useAuth } from "../../hooks/auth/useAuth";
-import { removeRoleFromUser } from "../../utils/fetch/admin";
-import { getIconComponent } from "../../utils/roles";
+} from '../../utils/fetch/admin';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { removeRoleFromUser } from '../../utils/fetch/admin';
+import { getIconComponent } from '../../utils/roles';
 
 function SettingsPanel({
   title,
   children,
-  className = "",
+  className = '',
 }: {
   title: string;
   children: ReactNode;
@@ -76,11 +76,11 @@ export default function AdminUsers() {
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
   const [debouncedSearch, setDebouncedSearch] = useState(
-    () => searchParams.get("search") ?? ""
+    () => searchParams.get('search') ?? ''
   );
-  const [filterAdmin, setFilterAdmin] = useState<string>("all");
+  const [filterAdmin, setFilterAdmin] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [revealedIPs, setRevealedIPs] = useState<Set<string>>(new Set());
@@ -95,14 +95,14 @@ export default function AdminUsers() {
   const [assigningRole, setAssigningRole] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const filterOptions = [
-    { value: "all", label: "All Users" },
-    { value: "admin", label: "Admins Only" },
-    { value: "non-admin", label: "Non-Admins" },
-    { value: "cached", label: "Cached Users Only" },
+    { value: 'all', label: 'All Users' },
+    { value: 'admin', label: 'Admins Only' },
+    { value: 'non-admin', label: 'Non-Admins' },
+    { value: 'cached', label: 'Cached Users Only' },
   ];
 
   useEffect(() => {
@@ -136,11 +136,11 @@ export default function AdminUsers() {
       return sortedUsers;
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch data";
+        err instanceof Error ? err.message : 'Failed to fetch data';
       setError(errorMessage);
       setToast({
         message: errorMessage,
-        type: "error",
+        type: 'error',
       });
       throw err;
     } finally {
@@ -175,7 +175,7 @@ export default function AdminUsers() {
   const handleRemoveRole = async (userId: string, roleId: number) => {
     try {
       await removeRoleFromUser(userId, roleId);
-      setToast({ message: "Role removed successfully", type: "success" });
+      setToast({ message: 'Role removed successfully', type: 'success' });
       const updatedUsers = await fetchData();
       const updatedUser = updatedUsers.find((u) => u.id === userId);
       if (updatedUser) {
@@ -184,8 +184,8 @@ export default function AdminUsers() {
     } catch (error) {
       setToast({
         message:
-          error instanceof Error ? error.message : "Failed to remove role",
-        type: "error",
+          error instanceof Error ? error.message : 'Failed to remove role',
+        type: 'error',
       });
     }
   };
@@ -199,13 +199,13 @@ export default function AdminUsers() {
       if (roleId) {
         await assignRoleToUser(selectedUserForRole.id, roleId);
         setToast({
-          message: "Role assigned successfully",
-          type: "success",
+          message: 'Role assigned successfully',
+          type: 'success',
         });
       } else {
         setToast({
-          message: "Please use the Admin Roles page to remove roles",
-          type: "info",
+          message: 'Please use the Admin Roles page to remove roles',
+          type: 'info',
         });
       }
 
@@ -219,8 +219,8 @@ export default function AdminUsers() {
     } catch (error) {
       setToast({
         message:
-          error instanceof Error ? error.message : "Failed to update role",
-        type: "error",
+          error instanceof Error ? error.message : 'Failed to update role',
+        type: 'error',
       });
     } finally {
       setAssigningRole(false);
@@ -242,17 +242,17 @@ export default function AdminUsers() {
       await revealUserIP(userId);
       setRevealedIPs((prev) => new Set(prev).add(userId));
       setToast({
-        message: "IP address revealed successfully",
-        type: "success",
+        message: 'IP address revealed successfully',
+        type: 'success',
       });
     } catch (error) {
-      console.error("Error revealing IP:", error);
+      console.error('Error revealing IP:', error);
       setToast({
         message:
           error instanceof Error
             ? error.message
-            : "Failed to reveal IP address",
-        type: "error",
+            : 'Failed to reveal IP address',
+        type: 'error',
       });
     } finally {
       setRevealingIP(null);
@@ -261,20 +261,20 @@ export default function AdminUsers() {
 
   const formatIPAddress = (ip: string | null | undefined, userId: string) => {
     if (!ip) {
-      return "***.***.***.**";
+      return '***.***.***.**';
     }
     if (revealedIPs.has(userId)) {
       return ip;
     }
 
-    const parts = ip.split(".");
+    const parts = ip.split('.');
     if (parts.length === 4) {
       return `${parts[0]}.${parts[1]}.***.**`;
     }
-    return "***.***.***.**";
+    return '***.***.***.**';
   };
 
-  const API_BASE_URL = import.meta.env.VITE_SERVER_URL || "";
+  const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
 
   type BackgroundImageSettings = {
     selectedImage?: string;
@@ -287,7 +287,7 @@ export default function AdminUsers() {
   ) => {
     const { selectedImage, useCustomBackground, favorites } = bgSettings || {};
     const imageUrl = selectedImage
-      ? selectedImage.startsWith("https://")
+      ? selectedImage.startsWith('https://')
         ? selectedImage
         : `${API_BASE_URL}/assets/app/backgrounds/${selectedImage}`
       : null;
@@ -297,13 +297,13 @@ export default function AdminUsers() {
         <div className="flex items-center gap-4">
           <div className="text-sm text-zinc-300 flex-1">
             <p className="mb-2">
-              <strong>Custom Background:</strong>{" "}
+              <strong>Custom Background:</strong>{' '}
               <span
                 className={
-                  useCustomBackground ? "text-green-400" : "text-red-400"
+                  useCustomBackground ? 'text-green-400' : 'text-red-400'
                 }
               >
-                {useCustomBackground ? "Enabled" : "Disabled"}
+                {useCustomBackground ? 'Enabled' : 'Disabled'}
               </span>
             </p>
             <p>
@@ -323,7 +323,7 @@ export default function AdminUsers() {
                 alt="Selected background"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder-image.png";
+                  (e.target as HTMLImageElement).src = '/placeholder-image.png';
                 }}
               />
             </div>
@@ -359,12 +359,12 @@ export default function AdminUsers() {
               <span>Startup Sound:</span>
               <span
                 className={
-                  startupSound.enabled ? "text-green-400" : "text-red-400"
+                  startupSound.enabled ? 'text-green-400' : 'text-red-400'
                 }
               >
                 {startupSound.enabled
                   ? `Enabled (${startupSound.volume}%)`
-                  : "Disabled"}
+                  : 'Disabled'}
               </span>
             </div>
           )}
@@ -374,13 +374,13 @@ export default function AdminUsers() {
               <span
                 className={
                   chatNotificationSound.enabled
-                    ? "text-green-400"
-                    : "text-red-400"
+                    ? 'text-green-400'
+                    : 'text-red-400'
                 }
               >
                 {chatNotificationSound.enabled
                   ? `Enabled (${chatNotificationSound.volume}%)`
-                  : "Disabled"}
+                  : 'Disabled'}
               </span>
             </div>
           )}
@@ -389,12 +389,12 @@ export default function AdminUsers() {
               <span>New Strip Sound:</span>
               <span
                 className={
-                  newStripSound.enabled ? "text-green-400" : "text-red-400"
+                  newStripSound.enabled ? 'text-green-400' : 'text-red-400'
                 }
               >
                 {newStripSound.enabled
                   ? `Enabled (${newStripSound.volume}%)`
-                  : "Disabled"}
+                  : 'Disabled'}
               </span>
             </div>
           )}
@@ -415,11 +415,11 @@ export default function AdminUsers() {
         <div className="space-y-2 text-sm text-zinc-300">
           <div className="bg-zinc-800 p-3 rounded">
             <p>
-              <strong>Combined View:</strong>{" "}
+              <strong>Combined View:</strong>{' '}
               <span
-                className={showCombinedView ? "text-green-400" : "text-red-400"}
+                className={showCombinedView ? 'text-green-400' : 'text-red-400'}
               >
-                {showCombinedView ? "Enabled" : "Disabled"}
+                {showCombinedView ? 'Enabled' : 'Disabled'}
               </span>
             </p>
           </div>
@@ -444,7 +444,7 @@ export default function AdminUsers() {
     return (
       <div className="text-sm text-zinc-300 bg-zinc-900/80 rounded-lg p-3 border border-zinc-800">
         <p className="text-xs font-medium text-zinc-400 mb-1">{type} table</p>
-        <p>Enabled: {enabledColumns.join(", ") || "None"}</p>
+        <p>Enabled: {enabledColumns.join(', ') || 'None'}</p>
       </div>
     );
   };
@@ -468,17 +468,17 @@ export default function AdminUsers() {
             <div className="flex justify-between items-center text-sm text-zinc-300">
               <span>Notes Panel:</span>
               <span
-                className={notesEnabled ? "text-green-400" : "text-red-400"}
+                className={notesEnabled ? 'text-green-400' : 'text-red-400'}
               >
-                {notesEnabled ? "Enabled" : "Disabled"}
+                {notesEnabled ? 'Enabled' : 'Disabled'}
               </span>
             </div>
             <div className="flex justify-between items-center text-sm text-zinc-300">
               <span>Charts Panel:</span>
               <span
-                className={chartsEnabled ? "text-green-400" : "text-red-400"}
+                className={chartsEnabled ? 'text-green-400' : 'text-red-400'}
               >
-                {chartsEnabled ? "Enabled" : "Disabled"}
+                {chartsEnabled ? 'Enabled' : 'Disabled'}
               </span>
             </div>
           </div>
@@ -622,7 +622,7 @@ export default function AdminUsers() {
                           {tableUser.id}
                         </span>
                         <span className="text-zinc-400 text-xs sm:hidden">
-                          Last:{" "}
+                          Last:{' '}
                           {new Date(tableUser.last_login).toLocaleDateString()}
                         </span>
                       </div>
@@ -637,14 +637,14 @@ export default function AdminUsers() {
                         <span
                           className={
                             revealedIPs.has(tableUser.id)
-                              ? ""
-                              : "filter blur-sm"
+                              ? ''
+                              : 'filter blur-sm'
                           }
                         >
                           {formatIPAddress(tableUser.ip_address, tableUser.id)}
                         </span>
                         <Button
-                          size={adminDownsizeButtonSize("sm")}
+                          size={adminDownsizeButtonSize('sm')}
                           variant="ghost"
                           onClick={() => handleRevealIP(tableUser.id)}
                           disabled={revealingIP === tableUser.id}
@@ -665,11 +665,11 @@ export default function AdminUsers() {
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
                         tableUser.is_vpn
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-green-500/20 text-green-400 border border-green-500/30"
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-green-500/20 text-green-400 border border-green-500/30'
                       }`}
                     >
-                      {tableUser.is_vpn ? "Yes" : "No"}
+                      {tableUser.is_vpn ? 'Yes' : 'No'}
                     </span>
                   </td>
                   <td className={`${ADMIN_TD} hidden xl:table-cell`}>
@@ -735,7 +735,7 @@ export default function AdminUsers() {
                   </td>
                   <td className={`${ADMIN_TD} hidden xl:table-cell`}>
                     <img
-                      src={`${API_BASE_URL}/assets/app/icons/redis${tableUser.cached ? "-green" : ""}.svg`}
+                      src={`${API_BASE_URL}/assets/app/icons/redis${tableUser.cached ? '-green' : ''}.svg`}
                       alt="Redis cache status"
                       className="w-6 h-6"
                     />
@@ -743,7 +743,7 @@ export default function AdminUsers() {
                   <td className={ADMIN_TD}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                       <Button
-                        size={adminDownsizeButtonSize("sm")}
+                        size={adminDownsizeButtonSize('sm')}
                         variant="outline"
                         onClick={() => handleViewSettings(tableUser)}
                         className="p-2 w-full sm:w-auto"
@@ -752,7 +752,7 @@ export default function AdminUsers() {
                       </Button>
                       {!tableUser.is_admin && (
                         <Button
-                          size={adminDownsizeButtonSize("sm")}
+                          size={adminDownsizeButtonSize('sm')}
                           variant="secondary"
                           onClick={() => handleManageRole(tableUser)}
                           className="p-2 w-full sm:w-auto bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
@@ -762,7 +762,7 @@ export default function AdminUsers() {
                       )}
                       {(tableUser.current_sessions_count || 0) >= 1 && (
                         <Button
-                          size={adminDownsizeButtonSize("sm")}
+                          size={adminDownsizeButtonSize('sm')}
                           variant="secondary"
                           onClick={() =>
                             (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
@@ -774,7 +774,7 @@ export default function AdminUsers() {
                       )}
                       {!tableUser.is_admin && (
                         <Button
-                          size={adminDownsizeButtonSize("sm")}
+                          size={adminDownsizeButtonSize('sm')}
                           variant="danger"
                           onClick={() =>
                             (window.location.href = `/admin/bans?userId=${
@@ -820,17 +820,17 @@ export default function AdminUsers() {
 
                 <div className="space-y-2 text-sm text-zinc-300">
                   <div>
-                    Last Login:{" "}
+                    Last Login:{' '}
                     {new Date(tableUser.last_login).toLocaleDateString()}
                   </div>
                   {user?.isAdmin && (
                     <div className="flex items-center space-x-2">
                       <span>
-                        IP:{" "}
+                        IP:{' '}
                         {formatIPAddress(tableUser.ip_address, tableUser.id)}
                       </span>
                       <Button
-                        size={adminDownsizeButtonSize("sm")}
+                        size={adminDownsizeButtonSize('sm')}
                         variant="ghost"
                         onClick={() => handleRevealIP(tableUser.id)}
                         disabled={revealingIP === tableUser.id}
@@ -846,7 +846,7 @@ export default function AdminUsers() {
                       </Button>
                     </div>
                   )}
-                  <div>VPN: {tableUser.is_vpn ? "Yes" : "No"}</div>
+                  <div>VPN: {tableUser.is_vpn ? 'Yes' : 'No'}</div>
                   <div>Sessions: {tableUser.current_sessions_count ?? 0}</div>
                   <div>
                     Role:
@@ -883,7 +883,7 @@ export default function AdminUsers() {
                     <span>Cached:</span>
                     <img
                       src={`${API_BASE_URL}/assets/app/icons/redis${
-                        tableUser.cached ? "-green" : ""
+                        tableUser.cached ? '-green' : ''
                       }.svg`}
                       alt="Redis cache status"
                       className="w-6 h-6"
@@ -893,7 +893,7 @@ export default function AdminUsers() {
 
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button
-                    size={adminDownsizeButtonSize("sm")}
+                    size={adminDownsizeButtonSize('sm')}
                     variant="outline"
                     onClick={() => handleViewSettings(tableUser)}
                     className="flex-1"
@@ -903,7 +903,7 @@ export default function AdminUsers() {
                   </Button>
                   {!tableUser.is_admin && (
                     <Button
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       variant="secondary"
                       onClick={() => handleManageRole(tableUser)}
                       className="flex-1 bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
@@ -914,7 +914,7 @@ export default function AdminUsers() {
                   )}
                   {(tableUser.current_sessions_count || 0) >= 1 && (
                     <Button
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       variant="secondary"
                       onClick={() =>
                         (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
@@ -927,7 +927,7 @@ export default function AdminUsers() {
                   )}
                   {!tableUser.is_admin && (
                     <Button
-                      size={adminDownsizeButtonSize("sm")}
+                      size={adminDownsizeButtonSize('sm')}
                       variant="danger"
                       onClick={() =>
                         (window.location.href = `/admin/bans?userId=${
@@ -1000,7 +1000,7 @@ export default function AdminUsers() {
                 </div>
               </div>
               <div className="text-sm text-zinc-300">
-                Current Roles:{" "}
+                Current Roles:{' '}
                 {selectedUserForRole.roles &&
                 selectedUserForRole.roles.length > 0 ? (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -1033,7 +1033,7 @@ export default function AdminUsers() {
                     })}
                   </div>
                 ) : (
-                  "No Roles"
+                  'No Roles'
                 )}
               </div>
             </div>
@@ -1044,7 +1044,7 @@ export default function AdminUsers() {
               </label>
               <Dropdown
                 options={[
-                  { value: "", label: "+ Add Role" },
+                  { value: '', label: '+ Add Role' },
                   ...roles
                     .filter(
                       (role) =>
@@ -1059,7 +1059,7 @@ export default function AdminUsers() {
                 ]}
                 value=""
                 onChange={(val) => {
-                  if (val !== "") handleAssignRole(parseInt(val));
+                  if (val !== '') handleAssignRole(parseInt(val));
                 }}
                 size="sm"
                 className="w-full"
@@ -1156,7 +1156,7 @@ export default function AdminUsers() {
                       string,
                       boolean
                     >,
-                    "Departure"
+                    'Departure'
                   )}
                   {renderTableColumns(
                     selectedUser.settings
@@ -1164,7 +1164,7 @@ export default function AdminUsers() {
                       string,
                       boolean
                     >,
-                    "Arrivals"
+                    'Arrivals'
                   )}
                 </div>
               </SettingsPanel>
@@ -1175,31 +1175,31 @@ export default function AdminUsers() {
               <SettingsPanel title="Other">
                 <div className="space-y-2 text-sm text-zinc-300">
                   <p>
-                    <span className="text-zinc-500">Tutorial:</span>{" "}
+                    <span className="text-zinc-500">Tutorial:</span>{' '}
                     <span
                       className={
                         selectedUser.settings.tutorialCompleted
-                          ? "text-green-400"
-                          : "text-red-400"
+                          ? 'text-green-400'
+                          : 'text-red-400'
                       }
                     >
-                      {selectedUser.settings.tutorialCompleted ? "Yes" : "No"}
+                      {selectedUser.settings.tutorialCompleted ? 'Yes' : 'No'}
                     </span>
                   </p>
                   <p>
                     <span className="text-zinc-500">
                       Linked accounts on profile:
-                    </span>{" "}
+                    </span>{' '}
                     <span
                       className={
                         selectedUser.settings.displayLinkedAccountsOnProfile
-                          ? "text-green-400"
-                          : "text-red-400"
+                          ? 'text-green-400'
+                          : 'text-red-400'
                       }
                     >
                       {selectedUser.settings.displayLinkedAccountsOnProfile
-                        ? "Yes"
-                        : "No"}
+                        ? 'Yes'
+                        : 'No'}
                     </span>
                   </p>
                 </div>

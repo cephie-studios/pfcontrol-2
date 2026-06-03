@@ -1,87 +1,87 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { MdDashboard, MdSettings } from "react-icons/md";
-import AdminRefreshButton from "../components/admin/AdminRefreshButton";
-import AdminLayout from "../components/admin/AdminLayout";
-import AdminPageHeader from "../components/admin/AdminPageHeader";
-import AdminStatCards from "../components/admin/AdminStatCards";
-import AdminSectionTitle from "../components/admin/AdminSectionTitle";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { MdDashboard, MdSettings } from 'react-icons/md';
+import AdminRefreshButton from '../components/admin/AdminRefreshButton';
+import AdminLayout from '../components/admin/AdminLayout';
+import AdminPageHeader from '../components/admin/AdminPageHeader';
+import AdminStatCards from '../components/admin/AdminStatCards';
+import AdminSectionTitle from '../components/admin/AdminSectionTitle';
 import {
   AdminAreaChart,
   AdminMultiSeriesAreaChart,
-} from "../components/admin/AdminChart";
+} from '../components/admin/AdminChart';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
   ADMIN_HEADER_ACTIONS_MOBILE,
   ADMIN_SEGMENT_ACTIVE,
   ADMIN_SEGMENT_INACTIVE,
-} from "../components/admin/adminConstants";
-import Loader from "../components/common/Loader";
-import { useAuth } from "../hooks/auth/useAuth";
+} from '../components/admin/adminConstants';
+import Loader from '../components/common/Loader';
+import { useAuth } from '../hooks/auth/useAuth';
 import {
   fetchAdminStatistics,
   fetchAppVersion,
   fetchApiLogStats24h,
   type AdminStats,
   type AppVersion,
-} from "../utils/fetch/admin";
-import Button from "../components/common/Button";
-import ErrorScreen from "../components/common/ErrorScreen";
+} from '../utils/fetch/admin';
+import Button from '../components/common/Button';
+import ErrorScreen from '../components/common/ErrorScreen';
 
-type ActivityChartView = "flights" | "sessions" | "accounts";
+type ActivityChartView = 'flights' | 'sessions' | 'accounts';
 
 const ACTIVITY_CHART_VIEWS: {
   id: ActivityChartView;
   label: string;
   color: string;
-  periodKey: "total_flights" | "total_sessions" | null;
+  periodKey: 'total_flights' | 'total_sessions' | null;
   periodLabel?: string;
 }[] = [
   {
-    id: "flights",
-    label: "Flights",
-    color: "#a78bfa",
-    periodKey: "total_flights",
+    id: 'flights',
+    label: 'Flights',
+    color: '#a78bfa',
+    periodKey: 'total_flights',
   },
   {
-    id: "sessions",
-    label: "Sessions",
-    color: "#34d399",
-    periodKey: "total_sessions",
+    id: 'sessions',
+    label: 'Sessions',
+    color: '#34d399',
+    periodKey: 'total_sessions',
   },
   {
-    id: "accounts",
-    label: "Accounts",
-    color: "#60a5fa",
+    id: 'accounts',
+    label: 'Accounts',
+    color: '#60a5fa',
     periodKey: null,
   },
 ];
 
 const ACCOUNTS_SERIES = [
-  { key: "logins", label: "Logins", color: "#60a5fa", strokeDasharray: "2 3" },
+  { key: 'logins', label: 'Logins', color: '#60a5fa', strokeDasharray: '2 3' },
   {
-    key: "users",
-    label: "New users",
-    color: "#fbbf24",
-    strokeDasharray: "8 4",
+    key: 'users',
+    label: 'New users',
+    color: '#fbbf24',
+    strokeDasharray: '8 4',
   },
 ] as const;
 
 const API_SERIES = [
-  { key: "successful", label: "2xx", color: "#34d399" },
+  { key: 'successful', label: '2xx', color: '#34d399' },
   {
-    key: "clientErrors",
-    label: "4xx",
-    color: "#fbbf24",
-    strokeDasharray: "6 4",
+    key: 'clientErrors',
+    label: '4xx',
+    color: '#fbbf24',
+    strokeDasharray: '6 4',
   },
   {
-    key: "serverErrors",
-    label: "5xx",
-    color: "#f87171",
-    strokeDasharray: "2 3",
+    key: 'serverErrors',
+    label: '5xx',
+    color: '#f87171',
+    strokeDasharray: '2 3',
   },
-  { key: "other", label: "Other", color: "#94a3b8", strokeDasharray: "8 4" },
+  { key: 'other', label: 'Other', color: '#94a3b8', strokeDasharray: '8 4' },
 ] as const;
 
 export default function Admin() {
@@ -92,7 +92,7 @@ export default function Admin() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
   const [appVersion, setAppVersion] = useState<AppVersion | null>(null);
   const [versionLoading, setVersionLoading] = useState(false);
@@ -106,7 +106,7 @@ export default function Admin() {
     }>
   >([]);
   const [activityChartView, setActivityChartView] =
-    useState<ActivityChartView>("flights");
+    useState<ActivityChartView>('flights');
 
   const hasPermission = (permission: string) =>
     Boolean(user?.isAdmin || user?.rolePermissions?.[permission]);
@@ -127,11 +127,11 @@ export default function Admin() {
       );
       setStats({ ...data, periodTotals, totals: data.totals });
     } catch (err) {
-      console.error("Error fetching admin statistics:", err);
+      console.error('Error fetching admin statistics:', err);
       setError(
-        err instanceof Error ? err.message : "Failed to fetch statistics"
+        err instanceof Error ? err.message : 'Failed to fetch statistics'
       );
-      setToast({ message: "Failed to fetch statistics", type: "error" });
+      setToast({ message: 'Failed to fetch statistics', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -143,8 +143,8 @@ export default function Admin() {
       setVersionLoading(true);
       setAppVersion(await fetchAppVersion());
     } catch (err) {
-      console.error("Error fetching app version:", err);
-      setToast({ message: "Failed to fetch app version", type: "error" });
+      console.error('Error fetching app version:', err);
+      setToast({ message: 'Failed to fetch app version', type: 'error' });
     } finally {
       setVersionLoading(false);
     }
@@ -154,8 +154,8 @@ export default function Admin() {
     try {
       setApiLogStats24h(await fetchApiLogStats24h());
     } catch (err) {
-      console.error("Error fetching API log stats:", err);
-      setToast({ message: "Failed to fetch API log stats", type: "error" });
+      console.error('Error fetching API log stats:', err);
+      setToast({ message: 'Failed to fetch API log stats', type: 'error' });
     }
   }, []);
 
@@ -188,7 +188,7 @@ export default function Admin() {
   )!;
 
   const singleSeriesChartData = useMemo(() => {
-    if (activityChartView === "accounts") return [];
+    if (activityChartView === 'accounts') return [];
     return activityChartData.map((row) => ({
       label: row.label,
       value: Number(row[activityChartView]) || 0,
@@ -207,7 +207,7 @@ export default function Admin() {
     [apiLogStats24h]
   );
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
   const period = stats?.periodTotals;
 
   return (
@@ -223,7 +223,7 @@ export default function Admin() {
               <Button
                 key={days}
                 onClick={() => setTimeRange(days)}
-                variant={timeRange === days ? "primary" : "outline"}
+                variant={timeRange === days ? 'primary' : 'outline'}
                 size={btnSize}
               >
                 {days}d
@@ -247,20 +247,20 @@ export default function Admin() {
         <>
           <AdminStatCards
             items={[
-              { label: "Total users", value: stats.totals?.total_users ?? 0 },
+              { label: 'Total users', value: stats.totals?.total_users ?? 0 },
               {
-                label: "Total sessions",
+                label: 'Total sessions',
                 value: stats.totals?.total_sessions ?? 0,
               },
               {
-                label: "Total flights",
+                label: 'Total flights',
                 value: stats.totals?.total_flights ?? 0,
               },
-              { label: "Total logins", value: stats.totals?.total_logins ?? 0 },
+              { label: 'Total logins', value: stats.totals?.total_logins ?? 0 },
             ]}
           />
 
-          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
               <div className="min-w-0 flex-1">
                 <AdminSectionTitle className="!mb-1">
@@ -277,15 +277,15 @@ export default function Admin() {
                         ·
                       </span>
                       <span className="hidden md:inline">
-                        {activityChartView === "accounts" ? (
+                        {activityChartView === 'accounts' ? (
                           <>
                             <span style={{ color: ACCOUNTS_SERIES[0].color }}>
                               {period.total_logins.toLocaleString()}
-                            </span>{" "}
-                            logins ·{" "}
+                            </span>{' '}
+                            logins ·{' '}
                             <span style={{ color: ACCOUNTS_SERIES[1].color }}>
                               {period.total_users.toLocaleString()}
-                            </span>{" "}
+                            </span>{' '}
                             new users in period
                           </>
                         ) : activeActivityView.periodKey ? (
@@ -294,7 +294,7 @@ export default function Admin() {
                               {period[
                                 activeActivityView.periodKey
                               ].toLocaleString()}
-                            </span>{" "}
+                            </span>{' '}
                             {activeActivityView.label.toLowerCase()} in period
                           </>
                         ) : null}
@@ -326,7 +326,7 @@ export default function Admin() {
               </div>
             </div>
 
-            {activityChartView === "accounts" ? (
+            {activityChartView === 'accounts' ? (
               <AdminMultiSeriesAreaChart
                 data={activityChartData}
                 series={[...ACCOUNTS_SERIES]}
@@ -345,7 +345,7 @@ export default function Admin() {
             )}
           </div>
 
-          {hasPermission("audit") ? (
+          {hasPermission('audit') ? (
             <div className={adminSectionClass()}>
               <div className="mb-4">
                 <AdminSectionTitle className="!mb-1">

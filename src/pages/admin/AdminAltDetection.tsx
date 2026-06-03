@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import type { IconType } from "react-icons";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import type { IconType } from 'react-icons';
+import { Link } from 'react-router-dom';
 import {
   MdCallMerge,
   MdFingerprint,
@@ -14,20 +14,20 @@ import {
   MdVisibility,
   MdVisibilityOff,
   MdUnfoldMore,
-} from "react-icons/md";
+} from 'react-icons/md';
 import {
   fetchAltClusters,
   revealUserIP,
   type AltCluster,
   type AltClustersResponse,
   type ClusterMember,
-} from "../../utils/fetch/admin";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
+} from '../../utils/fetch/admin';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -37,31 +37,31 @@ import {
   ADMIN_TOOLBAR_MOBILE_PAIR,
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import ErrorScreen from "../../components/common/ErrorScreen";
-import Dropdown from "../../components/common/Dropdown";
-import Button from "../../components/common/Button";
-import type { DropdownOption } from "../../types/dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import ErrorScreen from '../../components/common/ErrorScreen';
+import Dropdown from '../../components/common/Dropdown';
+import Button from '../../components/common/Button';
+import type { DropdownOption } from '../../types/dropdown';
 
 function ScoreBadge({
   score,
   label,
 }: {
   score: number;
-  label: AltCluster["score_label"];
+  label: AltCluster['score_label'];
 }) {
-  const colors: Record<AltCluster["score_label"], string> = {
-    low: "bg-zinc-700 text-zinc-300 border-zinc-600",
-    medium: "bg-yellow-900/40 text-yellow-400 border-yellow-700/50",
-    high: "bg-orange-900/40 text-orange-400 border-orange-700/50",
-    critical: "bg-red-900/40 text-red-400 border-red-600/50",
+  const colors: Record<AltCluster['score_label'], string> = {
+    low: 'bg-zinc-700 text-zinc-300 border-zinc-600',
+    medium: 'bg-yellow-900/40 text-yellow-400 border-yellow-700/50',
+    high: 'bg-orange-900/40 text-orange-400 border-orange-700/50',
+    critical: 'bg-red-900/40 text-red-400 border-red-600/50',
   };
-  const dot: Record<AltCluster["score_label"], string> = {
-    low: "bg-zinc-400",
-    medium: "bg-yellow-400",
-    high: "bg-orange-400",
-    critical: "bg-red-400",
+  const dot: Record<AltCluster['score_label'], string> = {
+    low: 'bg-zinc-400',
+    medium: 'bg-yellow-400',
+    high: 'bg-orange-400',
+    critical: 'bg-red-400',
   };
   return (
     <span
@@ -73,32 +73,32 @@ function ScoreBadge({
   );
 }
 
-function SignalPills({ signals }: { signals: AltCluster["signals"] }) {
+function SignalPills({ signals }: { signals: AltCluster['signals'] }) {
   const pills = [
     signals.shared_fingerprint && {
-      label: "Fingerprint",
+      label: 'Fingerprint',
       icon: MdFingerprint,
-      color: "text-purple-400 bg-purple-900/30 border-purple-700/50",
+      color: 'text-purple-400 bg-purple-900/30 border-purple-700/50',
     },
     signals.shared_ip && {
-      label: "IP Match",
+      label: 'IP Match',
       icon: MdPublic,
-      color: "text-blue-400 bg-blue-900/30 border-blue-700/50",
+      color: 'text-blue-400 bg-blue-900/30 border-blue-700/50',
     },
     signals.has_banned_member && {
-      label: "Banned Member",
+      label: 'Banned Member',
       icon: MdBlock,
-      color: "text-red-400 bg-red-900/30 border-red-700/50",
+      color: 'text-red-400 bg-red-900/30 border-red-700/50',
     },
     signals.young_account_joined_after_ban && {
-      label: "New Acct Post-Ban",
+      label: 'New Acct Post-Ban',
       icon: MdWarning,
-      color: "text-amber-400 bg-amber-900/30 border-amber-700/50",
+      color: 'text-amber-400 bg-amber-900/30 border-amber-700/50',
     },
     signals.vpn_overlap && {
-      label: "All VPN",
+      label: 'All VPN',
       icon: MdShield,
-      color: "text-zinc-400 bg-zinc-800 border-zinc-600",
+      color: 'text-zinc-400 bg-zinc-800 border-zinc-600',
     },
   ].filter(Boolean) as { label: string; icon: IconType; color: string }[];
 
@@ -137,14 +137,14 @@ function MemberRow({
 
   const platformJoined = member.created_at
     ? new Date(member.created_at).toLocaleDateString()
-    : "—";
+    : '—';
   const lastSeen = member.last_login
     ? new Date(member.last_login).toLocaleDateString()
-    : "—";
+    : '—';
 
-  const ipDisplay = revealedIp ?? "***.***.***.**";
+  const ipDisplay = revealedIp ?? '***.***.***.**';
   const isRevealed = revealedIp !== null;
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
 
   return (
     <div className="flex items-start gap-3 py-3 border-b border-zinc-800/60 last:border-b-0">
@@ -157,7 +157,7 @@ function MemberRow({
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-white text-sm">
             {member.username}
-            {member.discriminator && member.discriminator !== "0" && (
+            {member.discriminator && member.discriminator !== '0' && (
               <span className="text-zinc-500">#{member.discriminator}</span>
             )}
           </span>
@@ -183,7 +183,7 @@ function MemberRow({
         <div className="mt-1.5 flex items-center gap-2">
           <MdPublic size={12} className="text-zinc-600 shrink-0" />
           <span
-            className={`text-xs font-mono ${isRevealed ? "text-cyan-400" : "text-zinc-400 filter blur-sm select-none"}`}
+            className={`text-xs font-mono ${isRevealed ? 'text-cyan-400' : 'text-zinc-400 filter blur-sm select-none'}`}
           >
             {ipDisplay}
           </span>
@@ -250,10 +250,10 @@ function ClusterCard({
 }) {
   const displayMembers = cluster.members.slice(0, 10);
   const overflow = cluster.members.length - displayMembers.length;
-  const btnSize = adminDownsizeButtonSize("xs");
+  const btnSize = adminDownsizeButtonSize('xs');
 
   return (
-    <div className={adminTableShellClass("overflow-hidden")}>
+    <div className={adminTableShellClass('overflow-hidden')}>
       <button
         onClick={onToggle}
         className="w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/30 transition-colors"
@@ -281,7 +281,7 @@ function ClusterCard({
           ))}
           {overflow > 0 && (
             <p className="text-xs text-zinc-500 text-center pt-2">
-              + {overflow} more account{overflow !== 1 ? "s" : ""}
+              + {overflow} more account{overflow !== 1 ? 's' : ''}
             </p>
           )}
           <div className="pt-2">
@@ -300,21 +300,21 @@ function ClusterCard({
 
 export default function AdminAltDetection() {
   const [clusters, setClusters] = useState<AltCluster[]>([]);
-  const [stats, setStats] = useState<AltClustersResponse["stats"] | null>(null);
+  const [stats, setStats] = useState<AltClustersResponse['stats'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const [minScoreFilter, setMinScoreFilter] = useState<
-    "all" | "medium" | "high" | "critical"
-  >("all");
+    'all' | 'medium' | 'high' | 'critical'
+  >('all');
   const [showBannedOnly, setShowBannedOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"score" | "size">("score");
+  const [sortBy, setSortBy] = useState<'score' | 'size'>('score');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [revealedIPs, setRevealedIPs] = useState<Map<string, string>>(
     new Map()
   );
@@ -337,8 +337,8 @@ export default function AdminAltDetection() {
       setRevealedIPs((prev) => new Map(prev).set(userId, ip_address));
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to reveal IP",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to reveal IP',
+        type: 'error',
       });
     } finally {
       setRevealingId(null);
@@ -354,7 +354,7 @@ export default function AdminAltDetection() {
       setStats(data.stats);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load alt clusters"
+        err instanceof Error ? err.message : 'Failed to load alt clusters'
       );
     } finally {
       setLoading(false);
@@ -366,14 +366,14 @@ export default function AdminAltDetection() {
   }, []);
 
   const scoreFilterOptions: DropdownOption[] = [
-    { value: "all", label: "All scores" },
-    { value: "medium", label: "Medium+ (40%+)" },
-    { value: "high", label: "High+ (60%+)" },
-    { value: "critical", label: "Critical only (80%+)" },
+    { value: 'all', label: 'All scores' },
+    { value: 'medium', label: 'Medium+ (40%+)' },
+    { value: 'high', label: 'High+ (60%+)' },
+    { value: 'critical', label: 'Critical only (80%+)' },
   ];
   const sortOptions: DropdownOption[] = [
-    { value: "score", label: "Sort: Score" },
-    { value: "size", label: "Sort: Cluster size" },
+    { value: 'score', label: 'Sort: Score' },
+    { value: 'size', label: 'Sort: Cluster size' },
   ];
 
   const minScoreMap: Record<typeof minScoreFilter, number> = {
@@ -394,7 +394,7 @@ export default function AdminAltDetection() {
         c.members.some((m) => m.username.toLowerCase().includes(searchTerm))
     )
     .sort((a, b) =>
-      sortBy === "score"
+      sortBy === 'score'
         ? b.score - a.score || b.member_count - a.member_count
         : b.member_count - a.member_count || b.score - a.score
     );
@@ -437,12 +437,12 @@ export default function AdminAltDetection() {
             <AdminStatStrip
               columns={3}
               items={[
-                { label: "Clusters found", value: stats.total_clusters },
+                { label: 'Clusters found', value: stats.total_clusters },
                 {
-                  label: "Flagged accounts",
+                  label: 'Flagged accounts',
                   value: stats.total_flagged_accounts,
                 },
-                { label: "Scan time", value: `${stats.scan_duration_ms}ms` },
+                { label: 'Scan time', value: `${stats.scan_duration_ms}ms` },
               ]}
             />
           )}
@@ -472,14 +472,14 @@ export default function AdminAltDetection() {
             </div>
             <div className={`${ADMIN_TOOLBAR_MOBILE_PAIR} max-md:[&>*]:flex-1`}>
               <Button
-                variant={showBannedOnly ? "danger" : "outline"}
+                variant={showBannedOnly ? 'danger' : 'outline'}
                 size="sm"
                 onClick={() => setShowBannedOnly((v) => !v)}
                 className={`max-md:flex-1 max-md:justify-center ${toolbarBtnClass}`}
               >
                 <MdShield size={18} className="mr-1.5 shrink-0" />
                 <span className="truncate">
-                  {showBannedOnly ? "With bans only" : "All clusters"}
+                  {showBannedOnly ? 'With bans only' : 'All clusters'}
                 </span>
               </Button>
               <Button
@@ -497,14 +497,14 @@ export default function AdminAltDetection() {
               >
                 <MdUnfoldMore size={18} className="mr-1.5 shrink-0" />
                 <span className="truncate">
-                  {allExpanded ? "Collapse all" : "Expand all"}
+                  {allExpanded ? 'Collapse all' : 'Expand all'}
                 </span>
               </Button>
             </div>
           </AdminToolbar>
 
           <div
-            className={`space-y-3 ${adminSectionClass("!mt-0 !pt-0 !border-t-0")}`}
+            className={`space-y-3 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
           >
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
@@ -512,8 +512,8 @@ export default function AdminAltDetection() {
                 <p className="text-base font-medium">No clusters found</p>
                 <p className="text-sm mt-1 text-center max-w-md">
                   {clusters.length > 0
-                    ? "Try adjusting the filters above"
-                    : "No accounts share signals yet — run the backfill script to populate ip_hash for existing users"}
+                    ? 'Try adjusting the filters above'
+                    : 'No accounts share signals yet — run the backfill script to populate ip_hash for existing users'}
                 </p>
               </div>
             ) : (

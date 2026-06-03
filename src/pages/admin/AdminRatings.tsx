@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { MdStar, MdThumbUp } from "react-icons/md";
-import { Link } from "react-router-dom";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminSectionTitle from "../../components/admin/AdminSectionTitle";
-import AdminTable from "../../components/admin/AdminTable";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { MdStar, MdThumbUp } from 'react-icons/md';
+import { Link } from 'react-router-dom';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -12,20 +12,20 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
-} from "../../components/admin/adminConstants";
+} from '../../components/admin/adminConstants';
 import {
   AdminAreaChart,
   AdminMultiSeriesAreaChart,
-} from "../../components/admin/AdminChart";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
+} from '../../components/admin/AdminChart';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
 import {
   fetchControllerRatingStats,
   fetchControllerDailyRatingStats,
   type ControllerRatingStats,
   type DailyRatingStats,
-} from "../../utils/fetch/admin";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../utils/fetch/admin';
+import ErrorScreen from '../../components/common/ErrorScreen';
 
 const getAvatarUrl = (userId: string, avatar: string | null) => {
   if (!avatar) return null;
@@ -40,7 +40,7 @@ export default function AdminRatings() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -54,8 +54,8 @@ export default function AdminRatings() {
       setStats(statsData);
       setDailyStats(dailyData);
     } catch (error) {
-      console.error("Error fetching rating statistics:", error);
-      setError("Failed to fetch rating statistics");
+      console.error('Error fetching rating statistics:', error);
+      setError('Failed to fetch rating statistics');
     } finally {
       setLoading(false);
     }
@@ -97,8 +97,8 @@ export default function AdminRatings() {
               <Button
                 key={days}
                 onClick={() => setTimeRange(days)}
-                variant={timeRange === days ? "primary" : "outline"}
-                size={adminDownsizeButtonSize("sm")}
+                variant={timeRange === days ? 'primary' : 'outline'}
+                size={adminDownsizeButtonSize('sm')}
               >
                 {days} days
               </Button>
@@ -120,7 +120,7 @@ export default function AdminRatings() {
       ) : stats ? (
         <>
           <div
-            className={`space-y-8 ${adminSectionClass("!mt-0 !pt-0 !border-t-0")}`}
+            className={`space-y-8 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
           >
             <div>
               <AdminSectionTitle>Ratings count</AdminSectionTitle>
@@ -130,7 +130,7 @@ export default function AdminRatings() {
               <AdminMultiSeriesAreaChart
                 data={multiSeriesData}
                 series={[
-                  { key: "count", label: "Ratings count", color: "#3B82F6" },
+                  { key: 'count', label: 'Ratings count', color: '#3B82F6' },
                 ]}
                 height={200}
                 showLegend
@@ -313,7 +313,7 @@ export default function AdminRatings() {
                   <div className="text-zinc-500 text-sm">
                     <span className="font-bold text-white">
                       {p.rating_count}
-                    </span>{" "}
+                    </span>{' '}
                     ratings
                   </div>
                 </Link>

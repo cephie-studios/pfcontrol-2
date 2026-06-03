@@ -156,7 +156,11 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
         is_vpn: isVpn,
       },
     });
-    capture(req, { distinctId: discordUser.id, event: 'user_logged_in', properties: { username: discordUser.username, is_vpn: isVpn } });
+    capture(req, {
+      distinctId: discordUser.id,
+      event: 'user_logged_in',
+      properties: { username: discordUser.username, is_vpn: isVpn },
+    });
 
     const payload = {
       userId: discordUser.id,
@@ -268,7 +272,13 @@ router.get('/roblox/callback', authLimiter, async (req, res) => {
         roblox_user_id: robloxUser.sub,
       },
     });
-    capture(req, { distinctId: userId, event: 'roblox_linked', properties: { roblox_username: robloxUser.preferred_username || robloxUser.name } });
+    capture(req, {
+      distinctId: userId,
+      event: 'roblox_linked',
+      properties: {
+        roblox_username: robloxUser.preferred_username || robloxUser.name,
+      },
+    });
 
     res.redirect(FRONTEND_URL + '/settings?roblox_linked=true');
   } catch (error) {
@@ -282,7 +292,14 @@ router.post('/roblox/unlink', requireAuth, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkRobloxAccount(req.user.userId);
-    posthog.identify({ distinctId: req.user.userId, properties: { has_roblox: false, roblox_username: null, roblox_user_id: null } });
+    posthog.identify({
+      distinctId: req.user.userId,
+      properties: {
+        has_roblox: false,
+        roblox_username: null,
+        roblox_user_id: null,
+      },
+    });
     capture(req, { distinctId: req.user.userId, event: 'roblox_unlinked' });
     res.json({ success: true, message: 'Roblox account unlinked' });
   } catch (error) {
@@ -464,7 +481,11 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
         vatsim_rating_long: ratingLong,
       },
     });
-    capture(req, { distinctId: userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
+    capture(req, {
+      distinctId: userId,
+      event: 'vatsim_linked',
+      properties: { vatsim_cid: cid, rating_short: fallbackShort },
+    });
 
     res.redirect(FRONTEND_URL + '/settings?vatsim_linked=true');
   } catch (error) {
@@ -611,7 +632,11 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
         vatsim_rating_long: ratingLong2,
       },
     });
-    capture(req, { distinctId: req.user.userId, event: 'vatsim_linked', properties: { vatsim_cid: cid, rating_short: fallbackShort } });
+    capture(req, {
+      distinctId: req.user.userId,
+      event: 'vatsim_linked',
+      properties: { vatsim_cid: cid, rating_short: fallbackShort },
+    });
     res.json({
       success: true,
       vatsimCid: cid,
@@ -639,7 +664,15 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
     const { unlinkVatsimAccount } = await import('../db/users.js');
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await unlinkVatsimAccount(req.user.userId);
-    posthog.identify({ distinctId: req.user.userId, properties: { has_vatsim: false, vatsim_cid: null, vatsim_rating: null, vatsim_rating_long: null } });
+    posthog.identify({
+      distinctId: req.user.userId,
+      properties: {
+        has_vatsim: false,
+        vatsim_cid: null,
+        vatsim_rating: null,
+        vatsim_rating_long: null,
+      },
+    });
     capture(req, { distinctId: req.user.userId, event: 'vatsim_unlinked' });
     res.cookie('vatsim_force', '1', {
       httpOnly: true,
@@ -662,8 +695,14 @@ router.put('/tutorial', requireAuth, async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     await updateTutorialStatus(req.user.userId, completed);
     if (completed) {
-      posthog.identify({ distinctId: req.user.userId, properties: { tutorial_completed: true } });
-      capture(req, { distinctId: req.user.userId, event: 'tutorial_completed' });
+      posthog.identify({
+        distinctId: req.user.userId,
+        properties: { tutorial_completed: true },
+      });
+      capture(req, {
+        distinctId: req.user.userId,
+        event: 'tutorial_completed',
+      });
     }
     res.json({ success: true });
   } catch {
@@ -751,9 +790,12 @@ router.get('/me', requireAuthSoft, async (req, res) => {
     }
 
     const vpnGateEnabled = await isVpnGateEnabled();
-    const isCurrentlyVpn = !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
+    const isCurrentlyVpn =
+      !!user.is_vpn || (vpnGateEnabled && (await isVpnRequest(req)));
     const isVpnBlocked =
-      vpnGateEnabled && isCurrentlyVpn && !(await isVpnException(req.user.userId));
+      vpnGateEnabled &&
+      isCurrentlyVpn &&
+      !(await isVpnException(req.user.userId));
 
     // Return immediately for VPN-blocked users — skip rank queries.
     if (isVpnBlocked) {
@@ -862,14 +904,21 @@ router.post('/fingerprint', requireAuthSoft, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { visitorId } = req.body;
-  if (!visitorId || typeof visitorId !== 'string' || visitorId.length < 8 || visitorId.length > 255) {
+  if (
+    !visitorId ||
+    typeof visitorId !== 'string' ||
+    visitorId.length < 8 ||
+    visitorId.length > 255
+  ) {
     return res.status(400).json({ error: 'Invalid visitorId' });
   }
 
   try {
     await updateUserFingerprint(req.user.userId, visitorId);
 
-    const fpToken = jwt.sign({ visitorId }, JWT_SECRET as string, { expiresIn: '7d' });
+    const fpToken = jwt.sign({ visitorId }, JWT_SECRET as string, {
+      expiresIn: '7d',
+    });
     res.cookie('fp_token', fpToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -891,8 +940,11 @@ router.post('/logout', (req, res) => {
   if (token && JWT_SECRET) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string };
-      if (decoded?.userId) capture(req, { distinctId: decoded.userId, event: 'user_logged_out' });
-    } catch { /* invalid token, skip */ }
+      if (decoded?.userId)
+        capture(req, { distinctId: decoded.userId, event: 'user_logged_out' });
+    } catch {
+      /* invalid token, skip */
+    }
   }
   res.clearCookie('auth_token', {
     httpOnly: true,

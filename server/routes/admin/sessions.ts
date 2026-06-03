@@ -99,8 +99,10 @@ router.post(
       };
 
       const updates: Record<string, boolean> = {};
-      if (typeof pfatcEventMode === 'boolean') updates.pfatc_event_mode = pfatcEventMode;
-      if (typeof aatcEventMode === 'boolean') updates.aatc_event_mode = aatcEventMode;
+      if (typeof pfatcEventMode === 'boolean')
+        updates.pfatc_event_mode = pfatcEventMode;
+      if (typeof aatcEventMode === 'boolean')
+        updates.aatc_event_mode = aatcEventMode;
 
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: 'No valid fields provided' });

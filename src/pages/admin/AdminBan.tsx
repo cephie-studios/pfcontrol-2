@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   MdBlock,
   MdPeople,
@@ -9,7 +9,7 @@ import {
   MdVerifiedUser,
   MdGppBad,
   MdPlace,
-} from "react-icons/md";
+} from 'react-icons/md';
 import {
   banUser,
   unbanUser,
@@ -20,16 +20,16 @@ import {
   removeVpnException,
   fetchIpLocation,
   type VpnException,
-} from "../../utils/fetch/admin";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminSectionTitle from "../../components/admin/AdminSectionTitle";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminTable from "../../components/admin/AdminTable";
-import AdminToggleSwitch from "../../components/admin/AdminToggleSwitch";
-import AdminTextInput from "../../components/admin/AdminTextInput";
-import AdminDurationPresets from "../../components/admin/AdminDurationPresets";
-import type { AdminDurationPresetId } from "../../components/admin/adminDurationPresetConfig";
+} from '../../utils/fetch/admin';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTable from '../../components/admin/AdminTable';
+import AdminToggleSwitch from '../../components/admin/AdminToggleSwitch';
+import AdminTextInput from '../../components/admin/AdminTextInput';
+import AdminDurationPresets from '../../components/admin/AdminDurationPresets';
+import type { AdminDurationPresetId } from '../../components/admin/adminDurationPresetConfig';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -40,10 +40,10 @@ import {
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
   statusBadgeClass,
-} from "../../components/admin/adminConstants";
-import Button from "../../components/common/Button";
-import Loader from "../../components/common/Loader";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../components/admin/adminConstants';
+import Button from '../../components/common/Button';
+import Loader from '../../components/common/Loader';
+import ErrorScreen from '../../components/common/ErrorScreen';
 
 interface BanRecord {
   id: number;
@@ -70,14 +70,14 @@ interface IpLocation {
 export default function AdminBan() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const userId = params.get("userId") || "";
-  const username = params.get("username") || "";
-  const reasonParam = params.get("reason") || "";
-  const [banType, setBanType] = useState<"user" | "ip">("user");
+  const userId = params.get('userId') || '';
+  const username = params.get('username') || '';
+  const reasonParam = params.get('reason') || '';
+  const [banType, setBanType] = useState<'user' | 'ip'>('user');
   const [userIdInput, setUserIdInput] = useState(userId);
-  const [ipInput, setIpInput] = useState("");
+  const [ipInput, setIpInput] = useState('');
   const [reason, setReason] = useState(reasonParam);
-  const [expiresAt, setExpiresAt] = useState("");
+  const [expiresAt, setExpiresAt] = useState('');
   const [durationPreset, setDurationPreset] =
     useState<AdminDurationPresetId | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,7 @@ export default function AdminBan() {
   );
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
 
   const [vpnGateEnabled, setVpnGateEnabled] = useState(false);
@@ -98,8 +98,8 @@ export default function AdminBan() {
   const [vpnGateLoading, setVpnGateLoading] = useState(true);
   const [vpnGateError, setVpnGateError] = useState<string | null>(null);
   const [vpnToggleLoading, setVpnToggleLoading] = useState(false);
-  const [exceptionUserIdInput, setExceptionUserIdInput] = useState("");
-  const [exceptionNotesInput, setExceptionNotesInput] = useState("");
+  const [exceptionUserIdInput, setExceptionUserIdInput] = useState('');
+  const [exceptionNotesInput, setExceptionNotesInput] = useState('');
   const [addExceptionLoading, setAddExceptionLoading] = useState(false);
 
   useEffect(() => {
@@ -141,10 +141,10 @@ export default function AdminBan() {
       setBans(activeBans);
       void lookupIpLocations(activeBans);
     } catch (err) {
-      setBansError("Failed to load bans");
+      setBansError('Failed to load bans');
       setToast({
-        message: err instanceof Error ? err.message : "Failed to load bans",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to load bans',
+        type: 'error',
       });
     } finally {
       setBansLoading(false);
@@ -159,7 +159,7 @@ export default function AdminBan() {
       setVpnGateEnabled(data.enabled);
       setVpnExceptions(data.exceptions);
     } catch {
-      setVpnGateError("Failed to load VPN gate data");
+      setVpnGateError('Failed to load VPN gate data');
     } finally {
       setVpnGateLoading(false);
     }
@@ -168,31 +168,31 @@ export default function AdminBan() {
   const handleBan = async () => {
     setLoading(true);
     try {
-      if (banType === "user" && !userIdInput)
-        throw new Error("User ID is required");
-      if (banType === "ip" && !ipInput)
-        throw new Error("IP address is required");
+      if (banType === 'user' && !userIdInput)
+        throw new Error('User ID is required');
+      if (banType === 'ip' && !ipInput)
+        throw new Error('IP address is required');
       await banUser({
-        userId: banType === "user" ? userIdInput : undefined,
-        ip: banType === "ip" ? ipInput : undefined,
-        username: username || "",
+        userId: banType === 'user' ? userIdInput : undefined,
+        ip: banType === 'ip' ? ipInput : undefined,
+        username: username || '',
         reason,
         expiresAt,
       });
       setToast({
-        message: `Successfully banned ${banType === "user" ? "user" : "IP"}`,
-        type: "success",
+        message: `Successfully banned ${banType === 'user' ? 'user' : 'IP'}`,
+        type: 'success',
       });
-      setUserIdInput("");
-      setIpInput("");
-      setReason("");
-      setExpiresAt("");
+      setUserIdInput('');
+      setIpInput('');
+      setReason('');
+      setExpiresAt('');
       setDurationPreset(null);
       void fetchBans();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to ban",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to ban',
+        type: 'error',
       });
     } finally {
       setLoading(false);
@@ -202,12 +202,12 @@ export default function AdminBan() {
   const handleUnban = async (userIdOrIp: string) => {
     try {
       await unbanUser(userIdOrIp);
-      setToast({ message: "Successfully unbanned", type: "success" });
+      setToast({ message: 'Successfully unbanned', type: 'success' });
       void fetchBans();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to unban",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to unban',
+        type: 'error',
       });
     }
   };
@@ -219,14 +219,14 @@ export default function AdminBan() {
       await toggleVpnGate(newValue);
       setVpnGateEnabled(newValue);
       setToast({
-        message: `VPN gate ${newValue ? "enabled" : "disabled"}`,
-        type: "success",
+        message: `VPN gate ${newValue ? 'enabled' : 'disabled'}`,
+        type: 'success',
       });
     } catch (err) {
       setToast({
         message:
-          err instanceof Error ? err.message : "Failed to toggle VPN gate",
-        type: "error",
+          err instanceof Error ? err.message : 'Failed to toggle VPN gate',
+        type: 'error',
       });
     } finally {
       setVpnToggleLoading(false);
@@ -235,7 +235,7 @@ export default function AdminBan() {
 
   const handleAddException = async () => {
     if (!exceptionUserIdInput) {
-      setToast({ message: "User ID is required", type: "error" });
+      setToast({ message: 'User ID is required', type: 'error' });
       return;
     }
     setAddExceptionLoading(true);
@@ -244,14 +244,14 @@ export default function AdminBan() {
         userId: exceptionUserIdInput,
         notes: exceptionNotesInput,
       });
-      setToast({ message: "Exception added", type: "success" });
-      setExceptionUserIdInput("");
-      setExceptionNotesInput("");
+      setToast({ message: 'Exception added', type: 'success' });
+      setExceptionUserIdInput('');
+      setExceptionNotesInput('');
       void fetchVpnGateData();
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : "Failed to add exception",
-        type: "error",
+        message: err instanceof Error ? err.message : 'Failed to add exception',
+        type: 'error',
       });
     } finally {
       setAddExceptionLoading(false);
@@ -261,13 +261,13 @@ export default function AdminBan() {
   const handleRemoveException = async (exceptionUserId: string) => {
     try {
       await removeVpnException(exceptionUserId);
-      setToast({ message: "Exception removed", type: "success" });
+      setToast({ message: 'Exception removed', type: 'success' });
       void fetchVpnGateData();
     } catch (err) {
       setToast({
         message:
-          err instanceof Error ? err.message : "Failed to remove exception",
-        type: "error",
+          err instanceof Error ? err.message : 'Failed to remove exception',
+        type: 'error',
       });
     }
   };
@@ -275,17 +275,17 @@ export default function AdminBan() {
   const getModAvatar = (ban: BanRecord) =>
     ban.banned_by_avatar
       ? `https://cdn.discordapp.com/avatars/${ban.banned_by}/${ban.banned_by_avatar}.png`
-      : "/assets/app/default/avatar.webp";
+      : '/assets/app/default/avatar.webp';
 
   const presetExpiry = (
     ms: number,
-    presetId: Exclude<AdminDurationPresetId, "permanent">
+    presetId: Exclude<AdminDurationPresetId, 'permanent'>
   ) => {
     setDurationPreset(presetId);
     setExpiresAt(new Date(Date.now() + ms).toISOString().slice(0, 16));
   };
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
@@ -294,22 +294,22 @@ export default function AdminBan() {
       <AdminStatStrip
         columns={3}
         items={[
-          { label: "Active bans", value: bansLoading ? "—" : bans.length },
+          { label: 'Active bans', value: bansLoading ? '—' : bans.length },
           {
-            label: "VPN gate",
-            value: vpnGateLoading ? "—" : vpnGateEnabled ? "On" : "Off",
+            label: 'VPN gate',
+            value: vpnGateLoading ? '—' : vpnGateEnabled ? 'On' : 'Off',
             sub: vpnGateEnabled
-              ? "Blocking VPN/proxy unless excepted"
-              : "Not enforcing VPN checks",
+              ? 'Blocking VPN/proxy unless excepted'
+              : 'Not enforcing VPN checks',
           },
           {
-            label: "VPN exceptions",
-            value: vpnGateLoading ? "—" : vpnExceptions.length,
+            label: 'VPN exceptions',
+            value: vpnGateLoading ? '—' : vpnExceptions.length,
           },
         ]}
       />
 
-      <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+      <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
         <AdminSectionTitle>Create ban</AdminSectionTitle>
         <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4 sm:p-5 space-y-4">
           <div>
@@ -321,9 +321,9 @@ export default function AdminBan() {
             >
               <button
                 type="button"
-                onClick={() => setBanType("user")}
+                onClick={() => setBanType('user')}
                 className={`px-4 max-md:flex-1 max-md:justify-center h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                  banType === "user"
+                  banType === 'user'
                     ? ADMIN_SEGMENT_ACTIVE
                     : ADMIN_SEGMENT_INACTIVE
                 }`}
@@ -333,9 +333,9 @@ export default function AdminBan() {
               </button>
               <button
                 type="button"
-                onClick={() => setBanType("ip")}
+                onClick={() => setBanType('ip')}
                 className={`px-4 max-md:flex-1 max-md:justify-center h-full flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                  banType === "ip"
+                  banType === 'ip'
                     ? ADMIN_SEGMENT_ACTIVE
                     : ADMIN_SEGMENT_INACTIVE
                 }`}
@@ -347,7 +347,7 @@ export default function AdminBan() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {banType === "user" ? (
+            {banType === 'user' ? (
               <AdminTextInput
                 className="sm:col-span-2"
                 label="User ID"
@@ -378,15 +378,15 @@ export default function AdminBan() {
               value={expiresAt}
               onChange={(value) => {
                 setExpiresAt(value);
-                setDurationPreset(value.trim() ? null : "permanent");
+                setDurationPreset(value.trim() ? null : 'permanent');
               }}
             />
             <AdminDurationPresets
               activePreset={durationPreset}
               onPreset={presetExpiry}
               onPermanent={() => {
-                setDurationPreset("permanent");
-                setExpiresAt("");
+                setDurationPreset('permanent');
+                setExpiresAt('');
               }}
             />
           </div>
@@ -398,7 +398,7 @@ export default function AdminBan() {
               size="sm"
               variant="danger"
             >
-              {loading ? "Banning…" : "Apply ban"}
+              {loading ? 'Banning…' : 'Apply ban'}
             </Button>
           </div>
         </div>
@@ -471,13 +471,13 @@ export default function AdminBan() {
                               <MdPlace size={12} className="shrink-0" />
                               {[loc.city, loc.region, loc.country]
                                 .filter(Boolean)
-                                .join(", ")}
+                                .join(', ')}
                             </p>
                           )}
                           <span
-                            className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full ${statusBadgeClass("banned")}`}
+                            className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full ${statusBadgeClass('banned')}`}
                           >
-                            {isUser ? "User" : "IP"}
+                            {isUser ? 'User' : 'IP'}
                           </span>
                         </div>
                       </div>
@@ -507,7 +507,7 @@ export default function AdminBan() {
                           className="w-6 h-6 rounded-full shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
-                              "/assets/app/default/avatar.webp";
+                              '/assets/app/default/avatar.webp';
                           }}
                         />
                         <span className="text-xs text-zinc-300 truncate">
@@ -559,7 +559,7 @@ export default function AdminBan() {
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className={`p-2.5 rounded-lg shrink-0 ${
-                    vpnGateEnabled ? "bg-orange-500/20" : "bg-zinc-800"
+                    vpnGateEnabled ? 'bg-orange-500/20' : 'bg-zinc-800'
                   }`}
                 >
                   {vpnGateEnabled ? (
@@ -571,19 +571,19 @@ export default function AdminBan() {
                 <div>
                   <p className="text-sm font-medium text-white">
                     {vpnGateEnabled
-                      ? "VPN gate is enabled"
-                      : "VPN gate is disabled"}
+                      ? 'VPN gate is enabled'
+                      : 'VPN gate is disabled'}
                   </p>
                   <p className="text-xs text-zinc-500 mt-0.5 max-w-md">
                     {vpnGateEnabled
-                      ? "Users on VPN or proxy are blocked unless they appear in the exceptions list."
-                      : "All users can connect regardless of VPN detection."}
+                      ? 'Users on VPN or proxy are blocked unless they appear in the exceptions list.'
+                      : 'All users can connect regardless of VPN detection.'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-xs text-zinc-400">
-                  {vpnGateEnabled ? "Enabled" : "Disabled"}
+                  {vpnGateEnabled ? 'Enabled' : 'Disabled'}
                 </span>
                 <AdminToggleSwitch
                   checked={vpnGateEnabled}
@@ -622,7 +622,7 @@ export default function AdminBan() {
                   variant="primary"
                   className="w-full sm:w-auto"
                 >
-                  {addExceptionLoading ? "Adding…" : "Add exception"}
+                  {addExceptionLoading ? 'Adding…' : 'Add exception'}
                 </Button>
               </div>
 

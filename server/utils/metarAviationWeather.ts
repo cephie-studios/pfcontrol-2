@@ -1,8 +1,8 @@
-import { redisConnection } from "../db/connection.js";
+import { redisConnection } from '../db/connection.js';
 
 const FRESH_CACHE_MS = 3 * 60 * 1000;
 const STALE_MAX_MS = 45 * 60 * 1000;
-const REDIS_METAR_PREFIX = "metar:v1:";
+const REDIS_METAR_PREFIX = 'metar:v1:';
 const REDIS_TTL_SEC = Math.ceil(STALE_MAX_MS / 1000);
 
 type MetarBody = Record<string, unknown>;
@@ -44,7 +44,9 @@ function applyWindFallback(metar: MetarBody): MetarBody {
   };
 
   if ((m.wdir == null || m.wspd == null) && m.rawOb) {
-    const windMatch = m.rawOb.match(/\b(\d{3})(\d{2,3})(?:G(\d{2,3}))?K(?:T)?\b/);
+    const windMatch = m.rawOb.match(
+      /\b(\d{3})(\d{2,3})(?:G(\d{2,3}))?K(?:T)?\b/
+    );
     if (windMatch) {
       if (m.wdir == null) m.wdir = parseInt(windMatch[1], 10);
       if (m.wspd == null) m.wspd = parseInt(windMatch[2], 10);
@@ -55,36 +57,56 @@ function applyWindFallback(metar: MetarBody): MetarBody {
   return m;
 }
 
-async function getRedisEntry(icaoKey: string): Promise<RedisMetarPayload | null> {
+async function getRedisEntry(
+  icaoKey: string
+): Promise<RedisMetarPayload | null> {
   try {
     const raw = await redisConnection.get(redisKey(icaoKey));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object" || !("body" in parsed) || !("storedAt" in parsed)) {
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      !('body' in parsed) ||
+      !('storedAt' in parsed)
+    ) {
       return null;
     }
     const rec = parsed as { body: MetarBody; storedAt: unknown };
-    if (typeof rec.storedAt !== "number" || rec.body == null) return null;
+    if (typeof rec.storedAt !== 'number' || rec.body == null) return null;
     return { body: rec.body, storedAt: rec.storedAt };
   } catch (e) {
-    console.warn("[METAR] Redis read failed:", e);
+    console.warn('[METAR] Redis read failed:', e);
     return null;
   }
 }
 
-async function setRedisEntry(icaoKey: string, body: MetarBody, storedAt: number): Promise<void> {
+async function setRedisEntry(
+  icaoKey: string,
+  body: MetarBody,
+  storedAt: number
+): Promise<void> {
   try {
     const payload: RedisMetarPayload = {
       body: cloneBody(body),
       storedAt,
     };
-    await redisConnection.set(redisKey(icaoKey), JSON.stringify(payload), "EX", REDIS_TTL_SEC);
+    await redisConnection.set(
+      redisKey(icaoKey),
+      JSON.stringify(payload),
+      'EX',
+      REDIS_TTL_SEC
+    );
   } catch (e) {
-    console.warn("[METAR] Redis write failed:", e);
+    console.warn('[METAR] Redis write failed:', e);
   }
 }
 
-async function fetchWithRetry(url: string, maxRetries = 2, timeoutMs = 10000): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  maxRetries = 2,
+  timeoutMs = 10000
+): Promise<Response> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -95,8 +117,8 @@ async function fetchWithRetry(url: string, maxRetries = 2, timeoutMs = 10000): P
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
       });
       clearTimeout(timeoutId);
@@ -108,22 +130,24 @@ async function fetchWithRetry(url: string, maxRetries = 2, timeoutMs = 10000): P
         lastError = fetchError;
 
         if (attempt === maxRetries) {
-          if (fetchError.name === "AbortError") {
+          if (fetchError.name === 'AbortError') {
             throw new Error(
-              "Request timed out. The weather service is taking too long to respond.",
+              'Request timed out. The weather service is taking too long to respond.'
             );
           }
           throw new Error(
-            `Failed to connect to weather service after ${maxRetries + 1} attempts: ${fetchError.message}`,
+            `Failed to connect to weather service after ${maxRetries + 1} attempts: ${fetchError.message}`
           );
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        await new Promise((resolve) =>
+          setTimeout(resolve, 500 * (attempt + 1))
+        );
       }
     }
   }
 
-  throw lastError || new Error("Unknown error during fetch");
+  throw lastError || new Error('Unknown error during fetch');
 }
 
 export type ResolveMetarOk = {
@@ -142,7 +166,9 @@ export type ResolveMetarMiss = {
 
 export type ResolveMetarResult = ResolveMetarOk | ResolveMetarMiss;
 
-export async function resolveAviationMetar(icao: string): Promise<ResolveMetarResult> {
+export async function resolveAviationMetar(
+  icao: string
+): Promise<ResolveMetarResult> {
   const key = normalizeIcao(icao);
   const now = Date.now();
   const redisEntry = await getRedisEntry(key);
@@ -156,7 +182,9 @@ export async function resolveAviationMetar(icao: string): Promise<ResolveMetarRe
     };
   }
 
-  const staleFrom = (e: RedisMetarPayload | null): ResolveMetarResult | null => {
+  const staleFrom = (
+    e: RedisMetarPayload | null
+  ): ResolveMetarResult | null => {
     if (!e) return null;
     const t = Date.now();
     if (t - e.storedAt > STALE_MAX_MS) return null;
@@ -170,7 +198,7 @@ export async function resolveAviationMetar(icao: string): Promise<ResolveMetarRe
 
   try {
     const response = await fetchWithRetry(
-      `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(key)}&format=json`,
+      `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(key)}&format=json`
     );
 
     if (!response.ok) {
@@ -180,25 +208,25 @@ export async function resolveAviationMetar(icao: string): Promise<ResolveMetarRe
         return {
           ok: false,
           httpStatus: 404,
-          clientMessage: "No METAR data available for this airport",
+          clientMessage: 'No METAR data available for this airport',
         };
       }
       return {
         ok: false,
         httpStatus: 500,
-        clientMessage: "Failed to fetch METAR data",
+        clientMessage: 'Failed to fetch METAR data',
         log: `Upstream status ${response.status}`,
       };
     }
 
     const text = await response.text();
-    if (!text || text.trim() === "") {
+    if (!text || text.trim() === '') {
       const miss = staleFrom(redisEntry);
       if (miss) return miss;
       return {
         ok: false,
         httpStatus: 404,
-        clientMessage: "No METAR data found",
+        clientMessage: 'No METAR data found',
       };
     }
 
@@ -212,7 +240,7 @@ export async function resolveAviationMetar(icao: string): Promise<ResolveMetarRe
       return {
         ok: false,
         httpStatus: 500,
-        clientMessage: "Invalid METAR data format",
+        clientMessage: 'Invalid METAR data format',
       };
     }
 
@@ -229,17 +257,17 @@ export async function resolveAviationMetar(icao: string): Promise<ResolveMetarRe
     return {
       ok: false,
       httpStatus: 404,
-      clientMessage: "No METAR data available for this airport",
-      log: "The airport may not exist or has no current weather report",
+      clientMessage: 'No METAR data available for this airport',
+      log: 'The airport may not exist or has no current weather report',
     };
   } catch (error) {
-    console.error("Error fetching METAR:", error);
+    console.error('Error fetching METAR:', error);
     const miss = staleFrom(redisEntry);
     if (miss) return miss;
     return {
       ok: false,
       httpStatus: 500,
-      clientMessage: "Internal server error",
+      clientMessage: 'Internal server error',
       log: error instanceof Error ? error.message : String(error),
     };
   }

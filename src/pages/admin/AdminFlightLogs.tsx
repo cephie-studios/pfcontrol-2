@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   MdFlight,
   MdVisibility,
@@ -7,57 +7,57 @@ import {
   MdStorage,
   MdClose,
   MdEditNote,
-} from "react-icons/md";
-import { Link } from "react-router-dom";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminTextInput from "../../components/admin/AdminTextInput";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminTable from "../../components/admin/AdminTable";
+} from 'react-icons/md';
+import { Link } from 'react-router-dom';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminTextInput from '../../components/admin/AdminTextInput';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTable from '../../components/admin/AdminTable';
 import {
   adminDownsizeButtonSize,
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Dropdown from "../../components/common/Dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchFlightLogs,
   revealFlightLogIP,
   type FlightLogsResponse,
   type FlightLog,
-} from "../../utils/fetch/admin";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
+} from '../../utils/fetch/admin';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
 
 export default function AdminFlightLogs() {
   const [logs, setLogs] = useState<FlightLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generalSearch, setGeneralSearch] = useState("");
-  const [userFilter, setUserFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [sessionFilter, setSessionFilter] = useState("");
-  const [flightIdFilter, setFlightIdFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [textFilter, setTextFilter] = useState("");
+  const [generalSearch, setGeneralSearch] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [actionFilter, setActionFilter] = useState('');
+  const [sessionFilter, setSessionFilter] = useState('');
+  const [flightIdFilter, setFlightIdFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [textFilter, setTextFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<FlightLog | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
   const [revealedIPs, setRevealedIPs] = useState<Set<number>>(new Set());
   const [revealingIP, setRevealingIP] = useState<number | null>(null);
 
   const actionTypeOptions = [
-    { value: "", label: "All Actions" },
-    { value: "add", label: "Add Flight" },
-    { value: "update", label: "Update Flight" },
-    { value: "delete", label: "Delete Flight" },
+    { value: '', label: 'All Actions' },
+    { value: 'add', label: 'Add Flight' },
+    { value: 'update', label: 'Update Flight' },
+    { value: 'delete', label: 'Delete Flight' },
   ];
 
   useEffect(() => {
@@ -120,9 +120,9 @@ export default function AdminFlightLogs() {
       setLogs(allLogs);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch flight logs";
+        err instanceof Error ? err.message : 'Failed to fetch flight logs';
       setError(errorMessage);
-      setToast({ message: errorMessage, type: "error" });
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -139,23 +139,23 @@ export default function AdminFlightLogs() {
   };
 
   const clearFilters = () => {
-    setGeneralSearch("");
-    setUserFilter("");
-    setActionFilter("");
-    setSessionFilter("");
-    setFlightIdFilter("");
-    setDateFilter("");
-    setTextFilter("");
+    setGeneralSearch('');
+    setUserFilter('');
+    setActionFilter('');
+    setSessionFilter('');
+    setFlightIdFilter('');
+    setDateFilter('');
+    setTextFilter('');
   };
 
   const formatActionType = (action: string) => {
     switch (action) {
-      case "add":
-        return "Add Flight";
-      case "update":
-        return "Update Flight";
-      case "delete":
-        return "Delete Flight";
+      case 'add':
+        return 'Add Flight';
+      case 'update':
+        return 'Update Flight';
+      case 'delete':
+        return 'Delete Flight';
       default:
         return action;
     }
@@ -164,7 +164,7 @@ export default function AdminFlightLogs() {
   const getFlightOwner = (
     log: FlightLog
   ): { userId: string | null; username: string | null } => {
-    const data = (log.action === "add" ? log.new_data : log.old_data) as Record<
+    const data = (log.action === 'add' ? log.new_data : log.old_data) as Record<
       string,
       unknown
     > | null;
@@ -176,11 +176,11 @@ export default function AdminFlightLogs() {
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case "add":
+      case 'add':
         return <MdFlight size={16} className="text-green-400" />;
-      case "update":
+      case 'update':
         return <MdStorage size={16} className="text-blue-400" />;
-      case "delete":
+      case 'delete':
         return <MdVisibilityOff size={16} className="text-red-400" />;
       default:
         return <MdFlight size={16} className="text-zinc-400" />;
@@ -188,13 +188,13 @@ export default function AdminFlightLogs() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     });
   };
 
@@ -213,17 +213,17 @@ export default function AdminFlightLogs() {
       await revealFlightLogIP(logId);
       setRevealedIPs((prev) => new Set(prev).add(logId));
       setToast({
-        message: "IP address revealed successfully",
-        type: "success",
+        message: 'IP address revealed successfully',
+        type: 'success',
       });
     } catch (error) {
-      console.error("Error revealing IP:", error);
+      console.error('Error revealing IP:', error);
       setToast({
         message:
           error instanceof Error
             ? error.message
-            : "Failed to reveal IP address",
-        type: "error",
+            : 'Failed to reveal IP address',
+        type: 'error',
       });
     } finally {
       setRevealingIP(null);
@@ -231,20 +231,20 @@ export default function AdminFlightLogs() {
   };
 
   const formatIPAddress = (ip: string | null | undefined, logId: number) => {
-    if (!ip) return "***.***.***.**";
+    if (!ip) return '***.***.***.**';
     if (revealedIPs.has(logId)) return ip;
-    const parts = ip.split(".");
+    const parts = ip.split('.');
     if (parts.length === 4) return `${parts[0]}.${parts[1]}.***.**`;
-    return "***.***.***.**";
+    return '***.***.***.**';
   };
 
   const getUpdatedField = (log: FlightLog): string => {
-    if (log.action !== "update" || !log.new_data) return "N/A";
+    if (log.action !== 'update' || !log.new_data) return 'N/A';
 
     const newData = log.new_data as Record<string, unknown>;
     const fields = Object.keys(newData);
 
-    if (fields.length === 0) return "N/A";
+    if (fields.length === 0) return 'N/A';
 
     if (fields.length > 1) {
       const firstField = fields[0];
@@ -267,7 +267,7 @@ export default function AdminFlightLogs() {
     clientPage * clientLimit
   );
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
   const hasFilters =
     generalSearch ||
     userFilter ||
@@ -361,15 +361,15 @@ export default function AdminFlightLogs() {
           <AdminStatStrip
             columns={3}
             items={[
-              { label: "Loaded logs", value: logs.length },
+              { label: 'Loaded logs', value: logs.length },
               {
-                label: "Showing",
+                label: 'Showing',
                 value: paginatedLogs.length,
                 sub: `Page ${filteredLogs.length === 0 ? 0 : clientPage} of ${filteredLogs.length === 0 ? 0 : filteredTotalPages}`,
               },
               {
-                label: "Action filter",
-                value: actionFilter ? formatActionType(actionFilter) : "All",
+                label: 'Action filter',
+                value: actionFilter ? formatActionType(actionFilter) : 'All',
               },
             ]}
           />
@@ -433,7 +433,7 @@ export default function AdminFlightLogs() {
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`font-mono text-sm ${
-                            revealedIPs.has(log.id) ? "" : "filter blur-sm"
+                            revealedIPs.has(log.id) ? '' : 'filter blur-sm'
                           }`}
                         >
                           {formatIPAddress(log.ip_address, log.id)}
@@ -488,18 +488,18 @@ export default function AdminFlightLogs() {
                 <div>
                   <p className="text-zinc-300 text-sm">
                     <span className="text-zinc-500">
-                      {log.action === "add" ? "Submitted by" : "Changed by"}:
-                    </span>{" "}
+                      {log.action === 'add' ? 'Submitted by' : 'Changed by'}:
+                    </span>{' '}
                     {log.username || `Unknown (${log.user_id})`}
                   </p>
                   <p className="text-zinc-500 text-xs">{log.user_id}</p>
-                  {log.action !== "add" &&
+                  {log.action !== 'add' &&
                     (() => {
                       const owner = getFlightOwner(log);
                       if (!owner.username && !owner.userId) return null;
                       return (
                         <p className="text-zinc-300 text-sm mt-1">
-                          <span className="text-zinc-500">Flight owner:</span>{" "}
+                          <span className="text-zinc-500">Flight owner:</span>{' '}
                           {owner.username || owner.userId}
                         </p>
                       );
@@ -507,7 +507,7 @@ export default function AdminFlightLogs() {
                 </div>
 
                 <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Session:</span>{" "}
+                  <span className="text-zinc-500">Session:</span>{' '}
                   <Link
                     to={`/admin/sessions?search=${log.session_id}`}
                     className="text-purple-400 hover:text-purple-300 underline"
@@ -516,11 +516,11 @@ export default function AdminFlightLogs() {
                   </Link>
                 </p>
                 <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Flight ID:</span>{" "}
+                  <span className="text-zinc-500">Flight ID:</span>{' '}
                   {log.flight_id}
                 </p>
                 <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Timestamp:</span>{" "}
+                  <span className="text-zinc-500">Timestamp:</span>{' '}
                   {formatDate(log.created_at)}
                 </p>
 
@@ -528,7 +528,7 @@ export default function AdminFlightLogs() {
                   <span className="text-zinc-500 text-sm">IP:</span>
                   <span
                     className={`font-mono text-sm ${
-                      revealedIPs.has(log.id) ? "" : "filter blur-sm"
+                      revealedIPs.has(log.id) ? '' : 'filter blur-sm'
                     }`}
                   >
                     {formatIPAddress(log.ip_address, log.id)}
@@ -551,7 +551,7 @@ export default function AdminFlightLogs() {
                 </div>
 
                 <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Updated:</span>{" "}
+                  <span className="text-zinc-500">Updated:</span>{' '}
                   {getUpdatedField(log)}
                 </p>
 
@@ -570,8 +570,8 @@ export default function AdminFlightLogs() {
           {filteredLogs.length === 0 && (
             <div className="text-center py-12 text-zinc-500 text-sm">
               {logs.length > 0
-                ? "No flight logs found. All logs are filtered out."
-                : "No flight logs found with the current filters."}
+                ? 'No flight logs found. All logs are filtered out.'
+                : 'No flight logs found with the current filters.'}
             </div>
           )}
 
@@ -585,7 +585,7 @@ export default function AdminFlightLogs() {
               Previous
             </Button>
             <span className="text-zinc-500 text-sm px-2">
-              Page {filteredLogs.length === 0 ? 0 : clientPage} of{" "}
+              Page {filteredLogs.length === 0 ? 0 : clientPage} of{' '}
               {filteredLogs.length === 0 ? 0 : filteredTotalPages}
             </span>
             <Button
@@ -631,14 +631,14 @@ export default function AdminFlightLogs() {
               </div>
               <div className="bg-zinc-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  {selectedLog.action === "add" ? "Submitted By" : "Changed By"}
+                  {selectedLog.action === 'add' ? 'Submitted By' : 'Changed By'}
                 </h3>
                 <p className="text-white">
                   {selectedLog.username || `Unknown (${selectedLog.user_id})`}
                 </p>
                 <p className="text-xs text-zinc-500">{selectedLog.user_id}</p>
               </div>
-              {selectedLog.action !== "add" &&
+              {selectedLog.action !== 'add' &&
                 (() => {
                   const owner = getFlightOwner(selectedLog);
                   return (
@@ -649,7 +649,7 @@ export default function AdminFlightLogs() {
                       <p className="text-white">
                         {owner.username ||
                           owner.userId ||
-                          "Anonymous (public submit)"}
+                          'Anonymous (public submit)'}
                       </p>
                       {owner.userId && (
                         <p className="text-xs text-zinc-500">{owner.userId}</p>
@@ -664,7 +664,7 @@ export default function AdminFlightLogs() {
                 <div className="flex items-center space-x-2">
                   <p
                     className={`text-white font-mono ${
-                      revealedIPs.has(selectedLog.id) ? "" : "filter blur-sm"
+                      revealedIPs.has(selectedLog.id) ? '' : 'filter blur-sm'
                     }`}
                   >
                     {formatIPAddress(selectedLog.ip_address, selectedLog.id)}
@@ -694,7 +694,7 @@ export default function AdminFlightLogs() {
               <pre className="text-sm text-zinc-300 whitespace-pre-wrap">
                 {selectedLog.old_data
                   ? JSON.stringify(selectedLog.old_data, null, 2)
-                  : "N/A"}
+                  : 'N/A'}
               </pre>
             </div>
             <div className="bg-zinc-800 rounded-lg p-4">
@@ -704,7 +704,7 @@ export default function AdminFlightLogs() {
               <pre className="text-sm text-zinc-300 whitespace-pre-wrap">
                 {selectedLog.new_data
                   ? JSON.stringify(selectedLog.new_data, null, 2)
-                  : "N/A"}
+                  : 'N/A'}
               </pre>
             </div>
           </div>

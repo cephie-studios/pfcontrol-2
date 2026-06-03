@@ -1,11 +1,11 @@
-import { mainDb } from "./connection.js";
-import { cleanupOldStatistics } from "./statistics.js";
-import { sql } from "kysely";
-import { redisConnection } from "./connection.js";
-import { decrypt, hashIp } from "../utils/encryption.js";
-import { getAdminIds, isAdmin } from "../middleware/admin.js";
-import { getActiveUsersForSession } from "../websockets/sessionUsersWebsocket.js";
-import { getUserRoles } from "./roles.js";
+import { mainDb } from './connection.js';
+import { cleanupOldStatistics } from './statistics.js';
+import { sql } from 'kysely';
+import { redisConnection } from './connection.js';
+import { decrypt, hashIp } from '../utils/encryption.js';
+import { getAdminIds, isAdmin } from '../middleware/admin.js';
+import { getActiveUsersForSession } from '../websockets/sessionUsersWebsocket.js';
+import { getUserRoles } from './roles.js';
 
 type RawUser = {
   id: string;
@@ -36,18 +36,18 @@ type ProcessedUser = RawUser & {
 async function calculateDirectStatistics() {
   try {
     const usersResult = await mainDb
-      .selectFrom("users")
-      .select(({ fn }) => fn.countAll().as("count"))
+      .selectFrom('users')
+      .select(({ fn }) => fn.countAll().as('count'))
       .executeTakeFirst();
 
     const sessionsResult = await mainDb
-      .selectFrom("sessions")
-      .select(({ fn }) => fn.countAll().as("count"))
+      .selectFrom('sessions')
+      .select(({ fn }) => fn.countAll().as('count'))
       .executeTakeFirst();
 
     const flightCountResult = await mainDb
-      .selectFrom("flights")
-      .select(({ fn }) => fn.countAll().as("count"))
+      .selectFrom('flights')
+      .select(({ fn }) => fn.countAll().as('count'))
       .executeTakeFirst();
     const totalFlights = Number(flightCountResult?.count) || 0;
 
@@ -58,7 +58,7 @@ async function calculateDirectStatistics() {
       total_users: Number(usersResult?.count) || 0,
     };
   } catch (error) {
-    console.error("Error calculating direct statistics:", error);
+    console.error('Error calculating direct statistics:', error);
     return {
       total_logins: 0,
       total_sessions: 0,
@@ -75,7 +75,7 @@ async function backfillStatistics() {
     const today = new Date();
 
     await mainDb
-      .insertInto("daily_statistics")
+      .insertInto('daily_statistics')
       .values({
         id: sql`DEFAULT`,
         date: today,
@@ -85,16 +85,16 @@ async function backfillStatistics() {
         new_users_count: directStats.total_users,
       })
       .onConflict((oc) =>
-        oc.column("date").doUpdateSet({
+        oc.column('date').doUpdateSet({
           new_sessions_count: directStats.total_sessions,
           new_flights_count: directStats.total_flights,
           new_users_count: directStats.total_users,
-          updated_at: mainDb.fn("NOW"),
-        }),
+          updated_at: mainDb.fn('NOW'),
+        })
       )
       .execute();
   } catch (error) {
-    console.error("Error backfilling statistics:", error);
+    console.error('Error backfilling statistics:', error);
   }
 }
 
@@ -108,7 +108,10 @@ export async function getDailyStatistics(days = 30) {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn(`[Redis] Failed to read cache for daily stats (${days} days):`, error.message);
+      console.warn(
+        `[Redis] Failed to read cache for daily stats (${days} days):`,
+        error.message
+      );
     }
   }
 
@@ -116,16 +119,18 @@ export async function getDailyStatistics(days = 30) {
     await cleanupOldStatistics();
 
     const result = await mainDb
-      .selectFrom("daily_statistics")
+      .selectFrom('daily_statistics')
       .select([
-        "date",
-        mainDb.fn.coalesce("logins_count", sql`0`).as("logins_count"),
-        mainDb.fn.coalesce("new_sessions_count", sql`0`).as("new_sessions_count"),
-        mainDb.fn.coalesce("new_flights_count", sql`0`).as("new_flights_count"),
-        mainDb.fn.coalesce("new_users_count", sql`0`).as("new_users_count"),
+        'date',
+        mainDb.fn.coalesce('logins_count', sql`0`).as('logins_count'),
+        mainDb.fn
+          .coalesce('new_sessions_count', sql`0`)
+          .as('new_sessions_count'),
+        mainDb.fn.coalesce('new_flights_count', sql`0`).as('new_flights_count'),
+        mainDb.fn.coalesce('new_users_count', sql`0`).as('new_users_count'),
       ])
-      .where("date", ">=", new Date(Date.now() - days * 24 * 60 * 60 * 1000))
-      .orderBy("date", "asc")
+      .where('date', '>=', new Date(Date.now() - days * 24 * 60 * 60 * 1000))
+      .orderBy('date', 'asc')
       .execute();
 
     if (result.length === 0) {
@@ -134,22 +139,25 @@ export async function getDailyStatistics(days = 30) {
     }
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
+      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn(`[Redis] Failed to set cache for daily stats (${days} days):`, error.message);
+        console.warn(
+          `[Redis] Failed to set cache for daily stats (${days} days):`,
+          error.message
+        );
       }
     }
 
     return result;
   } catch (error) {
-    console.error("Error fetching daily statistics:", error);
+    console.error('Error fetching daily statistics:', error);
     return [];
   }
 }
 
 export async function getTotalStatistics() {
-  const cacheKey = "admin:total_stats";
+  const cacheKey = 'admin:total_stats';
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -158,7 +166,10 @@ export async function getTotalStatistics() {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for total stats:", error.message);
+      console.warn(
+        '[Redis] Failed to read cache for total stats:',
+        error.message
+      );
     }
   }
 
@@ -166,12 +177,12 @@ export async function getTotalStatistics() {
     const directStats = await calculateDirectStatistics();
 
     const dailyStatsResult = await mainDb
-      .selectFrom("daily_statistics")
+      .selectFrom('daily_statistics')
       .select(({ fn }) => [
-        fn.coalesce(fn.sum("logins_count"), sql`0`).as("total_logins"),
-        fn.coalesce(fn.sum("new_sessions_count"), sql`0`).as("total_sessions"),
-        fn.coalesce(fn.sum("new_flights_count"), sql`0`).as("total_flights"),
-        fn.coalesce(fn.sum("new_users_count"), sql`0`).as("total_users"),
+        fn.coalesce(fn.sum('logins_count'), sql`0`).as('total_logins'),
+        fn.coalesce(fn.sum('new_sessions_count'), sql`0`).as('total_sessions'),
+        fn.coalesce(fn.sum('new_flights_count'), sql`0`).as('total_flights'),
+        fn.coalesce(fn.sum('new_users_count'), sql`0`).as('total_users'),
       ])
       .executeTakeFirst();
 
@@ -183,16 +194,19 @@ export async function getTotalStatistics() {
     };
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
+      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for total stats:", error.message);
+        console.warn(
+          '[Redis] Failed to set cache for total stats:',
+          error.message
+        );
       }
     }
 
     return result;
   } catch (error) {
-    console.error("Error fetching total statistics:", error);
+    console.error('Error fetching total statistics:', error);
     return {
       total_logins: 0,
       total_sessions: 0,
@@ -202,7 +216,12 @@ export async function getTotalStatistics() {
   }
 }
 
-export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin = "all") {
+export async function getAllUsers(
+  page = 1,
+  limit = 50,
+  search = '',
+  filterAdmin = 'all'
+) {
   try {
     const offset = (page - 1) * limit;
     const cacheKey = `allUsers:${page}:${limit}:${search}:${filterAdmin}`;
@@ -217,50 +236,50 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       totalUsers = parsed.total;
     } else {
       let query = mainDb
-        .selectFrom("users as u")
-        .leftJoin("roles as r", "u.role_id", "r.id")
+        .selectFrom('users as u')
+        .leftJoin('roles as r', 'u.role_id', 'r.id')
         .select([
-          "u.id",
-          "u.username",
-          "u.discriminator",
-          "u.avatar",
-          "u.last_login",
-          "u.ip_address",
-          "u.is_vpn",
-          "u.total_sessions_created",
-          "u.total_minutes",
-          "u.created_at",
-          "u.settings",
-          "u.roblox_username",
-          "u.role_id",
-          "r.name as role_name",
-          "r.permissions as role_permissions",
+          'u.id',
+          'u.username',
+          'u.discriminator',
+          'u.avatar',
+          'u.last_login',
+          'u.ip_address',
+          'u.is_vpn',
+          'u.total_sessions_created',
+          'u.total_minutes',
+          'u.created_at',
+          'u.settings',
+          'u.roblox_username',
+          'u.role_id',
+          'r.name as role_name',
+          'r.permissions as role_permissions',
         ])
-        .orderBy("u.last_login", "desc");
+        .orderBy('u.last_login', 'desc');
 
-      const trimmedSearch = search && search.trim() ? search.trim() : "";
+      const trimmedSearch = search && search.trim() ? search.trim() : '';
 
       const isIpSearch = Boolean(trimmedSearch && /[.:]/.test(trimmedSearch));
 
       if (!isIpSearch && trimmedSearch) {
         query = query.where((eb) =>
           eb.or([
-            eb("u.username", "ilike", `%${trimmedSearch}%`),
-            eb("u.id", "ilike", `%${trimmedSearch}%`),
-          ]),
+            eb('u.username', 'ilike', `%${trimmedSearch}%`),
+            eb('u.id', 'ilike', `%${trimmedSearch}%`),
+          ])
         );
       } else if (isIpSearch) {
         const ipHash = hashIp(trimmedSearch);
-        query = query.where("u.ip_hash", "=", ipHash);
+        query = query.where('u.ip_hash', '=', ipHash);
       }
 
-      if (filterAdmin === "admin" || filterAdmin === "non-admin") {
+      if (filterAdmin === 'admin' || filterAdmin === 'non-admin') {
         const adminIds = getAdminIds();
         if (adminIds.length > 0) {
-          if (filterAdmin === "admin") {
-            query = query.where("u.id", "in", adminIds);
+          if (filterAdmin === 'admin') {
+            query = query.where('u.id', 'in', adminIds);
           } else {
-            query = query.where("u.id", "not in", adminIds);
+            query = query.where('u.id', 'not in', adminIds);
           }
         } else {
           return {
@@ -271,27 +290,29 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       }
 
       let rows;
-      if (filterAdmin === "cached") {
+      if (filterAdmin === 'cached') {
         try {
-          let cursor = "0";
+          let cursor = '0';
           const cachedUserIds: string[] = [];
 
           do {
             const [newCursor, keys] = await redisConnection.scan(
               cursor,
-              "MATCH",
-              "user:*",
-              "COUNT",
-              1000,
+              'MATCH',
+              'user:*',
+              'COUNT',
+              1000
             );
             cursor = newCursor;
 
             const userIds = keys
-              .filter((key) => key.startsWith("user:") && !key.includes(":username:"))
-              .map((key) => key.replace("user:", ""));
+              .filter(
+                (key) => key.startsWith('user:') && !key.includes(':username:')
+              )
+              .map((key) => key.replace('user:', ''));
 
             cachedUserIds.push(...userIds);
-          } while (cursor !== "0");
+          } while (cursor !== '0');
 
           if (cachedUserIds.length === 0) {
             return {
@@ -300,17 +321,17 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
             };
           }
 
-          query = query.where("u.id", "in", cachedUserIds);
+          query = query.where('u.id', 'in', cachedUserIds);
           rows = await query.execute();
         } catch (error) {
-          console.error("Error getting cached user IDs from Redis:", error);
+          console.error('Error getting cached user IDs from Redis:', error);
           rows = await query.execute();
         }
       } else {
         const countQuery = query
           .clearSelect()
           .clearOrderBy()
-          .select(({ fn }) => fn.countAll().as("count"));
+          .select(({ fn }) => fn.countAll().as('count'));
         const countResult = await countQuery.executeTakeFirst();
         totalUsers = Number(countResult?.count) || 0;
 
@@ -336,14 +357,18 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       }));
 
       const userIds = rawUsers.map((u) => u.id);
-      const allUserRoles = await Promise.all(userIds.map((userId) => getUserRoles(userId)));
+      const allUserRoles = await Promise.all(
+        userIds.map((userId) => getUserRoles(userId))
+      );
 
       const usersWithAdminStatus = rawUsers.map((user, index) => {
         let decryptedSettings = null;
         try {
           if (user.settings) {
             const settingsObj =
-              typeof user.settings === "string" ? JSON.parse(user.settings) : user.settings;
+              typeof user.settings === 'string'
+                ? JSON.parse(user.settings)
+                : user.settings;
             decryptedSettings = decrypt(settingsObj);
           }
         } catch {
@@ -354,30 +379,36 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
         try {
           if (user.role_permissions) {
             rolePermissions =
-              typeof user.role_permissions === "string"
+              typeof user.role_permissions === 'string'
                 ? JSON.parse(user.role_permissions)
                 : user.role_permissions;
           }
         } catch (error) {
-          console.warn(`Failed to parse role permissions for user ${user.id}:`, error);
+          console.warn(
+            `Failed to parse role permissions for user ${user.id}:`,
+            error
+          );
         }
         user.role_permissions = rolePermissions;
 
         let decryptedIP = user.ip_address;
         if (user.ip_address) {
           try {
-            if (typeof user.ip_address === "string" && user.ip_address.trim().startsWith("{")) {
+            if (
+              typeof user.ip_address === 'string' &&
+              user.ip_address.trim().startsWith('{')
+            ) {
               decryptedIP = decrypt(JSON.parse(user.ip_address));
             } else {
               const isEncryptedObject = (
-                val: unknown,
+                val: unknown
               ): val is { iv: string; data: string; authTag: string } => {
-                if (typeof val !== "object" || val === null) return false;
+                if (typeof val !== 'object' || val === null) return false;
                 const obj = val as Record<string, unknown>;
                 return (
-                  typeof obj.iv === "string" &&
-                  typeof obj.data === "string" &&
-                  typeof obj.authTag === "string"
+                  typeof obj.iv === 'string' &&
+                  typeof obj.data === 'string' &&
+                  typeof obj.authTag === 'string'
                 );
               };
 
@@ -401,18 +432,21 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       });
 
       let usersWithCacheStatus;
-      if (filterAdmin === "cached") {
-        usersWithCacheStatus = usersWithAdminStatus.map((user) => ({ ...user, cached: true }));
+      if (filterAdmin === 'cached') {
+        usersWithCacheStatus = usersWithAdminStatus.map((user) => ({
+          ...user,
+          cached: true,
+        }));
       } else {
         usersWithCacheStatus = await Promise.all(
           usersWithAdminStatus.map(async (user) => {
             const isCached = await redisConnection.exists(`user:${user.id}`);
             return { ...user, cached: isCached === 1 };
-          }),
+          })
         );
       }
 
-      if (filterAdmin === "cached") {
+      if (filterAdmin === 'cached') {
         filteredUsers = usersWithCacheStatus;
         totalUsers = filteredUsers.length;
         filteredUsers = filteredUsers.slice(offset, offset + limit);
@@ -424,12 +458,15 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
         await redisConnection.set(
           cacheKey,
           JSON.stringify({ users: filteredUsers, total: totalUsers }),
-          "EX",
-          300,
+          'EX',
+          300
         );
       } catch (error) {
         if (error instanceof Error) {
-          console.warn(`[Redis] Failed to set cache for allUsers (${cacheKey}):`, error.message);
+          console.warn(
+            `[Redis] Failed to set cache for allUsers (${cacheKey}):`,
+            error.message
+          );
         }
       }
     }
@@ -444,49 +481,49 @@ export async function getAllUsers(page = 1, limit = 50, search = "", filterAdmin
       },
     };
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error('Error fetching users:', error);
     throw error;
   }
 }
 
-export async function getAdminSessions(page = 1, limit = 100, search = "") {
+export async function getAdminSessions(page = 1, limit = 100, search = '') {
   try {
     const offset = (page - 1) * limit;
 
     let query = mainDb
-      .selectFrom("sessions as s")
-      .leftJoin("users as u", "s.created_by", "u.id")
+      .selectFrom('sessions as s')
+      .leftJoin('users as u', 's.created_by', 'u.id')
       .select([
-        "s.session_id",
-        "s.access_id",
-        "s.airport_icao",
-        "s.active_runway",
-        sql`(s.created_at AT TIME ZONE 'UTC')`.as("created_at"),
-        "s.created_by",
-        "s.is_pfatc",
-        "s.is_advanced_atc",
-        "u.username",
-        "u.discriminator",
-        "u.avatar",
+        's.session_id',
+        's.access_id',
+        's.airport_icao',
+        's.active_runway',
+        sql`(s.created_at AT TIME ZONE 'UTC')`.as('created_at'),
+        's.created_by',
+        's.is_pfatc',
+        's.is_advanced_atc',
+        'u.username',
+        'u.discriminator',
+        'u.avatar',
       ])
-      .orderBy("s.created_at", "desc");
+      .orderBy('s.created_at', 'desc');
 
     if (search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
       query = query.where((eb) =>
         eb.or([
-          eb("s.session_id", "ilike", searchTerm),
-          eb("s.airport_icao", "ilike", searchTerm),
-          eb("u.username", "ilike", searchTerm),
-          eb("s.created_by", "ilike", searchTerm),
-        ]),
+          eb('s.session_id', 'ilike', searchTerm),
+          eb('s.airport_icao', 'ilike', searchTerm),
+          eb('u.username', 'ilike', searchTerm),
+          eb('s.created_by', 'ilike', searchTerm),
+        ])
       );
     }
 
     const countQuery = query
       .clearSelect()
       .clearOrderBy()
-      .select(({ fn }) => fn.countAll().as("count"));
+      .select(({ fn }) => fn.countAll().as('count'));
     const countResult = await countQuery.executeTakeFirst();
     const total = Number(countResult?.count) || 0;
     const pages = Math.ceil(total / limit);
@@ -498,26 +535,30 @@ export async function getAdminSessions(page = 1, limit = 100, search = "") {
     const flightCounts =
       sessionIds.length > 0
         ? await mainDb
-            .selectFrom("flights")
-            .select(["session_id", mainDb.fn.countAll().as("count")])
-            .where("session_id", "in", sessionIds)
-            .groupBy("session_id")
+            .selectFrom('flights')
+            .select(['session_id', mainDb.fn.countAll().as('count')])
+            .where('session_id', 'in', sessionIds)
+            .groupBy('session_id')
             .execute()
         : [];
 
-    const flightCountMap = new Map(flightCounts.map((r) => [r.session_id, Number(r.count)]));
+    const flightCountMap = new Map(
+      flightCounts.map((r) => [r.session_id, Number(r.count)])
+    );
 
     const sessionsWithDetails = await Promise.all(
       sessions.map(async (session) => {
         const flight_count = flightCountMap.get(session.session_id) || 0;
-        const activeSessionUsers = await getActiveUsersForSession(session.session_id);
+        const activeSessionUsers = await getActiveUsersForSession(
+          session.session_id
+        );
         return {
           ...session,
           flight_count,
           active_users: activeSessionUsers,
           active_user_count: activeSessionUsers.length,
         };
-      }),
+      })
     );
 
     return {
@@ -530,7 +571,7 @@ export async function getAdminSessions(page = 1, limit = 100, search = "") {
       },
     };
   } catch (error) {
-    console.error("Error fetching admin sessions:", error);
+    console.error('Error fetching admin sessions:', error);
     throw error;
   }
 }
@@ -538,41 +579,41 @@ export async function getAdminSessions(page = 1, limit = 100, search = "") {
 export async function syncUserSessionCounts() {
   try {
     const sessionCounts = await mainDb
-      .selectFrom("sessions")
-      .select(["created_by", mainDb.fn.countAll().as("session_count")])
-      .groupBy("created_by")
+      .selectFrom('sessions')
+      .select(['created_by', mainDb.fn.countAll().as('session_count')])
+      .groupBy('created_by')
       .execute();
 
     for (const row of sessionCounts) {
       await mainDb
-        .updateTable("users")
+        .updateTable('users')
         .set({ total_sessions_created: Number(row.session_count) })
-        .where("id", "=", row.created_by)
+        .where('id', '=', row.created_by)
         .execute();
     }
 
     await mainDb
-      .updateTable("users")
+      .updateTable('users')
       .set({ total_sessions_created: 0 })
       .where(
-        "id",
-        "not in",
-        sessionCounts.map((r) => r.created_by),
+        'id',
+        'not in',
+        sessionCounts.map((r) => r.created_by)
       )
       .execute();
 
     return {
-      message: "Session counts synced successfully",
+      message: 'Session counts synced successfully',
       updatedUsers: sessionCounts.length,
     };
   } catch (error) {
-    console.error("Error syncing user session counts:", error);
+    console.error('Error syncing user session counts:', error);
     throw error;
   }
 }
 
 export async function getControllerRatingStats() {
-  const cacheKey = "admin:controller_rating_stats";
+  const cacheKey = 'admin:controller_rating_stats';
 
   try {
     const cached = await redisConnection.get(cacheKey);
@@ -581,41 +622,47 @@ export async function getControllerRatingStats() {
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.warn("[Redis] Failed to read cache for controller rating stats:", error.message);
+      console.warn(
+        '[Redis] Failed to read cache for controller rating stats:',
+        error.message
+      );
     }
   }
 
   try {
     const topRatedControllers = await mainDb
-      .selectFrom("controller_ratings")
+      .selectFrom('controller_ratings')
       .select([
-        "controller_id",
-        (eb) => eb.fn.avg<number>("rating").as("avg_rating"),
-        (eb) => eb.fn.count<number>("id").as("rating_count"),
+        'controller_id',
+        (eb) => eb.fn.avg<number>('rating').as('avg_rating'),
+        (eb) => eb.fn.count<number>('id').as('rating_count'),
       ])
-      .groupBy("controller_id")
-      .having((eb) => eb.fn.count<number>("id"), ">=", 3)
-      .orderBy("avg_rating", "desc")
+      .groupBy('controller_id')
+      .having((eb) => eb.fn.count<number>('id'), '>=', 3)
+      .orderBy('avg_rating', 'desc')
       .limit(10)
       .execute();
 
     const mostRatedControllers = await mainDb
-      .selectFrom("controller_ratings")
+      .selectFrom('controller_ratings')
       .select([
-        "controller_id",
-        (eb) => eb.fn.count<number>("id").as("rating_count"),
-        (eb) => eb.fn.avg<number>("rating").as("avg_rating"),
+        'controller_id',
+        (eb) => eb.fn.count<number>('id').as('rating_count'),
+        (eb) => eb.fn.avg<number>('rating').as('avg_rating'),
       ])
-      .groupBy("controller_id")
-      .orderBy("rating_count", "desc")
+      .groupBy('controller_id')
+      .orderBy('rating_count', 'desc')
       .limit(10)
       .execute();
 
     const topRatingPilots = await mainDb
-      .selectFrom("controller_ratings")
-      .select(["pilot_id", (eb) => eb.fn.count<number>("id").as("rating_count")])
-      .groupBy("pilot_id")
-      .orderBy("rating_count", "desc")
+      .selectFrom('controller_ratings')
+      .select([
+        'pilot_id',
+        (eb) => eb.fn.count<number>('id').as('rating_count'),
+      ])
+      .groupBy('pilot_id')
+      .orderBy('rating_count', 'desc')
       .limit(9)
       .execute();
 
@@ -628,42 +675,47 @@ export async function getControllerRatingStats() {
     const pilotIds = topRatingPilots.map((p) => p.pilot_id);
 
     const users = await mainDb
-      .selectFrom("users")
-      .select(["id", "username", "avatar"])
-      .where("id", "in", [...controllerIds, ...pilotIds])
+      .selectFrom('users')
+      .select(['id', 'username', 'avatar'])
+      .where('id', 'in', [...controllerIds, ...pilotIds])
       .execute();
 
-    const userMap = new Map(users.map((u) => [u.id, { username: u.username, avatar: u.avatar }]));
+    const userMap = new Map(
+      users.map((u) => [u.id, { username: u.username, avatar: u.avatar }])
+    );
 
     const result = {
       topRated: topRatedControllers.map((c) => ({
         ...c,
-        username: userMap.get(c.controller_id)?.username || "Unknown",
+        username: userMap.get(c.controller_id)?.username || 'Unknown',
         avatar: userMap.get(c.controller_id)?.avatar || null,
       })),
       mostRated: mostRatedControllers.map((c) => ({
         ...c,
-        username: userMap.get(c.controller_id)?.username || "Unknown",
+        username: userMap.get(c.controller_id)?.username || 'Unknown',
         avatar: userMap.get(c.controller_id)?.avatar || null,
       })),
       topPilots: topRatingPilots.map((p) => ({
         ...p,
-        username: userMap.get(p.pilot_id)?.username || "Unknown",
+        username: userMap.get(p.pilot_id)?.username || 'Unknown',
         avatar: userMap.get(p.pilot_id)?.avatar || null,
       })),
     };
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(result), "EX", 300);
+      await redisConnection.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (error) {
       if (error instanceof Error) {
-        console.warn("[Redis] Failed to set cache for controller rating stats:", error.message);
+        console.warn(
+          '[Redis] Failed to set cache for controller rating stats:',
+          error.message
+        );
       }
     }
 
     return result;
   } catch (error) {
-    console.error("Error fetching controller rating stats:", error);
+    console.error('Error fetching controller rating stats:', error);
     throw error;
   }
 }
@@ -680,62 +732,71 @@ export async function getControllerRatingsDailyStats(days: number = 30) {
     if (error instanceof Error) {
       console.warn(
         `[Redis] Failed to read cache for controller rating daily stats (${days} days):`,
-        error.message,
+        error.message
       );
     }
   }
 
   try {
     const dailyStats = await mainDb
-      .selectFrom("controller_ratings")
+      .selectFrom('controller_ratings')
       .select([
-        sql<string>`DATE(created_at)`.as("date"),
-        (eb) => eb.fn.count<number>("id").as("count"),
-        (eb) => eb.fn.avg<number>("rating").as("avg_rating"),
+        sql<string>`DATE(created_at)`.as('date'),
+        (eb) => eb.fn.count<number>('id').as('count'),
+        (eb) => eb.fn.avg<number>('rating').as('avg_rating'),
       ])
-      .where("created_at", ">=", sql<Date>`NOW() - INTERVAL '${sql.raw(days.toString())} days'`)
+      .where(
+        'created_at',
+        '>=',
+        sql<Date>`NOW() - INTERVAL '${sql.raw(days.toString())} days'`
+      )
       .groupBy(sql`DATE(created_at)`)
-      .orderBy(sql`DATE(created_at)`, "asc")
+      .orderBy(sql`DATE(created_at)`, 'asc')
       .execute();
 
     try {
-      await redisConnection.set(cacheKey, JSON.stringify(dailyStats), "EX", 300);
+      await redisConnection.set(
+        cacheKey,
+        JSON.stringify(dailyStats),
+        'EX',
+        300
+      );
     } catch (error) {
       if (error instanceof Error) {
         console.warn(
           `[Redis] Failed to set cache for controller rating daily stats (${days} days):`,
-          error.message,
+          error.message
         );
       }
     }
 
     return dailyStats;
   } catch (error) {
-    console.error("Error fetching daily controller rating stats:", error);
+    console.error('Error fetching daily controller rating stats:', error);
     throw error;
   }
 }
 
 export async function invalidateAllUsersCache() {
   try {
-    let cursor = "0";
+    let cursor = '0';
     const keysToDelete: string[] = [];
     do {
       const [newCursor, keys] = await redisConnection.scan(
         cursor,
-        "MATCH",
-        "allUsers:*",
-        "COUNT",
-        100,
+        'MATCH',
+        'allUsers:*',
+        'COUNT',
+        100
       );
       cursor = newCursor;
       keysToDelete.push(...keys);
-    } while (cursor !== "0");
+    } while (cursor !== '0');
 
     if (keysToDelete.length > 0) {
       await redisConnection.del(...keysToDelete);
     }
   } catch (error) {
-    console.warn("[Redis] Failed to invalidate allUsers cache:", error);
+    console.warn('[Redis] Failed to invalidate allUsers cache:', error);
   }
 }

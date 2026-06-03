@@ -21,7 +21,10 @@ vi.mock('../../../server/db/connection.js', () => ({
   redisConnection: {},
 }));
 
-import { getSessionById, getSessionsByUser } from '../../../server/db/sessions.js';
+import {
+  getSessionById,
+  getSessionsByUser,
+} from '../../../server/db/sessions.js';
 
 describe('getSessionById', () => {
   beforeEach(() => {

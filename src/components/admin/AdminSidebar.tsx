@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from 'react-router-dom';
 import {
   MdBarChart,
   MdPeople,
@@ -23,18 +23,18 @@ import {
   MdCode,
   MdCable,
   MdQueryStats,
-} from "react-icons/md";
-import type { IconType } from "react-icons";
-import { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/auth/useAuth";
-import { navActiveClass } from "./adminConstants";
+} from 'react-icons/md';
+import type { IconType } from 'react-icons';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { navActiveClass } from './adminConstants';
 
 interface AdminSidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
 }
 
-const SIDEBAR_STORAGE_KEY = "admin-sidebar-collapsed";
+const SIDEBAR_STORAGE_KEY = 'admin-sidebar-collapsed';
 
 type NavItem = {
   icon: IconType;
@@ -97,24 +97,24 @@ export default function AdminSidebar({
     if (user?.isAdmin) return true;
     const perms = (user?.rolePermissions ?? {}) as Record<string, unknown>;
     const checkVal = (v: unknown) =>
-      v === true || v === "true" || v === "1" || v === 1;
+      v === true || v === 'true' || v === '1' || v === 1;
 
     if (checkVal(perms[permission])) return true;
 
     const aliases: Record<string, string[]> = {
-      admin: ["admin", "overview"],
-      users: ["users", "user_management"],
-      sessions: ["sessions", "session_management"],
-      notifications: ["notifications", "update_notifications", "update_modals"],
-      update_modals: ["update_modals", "update_notifications"],
-      feedback: ["feedback", "user_feedback"],
-      chat_reports: ["chat_reports", "chatReports", "reports"],
-      audit: ["audit", "api_logs", "flight_logs", "audit_logs"],
-      api_logs: ["api_logs", "audit", "audit_logs"],
-      flight_logs: ["flight_logs", "audit", "flightArchive", "flight_logs"],
-      bans: ["bans", "ban_management"],
-      testers: ["testers", "tester_management"],
-      roles: ["roles", "role_management"],
+      admin: ['admin', 'overview'],
+      users: ['users', 'user_management'],
+      sessions: ['sessions', 'session_management'],
+      notifications: ['notifications', 'update_notifications', 'update_modals'],
+      update_modals: ['update_modals', 'update_notifications'],
+      feedback: ['feedback', 'user_feedback'],
+      chat_reports: ['chat_reports', 'chatReports', 'reports'],
+      audit: ['audit', 'api_logs', 'flight_logs', 'audit_logs'],
+      api_logs: ['api_logs', 'audit', 'audit_logs'],
+      flight_logs: ['flight_logs', 'audit', 'flightArchive', 'flight_logs'],
+      bans: ['bans', 'ban_management'],
+      testers: ['testers', 'tester_management'],
+      roles: ['roles', 'role_management'],
     };
 
     for (const p of aliases[permission] ?? []) {
@@ -125,144 +125,144 @@ export default function AdminSidebar({
 
   const sections: NavSection[] = [
     {
-      title: "General",
+      title: 'General',
       icon: MdDashboard,
       items: [
         {
           icon: MdBarChart,
-          label: "Overview",
-          path: "/admin",
-          permission: "admin",
+          label: 'Overview',
+          path: '/admin',
+          permission: 'admin',
         },
         {
           icon: MdPeople,
-          label: "Users",
-          path: "/admin/users",
-          textColor: "green-400",
-          permission: "users",
+          label: 'Users',
+          path: '/admin/users',
+          textColor: 'green-400',
+          permission: 'users',
         },
         {
           icon: MdStorage,
-          label: "Sessions",
-          path: "/admin/sessions",
-          textColor: "yellow-400",
-          permission: "sessions",
+          label: 'Sessions',
+          path: '/admin/sessions',
+          textColor: 'yellow-400',
+          permission: 'sessions',
         },
         {
           icon: MdNotifications,
-          label: "Notifications",
-          path: "/admin/notifications",
-          textColor: "cyan-400",
-          permission: "notifications",
+          label: 'Notifications',
+          path: '/admin/notifications',
+          textColor: 'cyan-400',
+          permission: 'notifications',
         },
         {
           icon: MdStar,
-          label: "Feedback",
-          path: "/admin/feedback",
-          textColor: "yellow-400",
-          permission: "admin",
+          label: 'Feedback',
+          path: '/admin/feedback',
+          textColor: 'yellow-400',
+          permission: 'admin',
         },
         {
           icon: MdThumbUp,
-          label: "Ratings",
-          path: "/admin/ratings",
-          textColor: "indigo-400",
-          permission: "admin",
+          label: 'Ratings',
+          path: '/admin/ratings',
+          textColor: 'indigo-400',
+          permission: 'admin',
         },
       ].filter((item) => hasPermission(item.permission)),
     },
     {
-      title: "Moderation",
+      title: 'Moderation',
       icon: MdVpnKey,
       items: [
         {
           icon: MdChat,
-          label: "Chat Reports",
-          path: "/admin/chat-reports",
-          textColor: "red-400",
-          permission: "chat_reports",
+          label: 'Chat Reports',
+          path: '/admin/chat-reports',
+          textColor: 'red-400',
+          permission: 'chat_reports',
         },
         {
           icon: MdFlight,
-          label: "Flight Archive",
-          path: "/admin/flight-logs",
-          textColor: "rose-400",
-          permission: "audit",
+          label: 'Flight Archive',
+          path: '/admin/flight-logs',
+          textColor: 'rose-400',
+          permission: 'audit',
         },
         {
           icon: MdBlock,
-          label: "Bans",
-          path: "/admin/bans",
-          textColor: "red-400",
-          permission: "bans",
+          label: 'Bans',
+          path: '/admin/bans',
+          textColor: 'red-400',
+          permission: 'bans',
         },
       ],
     },
     {
-      title: "Security",
+      title: 'Security',
       icon: MdSecurity,
       items: [
         {
           icon: MdMonitorHeart,
-          label: "API Logs",
-          path: "/admin/api-logs",
-          textColor: "blue-400",
-          permission: "audit",
+          label: 'API Logs',
+          path: '/admin/api-logs',
+          textColor: 'blue-400',
+          permission: 'audit',
         },
         {
           icon: MdCode,
-          label: "Developers",
-          path: "/admin/developers",
-          textColor: "cyan-400",
-          permission: "admin",
+          label: 'Developers',
+          path: '/admin/developers',
+          textColor: 'cyan-400',
+          permission: 'admin',
         },
         {
           icon: MdVerifiedUser,
-          label: "Testers",
-          path: "/admin/testers",
-          textColor: "purple-400",
-          permission: "testers",
+          label: 'Testers',
+          path: '/admin/testers',
+          textColor: 'purple-400',
+          permission: 'testers',
         },
         {
           icon: MdAdminPanelSettings,
-          label: "Roles",
-          path: "/admin/roles",
-          textColor: "rose-400",
-          permission: "roles",
+          label: 'Roles',
+          path: '/admin/roles',
+          textColor: 'rose-400',
+          permission: 'roles',
         },
         {
           icon: MdReport,
-          label: "Audit Log",
-          path: "/admin/audit",
-          textColor: "orange-400",
-          permission: "audit",
+          label: 'Audit Log',
+          path: '/admin/audit',
+          textColor: 'orange-400',
+          permission: 'audit',
         },
         {
           icon: MdMergeType,
-          label: "Alt Detection",
-          path: "/admin/alts",
-          textColor: "amber-400",
-          permission: "admin",
+          label: 'Alt Detection',
+          path: '/admin/alts',
+          textColor: 'amber-400',
+          permission: 'admin',
         },
       ].filter((item) => hasPermission(item.permission)),
     },
     {
-      title: "Monitoring",
+      title: 'Monitoring',
       icon: MdQueryStats,
       items: [
         {
           icon: MdCable,
-          label: "WebSockets",
-          path: "/admin/websockets",
-          textColor: "cyan-400",
-          permission: "admin",
+          label: 'WebSockets',
+          path: '/admin/websockets',
+          textColor: 'cyan-400',
+          permission: 'admin',
         },
         {
           icon: MdStorage,
-          label: "Database",
-          path: "/admin/database",
-          textColor: "blue-400",
-          permission: "admin",
+          label: 'Database',
+          path: '/admin/database',
+          textColor: 'blue-400',
+          permission: 'admin',
         },
       ].filter((item) => hasPermission(item.permission)),
     },
@@ -291,17 +291,17 @@ export default function AdminSidebar({
 
   const linkClass = (isActive: boolean, textColor?: string) =>
     `flex items-center gap-2.5 rounded-lg transition-colors duration-150 ${
-      collapsed ? "justify-center h-9 w-full px-0" : "h-9 px-3"
+      collapsed ? 'justify-center h-9 w-full px-0' : 'h-9 px-3'
     } ${
       isActive
         ? navActiveClass(textColor)
-        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+        : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
     }`;
 
   return (
     <div
       className={`bg-zinc-950 border-r border-zinc-800 transition-all duration-300 h-[calc(100vh-4rem)] sticky top-16 z-[40] ${
-        collapsed ? "w-16" : "w-64 xl:w-72"
+        collapsed ? 'w-16' : 'w-64 xl:w-72'
       } flex flex-col overflow-hidden`}
     >
       <div className="px-2 py-2 border-b border-zinc-800 shrink-0">
@@ -313,7 +313,7 @@ export default function AdminSidebar({
               </div>
               <div
                 className={`transition-opacity duration-200 truncate ${
-                  showText ? "opacity-100" : "opacity-0"
+                  showText ? 'opacity-100' : 'opacity-0'
                 }`}
               >
                 <h2 className="text-sm font-semibold text-white">Admin</h2>
@@ -324,7 +324,7 @@ export default function AdminSidebar({
             type="button"
             onClick={handleToggle}
             className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white shrink-0"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
               <MdChevronRight size={18} />
@@ -372,7 +372,7 @@ export default function AdminSidebar({
                     </span>
                     <MdExpandMore
                       size={16}
-                      className={`transition-transform ${isSectionCollapsed ? "-rotate-90" : ""}`}
+                      className={`transition-transform ${isSectionCollapsed ? '-rotate-90' : ''}`}
                     />
                   </button>
                   {!isSectionCollapsed && (

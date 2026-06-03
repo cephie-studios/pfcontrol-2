@@ -85,14 +85,23 @@ export default function DepartureTableMobile({
       let changed = false;
       for (const [id, opt] of prev) {
         const flight = flights.find((f) => f.id === id);
-        if (!flight) { next.delete(id); changed = true; continue; }
+        if (!flight) {
+          next.delete(id);
+          changed = true;
+          continue;
+        }
         const serverAt = flight.req_at ?? null;
         const optAt = opt.req_at ?? null;
         const synced =
           (serverAt === null && optAt === null) ||
-          (serverAt !== null && optAt !== null &&
-            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) < 5000);
-        if (synced) { next.delete(id); changed = true; }
+          (serverAt !== null &&
+            optAt !== null &&
+            Math.abs(new Date(serverAt).getTime() - new Date(optAt).getTime()) <
+              5000);
+        if (synced) {
+          next.delete(id);
+          changed = true;
+        }
       }
       return changed ? next : prev;
     });
@@ -106,7 +115,10 @@ export default function DepartureTableMobile({
   };
 
   const reqPositions = useMemo(() => {
-    const byPhase: Record<string, Array<{ id: string | number; req_at: string }>> = {};
+    const byPhase: Record<
+      string,
+      Array<{ id: string | number; req_at: string }>
+    > = {};
     for (const f of flights) {
       const { req_at, req_phase } = getReqData(f);
       if (!req_at) continue;
@@ -125,18 +137,24 @@ export default function DepartureTableMobile({
       });
     }
     return result;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flights, reqOptimistic]);
 
   const formatReqElapsed = (req_at: string) => {
-    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(req_at).getTime()) / 1000));
+    const elapsed = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(req_at).getTime()) / 1000)
+    );
     const m = Math.floor(elapsed / 60);
     const s = elapsed % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const getReqColor = (req_at: string): string => {
-    const elapsed = Math.max(0, (Date.now() - new Date(req_at).getTime()) / 1000);
+    const elapsed = Math.max(
+      0,
+      (Date.now() - new Date(req_at).getTime()) / 1000
+    );
     const progress = Math.min(1, elapsed / 300);
     const hue = Math.round(48 * (1 - progress));
     return `hsl(${hue}, 90%, 58%)`;
@@ -305,7 +323,9 @@ export default function DepartureTableMobile({
       if (checked && flight && getReqData(flight).req_at) {
         updates.req_at = null;
         updates.req_phase = null;
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
       }
       onFlightChange(flightId, updates);
     }
@@ -315,12 +335,15 @@ export default function DepartureTableMobile({
     if (!onFlightChange) return;
     const isClearanceCheckedLocal = (v: boolean | string | undefined) => {
       if (typeof v === 'boolean') return v;
-      if (typeof v === 'string') return ['true', 'c', 'yes', '1'].includes(v.trim().toLowerCase());
+      if (typeof v === 'string')
+        return ['true', 'c', 'yes', '1'].includes(v.trim().toLowerCase());
       return false;
     };
     const current = getReqData(flight);
     if (current.req_at) {
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: null, req_phase: null }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: null, req_phase: null })
+      );
       onFlightChange(flight.id, { req_at: null, req_phase: null });
     } else {
       const status = (flight.status || '').toLowerCase();
@@ -331,7 +354,9 @@ export default function DepartureTableMobile({
       else if (status === 'push') phase = 'T';
       else phase = 'G';
       const newReqAt = new Date().toISOString();
-      setReqOptimistic((prev) => new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase }));
+      setReqOptimistic((prev) =>
+        new Map(prev).set(flight.id, { req_at: newReqAt, req_phase: phase })
+      );
       onFlightChange(flight.id, { req_at: newReqAt, req_phase: phase });
     }
   };
@@ -430,7 +455,9 @@ export default function DepartureTableMobile({
       if (flight && getReqData(flight).req_at) {
         updates.req_at = null;
         updates.req_phase = null;
-        setReqOptimistic((prev) => new Map(prev).set(flightId, { req_at: null, req_phase: null }));
+        setReqOptimistic((prev) =>
+          new Map(prev).set(flightId, { req_at: null, req_phase: null })
+        );
       }
       onFlightChange(flightId, updates);
     }
@@ -522,30 +549,43 @@ export default function DepartureTableMobile({
                     />
                   </div>
                 )}
-                {departureColumns.req !== false && (() => {
-                  const { req_at } = getReqData(flight);
-                  return (
-                    <div
-                      className="flex flex-col justify-center cursor-pointer select-none"
-                      onClick={() => handleReqToggle(flight)}
-                      title={req_at ? 'Click to clear request' : 'Click to mark as on-request'}
-                    >
-                      <strong>REQ:</strong>
-                      {req_at ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-xs font-bold" style={{ color: getReqColor(req_at) }}>
-                            {reqPositions.get(flight.id) ?? 'REQ'}
+                {departureColumns.req !== false &&
+                  (() => {
+                    const { req_at } = getReqData(flight);
+                    return (
+                      <div
+                        className="flex flex-col justify-center cursor-pointer select-none"
+                        onClick={() => handleReqToggle(flight)}
+                        title={
+                          req_at
+                            ? 'Click to clear request'
+                            : 'Click to mark as on-request'
+                        }
+                      >
+                        <strong>REQ:</strong>
+                        {req_at ? (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                              className="text-xs font-bold"
+                              style={{ color: getReqColor(req_at) }}
+                            >
+                              {reqPositions.get(flight.id) ?? 'REQ'}
+                            </span>
+                            <span
+                              className="text-xs"
+                              style={{ color: getReqColor(req_at) }}
+                            >
+                              {formatReqElapsed(req_at)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-zinc-400 mt-0.5 opacity-40">
+                            —
                           </span>
-                          <span className="text-xs" style={{ color: getReqColor(req_at) }}>
-                            {formatReqElapsed(req_at)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-zinc-400 mt-0.5 opacity-40">—</span>
-                      )}
-                    </div>
-                  );
-                })()}
+                        )}
+                      </div>
+                    );
+                  })()}
                 {departureColumns.stand !== false && (
                   <div>
                     <strong>Stand:</strong>{' '}
@@ -727,8 +767,10 @@ export default function DepartureTableMobile({
                 {/* Time is always visible */}
                 <div>
                   <strong>Time:</strong>{' '}
-                  {(flight.timestamp || flight.created_at)
-                    ? new Date(flight.timestamp || flight.created_at!).toLocaleTimeString('en-GB', {
+                  {flight.timestamp || flight.created_at
+                    ? new Date(
+                        flight.timestamp || flight.created_at!
+                      ).toLocaleTimeString('en-GB', {
                         hour: '2-digit',
                         minute: '2-digit',
                         timeZone: 'UTC',

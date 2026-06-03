@@ -1,4 +1,4 @@
-import { Generated } from "kysely";
+import { Generated } from 'kysely';
 
 export interface AppSettingsTable {
   id: Generated<number>;

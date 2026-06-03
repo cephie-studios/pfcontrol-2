@@ -1,79 +1,98 @@
-import { apiFetch } from "../apiFetch.js";
+import { apiFetch } from '../apiFetch.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchChatMessages(sessionId: string) {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!res.ok) throw new Error("Failed to fetch chat messages");
+  if (!res.ok) throw new Error('Failed to fetch chat messages');
   return res.json();
 }
 
 export async function sendChatMessage(sessionId: string, message: string) {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
   });
-  if (!res.ok) throw new Error("Failed to send message");
+  if (!res.ok) throw new Error('Failed to send message');
   return res.json();
 }
 
 export async function deleteChatMessage(sessionId: string, messageId: number) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to delete message");
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  );
+  if (!res.ok) throw new Error('Failed to delete message');
   return res.json();
 }
 
-export async function reportChatMessage(sessionId: string, messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error("Failed to report message");
+export async function reportChatMessage(
+  sessionId: string,
+  messageId: number,
+  reason: string
+) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }
+  );
+  if (!res.ok) throw new Error('Failed to report message');
   return res.json();
 }
 
 export async function fetchGlobalChatMessages() {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/global/messages`, {
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!res.ok) throw new Error("Failed to fetch global chat messages");
+  if (!res.ok) throw new Error('Failed to fetch global chat messages');
   return res.json();
 }
 
-export async function reportGlobalChatMessage(messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/global/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error("Failed to report message");
+export async function reportGlobalChatMessage(
+  messageId: number,
+  reason: string
+) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/global/${messageId}/report`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }
+  );
+  if (!res.ok) throw new Error('Failed to report message');
   return res.json();
 }
 
 export async function fetchAATCChatMessages() {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/aatc/messages`, {
-    credentials: "include",
+    credentials: 'include',
   });
-  if (!res.ok) throw new Error("Failed to fetch AATC chat messages");
+  if (!res.ok) throw new Error('Failed to fetch AATC chat messages');
   return res.json();
 }
 
 export async function reportAATCChatMessage(messageId: number, reason: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/aatc/${messageId}/report`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error("Failed to report message");
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/aatc/${messageId}/report`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }
+  );
+  if (!res.ok) throw new Error('Failed to report message');
   return res.json();
 }

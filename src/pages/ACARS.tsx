@@ -865,7 +865,10 @@ NOTES:
               >
                 Create Account Now
               </Button>
-              <Button variant="outline" onClick={() => setShowAccountPrompt(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowAccountPrompt(false)}
+              >
                 Skip for now
               </Button>
             </>

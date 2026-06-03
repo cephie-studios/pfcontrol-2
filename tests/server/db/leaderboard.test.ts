@@ -22,7 +22,10 @@ vi.mock('../../../server/db/users.js', () => ({
   getUserById: vi.fn(),
 }));
 
-import { getUserRank, updateLeaderboard } from '../../../server/db/leaderboard.js';
+import {
+  getUserRank,
+  updateLeaderboard,
+} from '../../../server/db/leaderboard.js';
 
 describe('updateLeaderboard', () => {
   beforeEach(() => {

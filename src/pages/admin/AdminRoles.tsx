@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   MdAdd,
   MdEdit,
@@ -9,16 +9,16 @@ import {
   MdAdminPanelSettings,
   MdDragIndicator,
   MdFilterList,
-} from "react-icons/md";
-import AdminRefreshButton from "../../components/admin/AdminRefreshButton";
-import AdminLayout from "../../components/admin/AdminLayout";
-import AdminModal from "../../components/admin/AdminModal";
-import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminToolbar from "../../components/admin/AdminToolbar";
-import AdminSearchInput from "../../components/admin/AdminSearchInput";
-import AdminStatStrip from "../../components/admin/AdminStatStrip";
-import AdminTable from "../../components/admin/AdminTable";
-import AdminTextInput from "../../components/admin/AdminTextInput";
+} from 'react-icons/md';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminLayout from '../../components/admin/AdminLayout';
+import AdminModal from '../../components/admin/AdminModal';
+import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTable from '../../components/admin/AdminTable';
+import AdminTextInput from '../../components/admin/AdminTextInput';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -27,11 +27,11 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TOOLBAR_HEIGHT,
-} from "../../components/admin/adminConstants";
-import Loader from "../../components/common/Loader";
-import Button from "../../components/common/Button";
-import ErrorScreen from "../../components/common/ErrorScreen";
-import Dropdown from "../../components/common/Dropdown";
+} from '../../components/admin/adminConstants';
+import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import ErrorScreen from '../../components/common/ErrorScreen';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchRoles,
   createRole,
@@ -43,20 +43,20 @@ import {
   updateRolePriorities,
   type Role,
   type UserWithRole,
-} from "../../utils/fetch/admin";
+} from '../../utils/fetch/admin';
 import {
   getIconComponent,
   AVAILABLE_ICONS,
   AVAILABLE_PERMISSIONS,
   PRESET_COLORS,
-} from "../../utils/roles";
+} from '../../utils/roles';
 
 function RoleBadge({ role, compact }: { role: Role; compact?: boolean }) {
   const RoleIcon = getIconComponent(role.icon);
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-md border font-medium ${
-        compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
+        compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs'
       }`}
       style={{
         backgroundColor: `${role.color}18`,
@@ -65,7 +65,7 @@ function RoleBadge({ role, compact }: { role: Role; compact?: boolean }) {
       }}
     >
       <RoleIcon
-        className={compact ? "w-3 h-3" : "w-3.5 h-3.5"}
+        className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'}
         style={{ color: role.color }}
       />
       {role.name}
@@ -107,21 +107,21 @@ export default function AdminRoles() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formDescription, setFormDescription] = useState("");
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
   const [formPermissions, setFormPermissions] = useState<
     Record<string, boolean>
   >({});
-  const [formColor, setFormColor] = useState("#6366F1");
-  const [formIcon, setFormIcon] = useState("Star");
+  const [formColor, setFormColor] = useState('#6366F1');
+  const [formIcon, setFormIcon] = useState('Star');
   const [formPriority, setFormPriority] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [userSearch, setUserSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [userSearch, setUserSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "info";
+    type: 'success' | 'error' | 'info';
   } | null>(null);
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [selectedUserForRole, setSelectedUserForRole] = useState<string | null>(
@@ -151,17 +151,17 @@ export default function AdminRoles() {
         user.username.toLowerCase().includes(q) ||
         user.id.toLowerCase().includes(q);
       if (!matchesSearch) return false;
-      if (roleFilter === "all") return true;
-      if (roleFilter === "no-role") return !user.roles?.length;
+      if (roleFilter === 'all') return true;
+      if (roleFilter === 'no-role') return !user.roles?.length;
       return (
         user.roles?.some((role) => role.id.toString() === roleFilter) ?? false
       );
     });
   }, [users, userSearch, roleFilter]);
 
-  const hasUserFilters = userSearch.trim() !== "" || roleFilter !== "all";
+  const hasUserFilters = userSearch.trim() !== '' || roleFilter !== 'all';
 
-  const btnSize = adminDownsizeButtonSize("sm");
+  const btnSize = adminDownsizeButtonSize('sm');
   const toolbarBtnClass = `shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0`;
 
   useEffect(() => {
@@ -180,27 +180,27 @@ export default function AdminRoles() {
       setUsers(usersData);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch data";
+        err instanceof Error ? err.message : 'Failed to fetch data';
       setError(errorMessage);
-      setToast({ message: errorMessage, type: "error" });
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormName("");
-    setFormDescription("");
+    setFormName('');
+    setFormDescription('');
     setFormPermissions({});
-    setFormColor("#6366F1");
-    setFormIcon("Star");
+    setFormColor('#6366F1');
+    setFormIcon('Star');
     setFormPriority(0);
     setSelectedRole(null);
   };
 
   const handleCreateRole = async () => {
     if (!formName.trim()) {
-      setToast({ message: "Role name is required", type: "error" });
+      setToast({ message: 'Role name is required', type: 'error' });
       return;
     }
     try {
@@ -213,14 +213,14 @@ export default function AdminRoles() {
         icon: formIcon,
         priority: isNaN(formPriority) ? 0 : formPriority,
       });
-      setToast({ message: "Role created successfully", type: "success" });
+      setToast({ message: 'Role created successfully', type: 'success' });
       setShowCreateModal(false);
       resetForm();
       await fetchData();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Failed to create role",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Failed to create role',
+        type: 'error',
       });
     } finally {
       setSubmitting(false);
@@ -229,11 +229,11 @@ export default function AdminRoles() {
 
   const handleEditRole = async () => {
     if (!selectedRole || !formName.trim()) {
-      setToast({ message: "Role name is required", type: "error" });
+      setToast({ message: 'Role name is required', type: 'error' });
       return;
     }
     if (!selectedRole.id || isNaN(selectedRole.id)) {
-      setToast({ message: "Invalid role ID", type: "error" });
+      setToast({ message: 'Invalid role ID', type: 'error' });
       return;
     }
     try {
@@ -246,14 +246,14 @@ export default function AdminRoles() {
         icon: formIcon,
         priority: isNaN(formPriority) ? 0 : formPriority,
       });
-      setToast({ message: "Role updated successfully", type: "success" });
+      setToast({ message: 'Role updated successfully', type: 'success' });
       setShowEditModal(false);
       resetForm();
       await fetchData();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Failed to update role",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Failed to update role',
+        type: 'error',
       });
     } finally {
       setSubmitting(false);
@@ -262,7 +262,7 @@ export default function AdminRoles() {
 
   const handleDeleteRole = async (role: Role) => {
     if (!role.id || isNaN(role.id)) {
-      setToast({ message: "Invalid role ID", type: "error" });
+      setToast({ message: 'Invalid role ID', type: 'error' });
       return;
     }
     if (
@@ -274,12 +274,12 @@ export default function AdminRoles() {
     }
     try {
       await deleteRole(role.id);
-      setToast({ message: "Role deleted successfully", type: "success" });
+      setToast({ message: 'Role deleted successfully', type: 'success' });
       await fetchData();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Failed to delete role",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Failed to delete role',
+        type: 'error',
       });
     }
   };
@@ -287,14 +287,14 @@ export default function AdminRoles() {
   const handleAssignRole = async (userId: string, roleId: number) => {
     try {
       await assignRoleToUser(userId, roleId);
-      setToast({ message: "Role assigned successfully", type: "success" });
+      setToast({ message: 'Role assigned successfully', type: 'success' });
       setShowAddRoleModal(false);
       setSelectedUserForRole(null);
       await fetchData();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Failed to assign role",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Failed to assign role',
+        type: 'error',
       });
     }
   };
@@ -302,12 +302,12 @@ export default function AdminRoles() {
   const handleRemoveRole = async (userId: string, roleId: number) => {
     try {
       await removeRoleFromUser(userId, roleId);
-      setToast({ message: "Role removed successfully", type: "success" });
+      setToast({ message: 'Role removed successfully', type: 'success' });
       await fetchData();
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Failed to remove role",
-        type: "error",
+        message: e instanceof Error ? e.message : 'Failed to remove role',
+        type: 'error',
       });
     }
   };
@@ -315,12 +315,12 @@ export default function AdminRoles() {
   const openEditModal = (role: Role) => {
     setSelectedRole(role);
     setFormName(role.name);
-    setFormDescription(role.description || "");
+    setFormDescription(role.description || '');
     setFormPermissions(role.permissions);
-    setFormColor(role.color || "#6366F1");
-    setFormIcon(role.icon || "Star");
+    setFormColor(role.color || '#6366F1');
+    setFormIcon(role.icon || 'Star');
     setFormPriority(
-      typeof role.priority === "number" && !isNaN(role.priority)
+      typeof role.priority === 'number' && !isNaN(role.priority)
         ? role.priority
         : 0
     );
@@ -357,26 +357,26 @@ export default function AdminRoles() {
         priority: roles.length - index,
       }));
     if (rolePriorities.length === 0) {
-      setToast({ message: "No valid roles to update", type: "error" });
+      setToast({ message: 'No valid roles to update', type: 'error' });
       return;
     }
     try {
       await updateRolePriorities(rolePriorities);
-      setToast({ message: "Role order saved", type: "success" });
+      setToast({ message: 'Role order saved', type: 'success' });
       await fetchData();
     } catch (e) {
       setToast({
         message:
-          e instanceof Error ? e.message : "Failed to update role priorities",
-        type: "error",
+          e instanceof Error ? e.message : 'Failed to update role priorities',
+        type: 'error',
       });
       await fetchData();
     }
   };
 
   const clearUserFilters = () => {
-    setUserSearch("");
-    setRoleFilter("all");
+    setUserSearch('');
+    setRoleFilter('all');
   };
 
   const roleFormFields = (
@@ -407,8 +407,8 @@ export default function AdminRoles() {
                   onClick={() => setFormIcon(iconOption.value)}
                   className={`p-2.5 rounded-xl border transition-colors ${
                     formIcon === iconOption.value
-                      ? "border-blue-600 bg-blue-600/15"
-                      : "border-zinc-700/80 bg-zinc-900/40 hover:border-zinc-600"
+                      ? 'border-blue-600 bg-blue-600/15'
+                      : 'border-zinc-700/80 bg-zinc-900/40 hover:border-zinc-600'
                   }`}
                   title={iconOption.label}
                 >
@@ -428,8 +428,8 @@ export default function AdminRoles() {
                 onClick={() => setFormColor(color)}
                 className={`h-9 rounded-lg border-2 transition-all ${
                   formColor === color
-                    ? "border-white ring-2 ring-white/40"
-                    : "border-transparent"
+                    ? 'border-white ring-2 ring-white/40'
+                    : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color }}
                 title={color}
@@ -487,8 +487,8 @@ export default function AdminRoles() {
                 }
                 className={`shrink-0 w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-colors ${
                   formPermissions[permission.key]
-                    ? "bg-blue-600 border-blue-600"
-                    : "border-zinc-600 hover:border-zinc-500"
+                    ? 'bg-blue-600 border-blue-600'
+                    : 'border-zinc-600 hover:border-zinc-500'
                 }`}
                 aria-pressed={!!formPermissions[permission.key]}
               >
@@ -505,8 +505,8 @@ export default function AdminRoles() {
 
   const roleFilterOptions = useMemo(
     () => [
-      { value: "all", label: "All users" },
-      { value: "no-role", label: "No role" },
+      { value: 'all', label: 'All users' },
+      { value: 'no-role', label: 'No role' },
       ...validRoles.map((role) => ({
         value: role.id.toString(),
         label: role.name,
@@ -560,14 +560,14 @@ export default function AdminRoles() {
           <AdminStatStrip
             columns={4}
             items={[
-              { label: "Roles", value: stats.roleCount },
-              { label: "Users with roles", value: stats.usersWithRoles },
-              { label: "Without role", value: stats.usersWithoutRoles },
-              { label: "Assignments", value: stats.totalAssignments },
+              { label: 'Roles', value: stats.roleCount },
+              { label: 'Users with roles', value: stats.usersWithRoles },
+              { label: 'Without role', value: stats.usersWithoutRoles },
+              { label: 'Assignments', value: stats.totalAssignments },
             ]}
           />
 
-          <div className={adminSectionClass("!mt-0 !pt-0 !border-t-0")}>
+          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
             <p className="text-xs text-zinc-500 mb-3">
               Drag rows to set display priority (top = highest). Changes save on
               drop.
@@ -604,7 +604,7 @@ export default function AdminRoles() {
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={handleDrop}
                         className={`hover:bg-zinc-800/30 ${
-                          draggedId === role.id ? "opacity-60" : ""
+                          draggedId === role.id ? 'opacity-60' : ''
                         }`}
                       >
                         <td className={ADMIN_TD}>
@@ -690,7 +690,7 @@ export default function AdminRoles() {
                           </p>
                         )}
                         <p className="text-xs text-zinc-500 mt-2">
-                          {role.user_count ?? 0} members · priority{" "}
+                          {role.user_count ?? 0} members · priority{' '}
                           {role.priority}
                         </p>
                         <div className="mt-2">
@@ -950,7 +950,7 @@ export default function AdminRoles() {
               variant="primary"
               size={btnSize}
             >
-              {submitting ? "Creating…" : "Create role"}
+              {submitting ? 'Creating…' : 'Create role'}
             </Button>
           </>
         }
@@ -961,7 +961,7 @@ export default function AdminRoles() {
       <AdminModal
         open={showEditModal && !!selectedRole}
         onClose={() => setShowEditModal(false)}
-        title={selectedRole ? `Edit ${selectedRole.name}` : "Edit role"}
+        title={selectedRole ? `Edit ${selectedRole.name}` : 'Edit role'}
         size="xl"
         footer={
           <>
@@ -978,7 +978,7 @@ export default function AdminRoles() {
               variant="primary"
               size={btnSize}
             >
-              {submitting ? "Saving…" : "Save changes"}
+              {submitting ? 'Saving…' : 'Save changes'}
             </Button>
           </>
         }

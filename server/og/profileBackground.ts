@@ -58,7 +58,13 @@ function resolveFilename(
     return { kind: 'local', filePath: localPath };
   }
   // File not found locally — fall back to the hero image.
-  const heroPath = path.join(process.cwd(), 'public', 'assets', 'images', 'hero.webp');
+  const heroPath = path.join(
+    process.cwd(),
+    'public',
+    'assets',
+    'images',
+    'hero.webp'
+  );
   if (fs.existsSync(heroPath)) {
     return { kind: 'local', filePath: heroPath };
   }

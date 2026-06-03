@@ -30,7 +30,10 @@ describe('logAdminAction', () => {
   });
 
   it('returns new audit log id', async () => {
-    mocks.executeTakeFirst.mockResolvedValue({ id: 99, created_at: new Date() });
+    mocks.executeTakeFirst.mockResolvedValue({
+      id: 99,
+      created_at: new Date(),
+    });
 
     const id = await logAdminAction({
       adminId: '1',
