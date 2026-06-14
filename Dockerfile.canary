@@ -33,6 +33,8 @@ RUN npm run generate:developer-docs && npm run build-only -- --mode production
 # Production stage
 FROM node:22-alpine AS production
 
+LABEL org.opencontainers.image.source=https://github.com/cephie-studios/pfcontrol-2
+
 ARG APP_VERSION=2.0.0.0
 ENV APP_VERSION=${APP_VERSION}
 
