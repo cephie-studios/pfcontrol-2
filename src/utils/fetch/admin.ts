@@ -395,7 +395,7 @@ export async function fetchAdminSessions(
 
 export interface EventModeState {
   pfatcEventMode: boolean;
-  aatcEventMode: boolean;
+  aatcEventMode: boolean; // AATC disabled but kept in type for backend compatibility
 }
 
 export async function fetchEventMode(): Promise<EventModeState> {

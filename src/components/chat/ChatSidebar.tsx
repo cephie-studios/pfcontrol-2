@@ -4,8 +4,8 @@ import {
   reportChatMessage,
   fetchGlobalChatMessages,
   reportGlobalChatMessage,
-  fetchAATCChatMessages,
-  reportAATCChatMessage,
+  // fetchAATCChatMessages, // AATC disabled
+  // reportAATCChatMessage, // AATC disabled
 } from '../../utils/fetch/chats';
 import {
   isUserInActiveChat,
@@ -57,7 +57,7 @@ interface ChatSidebarProps {
   station?: string;
   position?: string;
   isPFATC?: boolean;
-  isAdvancedATC?: boolean;
+  // isAdvancedATC?: boolean; // AATC disabled
   unreadSessionCount?: number;
   unreadGlobalCount?: number;
   onVoiceStateChange?: (_inVoice: boolean) => void;
@@ -73,7 +73,7 @@ export default function ChatSidebar({
   station,
   position,
   isPFATC = false,
-  isAdvancedATC = false,
+  // isAdvancedATC = false, // AATC disabled
   unreadSessionCount = 0,
   unreadGlobalCount = 0,
   onVoiceStateChange,
@@ -111,9 +111,10 @@ export default function ChatSidebar({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isAtBottomRef = useRef(true);
 
+  // AATC disabled — 'aatc' tab removed from type; isAdvancedATC always false
   const [activeTab, setActiveTab] = useState<
-    'session' | 'voice' | 'pfatc' | 'aatc'
-  >(sessionId ? 'session' : isAdvancedATC ? 'aatc' : 'pfatc');
+    'session' | 'voice' | 'pfatc' /* | 'aatc' */
+  >(sessionId ? 'session' : 'pfatc');
   const [globalMessages, setGlobalMessages] = useState<GlobalChatMessage[]>([]);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalInput, setGlobalInput] = useState('');
@@ -137,24 +138,16 @@ export default function ChatSidebar({
   > | null>(null);
   const globalPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
   const globalTextareaRef = useRef<HTMLTextAreaElement>(null);
-  // AATC-specific state (separate socket + messages from PFATC)
-  const aatcSocketRef = useRef<ReturnType<
-    typeof createGlobalChatSocket
-  > | null>(null);
-  const aatcPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
-  const [aatcMessages, setAatcMessages] = useState<GlobalChatMessage[]>([]);
-  const [aatcLoading, setAatcLoading] = useState(false);
-  const [aatcInput, setAatcInput] = useState('');
-  const [aatcConnectedUsers, setAatcConnectedUsers] = useState<
-    ConnectedGlobalChatUser[]
-  >([]);
-  const [aatcTypingUsers, setAatcTypingUsers] = useState<Map<string, string>>(
-    new Map()
-  );
-  const aatcTypingTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map()
-  );
-  const lastAatcTypingEmit = useRef(0);
+  // AATC disabled — AATC-specific state commented out
+  // const aatcSocketRef = useRef<ReturnType<typeof createGlobalChatSocket> | null>(null);
+  // const aatcPendingDeleteRef = useRef<GlobalChatMessage | null>(null);
+  // const [aatcMessages, setAatcMessages] = useState<GlobalChatMessage[]>([]);
+  // const [aatcLoading, setAatcLoading] = useState(false);
+  // const [aatcInput, setAatcInput] = useState('');
+  // const [aatcConnectedUsers, setAatcConnectedUsers] = useState<ConnectedGlobalChatUser[]>([]);
+  // const [aatcTypingUsers, setAatcTypingUsers] = useState<Map<string, string>>(new Map());
+  // const aatcTypingTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // const lastAatcTypingEmit = useRef(0);
   const onMentionReceivedRef = useRef(onMentionReceived);
   const [voiceUsers, setVoiceUsers] = useState<VoiceUser[]>([]);
   const [connectionState, setConnectionState] = useState<VoiceConnectionState>({
@@ -470,7 +463,12 @@ export default function ChatSidebar({
     };
   }, [user, station, position, isPFATC]);
 
-  // AATC global chat socket (separate from PFATC)
+  // AATC disabled — AATC global chat socket commented out
+  // useEffect(() => {
+  //   if (!user || !isAdvancedATC) return;
+  //   if (!aatcSocketRef.current) {
+  //     aatcSocketRef.current = createGlobalChatSocket(
+  /* AATC_SOCKET_PLACEHOLDER_START
   useEffect(() => {
     if (!user || !isAdvancedATC) return;
 
@@ -582,6 +580,7 @@ export default function ChatSidebar({
       }
     };
   }, [user, station, position, isAdvancedATC]);
+  AATC_SOCKET_PLACEHOLDER_END */
 
   useEffect(() => {
     if (globalSocketRef.current) {
@@ -591,13 +590,14 @@ export default function ChatSidebar({
         globalSocketRef.current.socket.emit('globalChatClosed');
       }
     }
-    if (aatcSocketRef.current) {
-      if (open && activeTab === 'aatc') {
-        aatcSocketRef.current.socket.emit('globalChatOpened');
-      } else {
-        aatcSocketRef.current.socket.emit('globalChatClosed');
-      }
-    }
+    // AATC disabled — aatcSocketRef open/close removed
+    // if (aatcSocketRef.current) {
+    //   if (open && activeTab === 'aatc') {
+    //     aatcSocketRef.current.socket.emit('globalChatOpened');
+    //   } else {
+    //     aatcSocketRef.current.socket.emit('globalChatClosed');
+    //   }
+    // }
   }, [open, activeTab]);
 
   useEffect(() => {
@@ -614,33 +614,26 @@ export default function ChatSidebar({
           setGlobalLoading(false);
         });
     }
-    if (activeTab === 'aatc' && aatcMessages.length === 0) {
-      setAatcLoading(true);
-      fetchAATCChatMessages()
-        .then((msgs) => {
-          setAatcMessages(msgs);
-          setAatcLoading(false);
-        })
-        .catch(() => {
-          setAatcMessages([]);
-          setAatcLoading(false);
-        });
-    }
-  }, [open, activeTab, globalMessages.length, aatcMessages.length]);
+    // AATC disabled — AATC message fetch removed
+    // if (activeTab === 'aatc' && aatcMessages.length === 0) {
+    //   setAatcLoading(true);
+    //   fetchAATCChatMessages()
+    //     .then((msgs) => { setAatcMessages(msgs); setAatcLoading(false); })
+    //     .catch(() => { setAatcMessages([]); setAatcLoading(false); });
+    // }
+  }, [open, activeTab, globalMessages.length]);
 
-  const isGlobalChat = activeTab === 'pfatc' || activeTab === 'aatc';
+  const isGlobalChat = activeTab === 'pfatc'; // AATC disabled — was: || activeTab === 'aatc'
   const textMessages: ChatListMessage[] =
-    activeTab === 'aatc'
-      ? aatcMessages
-      : isGlobalChat
-        ? globalMessages
-        : messages;
+    // AATC disabled — was: activeTab === 'aatc' ? aatcMessages :
+    isGlobalChat ? globalMessages : messages;
   const textLoading =
-    activeTab === 'aatc' ? aatcLoading : isGlobalChat ? globalLoading : loading;
+    // AATC disabled — was: activeTab === 'aatc' ? aatcLoading :
+    isGlobalChat ? globalLoading : loading;
   const showTextChat =
     (sessionId && activeTab === 'session') ||
-    (isPFATC && activeTab === 'pfatc') ||
-    (isAdvancedATC && activeTab === 'aatc');
+    (isPFATC && activeTab === 'pfatc');
+  // AATC disabled — was: || (isAdvancedATC && activeTab === 'aatc')
 
   useEffect(() => {
     if (chatEndRef.current && isAtBottomRef.current) {
@@ -709,24 +702,17 @@ export default function ChatSidebar({
   };
 
   const sendGlobalMessage = () => {
-    const isAatcTab = activeTab === 'aatc';
-    const socketToUse = isAatcTab
-      ? aatcSocketRef.current
-      : globalSocketRef.current;
-    const inputValue = isAatcTab ? aatcInput : globalInput;
+    // AATC disabled — isAatcTab always false
+    const socketToUse = globalSocketRef.current;
+    const inputValue = globalInput;
     if (!inputValue.trim() || !socketToUse || inputValue.trim().length > 500)
       return;
     socketToUse.socket.emit('globalChatMessage', {
       user,
       message: inputValue.trim(),
     });
-    if (isAatcTab) {
-      setAatcInput('');
-      lastAatcTypingEmit.current = 0;
-    } else {
-      setGlobalInput('');
-      lastGlobalTypingEmit.current = 0;
-    }
+    setGlobalInput('');
+    lastGlobalTypingEmit.current = 0;
   };
 
   async function handleDelete(msgId: number) {
@@ -741,38 +727,28 @@ export default function ChatSidebar({
   }
 
   async function handleGlobalDelete(msgId: number) {
-    const isAatcTab = activeTab === 'aatc';
-    const socketToUse = isAatcTab
-      ? aatcSocketRef.current
-      : globalSocketRef.current;
+    // AATC disabled — isAatcTab always false
+    const socketToUse = globalSocketRef.current;
     if (!socketToUse || !user) return;
 
-    if (isAatcTab) {
-      const messageToDelete = aatcMessages.find((m) => m.id === msgId);
-      if (!messageToDelete) return;
-      aatcPendingDeleteRef.current = messageToDelete;
-      setAatcMessages((prev) => prev.filter((m) => m.id !== msgId));
-    } else {
-      const messageToDelete = globalMessages.find((m) => m.id === msgId);
-      if (!messageToDelete) return;
-      globalPendingDeleteRef.current = messageToDelete;
-      setGlobalMessages((prev) => prev.filter((m) => m.id !== msgId));
-    }
+    const messageToDelete = globalMessages.find((m) => m.id === msgId);
+    if (!messageToDelete) return;
+    globalPendingDeleteRef.current = messageToDelete;
+    setGlobalMessages((prev) => prev.filter((m) => m.id !== msgId));
     socketToUse.deleteMessage(msgId, user.userId);
   }
 
   const handleGlobalInputChange = (value: string) => {
-    const isAatcTab = activeTab === 'aatc';
-    if (isAatcTab) setAatcInput(value);
-    else setGlobalInput(value);
+    // AATC disabled — isAatcTab always false
+    setGlobalInput(value);
 
     const cursorPos = globalTextareaRef.current?.selectionStart || 0;
     const result = handleGlobalMentionSuggestions(
       value,
       cursorPos,
       airports,
-      isAatcTab ? aatcMessages : globalMessages,
-      isAatcTab ? aatcConnectedUsers : connectedGlobalChatUsers,
+      globalMessages,
+      connectedGlobalChatUsers,
       sessionUsers,
       user?.userId
     );
@@ -781,30 +757,22 @@ export default function ChatSidebar({
     setShowGlobalSuggestions(result.shouldShow);
     setSelectedGlobalSuggestionIndex(result.shouldShow ? 0 : -1);
 
-    const socketToUse = isAatcTab
-      ? aatcSocketRef.current
-      : globalSocketRef.current;
-    const lastEmitRef = isAatcTab ? lastAatcTypingEmit : lastGlobalTypingEmit;
+    const socketToUse = globalSocketRef.current;
     if (value && socketToUse && user) {
       const now = Date.now();
-      if (now - lastEmitRef.current > 2000) {
-        lastEmitRef.current = now;
+      if (now - lastGlobalTypingEmit.current > 2000) {
+        lastGlobalTypingEmit.current = now;
         socketToUse.sendTyping(user.username);
       }
     }
   };
 
   const insertGlobalMention = (value: string) => {
-    const isAatcTab = activeTab === 'aatc';
+    // AATC disabled — isAatcTab always false
     const cursorPos = globalTextareaRef.current?.selectionStart || 0;
-    const result = insertMentionIntoText(
-      isAatcTab ? aatcInput : globalInput,
-      cursorPos,
-      value
-    );
+    const result = insertMentionIntoText(globalInput, cursorPos, value);
 
-    if (isAatcTab) setAatcInput(result.newText);
-    else setGlobalInput(result.newText);
+    setGlobalInput(result.newText);
     setShowGlobalSuggestions(false);
     setSelectedGlobalSuggestionIndex(-1);
 
@@ -822,7 +790,9 @@ export default function ChatSidebar({
   const handleComposerKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    if (activeTab === 'pfatc' || activeTab === 'aatc') {
+    if (
+      activeTab === 'pfatc' /* AATC disabled — was: || activeTab === 'aatc' */
+    ) {
       const hasSuggestions =
         showGlobalSuggestions && globalSuggestions.length > 0;
 
@@ -915,14 +885,8 @@ export default function ChatSidebar({
 
     try {
       if (reportingGlobalMessage) {
-        if (activeTab === 'aatc') {
-          await reportAATCChatMessage(reportingMessageId, reportReason.trim());
-        } else {
-          await reportGlobalChatMessage(
-            reportingMessageId,
-            reportReason.trim()
-          );
-        }
+        // AATC disabled — was: if (activeTab === 'aatc') { await reportAATCChatMessage(...) } else { ... }
+        await reportGlobalChatMessage(reportingMessageId, reportReason.trim());
       } else {
         await reportChatMessage(
           sessionId,
@@ -944,7 +908,9 @@ export default function ChatSidebar({
     if (open) {
       if (activeTab === 'session') {
         setUnreadSessionMentions([]);
-      } else if (activeTab === 'pfatc' || activeTab === 'aatc') {
+      } else if (
+        activeTab === 'pfatc' /* AATC disabled — was: || activeTab === 'aatc' */
+      ) {
         setUnreadGlobalMentions([]);
       }
     }
@@ -1032,7 +998,7 @@ export default function ChatSidebar({
     }
   }, [userVolumes]);
 
-  type SidebarTabId = 'session' | 'voice' | 'pfatc' | 'aatc';
+  type SidebarTabId = 'session' | 'voice' | 'pfatc'; // AATC disabled — was: | 'aatc'
 
   const sidebarTabs = useMemo(() => {
     const items: SidebarTabId[] = [];
@@ -1040,9 +1006,9 @@ export default function ChatSidebar({
       items.push('session', 'voice');
     }
     if (isPFATC) items.push('pfatc');
-    if (isAdvancedATC) items.push('aatc');
+    // AATC disabled — if (isAdvancedATC) items.push('aatc');
     return items;
-  }, [sessionId, isPFATC, isAdvancedATC]);
+  }, [sessionId, isPFATC]);
 
   const activeTabIndex = Math.max(
     0,
@@ -1060,13 +1026,13 @@ export default function ChatSidebar({
       <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
         <div className="flex items-center gap-3">
           <span className="font-extrabold text-xl text-blue-300">
-            {activeTab === 'session'
-              ? 'Session Chat'
-              : activeTab === 'voice'
-                ? 'Voice Chat'
-                : activeTab === 'aatc'
-                  ? 'AATC Chat'
-                  : 'PFATC Chat'}
+            {
+              activeTab === 'session'
+                ? 'Session Chat'
+                : activeTab === 'voice'
+                  ? 'Voice Chat'
+                  : 'PFATC Chat' /* AATC disabled — was: activeTab === 'aatc' ? 'AATC Chat' : 'PFATC Chat' */
+            }
           </span>
         </div>
         <button
@@ -1077,73 +1043,75 @@ export default function ChatSidebar({
         </button>
       </div>
 
-      {(isPFATC || isAdvancedATC || sessionId) && tabCount > 0 && (
-        <div className="border-b border-blue-800 bg-zinc-900 px-4 pb-3 pt-2">
-          <div className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60">
-            <div
-              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
-              style={{
-                width:
-                  tabCount > 0
-                    ? `calc((100% - 0.5rem) / ${tabCount})`
-                    : undefined,
-                left:
-                  tabCount > 0
-                    ? `calc(0.25rem + ${activeTabIndex} * ((100% - 0.5rem) / ${tabCount}))`
-                    : undefined,
-              }}
-              aria-hidden
-            />
-            {sidebarTabs.map((tabId) => {
-              const isActive = activeTab === tabId;
-              return (
-                <button
-                  key={tabId}
-                  type="button"
-                  onClick={() => setActiveTab(tabId)}
-                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
-                    isActive
-                      ? 'text-white'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  {tabId === 'session' && (
-                    <>
-                      <MessageCircle className="h-4 w-4 shrink-0" />
-                      <span>Session</span>
-                      {unreadSessionCount > 0 && activeTab !== 'session' && (
-                        <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
-                          {unreadSessionCount}
+      {(isPFATC || /* isAdvancedATC || */ sessionId) &&
+        tabCount > 0 /* AATC disabled */ && (
+          <div className="border-b border-blue-800 bg-zinc-900 px-4 pb-3 pt-2">
+            <div className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60">
+              <div
+                className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
+                style={{
+                  width:
+                    tabCount > 0
+                      ? `calc((100% - 0.5rem) / ${tabCount})`
+                      : undefined,
+                  left:
+                    tabCount > 0
+                      ? `calc(0.25rem + ${activeTabIndex} * ((100% - 0.5rem) / ${tabCount}))`
+                      : undefined,
+                }}
+                aria-hidden
+              />
+              {sidebarTabs.map((tabId) => {
+                const isActive = activeTab === tabId;
+                return (
+                  <button
+                    key={tabId}
+                    type="button"
+                    onClick={() => setActiveTab(tabId)}
+                    className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {tabId === 'session' && (
+                      <>
+                        <MessageCircle className="h-4 w-4 shrink-0" />
+                        <span>Session</span>
+                        {unreadSessionCount > 0 && activeTab !== 'session' && (
+                          <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                            {unreadSessionCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {tabId === 'voice' && (
+                      <>
+                        <Phone className="h-4 w-4 shrink-0" />
+                        <span>Voice</span>
+                        <span
+                          className={`flex h-5 min-w-5 items-center justify-center rounded-full pl-px text-xs text-white ${
+                            isInVoice
+                              ? 'border border-green-500'
+                              : 'bg-zinc-700/90'
+                          }`}
+                        >
+                          {voiceUsers.length}
                         </span>
-                      )}
-                    </>
-                  )}
-                  {tabId === 'voice' && (
-                    <>
-                      <Phone className="h-4 w-4 shrink-0" />
-                      <span>Voice</span>
-                      <span
-                        className={`flex h-5 min-w-5 items-center justify-center rounded-full pl-px text-xs text-white ${
-                          isInVoice
-                            ? 'border border-green-500'
-                            : 'bg-zinc-700/90'
-                        }`}
-                      >
-                        {voiceUsers.length}
-                      </span>
-                    </>
-                  )}
-                  {tabId === 'pfatc' && (
-                    <>
-                      <Radio className="h-4 w-4 shrink-0" />
-                      <span>PFATC</span>
-                      {unreadGlobalCount > 0 && activeTab !== 'pfatc' && (
-                        <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
-                          {unreadGlobalCount}
-                        </span>
-                      )}
-                    </>
-                  )}
+                      </>
+                    )}
+                    {tabId === 'pfatc' && (
+                      <>
+                        <Radio className="h-4 w-4 shrink-0" />
+                        <span>PFATC</span>
+                        {unreadGlobalCount > 0 && activeTab !== 'pfatc' && (
+                          <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                            {unreadGlobalCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {/* AATC disabled — AATC tab button removed
                   {tabId === 'aatc' && (
                     <>
                       <Radio className="h-4 w-4 shrink-0" />
@@ -1155,12 +1123,13 @@ export default function ChatSidebar({
                       )}
                     </>
                   )}
-                </button>
-              );
-            })}
+                  */}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {activeTab !== 'voice' && (
         <div className="px-5 py-2 border-b border-blue-800 bg-zinc-900">
@@ -1184,31 +1153,34 @@ export default function ChatSidebar({
                 ))
               ) : (
                 <div className="flex flex-wrap gap-1">
-                  {(activeTab === 'aatc'
-                    ? aatcConnectedUsers
-                    : connectedGlobalChatUsers
-                  ).map((globalUser) => (
-                    <img
-                      key={globalUser.id}
-                      src={
-                        globalUser.avatar || '/assets/app/default/avatar.webp'
-                      }
-                      alt={globalUser.username}
-                      className="w-8 h-8 rounded-full border-2 border-blue-500 shadow-sm"
-                      title={`${globalUser.username} - ${globalUser.station || 'No Station'}`}
-                      onError={(e) => {
-                        e.currentTarget.src = '/assets/app/default/avatar.webp';
-                      }}
-                    />
-                  ))}
-                  {(activeTab === 'aatc'
-                    ? aatcConnectedUsers
-                    : connectedGlobalChatUsers
-                  ).length === 0 && (
-                    <div className="text-xs text-zinc-400">
-                      No controllers online
-                    </div>
-                  )}
+                  {
+                    /* AATC disabled — was: activeTab === 'aatc' ? aatcConnectedUsers : */ connectedGlobalChatUsers.map(
+                      (globalUser) => (
+                        <img
+                          key={globalUser.id}
+                          src={
+                            globalUser.avatar ||
+                            '/assets/app/default/avatar.webp'
+                          }
+                          alt={globalUser.username}
+                          className="w-8 h-8 rounded-full border-2 border-blue-500 shadow-sm"
+                          title={`${globalUser.username} - ${globalUser.station || 'No Station'}`}
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              '/assets/app/default/avatar.webp';
+                          }}
+                        />
+                      )
+                    )
+                  }
+                  {
+                    /* AATC disabled — was: activeTab === 'aatc' ? aatcConnectedUsers : */ connectedGlobalChatUsers.length ===
+                      0 && (
+                      <div className="text-xs text-zinc-400">
+                        No controllers online
+                      </div>
+                    )
+                  }
                 </div>
               )}
             </>
@@ -1265,11 +1237,8 @@ export default function ChatSidebar({
             isGlobalChat={isGlobalChat}
             textareaRef={isGlobalChat ? globalTextareaRef : textareaRef}
             value={
-              activeTab === 'aatc'
-                ? aatcInput
-                : isGlobalChat
-                  ? globalInput
-                  : input
+              // AATC disabled — was: activeTab === 'aatc' ? aatcInput :
+              isGlobalChat ? globalInput : input
             }
             onChange={
               isGlobalChat ? handleGlobalInputChange : handleInputChange
@@ -1278,7 +1247,7 @@ export default function ChatSidebar({
             onSend={isGlobalChat ? sendGlobalMessage : sendMessage}
             sendDisabled={
               isGlobalChat
-                ? !(activeTab === 'aatc' ? aatcInput : globalInput).trim()
+                ? !globalInput.trim() // AATC disabled — was: !(activeTab === 'aatc' ? aatcInput : globalInput).trim()
                 : !input.trim()
             }
             placeholder={
@@ -1299,11 +1268,8 @@ export default function ChatSidebar({
             selectedGlobalSuggestionIndex={selectedGlobalSuggestionIndex}
             insertGlobalMention={insertGlobalMention}
             typingUsers={
-              activeTab === 'aatc'
-                ? aatcTypingUsers
-                : isGlobalChat
-                  ? globalTypingUsers
-                  : sessionTypingUsers
+              // AATC disabled — was: activeTab === 'aatc' ? aatcTypingUsers :
+              isGlobalChat ? globalTypingUsers : sessionTypingUsers
             }
           />
         </div>

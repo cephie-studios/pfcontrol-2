@@ -649,6 +649,7 @@ export default function AdminSessions() {
               />
             </div>
 
+            {/* AATC disabled — AATC event mode toggle hidden
             <div className="flex items-center justify-between p-4 bg-zinc-800 border border-zinc-700/50 rounded-xl">
               <div className="flex items-center gap-4">
                 <div
@@ -681,6 +682,7 @@ export default function AdminSessions() {
                 aria-label="Toggle AATC event mode"
               />
             </div>
+            */}
           </div>
         </div>
       )}

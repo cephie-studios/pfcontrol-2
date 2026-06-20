@@ -42,11 +42,11 @@ async function loadBadge(userId: string): Promise<UserBadgeDto> {
     .executeTakeFirst();
 
   let isPFATCSector = false;
-  let isAATCSector = false;
+  // AATC disabled — isAATCSector always false
   try {
     const roles = await getUserRoles(userId);
     isPFATCSector = hasPermission(roles, 'pfatc_sector');
-    isAATCSector = hasPermission(roles, 'aatc_sector');
+    // isAATCSector = hasPermission(roles, 'aatc_sector');
   } catch {
     // ignore
   }
@@ -62,8 +62,8 @@ async function loadBadge(userId: string): Promise<UserBadgeDto> {
       user?.vatsim_rating_id && user.vatsim_rating_id > 1
     ),
     isPFATCSectorController: isPFATCSector,
-    isAATCSectorController: isAATCSector,
-    isEventController: isPFATCSector || isAATCSector,
+    isAATCSectorController: false, // AATC disabled — was: isAATCSector
+    isEventController: isPFATCSector, // AATC disabled — was: isPFATCSector || isAATCSector
   };
 }
 

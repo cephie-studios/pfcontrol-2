@@ -116,6 +116,7 @@ export default function AcarsSidebar({
                             </div>
                           </div>
                         )}
+                        {/* AATC disabled — AATC Sector Controller badge hidden
                         {controller.isAATCSectorController && (
                           <div className="relative group">
                             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center cursor-pointer">
@@ -136,6 +137,7 @@ export default function AcarsSidebar({
                             </div>
                           </div>
                         )}
+                        */}
                       </div>
                     </div>
                   ))}

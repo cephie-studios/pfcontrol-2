@@ -64,11 +64,12 @@ const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
     path: '/sessions/network/pfatc',
     label: 'GET /sessions/network/pfatc',
   },
-  {
-    scopeId: 'sessions.network_aatc',
-    path: '/sessions/network/aatc',
-    label: 'GET /sessions/network/aatc',
-  },
+  // AATC disabled — infrastructure kept for future re-enablement
+  // {
+  //   scopeId: 'sessions.network_aatc',
+  //   path: '/sessions/network/aatc',
+  //   label: 'GET /sessions/network/aatc',
+  // },
   { scopeId: 'sessions.list', path: '/sessions', label: 'GET /sessions' },
   {
     scopeId: 'sessions.read',

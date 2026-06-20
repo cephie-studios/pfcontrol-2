@@ -79,7 +79,7 @@ router.get('/event-mode', async (_req, res) => {
 
     res.json({
       pfatcEventMode: row?.pfatc_event_mode ?? false,
-      aatcEventMode: row?.aatc_event_mode ?? false,
+      aatcEventMode: false, // AATC disabled — was: row?.aatc_event_mode ?? false
     });
   } catch (error) {
     console.error('Error fetching event mode:', error);
@@ -93,16 +93,16 @@ router.post(
   createAuditLogger('EVENT_MODE_UPDATED'),
   async (req, res) => {
     try {
-      const { pfatcEventMode, aatcEventMode } = req.body as {
+      const { pfatcEventMode /*, aatcEventMode */ } = req.body as {
         pfatcEventMode?: boolean;
-        aatcEventMode?: boolean;
+        // aatcEventMode?: boolean; // AATC disabled
       };
 
       const updates: Record<string, boolean> = {};
       if (typeof pfatcEventMode === 'boolean')
         updates.pfatc_event_mode = pfatcEventMode;
-      if (typeof aatcEventMode === 'boolean')
-        updates.aatc_event_mode = aatcEventMode;
+      // AATC disabled — aatcEventMode update removed
+      // if (typeof aatcEventMode === 'boolean') updates.aatc_event_mode = aatcEventMode;
 
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: 'No valid fields provided' });
@@ -122,7 +122,7 @@ router.post(
 
       res.json({
         pfatcEventMode: row?.pfatc_event_mode ?? false,
-        aatcEventMode: row?.aatc_event_mode ?? false,
+        aatcEventMode: false, // AATC disabled — was: row?.aatc_event_mode ?? false
       });
     } catch (error) {
       console.error('Error updating event mode:', error);

@@ -1003,14 +1003,15 @@ router.get('/airports/:icao/status', async (req, res) => {
         ? req.query.network.toLowerCase()
         : 'pfatc';
 
-    if (network !== 'pfatc' && network !== 'aatc') {
-      return res
-        .status(400)
-        .json({ error: "Invalid network. Must be 'pfatc' or 'aatc'." });
+    // AATC disabled — only pfatc network supported now
+    if (network !== 'pfatc') {
+      return res.status(400).json({
+        error: "Invalid network. Only 'pfatc' is currently supported.",
+      });
     }
 
-    const networkLabel = network === 'aatc' ? 'Advanced ATC' : 'PFATC';
-    const networkCol = network === 'aatc' ? 'is_advanced_atc' : 'is_pfatc';
+    const networkLabel = 'PFATC'; // AATC disabled — was: network === 'aatc' ? 'Advanced ATC' : 'PFATC'
+    const networkCol = 'is_pfatc'; // AATC disabled — was: network === 'aatc' ? 'is_advanced_atc' : 'is_pfatc'
 
     const sessions = await mainDb
       .selectFrom('sessions')

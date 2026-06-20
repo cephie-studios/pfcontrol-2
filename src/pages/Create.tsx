@@ -33,8 +33,7 @@ function networkKindFromModeParam(
   if (!mode) return null;
   const normalized = mode.toLowerCase();
   if (normalized === 'pfatc') return 'pfatc';
-  if (normalized === 'aatc' || normalized === 'advanced_atc')
-    return 'advanced_atc';
+  // AATC disabled — was: if (normalized === 'aatc' || normalized === 'advanced_atc') return 'advanced_atc';
   return null;
 }
 
@@ -206,7 +205,7 @@ export default function Create() {
         airportIcao: selectedAirport,
         activeRunway: selectedRunway,
         isPFATC: effectiveKind === 'pfatc',
-        isAdvancedATC: effectiveKind === 'advanced_atc',
+        isAdvancedATC: false, // AATC disabled — was: effectiveKind === 'advanced_atc'
         createdBy: user?.userId || 'unknown',
         isTutorial: startTutorial,
       });
@@ -235,15 +234,14 @@ export default function Create() {
       }
 
       const showAtisReminder =
-        (effectiveKind === 'pfatc' || effectiveKind === 'advanced_atc') &&
+        effectiveKind === 'pfatc' && // AATC disabled — was: (effectiveKind === 'pfatc' || effectiveKind === 'advanced_atc')
         atisResponse?.atisText;
       if (showAtisReminder) {
         setCreatedSession({
           sessionId: newSession.sessionId,
           accessId: newSession.accessId,
           atisText: atisResponse?.atisText || '',
-          networkSessionKind:
-            effectiveKind === 'advanced_atc' ? 'advanced_atc' : 'pfatc',
+          networkSessionKind: 'pfatc', // AATC disabled — was: effectiveKind === 'advanced_atc' ? 'advanced_atc' : 'pfatc'
         });
         setShowAtisReminderModal(true);
       } else {
@@ -436,6 +434,7 @@ export default function Create() {
                   disabled={startTutorial ? true : false}
                 />
               </div>
+              {/* AATC Network checkbox disabled — AATC network not currently active
               <div className="flex-1">
                 <Checkbox
                   id="advanced-atc-checkbox"
@@ -459,6 +458,7 @@ export default function Create() {
                   disabled={startTutorial ? true : false}
                 />
               </div>
+              */}
             </div>
             {networkKind === 'pfatc' && !startTutorial && (
               <div className="mt-2 p-3 bg-blue-900/40 backdrop-blur-sm border border-blue-500/50 rounded-2xl w-full">
@@ -477,6 +477,7 @@ export default function Create() {
                 </div>
               </div>
             )}
+            {/* AATC info box disabled — AATC network not currently active
             {networkKind === 'advanced_atc' && !startTutorial && (
               <div className="mt-2 p-3 bg-violet-900/40 backdrop-blur-sm border border-violet-500/50 rounded-2xl w-full">
                 <div className="flex items-start space-x-2">
@@ -494,6 +495,7 @@ export default function Create() {
                 </div>
               </div>
             )}
+            */}
           </div>
 
           <div className="border-t border-gray-700 pt-4">

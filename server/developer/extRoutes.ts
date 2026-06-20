@@ -126,51 +126,25 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       },
     ],
   },
-  {
-    scopeId: 'sessions.network_aatc',
-    method: 'GET',
-    pattern: {
-      kind: 'regex',
-      regex: /^\/sessions\/network\/aatc\/[^/]+$/i,
-      pathTemplate: '/sessions/network/aatc/{sessionId}',
-    },
-    responseSummary:
-      'One Advanced ATC (AATC) network session (sanitized). Not limited to sessions you own.',
-    pathParams: [
-      {
-        name: 'sessionId',
-        description: 'Session identifier.',
-        example: 'sess_abc123',
-      },
-    ],
-  },
-  {
-    scopeId: 'sessions.network_aatc',
-    method: 'GET',
-    pattern: { kind: 'exact', path: '/sessions/network/aatc' },
-    responseSummary:
-      'JSON array of Advanced ATC (AATC) network sessions (sanitized; no access_id). Optional airport, page, limit.',
-    queryParams: [
-      {
-        name: 'airport',
-        required: false,
-        description: 'Filter to one airport ICAO (4 letters).',
-        example: 'EGLL',
-      },
-      {
-        name: 'page',
-        required: false,
-        description: 'Page number (default 1).',
-        example: '1',
-      },
-      {
-        name: 'limit',
-        required: false,
-        description: 'Page size (max 100, default 50).',
-        example: '50',
-      },
-    ],
-  },
+  // AATC disabled — sessions.network_aatc routes commented out
+  // {
+  //   scopeId: 'sessions.network_aatc',
+  //   method: 'GET',
+  //   pattern: { kind: 'regex', regex: /^\/sessions\/network\/aatc\/[^/]+$/i, pathTemplate: '/sessions/network/aatc/{sessionId}' },
+  //   responseSummary: 'One Advanced ATC (AATC) network session.',
+  //   pathParams: [{ name: 'sessionId', description: 'Session identifier.', example: 'sess_abc123' }],
+  // },
+  // {
+  //   scopeId: 'sessions.network_aatc',
+  //   method: 'GET',
+  //   pattern: { kind: 'exact', path: '/sessions/network/aatc' },
+  //   responseSummary: 'JSON array of Advanced ATC (AATC) network sessions.',
+  //   queryParams: [
+  //     { name: 'airport', required: false, description: 'Filter to one airport ICAO (4 letters).', example: 'EGLL' },
+  //     { name: 'page', required: false, description: 'Page number (default 1).', example: '1' },
+  //     { name: 'limit', required: false, description: 'Page size (max 100, default 50).', example: '50' },
+  //   ],
+  // },
   {
     scopeId: 'flights.read',
     method: 'GET',

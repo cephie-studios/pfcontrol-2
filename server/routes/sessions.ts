@@ -75,7 +75,14 @@ router.post(
       }
 
       const pfatc = Boolean(isPFATC);
-      const advancedAtc = Boolean(isAdvancedATC);
+      const advancedAtc = false; // AATC disabled — was: Boolean(isAdvancedATC)
+      if (isAdvancedATC) {
+        return res.status(400).json({
+          error: 'Network unavailable',
+          message:
+            'The Advanced ATC (AATC) network is not currently available.',
+        });
+      }
       if (pfatc && advancedAtc) {
         return res.status(400).json({
           error: 'Invalid session type',
@@ -84,7 +91,7 @@ router.post(
         });
       }
 
-      // Check event mode restrictions for PFATC / Advanced ATC sessions
+      // Check event mode restrictions for PFATC sessions
       if ((pfatc || advancedAtc) && !isAdmin(createdBy)) {
         const eventModeRow = await mainDb
           .selectFrom('app_settings')
@@ -102,13 +109,11 @@ router.post(
           return p?.pfatc_sector === true;
         });
 
-        const hasAatcSector = userRolesForEvent.some((r) => {
-          const p =
-            typeof r.permissions === 'string'
-              ? JSON.parse(r.permissions)
-              : r.permissions;
-          return p?.aatc_sector === true;
-        });
+        // AATC disabled — aatc_sector check removed
+        // const hasAatcSector = userRolesForEvent.some((r) => {
+        //   const p = typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
+        //   return p?.aatc_sector === true;
+        // });
 
         if (pfatc && eventModeRow?.pfatc_event_mode && !hasPfatcSector) {
           return res.status(403).json({
@@ -118,13 +123,10 @@ router.post(
           });
         }
 
-        if (advancedAtc && eventModeRow?.aatc_event_mode && !hasAatcSector) {
-          return res.status(403).json({
-            error: 'Event mode active',
-            message:
-              'AATC event mode is active. Only AATC Event Controllers can create Advanced ATC sessions.',
-          });
-        }
+        // AATC disabled — aatc event mode check removed
+        // if (advancedAtc && eventModeRow?.aatc_event_mode && !hasAatcSector) {
+        //   return res.status(403).json({ error: 'Event mode active', message: 'AATC event mode is active.' });
+        // }
       }
 
       const userSessions = await getSessionsByUser(createdBy);
@@ -141,7 +143,7 @@ router.post(
                 typeof role.permissions === 'string'
                   ? JSON.parse(role.permissions)
                   : role.permissions;
-              return p?.pfatc_sector === true || p?.aatc_sector === true;
+              return p?.pfatc_sector === true; // AATC disabled — was: || p?.aatc_sector === true
             })()
         );
       const maxSessions = isTester ? 100 : 50;
