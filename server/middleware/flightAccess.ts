@@ -35,24 +35,18 @@ export async function isPFATCSectorController(
   }
 }
 
-/** Check if user can edit AATC session flights (aatc_sector permission) */
-export async function isAATCSectorController(userId: string): Promise<boolean> {
-  try {
-    const userRoles = await getUserRoles(userId);
-    return hasPermission(userRoles, 'aatc_sector');
-  } catch {
-    return false;
-  }
+/** AATC disabled — isAATCSectorController always returns false */
+export async function isAATCSectorController(
+  _userId: string
+): Promise<boolean> {
+  return false; // AATC disabled — was: hasPermission(userRoles, 'aatc_sector')
 }
 
 /** Legacy alias — kept for websocket compatibility */
 export async function isEventController(userId: string): Promise<boolean> {
   try {
     const userRoles = await getUserRoles(userId);
-    return (
-      hasPermission(userRoles, 'pfatc_sector') ||
-      hasPermission(userRoles, 'aatc_sector')
-    );
+    return hasPermission(userRoles, 'pfatc_sector'); // AATC disabled — was: || hasPermission(userRoles, 'aatc_sector')
   } catch {
     return false;
   }
@@ -96,10 +90,10 @@ export async function requireFlightAccess(
       return next();
     }
 
-    // AATC Sector Controller can edit flights in Advanced ATC sessions
-    if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc) {
-      return next();
-    }
+    // AATC disabled — AATC Sector Controller check removed
+    // if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc) {
+    //   return next();
+    // }
 
     const accessId = req.query.accessId || req.body.accessId;
     if (accessId && accessId === session.access_id) {
@@ -145,8 +139,7 @@ export async function canModifySession(
 
     if (hasPermission(userRoles, 'pfatc_sector') && session.is_pfatc)
       return true;
-    if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc)
-      return true;
+    // AATC disabled — if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc) return true;
 
     if (accessId && accessId === session.access_id) return true;
     if (userId === session.created_by) return true;

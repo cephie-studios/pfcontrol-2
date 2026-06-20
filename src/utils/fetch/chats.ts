@@ -75,24 +75,25 @@ export async function reportGlobalChatMessage(
   return res.json();
 }
 
-export async function fetchAATCChatMessages() {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/aatc/messages`, {
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('Failed to fetch AATC chat messages');
-  return res.json();
-}
-
-export async function reportAATCChatMessage(messageId: number, reason: string) {
-  const res = await apiFetch(
-    `${API_BASE_URL}/api/chats/aatc/${messageId}/report`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-    }
-  );
-  if (!res.ok) throw new Error('Failed to report message');
-  return res.json();
-}
+// AATC disabled — infrastructure kept for future re-enablement
+// export async function fetchAATCChatMessages() {
+//   const res = await apiFetch(`${API_BASE_URL}/api/chats/aatc/messages`, {
+//     credentials: 'include',
+//   });
+//   if (!res.ok) throw new Error('Failed to fetch AATC chat messages');
+//   return res.json();
+// }
+//
+// export async function reportAATCChatMessage(messageId: number, reason: string) {
+//   const res = await apiFetch(
+//     `${API_BASE_URL}/api/chats/aatc/${messageId}/report`,
+//     {
+//       method: 'POST',
+//       credentials: 'include',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ reason }),
+//     }
+//   );
+//   if (!res.ok) throw new Error('Failed to report message');
+//   return res.json();
+// }

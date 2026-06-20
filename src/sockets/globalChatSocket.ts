@@ -46,7 +46,7 @@ export function createGlobalChatSocket(
   onAirportMention?: (mention: GlobalChatMention) => void,
   onConnectedGlobalChatUsers?: (users: ConnectedGlobalChatUser[]) => void,
   onUserTyping?: (data: { userId: string; username: string }) => void,
-  networkKind: 'pfatc' | 'aatc' = 'pfatc'
+  networkKind: 'pfatc' /* | 'aatc' */ = 'pfatc' // AATC disabled
 ) {
   const socket = io(SOCKET_URL, {
     withCredentials: true,

@@ -236,8 +236,10 @@ router.post('/:sessionId/:messageId/report', requireAuth, async (req, res) => {
   }
 });
 
-// GET: /api/chats/aatc/messages - Fetch AATC global chat messages (last 30 minutes)
-router.get('/aatc/messages', requireAuth, async (req, res) => {
+// AATC disabled — GET /api/chats/aatc/messages route commented out
+// router.get('/aatc/messages', requireAuth, async (req, res) => {
+/* AATC_MESSAGES_ROUTE_START
+router.get('/aatc/messages_DISABLED', requireAuth, async (req, res) => {
   try {
     const messages = await mainDb
       .selectFrom('global_chat')
@@ -313,9 +315,11 @@ router.get('/aatc/messages', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch AATC chat messages' });
   }
 });
+AATC_MESSAGES_ROUTE_END */
 
-// POST: /api/chats/aatc/:messageId/report - Report an AATC global chat message
-router.post('/aatc/:messageId/report', requireAuth, async (req, res) => {
+// AATC disabled — POST /api/chats/aatc/:messageId/report route commented out
+/* AATC_REPORT_ROUTE_START
+router.post('/aatc/:messageId/report_DISABLED', requireAuth, async (req, res) => {
   try {
     const { reason } = req.body;
     if (typeof reason !== 'string' || reason.length > 500) {
@@ -338,5 +342,6 @@ router.post('/aatc/:messageId/report', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to report message' });
   }
 });
+AATC_REPORT_ROUTE_END */
 
 export default router;

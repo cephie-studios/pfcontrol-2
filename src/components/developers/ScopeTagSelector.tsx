@@ -41,7 +41,7 @@ const SCOPE_ICONS: Record<string, LucideIcon> = {
   'data.find_route': Route,
   'data.airport_status': Activity,
   'sessions.network_pfatc': Network,
-  'sessions.network_aatc': Network,
+  // 'sessions.network_aatc': Network, // AATC disabled
   'sessions.list': List,
   'sessions.create': Plus,
   'sessions.read': Eye,

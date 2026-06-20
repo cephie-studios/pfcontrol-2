@@ -75,12 +75,12 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     description:
       'GET /sessions/network/pfatc — list PFATC network sessions worldwide (sanitized). Optional GET /sessions/network/pfatc/{sessionId} for one row. No access_id or ATIS.',
   },
-  {
-    id: 'sessions.network_aatc',
-    label: 'AATC sessions',
-    description:
-      'GET /sessions/network/aatc — list Advanced ATC (AATC) network sessions worldwide (sanitized). Optional GET /sessions/network/aatc/{sessionId}. No access_id or ATIS.',
-  },
+  // AATC disabled — sessions.network_aatc scope commented out
+  // {
+  //   id: 'sessions.network_aatc',
+  //   label: 'AATC sessions',
+  //   description: 'GET /sessions/network/aatc — list Advanced ATC (AATC) network sessions worldwide.',
+  // },
   {
     id: 'sessions.list',
     label: 'List my sessions',

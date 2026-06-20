@@ -18,7 +18,7 @@ import {
 } from '../utils/sanitization.js';
 import {
   isPFATCSectorController,
-  isAATCSectorController,
+  // isAATCSectorController, // AATC disabled
 } from '../middleware/flightAccess.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { logFlightAction } from '../db/flightLogs.js';
@@ -66,16 +66,15 @@ export function setupOverviewWebsocket(
       socket.handshake.query.isEventController === 'true';
 
     if (isEventControllerFlag && userId) {
-      const [canPfatc, canAatc] = await Promise.all([
-        isPFATCSectorController(userId),
-        isAATCSectorController(userId),
-      ]);
+      const canPfatc = await isPFATCSectorController(userId);
+      // AATC disabled — canAatc always false
+      const canAatc = false; // was: await isAATCSectorController(userId)
 
       if (canPfatc || canAatc) {
         eventControllerClients.add(socket.id);
         socket.data.isEventController = true;
         socket.data.canEditPfatc = canPfatc;
-        socket.data.canEditAatc = canAatc;
+        socket.data.canEditAatc = false; // AATC disabled
         socket.data.userId = userId;
         socket.data.username =
           (socket.handshake.query.username as string) || 'Unknown';
@@ -133,11 +132,12 @@ export function setupOverviewWebsocket(
             });
             return;
           }
-          if (session.is_advanced_atc && !socket.data.canEditAatc) {
+          // AATC disabled — AATC flight editing blocked entirely
+          if (session.is_advanced_atc) {
             socket.emit('flightError', {
               action: 'update',
               flightId,
-              error: 'Not authorized to edit AATC flights',
+              error: 'Advanced ATC (AATC) network is not currently available',
             });
             return;
           }
@@ -322,11 +322,12 @@ export function setupOverviewWebsocket(
             });
             return;
           }
-          if (session.is_advanced_atc && !socket.data.canEditAatc) {
+          // AATC disabled — block AATC contact messages
+          if (session.is_advanced_atc) {
             socket.emit('flightError', {
               action: 'contactMe',
               flightId,
-              error: 'Not authorized for AATC sessions',
+              error: 'Advanced ATC (AATC) network is not currently available',
             });
             return;
           }

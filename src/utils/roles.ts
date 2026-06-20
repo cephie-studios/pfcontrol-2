@@ -88,12 +88,13 @@ export const AVAILABLE_PERMISSIONS = [
     description:
       'Edit flights across all PFATC network sessions during events and create PFATC sessions in event mode',
   },
-  {
-    key: 'aatc_sector',
-    label: 'AATC Sector Controller',
-    description:
-      'Edit flights across all Advanced ATC sessions during events and create AATC sessions in event mode',
-  },
+  // AATC disabled — infrastructure kept for future re-enablement
+  // {
+  //   key: 'aatc_sector',
+  //   label: 'AATC Sector Controller',
+  //   description:
+  //     'Edit flights across all Advanced ATC sessions during events and create AATC sessions in event mode',
+  // },
 ];
 
 export const AVAILABLE_ICONS = [

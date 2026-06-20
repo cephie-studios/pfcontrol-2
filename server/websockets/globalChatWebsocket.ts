@@ -13,7 +13,7 @@ import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 const activeGlobalChatUsers = new Map<string, Set<string>>([
   ['pfatc', new Set()],
-  ['aatc', new Set()],
+  // ['aatc', new Set()], // AATC disabled
 ]);
 const connectedGlobalChatUsers = new Map<
   string,
@@ -30,7 +30,7 @@ const connectedGlobalChatUsers = new Map<
   >
 >([
   ['pfatc', new Map()],
-  ['aatc', new Map()],
+  // ['aatc', new Map()], // AATC disabled
 ]);
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
 
@@ -155,9 +155,13 @@ export function setupGlobalChatWebsocket(
     const rawNetworkKind = Array.isArray(socket.handshake.query.networkKind)
       ? socket.handshake.query.networkKind[0]
       : socket.handshake.query.networkKind;
-    const networkKind: 'pfatc' | 'aatc' =
-      rawNetworkKind === 'aatc' ? 'aatc' : 'pfatc';
-    const roomName = networkKind === 'aatc' ? 'aatc-chat' : 'global-chat';
+    // AATC disabled — force all connections to pfatc, reject aatc
+    const networkKind = 'pfatc' as const; // was: rawNetworkKind === 'aatc' ? 'aatc' : 'pfatc'
+    if (rawNetworkKind === 'aatc') {
+      socket.disconnect(true);
+      return;
+    }
+    const roomName = 'global-chat'; // was: networkKind === 'aatc' ? 'aatc-chat' : 'global-chat'
 
     if (!userId) {
       socket.disconnect(true);

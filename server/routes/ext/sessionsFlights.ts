@@ -162,7 +162,21 @@ router.get('/network/pfatc/:sessionId', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/network/aatc', async (req: Request, res: Response) => {
+// AATC disabled — /network/aatc routes return 404
+router.get('/network/aatc', async (_req: Request, res: Response) => {
+  res
+    .status(404)
+    .json({ error: 'The AATC network is not currently available.' });
+});
+
+router.get('/network/aatc/:sessionId', async (_req: Request, res: Response) => {
+  res
+    .status(404)
+    .json({ error: 'The AATC network is not currently available.' });
+});
+
+/* AATC_ROUTES_START — uncomment to re-enable
+router.get('/network/aatc_DISABLED', async (req: Request, res: Response) => {
   try {
     extCtx(req);
     const { limit, offset } = parsePublicDirectoryPagination(req);
@@ -183,7 +197,7 @@ router.get('/network/aatc', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/network/aatc/:sessionId', async (req: Request, res: Response) => {
+router.get('/network/aatc_DISABLED/:sessionId', async (req: Request, res: Response) => {
   try {
     extCtx(req);
     let sid: string;
@@ -200,6 +214,7 @@ router.get('/network/aatc/:sessionId', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to load session' });
   }
 });
+AATC_ROUTES_END */
 
 // 404 for missing or sessions the key owner did not create (no enumeration).
 async function loadOwnedSessionOr404(

@@ -232,19 +232,18 @@ export default function PFATCFlights() {
     user?.rolePermissions?.['pfatc_sector'] || user?.isAdmin
   );
 
-  const isAATCSectorController = Boolean(
-    user?.rolePermissions?.['aatc_sector'] || user?.isAdmin
-  );
+  // AATC disabled — isAATCSectorController always false
+  const isAATCSectorController = false; // was: Boolean(user?.rolePermissions?.['aatc_sector'] || user?.isAdmin)
 
   // Combined — used for showing toolbar controls and connecting the overview socket
-  const isEventController = isPFATCSectorController || isAATCSectorController;
+  const isEventController = isPFATCSectorController; // AATC disabled — was: || isAATCSectorController
 
   const canEditFlight = (flight: {
     sessionIsPFATC?: boolean;
     sessionIsAdvancedATC?: boolean;
   }) => {
     if (isPFATCSectorController && flight.sessionIsPFATC) return true;
-    if (isAATCSectorController && flight.sessionIsAdvancedATC) return true;
+    // AATC disabled — if (isAATCSectorController && flight.sessionIsAdvancedATC) return true;
     return false;
   };
 
@@ -1314,6 +1313,7 @@ export default function PFATCFlights() {
                 </span>
               </div>
             )}
+            {/* AATC disabled — isAATCSectorController badge hidden
             {isAATCSectorController && (
               <div className="px-6 py-1.5 bg-purple-600/20 backdrop-blur-md border border-purple-500/30 rounded-full shadow-lg">
                 <span className="text-purple-400 text-sm font-semibold tracking-wider">
@@ -1321,6 +1321,7 @@ export default function PFATCFlights() {
                 </span>
               </div>
             )}
+            */}
           </div>
         </div>
       </div>
@@ -1461,7 +1462,7 @@ export default function PFATCFlights() {
                     options={[
                       { label: 'All session types', value: 'all' },
                       { label: 'PFATC Network', value: 'pfatc' },
-                      { label: 'Advanced ATC', value: 'advanced_atc' },
+                      // AATC disabled: { label: 'Advanced ATC', value: 'advanced_atc' },
                     ]}
                     value={networkSessionFilter}
                     onChange={(v) =>
@@ -1577,12 +1578,14 @@ export default function PFATCFlights() {
                             </td>
                             <td className="px-3 py-4">
                               <div className="flex items-center gap-2">
+                                {/* AATC disabled — Advanced ATC dot hidden
                                 {flight.sessionIsAdvancedATC ? (
                                   <span
                                     title="Advanced ATC"
                                     className="w-2 h-2 rounded-full bg-purple-500 shrink-0"
                                   />
-                                ) : flight.sessionIsPFATC ? (
+                                ) : */}
+                                {flight.sessionIsPFATC ? (
                                   <span
                                     title="PFATC Network"
                                     className="w-2 h-2 rounded-full bg-blue-500 shrink-0"
@@ -2052,7 +2055,7 @@ export default function PFATCFlights() {
           selectedStation ? selectedStation.split('_').slice(1).join('_') : ''
         }
         isPFATC={isPFATCSectorController}
-        isAdvancedATC={isAATCSectorController}
+        // isAdvancedATC={isAATCSectorController} // AATC disabled
         unreadSessionCount={0}
         unreadGlobalCount={0}
       />
