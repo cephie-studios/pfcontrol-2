@@ -815,7 +815,7 @@ router.get('/findRoute', async (req, res) => {
       .json({ error: 'Missing required query parameters: from, to' });
   }
 
-  const cacheKey = prefixKey(`routev2:${from}:${to}:${runway}`);
+  const cacheKey = prefixKey(`routev3:${from}:${to}:${runway}`);
 
   try {
     const cachedRoute = await redisConnection.get(cacheKey);
@@ -853,7 +853,6 @@ router.get('/findRoute', async (req, res) => {
 
     let sid: string | undefined;
     let star: string | undefined;
-    let isRadarVectors = false;
 
     if (depAirport?.departures) {
       // Use the supplied runway if it matches a key, otherwise fall back to the first available
@@ -863,9 +862,10 @@ router.get('/findRoute', async (req, res) => {
           : Object.keys(depAirport.departures)[0];
       if (runwayKey) {
         const procedure = depAirport.departures[runwayKey][to];
-        if (procedure === 'RADAR VECTORS') {
-          isRadarVectors = true;
-        } else if (procedure) {
+        // 'RADAR VECTORS' means no published SID off this runway. The enroute
+        // segment and the STAR are unaffected, so leave sid undefined and route
+        // normally.
+        if (procedure && procedure !== 'RADAR VECTORS') {
           sid = procedure;
         }
       }
@@ -880,7 +880,7 @@ router.get('/findRoute', async (req, res) => {
       }
     }
 
-    // Calculate bearing for odd/even FL recommendation (shared by both paths)
+    // Calculate bearing for odd/even FL recommendation
     const depPoint = allPoints.find(
       (p) => p.name === from && p.type === 'AIRPORT'
     );
@@ -894,38 +894,6 @@ router.get('/findRoute', async (req, res) => {
       let bearing = Math.atan2(dx, dy) * (180 / Math.PI);
       if (bearing < 0) bearing += 360;
       flParity = bearing < 180 ? 'ODD' : 'EVEN';
-    }
-
-    // Radar vectors: skip pathfinding, return direct route
-    if (isRadarVectors) {
-      const path = [depPoint, arrPoint].filter(Boolean);
-      const routeData = {
-        path,
-        distance: 0,
-        route: `${from} ${to}`,
-        sid: undefined,
-        star: undefined,
-        flParity,
-      };
-
-      try {
-        await redisConnection.set(
-          cacheKey,
-          JSON.stringify(routeData),
-          'EX',
-          DATA_STATIC_REDIS_SEC
-        );
-      } catch (error) {
-        if (error instanceof Error) {
-          console.warn('[Redis] Failed to set cache for route:', error.message);
-        }
-      }
-
-      applyPublicCache(res, {
-        browserMaxAge: DATA_STATIC_BROWSER_SEC,
-        edgeMaxAge: DATA_STATIC_EDGE_SEC,
-      });
-      return res.json(routeData);
     }
 
     // Extract exit/entry fixes from SID/STAR names (e.g. KATOK2T → KATOK)
@@ -947,14 +915,10 @@ router.get('/findRoute', async (req, res) => {
       endFix
     );
 
-    if (!success) {
-      return res.status(404).json({ error: 'Route not found' });
-    }
-
     // Build formatted route string: DEP SID ...waypoints... STAR ARR
-    const midWaypoints = path
-      .filter((p) => p.type !== 'AIRPORT')
-      .map((p) => p.name);
+    const midWaypoints = success
+      ? path.filter((p) => p.type !== 'AIRPORT').map((p) => p.name)
+      : [];
 
     const routeParts: string[] = [from];
     if (sid) routeParts.push(sid);
@@ -964,7 +928,25 @@ router.get('/findRoute', async (req, res) => {
 
     const route = routeParts.join(' ');
 
-    const routeData = { path, distance, route, sid, star, flParity };
+    let routeData;
+    if (success) {
+      routeData = { path, distance, route, sid, star, flParity };
+    } else if (depPoint && arrPoint) {
+      // No enroute path exists — the airports are too close together to satisfy
+      // the waypoint minimum, or neither has a usable fix in range. Route them
+      // direct rather than failing outright.
+      routeData = {
+        path: [depPoint, arrPoint],
+        distance: Math.hypot(arrPoint.x - depPoint.x, arrPoint.y - depPoint.y),
+        route,
+        sid,
+        star,
+        flParity,
+      };
+    } else {
+      // An endpoint is missing from the waypoint graph, so nothing to route.
+      return res.status(404).json({ error: 'Route not found' });
+    }
 
     try {
       await redisConnection.set(
