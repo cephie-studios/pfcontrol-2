@@ -26,6 +26,7 @@ import { startStatsFlushing } from './utils/statisticsCache.js';
 import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
+import { securityMiddleware } from './middleware/security.js';
 import { httpErrorHandler } from './middleware/httpErrorHandler.js';
 import {
   applyImmutableAsset,
@@ -134,6 +135,7 @@ if (astroEntryPath) {
 const app = express();
 
 app.set('trust proxy', 1);
+app.use(securityMiddleware);
 app.use(
   cors({
     origin:

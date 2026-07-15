@@ -139,7 +139,7 @@ export default function Footer() {
 
           {/* Quick links */}
           <div className="md:col-span-3 col-span-1 w-full">
-            <div className="bg-zinc-900/40 p-4 w-full">
+            <div className="bg-black p-4 w-full">
               <h3 className="text-white font-medium mb-3">Quick Links</h3>
               <ul className="space-y-2">
                 {quickLinks.map((link) => {
@@ -173,7 +173,7 @@ export default function Footer() {
 
           {/* Legal & Contact */}
           <div className="md:col-span-3 col-span-1 w-full">
-            <div className="bg-zinc-900/40 p-4 w-full">
+            <div className="bg-black p-4 w-full">
               <h3 className="text-white font-medium mb-3">Legal</h3>
               <ul className="space-y-2 mb-3">
                 {legalLinks.map((link) => {

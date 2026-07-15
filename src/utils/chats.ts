@@ -51,8 +51,16 @@ export const formatStationDisplay = (
   return station;
 };
 
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export const renderMessage = (message: string): string => {
-  return message.replace(
+  return escapeHtml(message).replace(
     /@([^\s]+)/g,
     '<span class="text-blue-400 font-semibold">@$1</span>'
   );
