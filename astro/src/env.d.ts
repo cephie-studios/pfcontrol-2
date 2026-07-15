@@ -4,6 +4,12 @@ interface ImportMetaEnv {
   readonly PUBLIC_SITE_URL?: string;
 }
 
+declare namespace App {
+  interface Locals {
+    cspNonce?: string;
+  }
+}
+
 declare module '@app/islands/HomeContent' {
   const HomeContent: () => import('react').JSX.Element;
   export default HomeContent;

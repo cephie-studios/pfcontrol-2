@@ -1,5 +1,7 @@
+import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import type { RequestHandler, Response } from 'express';
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15min
@@ -9,13 +11,25 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const cspNonce: RequestHandler = (_req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+};
+
 const securityMiddleware = [
+  cspNonce,
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          (_req, res) =>
+            `'nonce-${(res as unknown as Response).locals.cspNonce}'`,
+          "'sha256-eIXWvAmxkr251LJZkjniEK5LcPF3NkapbJepohwYRIc='",
+          "'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='",
+        ],
         imgSrc: ["'self'", 'https://cdn.discordapp.com'],
       },
     },

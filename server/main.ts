@@ -227,7 +227,11 @@ app.use((req, res, next) => {
 if (astroHandler) {
   app.use((req, res, next) => {
     if (req.query['tutorial'] === 'true') return next();
-    astroHandler!(req, res, next);
+    (
+      astroHandler as unknown as RequestHandler & {
+        (req: unknown, res: unknown, next: unknown, locals: unknown): void;
+      }
+    )(req, res, next, { cspNonce: res.locals.cspNonce });
   });
 }
 
