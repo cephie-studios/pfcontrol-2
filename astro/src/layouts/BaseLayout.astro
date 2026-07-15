@@ -127,7 +127,11 @@ const twitterDescEffective = twitterDescription ?? ogDescEffective;
 
     {
       structuredBlocks.map((block) => (
-        <script type="application/ld+json" set:html={JSON.stringify(block)} />
+        <script
+          type="application/ld+json"
+          nonce={Astro.locals.cspNonce}
+          set:html={JSON.stringify(block)}
+        />
       ))
     }
 
