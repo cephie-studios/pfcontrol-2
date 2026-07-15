@@ -214,14 +214,13 @@ export default function Home({ standalone = true }: HomeProps) {
         <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
         <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-7xl mx-auto mt-16 md:mt-24 gap-10 md:gap-0 relative z-10">
-          <div className="flex-1 max-w-xl text-center md:text-left md:ml-12">
-            <h1 className="text-5xl sm:text-6xl md:text-[5rem] lg:text-[7rem] font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent leading-tight mb-4">
-              PFControl
+          <div className="flex-1 max-w-5xl text-center md:text-left md:ml-12">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent leading-[1.15] pb-2 mb-4">
+              The safe, free ATC platform for Project Flight
             </h1>
-            <p className="text-base sm:text-xl text-white max-w-lg mx-auto md:mx-0 mb-8 sm:mb-10">
-              The next-generation flight strip platform built for real-time
-              coordination between air traffic controllers with outstanding
-              reliability.
+            <p className="text-base sm:text-xl text-white max-w-xl mx-auto md:mx-0 mb-8 sm:mb-10">
+              Trusted by thousands of controllers. Real-time flight strips with
+              the security and reliability your sessions deserve, free, always.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full">
               <Button
@@ -308,20 +307,19 @@ export default function Home({ standalone = true }: HomeProps) {
       {/* Desktop: interactive scroll showcase */}
       <ProductShowcase />
 
-      <section className="relative py-36 px-2 sm:px-6 bg-black">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 relative z-10">
+      <section className="relative py-36 px-4 sm:px-6 bg-black">
+        <div className="max-w-[100rem] mx-auto relative z-10">
           <h2 className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6 text-center">
             Leaderboard
           </h2>
           <div className="w-16 h-1 bg-blue-500 mx-auto mb-6 mt-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-28 pt-24">
-            {' '}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 pt-20">
             {Object.entries(leaderboard)
               .filter(([key]) => !/chat|message/i.test(key))
               .map(([key, users]) => (
                 <div key={key} className="text-center">
                   <h3
-                    className="text-3xl font-medium bg-gradient-to-r from-blue-200 to-blue-700 bg-clip-text text-transparent mb-12 capitalize"
+                    className="text-2xl sm:text-3xl font-medium bg-gradient-to-r from-blue-200 to-blue-700 bg-clip-text text-transparent mb-12 capitalize"
                     style={{ lineHeight: 1.4 }}
                   >
                     {statTitles[key] ||
@@ -331,11 +329,11 @@ export default function Home({ standalone = true }: HomeProps) {
                         .trim()}
                   </h3>
                   {/* Podium — order: 2nd | 1st | 3rd */}
-                  <div className="flex items-end justify-center gap-4">
+                  <div className="flex items-end justify-center gap-2 sm:gap-3">
                     {[1, 0, 2].map((rank) => {
                       const u = users[rank];
                       if (!u) return null;
-                      const podiumHeights = [80, 52, 36]; // 1st, 2nd, 3rd bar heights (px)
+                      const podiumHeights = [128, 88, 60]; // 1st, 2nd, 3rd step heights (px)
                       const podiumColors = ['#fbbf24', '#c0c0c0', '#ad6823'];
                       const avatarSizes = [
                         'w-24 h-24',
@@ -347,32 +345,40 @@ export default function Home({ standalone = true }: HomeProps) {
                       return (
                         <div
                           key={u.userId}
-                          className="flex flex-col items-center"
+                          className="flex flex-col items-center w-24 sm:w-32"
                         >
                           <div className="relative mb-3">
                             <img
                               src={getDiscordAvatar(u.userId, u.avatar)}
                               alt={u.username}
                               className={`${avatarSizes[rank]} rounded-full border-2 cursor-pointer hover:opacity-90 transition-opacity`}
-                              style={{ borderColor: barColor }}
+                              style={{
+                                borderColor: barColor,
+                                boxShadow:
+                                  rank === 0
+                                    ? `0 0 24px ${barColor}55`
+                                    : 'none',
+                              }}
                               onClick={() =>
                                 (window.location.href = `/user/${u.username}`)
                               }
                             />
-                            <Crown
-                              className="absolute -top-2 -right-1 w-6 h-6 rotate-12"
-                              style={{
-                                color: barColor,
-                                filter:
-                                  'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
-                              }}
-                            />
+                            {rank === 0 && (
+                              <Crown
+                                className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7"
+                                style={{
+                                  color: barColor,
+                                  filter:
+                                    'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                                }}
+                              />
+                            )}
                           </div>
-                          <span className="text-gray-300 text-sm font-medium mb-1 max-w-[90px] truncate text-center">
+                          <span className="text-gray-300 text-sm font-medium mb-1 max-w-[100px] truncate text-center">
                             {u.username}
                           </span>
                           <span
-                            className="font-mono font-bold text-sm mb-2"
+                            className="font-mono font-bold text-sm mb-3"
                             style={{ color: barColor }}
                           >
                             {key === 'total_time_controlling_minutes'
@@ -389,18 +395,20 @@ export default function Home({ standalone = true }: HomeProps) {
                                 })()
                               : u.score}
                           </span>
-                          {/* Podium bar */}
+                          {/* Podium step */}
                           <div
-                            className="w-24 rounded-t-lg flex items-center justify-center"
+                            className="w-full rounded-t-xl bg-gradient-to-b from-zinc-800 to-transparent flex items-center justify-center"
                             style={{
                               height: barHeight,
-                              background: `${barColor}22`,
-                              borderTop: `2px solid ${barColor}55`,
+                              boxShadow:
+                                rank === 0
+                                  ? `0 -8px 32px ${barColor}14`
+                                  : 'none',
                             }}
                           >
                             <span
-                              className="text-2xl font-black"
-                              style={{ color: `${barColor}99` }}
+                              className="text-3xl font-black"
+                              style={{ color: barColor }}
                             >
                               {rank + 1}
                             </span>
@@ -415,8 +423,8 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <section className="relative py-36 px-2 sm:px-6 bg-black">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 text-center mb-24">
+      <section className="relative py-12 pt-42 px-2 sm:px-6 bg-black">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 text-center mb-12">
           <h2
             className="text-4xl sm:text-6xl font-extrabold bg-gradient-to-br from-blue-400 to-blue-900 bg-clip-text text-transparent mb-6"
             style={{ lineHeight: 1.4 }}
