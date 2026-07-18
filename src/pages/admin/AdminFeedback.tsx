@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MdStar, MdMessage, MdDelete, MdPeople } from 'react-icons/md';
+import {
+  MdStar,
+  MdMessage,
+  MdDelete,
+  MdPeople,
+  MdOutlineChatBubbleOutline,
+} from 'react-icons/md';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
@@ -13,6 +19,8 @@ import {
   ADMIN_TOOLBAR_MOBILE_SEARCH,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
   ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
+  ADMIN_SEGMENT_ACTIVE,
+  ADMIN_SEGMENT_INACTIVE,
 } from '../../components/admin/adminConstants';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
@@ -35,6 +43,7 @@ export default function AdminFeedback() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterRating, setFilterRating] = useState<string>('all');
+  const [onlyWithText, setOnlyWithText] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'info';
@@ -76,6 +85,32 @@ export default function AdminFeedback() {
     }
   };
 
+  const parseCategoryRatings = (comment: string | null | undefined) => {
+    if (!comment) return null;
+    const categoryRegex =
+      /UI:\s*(\d+)\/5,\s*Performance:\s*(\d+)\/5,\s*Features:\s*(\d+)\/5,\s*Ease of Use:\s*(\d+)\/5,\s*Overall:\s*(\d+)\/5/;
+    const match = comment.match(categoryRegex);
+
+    if (match) {
+      return {
+        ui: parseInt(match[1]),
+        performance: parseInt(match[2]),
+        features: parseInt(match[3]),
+        easeOfUse: parseInt(match[4]),
+        overall: parseInt(match[5]),
+        additionalComment: comment.split('\n\n')[1] || null,
+      };
+    }
+
+    return null;
+  };
+
+  const feedbackHasText = (item: Feedback) => {
+    const categoryData = parseCategoryRatings(item.comment);
+    if (categoryData) return Boolean(categoryData.additionalComment);
+    return Boolean(item.comment && item.comment.trim().length > 0);
+  };
+
   const filteredFeedback = feedback.filter((item) => {
     const matchesSearch =
       item.username.toLowerCase().includes(search.toLowerCase()) ||
@@ -83,7 +118,8 @@ export default function AdminFeedback() {
         item.comment.toLowerCase().includes(search.toLowerCase()));
     const matchesRating =
       filterRating === 'all' || item.rating.toString() === filterRating;
-    return matchesSearch && matchesRating;
+    const matchesText = !onlyWithText || feedbackHasText(item);
+    return matchesSearch && matchesRating && matchesText;
   });
 
   const handleDeleteFeedback = async (id: number) => {
@@ -119,26 +155,6 @@ export default function AdminFeedback() {
     );
   };
 
-  const parseCategoryRatings = (comment: string | null | undefined) => {
-    if (!comment) return null;
-    const categoryRegex =
-      /UI:\s*(\d+)\/5,\s*Performance:\s*(\d+)\/5,\s*Features:\s*(\d+)\/5,\s*Ease of Use:\s*(\d+)\/5,\s*Overall:\s*(\d+)\/5/;
-    const match = comment.match(categoryRegex);
-
-    if (match) {
-      return {
-        ui: parseInt(match[1]),
-        performance: parseInt(match[2]),
-        features: parseInt(match[3]),
-        easeOfUse: parseInt(match[4]),
-        overall: parseInt(match[5]),
-        additionalComment: comment.split('\n\n')[1] || null,
-      };
-    }
-
-    return null;
-  };
-
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
       <AdminPageHeader
@@ -170,6 +186,19 @@ export default function AdminFeedback() {
             size="sm"
             className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
           />
+          <button
+            type="button"
+            onClick={() => setOnlyWithText((v) => !v)}
+            aria-pressed={onlyWithText}
+            className={`flex items-center justify-center gap-1.5 h-full px-3 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM} ${
+              onlyWithText
+                ? ADMIN_SEGMENT_ACTIVE
+                : `border-2 border-blue-600 bg-gray-800 ${ADMIN_SEGMENT_INACTIVE}`
+            }`}
+          >
+            <MdOutlineChatBubbleOutline size={16} />
+            <span>With text</span>
+          </button>
           <AdminRefreshButton
             onClick={fetchData}
             loading={loading}
