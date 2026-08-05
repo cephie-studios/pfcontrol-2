@@ -13,6 +13,7 @@ declare global {
         keyPrefix: string;
         keyName: string;
         rateLimitPerMinute: number | null;
+        apiVersion?: 1 | 2;
       };
       developerExtStartedAt?: number;
     }

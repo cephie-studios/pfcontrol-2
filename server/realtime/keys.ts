@@ -6,6 +6,7 @@ export const TTL = {
   SESSION_META_SEC: 24 * 60 * 60,
   SESSION_FLIGHTS_SEC: 120,
   OVERVIEW_SNAPSHOT_SEC: 5,
+  DEVELOPER_NETWORK_SNAPSHOT_SEC: 5,
   ARRIVALS_SEC: 60,
   SESSIONS_BY_AIRPORT_SEC: 60,
   FLIGHT_SOURCE_SEC: 24 * 60 * 60,
@@ -22,6 +23,7 @@ export const keys = {
     prefixKey(`flights:session:${sessionId}`),
   overviewSnapshot: () => prefixKey('overview:snapshot'),
   overviewVersion: () => prefixKey('overview:version'),
+  developerNetworkSnapshot: () => prefixKey('developer:network:snapshot'),
   arrivals: (network: 'pfatc' | 'advanced_atc', icao: string) =>
     prefixKey(`arrivals:${network}:${icao.toUpperCase()}`),
   sessionsByAirport: (network: 'pfatc' | 'advanced_atc', icao: string) =>

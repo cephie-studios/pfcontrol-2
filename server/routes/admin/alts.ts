@@ -1,7 +1,10 @@
 import express from 'express';
+import { sql } from 'kysely';
 import { isAdmin } from '../../middleware/admin.js';
 import { mainDb } from '../../db/connection.js';
 import { getUserById } from '../../db/users.js';
+
+const COMMON_SIGNAL_THRESHOLD = 5;
 
 const router = express.Router();
 
@@ -22,6 +25,21 @@ interface BanRecord {
   banned_at: string | null;
 }
 
+interface IpHistoryEntry {
+  hash: string;
+  is_vpn: boolean;
+  first_seen: string;
+  last_seen: string;
+  seen_count: number;
+}
+
+interface FingerprintHistoryEntry {
+  fingerprint_id: string;
+  first_seen: string;
+  last_seen: string;
+  seen_count: number;
+}
+
 interface ClusterMember {
   id: string;
   username: string;
@@ -34,6 +52,10 @@ interface ClusterMember {
   is_vpn: boolean;
   fingerprint_id: string | null;
   ip_hash: string | null;
+  ip_history: IpHistoryEntry[];
+  fingerprint_history: FingerprintHistoryEntry[];
+  common_ip_count: number;
+  common_fingerprint_count: number;
   ban: BanRecord | null;
 }
 
@@ -84,25 +106,104 @@ function scoreLabel(score: number): 'low' | 'medium' | 'high' | 'critical' {
   return 'low';
 }
 
-function computeScore(signals: ClusterSignals, memberCount: number): number {
-  let base = 0;
-  if (signals.shared_fingerprint && signals.shared_ip) base = 0.8;
-  else if (signals.shared_fingerprint) base = 0.55;
-  else base = 0.5; // shared IP alone is a strong signal — raised from 0.35
 
-  if (signals.has_banned_member) base += 0.15;
-  if (signals.young_account_joined_after_ban) base += 0.1;
+const FINGERPRINT_WEIGHT = 1.0;
+const IP_WEIGHT = 0.7;
+const VPN_IP_DISCOUNT = 0.25;
+const PERSISTENCE_FACTOR = 0.15;
+const SIZE_WEIGHT = 0.25;
+const BAN_BONUS = 0.5;
+const EVASION_BONUS = 0.35;
 
-  // More accounts sharing a signal = higher confidence
-  if (memberCount >= 5) base += 0.1;
-  else if (memberCount >= 3) base += 0.05;
+interface SignalContribution {
+  otherCount: number;
+  seenTotal: number;
+  allVpn: boolean;
+}
 
-  if (signals.vpn_overlap) {
-    base -= 0.15;
-    if (!signals.shared_fingerprint) base = Math.min(base, 0.35);
+function clusterSignalContributions(
+  members: ClusterMember[],
+  groups: Map<string, Set<string>>,
+  extractEntries: (
+    m: ClusterMember
+  ) => { hash: string; seen_count: number; is_vpn?: boolean }[]
+): SignalContribution[] {
+  const perHash = new Map<
+    string,
+    { memberIds: Set<string>; seenTotal: number; entryCount: number; vpnCount: number }
+  >();
+
+  for (const m of members) {
+    for (const entry of extractEntries(m)) {
+      if (!perHash.has(entry.hash)) {
+        perHash.set(entry.hash, {
+          memberIds: new Set(),
+          seenTotal: 0,
+          entryCount: 0,
+          vpnCount: 0,
+        });
+      }
+      const stat = perHash.get(entry.hash)!;
+      stat.memberIds.add(m.id);
+      stat.seenTotal += entry.seen_count;
+      stat.entryCount += 1;
+      if (entry.is_vpn) stat.vpnCount += 1;
+    }
   }
 
-  return Math.min(0.99, Math.max(0, base));
+  const contributions: SignalContribution[] = [];
+  for (const [hash, stat] of perHash) {
+    if (stat.memberIds.size < 2) continue; // doesn't actually connect this cluster
+    const globalSize = groups.get(hash)?.size ?? stat.memberIds.size;
+    contributions.push({
+      otherCount: Math.max(1, globalSize - 1),
+      seenTotal: stat.seenTotal,
+      allVpn: stat.entryCount > 0 && stat.vpnCount === stat.entryCount,
+    });
+  }
+  return contributions;
+}
+
+function computeClusterScore(
+  members: ClusterMember[],
+  fpGroups: Map<string, Set<string>>,
+  ipGroups: Map<string, Set<string>>,
+  hasBannedMember: boolean,
+  youngAccountJoinedAfterBan: boolean
+): number {
+  const fpContribs = clusterSignalContributions(members, fpGroups, (m) =>
+    m.fingerprint_history.map((e) => ({
+      hash: e.fingerprint_id,
+      seen_count: e.seen_count,
+    }))
+  );
+  const ipContribs = clusterSignalContributions(members, ipGroups, (m) =>
+    m.ip_history.map((e) => ({
+      hash: e.hash,
+      seen_count: e.seen_count,
+      is_vpn: e.is_vpn,
+    }))
+  );
+
+  let raw = 0;
+  for (const c of fpContribs) {
+    const rarity = 1 / c.otherCount;
+    const persistence = Math.log2(1 + c.seenTotal);
+    raw += FINGERPRINT_WEIGHT * rarity * (1 + PERSISTENCE_FACTOR * persistence);
+  }
+  for (const c of ipContribs) {
+    const rarity = 1 / c.otherCount;
+    const persistence = Math.log2(1 + c.seenTotal);
+    const vpnFactor = c.allVpn ? VPN_IP_DISCOUNT : 1;
+    raw +=
+      IP_WEIGHT * rarity * vpnFactor * (1 + PERSISTENCE_FACTOR * persistence);
+  }
+
+  raw += SIZE_WEIGHT * Math.log2(members.length);
+  if (hasBannedMember) raw += BAN_BONUS;
+  if (youngAccountJoinedAfterBan) raw += EVASION_BONUS;
+
+  return Math.min(0.99, 1 - Math.exp(-raw));
 }
 
 // ─── Union-Find ───────────────────────────────────────────────────────────────
@@ -170,58 +271,79 @@ router.get('/', async (req, res) => {
   const minScore = minScoreRaw;
 
   try {
-    // 1. Fingerprint groups via SQL
-    const fpRows = await mainDb
-      .selectFrom('users')
-      .select(['id', 'fingerprint_id'])
-      .where('fingerprint_id', 'is not', null)
-      .execute();
+    const fpRows = await sql<{ id: string; fingerprint_id: string }>`
+      SELECT u.id, e->>'fingerprint_id' AS fingerprint_id
+      FROM users u, jsonb_array_elements(u.fingerprint_history) e
+    `.execute(mainDb);
 
-    const fpGroups = new Map<string, string[]>();
-    for (const row of fpRows) {
-      const fp = row.fingerprint_id!;
-      if (!fpGroups.has(fp)) fpGroups.set(fp, []);
-      fpGroups.get(fp)!.push(row.id);
+    const fpGroups = new Map<string, Set<string>>();
+    for (const row of fpRows.rows) {
+      if (!row.fingerprint_id) continue;
+      if (!fpGroups.has(row.fingerprint_id))
+        fpGroups.set(row.fingerprint_id, new Set());
+      fpGroups.get(row.fingerprint_id)!.add(row.id);
     }
 
-    // 2. IP hash groups via SQL
-    const ipRows = await mainDb
-      .selectFrom('users')
-      .select(['id', 'ip_hash'])
-      .where('ip_hash', 'is not', null)
-      .execute();
+    const ipRows = await sql<{ id: string; hash: string }>`
+      SELECT u.id, e->>'hash' AS hash
+      FROM users u, jsonb_array_elements(u.ip_history) e
+    `.execute(mainDb);
 
-    const ipGroups = new Map<string, string[]>();
-    for (const row of ipRows) {
-      const h = row.ip_hash!;
-      if (!ipGroups.has(h)) ipGroups.set(h, []);
-      ipGroups.get(h)!.push(row.id);
+    const ipGroups = new Map<string, Set<string>>();
+    for (const row of ipRows.rows) {
+      if (!row.hash) continue;
+      if (!ipGroups.has(row.hash)) ipGroups.set(row.hash, new Set());
+      ipGroups.get(row.hash)!.add(row.id);
     }
 
-    // 3. Union-Find merge
+    const commonFingerprints = new Set<string>();
+    for (const [fp, members] of fpGroups) {
+      if (members.size > COMMON_SIGNAL_THRESHOLD) commonFingerprints.add(fp);
+    }
+    const commonIpHashes = new Set<string>();
+    for (const [hash, members] of ipGroups) {
+      if (members.size > COMMON_SIGNAL_THRESHOLD) commonIpHashes.add(hash);
+    }
+
+    function maxSharedCount(
+      hashes: (string | null | undefined)[],
+      commonSet: Set<string>,
+      groups: Map<string, Set<string>>
+    ): number {
+      let max = 0;
+      for (const h of hashes) {
+        if (!h || !commonSet.has(h)) continue;
+        const size = (groups.get(h)?.size ?? 1) - 1;
+        if (size > max) max = size;
+      }
+      return max;
+    }
+
     const uf = new UnionFind();
 
-    for (const members of fpGroups.values()) {
-      if (members.length < 2) continue;
-      for (let i = 1; i < members.length; i++) {
-        uf.union(members[0], members[i], 'fingerprint');
+    for (const [fp, members] of fpGroups) {
+      if (commonFingerprints.has(fp)) continue;
+      const arr = [...members];
+      if (arr.length < 2) continue;
+      for (let i = 1; i < arr.length; i++) {
+        uf.union(arr[0], arr[i], 'fingerprint');
       }
     }
 
-    for (const members of ipGroups.values()) {
-      if (members.length < 2) continue;
-      for (let i = 1; i < members.length; i++) {
-        uf.union(members[0], members[i], 'ip');
+    for (const [hash, members] of ipGroups) {
+      if (commonIpHashes.has(hash)) continue;
+      const arr = [...members];
+      if (arr.length < 2) continue;
+      for (let i = 1; i < arr.length; i++) {
+        uf.union(arr[0], arr[i], 'ip');
       }
     }
 
-    // 4. Collect components with >= 2 members
     const components = uf.components();
     const multiComponents = [...components.values()].filter(
       (c) => c.members.length >= 2
     );
 
-    // 5. Gather all unique member IDs across all clusters
     const allMemberIds = new Set<string>();
     for (const comp of multiComponents) {
       for (const id of comp.members) allMemberIds.add(id);
@@ -239,7 +361,6 @@ router.get('/', async (req, res) => {
       return res.json(response);
     }
 
-    // 6. Fetch user details (Redis-cached) and active bans in parallel
     const memberIdArray = [...allMemberIds];
 
     const [userResults, banResults] = await Promise.all([
@@ -283,7 +404,6 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // 7. Build clusters
     const clusters: AltCluster[] = [];
     const detectedAt = new Date().toISOString();
 
@@ -302,6 +422,11 @@ router.get('/', async (req, res) => {
           ? daysBetween(discordCreated, platformJoined)
           : 0;
 
+        const ipHistoryRaw: Array<IpHistoryEntry & { ip?: unknown }> =
+          Array.isArray(u.ip_history) ? u.ip_history : [];
+        const fingerprintHistoryRaw: FingerprintHistoryEntry[] =
+          Array.isArray(u.fingerprint_history) ? u.fingerprint_history : [];
+
         members.push({
           id,
           username: u.username,
@@ -316,6 +441,24 @@ router.get('/', async (req, res) => {
           is_vpn: u.is_vpn ?? false,
           fingerprint_id: u.fingerprint_id ?? null,
           ip_hash: u.ip_hash ?? null,
+          ip_history: ipHistoryRaw.map((e) => ({
+            hash: e.hash,
+            is_vpn: e.is_vpn,
+            first_seen: e.first_seen,
+            last_seen: e.last_seen,
+            seen_count: e.seen_count,
+          })),
+          fingerprint_history: fingerprintHistoryRaw,
+          common_ip_count: maxSharedCount(
+            ipHistoryRaw.map((e) => e.hash),
+            commonIpHashes,
+            ipGroups
+          ),
+          common_fingerprint_count: maxSharedCount(
+            fingerprintHistoryRaw.map((e) => e.fingerprint_id),
+            commonFingerprints,
+            fpGroups
+          ),
           ban: banMap.get(id) ?? null,
         });
       }
@@ -352,7 +495,13 @@ router.get('/', async (req, res) => {
         vpn_overlap: allVpn,
       };
 
-      const score = computeScore(signals, members.length);
+      const score = computeClusterScore(
+        members,
+        fpGroups,
+        ipGroups,
+        hasBannedMember,
+        youngAccountJoinedAfterBan
+      );
       if (score < minScore) continue;
 
       // Sort members: banned first, then by platform join date

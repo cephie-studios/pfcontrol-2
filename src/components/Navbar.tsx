@@ -132,10 +132,28 @@ export default function Navbar({
   }, [user, isMobile]);
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 0);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    const isTrustedScrollSource = (target: EventTarget | null): boolean => {
+      if (target == null || target === document || target === window) {
+        return true;
+      }
+      return (
+        target instanceof HTMLElement && target.dataset.scrollRoot === 'true'
+      );
+    };
+    const getScrollTop = (target: EventTarget | null): number =>
+      target instanceof HTMLElement ? target.scrollTop : window.scrollY;
+    const onScroll = (e?: Event) => {
+      const target = e?.target ?? null;
+      if (!isTrustedScrollSource(target)) return;
+      setIsScrolled(getScrollTop(target) > 0);
+    };
+    window.addEventListener('scroll', onScroll, {
+      passive: true,
+      capture: true,
+    });
     onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    return () =>
+      window.removeEventListener('scroll', onScroll, { capture: true });
   }, []);
 
   const shouldShowBackdrop = isMobile && mobileSidebarOpen;

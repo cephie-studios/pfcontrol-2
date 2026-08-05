@@ -19,6 +19,7 @@ import {
   getDeveloperProfile,
   getLatestDeveloperApplication,
   updateDeveloperNotificationEmail,
+  getDeveloperUsageCountsByKey,
   insertPendingDeveloperApiKey,
   listDeveloperKeysForUser,
   revokeDeveloperApiKey,
@@ -26,6 +27,7 @@ import {
 } from '../db/developer.js';
 import {
   getDeveloperRecentUsage,
+  getDeveloperUsageByKey,
   getDeveloperUsageByScope,
   getDeveloperUsageDailyCounts,
   getDeveloperUsageHourlyCounts,
@@ -369,6 +371,7 @@ router.get('/keys', async (req, res) => {
       return res.status(403).json({ error: 'Developer access not active' });
     }
     const keys = await listDeveloperKeysForUser(req.user.userId);
+    const usageByKey = await getDeveloperUsageCountsByKey(req.user.userId);
     const profileDefault = (
       profile as { default_rate_limit_per_minute?: number | null }
     ).default_rate_limit_per_minute;
@@ -395,6 +398,7 @@ router.get('/keys', async (req, res) => {
         createdAt: k.created_at,
         lastUsedAt: k.last_used_at,
         revokedAt: k.revoked_at,
+        requestCount: usageByKey.get(String(k.id)) ?? 0,
       })),
     });
   } catch (e) {
@@ -582,6 +586,7 @@ router.get('/dashboard/summary', async (req, res) => {
 
     let daily: { date: string; count: number }[];
     let byScope: { scope_id: string; count: number }[];
+    let byKey: { key_id: string; count: number }[];
     let days: number | undefined;
     let hours: number | undefined;
     let granularity: 'day' | 'hour' = 'day';
@@ -592,13 +597,15 @@ router.get('/dashboard/summary', async (req, res) => {
       const h = Math.min(168, Math.max(1, parseInt(hoursParam, 10) || 24));
       hours = h;
       const since = new Date(Date.now() - h * 60 * 60 * 1000);
-      const [hourly, scopeRows, recentRows] = await Promise.all([
+      const [hourly, scopeRows, keyRows, recentRows] = await Promise.all([
         getDeveloperUsageHourlyCounts(userId, since),
         getDeveloperUsageByScope(userId, since),
+        getDeveloperUsageByKey(userId, since),
         getDeveloperRecentUsage(userId, 25, 0),
       ]);
       daily = hourly;
       byScope = scopeRows;
+      byKey = keyRows;
       recent = recentRows;
       granularity = 'hour';
     } else {
@@ -610,13 +617,15 @@ router.get('/dashboard/summary', async (req, res) => {
       const since = new Date();
       since.setDate(since.getDate() - d);
       since.setHours(0, 0, 0, 0);
-      const [dayRows, scopeRows, recentRows] = await Promise.all([
+      const [dayRows, scopeRows, keyRows, recentRows] = await Promise.all([
         getDeveloperUsageDailyCounts(userId, since),
         getDeveloperUsageByScope(userId, since),
+        getDeveloperUsageByKey(userId, since),
         getDeveloperRecentUsage(userId, 25, 0),
       ]);
       daily = dayRows;
       byScope = scopeRows;
+      byKey = keyRows;
       recent = recentRows;
     }
     const totalInRange = daily.reduce((s, d) => s + d.count, 0);
@@ -626,8 +635,10 @@ router.get('/dashboard/summary', async (req, res) => {
       granularity,
       daily,
       byScope,
+      byKey,
       recent: recent.map((r) => ({
         id: String(r.id),
+        keyId: String(r.key_id),
         scopeId: r.scope_id,
         method: r.method,
         path: r.path,

@@ -70,6 +70,18 @@ export async function getDeveloperUsageByScope(userId: string, since: Date) {
     .execute();
 }
 
+export async function getDeveloperUsageByKey(userId: string, since: Date) {
+  const rows = await mainDb
+    .selectFrom('developer_api_usage')
+    .select(['key_id', sql<number>`count(*)::int`.as('count')])
+    .where('user_id', '=', userId)
+    .where('created_at', '>=', since)
+    .groupBy('key_id')
+    .orderBy('count', 'desc')
+    .execute();
+  return rows.map((r) => ({ key_id: String(r.key_id), count: r.count }));
+}
+
 export async function getDeveloperRecentUsage(
   userId: string,
   limit: number,

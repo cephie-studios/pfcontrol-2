@@ -3,6 +3,9 @@ import type { Request, Response } from 'express';
 import { getControllerRatingStats } from '../../db/ratings.js';
 import { getActiveNotifications } from '../../db/notifications.js';
 import { listDeveloperFlightLogsMetadata } from '../../db/flightLogs.js';
+import { DEVELOPER_SCOPE_CATALOG } from '../../developer/scopeRegistry.js';
+import { getDeveloperApiDefaultRateLimitPerMinute } from '../../middleware/developerExtApi.js';
+import { sendServerError } from '../../utils/apiError.js';
 
 const router = express.Router();
 
@@ -11,6 +14,33 @@ function extCtx(req: Request) {
   if (!ext) throw new Error('developerExt missing');
   return ext;
 }
+
+router.get('/me', (req: Request, res: Response) => {
+  try {
+    const ext = extCtx(req);
+    const scopes = ext.scopes.map((id) => {
+      const catalogEntry = DEVELOPER_SCOPE_CATALOG.find((s) => s.id === id);
+      return {
+        id,
+        label: catalogEntry?.label ?? id,
+        description: catalogEntry?.description ?? '',
+      };
+    });
+    res.json({
+      keyId: ext.keyId,
+      keyName: ext.keyName,
+      keyPrefix: ext.keyPrefix,
+      userId: ext.userId,
+      apiVersion: ext.apiVersion ?? 1,
+      scopes,
+      rateLimitPerMinute:
+        ext.rateLimitPerMinute ?? getDeveloperApiDefaultRateLimitPerMinute(),
+    });
+  } catch (e) {
+    console.error('[ext/me]', e);
+    sendServerError(res, 'Failed to load key info', e);
+  }
+});
 
 router.get(
   '/ratings/controllers/:controllerId/stats',
@@ -29,7 +59,7 @@ router.get(
       });
     } catch (e) {
       console.error('[ext/ratings stats]', e);
-      res.status(500).json({ error: 'Failed to load rating stats' });
+      sendServerError(res, 'Failed to load rating stats', e);
     }
   }
 );
@@ -50,7 +80,7 @@ router.get('/notifications/active', async (req: Request, res: Response) => {
     );
   } catch (e) {
     console.error('[ext/notifications]', e);
-    res.status(500).json({ error: 'Failed to load notifications' });
+    sendServerError(res, 'Failed to load notifications', e);
   }
 });
 
@@ -75,7 +105,7 @@ router.get('/flight-logs', async (req: Request, res: Response) => {
     res.json(data);
   } catch (e) {
     console.error('[ext/flight-logs]', e);
-    res.status(500).json({ error: 'Failed to load flight logs' });
+    sendServerError(res, 'Failed to load flight logs', e);
   }
 });
 

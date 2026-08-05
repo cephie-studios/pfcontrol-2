@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import {
   DeveloperRequestsAreaChart,
-  DeveloperScopeDonutChart,
+  DeveloperBreakdownDonutChart,
 } from '../../components/developers/DeveloperUsageCharts';
 import DeveloperPillSegmentedControl from './DeveloperPillSegmentedControl';
 import { cardClass } from './constants';
@@ -42,7 +42,14 @@ export default function DeveloperConsole() {
     summary,
     dashLoading,
     scopeLabelMap,
+    keys,
   } = useDeveloperPortal();
+
+  const keyLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const k of keys) m.set(k.id, k.name);
+    return m;
+  }, [keys]);
 
   const [revealedCallIds, setRevealedCallIds] = useState<Set<string>>(
     new Set()
@@ -58,11 +65,13 @@ export default function DeveloperConsole() {
     if (!callsQuery) return list;
     return list.filter((r) => {
       const scopeLabel = scopeLabelMap.get(r.scopeId) ?? r.scopeId;
+      const keyLabel = keyLabelMap.get(r.keyId) ?? r.keyId;
       const hay = [
         r.method,
         r.path,
         r.scopeId,
         scopeLabel,
+        keyLabel,
         String(r.statusCode),
         String(r.durationMs),
         r.clientIp ?? '',
@@ -71,7 +80,7 @@ export default function DeveloperConsole() {
         .toLowerCase();
       return hay.includes(callsQuery);
     });
-  }, [summary?.recent, callsQuery, scopeLabelMap]);
+  }, [summary?.recent, callsQuery, scopeLabelMap, keyLabelMap]);
 
   const toggleIpReveal = useCallback((id: string) => {
     setRevealedCallIds((prev) => {
@@ -160,21 +169,53 @@ export default function DeveloperConsole() {
         </p>
       </div>
 
-      <div className={cardClass()}>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-4">Scope mix</h2>
-        <div className="h-72 sm:h-80 flex flex-col">
-          {!summary?.byScope.length ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-sm text-zinc-500">
-                No usage in this period yet.
-              </p>
-            </div>
-          ) : (
-            <DeveloperScopeDonutChart
-              rows={summary.byScope}
-              scopeLabelMap={scopeLabelMap}
-            />
-          )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className={cardClass()}>
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+            Scope mix
+          </h2>
+          <div className="h-72 sm:h-80 flex flex-col">
+            {!summary?.byScope.length ? (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm text-zinc-500">
+                  No usage in this period yet.
+                </p>
+              </div>
+            ) : (
+              <DeveloperBreakdownDonutChart
+                rows={summary.byScope.map((r) => ({
+                  id: r.scope_id,
+                  count: r.count,
+                }))}
+                labelMap={scopeLabelMap}
+                ariaLabel="Scope breakdown"
+              />
+            )}
+          </div>
+        </div>
+
+        <div className={cardClass()}>
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4">
+            Usage by key
+          </h2>
+          <div className="h-72 sm:h-80 flex flex-col">
+            {!summary?.byKey.length ? (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-sm text-zinc-500">
+                  No usage in this period yet.
+                </p>
+              </div>
+            ) : (
+              <DeveloperBreakdownDonutChart
+                rows={summary.byKey.map((r) => ({
+                  id: r.key_id,
+                  count: r.count,
+                }))}
+                labelMap={keyLabelMap}
+                ariaLabel="Key breakdown"
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -196,7 +237,7 @@ export default function DeveloperConsole() {
               type="search"
               value={callsSearch}
               onChange={(e) => setCallsSearch(e.target.value)}
-              placeholder="Filter by path, method, scope, status, IP…"
+              placeholder="Filter by path, method, scope, key, status, IP…"
               aria-label="Filter latest API calls"
               className="w-full rounded-full border border-zinc-700 bg-zinc-800/50 pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ring-1 ring-zinc-700/40 hover:border-zinc-600"
             />
@@ -228,6 +269,7 @@ export default function DeveloperConsole() {
           <ul className="overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/25 ring-1 ring-zinc-800/40 divide-y divide-zinc-800/80">
             {filteredRecent.map((r) => {
               const scopeLabel = scopeLabelMap.get(r.scopeId) ?? r.scopeId;
+              const keyLabel = keyLabelMap.get(r.keyId) ?? 'Deleted key';
               const revealed = revealedCallIds.has(r.id);
               const expanded = expandedCallIds.has(r.id);
               const ip = r.clientIp ?? null;
@@ -329,6 +371,8 @@ export default function DeveloperConsole() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <dl className="grid gap-1.5 sm:grid-cols-[auto_1fr] sm:gap-x-3 sm:gap-y-1">
+                        <dt className="text-zinc-600">Key</dt>
+                        <dd className="text-zinc-200">{keyLabel}</dd>
                         <dt className="text-zinc-600">Scope</dt>
                         <dd className="text-zinc-200">{scopeLabel}</dd>
                         <dt className="text-zinc-600">Path</dt>

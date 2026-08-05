@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Outlet, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { Code2, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import DeveloperSubnav from './DeveloperSubnav';
@@ -17,6 +17,8 @@ const notifyWarnBannerClass =
 function DeveloperShell() {
   const { error, loading, dashLoading, refresh, loadApplication } =
     useDeveloperPortal();
+  const location = useLocation();
+  const isDocsPage = location.pathname.endsWith('/docs');
   const [refreshSpinOnce, setRefreshSpinOnce] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [notifyEmailBanner, setNotifyEmailBanner] = useState<
@@ -45,10 +47,15 @@ function DeveloperShell() {
   };
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="h-dvh bg-zinc-950 text-zinc-100 flex flex-col">
       <Navbar />
-      <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden [scrollbar-gutter:stable]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 pt-24 pb-16">
+      <div
+        data-scroll-root="true"
+        className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden [scrollbar-gutter:stable]"
+      >
+        <div
+          className={`${isDocsPage ? 'max-w-[90rem]' : 'max-w-7xl'} mx-auto px-4 sm:px-6 py-10 pt-24 pb-16`}
+        >
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2 text-blue-400 mb-1">

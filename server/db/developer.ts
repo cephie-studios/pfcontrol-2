@@ -514,6 +514,19 @@ export async function insertDeveloperApiUsage(input: {
   }
 }
 
+/** Per-key request counts (all-time) for one developer's keys. */
+export async function getDeveloperUsageCountsByKey(
+  userId: string
+): Promise<Map<string, number>> {
+  const rows = await mainDb
+    .selectFrom('developer_api_usage')
+    .select(['key_id', sql<string>`count(*)`.as('count')])
+    .where('user_id', '=', userId)
+    .groupBy('key_id')
+    .execute();
+  return new Map(rows.map((r) => [String(r.key_id), Number(r.count)]));
+}
+
 export async function listApprovedDevelopersSummary() {
   const profiles = await mainDb
     .selectFrom('developer_profiles')
@@ -528,7 +541,15 @@ export async function listApprovedDevelopersSummary() {
     .select(['user_id', sql<string>`max(created_at)`.as('last_at')])
     .groupBy('user_id')
     .execute();
+  const requestCounts = await mainDb
+    .selectFrom('developer_api_usage')
+    .select(['user_id', sql<string>`count(*)`.as('count')])
+    .groupBy('user_id')
+    .execute();
   const lastByUser = new Map(lastUsage.map((r) => [r.user_id, r.last_at]));
+  const requestsByUser = new Map(
+    requestCounts.map((r) => [r.user_id, Number(r.count)])
+  );
   const keyCounts = new Map<
     string,
     { usable: number; total: number; pending: number }
@@ -549,6 +570,7 @@ export async function listApprovedDevelopersSummary() {
     keysActive: keyCounts.get(p.user_id)?.usable ?? 0,
     keysPending: keyCounts.get(p.user_id)?.pending ?? 0,
     keysTotal: keyCounts.get(p.user_id)?.total ?? 0,
+    requestsTotal: requestsByUser.get(p.user_id) ?? 0,
     lastApiActivity: lastByUser.get(p.user_id) ?? null,
     updatedAt: p.updated_at,
     adminNoticeSeq: Number(p.admin_notice_seq ?? 0),

@@ -113,30 +113,6 @@ export async function submitDeveloperApplication(input: {
   }
 }
 
-export async function submitDeveloperScopeExpansionRequest(input: {
-  who: string;
-  why: string;
-  additionalScopes: string[];
-}): Promise<void> {
-  const res = await apiFetch(
-    `${API_BASE_URL}/api/developer/application/scope-expansion`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        who: input.who,
-        why: input.why,
-        additionalScopes: input.additionalScopes,
-      }),
-    }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Failed to submit');
-  }
-}
-
 export interface DeveloperKeyRow {
   id: string;
   name: string;
@@ -150,6 +126,7 @@ export interface DeveloperKeyRow {
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  requestCount: number;
 }
 
 export type DeveloperKeysPayload = {
@@ -302,8 +279,10 @@ export interface DeveloperDashboardSummary {
   granularity?: 'day' | 'hour';
   daily: { date: string; count: number }[];
   byScope: { scope_id: string; count: number }[];
+  byKey: { key_id: string; count: number }[];
   recent: {
     id: string;
+    keyId: string;
     scopeId: string;
     method: string;
     path: string;

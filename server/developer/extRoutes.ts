@@ -1,4 +1,4 @@
-export type HttpMethod = 'GET' | 'POST' | 'PUT';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 export interface DeveloperExtRouteParamDoc {
   name: string;
@@ -26,9 +26,19 @@ export interface DeveloperExtRouteDefinition {
   queryParams?: DeveloperExtRouteQueryDoc[];
   requestBodySummary?: string;
   requestBodyExampleJson?: string;
+  minVersion?: 1 | 2;
 }
 
+export const SELF_INFO_SCOPE_ID = 'self.read';
+
 export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
+  {
+    scopeId: SELF_INFO_SCOPE_ID,
+    method: 'GET',
+    pattern: { kind: 'exact', path: '/me' },
+    responseSummary:
+      'Information about the calling API key itself: id, name, key prefix, owning user id, granted scopes (with labels/descriptions), effective rate limit, and which API version this request used. Always available regardless of scopes.',
+  },
   {
     scopeId: 'ratings.controller_stats',
     method: 'GET',
@@ -104,7 +114,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions/network/pfatc' },
     responseSummary:
-      'JSON array of PFATC network sessions (sanitized; no access_id). Optional airport (ICAO), page, limit.',
+      'JSON array of PFATC network sessions (sanitized). Optional airport (ICAO), page, limit.',
     queryParams: [
       {
         name: 'airport',
@@ -125,6 +135,22 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
         example: '50',
       },
     ],
+  },
+  {
+    scopeId: 'sessions.network_overview',
+    method: 'GET',
+    pattern: { kind: 'exact', path: '/sessions/network/overview' },
+    responseSummary:
+      'Every PFATC session network-wide that was created in the last 4 hours or has had flight activity (created, updated, or planned) in the last 4 hours. A live connected controller is not required. Each session includes nested sanitized flights, connected-controller list (if any), and decoded ATIS. Also includes totalActiveSessions, totalFlights, arrivalsByAirport (flights grouped by arrival ICAO across every session), and lastUpdated. Not limited to sessions you own.',
+    minVersion: 2,
+  },
+  {
+    scopeId: 'sessions.network_overview',
+    method: 'GET',
+    pattern: { kind: 'exact', path: '/sessions/network/flights' },
+    responseSummary:
+      'Flat JSON array of every flight across every PFATC session network-wide that matches the same 4-hour activity window as /sessions/network/overview. Each flight is annotated with sessionId and departureAirport. Not limited to sessions you own.',
+    minVersion: 2,
   },
   // AATC disabled — sessions.network_aatc routes commented out
   // {
@@ -207,7 +233,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/{sessionId}/flights',
     },
     responseSummary:
-      'JSON array of flights (sanitized; no IPs or ACARS tokens).',
+      'JSON array of flights',
     pathParams: [
       {
         name: 'sessionId',
@@ -244,6 +270,30 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     }),
   },
   {
+    scopeId: 'flights.delete',
+    method: 'DELETE',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/[^/]+\/flights\/[^/]+$/i,
+      pathTemplate: '/sessions/{sessionId}/flights/{flightId}',
+    },
+    responseSummary:
+      'Deletes one flight. Only allowed for sessions created with this same API key (same rule as flight updates).',
+    pathParams: [
+      {
+        name: 'sessionId',
+        description: 'Session you own, created with this same API key.',
+        example: 'sess_abc123',
+      },
+      {
+        name: 'flightId',
+        description: 'Flight UUID to delete.',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+      },
+    ],
+    minVersion: 2,
+  },
+  {
     scopeId: 'sessions.read',
     method: 'GET',
     pattern: {
@@ -266,7 +316,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions' },
     responseSummary:
-      'JSON array of sessions you created (no access_id). Includes apiManaged when the session was created via the developer API.',
+      'JSON array of sessions you created. Includes apiManaged when the session was created via the developer API.',
   },
   {
     scopeId: 'sessions.create',
@@ -275,19 +325,66 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     responseSummary:
       'Creates a session tied to your user and this API key (API-managed). Returns session id and metadata without access_id.',
     requestBodySummary:
-      'airportIcao (required), optional isPFATC, isAdvancedATC (mutually exclusive), activeRunway.',
+      'airportIcao (required), optional isPFATC, isAdvancedATC (mutually exclusive), activeRunway (departure), arrivalRunway (defaults to activeRunway when omitted).',
     requestBodyExampleJson: JSON.stringify({
       airportIcao: 'EGLL',
       isPFATC: false,
       isAdvancedATC: false,
       activeRunway: '27L',
+      arrivalRunway: '27R',
     }),
+  },
+  {
+    scopeId: 'sessions.delete',
+    method: 'DELETE',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/[^/]+$/i,
+      pathTemplate: '/sessions/{sessionId}',
+    },
+    responseSummary:
+      'Deletes a session created with this same API key. Flights already logged in the session are not deleted — they remain in place, no longer attached to a live session.',
+    pathParams: [
+      {
+        name: 'sessionId',
+        description: 'Session you own, created with this same API key.',
+        example: 'sess_abc123',
+      },
+    ],
+    minVersion: 2,
   },
   {
     scopeId: 'data.airports',
     method: 'GET',
     pattern: { kind: 'exact', path: '/data/airports' },
     responseSummary: 'JSON array of airport objects (static dataset).',
+    queryParams: [
+      {
+        name: 'search',
+        required: false,
+        description:
+          'Case-insensitive substring match against ICAO code, name, or controller name.',
+        example: 'punta',
+      },
+    ],
+  },
+  {
+    scopeId: 'data.airports',
+    method: 'GET',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/data\/airports\/[^/]+$/i,
+      pathTemplate: '/data/airports/{icao}',
+    },
+    responseSummary:
+      'Single airport object by ICAO code (case-insensitive), or 404 if not found. Uses the same scope as the full airport list.',
+    pathParams: [
+      {
+        name: 'icao',
+        description: 'Airport ICAO code (case-insensitive).',
+        example: 'EGLL',
+      },
+    ],
   },
   {
     scopeId: 'data.aircrafts',
@@ -394,7 +491,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/data/airports/{icao}/status',
     },
     responseSummary:
-      'JSON with active PFATC/Advanced session summary, controller, runway, flight count, METAR when available.',
+      'JSON with active PFATC/Advanced session summary, controller, departureRunway, arrivalRunway (activeRunway kept for backwards compatibility, same value as departureRunway), flight count, METAR when available.',
     pathParams: [
       {
         name: 'icao',
@@ -412,10 +509,12 @@ export function pathTemplateForRoute(r: DeveloperExtRouteDefinition): string {
 
 export function matchExtDeveloperRoute(
   method: string,
-  pathNoQuery: string
+  pathNoQuery: string,
+  version: 1 | 2 = 1
 ): string | null {
   const p = pathNoQuery.split('?')[0];
   for (const r of DEVELOPER_EXT_ROUTES) {
+    if ((r.minVersion ?? 1) > version) continue;
     if (r.method !== method) continue;
     if (r.pattern.kind === 'exact' && r.pattern.path === p) return r.scopeId;
     if (r.pattern.kind === 'regex' && r.pattern.regex.test(p)) return r.scopeId;

@@ -12,6 +12,7 @@ interface CreateSessionParams {
   sessionId: string;
   accessId: string;
   activeRunway?: string;
+  arrivalRunway?: string;
   airportIcao: string;
   createdBy: string;
   isPFATC?: boolean;
@@ -23,6 +24,7 @@ export async function createSession({
   sessionId,
   accessId,
   activeRunway,
+  arrivalRunway,
   airportIcao,
   createdBy,
   isPFATC,
@@ -42,11 +44,15 @@ export async function createSession({
   const isAdvancedAtc = Boolean(isAdvancedATC);
   assertExclusiveSessionNetworkFlags(isPfatc, isAdvancedAtc);
 
+  // Defaults to the departure/active runway when not given separately.
+  const resolvedArrivalRunway = arrivalRunway || activeRunway;
+
   try {
     const baseValues = {
       session_id: validSessionId,
       access_id: accessId,
       active_runway: activeRunway,
+      arrival_runway: resolvedArrivalRunway,
       airport_icao: airportIcao.toUpperCase(),
       created_by: createdBy,
       is_pfatc: isPfatc,
@@ -112,6 +118,7 @@ export async function getSessionsByUser(userId: string) {
       'session_id',
       'access_id',
       'active_runway',
+      'arrival_runway',
       'airport_icao',
       'created_at',
       'created_by',
@@ -131,6 +138,7 @@ export async function listDeveloperSessionSummariesForUser(userId: string) {
     .select([
       'session_id',
       'active_runway',
+      'arrival_runway',
       'airport_icao',
       'created_at',
       'created_by',
@@ -158,6 +166,7 @@ export async function updateSession(
   sessionId: string,
   updates: Partial<{
     active_runway: string;
+    arrival_runway: string;
     airport_icao: string;
     flight_strips: unknown;
     atis: unknown;
@@ -244,13 +253,12 @@ export async function updateSessionName(sessionId: string, customName: string) {
     .executeTakeFirst();
 }
 
+/**
+ * Deletes only the session row; flights are intentionally left in place
+ * (no FK from flights to sessions) rather than cascade-deleted.
+ */
 export async function deleteSession(sessionId: string) {
   const validSessionId = validateSessionId(sessionId);
-
-  await mainDb
-    .deleteFrom('flights')
-    .where('session_id', '=', validSessionId)
-    .execute();
 
   await mainDb
     .deleteFrom('session_chat')
@@ -293,6 +301,7 @@ export type PublicNetworkSessionDeveloperRow = {
   session_id: string;
   airport_icao: string;
   active_runway?: string | null;
+  arrival_runway?: string | null;
   custom_name?: string | null;
   created_at?: Date | null;
   refreshed_at?: Date | null;
@@ -322,6 +331,7 @@ export async function listPublicNetworkSessionsForDeveloperApi(opts: {
       's.session_id',
       's.airport_icao',
       's.active_runway',
+      's.arrival_runway',
       's.custom_name',
       's.created_at',
       's.refreshed_at',
@@ -362,6 +372,7 @@ export async function getPublicNetworkSessionForDeveloperApi(
       's.session_id',
       's.airport_icao',
       's.active_runway',
+      's.arrival_runway',
       's.custom_name',
       's.created_at',
       's.refreshed_at',
@@ -381,4 +392,47 @@ export async function getPublicNetworkSessionForDeveloperApi(
 
   const row = await q.executeTakeFirst();
   return row ?? null;
+}
+
+/**
+ * "Active" = created recently, or has recent flight activity — not gated on
+ * a connected controller. `refreshed_at` is never written anywhere, so it
+ * can't be used as the recency signal.
+ */
+export async function getActivePfatcSessionIdsForDeveloperApi(
+  windowHours: number
+): Promise<string[]> {
+  const sinceIso = new Date(
+    Date.now() - windowHours * 60 * 60 * 1000
+  ).toISOString();
+
+  const [recentSessions, recentFlightSessions] = await Promise.all([
+    mainDb
+      .selectFrom('sessions')
+      .select('session_id')
+      .where('is_pfatc', '=', true)
+      .where('created_at', '>=', sql<Date>`${sinceIso}`)
+      .execute(),
+    mainDb
+      .selectFrom('flights as f')
+      .innerJoin('sessions as s', 's.session_id', 'f.session_id')
+      .select('f.session_id')
+      .distinct()
+      .where('s.is_pfatc', '=', true)
+      .where((eb) =>
+        eb.or([
+          eb('f.flight_plan_time', '>=', sinceIso),
+          eb('f.updated_at', '>=', sql<Date>`${sinceIso}`),
+          eb('f.created_at', '>=', sql<Date>`${sinceIso}`),
+        ])
+      )
+      .execute(),
+  ]);
+
+  return [
+    ...new Set([
+      ...recentSessions.map((r) => r.session_id),
+      ...recentFlightSessions.map((r) => r.session_id),
+    ]),
+  ];
 }

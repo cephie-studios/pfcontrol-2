@@ -3,11 +3,7 @@ import { decrypt } from '../utils/encryption.js';
 import type { ClientFlight } from '../db/flights.js';
 import { keys, TTL } from './keys.js';
 import { perfAsync } from './perf.js';
-import {
-  getActiveNetworkSessionIds,
-  getSessionMetas,
-  type SessionMeta,
-} from './activeSessions.js';
+import { getActiveNetworkSessionIds, getSessionMetas } from './activeSessions.js';
 import { getFlightsForSessions } from './flightsRead.js';
 import { getUserBadgesByIds } from './userCache.js';
 
@@ -246,6 +242,116 @@ export async function buildOverviewSnapshot(
   });
 }
 
+const DEVELOPER_NETWORK_ACTIVE_WINDOW_HOURS = (() => {
+  const envValue = Number(process.env.DEVELOPER_NETWORK_ACTIVE_WINDOW_HOURS);
+  return Number.isFinite(envValue) && envValue > 0 ? envValue : 4;
+})();
+
+export async function buildDeveloperNetworkSnapshot(
+  windowHours: number,
+  sessionUsersIO?: SessionUsersReader
+): Promise<OverviewData> {
+  return perfAsync('buildDeveloperNetworkSnapshot', async () => {
+    const { getActivePfatcSessionIdsForDeveloperApi } = await import(
+      '../db/sessions.js'
+    );
+    const activeSessionIds =
+      await getActivePfatcSessionIdsForDeveloperApi(windowHours);
+    const metas = await getSessionMetas(activeSessionIds);
+    const flightsBySession = await getFlightsForSessions(
+      activeSessionIds,
+      windowHours
+    );
+
+    const sessionUsersEntries = sessionUsersIO
+      ? await Promise.all(
+          activeSessionIds.map(async (sessionId) => {
+            const users =
+              await sessionUsersIO.getActiveUsersForSession(sessionId);
+            return { sessionId, users };
+          })
+        )
+      : activeSessionIds.map((sessionId) => ({ sessionId, users: [] }));
+    const usersBySession = new Map(
+      sessionUsersEntries.map((e) => [e.sessionId, e.users])
+    );
+
+    const controllerUserIds = sessionUsersEntries.flatMap((e) =>
+      e.users.map((u) => u.id).filter(Boolean)
+    );
+    const badges = await getUserBadgesByIds(controllerUserIds);
+
+    const activeSessions: OverviewSession[] = [];
+
+    for (const sessionId of activeSessionIds) {
+      const meta = metas.get(sessionId);
+      if (!meta || !meta.isPFATC) continue;
+
+      const flights = flightsBySession.get(sessionId) ?? [];
+      let atisData = null;
+      if (meta.hasAtis) {
+        const { getSessionById } = await import('../db/sessions.js');
+        const fullSession = await getSessionById(sessionId);
+        if (fullSession?.atis) {
+          atisData = await getDecryptedAtis(sessionId, fullSession.atis);
+        }
+      }
+
+      const users = usersBySession.get(sessionId) ?? [];
+      const controllers: OverviewController[] = users.map((user) => {
+        const badge = badges.get(user.id);
+        return {
+          username: user.username || 'Unknown',
+          role: user.position || 'APP',
+          avatar: badge?.avatar ?? user.avatar,
+          hasVatsimRating: badge?.hasVatsimRating ?? false,
+          isEventController: badge?.isEventController ?? false,
+          isPFATCSectorController: badge?.isPFATCSectorController ?? false,
+          isAATCSectorController: badge?.isAATCSectorController ?? false,
+        };
+      });
+
+      activeSessions.push({
+        sessionId: meta.sessionId,
+        airportIcao: meta.airportIcao,
+        activeRunway: meta.activeRunway,
+        createdAt: meta.createdAt,
+        createdBy: meta.createdBy,
+        isPFATC: meta.isPFATC,
+        isAdvancedATC: meta.isAdvancedATC,
+        activeUsers: users.length,
+        controllers,
+        atis: atisData,
+        flights,
+        flightCount: flights.length,
+      });
+    }
+
+    const arrivalsByAirport: OverviewData['arrivalsByAirport'] = {};
+    for (const session of activeSessions) {
+      for (const flight of session.flights) {
+        if (!flight.arrival) continue;
+        const arrivalIcao = flight.arrival.toUpperCase();
+        if (!arrivalsByAirport[arrivalIcao])
+          arrivalsByAirport[arrivalIcao] = [];
+        arrivalsByAirport[arrivalIcao].push({
+          ...flight,
+          sessionId: session.sessionId,
+          departureAirport: session.airportIcao,
+        });
+      }
+    }
+
+    return {
+      activeSessions,
+      totalActiveSessions: activeSessions.length,
+      totalFlights: activeSessions.reduce((sum, s) => sum + s.flightCount, 0),
+      arrivalsByAirport,
+      lastUpdated: new Date().toISOString(),
+    };
+  });
+}
+
 export async function getCachedOverview(): Promise<OverviewData | null> {
   if (!OVERVIEW_CACHE_ENABLED) return null;
   try {
@@ -316,4 +422,39 @@ export async function getOverviewForClient(
     }
   }
   return refreshOverviewSnapshot(sessionUsersIO);
+}
+
+async function getCachedDeveloperNetworkSnapshot(): Promise<OverviewData | null> {
+  if (!OVERVIEW_CACHE_ENABLED) return null;
+  try {
+    const raw = await redisConnection.get(keys.developerNetworkSnapshot());
+    if (raw) return JSON.parse(raw) as OverviewData;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+async function storeDeveloperNetworkSnapshot(data: OverviewData): Promise<void> {
+  if (!OVERVIEW_CACHE_ENABLED) return;
+  try {
+    await redisConnection.setex(
+      keys.developerNetworkSnapshot(),
+      TTL.DEVELOPER_NETWORK_SNAPSHOT_SEC,
+      JSON.stringify(data)
+    );
+  } catch {
+    // ignore
+  }
+}
+
+export async function getDeveloperNetworkSnapshot(): Promise<OverviewData> {
+  const cached = await getCachedDeveloperNetworkSnapshot();
+  if (cached) return cached;
+  const data = await buildDeveloperNetworkSnapshot(
+    DEVELOPER_NETWORK_ACTIVE_WINDOW_HOURS,
+    sessionUsersIORef ?? undefined
+  );
+  await storeDeveloperNetworkSnapshot(data);
+  return data;
 }

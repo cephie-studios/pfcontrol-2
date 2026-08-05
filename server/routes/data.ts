@@ -86,18 +86,37 @@ interface Airport {
 
 const router = express.Router();
 
+function airportMatchesSearch(airport: Airport, query: string): boolean {
+  const q = query.toLowerCase();
+  return (
+    airport.icao?.toLowerCase().includes(q) ||
+    airport.name?.toLowerCase().includes(q) ||
+    (airport.controlName?.toLowerCase().includes(q) ?? false)
+  );
+}
+
 // GET: /api/data/airports
+// Optional ?search= — case-insensitive substring match against icao, name,
+// controlName.
 router.get('/airports', async (req, res) => {
   const cacheKey = prefixKey('data:airports');
+  const search =
+    typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+  const sendAirports = (data: Airport[]) => {
+    applyPublicCache(res, {
+      browserMaxAge: DATA_STATIC_BROWSER_SEC,
+      edgeMaxAge: DATA_STATIC_EDGE_SEC,
+    });
+    res.json(
+      search ? data.filter((a) => airportMatchesSearch(a, search)) : data
+    );
+  };
 
   try {
     const cached = await redisConnection.get(cacheKey);
     if (cached) {
-      applyPublicCache(res, {
-        browserMaxAge: DATA_STATIC_BROWSER_SEC,
-        edgeMaxAge: DATA_STATIC_EDGE_SEC,
-      });
-      return res.json(JSON.parse(cached));
+      return sendAirports(JSON.parse(cached));
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -128,11 +147,35 @@ router.get('/airports', async (req, res) => {
       }
     }
 
+    sendAirports(data);
+  } catch (error) {
+    console.error('Error reading airport data:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Error reading airport data',
+    });
+  }
+});
+
+// GET: /api/data/airports/:icao - single airport lookup
+router.get('/airports/:icao', (req, res) => {
+  try {
+    if (!fs.existsSync(airportsPath)) {
+      return res.status(404).json({ error: 'Airport data not found' });
+    }
+
+    const icao = req.params.icao.toUpperCase();
+    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const airport = data.find((a: Airport) => a.icao === icao);
+    if (!airport) {
+      return res.status(404).json({ error: 'Airport not found' });
+    }
+
     applyPublicCache(res, {
       browserMaxAge: DATA_STATIC_BROWSER_SEC,
       edgeMaxAge: DATA_STATIC_EDGE_SEC,
     });
-    res.json(data);
+    res.json(airport);
   } catch (error) {
     console.error('Error reading airport data:', error);
     res.status(500).json({
@@ -997,7 +1040,13 @@ router.get('/airports/:icao/status', async (req, res) => {
 
     const sessions = await mainDb
       .selectFrom('sessions')
-      .select(['session_id', 'created_by', 'active_runway', 'created_at'])
+      .select([
+        'session_id',
+        'created_by',
+        'active_runway',
+        'arrival_runway',
+        'created_at',
+      ])
       .where('airport_icao', '=', icao)
       .where(networkCol, '=', true)
       .orderBy('created_at', 'desc')
@@ -1071,6 +1120,8 @@ router.get('/airports/:icao/status', async (req, res) => {
           : null,
       },
       activeRunway: validSession.active_runway,
+      departureRunway: validSession.active_runway,
+      arrivalRunway: validSession.arrival_runway ?? validSession.active_runway,
       flightCount,
       createdAt: validSession.created_at,
       metar,

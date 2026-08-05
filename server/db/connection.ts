@@ -2,16 +2,19 @@ import { Kysely, PostgresDialect } from 'kysely';
 import {
   createMainTables,
   ensureSessionsAdvancedAtcColumn,
+  ensureSessionsArrivalRunwayColumn,
   ensureSessionsNetworkFlagsExclusiveConstraint,
   ensureGlobalChatNetworkKindColumn,
   ensureSessionsDeveloperApiKeyColumn,
   ensureDeveloperApiPolicyColumns,
+  ensureUserHistoryColumns,
   ensureAppSettingsChannelColumn,
   ensureEventModeColumns,
   ensureFlightReqColumns,
   ensureDailyDatabaseMetricsTables,
   ensureWebsocketSnapshotsTable,
   ensurePerformanceIndexes,
+  ensureAatcScopeCleanup,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -66,16 +69,19 @@ redisConnection.on('connect', () => {
 try {
   await createMainTables();
   await ensureSessionsAdvancedAtcColumn();
+  await ensureSessionsArrivalRunwayColumn();
   await ensureSessionsNetworkFlagsExclusiveConstraint();
   await ensureGlobalChatNetworkKindColumn();
   await ensureSessionsDeveloperApiKeyColumn();
   await ensureDeveloperApiPolicyColumns();
+  await ensureUserHistoryColumns();
   await ensureAppSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFlightReqColumns();
   await ensureDailyDatabaseMetricsTables();
   await ensureWebsocketSnapshotsTable();
   await ensurePerformanceIndexes();
+  await ensureAatcScopeCleanup();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

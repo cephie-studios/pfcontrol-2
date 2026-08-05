@@ -34,7 +34,6 @@ export default function DeveloperKeys() {
     setCreatedSecret,
     secretCopied,
     curlCopied,
-    approvedScopes,
     handleCreateKey,
     handleRevoke,
     handleDeleteKey,
@@ -58,11 +57,6 @@ export default function DeveloperKeys() {
       return next;
     });
   };
-
-  const allowedCatalog = useMemo(
-    () => catalog.filter((c) => approvedScopes.includes(c.id)),
-    [catalog, approvedScopes]
-  );
 
   const activeKeys = useMemo(() => keys.filter((k) => !k.revokedAt), [keys]);
   const revokedKeys = useMemo(() => keys.filter((k) => k.revokedAt), [keys]);
@@ -229,7 +223,7 @@ export default function DeveloperKeys() {
                 )}
               </label>
               <ScopeTagSelector
-                catalog={allowedCatalog}
+                catalog={catalog}
                 selected={newKeyScopes}
                 onChange={setNewKeyScopes}
               />
@@ -428,6 +422,28 @@ export default function DeveloperKeys() {
                         readOnly
                       />
                     )}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+                      <span>
+                        <span className="font-medium tabular-nums text-zinc-300">
+                          {k.requestCount.toLocaleString()}
+                        </span>{' '}
+                        request{k.requestCount === 1 ? '' : 's'}
+                      </span>
+                      <span>
+                        Last used:{' '}
+                        <span className="text-zinc-300">
+                          {k.lastUsedAt
+                            ? new Date(k.lastUsedAt).toLocaleString()
+                            : 'Never'}
+                        </span>
+                      </span>
+                      <span>
+                        Created:{' '}
+                        <span className="text-zinc-300">
+                          {new Date(k.createdAt).toLocaleDateString()}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>

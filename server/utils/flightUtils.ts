@@ -24,14 +24,16 @@ export async function generateSquawk(flight: Flight) {
 }
 
 export async function generateSID(flight: Flight) {
-  const { icao, runway, arrival } = flight;
+  const icao = flight.icao?.toUpperCase();
+  const runway = flight.runway;
+  const arrival = flight.arrival?.toUpperCase();
   const airportData = getAirportData();
   type DepartureData = { [runway: string]: { [arrival: string]: string } };
   type Airport = { icao: string; departures?: DepartureData };
   const airport = airportData.find((ap: Airport) => ap.icao === icao);
 
   if (!airport) {
-    throw new Error('Airport not found');
+    throw new Error(`Airport not found: ${icao ?? '(none provided)'}`);
   }
 
   let selectedRunway: string | undefined = runway;

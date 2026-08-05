@@ -6,6 +6,7 @@ import { getUserById, setUserVpnFlag } from '../../db/users.js';
 import { logAdminAction } from '../../db/audit.js';
 import { isAdmin } from '../../middleware/admin.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
+import { decrypt } from '../../utils/encryption.js';
 
 const router = express.Router();
 
@@ -72,6 +73,70 @@ router.post('/:userId/reveal-ip', async (req, res) => {
   } catch (error) {
     console.error('Error revealing IP address:', error);
     res.status(500).json({ error: 'Failed to reveal IP address' });
+  }
+});
+
+// POST: /api/admin/users/:userId/reveal-ip-history - Reveal every IP an account has ever logged in from
+router.post('/:userId/reveal-ip-history', async (req, res) => {
+  try {
+    if (!req.user?.userId || !isAdmin(req.user.userId)) {
+      return res
+        .status(403)
+        .json({ error: 'Access denied - insufficient permissions' });
+    }
+
+    const { userId } = req.params;
+    const user = await getUserById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const rawHistory = Array.isArray(user.ip_history) ? user.ip_history : [];
+    const history = rawHistory.map(
+      (entry: {
+        hash: string;
+        ip: { iv: string; data: string; authTag: string } | null;
+        is_vpn: boolean;
+        first_seen: string;
+        last_seen: string;
+        seen_count: number;
+      }) => ({
+        hash: entry.hash,
+        ip_address: entry.ip ? decrypt(entry.ip) : null,
+        is_vpn: entry.is_vpn,
+        first_seen: entry.first_seen,
+        last_seen: entry.last_seen,
+        seen_count: entry.seen_count,
+      })
+    );
+
+    if (req.user?.userId) {
+      let adminIp = getClientIp(req);
+      if (Array.isArray(adminIp)) adminIp = adminIp[0] || '';
+      await logAdminAction({
+        adminId: req.user.userId,
+        adminUsername: req.user.username || 'Unknown',
+        actionType: 'IP_HISTORY_REVEALED',
+        targetUserId: userId,
+        targetUsername: user.username,
+        ipAddress: adminIp,
+        userAgent: req.get('User-Agent'),
+        details: {
+          entriesRevealed: history.length,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    res.json({
+      userId: user.id,
+      username: user.username,
+      history,
+    });
+  } catch (error) {
+    console.error('Error revealing IP history:', error);
+    res.status(500).json({ error: 'Failed to reveal IP history' });
   }
 });
 

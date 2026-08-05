@@ -73,6 +73,10 @@ export async function createMainTables() {
     .addColumn('statistics', 'jsonb')
     .addColumn('fingerprint_id', 'varchar(255)')
     .addColumn('ip_hash', 'varchar(64)')
+    .addColumn('ip_history', 'jsonb', (col) => col.notNull().defaultTo('[]'))
+    .addColumn('fingerprint_history', 'jsonb', (col) =>
+      col.notNull().defaultTo('[]')
+    )
     .execute();
 
   await mainDb.schema
@@ -672,10 +676,45 @@ export async function createMainTables() {
     .execute();
 }
 
+/**
+ * Append-only IP/fingerprint history, added after ip_hash/fingerprint_id were
+ * already single-value columns. Kept separate from those columns rather than
+ * replacing them — everything that reads "current" IP/fingerprint (reveal-IP,
+ * ban checks, the users list) keeps working unchanged, and this just adds the
+ * full history on top for alt detection.
+ */
+export async function ensureUserHistoryColumns() {
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS ip_history jsonb NOT NULL DEFAULT '[]'::jsonb
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS fingerprint_history jsonb NOT NULL DEFAULT '[]'::jsonb
+  `.execute(mainDb);
+}
+
 export async function ensureSessionsAdvancedAtcColumn() {
   await sql`
     ALTER TABLE sessions
     ADD COLUMN IF NOT EXISTS is_advanced_atc boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+}
+
+/**
+ * New column: arrival runway, separate from active_runway (departures).
+ * Backfills existing rows to active_runway so arrival == departure until set otherwise.
+ */
+export async function ensureSessionsArrivalRunwayColumn() {
+  await sql`
+    ALTER TABLE sessions
+    ADD COLUMN IF NOT EXISTS arrival_runway varchar(10)
+  `.execute(mainDb);
+
+  await sql`
+    UPDATE sessions
+    SET arrival_runway = active_runway
+    WHERE arrival_runway IS NULL AND active_runway IS NOT NULL
   `.execute(mainDb);
 }
 
@@ -923,6 +962,25 @@ export async function ensurePerformanceIndexes() {
     CREATE INDEX IF NOT EXISTS idx_sessions_aatc_airport
     ON sessions (airport_icao)
     WHERE is_advanced_atc = true
+  `.execute(mainDb);
+}
+
+/**
+ * Strips the removed 'sessions.network_aatc' scope id from old profiles/keys.
+ * Without this, isValidScopeList() rejects any array containing it, so
+ * re-saving an affected row fails validation even for unrelated changes.
+ */
+export async function ensureAatcScopeCleanup() {
+  await sql`
+    UPDATE developer_profiles
+    SET approved_scopes = approved_scopes - 'sessions.network_aatc'
+    WHERE approved_scopes ? 'sessions.network_aatc'
+  `.execute(mainDb);
+
+  await sql`
+    UPDATE developer_api_keys
+    SET scopes = scopes - 'sessions.network_aatc'
+    WHERE scopes ? 'sessions.network_aatc'
   `.execute(mainDb);
 }
 

@@ -68,6 +68,7 @@ router.post(
         isPFATC = false,
         isAdvancedATC = false,
         activeRunway = null,
+        arrivalRunway = null,
         isTutorial = false,
       } = req.body;
       if (!airportIcao) {
@@ -180,6 +181,7 @@ router.post(
         sessionId,
         accessId,
         activeRunway,
+        arrivalRunway,
         airportIcao,
         createdBy,
         isPFATC: pfatc,

@@ -2,6 +2,7 @@ export interface SessionsTable {
   session_id: string;
   access_id: string;
   active_runway?: string;
+  arrival_runway?: string | null;
   airport_icao: string;
   created_at?: Date;
   created_by: string;

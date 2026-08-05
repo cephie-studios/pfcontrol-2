@@ -39,6 +39,7 @@ export async function createSession(data: {
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
   activeRunway?: string | null;
+  arrivalRunway?: string | null;
   isTutorial?: boolean;
 }): Promise<SessionInfo> {
   const res = await apiFetch(`${API_BASE_URL}/api/sessions/create`, {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Loader2,
@@ -9,7 +9,6 @@ import {
   Bell,
   X,
   Clock,
-  Sparkles,
   Mail,
 } from 'lucide-react';
 import DeveloperAccessRequestForm from '../../components/developers/DeveloperAccessRequestForm';
@@ -39,9 +38,6 @@ function parseAdminNoticeDetail(raw: string | null | undefined): {
   return { variant: 'default', body: text };
 }
 
-const devPendingBannerClass =
-  'flex items-start gap-3 rounded-2xl border border-sky-800/40 bg-sky-950/35 px-4 py-3 text-sky-50 ring-1 ring-sky-900/25';
-
 const devPendingCardClass =
   'rounded-3xl border border-zinc-700/80 bg-linear-to-br from-zinc-900/95 via-zinc-900/90 to-sky-950/20 p-6 sm:p-8 shadow-xl ring-1 ring-zinc-700/45 text-zinc-200';
 
@@ -65,9 +61,6 @@ export default function DeveloperOverview() {
     showAdminNotice,
     adminNoticeDetail,
     dismissAdminNotice,
-    approvedScopes,
-    scopeExpansionSubmitting,
-    submitScopeExpansionRequest,
     setError,
     notificationEmail,
     notificationEmailSaving,
@@ -78,41 +71,6 @@ export default function DeveloperOverview() {
   useEffect(() => {
     setEmailDraft(notificationEmail ?? '');
   }, [notificationEmail]);
-
-  const [scopeRequestOpen, setScopeRequestOpen] = useState(false);
-  const [rqWho, setRqWho] = useState('');
-  const [rqWhy, setRqWhy] = useState('');
-  const [rqScopes, setRqScopes] = useState<Set<string>>(new Set());
-
-  const catalogForNewScopes = useMemo(
-    () => catalog.filter((c) => !approvedScopes.includes(c.id)),
-    [catalog, approvedScopes]
-  );
-
-  const scopeRequestPending = appState?.latestApplication?.status === 'pending';
-
-  const openScopeRequest = () => {
-    setError(null);
-    setRqWho('');
-    setRqWhy('');
-    setRqScopes(new Set());
-    setScopeRequestOpen(true);
-  };
-
-  const submitScopeRequest = async () => {
-    setError(null);
-    const ok = await submitScopeExpansionRequest({
-      who: rqWho,
-      why: rqWhy,
-      additionalScopes: [...rqScopes],
-    });
-    if (ok) {
-      setScopeRequestOpen(false);
-      setRqWho('');
-      setRqWhy('');
-      setRqScopes(new Set());
-    }
-  };
 
   if (loading) {
     return (
@@ -190,43 +148,10 @@ export default function DeveloperOverview() {
             </button>
           </div>
         )}
-        {scopeRequestPending && (
-          <div className={devPendingBannerClass}>
-            <Clock className="w-5 h-5 shrink-0 text-sky-400 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-sky-100">
-                We&apos;re reviewing a scope request
-              </p>
-              <p className="text-sm text-sky-200/85 mt-1 leading-relaxed">
-                Hang tight — your current access still works while we take a
-                look. We&apos;ll follow up when it&apos;s sorted.
-              </p>
-            </div>
-          </div>
-        )}
         <p className="text-zinc-400 text-sm sm:text-base max-w-2xl">
           You&apos;re all set. Jump into usage, keys, or the live API reference
           whenever you like.
         </p>
-
-        {catalogForNewScopes.length > 0 && !scopeRequestOpen && (
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={openScopeRequest}
-              disabled={scopeRequestPending}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-600 bg-zinc-800/80 text-zinc-100 text-sm font-semibold hover:bg-zinc-800 hover:border-zinc-500 transition-colors disabled:opacity-45 disabled:pointer-events-none ring-1 ring-zinc-700/50"
-            >
-              <Sparkles className="w-4 h-4 shrink-0 text-sky-400" />
-              Ask for more API access
-            </button>
-            {scopeRequestPending && (
-              <span className="text-xs text-zinc-500">
-                You already have one request waiting — thanks for your patience.
-              </span>
-            )}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link
@@ -331,22 +256,6 @@ export default function DeveloperOverview() {
             </div>
           </div>
         </div>
-
-        {scopeRequestOpen && (
-          <DeveloperAccessRequestForm
-            mode="expansion"
-            who={rqWho}
-            why={rqWhy}
-            onWhoChange={setRqWho}
-            onWhyChange={setRqWhy}
-            catalog={catalogForNewScopes}
-            selectedScopes={rqScopes}
-            onScopesChange={setRqScopes}
-            onSubmit={submitScopeRequest}
-            submitting={scopeExpansionSubmitting}
-            onDismiss={() => setScopeRequestOpen(false)}
-          />
-        )}
       </div>
     );
   }
@@ -440,7 +349,6 @@ export default function DeveloperOverview() {
 
   return (
     <DeveloperAccessRequestForm
-      mode="initial"
       who={who}
       why={why}
       onWhoChange={setWho}
