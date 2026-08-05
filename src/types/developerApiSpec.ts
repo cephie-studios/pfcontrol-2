@@ -25,6 +25,7 @@ export interface DeveloperApiDocEndpoint {
   responseContentType: string;
   responseSummary: string;
   exampleCurl: string;
+  availableSince: 1 | 2;
 }
 
 export interface DeveloperApiPublicSpec {
@@ -33,6 +34,7 @@ export interface DeveloperApiPublicSpec {
   title: string;
   description: string;
   baseUrlTemplate: string;
+  legacyBaseUrlTemplate: string;
   authentication: {
     description: string;
     headers: DeveloperApiDocHeader[];

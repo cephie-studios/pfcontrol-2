@@ -29,4 +29,6 @@ export interface UsersTable {
   statistics?: unknown;
   fingerprint_id?: string | null;
   ip_hash?: string | null;
+  ip_history?: unknown;
+  fingerprint_history?: unknown;
 }

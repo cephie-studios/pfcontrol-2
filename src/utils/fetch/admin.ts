@@ -147,6 +147,21 @@ export interface RevealIPResponse {
   ip_address: string;
 }
 
+export interface RevealIPHistoryEntry {
+  hash: string;
+  ip_address: string | null;
+  is_vpn: boolean;
+  first_seen: string;
+  last_seen: string;
+  seen_count: number;
+}
+
+export interface RevealIPHistoryResponse {
+  userId: string;
+  username: string;
+  history: RevealIPHistoryEntry[];
+}
+
 export interface Ban {
   id: string;
   userId?: string;
@@ -413,6 +428,14 @@ export async function setEventMode(
 
 export async function revealUserIP(userId: string): Promise<RevealIPResponse> {
   return makeAdminRequest(`/users/${userId}/reveal-ip`, {
+    method: 'POST',
+  });
+}
+
+export async function revealUserIPHistory(
+  userId: string
+): Promise<RevealIPHistoryResponse> {
+  return makeAdminRequest(`/users/${userId}/reveal-ip-history`, {
     method: 'POST',
   });
 }
@@ -917,6 +940,21 @@ export interface AltClusterBan {
   banned_at: string | null;
 }
 
+export interface IpHistoryEntry {
+  hash: string;
+  is_vpn: boolean;
+  first_seen: string;
+  last_seen: string;
+  seen_count: number;
+}
+
+export interface FingerprintHistoryEntry {
+  fingerprint_id: string;
+  first_seen: string;
+  last_seen: string;
+  seen_count: number;
+}
+
 export interface ClusterMember {
   id: string;
   username: string;
@@ -929,6 +967,10 @@ export interface ClusterMember {
   is_vpn: boolean;
   fingerprint_id: string | null;
   ip_hash: string | null;
+  ip_history: IpHistoryEntry[];
+  fingerprint_history: FingerprintHistoryEntry[];
+  common_ip_count: number;
+  common_fingerprint_count: number;
   ban: AltClusterBan | null;
 }
 

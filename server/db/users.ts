@@ -226,6 +226,97 @@ export async function getUserByUsername(username: string) {
   return result;
 }
 
+/**
+ * Appends (or bumps, if already present) an entry in the user's append-only
+ * IP history. Done as a single atomic UPDATE rather than read-modify-write in
+ * JS so concurrent logins for the same user can't race and drop an entry.
+ */
+export async function appendIpHistoryEntry(
+  userId: string,
+  ipAddress: string,
+  isVpn: boolean
+) {
+  const hash = hashIp(ipAddress);
+  const encryptedIp = encrypt(ipAddress);
+
+  await sql`
+    UPDATE users
+    SET ip_history = (
+      CASE
+        WHEN EXISTS (
+          SELECT 1 FROM jsonb_array_elements(ip_history) e WHERE e->>'hash' = ${hash}
+        )
+        THEN COALESCE((
+          SELECT jsonb_agg(
+            CASE
+              WHEN e->>'hash' = ${hash}
+              THEN e
+                || jsonb_build_object('last_seen', now())
+                || jsonb_build_object('seen_count', COALESCE((e->>'seen_count')::int, 0) + 1)
+                || jsonb_build_object('is_vpn', ${isVpn}::boolean)
+              ELSE e
+            END
+            ORDER BY ord
+          )
+          FROM jsonb_array_elements(ip_history) WITH ORDINALITY AS t(e, ord)
+        ), '[]'::jsonb)
+        ELSE ip_history || jsonb_build_array(
+          jsonb_build_object(
+            'hash', ${hash}::text,
+            'ip', ${JSON.stringify(encryptedIp)}::jsonb,
+            'is_vpn', ${isVpn}::boolean,
+            'first_seen', now(),
+            'last_seen', now(),
+            'seen_count', 1
+          )
+        )
+      END
+    )
+    WHERE id = ${userId}
+  `.execute(mainDb);
+}
+
+/**
+ * Same append-only pattern as appendIpHistoryEntry, for browser fingerprints.
+ */
+export async function appendFingerprintHistoryEntry(
+  userId: string,
+  fingerprintId: string
+) {
+  await sql`
+    UPDATE users
+    SET fingerprint_history = (
+      CASE
+        WHEN EXISTS (
+          SELECT 1 FROM jsonb_array_elements(fingerprint_history) e WHERE e->>'fingerprint_id' = ${fingerprintId}
+        )
+        THEN COALESCE((
+          SELECT jsonb_agg(
+            CASE
+              WHEN e->>'fingerprint_id' = ${fingerprintId}
+              THEN e
+                || jsonb_build_object('last_seen', now())
+                || jsonb_build_object('seen_count', COALESCE((e->>'seen_count')::int, 0) + 1)
+              ELSE e
+            END
+            ORDER BY ord
+          )
+          FROM jsonb_array_elements(fingerprint_history) WITH ORDINALITY AS t(e, ord)
+        ), '[]'::jsonb)
+        ELSE fingerprint_history || jsonb_build_array(
+          jsonb_build_object(
+            'fingerprint_id', ${fingerprintId}::text,
+            'first_seen', now(),
+            'last_seen', now(),
+            'seen_count', 1
+          )
+        )
+      END
+    )
+    WHERE id = ${userId}
+  `.execute(mainDb);
+}
+
 export async function createOrUpdateUser(userData: {
   id: string;
   username: string;
@@ -359,6 +450,10 @@ export async function createOrUpdateUser(userData: {
       })
     )
     .execute();
+
+  if (ipAddress) {
+    await appendIpHistoryEntry(id, ipAddress, isVpn);
+  }
 
   await invalidateUserCache(id);
   return await getUserById(id);
@@ -594,6 +689,8 @@ export async function updateUserFingerprint(
     .set({ fingerprint_id: fingerprintId, updated_at: sql`NOW()` })
     .where('id', '=', userId)
     .execute();
+
+  await appendFingerprintHistoryEntry(userId, fingerprintId);
 
   await invalidateUserCache(userId);
 }

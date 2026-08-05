@@ -191,22 +191,24 @@ export function DeveloperRequestsAreaChart({ data }: { data: DailyRow[] }) {
   );
 }
 
-type ScopeRow = { scope_id: string; count: number };
+type BreakdownRow = { id: string; count: number };
 
-export function DeveloperScopeDonutChart({
+export function DeveloperBreakdownDonutChart({
   rows,
-  scopeLabelMap,
+  labelMap,
+  ariaLabel = 'Breakdown',
 }: {
-  rows: ScopeRow[];
-  scopeLabelMap: Map<string, string>;
+  rows: BreakdownRow[];
+  labelMap: Map<string, string>;
+  ariaLabel?: string;
 }) {
   const pieData = useMemo(
     () =>
       rows.map((r) => ({
-        name: scopeLabelMap.get(r.scope_id) ?? r.scope_id,
+        name: labelMap.get(r.id) ?? r.id,
         value: r.count,
       })),
-    [rows, scopeLabelMap]
+    [rows, labelMap]
   );
 
   const total = useMemo(
@@ -283,7 +285,7 @@ export function DeveloperScopeDonutChart({
       <div className="flex w-1/3 min-w-0 shrink-0 flex-col justify-center pl-2 sm:pl-3">
         <ul
           className="flex w-full min-w-0 flex-col justify-center gap-y-2 overflow-y-auto py-1 text-left"
-          aria-label="Scope breakdown"
+          aria-label={ariaLabel}
         >
           {pieData.map((d, i) => {
             const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;

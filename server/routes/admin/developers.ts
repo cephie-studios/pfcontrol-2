@@ -7,6 +7,7 @@ import {
   getDeveloperApiKeyForUser,
   getDeveloperApplicationById,
   getDeveloperProfile,
+  getDeveloperUsageCountsByKey,
   listDeveloperApiKeysForAdmin,
   listDeveloperApplications,
   rejectPendingDeveloperApiKey,
@@ -408,6 +409,7 @@ router.get(
       if (!profile)
         return res.status(404).json({ error: 'Developer profile not found' });
       const keys = await listDeveloperApiKeysForAdmin(userId);
+      const usageByKey = await getDeveloperUsageCountsByKey(userId);
       res.json({
         keys: keys.map((k) => ({
           id: String(k.id),
@@ -425,6 +427,7 @@ router.get(
           createdAt: k.created_at,
           lastUsedAt: k.last_used_at,
           revokedAt: k.revoked_at,
+          requestCount: usageByKey.get(String(k.id)) ?? 0,
         })),
       });
     } catch (e) {

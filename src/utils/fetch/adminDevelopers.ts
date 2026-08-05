@@ -105,6 +105,7 @@ export interface AdminDeveloperSummary {
   keysActive: number;
   keysPending: number;
   keysTotal: number;
+  requestsTotal: number;
   lastApiActivity: string | null;
   updatedAt: string;
   adminNoticeSeq: number;
@@ -138,6 +139,7 @@ export interface AdminDeveloperKeyRow {
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  requestCount: number;
 }
 
 export async function fetchAdminDeveloperKeys(

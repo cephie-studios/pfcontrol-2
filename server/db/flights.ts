@@ -652,6 +652,25 @@ export interface AddFlightData {
 export async function addFlight(sessionId: string, flightData: AddFlightData) {
   const validSessionId = validateSessionId(sessionId);
 
+  // Airport/SID/STAR data is keyed uppercase; normalize so lookups aren't case-sensitive.
+  if (typeof flightData.departure === 'string') {
+    flightData.departure = flightData.departure.toUpperCase();
+  }
+  if (typeof flightData.arrival === 'string') {
+    flightData.arrival = flightData.arrival.toUpperCase();
+  }
+  if (typeof flightData.alternate === 'string') {
+    flightData.alternate = flightData.alternate.toUpperCase();
+  }
+
+  // No DB-level default for status; match the web UI's default of PENDING.
+  if (
+    typeof flightData.status !== 'string' ||
+    flightData.status.trim() === ''
+  ) {
+    flightData.status = 'PENDING';
+  }
+
   flightData.id = generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
   flightData.wtc = await getWakeTurbulence(
@@ -821,7 +840,14 @@ export async function updateFlight(
     if (key === 'cruisingFL') dbKey = 'cruisingfl';
     if (key === 'clearedFL') dbKey = 'clearedfl';
     if (allowedColumns.includes(dbKey)) {
-      dbUpdates[dbKey] = dbKey === 'clearance' ? String(value) : value;
+      if (
+        (dbKey === 'departure' || dbKey === 'arrival') &&
+        typeof value === 'string'
+      ) {
+        dbUpdates[dbKey] = value.toUpperCase();
+      } else {
+        dbUpdates[dbKey] = dbKey === 'clearance' ? String(value) : value;
+      }
     }
   }
 

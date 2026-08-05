@@ -33,18 +33,23 @@ import {
   validateCallsign,
 } from '../../utils/validation.js';
 import { broadcastFlightEvent } from '../../websockets/flightsWebsocket.js';
+import { sendServerError } from '../../utils/apiError.js';
+import {
+  getDeveloperNetworkSnapshot,
+  type OverviewData,
+} from '../../realtime/overview.js';
 
 const router = express.Router();
 
 /** Express 5 types dynamic segments as `string | string[]`. */
-function routeParamString(
+export function routeParamString(
   v: string | string[] | undefined
 ): string | undefined {
   if (v === undefined) return undefined;
   return Array.isArray(v) ? v[0] : v;
 }
 
-function extCtx(req: Request) {
+export function extCtx(req: Request) {
   const ext = req.developerExt;
   if (!ext) throw new Error('developerExt missing');
   return ext;
@@ -58,6 +63,7 @@ function publicNetworkSessionJson(
     sessionId: row.session_id,
     airportIcao: row.airport_icao,
     activeRunway: row.active_runway,
+    arrivalRunway: row.arrival_runway,
     customName: row.custom_name,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     refreshedAt: row.refreshed_at
@@ -94,6 +100,7 @@ function sessionToDeveloperJson(
   row: {
     session_id: string;
     active_runway?: string | null;
+    arrival_runway?: string | null;
     airport_icao: string;
     created_at?: Date | null;
     created_by: string;
@@ -108,6 +115,7 @@ function sessionToDeveloperJson(
   return {
     sessionId: row.session_id,
     activeRunway: row.active_runway ?? null,
+    arrivalRunway: row.arrival_runway ?? null,
     airportIcao: row.airport_icao,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     createdBy: row.created_by,
@@ -140,7 +148,7 @@ router.get('/network/pfatc', async (req: Request, res: Response) => {
     res.json(rows.map((r) => publicNetworkSessionJson(r, 'pfatc')));
   } catch (e) {
     console.error('[ext/sessions] network pfatc list:', e);
-    res.status(500).json({ error: 'Failed to list PFATC sessions' });
+    sendServerError(res, 'Failed to list PFATC sessions', e);
   }
 });
 
@@ -158,7 +166,84 @@ router.get('/network/pfatc/:sessionId', async (req: Request, res: Response) => {
     res.json(publicNetworkSessionJson(row, 'pfatc'));
   } catch (e) {
     console.error('[ext/sessions] network pfatc get:', e);
-    res.status(500).json({ error: 'Failed to load session' });
+    sendServerError(res, 'Failed to load session', e);
+  }
+});
+
+function activeDeveloperNetworkSessions(data: OverviewData) {
+  return data.activeSessions
+    .filter((s) => s.isPFATC && !s.sessionId.startsWith('sector-'))
+    .map((s) => ({
+      sessionId: s.sessionId,
+      airportIcao: s.airportIcao,
+      activeRunway: s.activeRunway,
+      createdAt: s.createdAt,
+      createdBy: s.createdBy,
+      isPFATC: s.isPFATC,
+      activeUsers: s.activeUsers,
+      controllers: s.controllers,
+      atis: s.atis,
+      flights: s.flights,
+      flightCount: s.flightCount,
+    }));
+}
+
+function developerOverviewJson(data: OverviewData) {
+  const activeSessions = activeDeveloperNetworkSessions(data);
+
+  type ArrivalFlight = (typeof activeSessions)[number]['flights'][number] & {
+    sessionId: string;
+    departureAirport: string;
+  };
+  const arrivalsByAirport: Record<string, ArrivalFlight[]> = {};
+  for (const session of activeSessions) {
+    for (const flight of session.flights) {
+      if (!flight.arrival) continue;
+      const arrivalIcao = flight.arrival.toUpperCase();
+      if (!arrivalsByAirport[arrivalIcao]) arrivalsByAirport[arrivalIcao] = [];
+      arrivalsByAirport[arrivalIcao].push({
+        ...flight,
+        sessionId: session.sessionId,
+        departureAirport: session.airportIcao,
+      });
+    }
+  }
+
+  return {
+    activeSessions,
+    totalActiveSessions: activeSessions.length,
+    totalFlights: activeSessions.reduce((sum, s) => sum + s.flightCount, 0),
+    arrivalsByAirport,
+    lastUpdated: data.lastUpdated,
+  };
+}
+
+router.get('/network/overview', async (req: Request, res: Response) => {
+  try {
+    extCtx(req);
+    const snapshot = await getDeveloperNetworkSnapshot();
+    res.json(developerOverviewJson(snapshot));
+  } catch (e) {
+    console.error('[ext/sessions] network overview:', e);
+    sendServerError(res, 'Failed to load network overview', e);
+  }
+});
+
+router.get('/network/flights', async (req: Request, res: Response) => {
+  try {
+    extCtx(req);
+    const snapshot = await getDeveloperNetworkSnapshot();
+    const flights = activeDeveloperNetworkSessions(snapshot).flatMap((s) =>
+      s.flights.map((f) => ({
+        ...f,
+        sessionId: s.sessionId,
+        departureAirport: s.airportIcao,
+      }))
+    );
+    res.json(flights);
+  } catch (e) {
+    console.error('[ext/sessions] network flights:', e);
+    sendServerError(res, 'Failed to list network flights', e);
   }
 });
 
@@ -217,7 +302,7 @@ router.get('/network/aatc_DISABLED/:sessionId', async (req: Request, res: Respon
 AATC_ROUTES_END */
 
 // 404 for missing or sessions the key owner did not create (no enumeration).
-async function loadOwnedSessionOr404(
+export async function loadOwnedSessionOr404(
   sessionId: string | string[] | undefined,
   userId: string
 ) {
@@ -249,7 +334,7 @@ router.get('/', async (req: Request, res: Response) => {
     res.json(rows.map((r) => sessionToDeveloperJson(r, ext.keyId)));
   } catch (e) {
     console.error('[ext/sessions] list:', e);
-    res.status(500).json({ error: 'Failed to list sessions' });
+    sendServerError(res, 'Failed to list sessions', e);
   }
 });
 
@@ -264,6 +349,7 @@ router.post(
         isPFATC = false,
         isAdvancedATC = false,
         activeRunway = null,
+        arrivalRunway = null,
       } = req.body ?? {};
       if (!airportIcao || typeof airportIcao !== 'string') {
         return res.status(400).json({ error: 'Airport ICAO is required' });
@@ -314,6 +400,7 @@ router.post(
         sessionId,
         accessId,
         activeRunway: activeRunway ?? undefined,
+        arrivalRunway: arrivalRunway ?? undefined,
         airportIcao,
         createdBy: ext.userId,
         isPFATC: pfatc,
@@ -340,7 +427,7 @@ router.post(
         });
       }
       console.error('[ext/sessions] create:', error);
-      res.status(500).json({ error: 'Failed to create session' });
+      sendServerError(res, 'Failed to create session', error);
     }
   }
 );
@@ -356,7 +443,7 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
     res.json(sessionToDeveloperJson(loaded.session, ext.keyId));
   } catch (e) {
     console.error('[ext/sessions] get:', e);
-    res.status(500).json({ error: 'Failed to load session' });
+    sendServerError(res, 'Failed to load session', e);
   }
 });
 
@@ -374,7 +461,7 @@ router.get('/:sessionId/flights', async (req: Request, res: Response) => {
     res.json(flights);
   } catch (e) {
     console.error('[ext/sessions] list flights:', e);
-    res.status(500).json({ error: 'Failed to list flights' });
+    sendServerError(res, 'Failed to list flights', e);
   }
 });
 
@@ -399,7 +486,7 @@ router.get(
       res.json(sanitizeFlightForClient(flight));
     } catch (e) {
       console.error('[ext/sessions] get flight:', e);
-      res.status(500).json({ error: 'Failed to load flight' });
+      sendServerError(res, 'Failed to load flight', e);
     }
   }
 );
@@ -449,7 +536,7 @@ router.post(
       res.status(201).json(payload);
     } catch (e) {
       console.error('[ext/sessions] add flight:', e);
-      res.status(500).json({ error: 'Failed to add flight' });
+      sendServerError(res, 'Failed to add flight', e);
     }
   }
 );
@@ -512,7 +599,7 @@ router.put(
         return res.status(400).json({ error: msg });
       }
       console.error('[ext/sessions] update flight:', e);
-      res.status(500).json({ error: 'Failed to update flight' });
+      sendServerError(res, 'Failed to update flight', e);
     }
   }
 );

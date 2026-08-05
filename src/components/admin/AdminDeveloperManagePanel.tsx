@@ -335,6 +335,7 @@ export default function AdminDeveloperManagePanel({
                 <th className={ADMIN_TH}>Status</th>
                 <th className={ADMIN_TH}>Scopes</th>
                 <th className={ADMIN_TH}>RPM</th>
+                <th className={ADMIN_TH}>Usage</th>
                 <th className={ADMIN_TH}>Actions</th>
               </tr>
             </thead>
@@ -342,7 +343,7 @@ export default function AdminDeveloperManagePanel({
               {keys.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className={`${ADMIN_TD} py-6 text-center text-zinc-500`}
                   >
                     No keys.
@@ -377,6 +378,17 @@ export default function AdminDeveloperManagePanel({
                     </td>
                     <td className={`${ADMIN_TD} text-xs text-zinc-400`}>
                       {k.rateLimitPerMinute ?? '—'}
+                    </td>
+                    <td className={`${ADMIN_TD} text-xs text-zinc-400 whitespace-nowrap`}>
+                      <div className="tabular-nums text-zinc-300">
+                        {k.requestCount.toLocaleString()} req
+                        {k.requestCount === 1 ? '' : 's'}
+                      </div>
+                      <div className="text-zinc-500">
+                        {k.lastUsedAt
+                          ? new Date(k.lastUsedAt).toLocaleDateString()
+                          : 'Never used'}
+                      </div>
                     </td>
                     <td className={`${ADMIN_TD} whitespace-nowrap`}>
                       {k.revokedAt ? (

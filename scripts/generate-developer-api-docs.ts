@@ -54,10 +54,14 @@ function renderParams(
 }
 
 function renderEndpoint(endpoint: DeveloperApiDocEndpoint): string {
+  const versionNote =
+    endpoint.availableSince > 1
+      ? `  \n**Available since:** v${endpoint.availableSince} (not on /api/ext/v1)`
+      : '';
   const sections = [
     `### ${endpoint.title}`,
     '',
-    `**Scope:** \`${endpoint.scopeId}\`  `,
+    `**Scope:** \`${endpoint.scopeId}\`${versionNote}  `,
     '',
     `- **${endpoint.method}** \`${endpoint.pathTemplate}\``,
     `- **Response:** ${endpoint.responseContentType} — ${endpoint.responseSummary}`,
@@ -90,6 +94,7 @@ function renderMarkdown(spec: DeveloperApiPublicSpec): string {
     spec.description,
     '',
     `- **Base URL pattern:** \`${spec.baseUrlTemplate}\``,
+    `- **Legacy base (still active):** \`${spec.legacyBaseUrlTemplate}\` — serves every endpoint below except those marked "Available since v2"`,
     '',
     '## Authentication',
     '',

@@ -10,7 +10,10 @@ import {
   insertDeveloperApiUsage,
   touchDeveloperApiKeyLastUsed,
 } from '../db/developer.js';
-import { matchExtDeveloperRoute } from '../developer/extRoutes.js';
+import {
+  matchExtDeveloperRoute,
+  SELF_INFO_SCOPE_ID,
+} from '../developer/extRoutes.js';
 import { redisConnection } from '../db/connection.js';
 
 function extractApiSecret(req: Request): string | null {
@@ -109,36 +112,39 @@ export function getDeveloperExtPath(req: Request): string {
   return raw.startsWith('/') ? raw : `/${raw}`;
 }
 
-export async function developerExtScopeGuard(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const ext = req.developerExt;
-    if (!ext) {
-      return res.status(401).json({ error: 'Invalid or missing API key' });
+export function developerExtScopeGuard(version: 1 | 2) {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    try {
+      const ext = req.developerExt;
+      if (!ext) {
+        return res.status(401).json({ error: 'Invalid or missing API key' });
+      }
+      const path = getDeveloperExtPath(req);
+      const scopeId = matchExtDeveloperRoute(req.method, path, version);
+      if (!scopeId) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      // /me doesnt need a scope
+      if (
+        scopeId !== SELF_INFO_SCOPE_ID &&
+        !ext.scopes.includes(scopeId)
+      ) {
+        return res.status(403).json({
+          error: 'This API key is not allowed to access this endpoint',
+        });
+      }
+      ext.matchedScopeId = scopeId;
+      ext.matchedPath = path;
+      ext.apiVersion = version;
+      next();
+    } catch (e) {
+      next(e);
     }
-    const path = getDeveloperExtPath(req);
-    const scopeId = matchExtDeveloperRoute(req.method, path);
-    if (!scopeId) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-    if (!ext.scopes.includes(scopeId)) {
-      return res
-        .status(403)
-        .json({ error: 'This API key is not allowed to access this endpoint' });
-    }
-    ext.matchedScopeId = scopeId;
-    ext.matchedPath = path;
-    next();
-  } catch (e) {
-    next(e);
-  }
+  };
 }
 
-// @deprecated Use developerExtScopeGuard (matches all /api/ext/v1 routes).
-export const developerExtDataGuard = developerExtScopeGuard;
+// @deprecated Use developerExtScopeGuard(1) (matches only /api/ext/v1 routes).
+export const developerExtDataGuard = developerExtScopeGuard(1);
 
 const RPM_FLOOR = 10;
 

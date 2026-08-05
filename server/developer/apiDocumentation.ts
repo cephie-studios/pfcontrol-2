@@ -2,6 +2,7 @@ import { DEVELOPER_SCOPE_CATALOG } from './scopeRegistry.js';
 import {
   DEVELOPER_EXT_ROUTES,
   pathTemplateForRoute,
+  SELF_INFO_SCOPE_ID,
   type DeveloperExtRouteDefinition,
 } from './extRoutes.js';
 
@@ -34,6 +35,7 @@ export interface DeveloperApiDocEndpoint {
   responseContentType: string;
   responseSummary: string;
   exampleCurl: string;
+  availableSince: 1 | 2;
 }
 
 export interface DeveloperApiPublicSpec {
@@ -42,6 +44,7 @@ export interface DeveloperApiPublicSpec {
   title: string;
   description: string;
   baseUrlTemplate: string;
+  legacyBaseUrlTemplate: string;
   authentication: {
     description: string;
     headers: DeveloperApiDocHeader[];
@@ -54,14 +57,18 @@ export interface DeveloperApiPublicSpec {
   endpoints: DeveloperApiDocEndpoint[];
 }
 
-const DEFAULT_BASE = 'https://pfcontrol.com/api/ext/v1';
+const DEFAULT_BASE = 'https://pfcontrol.com/api/ext/v2';
 
 function catalogTitle(scopeId: string): string {
+  if (scopeId === SELF_INFO_SCOPE_ID) return 'Your API key info';
   const c = DEVELOPER_SCOPE_CATALOG.find((x) => x.id === scopeId);
   return c?.label ?? scopeId;
 }
 
 function catalogSummary(scopeId: string): string {
+  if (scopeId === SELF_INFO_SCOPE_ID) {
+    return 'Not a grantable scope — every valid key can always call this.';
+  }
   const c = DEVELOPER_SCOPE_CATALOG.find((x) => x.id === scopeId);
   return c?.description ?? '';
 }
@@ -150,6 +157,7 @@ function endpointFromRoute(
       pathWithQuery,
       r.requestBodyExampleJson
     ),
+    availableSince: r.minVersion ?? 1,
   };
 }
 
@@ -163,12 +171,13 @@ export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
       : 120;
 
   return {
-    specVersion: 1,
+    specVersion: 2,
     generatedAt: new Date().toISOString(),
     title: 'PFControl Developer API',
     description:
-      'HTTP JSON API under /api/ext/v1: static /data/... routes (mirrors the public data API), plus /sessions and /sessions/.../flights for session and flight access when granted. Join codes, client IPs, and ACARS tokens are never returned in developer API responses. Flight updates via PUT are only allowed for sessions created with the same API key. Each key is limited to its scopes.',
-    baseUrlTemplate: '/api/ext/v1',
+      'HTTP JSON API at /api/ext/v2. Static /data/... routes mirror the public data API. /sessions and /sessions/{sessionId}/flights provide session and flight access when your key\'s scopes allow it. Join codes, client IP addresses, and ACARS tokens are never included in responses. Flight updates (PUT) and session/flight deletes (DELETE) are only allowed on sessions created with the same API key. Each key can only call the endpoints covered by its granted scopes. /api/ext/v1 remains available and serves every endpoint listed here except the two marked "v2+ only" (session and flight deletion).',
+    baseUrlTemplate: '/api/ext/v2',
+    legacyBaseUrlTemplate: '/api/ext/v1',
     authentication: {
       description:
         'Use a developer API key issued from the Developers portal after your application is approved. Keys start with `pfc_live_` (legacy `pf_live_` keys still work until rotated). Either header style works; do not send cookies for machine clients.',
@@ -187,7 +196,7 @@ export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
     },
     rateLimiting: {
       description:
-        'Per API key, per minute sliding window (Redis-backed). HTTP 429 with Retry-After when exceeded.',
+        'Per API key, per minute sliding window. HTTP 429 with Retry-After when exceeded.',
       defaultPerMinute: perMin,
       envVar: 'DEVELOPER_API_RATE_LIMIT_PER_MINUTE',
     },

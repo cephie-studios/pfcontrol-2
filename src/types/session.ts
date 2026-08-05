@@ -9,6 +9,7 @@ export interface SessionInfo {
   isPFATC: boolean;
   isAdvancedATC?: boolean;
   activeRunway?: string;
+  arrivalRunway?: string;
   customName?: string;
   isLegacy: boolean;
   flightCount: number;

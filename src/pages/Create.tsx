@@ -204,6 +204,7 @@ export default function Create() {
       const newSession = await createSession({
         airportIcao: selectedAirport,
         activeRunway: selectedRunway,
+        arrivalRunway: selectedArrivalRunway || undefined,
         isPFATC: effectiveKind === 'pfatc',
         isAdvancedATC: false, // AATC disabled — was: effectiveKind === 'advanced_atc'
         createdBy: user?.userId || 'unknown',

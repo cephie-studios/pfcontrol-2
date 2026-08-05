@@ -1,4 +1,4 @@
-export const API_EXT_BASE = `${import.meta.env.VITE_SERVER_URL}/api/ext/v1`;
+export const API_EXT_BASE = `${import.meta.env.VITE_SERVER_URL}/api/ext/v2`;
 
 export function cardClass(extra = '') {
   return `rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-xl p-5 shadow-xl ring-1 ring-zinc-700/50${extra ? ` ${extra}` : ''}`;

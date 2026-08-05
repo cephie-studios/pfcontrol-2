@@ -20,6 +20,8 @@ import {
   BarChart3,
   Bell,
   ScrollText,
+  Trash2,
+  Radar,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -41,6 +43,7 @@ const SCOPE_ICONS: Record<string, LucideIcon> = {
   'data.find_route': Route,
   'data.airport_status': Activity,
   'sessions.network_pfatc': Network,
+  'sessions.network_overview': Radar,
   // 'sessions.network_aatc': Network, // AATC disabled
   'sessions.list': List,
   'sessions.create': Plus,
@@ -49,6 +52,8 @@ const SCOPE_ICONS: Record<string, LucideIcon> = {
   'flights.read': Eye,
   'flights.create': PlaneTakeoff,
   'flights.update': PencilLine,
+  'flights.delete': Trash2,
+  'sessions.delete': Trash2,
   'ratings.controller_stats': BarChart3,
   'notifications.read': Bell,
   'flight_logs.read': ScrollText,

@@ -328,7 +328,7 @@ export default function AdminDevelopers() {
       ) : (
         <>
           <AdminStatStrip
-            columns={4}
+            columns={6}
             items={[
               { label: 'Pending', value: appCounts.pending },
               { label: 'Approved', value: appCounts.approved },
@@ -337,6 +337,16 @@ export default function AdminDevelopers() {
                 label: 'Active developers',
                 value: developers.filter((d) => d.status === 'active').length,
                 sub: `${developers.length} total profiles`,
+              },
+              {
+                label: 'Active keys',
+                value: developers.reduce((sum, d) => sum + d.keysActive, 0),
+                sub: `${developers.reduce((sum, d) => sum + d.keysTotal, 0)} total keys`,
+              },
+              {
+                label: 'API requests',
+                value: developers.reduce((sum, d) => sum + d.requestsTotal, 0),
+                sub: 'all-time, all developers',
               },
             ]}
           />
@@ -563,6 +573,7 @@ export default function AdminDevelopers() {
                       <th className={ADMIN_TH}>Developer</th>
                       <th className={ADMIN_TH}>Status</th>
                       <th className={ADMIN_TH}>Keys</th>
+                      <th className={ADMIN_TH}>Requests</th>
                       <th className={ADMIN_TH}>Last activity</th>
                       <th className={`${ADMIN_TH} text-right`}>Actions</th>
                     </tr>
@@ -571,7 +582,7 @@ export default function AdminDevelopers() {
                     {filteredDevelopers.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
                         >
                           No developer profiles found.
@@ -615,7 +626,13 @@ export default function AdminDevelopers() {
                                   {d.keysPending} pending
                                 </span>
                               )}
+                              <span className="text-zinc-600">
+                                ({d.keysTotal} total)
+                              </span>
                             </div>
+                          </td>
+                          <td className={`${ADMIN_TD} text-xs text-zinc-400 tabular-nums`}>
+                            {d.requestsTotal.toLocaleString()}
                           </td>
                           <td className={ADMIN_TD}>
                             <span className="flex items-center gap-1 text-xs text-zinc-500">
@@ -691,18 +708,31 @@ export default function AdminDevelopers() {
                           {d.status}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-xs text-zinc-500">
-                          <span className="flex items-center gap-1 text-emerald-400/90">
-                            <MdVpnKey className="w-3 h-3" />
-                            {d.keysActive} active
+                      <div className="flex items-center gap-3 text-xs text-zinc-500 mb-2">
+                        <span className="flex items-center gap-1 text-emerald-400/90">
+                          <MdVpnKey className="w-3 h-3" />
+                          {d.keysActive} active
+                        </span>
+                        {d.keysPending > 0 && (
+                          <span className="text-amber-400/90">
+                            {d.keysPending} pending
                           </span>
-                          {d.keysPending > 0 && (
-                            <span className="text-amber-400/90">
-                              {d.keysPending} pending
-                            </span>
-                          )}
-                        </div>
+                        )}
+                        <span className="text-zinc-600">
+                          ({d.keysTotal} total)
+                        </span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="tabular-nums">
+                          {d.requestsTotal.toLocaleString()} reqs
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1 text-xs text-zinc-500">
+                          <MdSchedule className="w-3 h-3" />
+                          {d.lastApiActivity
+                            ? new Date(d.lastApiActivity).toLocaleDateString()
+                            : 'No activity'}
+                        </span>
                         <div className="flex gap-1.5 shrink-0">
                           <Button
                             type="button"

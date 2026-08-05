@@ -137,10 +137,15 @@ router.post('/generate', requireAuth, async (req, res) => {
       text: generatedAtis,
       timestamp: atisTimestamp,
     };
+    
+    const newDepartureRunway = departing_runways[0] ?? landing_runways[0];
+    const newArrivalRunway = landing_runways[0] ?? departing_runways[0];
 
     const encryptedAtis = encrypt(atisData);
     const updatedSession = await updateSession(sessionId, {
       atis: JSON.stringify(encryptedAtis),
+      ...(newDepartureRunway ? { active_runway: newDepartureRunway } : {}),
+      ...(newArrivalRunway ? { arrival_runway: newArrivalRunway } : {}),
     });
     if (!updatedSession) {
       throw new Error('Failed to update session with ATIS data');

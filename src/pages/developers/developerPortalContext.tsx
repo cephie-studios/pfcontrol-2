@@ -16,7 +16,6 @@ import {
   fetchDeveloperDashboardSummary,
   fetchDeveloperKeys,
   submitDeveloperApplication,
-  submitDeveloperScopeExpansionRequest,
   createDeveloperKey,
   deleteDeveloperKey,
   dismissDeveloperAdminNotice,
@@ -78,12 +77,6 @@ type DeveloperPortalContextValue = {
     update: (s: Set<string>) => void
   ) => void;
   handleApply: () => Promise<void>;
-  scopeExpansionSubmitting: boolean;
-  submitScopeExpansionRequest: (input: {
-    who: string;
-    why: string;
-    additionalScopes: string[];
-  }) => Promise<boolean>;
   handleCreateKey: () => Promise<void>;
   handleRevoke: (id: string) => Promise<void>;
   handleDeleteKey: (id: string) => Promise<void>;
@@ -126,8 +119,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
   const [why, setWhy] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
-  const [scopeExpansionSubmitting, setScopeExpansionSubmitting] =
-    useState(false);
 
   const [usageChartWindow, setUsageChartWindow] =
     useState<DeveloperUsageChartWindow>(14);
@@ -306,32 +297,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
     }
   }, [who, why, selectedScopes, loadApplication]);
 
-  const submitScopeExpansionRequest = useCallback(
-    async (input: {
-      who: string;
-      why: string;
-      additionalScopes: string[];
-    }): Promise<boolean> => {
-      if (input.additionalScopes.length === 0) {
-        setError('Pick at least one new scope to include in your request.');
-        return false;
-      }
-      setScopeExpansionSubmitting(true);
-      setError(null);
-      try {
-        await submitDeveloperScopeExpansionRequest(input);
-        await loadApplication();
-        return true;
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Submit failed');
-        return false;
-      } finally {
-        setScopeExpansionSubmitting(false);
-      }
-    },
-    [loadApplication]
-  );
-
   const handleCreateKey = useCallback(async () => {
     if (!newKeyName.trim() || newKeyScopes.size === 0) {
       setError('Key name and at least one scope are required.');
@@ -501,8 +466,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       refresh,
       toggleScope,
       handleApply,
-      scopeExpansionSubmitting,
-      submitScopeExpansionRequest,
       handleCreateKey,
       handleRevoke,
       handleDeleteKey,
@@ -538,7 +501,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       why,
       selectedScopes,
       submitting,
-      scopeExpansionSubmitting,
       newKeyName,
       newKeyScopes,
       createdSecret,
@@ -550,7 +512,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
       refresh,
       toggleScope,
       handleApply,
-      submitScopeExpansionRequest,
       handleCreateKey,
       handleRevoke,
       handleDeleteKey,

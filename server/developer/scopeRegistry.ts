@@ -73,7 +73,13 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'sessions.network_pfatc',
     label: 'PFATC sessions',
     description:
-      'GET /sessions/network/pfatc — list PFATC network sessions worldwide (sanitized). Optional GET /sessions/network/pfatc/{sessionId} for one row. No access_id or ATIS.',
+      'GET /sessions/network/pfatc — list PFATC network sessions worldwide (sanitized). Optional GET /sessions/network/pfatc/{sessionId} for one row.',
+  },
+  {
+    id: 'sessions.network_overview',
+    label: 'Network overview',
+    description:
+      'GET /sessions/network/overview — every PFATC session network-wide created or flight-active in the last 4 hours (no live controller required) with nested flights, controllers, and ATIS, plus an arrivals-by-airport index. GET /sessions/network/flights — the same active sessions, flattened to a plain array of flight objects. Available from API v2.',
   },
   // AATC disabled — sessions.network_aatc scope commented out
   // {
@@ -97,7 +103,7 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'sessions.read',
     label: 'Read session',
     description:
-      'GET /sessions/:sessionId — metadata for a session you own (no access_id).',
+      'GET /sessions/:sessionId — metadata for a session you own (sanitized).',
   },
   {
     id: 'flights.list',
@@ -122,6 +128,18 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     label: 'Update flight',
     description:
       'PUT /sessions/:sessionId/flights/:flightId — update only for sessions created with this same API key.',
+  },
+  {
+    id: 'flights.delete',
+    label: 'Delete flight',
+    description:
+      'DELETE /sessions/:sessionId/flights/:flightId — delete only for sessions created with this same API key. Available from API v2.',
+  },
+  {
+    id: 'sessions.delete',
+    label: 'Delete session',
+    description:
+      'DELETE /sessions/:sessionId — delete a session created with this same API key. Flights already logged in the session are left in place (orphaned), not deleted. Available from API v2.',
   },
   {
     id: 'ratings.controller_stats',

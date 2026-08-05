@@ -16,6 +16,22 @@ export const flightCreationLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+export const sessionDeletionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 3,
+  message: { error: 'Too many sessions deleted. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const flightDeletionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many flights deleted. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const acarsValidationLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 60,
