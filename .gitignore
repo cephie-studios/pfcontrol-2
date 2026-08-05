@@ -15,6 +15,7 @@ lerna-debug.log*
 !/scripts/verify-node-modules.mjs
 !/scripts/generate-developer-api-docs.ts
 !/scripts/install-hooks.mjs
+!/scripts/backfill*.ts
 node_modules
 dist
 dist-ssr
