@@ -66,7 +66,7 @@ RUN cd astro && npm ci --omit=dev && npm cache clean --force
 # Copy built application from builder stage
 COPY --from=builder --chown=nodeuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodeuser:nodejs /app/public ./public
-COPY --from=builder --chown=nodeuser:nodejs /app/server ./server
+COPY --from=builder --chown=nodeuser:nodejs /app/server/dist ./server/dist
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/data
 COPY --from=builder --chown=nodeuser:nodejs /app/server/data ./server/dist/data
 COPY --from=builder --chown=nodeuser:nodejs /app/astro/dist ./astro/dist
