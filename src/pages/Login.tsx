@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 import { fetchStatistics } from '../utils/fetch/data';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Users } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa';
 import { useAuth } from '../hooks/auth/useAuth';

@@ -97,12 +97,12 @@ export function initTelemetry() {
       'service.name': process.env.SERVICE_NAME || 'pfcontrol',
     }),
     processors: [
-      new BatchLogRecordProcessor(
-        new OTLPLogExporter({
+      new BatchLogRecordProcessor({
+        exporter: new OTLPLogExporter({
           url: `${host}/i/v1/logs`,
           headers: { Authorization: `Bearer ${process.env.POSTHOG_API_KEY}` },
-        })
-      ),
+        }),
+      }),
     ],
   });
   logs.setGlobalLoggerProvider(loggerProvider);

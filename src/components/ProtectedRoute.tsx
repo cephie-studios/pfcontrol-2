@@ -1,5 +1,5 @@
 import { useAuth } from '../hooks/auth/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { getTesterSettings } from '../utils/fetch/data';
 import AccessDenied from './AccessDenied';

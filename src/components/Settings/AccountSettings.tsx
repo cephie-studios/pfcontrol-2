@@ -15,7 +15,7 @@ import {
 import { SiRoblox, SiDiscord } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
 import Button from '../common/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { Settings } from '../../types/settings';
 import PrivacySettings from './PrivacySettings';
 import ConfirmationDialog from '../common/ConfirmationDialog';

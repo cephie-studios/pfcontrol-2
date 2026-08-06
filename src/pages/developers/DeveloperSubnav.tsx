@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router';
 import { LayoutDashboard, KeyRound, BookOpen, Home } from 'lucide-react';
 
 const TAB_COUNT = 4;

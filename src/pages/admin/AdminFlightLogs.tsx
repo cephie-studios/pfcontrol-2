@@ -8,7 +8,7 @@ import {
   MdClose,
   MdEditNote,
 } from 'react-icons/md';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';

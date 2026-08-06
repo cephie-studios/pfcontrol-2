@@ -1,6 +1,6 @@
 import Navbar from './Navbar';
 import { FaDiscord } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 interface AccessDeniedProps {
   standalone?: boolean;

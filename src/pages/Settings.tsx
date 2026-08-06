@@ -4,7 +4,7 @@ import {
   useLocation,
   useSearchParams,
   useNavigate,
-} from 'react-router-dom';
+} from 'react-router';
 import { Save, AlertTriangle, Check, RotateCcw } from 'lucide-react';
 import type {
   Settings,

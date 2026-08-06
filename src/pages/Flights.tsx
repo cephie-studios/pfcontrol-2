@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router';
 import { useMediaQuery } from 'react-responsive';
 import { fetchFlights, addFlight } from '../utils/fetch/flights';
 import { fetchSession, updateSession } from '../utils/fetch/sessions';

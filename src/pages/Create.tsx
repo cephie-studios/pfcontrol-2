@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AlertCircle, Info, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';
