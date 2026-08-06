@@ -394,11 +394,6 @@ export async function getPublicNetworkSessionForDeveloperApi(
   return row ?? null;
 }
 
-/**
- * "Active" = created recently, or has recent flight activity — not gated on
- * a connected controller. `refreshed_at` is never written anywhere, so it
- * can't be used as the recency signal.
- */
 export async function getActivePfatcSessionIdsForDeveloperApi(
   windowHours: number
 ): Promise<string[]> {
@@ -418,14 +413,8 @@ export async function getActivePfatcSessionIdsForDeveloperApi(
       .innerJoin('sessions as s', 's.session_id', 'f.session_id')
       .select('f.session_id')
       .distinct()
+      .where('f.updated_at', '>=', sql<Date>`${sinceIso}`)
       .where('s.is_pfatc', '=', true)
-      .where((eb) =>
-        eb.or([
-          eb('f.flight_plan_time', '>=', sinceIso),
-          eb('f.updated_at', '>=', sql<Date>`${sinceIso}`),
-          eb('f.created_at', '>=', sql<Date>`${sinceIso}`),
-        ])
-      )
       .execute(),
   ]);
 

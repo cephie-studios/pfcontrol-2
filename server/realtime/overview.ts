@@ -4,7 +4,10 @@ import type { ClientFlight } from '../db/flights.js';
 import { keys, TTL } from './keys.js';
 import { perfAsync } from './perf.js';
 import { getActiveNetworkSessionIds, getSessionMetas } from './activeSessions.js';
-import { getFlightsForSessions } from './flightsRead.js';
+import {
+  getFlightsForSessions,
+  getRecentlyUpdatedFlightsForSessions,
+} from './flightsRead.js';
 import { getUserBadgesByIds } from './userCache.js';
 
 type SectorController = {
@@ -247,8 +250,14 @@ const DEVELOPER_NETWORK_ACTIVE_WINDOW_HOURS = (() => {
   return Number.isFinite(envValue) && envValue > 0 ? envValue : 4;
 })();
 
+const DEVELOPER_NETWORK_FLIGHT_WINDOW_MINUTES = (() => {
+  const envValue = Number(process.env.DEVELOPER_NETWORK_FLIGHT_WINDOW_MINUTES);
+  return Number.isFinite(envValue) && envValue > 0 ? envValue : 30;
+})();
+
 export async function buildDeveloperNetworkSnapshot(
-  windowHours: number,
+  sessionWindowHours: number,
+  flightWindowMinutes: number,
   sessionUsersIO?: SessionUsersReader
 ): Promise<OverviewData> {
   return perfAsync('buildDeveloperNetworkSnapshot', async () => {
@@ -256,11 +265,11 @@ export async function buildDeveloperNetworkSnapshot(
       '../db/sessions.js'
     );
     const activeSessionIds =
-      await getActivePfatcSessionIdsForDeveloperApi(windowHours);
+      await getActivePfatcSessionIdsForDeveloperApi(sessionWindowHours);
     const metas = await getSessionMetas(activeSessionIds);
-    const flightsBySession = await getFlightsForSessions(
+    const flightsBySession = await getRecentlyUpdatedFlightsForSessions(
       activeSessionIds,
-      windowHours
+      flightWindowMinutes
     );
 
     const sessionUsersEntries = sessionUsersIO
@@ -453,6 +462,7 @@ export async function getDeveloperNetworkSnapshot(): Promise<OverviewData> {
   if (cached) return cached;
   const data = await buildDeveloperNetworkSnapshot(
     DEVELOPER_NETWORK_ACTIVE_WINDOW_HOURS,
+    DEVELOPER_NETWORK_FLIGHT_WINDOW_MINUTES,
     sessionUsersIORef ?? undefined
   );
   await storeDeveloperNetworkSnapshot(data);

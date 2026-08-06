@@ -79,7 +79,7 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'sessions.network_overview',
     label: 'Network overview',
     description:
-      'GET /sessions/network/overview — every PFATC session network-wide created or flight-active in the last 4 hours (no live controller required) with nested flights, controllers, and ATIS, plus an arrivals-by-airport index. GET /sessions/network/flights — the same active sessions, flattened to a plain array of flight objects. Available from API v2.',
+      'GET /sessions/network/overview — every PFATC session network-wide created or flight-active in the last 4 hours (no live controller required) with nested flights updated in the last 30 minutes, controllers, and ATIS, plus an arrivals-by-airport index. GET /sessions/network/flights — the same active sessions, flattened to a plain array of flight objects. Available from API v2.',
   },
   // AATC disabled — sessions.network_aatc scope commented out
   // {

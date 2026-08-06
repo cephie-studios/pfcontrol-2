@@ -104,6 +104,49 @@ export async function getFlightsForSessions(
   );
 }
 
+/** Same as getFlightsForSessions but gated on updated_at alone, for callers that want "still being worked" rather than "recently planned/created/touched". */
+export async function getRecentlyUpdatedFlightsForSessions(
+  sessionIds: string[],
+  minutesBack: number
+): Promise<Map<string, ClientFlight[]>> {
+  const grouped = new Map<string, ClientFlight[]>();
+  if (sessionIds.length === 0) return grouped;
+
+  const validIds = sessionIds.map((id) => validateSessionId(id));
+  const since = createUTCDate();
+  since.setUTCMinutes(since.getUTCMinutes() - minutesBack);
+  const sinceIso = since.toISOString();
+
+  return perfAsync(
+    'getRecentlyUpdatedFlightsForSessions',
+    async () => {
+      const rows = await mainDb
+        .selectFrom('flights')
+        .selectAll()
+        .where('session_id', 'in', validIds)
+        .where('updated_at', '>=', sql<Date>`${sinceIso}`)
+        .orderBy('updated_at', 'desc')
+        .execute();
+
+      const pairs = rows.map((f) => ({
+        flight: sanitizeFlightForClient(f),
+        userId: f.user_id,
+      }));
+      const withUsers = await attachUsersToFlights(pairs);
+
+      for (const id of validIds) {
+        grouped.set(id, []);
+      }
+      for (const flight of withUsers) {
+        const list = grouped.get(flight.session_id);
+        if (list) list.push(flight);
+      }
+      return grouped;
+    },
+    { sessionCount: validIds.length }
+  );
+}
+
 export async function getFlightsForSessionCached(
   sessionId: string,
   hoursBack = 2

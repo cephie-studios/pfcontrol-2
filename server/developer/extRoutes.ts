@@ -141,7 +141,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions/network/overview' },
     responseSummary:
-      'Every PFATC session network-wide that was created in the last 4 hours or has had flight activity (created, updated, or planned) in the last 4 hours. A live connected controller is not required. Each session includes nested sanitized flights, connected-controller list (if any), and decoded ATIS. Also includes totalActiveSessions, totalFlights, arrivalsByAirport (flights grouped by arrival ICAO across every session), and lastUpdated. Not limited to sessions you own.',
+      'Every PFATC session network-wide that was created in the last 4 hours or has had flight activity in the last 4 hours. A live connected controller is not required. Each session includes nested flights updated in the last 30 minutes (sanitized), connected-controller list (if any), and decoded ATIS. Also includes totalActiveSessions, totalFlights, arrivalsByAirport (flights grouped by arrival ICAO across every session), and lastUpdated. Not limited to sessions you own.',
     minVersion: 2,
   },
   {
@@ -149,7 +149,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions/network/flights' },
     responseSummary:
-      'Flat JSON array of every flight across every PFATC session network-wide that matches the same 4-hour activity window as /sessions/network/overview. Each flight is annotated with sessionId and departureAirport. Not limited to sessions you own.',
+      'Flat JSON array of every flight updated in the last 30 minutes, across every PFATC session network-wide that was created or flight-active in the last 4 hours. Each flight is annotated with sessionId and departureAirport. Not limited to sessions you own.',
     minVersion: 2,
   },
   // AATC disabled — sessions.network_aatc routes commented out

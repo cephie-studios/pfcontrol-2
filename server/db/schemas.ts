@@ -963,24 +963,10 @@ export async function ensurePerformanceIndexes() {
     ON sessions (airport_icao)
     WHERE is_advanced_atc = true
   `.execute(mainDb);
-}
-
-/**
- * Strips the removed 'sessions.network_aatc' scope id from old profiles/keys.
- * Without this, isValidScopeList() rejects any array containing it, so
- * re-saving an affected row fails validation even for unrelated changes.
- */
-export async function ensureAatcScopeCleanup() {
-  await sql`
-    UPDATE developer_profiles
-    SET approved_scopes = approved_scopes - 'sessions.network_aatc'
-    WHERE approved_scopes ? 'sessions.network_aatc'
-  `.execute(mainDb);
 
   await sql`
-    UPDATE developer_api_keys
-    SET scopes = scopes - 'sessions.network_aatc'
-    WHERE scopes ? 'sessions.network_aatc'
+    CREATE INDEX IF NOT EXISTS idx_flights_updated_at
+    ON flights (updated_at)
   `.execute(mainDb);
 }
 
