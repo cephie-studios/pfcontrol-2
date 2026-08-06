@@ -14,7 +14,6 @@ import {
   ensureDailyDatabaseMetricsTables,
   ensureWebsocketSnapshotsTable,
   ensurePerformanceIndexes,
-  ensureAatcScopeCleanup,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -81,7 +80,6 @@ try {
   await ensureDailyDatabaseMetricsTables();
   await ensureWebsocketSnapshotsTable();
   await ensurePerformanceIndexes();
-  await ensureAatcScopeCleanup();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {
