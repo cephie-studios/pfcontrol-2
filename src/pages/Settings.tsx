@@ -15,6 +15,7 @@ import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsSettings';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useToast } from '../hooks/useToast';
 import Joyride, {
   type CallBackProps,
   STATUS,
@@ -72,6 +73,7 @@ function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
 export default function Settings() {
   const { settings, updateSettings, loading } = useSettings();
   const { refreshUser } = useAuth();
+  const { showError } = useToast();
   const [localSettings, setLocalSettings] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -260,6 +262,11 @@ export default function Settings() {
       preventNavigation.current = false;
     } catch (error) {
       console.error('Error updating settings:', error);
+      showError(
+        error instanceof Error
+          ? `Failed to save settings: ${error.message}`
+          : 'Failed to save settings'
+      );
     } finally {
       setSaving(false);
     }
@@ -299,9 +306,11 @@ export default function Settings() {
         navigate('/?tutorial=true');
       } else {
         console.error('Failed to reset tutorial.');
+        showError('Failed to reset tutorial.');
       }
     } catch (error) {
       console.error('Error resetting tutorial:', error);
+      showError('Failed to reset tutorial.');
     }
   };
 

@@ -128,10 +128,10 @@ export default function Admin() {
       setStats({ ...data, periodTotals, totals: data.totals });
     } catch (err) {
       console.error('Error fetching admin statistics:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch statistics'
-      );
-      setToast({ message: 'Failed to fetch statistics', type: 'error' });
+      const message =
+        err instanceof Error ? err.message : 'Failed to fetch statistics';
+      setError(message);
+      setToast({ message, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -144,7 +144,11 @@ export default function Admin() {
       setAppVersion(await fetchAppVersion());
     } catch (err) {
       console.error('Error fetching app version:', err);
-      setToast({ message: 'Failed to fetch app version', type: 'error' });
+      setToast({
+        message:
+          err instanceof Error ? err.message : 'Failed to fetch app version',
+        type: 'error',
+      });
     } finally {
       setVersionLoading(false);
     }
@@ -155,7 +159,11 @@ export default function Admin() {
       setApiLogStats24h(await fetchApiLogStats24h());
     } catch (err) {
       console.error('Error fetching API log stats:', err);
-      setToast({ message: 'Failed to fetch API log stats', type: 'error' });
+      setToast({
+        message:
+          err instanceof Error ? err.message : 'Failed to fetch API log stats',
+        type: 'error',
+      });
     }
   }, []);
 

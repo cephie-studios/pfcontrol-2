@@ -145,6 +145,11 @@ export default function AdminApiLogs() {
       setStats(statsData);
     } catch (err) {
       console.error('Failed to fetch API log stats:', err);
+      setToast({
+        message:
+          err instanceof Error ? err.message : 'Failed to fetch API log stats',
+        type: 'error',
+      });
     }
   };
 

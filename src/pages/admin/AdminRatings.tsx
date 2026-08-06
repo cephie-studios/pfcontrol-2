@@ -55,7 +55,11 @@ export default function AdminRatings() {
       setDailyStats(dailyData);
     } catch (error) {
       console.error('Error fetching rating statistics:', error);
-      setError('Failed to fetch rating statistics');
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch rating statistics'
+      );
     } finally {
       setLoading(false);
     }

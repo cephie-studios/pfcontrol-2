@@ -10,6 +10,7 @@ import { createSessionUsersSocket } from '../sockets/sessionUsersSocket';
 import { useAuth } from '../hooks/auth/useAuth';
 import { playSoundWithSettings } from '../utils/playSound';
 import { useSettings } from '../hooks/settings/useSettings';
+import { useToast } from '../hooks/useToast';
 import { steps } from '../components/tutorial/TutorialStepsFlights';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { getChartsForAirport } from '../utils/acars';
@@ -70,6 +71,7 @@ export default function Flights() {
   const startTutorial = searchParams.get('tutorial') === 'true';
   const isMobile = useMediaQuery({ maxWidth: 1000 });
   const posthog = usePostHog();
+  const { showError } = useToast();
 
   const [accessError, setAccessError] = useState<string | null>(null);
   const [validatingAccess, setValidatingAccess] = useState(true);
@@ -321,6 +323,7 @@ export default function Flights() {
         error: string;
       }) => {
         console.error('Flight websocket error:', error);
+        showError(error.error || 'Flight update failed');
       }
     );
     socket.socket.on('sessionUpdated', (updates) => {
@@ -338,6 +341,7 @@ export default function Flights() {
     accessError,
     user?.userId,
     user?.username,
+    showError,
   ]);
   const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
     if (!flightsSocket?.socket) {
@@ -425,6 +429,7 @@ export default function Flights() {
       // onArrivalError
       (error) => {
         console.error('Arrival websocket error:', error);
+        showError(error?.error || 'Arrival update failed');
       },
       // onInitialExternalArrivals
       (flights: Flight[]) => {
@@ -437,7 +442,7 @@ export default function Flights() {
       arrivalsSocketConnectedRef.current = false;
       socket.socket.disconnect();
     };
-  }, [sessionId, accessId, initialLoadComplete, session]);
+  }, [sessionId, accessId, initialLoadComplete, session, showError]);
 
   // For sessions without advanced network features, arrivals come from own flights (already loaded)
   useEffect(() => {
@@ -652,6 +657,11 @@ export default function Flights() {
       await addFlight(sessionId, newFlightData);
     } catch (error) {
       console.error('Failed to add custom departure:', error);
+      showError(
+        error instanceof Error
+          ? `Failed to add custom departure: ${error.message}`
+          : 'Failed to add custom departure'
+      );
     }
   };
 
@@ -680,6 +690,11 @@ export default function Flights() {
       await addFlight(sessionId, newFlightData);
     } catch (error) {
       console.error('Failed to add custom arrival:', error);
+      showError(
+        error instanceof Error
+          ? `Failed to add custom arrival: ${error.message}`
+          : 'Failed to add custom arrival'
+      );
     }
   };
 
@@ -699,6 +714,11 @@ export default function Flights() {
       }
     } catch (error) {
       console.error('Failed to update runway:', error);
+      showError(
+        error instanceof Error
+          ? `Failed to update runway: ${error.message}`
+          : 'Failed to update runway'
+      );
     }
   };
 

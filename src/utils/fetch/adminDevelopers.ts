@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -33,7 +34,7 @@ export async function fetchAdminDeveloperApplications(params?: {
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to load applications');
+  if (!res.ok) await apiError(res, 'Failed to load applications');
   return res.json();
 }
 
@@ -55,8 +56,7 @@ export async function approveDeveloperApplication(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Approve failed');
+    await apiError(res, 'Approve failed');
   }
 }
 
@@ -74,8 +74,7 @@ export async function rejectDeveloperApplication(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Reject failed');
+    await apiError(res, 'Reject failed');
   }
 }
 
@@ -91,7 +90,7 @@ export async function fetchAdminDeveloperCatalog(): Promise<
   const res = await apiFetch(`${API_BASE_URL}/api/admin/developers/catalog`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to load scope catalog');
+  if (!res.ok) await apiError(res, 'Failed to load scope catalog');
   const data = await res.json();
   return data.scopes as AdminScopeCatalogEntry[];
 }
@@ -121,7 +120,7 @@ export async function fetchAdminDevelopers(): Promise<{
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to load developers');
+  if (!res.ok) await apiError(res, 'Failed to load developers');
   return res.json();
 }
 
@@ -149,7 +148,7 @@ export async function fetchAdminDeveloperKeys(
     `${API_BASE_URL}/api/admin/developers/${encodeURIComponent(userId)}/keys`,
     { credentials: 'include' }
   );
-  if (!res.ok) throw new Error('Failed to load keys');
+  if (!res.ok) await apiError(res, 'Failed to load keys');
   return res.json();
 }
 
@@ -172,8 +171,7 @@ export async function approveAdminDeveloperKey(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Approve key failed');
+    await apiError(res, 'Approve key failed');
   }
   return res.json();
 }
@@ -193,8 +191,7 @@ export async function rejectAdminDeveloperKey(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Reject key failed');
+    await apiError(res, 'Reject key failed');
   }
 }
 
@@ -213,8 +210,7 @@ export async function patchAdminDeveloperKey(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Update key failed');
+    await apiError(res, 'Update key failed');
   }
 }
 
@@ -227,8 +223,7 @@ export async function revokeAdminDeveloperKey(
     { method: 'POST', credentials: 'include' }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Revoke failed');
+    await apiError(res, 'Revoke failed');
   }
 }
 
@@ -246,10 +241,7 @@ export async function patchAdminDeveloperProfileScopes(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error || 'Update scopes failed'
-    );
+    await apiError(res, 'Update scopes failed');
   }
 }
 
@@ -261,7 +253,7 @@ export async function suspendDeveloperProfile(userId: string): Promise<void> {
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Suspend failed');
+  if (!res.ok) await apiError(res, 'Suspend failed');
 }
 
 export async function reactivateDeveloperProfile(
@@ -274,7 +266,7 @@ export async function reactivateDeveloperProfile(
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Reactivate failed');
+  if (!res.ok) await apiError(res, 'Reactivate failed');
 }
 
 export async function deleteAdminDeveloperAccount(
@@ -285,7 +277,6 @@ export async function deleteAdminDeveloperAccount(
     { method: 'DELETE', credentials: 'include' }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Delete failed');
+    await apiError(res, 'Delete failed');
   }
 }

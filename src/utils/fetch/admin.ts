@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 import type { Settings } from '../../types/settings';
 import type { Feedback, FeedbackStats } from './feedback';
 
@@ -358,7 +359,7 @@ async function makeAdminRequest(endpoint: string, options?: RequestInit) {
     if (response.status === 401) {
       throw new Error('Authentication required');
     }
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    await apiError(response, `HTTP ${response.status}: ${response.statusText}`);
   }
 
   return response.json();
@@ -510,7 +511,7 @@ export async function fetchAuditLogs(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch audit logs');
+    await apiError(response, 'Failed to fetch audit logs');
   }
 
   return response.json();
@@ -659,7 +660,7 @@ export async function fetchChatReports(
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to fetch chat reports');
+  if (!res.ok) await apiError(res, 'Failed to fetch chat reports');
   return res.json();
 }
 
@@ -676,7 +677,7 @@ export async function updateChatReportStatus(
       body: JSON.stringify({ status }),
     }
   );
-  if (!res.ok) throw new Error('Failed to update report status');
+  if (!res.ok) await apiError(res, 'Failed to update report status');
 }
 
 export async function deleteChatReport(reportId: number): Promise<void> {
@@ -687,7 +688,7 @@ export async function deleteChatReport(reportId: number): Promise<void> {
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to delete report');
+  if (!res.ok) await apiError(res, 'Failed to delete report');
 }
 
 export async function fetchFlightLogs(
@@ -721,7 +722,7 @@ export async function fetchFlightLogs(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch flight logs');
+    await apiError(response, 'Failed to fetch flight logs');
   }
 
   return response.json();
@@ -739,7 +740,7 @@ export async function revealFlightLogIP(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to reveal flight log IP');
+    await apiError(response, 'Failed to reveal flight log IP');
   }
 
   return response.json();
@@ -790,7 +791,7 @@ export async function fetchApiLogs(
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API logs');
+    await apiError(response, 'Failed to fetch API logs');
   }
 
   return response.json();
@@ -805,7 +806,7 @@ export async function fetchApiLogStats(days: number = 7): Promise<ApiLogStats> {
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log stats');
+    await apiError(response, 'Failed to fetch API log stats');
   }
 
   return response.json();
@@ -817,7 +818,7 @@ export async function fetchApiLogById(id: number): Promise<ApiLog> {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log');
+    await apiError(response, 'Failed to fetch API log');
   }
 
   return response.json();
@@ -840,7 +841,7 @@ export async function fetchApiLogStats24h(): Promise<
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch API log stats for last 24 hours');
+    await apiError(response, 'Failed to fetch API log stats for last 24 hours');
   }
 
   return response.json();

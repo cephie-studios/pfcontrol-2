@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 import type { DeveloperApiPublicSpec } from '../../types/developerApiSpec';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -58,7 +59,7 @@ export async function fetchDeveloperCatalog(): Promise<
   const res = await apiFetch(`${API_BASE_URL}/api/developer/catalog`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to load scope catalog');
+  if (!res.ok) await apiError(res, 'Failed to load scope catalog');
   const data = await res.json();
   return data.scopes as DeveloperScopeCatalogEntry[];
 }
@@ -67,7 +68,7 @@ export async function fetchDeveloperApplication(): Promise<DeveloperApplicationS
   const res = await apiFetch(`${API_BASE_URL}/api/developer/application`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to load application');
+  if (!res.ok) await apiError(res, 'Failed to load application');
   return res.json();
 }
 
@@ -84,10 +85,7 @@ export async function patchDeveloperNotificationEmail(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error || 'Failed to save email'
-    );
+    await apiError(res, 'Failed to save email');
   }
   return res.json() as Promise<{ notificationEmail: string | null }>;
 }
@@ -108,8 +106,7 @@ export async function submitDeveloperApplication(input: {
     }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Failed to submit');
+    await apiError(res, 'Failed to submit');
   }
 }
 
@@ -138,7 +135,7 @@ export async function fetchDeveloperKeys(): Promise<DeveloperKeysPayload> {
   const res = await apiFetch(`${API_BASE_URL}/api/developer/keys`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to list keys');
+  if (!res.ok) await apiError(res, 'Failed to list keys');
   const data = (await res.json()) as {
     keys?: DeveloperKeyRow[];
     defaultRateLimitPerMinute?: number;
@@ -184,10 +181,7 @@ export async function createDeveloperKey(input: {
     body: JSON.stringify(input),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error || 'Failed to create key'
-    );
+    await apiError(res, 'Failed to create key');
   }
   const data = (await res.json()) as Record<string, unknown>;
   if (res.status === 202 || data.status === 'pending') {
@@ -219,8 +213,7 @@ export async function dismissDeveloperAdminNotice(): Promise<void> {
     credentials: 'include',
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Failed to dismiss');
+    await apiError(res, 'Failed to dismiss');
   }
 }
 
@@ -230,10 +223,7 @@ export async function deleteDeveloperKey(id: string): Promise<void> {
     credentials: 'include',
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error || 'Failed to delete key'
-    );
+    await apiError(res, 'Failed to delete key');
   }
 }
 
@@ -246,8 +236,7 @@ export async function revokeDeveloperKey(id: string): Promise<void> {
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || 'Failed to revoke');
+    await apiError(res, 'Failed to revoke');
   }
 }
 
@@ -265,10 +254,7 @@ export async function rotateDeveloperKey(id: string): Promise<{
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { error?: string }).error || 'Failed to rotate key'
-    );
+    await apiError(res, 'Failed to rotate key');
   }
   return res.json();
 }
@@ -310,6 +296,6 @@ export async function fetchDeveloperDashboardSummary(opts?: {
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to load dashboard');
+  if (!res.ok) await apiError(res, 'Failed to load dashboard');
   return res.json();
 }

@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 export interface Feedback {
   id: number;
   user_id: string;
@@ -34,7 +35,7 @@ export async function submitFeedback(
   });
 
   if (!res.ok) {
-    throw new Error('Failed to submit feedback');
+    await apiError(res, 'Failed to submit feedback');
   }
 
   return res.json();
@@ -46,7 +47,7 @@ export async function fetchFeedback(): Promise<Feedback[]> {
   });
 
   if (!res.ok) {
-    throw new Error('Failed to fetch feedback');
+    await apiError(res, 'Failed to fetch feedback');
   }
 
   return res.json();
@@ -58,7 +59,7 @@ export async function fetchFeedbackStats(): Promise<FeedbackStats> {
   });
 
   if (!res.ok) {
-    throw new Error('Failed to fetch feedback stats');
+    await apiError(res, 'Failed to fetch feedback stats');
   }
 
   return res.json();
@@ -71,7 +72,7 @@ export async function deleteFeedback(id: number): Promise<Feedback> {
   });
 
   if (!res.ok) {
-    throw new Error('Failed to delete feedback');
+    await apiError(res, 'Failed to delete feedback');
   }
 
   return res.json();

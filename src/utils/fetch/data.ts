@@ -4,6 +4,7 @@ import type { Airline } from '../../types/airlines';
 import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 import { clientApiUrl } from '../clientApiBase';
+import { errorFromResponse } from '../errorMessage';
 
 interface AvailableImage {
   filename: string;
@@ -20,7 +21,7 @@ async function fetchData<T>(endpoint: string): Promise<T[]> {
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
     }
     return await response.json();
   } catch (error) {
@@ -80,7 +81,7 @@ export async function fetchLeaderboard(): Promise<
     `${import.meta.env.VITE_SERVER_URL}/api/data/leaderboard`,
     publicDataFetchInit
   );
-  if (!response.ok) throw new Error('Failed to fetch leaderboard');
+  if (!response.ok) throw await errorFromResponse(response, 'Failed to fetch leaderboard');
   return response.json();
 }
 
@@ -91,7 +92,7 @@ export async function getTesterSettings(): Promise<TesterSettings> {
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
     }
     const settings: TesterSettings = await response.json();
     return settings;
@@ -107,7 +108,10 @@ export async function fetchActiveNotifications(): Promise<AdminNotification[]> {
     publicDataFetchInit
   );
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    throw await errorFromResponse(
+      response,
+      `HTTP error! status: ${response.status}`
+    );
   }
   return await response.json();
 }
@@ -120,7 +124,7 @@ export async function fetchUserRanks(
     publicDataFetchInit
   );
   if (!response.ok) {
-    throw new Error('Failed to fetch user ranks');
+    throw await errorFromResponse(response, 'Failed to fetch user ranks');
   }
   return response.json();
 }
@@ -146,7 +150,7 @@ export async function fetchRoute(
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     return { ...data, success: true };
