@@ -736,7 +736,7 @@ router.post(
         return res.status(400).json({ error: 'cruisingFL is required' });
       }
 
-      const flightData = {
+      const flightData: Record<string, unknown> = {
         ...fromCamelCaseFlightBody(req.body ?? {}),
         user_id: ext.userId,
         ip_address: null,
