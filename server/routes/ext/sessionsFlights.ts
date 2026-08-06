@@ -16,13 +16,15 @@ import {
   sanitizeFlightForClient,
   updateFlight,
 } from '../../db/flights.js';
-import { addSessionToUser } from '../../db/users.js';
+import { addSessionToUser, getUserById } from '../../db/users.js';
+import { logFlightAction } from '../../db/flightLogs.js';
 import { generateSessionId, generateAccessId } from '../../utils/ids.js';
 import { recordNewFlight, recordNewSession } from '../../db/statistics.js';
 import { getSessionsByUser } from '../../db/sessions.js';
 import {
   sessionCreationLimiter,
   flightCreationLimiter,
+  networkFlightBatchLimiter,
 } from '../../middleware/rateLimiting.js';
 import { getUserRoles } from '../../db/roles.js';
 import { isAdmin } from '../../middleware/admin.js';
@@ -34,6 +36,11 @@ import {
 } from '../../utils/validation.js';
 import { broadcastFlightEvent } from '../../websockets/flightsWebsocket.js';
 import { sendServerError } from '../../utils/apiError.js';
+import { fromCamelCaseFlightBody } from '../../utils/caseConversion.js';
+import {
+  isValidAirportIcao,
+  isValidRunwayForAirport,
+} from '../../utils/flightUtils.js';
 import {
   getDeveloperNetworkSnapshot,
   type OverviewData,
@@ -49,10 +56,58 @@ export function routeParamString(
   return Array.isArray(v) ? v[0] : v;
 }
 
+export async function usernameFor(userId: string): Promise<string> {
+  try {
+    const user = await getUserById(userId);
+    return user?.username || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 export function extCtx(req: Request) {
   const ext = req.developerExt;
   if (!ext) throw new Error('developerExt missing');
   return ext;
+}
+
+function validateFlightAirportFields(
+  fields: Record<string, unknown>,
+  fallbackDepartureIcao?: string | null
+): { error: string } | null {
+  const departure =
+    typeof fields.departure === 'string' ? fields.departure : undefined;
+  const arrival =
+    typeof fields.arrival === 'string' ? fields.arrival : undefined;
+  const alternate =
+    typeof fields.alternate === 'string' ? fields.alternate : undefined;
+  const runway =
+    typeof fields.runway === 'string' ? fields.runway : undefined;
+
+  if (departure && !isValidAirportIcao(departure)) {
+    return {
+      error: `Unknown departure airport ICAO: "${departure}". See GET /data/airports for valid codes.`,
+    };
+  }
+  if (arrival && !isValidAirportIcao(arrival)) {
+    return {
+      error: `Unknown arrival airport ICAO: "${arrival}". See GET /data/airports for valid codes.`,
+    };
+  }
+  if (alternate && !isValidAirportIcao(alternate)) {
+    return {
+      error: `Unknown alternate airport ICAO: "${alternate}". See GET /data/airports for valid codes.`,
+    };
+  }
+  if (runway) {
+    const runwayIcao = departure ?? fallbackDepartureIcao;
+    if (runwayIcao && !isValidRunwayForAirport(runwayIcao, runway)) {
+      return {
+        error: `Invalid runway: "${runway}" is not a runway at ${runwayIcao.toUpperCase()}. See GET /data/airports/${runwayIcao.toUpperCase()}/runways.`,
+      };
+    }
+  }
+  return null;
 }
 
 function publicNetworkSessionJson(
@@ -191,21 +246,16 @@ function activeDeveloperNetworkSessions(data: OverviewData) {
 function developerOverviewJson(data: OverviewData) {
   const activeSessions = activeDeveloperNetworkSessions(data);
 
-  type ArrivalFlight = (typeof activeSessions)[number]['flights'][number] & {
-    sessionId: string;
-    departureAirport: string;
-  };
-  const arrivalsByAirport: Record<string, ArrivalFlight[]> = {};
+  const arrivalsByAirport: Record<
+    string,
+    (typeof activeSessions)[number]['flights']
+  > = {};
   for (const session of activeSessions) {
     for (const flight of session.flights) {
       if (!flight.arrival) continue;
       const arrivalIcao = flight.arrival.toUpperCase();
       if (!arrivalsByAirport[arrivalIcao]) arrivalsByAirport[arrivalIcao] = [];
-      arrivalsByAirport[arrivalIcao].push({
-        ...flight,
-        sessionId: session.sessionId,
-        departureAirport: session.airportIcao,
-      });
+      arrivalsByAirport[arrivalIcao].push(flight);
     }
   }
 
@@ -233,12 +283,8 @@ router.get('/network/flights', async (req: Request, res: Response) => {
   try {
     extCtx(req);
     const snapshot = await getDeveloperNetworkSnapshot();
-    const flights = activeDeveloperNetworkSessions(snapshot).flatMap((s) =>
-      s.flights.map((f) => ({
-        ...f,
-        sessionId: s.sessionId,
-        departureAirport: s.airportIcao,
-      }))
+    const flights = activeDeveloperNetworkSessions(snapshot).flatMap(
+      (s) => s.flights
     );
     res.json(flights);
   } catch (e) {
@@ -246,6 +292,140 @@ router.get('/network/flights', async (req: Request, res: Response) => {
     sendServerError(res, 'Failed to list network flights', e);
   }
 });
+
+const NETWORK_MANAGE_ALLOWED_FIELDS = [
+  'callsign',
+  'remark',
+  'squawk',
+  'clearedfl',
+  'cruisingfl',
+  'runway',
+  'stand',
+  'gate',
+  'sid',
+  'star',
+  'req_at',
+  'req_phase',
+  'clearance',
+] as const;
+
+const MAX_NETWORK_BATCH_SIZE = 25;
+
+function pickAllowedNetworkFields(
+  fields: Record<string, unknown>
+): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const key of NETWORK_MANAGE_ALLOWED_FIELDS) {
+    if (key in fields) picked[key] = fields[key];
+  }
+  return picked;
+}
+
+interface NetworkFlightUpdateItem {
+  sessionId?: unknown;
+  flightId?: unknown;
+  fields?: unknown;
+}
+
+router.put(
+  '/network/flights',
+  networkFlightBatchLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      const ext = extCtx(req);
+      const body = req.body as { updates?: NetworkFlightUpdateItem[] };
+      if (!Array.isArray(body.updates) || body.updates.length === 0) {
+        return res
+          .status(400)
+          .json({ error: 'updates must be a non-empty array' });
+      }
+      if (body.updates.length > MAX_NETWORK_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Too many updates in one batch (max ${MAX_NETWORK_BATCH_SIZE})`,
+        });
+      }
+
+      const username = await usernameFor(ext.userId);
+
+      const results = await Promise.all(
+        body.updates.map(async (item) => {
+          const rawSessionId =
+            typeof item.sessionId === 'string' ? item.sessionId : '';
+          const rawFlightId =
+            typeof item.flightId === 'string' ? item.flightId : '';
+          try {
+            const sessionId = validateSessionId(rawSessionId);
+            const flightId = validateFlightId(rawFlightId);
+
+            const session = await getSessionById(sessionId);
+            if (!session || !session.is_pfatc) {
+              return { sessionId, flightId, ok: false, error: 'Not found' };
+            }
+
+            const fields = pickAllowedNetworkFields(
+              fromCamelCaseFlightBody(
+                item.fields && typeof item.fields === 'object'
+                  ? (item.fields as Record<string, unknown>)
+                  : {}
+              )
+            );
+            if (Object.keys(fields).length === 0) {
+              return {
+                sessionId,
+                flightId,
+                ok: false,
+                error: 'No editable fields provided',
+              };
+            }
+
+            const before = await getFlightById(sessionId, flightId);
+            const airportError = validateFlightAirportFields(
+              fields,
+              before?.departure
+            );
+            if (airportError) {
+              return { sessionId, flightId, ok: false, error: airportError.error };
+            }
+
+            const flight = await updateFlight(sessionId, flightId, fields);
+            broadcastFlightEvent(sessionId, 'flightUpdated', flight);
+
+            setImmediate(() => {
+              void logFlightAction({
+                userId: ext.userId,
+                username,
+                sessionId,
+                action: 'update',
+                flightId,
+                oldData: before ? sanitizeFlightForClient(before) : null,
+                newData: flight,
+              });
+            });
+
+            return { sessionId, flightId, ok: true, flight };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Update failed';
+            const error =
+              msg === 'Flight not found or update failed'
+                ? 'Not found'
+                : msg;
+            return {
+              sessionId: rawSessionId,
+              flightId: rawFlightId,
+              ok: false,
+              error,
+            };
+          }
+        })
+      );
+
+      res.json({ results });
+    } catch (e) {
+      console.error('[ext/sessions] network flights batch update:', e);
+      sendServerError(res, 'Failed to update network flights', e);
+    }
+  }
+);
 
 // AATC disabled — /network/aatc routes return 404
 router.get('/network/aatc', async (_req: Request, res: Response) => {
@@ -354,6 +534,29 @@ router.post(
       if (!airportIcao || typeof airportIcao !== 'string') {
         return res.status(400).json({ error: 'Airport ICAO is required' });
       }
+      if (!isValidAirportIcao(airportIcao)) {
+        return res.status(400).json({
+          error: `Unknown airport ICAO: "${airportIcao}". See GET /data/airports for valid codes.`,
+        });
+      }
+      if (!activeRunway || typeof activeRunway !== 'string') {
+        return res.status(400).json({
+          error: `Active (departure) runway is required. See GET /data/airports/${String(airportIcao).toUpperCase()}/runways.`,
+        });
+      }
+      if (activeRunway && !isValidRunwayForAirport(airportIcao, activeRunway)) {
+        return res.status(400).json({
+          error: `Invalid activeRunway: "${activeRunway}" is not a runway at ${String(airportIcao).toUpperCase()}. See GET /data/airports/${String(airportIcao).toUpperCase()}/runways.`,
+        });
+      }
+      if (
+        arrivalRunway &&
+        !isValidRunwayForAirport(airportIcao, arrivalRunway)
+      ) {
+        return res.status(400).json({
+          error: `Invalid arrivalRunway: "${arrivalRunway}" is not a runway at ${String(airportIcao).toUpperCase()}. See GET /data/airports/${String(airportIcao).toUpperCase()}/runways.`,
+        });
+      }
 
       const pfatc = Boolean(isPFATC);
       const advancedAtc = Boolean(isAdvancedATC);
@@ -417,7 +620,10 @@ router.post(
           .json({ error: 'Failed to load created session' });
       }
 
-      res.status(201).json(sessionToDeveloperJson(created, ext.keyId));
+      res.status(201).json({
+        ...sessionToDeveloperJson(created, ext.keyId),
+        accessId: created.access_id,
+      });
     } catch (error) {
       if (error instanceof ExclusiveSessionNetworkFlagsError) {
         return res.status(400).json({
@@ -517,12 +723,32 @@ router.post(
           .status(400)
           .json({ error: 'Stand must be 8 characters or less' });
       }
+      if (!req.body?.callsign) {
+        return res.status(400).json({ error: 'callsign is required' });
+      }
+      if (!req.body?.aircraft) {
+        return res.status(400).json({ error: 'aircraft is required' });
+      }
+      if (!req.body?.arrival) {
+        return res.status(400).json({ error: 'arrival is required' });
+      }
+      if (!req.body?.cruisingFL) {
+        return res.status(400).json({ error: 'cruisingFL is required' });
+      }
 
-      const flightData = {
-        ...req.body,
+      const flightData: Record<string, unknown> = {
+        ...fromCamelCaseFlightBody(req.body ?? {}),
         user_id: ext.userId,
         ip_address: null,
       };
+
+      flightData.departure = loaded.session.airport_icao;
+
+      const airportError = validateFlightAirportFields(
+        flightData,
+        loaded.session.airport_icao
+      );
+      if (airportError) return res.status(400).json(airportError);
 
       const ownerView = await addFlight(loaded.session.session_id, flightData);
       await recordNewFlight();
@@ -532,6 +758,21 @@ router.post(
         : null;
       const payload = inserted ? sanitizeFlightForClient(inserted) : {};
       broadcastFlightEvent(loaded.session.session_id, 'flightAdded', payload);
+
+      if (ownerView.id) {
+        setImmediate(() => {
+          void (async () => {
+            void logFlightAction({
+              userId: ext.userId,
+              username: await usernameFor(ext.userId),
+              sessionId: loaded.session.session_id,
+              action: 'add',
+              flightId: ownerView.id!,
+              newData: payload,
+            });
+          })();
+        });
+      }
 
       res.status(201).json(payload);
     } catch (e) {
@@ -580,12 +821,33 @@ router.put(
         return res.status(400).json({ error: 'Stand too long' });
       }
 
-      const flight = await updateFlight(
-        session.session_id,
-        fid,
-        req.body ?? {}
+      const before = await getFlightById(session.session_id, fid);
+      if (!before) return res.status(404).json({ error: 'Not found' });
+
+      const updateFields = fromCamelCaseFlightBody(req.body ?? {});
+      const airportError = validateFlightAirportFields(
+        updateFields,
+        before.departure
       );
+      if (airportError) return res.status(400).json(airportError);
+
+      const flight = await updateFlight(session.session_id, fid, updateFields);
       broadcastFlightEvent(session.session_id, 'flightUpdated', flight);
+
+      setImmediate(() => {
+        void (async () => {
+          void logFlightAction({
+            userId: ext.userId,
+            username: await usernameFor(ext.userId),
+            sessionId: session.session_id,
+            action: 'update',
+            flightId: fid,
+            oldData: before ? sanitizeFlightForClient(before) : null,
+            newData: flight,
+          });
+        })();
+      });
+
       res.json(flight);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';

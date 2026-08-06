@@ -26,6 +26,16 @@ function createUTCDate(): Date {
   );
 }
 
+function normalizeClearance(value: unknown): 'true' | 'false' {
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'string') return value.toLowerCase() === 'true' ? 'true' : 'false';
+  return 'false';
+}
+
+function clearanceToBoolean(value: unknown): boolean {
+  return value === 'true' || value === true;
+}
+
 export interface SnapImage {
   cephie_id: string;
   url: string;
@@ -53,7 +63,7 @@ export interface ClientFlight {
   created_at?: Date;
   updated_at?: Date;
   status?: string;
-  clearance?: string;
+  clearance?: boolean;
   position?: object;
   squawk?: string;
   wtc?: string;
@@ -78,12 +88,14 @@ export function sanitizeFlightForClient(flight: FlightsTable): ClientFlight {
     acars_token: _tok,
     cruisingfl,
     clearedfl,
+    clearance,
     ...rest
   } = flight;
   return {
     ...rest,
     cruisingFL: cruisingfl,
     clearedFL: clearedfl,
+    clearance: clearanceToBoolean(clearance),
   };
 }
 
@@ -95,12 +107,14 @@ function sanitizeFlightForOwner(
     ip_address: _ip,
     cruisingfl,
     clearedfl,
+    clearance,
     ...rest
   } = flight;
   return {
     ...rest,
     cruisingFL: cruisingfl,
     clearedFL: clearedfl,
+    clearance: clearanceToBoolean(clearance),
   };
 }
 
@@ -670,6 +684,14 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
   ) {
     flightData.status = 'PENDING';
   }
+  
+  if (
+    typeof flightData.flight_type !== 'string' ||
+    flightData.flight_type.trim() === ''
+  ) {
+    flightData.flight_type = 'IFR';
+  }
+  flightData.clearance = normalizeClearance(flightData.clearance);
 
   flightData.id = generateRandomId();
   flightData.squawk = await generateSquawk(flightData);
@@ -687,23 +709,32 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
     delete flightData.aircraft_type;
   }
 
-  if (!flightData.runway) {
+  let sessionForDefaults: Awaited<ReturnType<typeof getSessionById>> = null;
+  if (!flightData.runway || !flightData.sid) {
     try {
-      const session = await getSessionById(validSessionId);
-      if (session?.active_runway) {
-        flightData.runway = session.active_runway;
-      }
+      sessionForDefaults = await getSessionById(validSessionId);
     } catch (error) {
-      console.error('Error fetching session for runway assignment:', error);
+      console.error('Error fetching session for flight defaults:', error);
     }
   }
 
+  if (!flightData.runway && sessionForDefaults?.active_runway) {
+    flightData.runway = sessionForDefaults.active_runway;
+  }
+
   if (!flightData.sid) {
-    if (!flightData.icao && flightData.departure) {
-      flightData.icao = flightData.departure as string;
+    if (!flightData.icao) {
+      flightData.icao =
+        (flightData.departure as string) ||
+        sessionForDefaults?.airport_icao ||
+        undefined;
     }
-    const sidResult = await generateSID(flightData);
-    flightData.sid = sidResult.sid;
+    try {
+      const sidResult = await generateSID(flightData);
+      flightData.sid = sidResult.sid;
+    } catch (error) {
+      console.error('Error generating SID for flight:', error);
+    }
   }
 
   if (flightData.cruisingFL !== undefined) {
@@ -846,7 +877,8 @@ export async function updateFlight(
       ) {
         dbUpdates[dbKey] = value.toUpperCase();
       } else {
-        dbUpdates[dbKey] = dbKey === 'clearance' ? String(value) : value;
+        dbUpdates[dbKey] =
+          dbKey === 'clearance' ? normalizeClearance(value) : value;
       }
     }
   }
