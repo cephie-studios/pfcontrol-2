@@ -90,6 +90,11 @@ export default function CallsignInput({
       return '';
     }
 
+    const separator = callsign.match(/[^A-Za-z0-9]/)?.[0];
+    if (separator) {
+      return `Remove the "${separator === ' ' ? 'space' : separator}". Callsigns are letters and numbers only (e.g. ABC123)`;
+    }
+
     if (!/\d/.test(callsign)) {
       return 'Callsign must contain at least one number';
     }
@@ -100,6 +105,9 @@ export default function CallsignInput({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.toUpperCase();
     onChange(newValue);
+    if (hasBlurred) {
+      setValidationError(validateCallsign(newValue));
+    }
     setShowSuggestions(true);
   };
 
@@ -124,12 +132,13 @@ export default function CallsignInput({
 
   const handleBlur = () => {
     setHasBlurred(true);
-    if (value) {
-      setValidationError(validateCallsign(value));
-    }
+    setValidationError(value ? validateCallsign(value) : '');
   };
 
-  const shouldShowError = hasBlurred && validationError && !showSuggestions;
+  const shouldShowError =
+    hasBlurred &&
+    validationError &&
+    !(showSuggestions && filteredAirlines.length > 0);
 
   return (
     <div className="relative">
