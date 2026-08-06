@@ -15,8 +15,10 @@ import {
   loadOwnedSessionOr404,
   routeParamString,
   extCtx,
+  usernameFor,
 } from './sessionsFlights.js';
 import { sendServerError } from '../../utils/apiError.js';
+import { logFlightAction } from '../../db/flightLogs.js';
 
 const router = express.Router();
 
@@ -103,6 +105,21 @@ router.delete(
       await deleteFlight(session.session_id, fid);
       broadcastFlightEvent(session.session_id, 'flightDeleted', {
         flightId: fid,
+      });
+
+      setImmediate(() => {
+        void (async () => {
+          const { user_id: _uid, ip_address: _ip, acars_token: _at, ...oldSanitized } =
+            flight;
+          void logFlightAction({
+            userId: ext.userId,
+            username: await usernameFor(ext.userId),
+            sessionId: session.session_id,
+            action: 'delete',
+            flightId: fid,
+            oldData: oldSanitized,
+          });
+        })();
       });
 
       res.json({ message: 'Flight deleted successfully', flightId: fid });

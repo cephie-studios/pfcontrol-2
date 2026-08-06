@@ -81,6 +81,12 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     description:
       'GET /sessions/network/overview — every PFATC session network-wide created or flight-active in the last 4 hours (no live controller required) with nested flights updated in the last 30 minutes, controllers, and ATIS, plus an arrivals-by-airport index. GET /sessions/network/flights — the same active sessions, flattened to a plain array of flight objects. Available from API v2.',
   },
+  {
+    id: 'flights.network_manage',
+    label: 'Manage network flights',
+    description:
+      'PUT /sessions/network/flights — batch-update flights on any PFATC session network-wide, not limited to sessions you own. Restricted field set (callsign, remark, squawk, clearedFL, cruisingFL, runway, stand, gate, sid, star, req_at, req_phase, clearance) — the same fields an event controller can touch from the live Overview page. Available from API v2.',
+  },
   // AATC disabled — sessions.network_aatc scope commented out
   // {
   //   id: 'sessions.network_aatc',

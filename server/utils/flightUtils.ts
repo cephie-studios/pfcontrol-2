@@ -11,6 +11,36 @@ export interface Flight {
 
 export const generateRandomId = generateFlightId;
 
+interface AirportRunwayInfo {
+  icao: string;
+  runways?: string[];
+}
+
+export function isValidAirportIcao(icao: unknown): boolean {
+  if (typeof icao !== 'string' || !icao.trim()) return false;
+  const airportData = getAirportData() as AirportRunwayInfo[];
+  return airportData.some((ap) => ap.icao === icao.trim().toUpperCase());
+}
+
+export function isValidRunwayForAirport(
+  icao: unknown,
+  runway: unknown
+): boolean {
+  if (
+    typeof icao !== 'string' ||
+    !icao.trim() ||
+    typeof runway !== 'string' ||
+    !runway.trim()
+  ) {
+    return false;
+  }
+  const airportData = getAirportData() as AirportRunwayInfo[];
+  const airport = airportData.find((ap) => ap.icao === icao.trim().toUpperCase());
+  if (!airport) return false;
+  const runways = airport.runways ?? [];
+  return runways.some((r) => r.toUpperCase() === runway.trim().toUpperCase());
+}
+
 export async function generateSquawk(flight: Flight) {
   let squawk = '';
   if (flight.flightType === 'VFR' || flight.flight_type === 'VFR') {

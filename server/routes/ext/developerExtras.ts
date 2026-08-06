@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import { getControllerRatingStats } from '../../db/ratings.js';
+import { getUserById } from '../../db/users.js';
 import { getActiveNotifications } from '../../db/notifications.js';
 import { listDeveloperFlightLogsMetadata } from '../../db/flightLogs.js';
 import { DEVELOPER_SCOPE_CATALOG } from '../../developer/scopeRegistry.js';
@@ -51,9 +52,16 @@ router.get(
       if (!controllerId?.trim()) {
         return res.status(400).json({ error: 'controllerId required' });
       }
-      const stats = await getControllerRatingStats(controllerId.trim());
+      const id = controllerId.trim();
+      const [user, stats] = await Promise.all([
+        getUserById(id),
+        getControllerRatingStats(id),
+      ]);
+      if (!user) {
+        return res.status(404).json({ error: 'Not found' });
+      }
       res.json({
-        controllerId: controllerId.trim(),
+        controllerId: id,
         averageRating: stats.averageRating,
         ratingCount: stats.ratingCount,
       });

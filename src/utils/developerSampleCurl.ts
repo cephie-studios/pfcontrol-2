@@ -26,27 +26,27 @@ const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
   },
   {
     scopeId: 'data.find_route',
-    path: '/data/findRoute?from=EGLL&to=LFPG',
+    path: '/data/findRoute?from=EGKK&to=LCLK',
     label: 'GET /data/findRoute',
   },
   {
     scopeId: 'data.airport_runways',
-    path: '/data/airports/EGLL/runways',
+    path: '/data/airports/EGKK/runways',
     label: 'GET /data/airports/…/runways',
   },
   {
     scopeId: 'data.airport_sids',
-    path: '/data/airports/EGLL/sids',
+    path: '/data/airports/EGKK/sids',
     label: 'GET /data/airports/…/sids',
   },
   {
     scopeId: 'data.airport_stars',
-    path: '/data/airports/EGLL/stars',
+    path: '/data/airports/EGKK/stars',
     label: 'GET /data/airports/…/stars',
   },
   {
     scopeId: 'data.airport_status',
-    path: '/data/airports/EGLL/status',
+    path: '/data/airports/EGKK/status',
     label: 'GET /data/airports/…/status',
   },
   {
@@ -78,17 +78,17 @@ const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
   { scopeId: 'sessions.list', path: '/sessions', label: 'GET /sessions' },
   {
     scopeId: 'sessions.read',
-    path: '/sessions/sess_abc123',
+    path: '/sessions/f0a35b5c',
     label: 'GET /sessions/{id}',
   },
   {
     scopeId: 'flights.list',
-    path: '/sessions/sess_abc123/flights',
+    path: '/sessions/f0a2atac/flights',
     label: 'GET /sessions/…/flights',
   },
   {
     scopeId: 'flights.read',
-    path: '/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000',
+    path: '/sessions/f0a25uac/flights/da8dc2b5',
     label: 'GET /sessions/…/flights/{id}',
   },
   {
@@ -99,23 +99,23 @@ const GET_SAMPLES: { scopeId: string; path: string; label: string }[] = [
 ];
 
 const SESSION_CREATE_BODY = JSON.stringify({
-  airportIcao: 'EGLL',
+  airportIcao: 'EGKK',
   isPFATC: false,
   isAdvancedATC: false,
-  activeRunway: '27L',
+  activeRunway: '26L',
 });
 
 const FLIGHT_CREATE_BODY = JSON.stringify({
   callsign: 'BAW123',
   aircraft: 'A320',
   flight_type: 'IFR',
-  departure: 'EGLL',
-  arrival: 'LFPG',
+  departure: 'EGKK',
+  arrival: 'MDPC',
 });
 
 const FLIGHT_UPDATE_BODY = JSON.stringify({
   status: 'ACTIVE',
-  runway: '27L',
+  runway: '26L',
   squawk: '1234',
 });
 
@@ -151,14 +151,14 @@ export function buildSampleCurlForScopes(
 
   if (set.has('flights.create')) {
     return {
-      command: `curl -s -X POST -H "Authorization: Bearer ${secret}" -H "Content-Type: application/json" -d '${FLIGHT_CREATE_BODY}' "${base}/sessions/sess_abc123/flights"`,
+      command: `curl -s -X POST -H "Authorization: Bearer ${secret}" -H "Content-Type: application/json" -d '${FLIGHT_CREATE_BODY}' "${base}/sessions/f0a25bac/flights"`,
       label: 'POST /sessions/…/flights',
     };
   }
 
   if (set.has('flights.update')) {
     return {
-      command: `curl -s -X PUT -H "Authorization: Bearer ${secret}" -H "Content-Type: application/json" -d '${FLIGHT_UPDATE_BODY}' "${base}/sessions/sess_abc123/flights/550e8400-e29b-41d4-a716-446655440000"`,
+      command: `curl -s -X PUT -H "Authorization: Bearer ${secret}" -H "Content-Type: application/json" -d '${FLIGHT_UPDATE_BODY}' "${base}/sessions/f0a25bac/flights/da8dd215"`,
       label: 'PUT /sessions/…/flights/{id}',
     };
   }

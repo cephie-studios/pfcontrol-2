@@ -50,6 +50,14 @@ export const generalApiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+export const networkFlightBatchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: 'Too many network flight batch updates. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const chatMessageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 30,
