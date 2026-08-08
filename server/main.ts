@@ -246,11 +246,15 @@ if (astroHandler) {
       return originalSetHeader(name, value);
     }) as typeof res.setHeader;
 
+    const toChunkBuffer = (chunk: unknown): Buffer => {
+      if (Buffer.isBuffer(chunk)) return chunk;
+      if (chunk instanceof Uint8Array) return Buffer.from(chunk);
+      return Buffer.from(String(chunk), 'utf8');
+    };
+
     const originalWrite = res.write.bind(res);
     res.write = ((chunk: unknown, ...rest: unknown[]) => {
-      chunks.push(
-        Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), 'utf8')
-      );
+      chunks.push(toChunkBuffer(chunk));
       const callback = rest.find((arg) => typeof arg === 'function') as
         | (() => void)
         | undefined;
@@ -261,9 +265,7 @@ if (astroHandler) {
     const originalEnd = res.end.bind(res);
     res.end = ((chunk?: unknown, ...rest: unknown[]) => {
       if (chunk !== undefined && typeof chunk !== 'function') {
-        chunks.push(
-          Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), 'utf8')
-        );
+        chunks.push(toChunkBuffer(chunk));
       }
       const body = Buffer.concat(chunks).toString('utf8');
       const finalBody = body ? injectCspNonceIntoScripts(body, nonce) : body;
