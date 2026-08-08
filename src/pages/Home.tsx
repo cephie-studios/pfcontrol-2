@@ -12,7 +12,7 @@ import {
   fetchLeaderboard,
   fetchBackgrounds,
 } from '../utils/fetch/data';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';

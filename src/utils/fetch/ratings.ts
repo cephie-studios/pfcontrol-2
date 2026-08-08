@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 export async function submitControllerRating(
   controllerId: string,
   rating: number,
@@ -17,8 +18,7 @@ export async function submitControllerRating(
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to submit rating');
+    await apiError(response, 'Failed to submit rating');
   }
 
   return response.json();

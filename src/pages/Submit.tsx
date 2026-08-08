@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
 import Button from '../components/common/Button';

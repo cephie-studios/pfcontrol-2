@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/auth/useAuth';
+import { useToast } from '../../hooks/useToast';
 import {
   Link2,
   ExternalLink,
@@ -15,7 +16,7 @@ import {
 import { SiRoblox, SiDiscord } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
 import Button from '../common/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { Settings } from '../../types/settings';
 import PrivacySettings from './PrivacySettings';
 import ConfirmationDialog from '../common/ConfirmationDialog';
@@ -31,6 +32,7 @@ export default function AccountSettings({
 }: AccountSettingsProps) {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { showError } = useToast();
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   const [showVatsimConfirm, setShowVatsimConfirm] = useState(false);
   const [showRobloxConfirm, setShowRobloxConfirm] = useState(false);
@@ -63,11 +65,11 @@ export default function AccountSettings({
       if (res.ok) {
         await refreshUser();
       } else {
-        alert('Failed to unlink VATSIM account');
+        showError('Failed to unlink VATSIM account');
       }
     } catch (e) {
       console.error('Unlink VATSIM error:', e);
-      alert('Failed to unlink VATSIM account');
+      showError('Failed to unlink VATSIM account');
     }
   };
 
@@ -85,11 +87,11 @@ export default function AccountSettings({
       if (res.ok) {
         await refreshUser();
       } else {
-        alert('Failed to unlink Roblox account');
+        showError('Failed to unlink Roblox account');
       }
     } catch (error) {
       console.error('Error unlinking Roblox:', error);
-      alert('Failed to unlink Roblox account');
+      showError('Failed to unlink Roblox account');
     }
   };
 
@@ -135,11 +137,11 @@ export default function AccountSettings({
         window.location.href = '/';
       } else {
         const error = await res.json();
-        alert(`Failed to delete account: ${error.message || 'Unknown error'}`);
+        showError(`Failed to delete account: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again.');
+      showError('Failed to delete account. Please try again.');
     } finally {
       setDeleteInProgress(false);
     }

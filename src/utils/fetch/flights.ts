@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 import type { Flight } from '../../types/flight';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -7,7 +8,7 @@ export async function fetchFlights(sessionId: string): Promise<Flight[]> {
   const res = await apiFetch(`${API_BASE_URL}/api/flights/${sessionId}`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch flights');
+  if (!res.ok) await apiError(res, 'Failed to fetch flights');
   return res.json();
 }
 
@@ -21,7 +22,7 @@ export async function addFlight(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(flight),
   });
-  if (!res.ok) throw new Error('Failed to add flight');
+  if (!res.ok) await apiError(res, 'Failed to add flight');
   return res.json();
 }
 
@@ -29,7 +30,7 @@ export async function fetchMyFlights(): Promise<Flight[]> {
   const res = await apiFetch(`${API_BASE_URL}/api/flights/me/list`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch your flights');
+  if (!res.ok) await apiError(res, 'Failed to fetch your flights');
   return res.json();
 }
 
@@ -46,7 +47,7 @@ export async function claimSubmittedFlight(
   });
 
   if (!res.ok) {
-    throw new Error('Failed to claim submitted flight');
+    await apiError(res, 'Failed to claim submitted flight');
   }
 }
 
@@ -54,7 +55,7 @@ export async function fetchMyFlightById(flightId: string): Promise<Flight> {
   const res = await apiFetch(`${API_BASE_URL}/api/flights/me/${flightId}`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch flight');
+  if (!res.ok) await apiError(res, 'Failed to fetch flight');
   return res.json();
 }
 
@@ -84,7 +85,7 @@ export async function fetchMyFlightLogs(
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to fetch flight logs');
+  if (!res.ok) await apiError(res, 'Failed to fetch flight logs');
   return res.json();
 }
 
@@ -102,7 +103,7 @@ export async function updateFlight(
       body: JSON.stringify(updates),
     }
   );
-  if (!res.ok) throw new Error('Failed to update flight');
+  if (!res.ok) await apiError(res, 'Failed to update flight');
   return res.json();
 }
 
@@ -117,12 +118,12 @@ export async function deleteFlight(
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to delete flight');
+  if (!res.ok) await apiError(res, 'Failed to delete flight');
 }
 
 export async function fetchPublicFlight(flightId: string): Promise<Flight> {
   const res = await fetch(`${API_BASE_URL}/api/flights/public/${flightId}`);
-  if (!res.ok) throw new Error('Failed to fetch public flight');
+  if (!res.ok) await apiError(res, 'Failed to fetch public flight');
   return res.json();
 }
 
@@ -139,7 +140,7 @@ export async function updateFlightNotes(
       body: JSON.stringify({ notes }),
     }
   );
-  if (!res.ok) throw new Error('Failed to save notes');
+  if (!res.ok) await apiError(res, 'Failed to save notes');
 }
 
 export interface SnapImage {
@@ -161,7 +162,7 @@ export async function uploadSnapImage(
       body: formData,
     }
   );
-  if (!res.ok) throw new Error('Failed to upload snap');
+  if (!res.ok) await apiError(res, 'Failed to upload snap');
   return res.json();
 }
 
@@ -176,7 +177,7 @@ export async function deleteSnapImage(
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to delete snap');
+  if (!res.ok) await apiError(res, 'Failed to delete snap');
 }
 
 export async function toggleFeaturedOnProfile(
@@ -190,6 +191,6 @@ export async function toggleFeaturedOnProfile(
     }
   );
   if (res.status === 409) throw new Error('CAP_REACHED');
-  if (!res.ok) throw new Error('Failed to toggle featured status');
+  if (!res.ok) await apiError(res, 'Failed to toggle featured status');
   return res.json();
 }

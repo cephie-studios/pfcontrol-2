@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation, useSearchParams } from 'react-router';
 import { Code2, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import DeveloperSubnav from './DeveloperSubnav';

@@ -1,5 +1,7 @@
 export type { UpdateModal } from '../updateModal';
 
+import { apiError } from '../error.js';
+
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
 
 async function makeAdminRequest(endpoint: string, options?: RequestInit) {
@@ -15,7 +17,7 @@ async function makeAdminRequest(endpoint: string, options?: RequestInit) {
   if (!response.ok) {
     if (response.status === 403) throw new Error('Admin access required');
     if (response.status === 401) throw new Error('Authentication required');
-    throw new Error(`HTTP ${response.status}`);
+    await apiError(response, `HTTP ${response.status}`);
   }
 
   return response.json();

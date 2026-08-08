@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MdStar, MdThumbUp } from 'react-icons/md';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
@@ -55,7 +55,11 @@ export default function AdminRatings() {
       setDailyStats(dailyData);
     } catch (error) {
       console.error('Error fetching rating statistics:', error);
-      setError('Failed to fetch rating statistics');
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch rating statistics'
+      );
     } finally {
       setLoading(false);
     }

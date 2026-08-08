@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Loader2,

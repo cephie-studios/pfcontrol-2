@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 import type { User } from '../../types/user';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -8,7 +9,7 @@ export async function getCurrentUser(): Promise<User> {
   const res = await apiFetch(`${API_BASE_URL}/api/auth/me`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch user');
+  if (!res.ok) await apiError(res, 'Failed to fetch user');
   return await res.json();
 }
 

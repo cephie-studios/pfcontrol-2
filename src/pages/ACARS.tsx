@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';

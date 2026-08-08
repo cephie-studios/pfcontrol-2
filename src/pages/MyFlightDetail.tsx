@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import RouteMap from '../components/map/RouteMap';
 import {
   ArrowLeft,

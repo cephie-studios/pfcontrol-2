@@ -8,6 +8,8 @@ interface ToastProps {
   type?: ToastType;
   onClose: () => void;
   duration?: number;
+  /** Override the default fixed top-right positioning (used when stacking). */
+  className?: string;
 }
 
 export default function Toast({
@@ -15,6 +17,7 @@ export default function Toast({
   type = 'info',
   onClose,
   duration = 2000,
+  className,
 }: ToastProps) {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -47,7 +50,9 @@ export default function Toast({
 
   return (
     <div
-      className={`fixed top-6 right-6 z-[10000] flex items-center space-x-3 px-4 py-3 rounded-full border-2 ${
+      className={`${
+        className ?? 'fixed top-6 right-6 z-[10000]'
+      } flex items-center space-x-3 px-4 py-3 rounded-full border-2 ${
         styles[type]
       } backdrop-blur-md shadow-2xl ${
         isVisible

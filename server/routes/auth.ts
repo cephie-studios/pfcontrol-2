@@ -860,7 +860,10 @@ router.get('/me', requireAuthSoft, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to fetch user',
+    });
   }
 });
 
@@ -930,7 +933,10 @@ router.post('/fingerprint', requireAuthSoft, async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     console.error('Error processing fingerprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to process login',
+    });
   }
 });
 

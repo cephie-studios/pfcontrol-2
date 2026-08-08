@@ -337,6 +337,33 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     ],
   },
   {
+    scopeId: 'sessions.update',
+    method: 'PUT',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/[^/]+$/i,
+      pathTemplate: '/sessions/{sessionId}',
+    },
+    responseSummary:
+      'Updates a session you own. Returns the updated session (same shape as GET /sessions/{sessionId}), plus a decoded atis object ({ letter, text }) reflecting the current ATIS after the update.',
+    pathParams: [
+      {
+        name: 'sessionId',
+        description: 'Session you own.',
+        example: 'f0a25bac',
+      },
+    ],
+    requestBodySummary:
+      "Every field is optional; send only what changed — but at least one must be present (400 if the body has none of these). customName (letters/digits/spaces/hyphens/underscores only, max 50 chars — other characters are stripped, not rejected), activeRunway (departure runway — see GET /data/airports/{icao}/runways; rejected with 400 if not a real runway at this session's airport), arrivalRunway (same validation as activeRunway), atisLetter + atisText (must be sent together — 400 if only one is present; atisLetter is a single A-Z letter, atisText max 2000 characters, free text — this sets a custom ATIS directly, it does not call the external ATIS generator the web UI uses). airportIcao cannot be changed here.",
+    requestBodyExampleJson: JSON.stringify({
+      customName: 'Morning EGKK session',
+      activeRunway: '26L',
+      arrivalRunway: '08R',
+      atisLetter: 'A',
+      atisText: 'EGKK information Alpha, runway 26L in use, QNH 1013.',
+    }),
+  },
+  {
     scopeId: 'sessions.list',
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions' },

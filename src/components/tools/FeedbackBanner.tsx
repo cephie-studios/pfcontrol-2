@@ -143,7 +143,10 @@ export default function FeedbackBanner({
     } catch (error) {
       console.error('Error submitting feedback:', error);
       setToast({
-        message: 'Failed to submit feedback. Please try again later.',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to submit feedback. Please try again later.',
         type: 'error',
       });
       setIsSubmitting(false);
@@ -173,7 +176,10 @@ export default function FeedbackBanner({
     } catch (error) {
       console.error('Error submitting feedback:', error);
       setToast({
-        message: 'Failed to submit feedback. Please try again later.',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to submit feedback. Please try again later.',
         type: 'error',
       });
       setIsSubmitting(false);

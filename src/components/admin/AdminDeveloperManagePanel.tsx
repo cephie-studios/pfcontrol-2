@@ -12,6 +12,7 @@ import {
   statusBadgeClass,
 } from './adminConstants';
 import Button from '../common/Button';
+import { useToast } from '../../hooks/useToast';
 import {
   approveAdminDeveloperKey,
   fetchAdminDeveloperCatalog,
@@ -40,6 +41,7 @@ export default function AdminDeveloperManagePanel({
   onProfileReactivate,
   profileActionBusy,
 }: Props) {
+  const { showError } = useToast();
   const [catalog, setCatalog] = useState<AdminScopeCatalogEntry[]>([]);
   const [keys, setKeys] = useState<AdminDeveloperKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(true);
@@ -160,7 +162,7 @@ export default function AdminDeveloperManagePanel({
       setKeys(kr.keys);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Approve failed');
+      showError(e instanceof Error ? e.message : 'Approve failed');
     } finally {
       setRowBusy(null);
     }
@@ -175,7 +177,7 @@ export default function AdminDeveloperManagePanel({
       setKeys(kr.keys);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Reject failed');
+      showError(e instanceof Error ? e.message : 'Reject failed');
     } finally {
       setRowBusy(null);
     }
@@ -204,7 +206,7 @@ export default function AdminDeveloperManagePanel({
       setKeys(kr.keys);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Save failed');
+      showError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setRowBusy(null);
     }
@@ -219,7 +221,7 @@ export default function AdminDeveloperManagePanel({
       setKeys(kr.keys);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Revoke failed');
+      showError(e instanceof Error ? e.message : 'Revoke failed');
     } finally {
       setRowBusy(null);
     }

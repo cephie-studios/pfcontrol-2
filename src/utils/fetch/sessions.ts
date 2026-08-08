@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 import type { SessionInfo } from '../../types/session';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -13,7 +14,7 @@ export async function fetchSession(
   const res = await apiFetch(url.toString(), {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch session');
+  if (!res.ok) await apiError(res, 'Failed to fetch session');
   return res.json();
 }
 
@@ -21,7 +22,7 @@ export async function fetchMySessions(): Promise<SessionInfo[]> {
   const res = await apiFetch(`${API_BASE_URL}/api/sessions/mine`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch user sessions');
+  if (!res.ok) await apiError(res, 'Failed to fetch user sessions');
   return res.json();
 }
 
@@ -29,7 +30,7 @@ export async function fetchAllSessions(): Promise<SessionInfo[]> {
   const res = await apiFetch(`${API_BASE_URL}/api/sessions/`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch sessions');
+  if (!res.ok) await apiError(res, 'Failed to fetch sessions');
   return res.json();
 }
 
@@ -49,8 +50,7 @@ export async function createSession(data: {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || body.error || 'Failed to create session');
+    await apiError(res, 'Failed to create session');
   }
   return res.json();
 }
@@ -69,7 +69,7 @@ export async function updateSession(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update session');
+  if (!res.ok) await apiError(res, 'Failed to update session');
   return res.json();
 }
 
@@ -83,7 +83,7 @@ export async function updateSessionName(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId, name }),
   });
-  if (!res.ok) throw new Error('Failed to update session name');
+  if (!res.ok) await apiError(res, 'Failed to update session name');
   return res.json();
 }
 
@@ -96,7 +96,7 @@ export async function deleteSession(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId }),
   });
-  if (!res.ok) throw new Error('Failed to delete session');
+  if (!res.ok) await apiError(res, 'Failed to delete session');
   return res.json();
 }
 
@@ -118,8 +118,7 @@ export async function deleteOldestSession(): Promise<{
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to delete oldest session');
+    await apiError(response, 'Failed to delete oldest session');
   }
 
   return await response.json();

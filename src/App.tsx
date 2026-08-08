@@ -1,9 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router';
 import { lazy, Suspense } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
 

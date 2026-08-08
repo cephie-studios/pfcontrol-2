@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
 
 export interface UpdateModal {
@@ -18,9 +19,7 @@ export async function fetchActiveUpdateModal(): Promise<UpdateModal | null> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch active update modal: ${response.statusText}`
-    );
+    await apiError(response, 'Failed to fetch active update modal');
   }
 
   return response.json();

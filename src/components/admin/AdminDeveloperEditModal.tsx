@@ -19,6 +19,7 @@ import {
   ADMIN_TD,
 } from './adminConstants';
 import Button from '../common/Button';
+import { useToast } from '../../hooks/useToast';
 import ScopeTagSelector from '../developers/ScopeTagSelector';
 import {
   approveAdminDeveloperKey,
@@ -56,6 +57,7 @@ export default function AdminDeveloperEditModal({
   onDeleteDeveloper,
   deleteDeveloperBusy,
 }: Props) {
+  const { showError } = useToast();
   const [tab, setTab] = useState<Tab>('ceiling');
   const [catalog, setCatalog] = useState<AdminScopeCatalogEntry[]>([]);
   const [keys, setKeys] = useState<AdminDeveloperKeyRow[]>([]);
@@ -126,7 +128,7 @@ export default function AdminDeveloperEditModal({
       setTimeout(() => setCeilingSaved(false), 2000);
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Save failed');
+      showError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setCeilingBusy(false);
     }
@@ -161,7 +163,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Approve failed');
+      showError(e instanceof Error ? e.message : 'Approve failed');
     } finally {
       setRowBusy(null);
     }
@@ -175,7 +177,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Reject failed');
+      showError(e instanceof Error ? e.message : 'Reject failed');
     } finally {
       setRowBusy(null);
     }
@@ -203,7 +205,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Save failed');
+      showError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setRowBusy(null);
     }
@@ -217,7 +219,7 @@ export default function AdminDeveloperEditModal({
       await reloadKeys();
       await onReload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Revoke failed');
+      showError(e instanceof Error ? e.message : 'Revoke failed');
     } finally {
       setRowBusy(null);
     }

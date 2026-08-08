@@ -1,11 +1,12 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchChatMessages(sessionId: string) {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch chat messages');
+  if (!res.ok) await apiError(res, 'Failed to fetch chat messages');
   return res.json();
 }
 
@@ -16,7 +17,7 @@ export async function sendChatMessage(sessionId: string, message: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
   });
-  if (!res.ok) throw new Error('Failed to send message');
+  if (!res.ok) await apiError(res, 'Failed to send message');
   return res.json();
 }
 
@@ -28,7 +29,7 @@ export async function deleteChatMessage(sessionId: string, messageId: number) {
       credentials: 'include',
     }
   );
-  if (!res.ok) throw new Error('Failed to delete message');
+  if (!res.ok) await apiError(res, 'Failed to delete message');
   return res.json();
 }
 
@@ -46,7 +47,7 @@ export async function reportChatMessage(
       body: JSON.stringify({ reason }),
     }
   );
-  if (!res.ok) throw new Error('Failed to report message');
+  if (!res.ok) await apiError(res, 'Failed to report message');
   return res.json();
 }
 
@@ -54,7 +55,7 @@ export async function fetchGlobalChatMessages() {
   const res = await apiFetch(`${API_BASE_URL}/api/chats/global/messages`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Failed to fetch global chat messages');
+  if (!res.ok) await apiError(res, 'Failed to fetch global chat messages');
   return res.json();
 }
 
@@ -71,7 +72,7 @@ export async function reportGlobalChatMessage(
       body: JSON.stringify({ reason }),
     }
   );
-  if (!res.ok) throw new Error('Failed to report message');
+  if (!res.ok) await apiError(res, 'Failed to report message');
   return res.json();
 }
 

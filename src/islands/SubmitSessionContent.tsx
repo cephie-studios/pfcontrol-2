@@ -1,5 +1,5 @@
 import './loadIslandStyles';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from '../hooks/auth/AuthProvider';
 import { DataProvider } from '../hooks/data/DataProvider';
 import { SettingsProvider } from '../hooks/settings/SettingsProvider';

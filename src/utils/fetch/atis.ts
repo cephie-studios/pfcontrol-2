@@ -1,4 +1,5 @@
 import { apiFetch } from '../apiFetch.js';
+import { apiError } from './error.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export interface ATISGenerateRequest {
@@ -31,10 +32,7 @@ export async function generateATIS(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `Server responded with ${response.status}`
-    );
+    await apiError(response, `Server responded with ${response.status}`);
   }
 
   return response.json();
