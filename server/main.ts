@@ -224,14 +224,57 @@ app.use((req, res, next) => {
     );
 });
 
+function injectCspNonceIntoScripts(html: string, nonce: string): string {
+  return html.replace(
+    /<script(?![^>]*\bnonce=)([^>]*)>/g,
+    (_match, attrs: string) => `<script nonce="${nonce}"${attrs}>`
+  );
+}
+
 if (astroHandler) {
   app.use((req, res, next) => {
     if (req.query['tutorial'] === 'true') return next();
+
+    const nonce = res.locals.cspNonce as string;
+    const chunks: Buffer[] = [];
+
+    const originalSetHeader = res.setHeader.bind(res);
+    res.setHeader = ((name: string, value: never) => {
+      if (typeof name === 'string' && name.toLowerCase() === 'content-length') {
+        return res;
+      }
+      return originalSetHeader(name, value);
+    }) as typeof res.setHeader;
+
+    const originalWrite = res.write.bind(res);
+    res.write = ((chunk: unknown, ...rest: unknown[]) => {
+      chunks.push(
+        Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), 'utf8')
+      );
+      const callback = rest.find((arg) => typeof arg === 'function') as
+        | (() => void)
+        | undefined;
+      callback?.();
+      return true;
+    }) as typeof res.write;
+
+    const originalEnd = res.end.bind(res);
+    res.end = ((chunk?: unknown, ...rest: unknown[]) => {
+      if (chunk !== undefined && typeof chunk !== 'function') {
+        chunks.push(
+          Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), 'utf8')
+        );
+      }
+      const body = Buffer.concat(chunks).toString('utf8');
+      const finalBody = body ? injectCspNonceIntoScripts(body, nonce) : body;
+      return originalEnd(finalBody, 'utf8');
+    }) as typeof res.end;
+
     (
       astroHandler as unknown as RequestHandler & {
         (req: unknown, res: unknown, next: unknown, locals: unknown): void;
       }
-    )(req, res, next, { cspNonce: res.locals.cspNonce });
+    )(req, res, next, { cspNonce: nonce });
   });
 }
 

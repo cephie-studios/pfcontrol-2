@@ -112,6 +112,12 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
       'GET /sessions/:sessionId — metadata for a session you own (sanitized).',
   },
   {
+    id: 'sessions.update',
+    label: 'Update session',
+    description:
+      'PUT /sessions/:sessionId — update customName, activeRunway, arrivalRunway, and/or ATIS for a session you own.',
+  },
+  {
     id: 'flights.list',
     label: 'List session flights',
     description:

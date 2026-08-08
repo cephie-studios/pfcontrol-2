@@ -3,12 +3,16 @@ import type { Request, Response } from 'express';
 import {
   createSession,
   getSessionById,
+  updateSession,
   getPublicNetworkSessionForDeveloperApi,
   listDeveloperSessionSummariesForUser,
   listPublicNetworkSessionsForDeveloperApi,
   type DeveloperPublicNetworkKind,
   type PublicNetworkSessionDeveloperRow,
 } from '../../db/sessions.js';
+import { encrypt } from '../../utils/encryption.js';
+import { parsePublicSessionAtis } from '../../utils/publicSessionAtis.js';
+import { sanitizeAlphanumeric } from '../../utils/sanitization.js';
 import {
   addFlight,
   getFlightById,
@@ -650,6 +654,89 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
   } catch (e) {
     console.error('[ext/sessions] get:', e);
     sendServerError(res, 'Failed to load session', e);
+  }
+});
+
+router.put('/:sessionId', async (req: Request, res: Response) => {
+  try {
+    const ext = extCtx(req);
+    const loaded = await loadOwnedSessionOr404(
+      req.params.sessionId,
+      ext.userId
+    );
+    if (!loaded.ok) return res.status(loaded.status).json(loaded.body);
+    const session = loaded.session;
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const updates: Record<string, unknown> = {};
+
+    if (body.customName !== undefined) {
+      updates.custom_name = sanitizeAlphanumeric(String(body.customName), 50);
+    }
+
+    if (body.activeRunway !== undefined) {
+      if (!isValidRunwayForAirport(session.airport_icao, body.activeRunway)) {
+        return res.status(400).json({
+          error: `Invalid activeRunway: "${body.activeRunway}" is not a runway at ${session.airport_icao}. See GET /data/airports/${session.airport_icao}/runways.`,
+        });
+      }
+      updates.active_runway = String(body.activeRunway).toUpperCase();
+    }
+
+    if (body.arrivalRunway !== undefined) {
+      if (!isValidRunwayForAirport(session.airport_icao, body.arrivalRunway)) {
+        return res.status(400).json({
+          error: `Invalid arrivalRunway: "${body.arrivalRunway}" is not a runway at ${session.airport_icao}. See GET /data/airports/${session.airport_icao}/runways.`,
+        });
+      }
+      updates.arrival_runway = String(body.arrivalRunway).toUpperCase();
+    }
+
+    const hasAtisLetter = body.atisLetter !== undefined;
+    const hasAtisText = body.atisText !== undefined;
+    if (hasAtisLetter || hasAtisText) {
+      if (!hasAtisLetter || !hasAtisText) {
+        return res.status(400).json({
+          error: 'atisLetter and atisText must both be provided together.',
+        });
+      }
+      const letter = String(body.atisLetter).trim().slice(0, 1).toUpperCase();
+      if (!/^[A-Z]$/.test(letter)) {
+        return res
+          .status(400)
+          .json({ error: 'atisLetter must be a single letter A-Z.' });
+      }
+      const text = String(body.atisText).trim();
+      if (!text) {
+        return res.status(400).json({ error: 'atisText cannot be empty.' });
+      }
+      if (text.length > 2000) {
+        return res.status(400).json({
+          error: 'atisText is too long (max 2000 characters).',
+        });
+      }
+      updates.atis = JSON.stringify(
+        encrypt({ letter, text, timestamp: new Date().toISOString() })
+      );
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        error:
+          'No editable fields provided. Accepted: customName, activeRunway, arrivalRunway, atisLetter+atisText.',
+      });
+    }
+
+    const updated = await updateSession(session.session_id, updates);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+
+    res.json({
+      ...sessionToDeveloperJson(updated, ext.keyId),
+      atis: parsePublicSessionAtis(updated.atis),
+    });
+  } catch (e) {
+    console.error('[ext/sessions] update:', e);
+    sendServerError(res, 'Failed to update session', e);
   }
 });
 

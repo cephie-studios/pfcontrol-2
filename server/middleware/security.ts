@@ -27,13 +27,13 @@ const securityMiddleware = [
           "'self'",
           (_req, res) =>
             `'nonce-${(res as unknown as Response).locals.cspNonce}'`,
-          "'sha256-eIXWvAmxkr251LJZkjniEK5LcPF3NkapbJepohwYRIc='",
-          "'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='",
           'https://tpfcu.pfcontrol.com',
+          'https://pilot.pfcontrol.com',
         ],
         connectSrc: [
           "'self'",
           'https://tpfcu.pfcontrol.com',
+          'https://pilot.pfcontrol.com',
           'https://api.cephie.app',
           'https://us.i.posthog.com',
           'https://us.posthog.com',
