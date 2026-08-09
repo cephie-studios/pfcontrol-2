@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import RouteMap from '../components/map/RouteMap';
-import {
-  ArrowRight,
-  CalendarClock,
-  Camera,
-  ExternalLink,
-  History,
-  MessageSquareText,
-  Route,
-  StickyNote,
-  X,
-} from 'lucide-react';
+import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
+import FlightTimingBlock from '../components/flight/FlightTimingBlock';
+import FlightTabs, { type FlightTab } from '../components/flight/FlightTabs';
+import { ArrowRight, CalendarClock, ExternalLink, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Loader from '../components/common/Loader';
-import { fetchPublicFlight } from '../utils/fetch/flights';
+import {
+  fetchPublicFlight,
+  type FlightLogItem,
+} from '../utils/fetch/flights';
 import { fetchBackgrounds } from '../utils/fetch/data';
 import { useSettings } from '../hooks/settings/useSettings';
 import { useData } from '../hooks/data/useData';
@@ -28,26 +24,6 @@ interface AvailableImage {
   path: string;
   extension: string;
 }
-
-interface StatusEntry {
-  id: number;
-  label: React.ReactNode;
-  at: string;
-}
-
-const getDisplayStatus = (status?: string) => {
-  if (!status) return 'PENDING';
-  if (status === 'TAXI_ORIG' || status === 'TAXI_ARRV') return 'TAXI';
-  if (status === 'RWY_ORIG' || status === 'RWY_ARRV') return 'RWY';
-  return status;
-};
-
-const Field = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-    <p className="text-sm text-gray-200 font-medium break-all">{value}</p>
-  </div>
-);
 
 interface PublicFlightViewProps {
   standalone?: boolean;
@@ -70,7 +46,9 @@ export default function PublicFlightView({
   const [customLoaded, setCustomLoaded] = useState(false);
   const [isPFATC, setIsPFATC] = useState(false);
   const [isAdvancedATC, setIsAdvancedATC] = useState(false);
-  const [statusTimeline, setStatusTimeline] = useState<StatusEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<FlightTab>('overview');
+  const [logs, setLogs] = useState<FlightLogItem[]>([]);
+  const [logsAvailable, setLogsAvailable] = useState(false);
   const [controllers, setControllers] = useState<
     { user_id: string; username: string; avatar_url: string | null }[]
   >([]);
@@ -106,6 +84,9 @@ export default function PublicFlightView({
           .then((r) => (r.ok ? r.json() : null))
           .then((logsData) => {
             if (!logsData?.logs) return;
+            setLogs(logsData.logs);
+            setLogsAvailable(true);
+
             const pilotUserId: string | undefined = logsData.pilotUserId;
             const seen = new Set<string>();
             const ctrlList: {
@@ -113,7 +94,7 @@ export default function PublicFlightView({
               username: string;
               avatar_url: string | null;
             }[] = [];
-            for (const log of logsData.logs) {
+            for (const log of logsData.logs as FlightLogItem[]) {
               if (
                 log.action === 'update' &&
                 log.user_id !== pilotUserId &&
@@ -128,56 +109,43 @@ export default function PublicFlightView({
               }
             }
             setControllers(ctrlList);
-
-            const timeline: StatusEntry[] = logsData.logs
-              .map(
-                (log: {
-                  id: number;
-                  action: string;
-                  old_data: Record<string, unknown> | null;
-                  new_data: Record<string, unknown> | null;
-                  created_at: string;
-                }) => {
-                  const oldStatus =
-                    (log.old_data?.status as string | undefined) ?? null;
-                  const newStatus =
-                    (log.new_data?.status as string | undefined) ?? null;
-                  if (log.action === 'add' && newStatus) {
-                    return {
-                      id: log.id,
-                      label: `Created as ${newStatus}`,
-                      at: log.created_at,
-                    };
-                  }
-                  if (
-                    log.action === 'update' &&
-                    oldStatus !== newStatus &&
-                    newStatus
-                  ) {
-                    return {
-                      id: log.id,
-                      label: (
-                        <span className="flex items-center gap-1.5">
-                          <span>{oldStatus || 'N/A'}</span>
-                          <ArrowRight className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                          <span className="text-blue-300">{newStatus}</span>
-                        </span>
-                      ),
-                      at: log.created_at,
-                    };
-                  }
-                  return null;
-                }
-              )
-              .filter(Boolean)
-              .reverse() as StatusEntry[];
-            setStatusTimeline(timeline);
           })
           .catch(() => {});
       })
       .catch(() => setError('This flight is not available or does not exist.'))
       .finally(() => setLoading(false));
   }, [flightId]);
+
+  const statusTimeline = useMemo(() => {
+    return logs
+      .map((log) => {
+        const oldStatus = (log.old_data?.status as string | undefined) ?? null;
+        const newStatus = (log.new_data?.status as string | undefined) ?? null;
+        if (log.action === 'add' && newStatus) {
+          return {
+            id: log.id,
+            label: `Created as ${newStatus}`,
+            at: log.created_at,
+          };
+        }
+        if (log.action === 'update' && oldStatus !== newStatus && newStatus) {
+          return {
+            id: log.id,
+            label: (
+              <span className="flex items-center gap-1.5">
+                <span>{oldStatus || 'N/A'}</span>
+                <ArrowRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="text-blue-400">{newStatus}</span>
+              </span>
+            ),
+            at: log.created_at,
+          };
+        }
+        return null;
+      })
+      .filter((item): item is NonNullable<typeof item> => !!item)
+      .reverse();
+  }, [logs]);
 
   const snaps = useMemo(() => flight?.snap_images ?? [], [flight?.snap_images]);
 
@@ -229,7 +197,7 @@ export default function PublicFlightView({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
         {standalone && <Navbar />}
         <Loader />
       </div>
@@ -238,7 +206,7 @@ export default function PublicFlightView({
 
   if (error || !flight) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white">
+      <div className="min-h-screen bg-zinc-900 text-white">
         {standalone && <Navbar />}
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700 text-red-200 text-sm">
@@ -254,7 +222,7 @@ export default function PublicFlightView({
     formattedCallsign !== (flight.callsign || '').toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       {standalone && <Navbar />}
 
       {lightboxSrc && (
@@ -278,7 +246,7 @@ export default function PublicFlightView({
       )}
 
       {/* Hero */}
-      <div className="relative w-full h-72 md:h-80 overflow-hidden">
+      <div className="relative w-full h-80 md:h-[400px] overflow-hidden flex flex-col">
         <div className="absolute inset-0">
           <img
             src="/assets/images/hero.webp"
@@ -296,253 +264,218 @@ export default function PublicFlightView({
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/55 via-black/15 to-zinc-950" />
         </div>
 
-        <div className="relative h-full flex flex-col items-center justify-center px-6 text-center gap-3">
-          <div>
-            {hasSpokenName ? (
-              <>
-                <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
-                  {formattedCallsign}
-                </h1>
-                <p className="text-sm font-mono text-zinc-400 mt-1">
-                  ({flight.callsign?.toUpperCase()})
-                </p>
-              </>
-            ) : (
-              <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
-                {flight.callsign || 'Unknown Callsign'}
-              </h1>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            {flight.departure && flight.arrival && (
-              <span className="flex items-center gap-1.5 text-gray-300 font-mono text-sm">
-                <span>{flight.departure}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-gray-500" />
-                <span>{flight.arrival}</span>
-              </span>
-            )}
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              <span className="text-xs px-2.5 py-1 rounded-full font-mono font-semibold bg-blue-700 text-blue-100 border border-blue-600">
-                {getDisplayStatus(flight.status)}
-              </span>
-              {isAdvancedATC ? (
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-purple-700 text-purple-100 border border-purple-600">
-                  Advanced ATC
-                </span>
-              ) : isPFATC ? (
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-indigo-700 text-indigo-100 border border-indigo-600">
-                  PFATC
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {acarsUrl && (
+        {acarsUrl && (
+          <div className="relative z-20 flex items-center justify-end container mx-auto max-w-4xl px-4 pt-20">
             <a
               href={acarsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border bg-indigo-700 border-indigo-600 text-indigo-100 hover:bg-indigo-600 transition-all"
+              aria-label="Open ACARS"
+              title="ACARS"
+              className="h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-zinc-200 hover:bg-black/60 transition-colors"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
-              ACARS
+              <ExternalLink className="h-4 w-4" />
             </a>
+          </div>
+        )}
+
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 gap-1.5">
+          {hasSpokenName ? (
+            <>
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
+                {formattedCallsign}
+              </h1>
+              <p className="text-sm font-mono text-zinc-400">
+                ({flight.callsign?.toUpperCase()})
+              </p>
+            </>
+          ) : (
+            <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
+              {flight.callsign || 'Unknown Callsign'}
+            </h1>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="container mx-auto max-w-5xl px-4 pb-10 -mt-4 relative z-10 space-y-4">
-        {/* Photos */}
-        {snaps.length > 0 && (
-          <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Camera className="h-5 w-5 text-blue-400" />
-              <h2 className="text-lg font-semibold text-blue-400">Photos</h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {snaps.map((snap) => (
-                <div
-                  key={snap.cephie_id}
-                  className="rounded-xl overflow-hidden aspect-video bg-gray-900/40 cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setLightboxSrc(snap.url)}
-                >
+      <div className="container mx-auto max-w-4xl px-4 pb-10 relative z-10">
+        <FlightTimingBlock flight={flight} logs={logs} />
+
+        {controllers.length > 0 && (
+          <div className="flex items-center gap-2 mt-3 px-1">
+            <span className="text-xs text-zinc-500">Controllers:</span>
+            <div className="flex items-center gap-1">
+              {controllers.map((c) => (
+                <Link key={c.user_id} to={`/user/${c.username}`}>
                   <img
-                    src={snap.url}
-                    alt="Snap"
-                    className="w-full h-full object-cover"
+                    src={
+                      c.avatar_url ??
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`
+                    }
+                    alt={c.username}
+                    className="h-6 w-6 rounded-full bg-zinc-700 ring-1 ring-zinc-600 hover:ring-blue-500 transition-all"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`;
+                    }}
                   />
-                </div>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
-        {/* Flight Details */}
-        <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6 space-y-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <Route className="h-4 w-4 text-gray-500 shrink-0" />
-              <span className="font-mono text-lg font-bold text-white">
-                {flight.departure || '----'}
-              </span>
-              <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
-              <span className="font-mono text-lg font-bold text-white">
-                {flight.arrival || '----'}
-              </span>
+        <div className="mt-5">
+          <FlightTabs active={activeTab} onChange={setActiveTab} />
+        </div>
+
+        <div className="mt-4 pb-2">
+          {activeTab === 'overview' && (
+            <div>
+              <AircraftPhotoCard flight={flight} />
+
               {flight.route && (
                 <>
-                  <span className="text-gray-700">·</span>
-                  <span className="text-gray-400 text-sm truncate">
+                  <div
+                    className="rounded-2xl overflow-hidden mb-2"
+                    style={{ height: '300px' }}
+                  >
+                    <RouteMap
+                      route={flight.route}
+                      departure={flight.departure}
+                      arrival={flight.arrival}
+                      sid={flight.sid}
+                      star={flight.star}
+                    />
+                  </div>
+                  <p className="text-xs font-mono text-zinc-500 mb-5 break-words">
                     {flight.route}
-                  </span>
+                  </p>
                 </>
               )}
-            </div>
-            {controllers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Controllers:</span>
-                <div className="flex items-center gap-1">
-                  {controllers.map((c) => (
-                    <div key={c.user_id} className="relative group">
-                      <Link to={`/user/${c.username}`}>
-                        <img
-                          src={
-                            c.avatar_url ??
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`
-                          }
-                          alt={c.username}
-                          className="h-6 w-6 rounded-full bg-gray-700 ring-1 ring-gray-600 group-hover:ring-blue-500 transition-all"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(c.username)}&background=3f3f46&color=fff&size=32&bold=true`;
-                          }}
-                        />
-                      </Link>
-                    </div>
-                  ))}
+
+              <div className="grid grid-cols-3 items-start">
+                <div className="text-left">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                    SID
+                  </p>
+                  <p
+                    className={`font-mono text-base font-bold ${flight.sid ? 'text-zinc-100' : 'text-zinc-600'}`}
+                  >
+                    {flight.sid || 'N/A'}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                    Cruising FL
+                  </p>
+                  <p
+                    className={`font-mono text-base font-bold ${flight.cruisingFL ? 'text-zinc-100' : 'text-zinc-600'}`}
+                  >
+                    {flight.cruisingFL || 'N/A'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">
+                    STAR
+                  </p>
+                  <p
+                    className={`font-mono text-base font-bold ${flight.star ? 'text-zinc-100' : 'text-zinc-600'}`}
+                  >
+                    {flight.star || 'N/A'}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
 
-          {flight.route && (
-            <div
-              className="rounded-2xl overflow-hidden border border-gray-700/60"
-              style={{ height: '280px' }}
-            >
-              <RouteMap
-                route={flight.route}
-                departure={flight.departure}
-                arrival={flight.arrival}
-                sid={flight.sid}
-                star={flight.star}
-              />
+              {flight.remark && (
+                <div className="flex items-start gap-3 mt-5 p-4 bg-blue-600/10 border border-blue-600/20 rounded-2xl">
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-0.5">Remarks</p>
+                    <p className="text-sm text-zinc-200">{flight.remark}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
-            <Field label="Aircraft" value={flight.aircraft || 'N/A'} />
-            <Field label="Flight Type" value={flight.flight_type || 'N/A'} />
-            <Field label="Runway" value={flight.runway || 'N/A'} />
-            <Field
-              label="Stand / Gate"
-              value={
-                [flight.stand, flight.gate].filter(Boolean).join(' / ') || 'N/A'
-              }
-            />
-            <Field label="SID" value={flight.sid || 'N/A'} />
-            <Field label="STAR" value={flight.star || 'N/A'} />
-            <Field label="Cruising FL" value={flight.cruisingFL || 'N/A'} />
-            <Field label="Cleared FL" value={flight.clearedFL || 'N/A'} />
-            <Field label="Squawk" value={flight.squawk || 'N/A'} />
-            <Field label="WTC" value={flight.wtc || 'N/A'} />
-          </div>
-
-          <div className="border-t border-gray-700/50 pt-4 flex flex-wrap gap-x-6 gap-y-2">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
-              <span className="text-gray-500">Created:</span>
-              <span>
-                {flight.created_at
-                  ? new Date(flight.created_at).toLocaleString()
-                  : 'N/A'}
-              </span>
+          {activeTab === 'photos' && (
+            <div>
+              {snaps.length === 0 ? (
+                <p className="text-zinc-500 text-sm">
+                  No photos have been added to this flight.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {snaps.map((snap) => (
+                    <div
+                      key={snap.cephie_id}
+                      className="rounded-xl overflow-hidden aspect-video bg-zinc-800/40 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setLightboxSrc(snap.url)}
+                    >
+                      <img
+                        src={snap.url}
+                        alt="Snap"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <CalendarClock className="h-4 w-4 text-gray-600 shrink-0" />
-              <span className="text-gray-500">Updated:</span>
-              <span>
-                {flight.updated_at
-                  ? new Date(flight.updated_at).toLocaleString()
-                  : 'N/A'}
-              </span>
-            </div>
-          </div>
+          )}
 
-          {flight.remark && (
-            <div className="flex items-start gap-3 p-4 bg-blue-600/10 border border-blue-600/20 rounded-2xl">
-              <MessageSquareText className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 mb-0.5">Remarks</p>
-                <p className="text-sm text-gray-200">{flight.remark}</p>
-              </div>
+          {activeTab === 'notes' && (
+            <div>
+              {flight.notes ? (
+                <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed font-mono">
+                  {flight.notes}
+                </p>
+              ) : (
+                <p className="text-zinc-500 text-sm">
+                  No notes have been added to this flight.
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'timeline' && (
+            <div>
+              {statusTimeline.length === 0 ? (
+                <p className="text-zinc-500 text-sm">
+                  {logsAvailable
+                    ? 'No status-change logs available for this flight.'
+                    : 'Sign in to view this flight’s status history.'}
+                </p>
+              ) : (
+                <div className="overflow-x-auto pb-1">
+                  <div className="flex items-center gap-2 min-w-max">
+                    {statusTimeline.map((item, index) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <div className="p-3 bg-zinc-800/40 border border-zinc-800 rounded-2xl text-sm min-w-44">
+                          <div className="text-zinc-200 font-medium mb-1">
+                            {item.label}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
+                            <CalendarClock className="h-3 w-3 shrink-0" />
+                            {new Date(item.at).toLocaleString()}
+                          </div>
+                        </div>
+                        {index !== statusTimeline.length - 1 && (
+                          <ArrowRight className="h-4 w-4 text-zinc-600 shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Flight Notes */}
-        {flight.notes && (
-          <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <StickyNote className="h-5 w-5 text-blue-400" />
-              <h2 className="text-lg font-semibold text-blue-400">
-                Flight Notes
-              </h2>
-            </div>
-            <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed font-mono">
-              {flight.notes}
-            </p>
-          </div>
-        )}
-
-        {/* Status Timeline */}
-        {statusTimeline.length > 0 && (
-          <div className="bg-gray-900/20 border-2 border-gray-800 rounded-3xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <History className="h-5 w-5 text-blue-400" />
-              <h2 className="text-lg font-semibold text-blue-400">
-                Status Timeline
-              </h2>
-            </div>
-            <div className="overflow-x-auto pb-1">
-              <div className="flex items-center gap-2 min-w-max">
-                {statusTimeline.map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <div className="p-3 bg-gray-900/40 border border-gray-800 rounded-2xl text-sm min-w-44">
-                      <div className="text-gray-200 font-medium mb-1">
-                        {item.label}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-                        <CalendarClock className="h-3 w-3 shrink-0" />
-                        {new Date(item.at).toLocaleString()}
-                      </div>
-                    </div>
-                    {index !== statusTimeline.length - 1 && (
-                      <ArrowRight className="h-4 w-4 text-gray-600 shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <p className="text-xs text-gray-700 font-mono px-1">
+        <p className="text-xs text-zinc-700 font-mono px-1 mt-6">
           Shared via PFControl
         </p>
       </div>

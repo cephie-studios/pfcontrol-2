@@ -11,15 +11,18 @@ import {
   Search,
   Share2,
   Star,
+  Trash2,
   Workflow,
 } from 'lucide-react';
 import {
   claimSubmittedFlight,
+  deleteFlight,
   fetchMyFlights,
   toggleFeaturedOnProfile,
 } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import { useSettings } from '../hooks/settings/useSettings';
 import { fetchBackgrounds } from '../utils/fetch/data';
 
@@ -32,27 +35,27 @@ interface AvailableImage {
 }
 
 const FlightCardSkeleton = () => (
-  <div className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse">
+  <div className="bg-zinc-800/50 border-2 border-zinc-700 rounded-3xl p-5 animate-pulse">
     <div className="flex items-center mb-3 gap-2">
-      <div className="h-5 w-5 rounded-full bg-gray-700 shrink-0" />
-      <div className="h-4 w-28 rounded-full bg-gray-700" />
+      <div className="h-5 w-5 rounded-full bg-zinc-700 shrink-0" />
+      <div className="h-4 w-28 rounded-full bg-zinc-700" />
     </div>
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
-        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-        <div className="h-3.5 w-36 rounded-full bg-gray-700" />
+        <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+        <div className="h-3.5 w-36 rounded-full bg-zinc-700" />
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-        <div className="h-3.5 w-32 rounded-full bg-gray-700" />
+        <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+        <div className="h-3.5 w-32 rounded-full bg-zinc-700" />
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-        <div className="h-3.5 w-24 rounded-full bg-gray-700" />
+        <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+        <div className="h-3.5 w-24 rounded-full bg-zinc-700" />
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-        <div className="h-3.5 w-28 rounded-full bg-gray-700" />
+        <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+        <div className="h-3.5 w-28 rounded-full bg-zinc-700" />
       </div>
     </div>
   </div>
@@ -62,15 +65,19 @@ function FlightCard({
   flight,
   featuredCount,
   onFeaturedToggle,
+  onDelete,
 }: {
   flight: Flight;
   featuredCount: number;
   onFeaturedToggle: (id: string, featured: boolean) => void;
+  onDelete: (id: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [featured, setFeatured] = useState(flight.featured_on_profile ?? false);
   const [featuredLoading, setFeaturedLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const coverSnap = flight.snap_images?.[0];
@@ -132,6 +139,29 @@ function FlightCard({
     }
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deleting) return;
+    setMenuOpen(false);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteConfirmOpen(false);
+    setDeleting(true);
+    try {
+      await deleteFlight(flight.session_id, flight.id);
+      onDelete(String(flight.id));
+    } catch {
+      setDeleting(false);
+    }
+  };
+
   const toggleMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -163,22 +193,51 @@ function FlightCard({
                 : 'Feature flight'}
           </span>
         </button>
+        {acarsUrl && (
+          <>
+            <button
+              onClick={handleShare}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+            >
+              <Share2 className="h-4 w-4 shrink-0" />
+              <span className="font-medium">Share flight</span>
+            </button>
+            <button
+              onClick={handleOpenAcars}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              <span className="font-medium">Open ACARS</span>
+            </button>
+          </>
+        )}
+        <div className="my-1 border-t border-zinc-800" />
         <button
-          onClick={handleShare}
-          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-colors duration-150 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Share2 className="h-4 w-4 shrink-0" />
-          <span className="font-medium">Share flight</span>
-        </button>
-        <button
-          onClick={handleOpenAcars}
-          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
-        >
-          <ExternalLink className="h-4 w-4 shrink-0" />
-          <span className="font-medium">Open ACARS</span>
+          <Trash2 className="h-4 w-4 shrink-0" />
+          <span className="font-medium">
+            {deleting ? 'Deleting…' : 'Delete flight'}
+          </span>
         </button>
       </div>
     </div>
+  );
+
+  const confirmDeleteDialog = (
+    <ConfirmationDialog
+      isOpen={deleteConfirmOpen}
+      onConfirm={handleConfirmDelete}
+      onCancel={handleCancelDelete}
+      title="Delete Flight"
+      description={`Delete flight ${callsign}? This cannot be undone.`}
+      confirmText="Delete"
+      cancelText="Cancel"
+      variant="danger"
+      icon={<Trash2 size={24} />}
+    />
   );
 
   if (hasCover) {
@@ -186,7 +245,7 @@ function FlightCard({
       <div className="relative">
         <Link
           to={`/my-flights/${flight.id}`}
-          className="relative overflow-hidden border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all block h-full"
+          className="relative overflow-hidden border-2 border-zinc-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all block h-full"
         >
           {/* Background image + overlay */}
           <img
@@ -195,7 +254,7 @@ function FlightCard({
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gray-900/70" />
+          <div className="absolute inset-0 bg-zinc-900/70" />
 
           {/* Same content as standard card, positioned above the overlay */}
           <div className="relative">
@@ -206,23 +265,23 @@ function FlightCard({
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 ml-2 shrink-0" />
               )}
             </div>
-            <div className="space-y-2 text-sm text-gray-300">
+            <div className="space-y-2 text-sm text-zinc-300">
               <div className="flex items-center">
-                <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                <Route className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
                 <span className="font-mono font-medium text-white">
                   {flight.departure || '----'}
                 </span>
-                <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
+                <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-zinc-500 shrink-0" />
                 <span className="font-mono font-medium text-white">
                   {flight.arrival || '----'}
                 </span>
               </div>
               <div className="flex items-center">
-                <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                <Plane className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
                 {flight.aircraft || 'Unknown aircraft'}
               </div>
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                <Calendar className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
                 {flight.created_at
                   ? new Date(flight.created_at).toLocaleDateString(undefined, {
                       month: 'short',
@@ -263,23 +322,20 @@ function FlightCard({
           className="absolute top-4 right-4 flex items-center gap-2"
           ref={menuRef}
         >
-          {acarsUrl && (
-            <>
-              <button
-                onClick={toggleMenu}
-                className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
-                aria-label="Flight options"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-emerald-400" />
-                ) : (
-                  <MoreVertical className="h-4 w-6" />
-                )}
-              </button>
-              {dropdown}
-            </>
-          )}
+          <button
+            onClick={toggleMenu}
+            className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+            aria-label="Flight options"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <MoreVertical className="h-4 w-6" />
+            )}
+          </button>
+          {dropdown}
         </div>
+        {confirmDeleteDialog}
       </div>
     );
   }
@@ -289,7 +345,7 @@ function FlightCard({
     <div className="relative">
       <Link
         to={`/my-flights/${flight.id}`}
-        className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block h-full"
+        className="bg-zinc-800/50 border-2 border-zinc-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-zinc-800/70 block h-full"
       >
         {/* Header */}
         <div className="flex items-center mb-3">
@@ -301,23 +357,23 @@ function FlightCard({
         </div>
 
         {/* Details */}
-        <div className="space-y-2 text-sm text-gray-300">
+        <div className="space-y-2 text-sm text-zinc-300">
           <div className="flex items-center">
-            <Route className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            <Route className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
             <span className="font-mono font-medium text-white">
               {flight.departure || '----'}
             </span>
-            <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-gray-500 shrink-0" />
+            <ArrowRight className="h-3.5 w-3.5 mx-1.5 text-zinc-500 shrink-0" />
             <span className="font-mono font-medium text-white">
               {flight.arrival || '----'}
             </span>
           </div>
           <div className="flex items-center">
-            <Plane className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            <Plane className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
             {flight.aircraft || 'Unknown aircraft'}
           </div>
           <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+            <Calendar className="h-4 w-4 mr-2 text-zinc-500 shrink-0" />
             {flight.created_at
               ? new Date(flight.created_at).toLocaleDateString(undefined, {
                   month: 'short',
@@ -352,22 +408,21 @@ function FlightCard({
       </Link>
 
       {/* 3-dot menu */}
-      {acarsUrl && (
-        <div className="absolute top-4 right-4" ref={menuRef}>
-          <button
-            onClick={toggleMenu}
-            className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
-            aria-label="Flight options"
-          >
-            {copied ? (
-              <Check className="h-4 w-4 text-emerald-400" />
-            ) : (
-              <MoreVertical className="h-4 w-6" />
-            )}
-          </button>
-          {dropdown}
-        </div>
-      )}
+      <div className="absolute top-4 right-4" ref={menuRef}>
+        <button
+          onClick={toggleMenu}
+          className="px-3 py-2 rounded-2xl text-blue-400 border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+          aria-label="Flight options"
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-emerald-400" />
+          ) : (
+            <MoreVertical className="h-4 w-6" />
+          )}
+        </button>
+        {dropdown}
+      </div>
+      {confirmDeleteDialog}
     </div>
   );
 }
@@ -436,6 +491,10 @@ export default function MyFlights() {
     );
   };
 
+  const handleDelete = (id: string) => {
+    setFlights((prev) => prev.filter((f) => String(f.id) !== id));
+  };
+
   const filteredFlights = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return flights;
@@ -500,7 +559,7 @@ export default function MyFlights() {
   }, [backgroundImage]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <Navbar />
 
       <div className="relative w-full h-80 md:h-96 overflow-hidden">
@@ -521,7 +580,7 @@ export default function MyFlights() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -530,7 +589,7 @@ export default function MyFlights() {
           </h1>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4">
-            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg h-12 sm:h-auto">
+            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-950 backdrop-blur-md border border-blue-950 rounded-full shadow-lg h-12 sm:h-auto">
               <Plane className="h-5 w-5 text-blue-400" />
               <span className="text-blue-400 text-sm font-semibold tracking-wider whitespace-nowrap">
                 {filteredFlights.length} FLIGHT
@@ -545,13 +604,13 @@ export default function MyFlights() {
         <div className="p-6 space-y-6">
           <div className="relative group">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full p-1 z-10 flex items-center justify-center">
-              <Search className="h-5 w-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+              <Search className="h-5 w-5 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
             </span>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search callsign, airport, aircraft..."
-              className="w-full bg-gray-900/70 backdrop-blur-md border-2 border-gray-800 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all"
+              className="w-full bg-zinc-900/70 backdrop-blur-md border-2 border-zinc-800 rounded-full pl-12 pr-4 py-3 text-white font-semibold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all"
             />
           </div>
 
@@ -566,12 +625,12 @@ export default function MyFlights() {
               {error}
             </div>
           ) : filteredFlights.length === 0 ? (
-            <div className="p-8 text-center bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-3xl">
+            <div className="p-8 text-center bg-zinc-900/70 backdrop-blur-md border border-zinc-800 rounded-3xl">
               <div className="inline-block p-4 bg-blue-600/20 rounded-full mb-4">
                 <Plane className="h-12 w-12 text-blue-400" />
               </div>
               <h2 className="text-xl font-semibold mb-2">No flights yet</h2>
-              <p className="text-gray-400 mb-6">
+              <p className="text-zinc-400 mb-6">
                 Submit a flight plan and it will show up here.
               </p>
               <Link
@@ -589,6 +648,7 @@ export default function MyFlights() {
                   flight={flight}
                   featuredCount={featuredCount}
                   onFeaturedToggle={handleFeaturedToggle}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>

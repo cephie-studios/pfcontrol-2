@@ -394,16 +394,14 @@ router.put(
             const flight = await updateFlight(sessionId, flightId, fields);
             broadcastFlightEvent(sessionId, 'flightUpdated', flight);
 
-            setImmediate(() => {
-              void logFlightAction({
-                userId: ext.userId,
-                username,
-                sessionId,
-                action: 'update',
-                flightId,
-                oldData: before ? sanitizeFlightForClient(before) : null,
-                newData: flight,
-              });
+            await logFlightAction({
+              userId: ext.userId,
+              username,
+              sessionId,
+              action: 'update',
+              flightId,
+              oldData: before ? sanitizeFlightForClient(before) : null,
+              newData: flight,
             });
 
             return { sessionId, flightId, ok: true, flight };
@@ -847,17 +845,16 @@ router.post(
       broadcastFlightEvent(loaded.session.session_id, 'flightAdded', payload);
 
       if (ownerView.id) {
-        setImmediate(() => {
-          void (async () => {
-            void logFlightAction({
-              userId: ext.userId,
-              username: await usernameFor(ext.userId),
-              sessionId: loaded.session.session_id,
-              action: 'add',
-              flightId: ownerView.id!,
-              newData: payload,
-            });
-          })();
+        // Awaited (not fire-and-forget) so this write survives a server
+        // restart landing between the broadcast above and the log getting
+        // written.
+        await logFlightAction({
+          userId: ext.userId,
+          username: await usernameFor(ext.userId),
+          sessionId: loaded.session.session_id,
+          action: 'add',
+          flightId: ownerView.id,
+          newData: payload,
         });
       }
 
@@ -921,18 +918,17 @@ router.put(
       const flight = await updateFlight(session.session_id, fid, updateFields);
       broadcastFlightEvent(session.session_id, 'flightUpdated', flight);
 
-      setImmediate(() => {
-        void (async () => {
-          void logFlightAction({
-            userId: ext.userId,
-            username: await usernameFor(ext.userId),
-            sessionId: session.session_id,
-            action: 'update',
-            flightId: fid,
-            oldData: before ? sanitizeFlightForClient(before) : null,
-            newData: flight,
-          });
-        })();
+      // Awaited (not fire-and-forget) so this write survives a server
+      // restart landing between the broadcast above and the log getting
+      // written.
+      await logFlightAction({
+        userId: ext.userId,
+        username: await usernameFor(ext.userId),
+        sessionId: session.session_id,
+        action: 'update',
+        flightId: fid,
+        oldData: before ? sanitizeFlightForClient(before) : null,
+        newData: flight,
       });
 
       res.json(flight);

@@ -42,10 +42,10 @@ export default function Login() {
 
   const buttonClass = agreed
     ? 'w-full py-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
-    : 'w-full py-4 flex items-center justify-center gap-3 bg-gray-700 text-gray-400';
+    : 'w-full py-4 flex items-center justify-center gap-3 bg-zinc-700 text-zinc-400 border-zinc-700 hover:from-zinc-700 hover:to-zinc-800 pointer-events-none';
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <div className="absolute top-6 left-6 z-20">
         <button
           onClick={() => navigate(-1)}
@@ -63,16 +63,16 @@ export default function Login() {
             alt="Banner"
             className="object-cover w-full h-full scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/80 to-gray-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
             SIGN IN
           </h1>
-          <div className="flex items-center gap-1.5 px-6 py-2 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
-            <Users className="h-4 w-4 text-blue-400" />
-            <span className="text-blue-400 text-sm font-semibold tracking-wider">
+          <div className="flex items-center gap-1.5 px-6 py-2 bg-blue-900 backdrop-blur-md border border-blue-900 rounded-full shadow-lg">
+            <Users className="h-4 w-4 text-blue-200" />
+            <span className="text-blue-200 text-sm font-semibold tracking-wider">
               {stats.registeredUsers.toLocaleString()} REGISTERED USERS
             </span>
           </div>
@@ -80,7 +80,7 @@ export default function Login() {
       </div>
 
       <div className="container mx-auto max-w-md px-4 pb-8 relative z-10">
-        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-[3rem] p-6 space-y-6 animate-fade-in">
+        <div className="bg-zinc-900/70 backdrop-blur-md border border-zinc-800 rounded-[3rem] p-6 space-y-6 animate-fade-in">
           <Button
             onClick={handleLogin}
             disabled={!agreed}
@@ -92,11 +92,11 @@ export default function Login() {
             Sign In with Discord
           </Button>
 
-          <hr className="w-full border-gray-700" />
+          <hr className="w-full border-zinc-700" />
 
           <div
-            className={`w-full flex items-center border-2 border-blue-600 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
-                      ${agreed ? 'bg-blue-600/30' : 'bg-blue-600/10'}
+            className={`w-full flex items-center border-2 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
+                      ${agreed ? 'border-blue-600 bg-blue-600/30' : 'border-blue-700 bg-blue-600/10'}
                       hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
           >
             <Checkbox
@@ -141,8 +141,8 @@ export default function Login() {
           </div>
 
           <div className="flex w-full justify-center">
-            <p className="text-xs text-gray-500 text-center max-w-xs">
-              PFControl is an independent service and is not in any way
+            <p className="text-xs text-zinc-500 text-center max-w-xs">
+              PFControl is an independent service created by Cephie Studios and is not in any way
               affiliated with Project Flight.
             </p>
           </div>

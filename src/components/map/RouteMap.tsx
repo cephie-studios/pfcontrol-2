@@ -77,10 +77,6 @@ function computeViewState(
   };
 }
 
-/**
- * Expand a space-separated route string into resolved Waypoint objects,
- * replacing SID/STAR procedure names with their waypoint sequences.
- */
 function buildFullRoute(
   routeStr: string,
   waypoints: Waypoint[],
@@ -106,12 +102,23 @@ function buildFullRoute(
     (t) => t !== departure && t !== arrival && t !== sidName && t !== starName
   );
 
+  const sidTokenPresent = !!sidName && tokens.includes(sidName);
+  const starTokenPresent = !!starName && tokens.includes(starName);
+  const sidSpelledOutLiterally =
+    !sidTokenPresent &&
+    sidWps.length > 0 &&
+    midTokens.some((t) => sidWps.includes(t));
+  const starSpelledOutLiterally =
+    !starTokenPresent &&
+    starWps.length > 0 &&
+    midTokens.some((t) => starWps.includes(t));
+
   // Build ordered name list: dep → SID waypoints → mid route → STAR waypoints → arr
   const names: string[] = [];
   if (departure) names.push(departure);
-  names.push(...sidWps);
+  if (!sidSpelledOutLiterally) names.push(...sidWps);
   names.push(...midTokens);
-  names.push(...starWps);
+  if (!starSpelledOutLiterally) names.push(...starWps);
   if (arrival) names.push(arrival);
 
   // Deduplicate consecutive duplicates (e.g. SID exit fix appearing in mid route too)

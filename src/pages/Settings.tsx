@@ -230,6 +230,7 @@ export default function Settings() {
         pdc: true,
         hide: true,
         delete: true,
+        req: true,
       },
       arrivalsTableColumns: {
         time: true as const,
@@ -323,7 +324,7 @@ export default function Settings() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <Navbar />
 
       <div className="relative w-full h-80 md:h-96 overflow-hidden">
@@ -344,7 +345,7 @@ export default function Settings() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-4 sm:px-6 md:px-10 gap-4">
@@ -561,7 +562,7 @@ export default function Settings() {
             <Check className="h-8 w-8 text-green-400" />
           </div>
           <div>
-            <p className="text-gray-300">
+            <p className="text-zinc-300">
               You've successfully completed the tutorial for PFControl. Explore
               your new settings and enjoy using PFControl!
             </p>
