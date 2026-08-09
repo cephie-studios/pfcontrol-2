@@ -19,6 +19,7 @@ const cspNonce: RequestHandler = (_req, res, next) => {
 const securityMiddleware = [
   cspNonce,
   helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],

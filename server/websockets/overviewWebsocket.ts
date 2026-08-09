@@ -218,33 +218,31 @@ export function setupOverviewWebsocket(
               flightsIO.to(validSessionId).emit('flightUpdated', updatedFlight);
             }
 
-            setImmediate(() => {
-              void (async () => {
-                const flightOwner = oldFlight?.user_id
-                  ? await getUserById(oldFlight.user_id)
-                  : null;
-                const {
-                  user_id: _uid,
-                  ip_address: _ip,
-                  acars_token: _at,
-                  ...oldSanitized
-                } = oldFlight || {};
-                await logFlightAction({
-                  userId: socket.data.userId || 'unknown',
-                  username: socket.data.username || 'unknown',
-                  sessionId: validSessionId,
-                  action: 'update',
-                  flightId: flightId as string,
-                  oldData: {
-                    ...oldSanitized,
-                    flight_owner_user_id: oldFlight?.user_id || null,
-                    flight_owner_username: flightOwner?.username || null,
-                  },
-                  newData: updatedFlight ?? {},
-                  ipAddress: socket.handshake.address,
-                });
-              })();
-            });
+            {
+              const flightOwner = oldFlight?.user_id
+                ? await getUserById(oldFlight.user_id)
+                : null;
+              const {
+                user_id: _uid,
+                ip_address: _ip,
+                acars_token: _at,
+                ...oldSanitized
+              } = oldFlight || {};
+              await logFlightAction({
+                userId: socket.data.userId || 'unknown',
+                username: socket.data.username || 'unknown',
+                sessionId: validSessionId,
+                action: 'update',
+                flightId: flightId as string,
+                oldData: {
+                  ...oldSanitized,
+                  flight_owner_user_id: oldFlight?.user_id || null,
+                  flight_owner_username: flightOwner?.username || null,
+                },
+                newData: updatedFlight ?? {},
+                ipAddress: socket.handshake.address,
+              });
+            }
 
             if (socket.data.userId) {
               incrementStat(

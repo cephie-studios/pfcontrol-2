@@ -1150,7 +1150,7 @@ export default function PFATCFlights() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white relative">
+      <div className="min-h-screen bg-zinc-950 text-white relative">
         <Navbar />
         {/* Hero with user's banner */}
         <div className="relative w-full h-80 md:h-96 overflow-hidden">
@@ -1171,15 +1171,15 @@ export default function PFATCFlights() {
                 transition: 'opacity 0.5s ease-in-out',
               }}
             />
-            <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+            <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950" />
           </div>
           <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center">
               NETWORKS OVERVIEW
             </h1>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6 animate-pulse">
-              <div className="h-10 w-40 rounded-full bg-gray-700/60" />
-              <div className="h-10 w-32 rounded-full bg-gray-700/60" />
+              <div className="h-10 w-40 rounded-full bg-zinc-700/60" />
+              <div className="h-10 w-32 rounded-full bg-zinc-700/60" />
             </div>
           </div>
         </div>
@@ -1220,7 +1220,7 @@ export default function PFATCFlights() {
             </div>
             {/* Airport cards skeleton */}
             <div>
-              <div className="h-7 w-36 rounded-full bg-gray-700 mb-4 animate-pulse" />
+              <div className="h-7 w-36 rounded-full bg-zinc-700 mb-4 animate-pulse" />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
@@ -1275,7 +1275,7 @@ export default function PFATCFlights() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <Navbar />
 
       {/* Hero Banner */}
@@ -1297,7 +1297,7 @@ export default function PFATCFlights() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
         </div>
 
         {/* Hero Content */}
@@ -1307,23 +1307,23 @@ export default function PFATCFlights() {
           </h1>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-            <div className="flex items-center gap-2 px-6 py-2 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
-              <TowerControl className="h-5 w-5 text-blue-400" />
-              <span className="text-blue-400 text-sm font-semibold tracking-wider">
+            <div className="flex items-center gap-2 px-6 py-2 bg-blue-900 backdrop-blur-md border border-blue-900 rounded-full shadow-lg">
+              <TowerControl className="h-5 w-5 text-blue-200" />
+              <span className="text-blue-200 text-sm font-semibold tracking-wider">
                 {overviewData?.totalActiveSessions || 0} ACTIVE SESSION
                 {(overviewData?.totalActiveSessions || 0) === 1 ? '' : 'S'}
               </span>
             </div>
-            <div className="flex items-center gap-2 px-6 py-2 bg-green-600/20 backdrop-blur-md border border-green-500/30 rounded-full shadow-lg">
-              <Plane className="h-5 w-5 text-green-400" />
-              <span className="text-green-400 text-sm font-semibold tracking-wider">
+            <div className="flex items-center gap-2 px-6 py-2 bg-green-900 backdrop-blur-md border border-green-900 rounded-full shadow-lg">
+              <Plane className="h-5 w-5 text-green-200" />
+              <span className="text-green-200 text-sm font-semibold tracking-wider">
                 {overviewData?.totalFlights || 0} FLIGHT
                 {(overviewData?.totalFlights || 0) === 1 ? '' : 'S'}
               </span>
             </div>
             {isPFATCSectorController && (
-              <div className="px-6 py-1.5 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg">
-                <span className="text-blue-400 text-sm font-semibold tracking-wider">
+              <div className="px-6 py-1.5 bg-blue-900 backdrop-blur-md border border-blue-900 rounded-full shadow-lg">
+                <span className="text-blue-200 text-sm font-semibold tracking-wider">
                   PFATC SECTOR CONTROLLER
                 </span>
               </div>
@@ -1716,7 +1716,7 @@ export default function PFATCFlights() {
                                       actionButtonRefs.current[flight.id] = el;
                                     }
                                   }}
-                                  className={`flex items-center justify-center text-gray-400 hover:text-white transition-colors ${!canEditFlight(flight) || !selectedStation ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  className={`flex items-center justify-center text-zinc-400 hover:text-white transition-colors ${!canEditFlight(flight) || !selectedStation ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   onClick={() => {
                                     setOpenActionMenuId(
                                       openActionMenuId === flight.id

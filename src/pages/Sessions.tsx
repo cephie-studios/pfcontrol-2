@@ -178,7 +178,7 @@ export default function Sessions() {
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white relative">
+      <div className="min-h-screen bg-zinc-950 text-white relative">
         <Navbar />
         <div className="relative w-full h-80 md:h-96 overflow-hidden">
           <div className="absolute inset-0">
@@ -198,15 +198,15 @@ export default function Sessions() {
                 transition: 'opacity 0.5s ease-in-out',
               }}
             />
-            <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950" />
+            <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950" />
           </div>
           <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
               MY SESSIONS
             </h1>
             <div className="flex gap-3 animate-pulse">
-              <div className="h-10 w-36 rounded-full bg-gray-700/60" />
-              <div className="h-10 w-40 rounded-full bg-gray-700/60" />
+              <div className="h-10 w-36 rounded-full bg-zinc-700/60" />
+              <div className="h-10 w-40 rounded-full bg-zinc-700/60" />
             </div>
           </div>
         </div>
@@ -216,24 +216,24 @@ export default function Sessions() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="bg-gray-800/50 border-2 border-gray-700 rounded-3xl p-5 animate-pulse"
+                  className="bg-zinc-800/50 border-2 border-zinc-700 rounded-3xl p-5 animate-pulse"
                 >
                   <div className="flex items-center mb-3 gap-2">
-                    <div className="h-5 w-5 rounded bg-gray-700 shrink-0" />
-                    <div className="h-4 w-36 rounded-full bg-gray-700" />
+                    <div className="h-5 w-5 rounded bg-zinc-700 shrink-0" />
+                    <div className="h-4 w-36 rounded-full bg-zinc-700" />
                   </div>
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-                      <div className="h-3.5 w-44 rounded-full bg-gray-700" />
+                      <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+                      <div className="h-3.5 w-44 rounded-full bg-zinc-700" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-                      <div className="h-3.5 w-28 rounded-full bg-gray-700" />
+                      <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+                      <div className="h-3.5 w-28 rounded-full bg-zinc-700" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded bg-gray-700 shrink-0" />
-                      <div className="h-3.5 w-20 rounded-full bg-gray-700" />
+                      <div className="h-4 w-4 rounded bg-zinc-700 shrink-0" />
+                      <div className="h-3.5 w-20 rounded-full bg-zinc-700" />
                     </div>
                   </div>
                 </div>
@@ -249,10 +249,10 @@ export default function Sessions() {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
         <Navbar />
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
+        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-8 text-center">
           <AlertTriangle className="h-8 w-8 text-yellow-500 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Not logged in</h2>
-          <p className="text-gray-400 mb-6">
+          <p className="text-zinc-400 mb-6">
             Please log in to view your sessions.
           </p>
           <Link
@@ -267,7 +267,7 @@ export default function Sessions() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <Navbar />
 
       <div className="relative w-full h-80 md:h-96 overflow-hidden">
@@ -288,7 +288,7 @@ export default function Sessions() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -297,9 +297,9 @@ export default function Sessions() {
           </h1>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full px-4">
-            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-full shadow-lg h-12 sm:h-auto">
-              <FolderOpen className="h-5 w-5 text-blue-400" />
-              <span className="text-blue-400 text-sm font-semibold tracking-wider whitespace-nowrap">
+            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-900 backdrop-blur-md border border-blue-900 rounded-full shadow-lg h-12 sm:h-auto">
+              <FolderOpen className="h-5 w-5 text-blue-200" />
+              <span className="text-blue-200 text-sm font-semibold tracking-wider whitespace-nowrap">
                 {sessions.length}/{maxSessions} SESSION
                 {sessions.length === 1 ? '' : 'S'}
               </span>
@@ -353,7 +353,7 @@ export default function Sessions() {
                   <Workflow className="h-12 w-12 text-blue-400" />
                 </div>
                 <h2 className="text-xl font-semibold mb-2">No sessions yet</h2>
-                <p className="text-gray-400 mb-6">
+                <p className="text-zinc-400 mb-6">
                   You haven't created any sessions yet.
                 </p>
                 <Link
@@ -368,7 +368,7 @@ export default function Sessions() {
                 {sessions.map((session) => (
                   <div
                     key={session.sessionId}
-                    className="bg-gray-800/50 border-2 border-gray-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-gray-800/70 block relative"
+                    className="bg-zinc-800/50 border-2 border-zinc-700 hover:border-blue-600/50 rounded-3xl p-5 transition-all hover:bg-zinc-800/70 block relative"
                   >
                     <Link
                       to={`/view/${session.sessionId}/?accessId=${session.accessId}`}
@@ -385,16 +385,16 @@ export default function Sessions() {
                           <Info className="h-4 w-4 text-yellow-400 ml-2" />
                         )}
                       </div>
-                      <div className="space-y-2 text-sm text-gray-300">
+                      <div className="space-y-2 text-sm text-zinc-300">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                          <Calendar className="h-4 w-4 mr-2 text-zinc-500" />
                           {session.createdAt
                             ? new Date(session.createdAt).toLocaleString()
                             : 'Date unavailable'}
                         </div>
                         {session.activeRunway && (
                           <div className="flex items-center">
-                            <PlaneTakeoff className="h-4 w-4 mr-2 text-gray-500" />
+                            <PlaneTakeoff className="h-4 w-4 mr-2 text-zinc-500" />
                             Departure Runway: {session.activeRunway}
                           </div>
                         )}
@@ -423,7 +423,7 @@ export default function Sessions() {
                           )}
                         </div>
                         <div className="flex items-center">
-                          <Plane className="h-4 w-4 mr-2 text-gray-500" />
+                          <Plane className="h-4 w-4 mr-2 text-zinc-500" />
                           Flights: {session.flightCount}
                         </div>
                       </div>
@@ -471,9 +471,9 @@ export default function Sessions() {
               </div>
               <button
                 onClick={() => setSessionToDelete(null)}
-                className="p-1 rounded-full hover:bg-gray-700"
+                className="p-1 rounded-full hover:bg-zinc-700"
               >
-                <X className="h-5 w-5 text-gray-400" />
+                <X className="h-5 w-5 text-zinc-400" />
               </button>
             </div>
 
@@ -493,11 +493,11 @@ export default function Sessions() {
                   </p>
                 </div>
               )}
-              <p className="text-gray-300 mb-2">
+              <p className="text-zinc-300 mb-2">
                 Are you sure you want to delete this session? This action cannot
                 be undone.
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-zinc-400">
                 Session:{' '}
                 <span className="font-medium">
                   {sessions.find((s) => s.sessionId === sessionToDelete)
@@ -508,7 +508,7 @@ export default function Sessions() {
                     } Session`}
                 </span>
               </p>
-              <p className="text-sm text-gray-500 font-mono">
+              <p className="text-sm text-zinc-500 font-mono">
                 ID: {sessionToDelete}
               </p>
             </div>
@@ -528,7 +528,7 @@ export default function Sessions() {
               >
                 {deleteInProgress ? (
                   <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-white"></div>
                     Deleting...
                   </>
                 ) : (
@@ -552,13 +552,13 @@ export default function Sessions() {
               </div>
               <button
                 onClick={() => setEditingName(null)}
-                className="p-1 rounded-full hover:bg-gray-700"
+                className="p-1 rounded-full hover:bg-zinc-700"
               >
-                <X className="h-5 w-5 text-gray-400" />
+                <X className="h-5 w-5 text-zinc-400" />
               </button>
             </div>
             <div className="mb-6">
-              <p className="text-gray-300 mb-4">
+              <p className="text-zinc-300 mb-4">
                 Change the name for this session. This helps you identify it
                 more easily.
               </p>
@@ -589,7 +589,7 @@ export default function Sessions() {
               >
                 {savingName === editingName ? (
                   <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-white"></div>
                     Saving...
                   </>
                 ) : (

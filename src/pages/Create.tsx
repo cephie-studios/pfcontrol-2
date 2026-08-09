@@ -274,7 +274,7 @@ export default function Create() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-zinc-950 text-white relative">
       <Navbar />
 
       <div className="relative w-full h-80 md:h-96 overflow-hidden mb-4">
@@ -295,7 +295,7 @@ export default function Create() {
               transition: 'opacity 0.5s ease-in-out',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -306,7 +306,7 @@ export default function Create() {
       </div>
 
       <div className="relative z-10 max-w-xl mx-auto px-4 -mt-24 md:-mt-32 pb-12">
-        <div className="bg-gray-900/70 backdrop-blur-md border border-gray-800 rounded-4xl p-6 space-y-6 shadow-2xl">
+        <div className="bg-zinc-900/70 backdrop-blur-md border border-zinc-800 rounded-4xl p-6 space-y-6 shadow-2xl">
           {error && (
             <div className="p-3 bg-red-900/40 border border-red-700 rounded-full flex items-center text-sm">
               <AlertCircle className="h-5 w-5 mr-2 text-red-400" />
@@ -358,7 +358,7 @@ export default function Create() {
           </div>
 
           <div id="airport-dropdown" className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-zinc-300">
               Select Airport <span className="text-red-400">*</span>
             </label>
             <AirportDropdown
@@ -375,7 +375,7 @@ export default function Create() {
           </div>
 
           <div id="runway-dropdown" className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-zinc-300">
               Select Departure Runway <span className="text-red-400">*</span>
             </label>
             <RunwayDropdown
@@ -390,9 +390,9 @@ export default function Create() {
           </div>
 
           <div id="arrival-runway-dropdown" className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-zinc-300">
               Select Arrival Runway{' '}
-              <span className="text-gray-500">(Optional)</span>
+              <span className="text-zinc-500">(Optional)</span>
             </label>
             <RunwayDropdown
               airportIcao={selectedAirport}
@@ -410,7 +410,7 @@ export default function Create() {
 
           <div
             id="network-session-options"
-            className="w-full border-t border-gray-700 pt-6 space-y-4"
+            className="w-full border-t border-zinc-700 pt-6 space-y-4"
           >
             <div className="flex flex-row gap-4 w-full">
               <p>I am controlling on the</p>
@@ -431,7 +431,7 @@ export default function Create() {
                       PFATC Network
                     </a>
                   }
-                  className="text-gray-300 w-full"
+                  className="text-zinc-300 w-full"
                   disabled={startTutorial ? true : false}
                 />
               </div>
@@ -455,7 +455,7 @@ export default function Create() {
                       AATC Network
                     </a>
                   }
-                  className="text-gray-300 w-full"
+                  className="text-zinc-300 w-full"
                   disabled={startTutorial ? true : false}
                 />
               </div>
@@ -499,7 +499,7 @@ export default function Create() {
             */}
           </div>
 
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-zinc-700 pt-4">
             <Button
               id="create-session-btn"
               onClick={handleCreateSession}

@@ -1,7 +1,13 @@
 FROM node:22-alpine
 
-# Install dumb-init
-RUN apk add --no-cache dumb-init
+# Install dumb-init.
+RUN ok=0; \
+    for i in 1 2 3 4 5; do \
+      apk add --no-cache dumb-init && { ok=1; break; }; \
+      echo "apk add failed (attempt $i/5), retrying in 5s..."; \
+      sleep 5; \
+    done; \
+    [ "$ok" = "1" ]
 
 WORKDIR /app
 

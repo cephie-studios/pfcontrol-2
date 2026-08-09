@@ -9,8 +9,10 @@ body {
   overscroll-behavior: none;
 }
 
-button {
-  cursor: pointer;
+@layer base {
+  button {
+    cursor: pointer;
+  }
 }
 
 ::-webkit-scrollbar {

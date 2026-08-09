@@ -107,20 +107,22 @@ router.delete(
         flightId: fid,
       });
 
-      setImmediate(() => {
-        void (async () => {
-          const { user_id: _uid, ip_address: _ip, acars_token: _at, ...oldSanitized } =
-            flight;
-          void logFlightAction({
-            userId: ext.userId,
-            username: await usernameFor(ext.userId),
-            sessionId: session.session_id,
-            action: 'delete',
-            flightId: fid,
-            oldData: oldSanitized,
-          });
-        })();
-      });
+      {
+        const {
+          user_id: _uid,
+          ip_address: _ip,
+          acars_token: _at,
+          ...oldSanitized
+        } = flight;
+        await logFlightAction({
+          userId: ext.userId,
+          username: await usernameFor(ext.userId),
+          sessionId: session.session_id,
+          action: 'delete',
+          flightId: fid,
+          oldData: oldSanitized,
+        });
+      }
 
       res.json({ message: 'Flight deleted successfully', flightId: fid });
     } catch (e) {

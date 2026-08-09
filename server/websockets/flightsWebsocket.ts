@@ -211,21 +211,19 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         const { acars_token: _acars, ...sanitizedFlight } = flight;
         socket.to(sessionId).emit('flightAdded', sanitizedFlight);
 
-        setImmediate(() => {
-          void logFlightAction({
-            userId: userId || 'unknown',
-            username: (socket.handshake.query.username as string) || 'unknown',
-            sessionId,
-            action: 'add',
-            flightId: flight.id,
-            newData: {
-              ...sanitizedFlight,
-              flight_owner_user_id: userId || null,
-              flight_owner_username:
-                (socket.handshake.query.username as string) || null,
-            },
-            ipAddress: getSocketClientIp(socket),
-          });
+        await logFlightAction({
+          userId: userId || 'unknown',
+          username: (socket.handshake.query.username as string) || 'unknown',
+          sessionId,
+          action: 'add',
+          flightId: flight.id,
+          newData: {
+            ...sanitizedFlight,
+            flight_owner_user_id: userId || null,
+            flight_owner_username:
+              (socket.handshake.query.username as string) || null,
+          },
+          ipAddress: getSocketClientIp(socket),
         });
       } catch {
         socket.emit('flightError', {
@@ -313,37 +311,35 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           if (updatedFlight) {
             io.to(sessionId).emit('flightUpdated', updatedFlight);
 
-            setImmediate(() => {
-              void (async () => {
-                const {
-                  acars_token: _,
-                  user_id: flightOwnerUserId,
-                  ip_address: ___,
-                  ...oldSanitized
-                } = oldFlight || {};
-                const flightOwner = flightOwnerUserId
-                  ? await getUserById(flightOwnerUserId)
-                  : null;
-                const changedData: Record<string, unknown> = {};
-                for (const [key, value] of Object.entries(updates)) {
-                  changedData[key] = value;
-                }
-                await logFlightAction({
-                  userId: userId || 'unknown',
-                  username:
-                    (socket.handshake.query.username as string) || 'unknown',
-                  sessionId,
-                  action: 'update',
-                  flightId: flightId as string,
-                  oldData: {
-                    ...oldSanitized,
-                    flight_owner_user_id: flightOwnerUserId || null,
-                    flight_owner_username: flightOwner?.username || null,
-                  },
-                  newData: changedData,
-                  ipAddress: getSocketClientIp(socket),
-                });
-              })();
+            // Awaited so this write survives a server restart landing
+            // between the emit above and the log getting written.
+            const {
+              acars_token: _,
+              user_id: flightOwnerUserId,
+              ip_address: ___,
+              ...oldSanitized
+            } = oldFlight || {};
+            const flightOwner = flightOwnerUserId
+              ? await getUserById(flightOwnerUserId)
+              : null;
+            const changedData: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(updates)) {
+              changedData[key] = value;
+            }
+            await logFlightAction({
+              userId: userId || 'unknown',
+              username:
+                (socket.handshake.query.username as string) || 'unknown',
+              sessionId,
+              action: 'update',
+              flightId: flightId as string,
+              oldData: {
+                ...oldSanitized,
+                flight_owner_user_id: flightOwnerUserId || null,
+                flight_owner_username: flightOwner?.username || null,
+              },
+              newData: changedData,
+              ipAddress: getSocketClientIp(socket),
             });
           } else {
             socket.emit('flightError', {
@@ -396,20 +392,20 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         await deleteFlight(sessionId, flightId as string);
         io.to(sessionId).emit('flightDeleted', { flightId });
 
-        setImmediate(() => {
-          void logFlightAction({
-            userId: userId || 'unknown',
-            username: (socket.handshake.query.username as string) || 'unknown',
-            sessionId,
-            action: 'delete',
-            flightId: flightId as string,
-            oldData: {
-              ...sanitizedOldData,
-              flight_owner_user_id: flightOwnerUserId || null,
-              flight_owner_username: flightOwner?.username || null,
-            },
-            ipAddress: getSocketClientIp(socket),
-          });
+        // Awaited so this write survives a server restart landing between
+        // the emit above and the log getting written.
+        await logFlightAction({
+          userId: userId || 'unknown',
+          username: (socket.handshake.query.username as string) || 'unknown',
+          sessionId,
+          action: 'delete',
+          flightId: flightId as string,
+          oldData: {
+            ...sanitizedOldData,
+            flight_owner_user_id: flightOwnerUserId || null,
+            flight_owner_username: flightOwner?.username || null,
+          },
+          ipAddress: getSocketClientIp(socket),
         });
       } catch {
         socket.emit('flightError', {
