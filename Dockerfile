@@ -36,8 +36,14 @@ FROM node:22-alpine AS production
 ARG APP_VERSION=2.0.0.0
 ENV APP_VERSION=${APP_VERSION}
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init for proper signal handling.
+RUN ok=0; \
+    for i in 1 2 3 4 5; do \
+      apk add --no-cache dumb-init && { ok=1; break; }; \
+      echo "apk add failed (attempt $i/5), retrying in 5s..."; \
+      sleep 5; \
+    done; \
+    [ "$ok" = "1" ]
 
 # Create app user for security
 RUN addgroup -g 1001 -S nodejs && \
