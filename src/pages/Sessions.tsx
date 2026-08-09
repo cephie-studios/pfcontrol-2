@@ -524,7 +524,7 @@ export default function Sessions() {
               <Button
                 onClick={handleDeleteSession}
                 disabled={!!deleteInProgress}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 border border-red-700 rounded transition-colors flex items-center"
+                variant="danger"
               >
                 {deleteInProgress ? (
                   <>
