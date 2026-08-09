@@ -372,7 +372,7 @@ export default function Navbar({
                       href="https://cephie.app/discord"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center font-medium focus:outline-none bg-yellow-600 hover:bg-yellow-700 text-white shadow-lg hover:shadow-xl border-2 border-yellow-600 rounded-full px-4 py-2 text-sm relative overflow-hidden transition-all duration-300"
+                      className="inline-flex items-center justify-center font-medium focus:outline-none bg-linear-to-b from-yellow-500 to-yellow-700 hover:bg-linear-to-b hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl border-1 border-yellow-600 hover:border-yellow-700 rounded-full px-4 py-2 text-sm relative overflow-hidden transition-all duration-300"
                     >
                       <div className="flex items-center space-x-2 transition-transform duration-300">
                         {isCompact ? (

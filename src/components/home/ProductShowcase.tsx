@@ -183,8 +183,8 @@ function CopyBtn({
 }) {
   const base =
     variant === 'submit'
-      ? 'bg-blue-600 border-blue-600'
-      : 'bg-red-600 border-red-600';
+      ? 'bg-linear-to-b from-blue-500 to-blue-700 hover:bg-linear-to-b hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-xl border border-blue-600 hover:border-blue-700 rounded-full'
+      : 'bg-linear-to-b from-red-500 to-red-700 hover:bg-linear-to-b hover:from-red-600 hover:to-red-800 text-white shadow-lg hover:shadow-xl border border-red-600 hover:border-red-700 rounded-full';
   const active = copied ? 'bg-emerald-600 border-emerald-600' : base;
   const ring =
     highlight && !copied
@@ -246,7 +246,7 @@ function MockNavbar({
         </span>
       </div>
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
-        <div className="flex items-center gap-1.5 bg-yellow-600 border-2 border-yellow-600 rounded-full px-3 py-1.5 text-xs font-medium text-white select-none cursor-default">
+        <div className="flex items-center gap-1.5 bg-linear-to-b from-yellow-500 to-yellow-700 hover:bg-linear-to-b hover:from-yellow-600 hover:to-yellow-800 text-white shadow-lg hover:shadow-xl border-1 border-yellow-600 hover:border-yellow-700 rounded-full px-3 py-1.5 text-xs font-medium select-none cursor-default">
           <HelpCircle className="h-3.5 w-3.5 shrink-0" />
           <span>Support</span>
         </div>
@@ -1223,14 +1223,17 @@ export default function ProductShowcase() {
                 <p className="text-white text-3xl font-extrabold">
                   Ready to get started?
                 </p>
-                <a
-                  href={
-                    user ? '/?tutorial=true' : '/login?callback=/?tutorial=true'
-                  }
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    const url = user ? '/?tutorial=true' : '/login?callback=/?tutorial=true';
+                    window.location.assign(url);
+                  }}
                   className="flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors"
                 >
                   Start Tutorial
-                </a>
+                </Button>
               </div>
             </div>
           )}

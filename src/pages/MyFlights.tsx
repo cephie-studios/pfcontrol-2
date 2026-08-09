@@ -215,7 +215,7 @@ function FlightCard({
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-colors duration-150 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-red-400 hover:bg-red-600/70 hover:text-white transition-colors duration-150 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Trash2 className="h-4 w-4 shrink-0" />
           <span className="font-medium">
