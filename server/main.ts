@@ -17,6 +17,7 @@ import { setupChatWebsocket } from './websockets/chatWebsocket.js';
 import { setupGlobalChatWebsocket } from './websockets/globalChatWebsocket.js';
 import { setupFlightsWebsocket } from './websockets/flightsWebsocket.js';
 import { setupOverviewWebsocket } from './websockets/overviewWebsocket.js';
+import { setupExtNetworkFlightsWebsocket } from './websockets/extNetworkFlightsWebsocket.js';
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
 import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
@@ -372,6 +373,15 @@ registerAdminSocketNamespace(
   'Notifications',
   '/sockets/notifications',
   notificationsIO
+);
+
+const extNetworkFlightsIO = setupExtNetworkFlightsWebsocket(server);
+extNetworkFlightsIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  'ext-network-flights',
+  'Developer API: Network Flights',
+  '/sockets/ext/network-flights',
+  extNetworkFlightsIO
 );
 
 startStatsFlushing();

@@ -229,7 +229,7 @@ router.get('/network/pfatc/:sessionId', async (req: Request, res: Response) => {
   }
 });
 
-function activeDeveloperNetworkSessions(data: OverviewData) {
+export function activeDeveloperNetworkSessions(data: OverviewData) {
   return data.activeSessions
     .filter((s) => s.isPFATC && !s.sessionId.startsWith('sector-'))
     .map((s) => ({

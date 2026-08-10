@@ -7,6 +7,7 @@ import {
   ensureGlobalChatNetworkKindColumn,
   ensureSessionsDeveloperApiKeyColumn,
   ensureDeveloperApiPolicyColumns,
+  ensureDeveloperApiUsageBodyColumns,
   ensureUserHistoryColumns,
   ensureAppSettingsChannelColumn,
   ensureEventModeColumns,
@@ -73,6 +74,7 @@ try {
   await ensureGlobalChatNetworkKindColumn();
   await ensureSessionsDeveloperApiKeyColumn();
   await ensureDeveloperApiPolicyColumns();
+  await ensureDeveloperApiUsageBodyColumns();
   await ensureUserHistoryColumns();
   await ensureAppSettingsChannelColumn();
   await ensureEventModeColumns();

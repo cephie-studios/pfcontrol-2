@@ -58,7 +58,7 @@ function shouldLogRequest(path: string): boolean {
   );
 }
 
-function sanitizeObject(obj: unknown): unknown {
+export function sanitizeObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') return obj;
 
   if (Array.isArray(obj)) {
@@ -80,7 +80,7 @@ function sanitizeObject(obj: unknown): unknown {
   }
 }
 
-function truncateString(str: string, maxLength: number = 10000): string {
+export function truncateString(str: string, maxLength: number = 10000): string {
   if (str.length <= maxLength) return str;
   return str.substring(0, maxLength) + '... [TRUNCATED]';
 }

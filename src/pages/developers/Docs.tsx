@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Copy,
   Check,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type {
   DeveloperApiDocEndpoint,
+  DeveloperApiDocWebsocket,
   DeveloperApiPublicSpec,
 } from '../../types/developerApiSpec';
 import { fetchDeveloperApiDocs } from '../../utils/fetch/developer';
@@ -110,10 +111,6 @@ function methodStyle(method: string) {
   };
 }
 
-/**
- * Dependency-free token coloring for the code panels — good enough for a
- * static reference page without pulling in a highlighter library.
- */
 function highlightBash(cmd: string): ReactNode[] {
   const regex = /("(?:[^"\\]|\\.)*")|(\s-{1,2}[A-Za-z-]+)|(^curl\b)/g;
   const parts: ReactNode[] = [];
@@ -239,12 +236,18 @@ function CodeBlock({
 }: {
   label: string;
   code: string;
-  language: 'bash' | 'json';
+  language: 'bash' | 'json' | 'text';
   copyId: string;
   copiedId: string | null;
   onCopy: (text: string, id: string) => void;
 }) {
   const isCopied = copiedId === copyId;
+  const highlighted =
+    language === 'json'
+      ? highlightJson(code)
+      : language === 'bash'
+        ? highlightBash(code)
+        : code;
   return (
     <div className="rounded-xl border border-zinc-800 bg-black/40 ring-1 ring-zinc-800/50 overflow-hidden">
       <div className="flex items-center justify-between px-3.5 py-2 border-b border-zinc-800/80 bg-zinc-900/50">
@@ -265,7 +268,7 @@ function CodeBlock({
         </button>
       </div>
       <pre className="text-[12.5px] sm:text-[13px] leading-relaxed p-3.5 overflow-x-auto font-mono whitespace-pre-wrap break-all text-zinc-300">
-        <code>{language === 'json' ? highlightJson(code) : highlightBash(code)}</code>
+        <code>{highlighted}</code>
       </pre>
     </div>
   );
@@ -391,6 +394,87 @@ function EndpointCard({
                 onCopy={onCopy}
               />
             ) : null}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function websocketAnchorId(ws: DeveloperApiDocWebsocket): string {
+  const slugPath = ws.path
+    .replace(/[{}]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `ws-${slugPath}`;
+}
+
+function WebSocketCard({
+  ws,
+  anchorId,
+  copiedId,
+  onCopy,
+}: {
+  ws: DeveloperApiDocWebsocket;
+  anchorId: string;
+  copiedId: string | null;
+  onCopy: (text: string, id: string) => void;
+}) {
+  const eventRows = ws.events.map((e) => ({
+    cells: [e.name, `${e.direction} · ${e.description}`],
+  }));
+
+  return (
+    <article
+      id={anchorId}
+      className="scroll-mt-24 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 shadow-inner ring-1 ring-zinc-800/40 overflow-hidden"
+    >
+      <div className="px-5 sm:px-6 pt-4 pb-3.5 border-b border-zinc-800/70">
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            {ws.title}
+          </p>
+          <span className="text-zinc-700 text-[11px]">·</span>
+          <code className="text-[11px] font-mono text-zinc-600 truncate">
+            {ws.scopeId}
+          </code>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide border font-mono shrink-0 bg-fuchsia-900 text-fuchsia-200 border-fuchsia-900">
+            WS
+          </span>
+          <code className="text-[15px] sm:text-base text-zinc-50 font-mono font-medium break-all leading-snug">
+            {ws.path}
+          </code>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr]">
+        <div className="min-w-0 px-5 sm:px-6 py-5 space-y-5 lg:border-r lg:border-zinc-800/70">
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            {ws.description}
+          </p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+              Authentication
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              {ws.authentication}
+            </p>
+          </div>
+          <ParamTable title="Events" rows={eventRows} />
+        </div>
+
+        <div className="min-w-0 px-5 sm:px-6 py-5 bg-zinc-950/30">
+          <div className="lg:sticky lg:top-24 space-y-3">
+            <CodeBlock
+              label="Example (Node / socket.io-client)"
+              code={ws.exampleCode}
+              language="text"
+              copyId={`${anchorId}:example`}
+              copiedId={copiedId}
+              onCopy={onCopy}
+            />
           </div>
         </div>
       </div>
@@ -541,6 +625,17 @@ export default function DeveloperDocs() {
             Authentication &amp; limits
           </a>
         </li>
+        {spec && spec.websockets.length > 0 && (
+          <li>
+            <a
+              href="#websockets"
+              onClick={() => onNavigate('websockets')}
+              className="block rounded-lg px-2.5 py-1.5 text-zinc-300 hover:bg-zinc-800/70 hover:text-zinc-100"
+            >
+              WebSockets
+            </a>
+          </li>
+        )}
       </ul>
       {groups.length === 0 ? (
         <p className="text-xs text-zinc-600 px-2.5">No matching endpoints.</p>
@@ -624,7 +719,7 @@ export default function DeveloperDocs() {
             <div className="shrink-0 pb-3">{searchBox}</div>
             <div className="flex-1 min-h-0 overflow-y-auto pb-6">
               {navList((id) => {
-                if (id === 'overview' || id === 'auth') {
+                if (id === 'overview' || id === 'auth' || id === 'websockets') {
                   setActiveId(null);
                   document
                     .getElementById(id)
@@ -657,7 +752,7 @@ export default function DeveloperDocs() {
                 <div className="mb-3">{searchBox}</div>
                 {navList((id) => {
                   setMobileNavOpen(false);
-                  if (id === 'overview' || id === 'auth') {
+                  if (id === 'overview' || id === 'auth' || id === 'websockets') {
                     setActiveId(null);
                     requestAnimationFrame(() => {
                       document
@@ -786,6 +881,32 @@ export default function DeveloperDocs() {
                   </div>
                 </div>
               ))
+            )}
+
+            {spec.websockets.length > 0 && (
+              <div id="websockets" className="scroll-mt-24 space-y-3 pt-2">
+                <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-600" />
+                  WebSockets
+                  <span className="text-xs font-normal text-zinc-600">
+                    ({spec.websockets.length})
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {spec.websockets.map((ws) => {
+                    const id = websocketAnchorId(ws);
+                    return (
+                      <WebSocketCard
+                        key={id}
+                        ws={ws}
+                        anchorId={id}
+                        copiedId={copied}
+                        onCopy={copy}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         </div>

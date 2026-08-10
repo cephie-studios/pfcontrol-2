@@ -269,6 +269,47 @@ export async function reactivateDeveloperProfile(
   if (!res.ok) await apiError(res, 'Reactivate failed');
 }
 
+export interface AdminDeveloperUsageSummary {
+  days?: number;
+  hours?: number;
+  granularity?: 'day' | 'hour';
+  daily: { date: string; count: number }[];
+  byScope: { scope_id: string; count: number }[];
+  byKey: { key_id: string; count: number }[];
+  recent: {
+    id: string;
+    keyId: string;
+    scopeId: string;
+    method: string;
+    path: string;
+    statusCode: number;
+    durationMs: number;
+    createdAt: string;
+    clientIp?: string | null;
+    requestBody: string | null;
+    responseBody: string | null;
+  }[];
+  totalInRange: number;
+}
+
+export async function fetchAdminDeveloperUsage(
+  userId: string,
+  opts?: { days?: number; hours?: number }
+): Promise<AdminDeveloperUsageSummary> {
+  let q = '';
+  if (opts?.hours != null) {
+    q = `?hours=${opts.hours}`;
+  } else if (opts?.days != null) {
+    q = `?days=${opts.days}`;
+  }
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/developers/${encodeURIComponent(userId)}/usage${q}`,
+    { credentials: 'include' }
+  );
+  if (!res.ok) await apiError(res, 'Failed to load usage');
+  return res.json();
+}
+
 export async function deleteAdminDeveloperAccount(
   userId: string
 ): Promise<void> {

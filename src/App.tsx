@@ -37,6 +37,10 @@ const AdminNotifications = lazy(
 const AdminRoles = lazy(() => import('./pages/admin/AdminRoles'));
 const AdminChatReports = lazy(() => import('./pages/admin/AdminChatReports'));
 const AdminFlightLogs = lazy(() => import('./pages/admin/AdminFlightLogs'));
+const AdminFeaturedFlights = lazy(
+  () => import('./pages/admin/AdminFeaturedFlights')
+);
+const AdminUserAlerts = lazy(() => import('./pages/admin/AdminUserAlerts'));
 const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
 const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
 const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
@@ -235,6 +239,22 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="audit">
                           <AdminFlightLogs />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="featured-flights"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminFeaturedFlights />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="user-alerts"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminUserAlerts />
                         </ProtectedRoute>
                       }
                     />

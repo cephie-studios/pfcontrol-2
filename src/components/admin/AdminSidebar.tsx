@@ -23,6 +23,8 @@ import {
   MdCode,
   MdCable,
   MdQueryStats,
+  MdImage,
+  MdNotificationsActive,
 } from 'react-icons/md';
 import type { IconType } from 'react-icons';
 import { useState, useEffect } from 'react';
@@ -188,6 +190,20 @@ export default function AdminSidebar({
           path: '/admin/flight-logs',
           textColor: 'rose-400',
           permission: 'audit',
+        },
+        {
+          icon: MdImage,
+          label: 'Featured Flights',
+          path: '/admin/featured-flights',
+          textColor: 'yellow-400',
+          permission: 'admin',
+        },
+        {
+          icon: MdNotificationsActive,
+          label: 'User Alerts',
+          path: '/admin/user-alerts',
+          textColor: 'cyan-400',
+          permission: 'admin',
         },
         {
           icon: MdBlock,

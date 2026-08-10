@@ -492,6 +492,8 @@ export async function insertDeveloperApiUsage(input: {
   durationMs: number;
   ipHash: string | null;
   clientIp: string | null;
+  requestBody?: string | null;
+  responseBody?: string | null;
 }) {
   try {
     await mainDb
@@ -506,6 +508,8 @@ export async function insertDeveloperApiUsage(input: {
         duration_ms: input.durationMs,
         ip_hash: input.ipHash,
         client_ip: input.clientIp,
+        request_body: input.requestBody ?? null,
+        response_body: input.responseBody ?? null,
         created_at: new Date(),
       })
       .execute();

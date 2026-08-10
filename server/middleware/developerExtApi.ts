@@ -15,6 +15,7 @@ import {
   SELF_INFO_SCOPE_ID,
 } from '../developer/extRoutes.js';
 import { redisConnection } from '../db/connection.js';
+import { sanitizeObject, truncateString } from './apiLogger.js';
 
 function extractApiSecret(req: Request): string | null {
   const auth = req.get('authorization');
@@ -27,7 +28,7 @@ function extractApiSecret(req: Request): string | null {
   return null;
 }
 
-function parseScopesFromKey(scopes: unknown): string[] {
+export function parseScopesFromKey(scopes: unknown): string[] {
   if (Array.isArray(scopes))
     return scopes.filter((s): s is string => typeof s === 'string');
   if (typeof scopes === 'string') {
@@ -48,6 +49,31 @@ export function developerExtUsageLifecycle(
   next: NextFunction
 ) {
   req.developerExtStartedAt = Date.now();
+
+  let requestBody: string | null = null;
+  if (req.body && Object.keys(req.body).length > 0) {
+    try {
+      requestBody = truncateString(JSON.stringify(sanitizeObject(req.body)));
+    } catch {
+      requestBody = '[SERIALIZATION_ERROR]';
+    }
+  }
+
+  let responseBody: string | null = null;
+  const originalSend = res.send.bind(res);
+  res.send = ((data: unknown) => {
+    try {
+      if (data && typeof data === 'object') {
+        responseBody = truncateString(JSON.stringify(sanitizeObject(data)));
+      } else if (typeof data === 'string') {
+        responseBody = truncateString(data);
+      }
+    } catch {
+      responseBody = '[SERIALIZATION_ERROR]';
+    }
+    return originalSend(data);
+  }) as typeof res.send;
+
   res.on('finish', () => {
     const ext = req.developerExt;
     const started = req.developerExtStartedAt;
@@ -66,6 +92,8 @@ export function developerExtUsageLifecycle(
       durationMs,
       ipHash,
       clientIp: validIp,
+      requestBody,
+      responseBody,
     });
     if (res.statusCode < 500) {
       void touchDeveloperApiKeyLastUsed(ext.keyId);

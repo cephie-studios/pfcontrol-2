@@ -824,6 +824,17 @@ export async function ensureDeveloperApiPolicyColumns() {
   `.execute(mainDb);
 }
 
+export async function ensureDeveloperApiUsageBodyColumns() {
+  await sql`
+    ALTER TABLE developer_api_usage
+    ADD COLUMN IF NOT EXISTS request_body text
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_api_usage
+    ADD COLUMN IF NOT EXISTS response_body text
+  `.execute(mainDb);
+}
+
 export async function ensureAppSettingsChannelColumn() {
   await sql`
     ALTER TABLE app_settings
