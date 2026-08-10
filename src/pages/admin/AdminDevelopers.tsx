@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MdVpnKey, MdSchedule, MdEdit, MdDelete, MdCode } from 'react-icons/md';
+import {
+  MdVpnKey,
+  MdSchedule,
+  MdEdit,
+  MdDelete,
+  MdCode,
+  MdBarChart,
+} from 'react-icons/md';
 
 const REFRESH_ICON_MIN_SPIN_MS = 500;
 const APPLICATIONS_FETCH_LIMIT = 100;
@@ -13,6 +20,7 @@ import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import AdminStatStrip from '../../components/admin/AdminStatStrip';
 import AdminTable from '../../components/admin/AdminTable';
 import AdminDeveloperEditModal from '../../components/admin/AdminDeveloperEditModal';
+import AdminDeveloperUsageModal from '../../components/admin/AdminDeveloperUsageModal';
 import AdminDeveloperApplicationReviewModal from '../../components/admin/AdminDeveloperApplicationReviewModal';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
 import {
@@ -74,6 +82,7 @@ export default function AdminDevelopers() {
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | string | null>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [usageUserId, setUsageUserId] = useState<string | null>(null);
   const [reviewApp, setReviewApp] = useState<AdminDeveloperApplication | null>(
     null
   );
@@ -191,6 +200,11 @@ export default function AdminDevelopers() {
   const editDeveloper = useMemo(
     () => developers.find((d) => d.userId === editUserId) ?? null,
     [developers, editUserId]
+  );
+
+  const usageDeveloper = useMemo(
+    () => developers.find((d) => d.userId === usageUserId) ?? null,
+    [developers, usageUserId]
   );
 
   const btnSize = adminDownsizeButtonSize('sm');
@@ -657,6 +671,15 @@ export default function AdminDevelopers() {
                               </Button>
                               <Button
                                 type="button"
+                                variant="outline"
+                                size={btnSize}
+                                onClick={() => setUsageUserId(d.userId)}
+                              >
+                                <MdBarChart className="w-3.5 h-3.5 inline mr-1" />
+                                Usage
+                              </Button>
+                              <Button
+                                type="button"
                                 variant="danger"
                                 size={btnSize}
                                 disabled={busyId === d.userId}
@@ -739,8 +762,18 @@ export default function AdminDevelopers() {
                             variant="outline"
                             size={btnSize}
                             onClick={() => setEditUserId(d.userId)}
+                            aria-label="Edit developer"
                           >
                             <MdEdit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={btnSize}
+                            onClick={() => setUsageUserId(d.userId)}
+                            aria-label="View developer usage"
+                          >
+                            <MdBarChart className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             type="button"
@@ -835,6 +868,13 @@ export default function AdminDevelopers() {
             void handleDeleteDeveloper(editDeveloper.userId)
           }
           deleteDeveloperBusy={busyId === editDeveloper.userId}
+        />
+      )}
+
+      {usageUserId && usageDeveloper && (
+        <AdminDeveloperUsageModal
+          developer={usageDeveloper}
+          onClose={() => setUsageUserId(null)}
         />
       )}
     </AdminLayout>

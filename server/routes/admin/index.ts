@@ -21,6 +21,8 @@ import altsRouter from './alts.js';
 import developersRouter from './developers.js';
 import websocketsRouter from './websockets.js';
 import databaseRouter from './database.js';
+import featuredFlightsRouter from './featuredFlights.js';
+import userAlertsRouter from './userAlerts.js';
 
 const router = express.Router();
 
@@ -43,6 +45,8 @@ router.use('/alts', altsRouter);
 router.use('/developers', developersRouter);
 router.use('/websockets', websocketsRouter);
 router.use('/database', databaseRouter);
+router.use('/featured-flights', featuredFlightsRouter);
+router.use('/user-alerts', userAlertsRouter);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get('/statistics', requirePermission('admin'), async (req, res) => {

@@ -20,6 +20,13 @@ import {
   listApprovedDevelopersSummary,
   deleteDeveloperAllDataForUser,
 } from '../../db/developer.js';
+import {
+  getDeveloperUsageDailyCounts,
+  getDeveloperUsageHourlyCounts,
+  getDeveloperUsageByScope,
+  getDeveloperUsageByKey,
+  getDeveloperRecentUsage,
+} from '../../db/developerDashboard.js';
 import { buildNewDeveloperKeyCredentials } from '../../developer/apiKeySecret.js';
 import {
   DEVELOPER_SCOPE_CATALOG,
@@ -433,6 +440,92 @@ router.get(
     } catch (e) {
       console.error('[admin/developers keys list]', e);
       res.status(500).json({ error: 'Failed to list keys' });
+    }
+  }
+);
+
+router.get(
+  '/:userId/usage',
+  createAuditLogger('ADMIN_DEVELOPER_USAGE_VIEWED'),
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const profile = await getDeveloperProfile(userId);
+      if (!profile)
+        return res.status(404).json({ error: 'Developer profile not found' });
+
+      const hoursParam = req.query.hours;
+      const daysParam = req.query.days;
+
+      let daily: { date: string; count: number }[];
+      let byScope: { scope_id: string; count: number }[];
+      let byKey: { key_id: string; count: number }[];
+      let days: number | undefined;
+      let hours: number | undefined;
+      let granularity: 'day' | 'hour' = 'day';
+      let recent: Awaited<ReturnType<typeof getDeveloperRecentUsage>>;
+
+      if (typeof hoursParam === 'string') {
+        const h = Math.min(168, Math.max(1, parseInt(hoursParam, 10) || 24));
+        hours = h;
+        const since = new Date(Date.now() - h * 60 * 60 * 1000);
+        const [hourly, scopeRows, keyRows, recentRows] = await Promise.all([
+          getDeveloperUsageHourlyCounts(userId, since),
+          getDeveloperUsageByScope(userId, since),
+          getDeveloperUsageByKey(userId, since),
+          getDeveloperRecentUsage(userId, 25, 0),
+        ]);
+        daily = hourly;
+        byScope = scopeRows;
+        byKey = keyRows;
+        recent = recentRows;
+        granularity = 'hour';
+      } else {
+        const d =
+          typeof daysParam === 'string'
+            ? Math.min(90, Math.max(1, parseInt(daysParam, 10) || 14))
+            : 14;
+        days = d;
+        const since = new Date();
+        since.setDate(since.getDate() - d);
+        since.setHours(0, 0, 0, 0);
+        const [dayRows, scopeRows, keyRows, recentRows] = await Promise.all([
+          getDeveloperUsageDailyCounts(userId, since),
+          getDeveloperUsageByScope(userId, since),
+          getDeveloperUsageByKey(userId, since),
+          getDeveloperRecentUsage(userId, 25, 0),
+        ]);
+        daily = dayRows;
+        byScope = scopeRows;
+        byKey = keyRows;
+        recent = recentRows;
+      }
+      const totalInRange = daily.reduce((s, d) => s + d.count, 0);
+      res.json({
+        days,
+        hours,
+        granularity,
+        daily,
+        byScope,
+        byKey,
+        recent: recent.map((r) => ({
+          id: String(r.id),
+          keyId: String(r.key_id),
+          scopeId: r.scope_id,
+          method: r.method,
+          path: r.path,
+          statusCode: r.status_code,
+          durationMs: r.duration_ms,
+          createdAt: r.created_at,
+          clientIp: r.client_ip ?? null,
+          requestBody: r.request_body ?? null,
+          responseBody: r.response_body ?? null,
+        })),
+        totalInRange,
+      });
+    } catch (e) {
+      console.error('[admin/developers usage]', e);
+      res.status(500).json({ error: 'Failed to load usage' });
     }
   }
 );

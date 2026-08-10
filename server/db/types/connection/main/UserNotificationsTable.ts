@@ -1,5 +1,7 @@
+import type { Generated } from 'kysely';
+
 export interface UserNotificationsTable {
-  id: number;
+  id: Generated<number>;
   user_id: string;
   type: string;
   title: string;

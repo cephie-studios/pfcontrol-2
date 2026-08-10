@@ -1,5 +1,45 @@
 import { mainDb } from './connection.js';
 
+export async function createUserNotification(input: {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+}) {
+  return await mainDb
+    .insertInto('user_notifications')
+    .values({
+      user_id: input.userId,
+      type: input.type,
+      title: input.title,
+      message: input.message,
+      read: false,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+/** Every notification ever sent, joined with the recipient, for the admin view. */
+export async function getAllUserNotificationsForAdmin(limit = 200) {
+  return await mainDb
+    .selectFrom('user_notifications')
+    .innerJoin('users', 'users.id', 'user_notifications.user_id')
+    .select([
+      'user_notifications.id',
+      'user_notifications.user_id',
+      'users.username',
+      'users.avatar',
+      'user_notifications.type',
+      'user_notifications.title',
+      'user_notifications.message',
+      'user_notifications.read',
+      'user_notifications.created_at',
+    ])
+    .orderBy('user_notifications.created_at', 'desc')
+    .limit(limit)
+    .execute();
+}
+
 export async function getUserNotifications(
   userId: string,
   unreadOnly = false,

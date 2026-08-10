@@ -28,6 +28,22 @@ export interface DeveloperApiDocEndpoint {
   availableSince: 1 | 2;
 }
 
+export interface DeveloperApiDocWebsocketEvent {
+  name: string;
+  direction: 'server-to-client' | 'client-to-server';
+  description: string;
+}
+
+export interface DeveloperApiDocWebsocket {
+  title: string;
+  scopeId: string;
+  path: string;
+  description: string;
+  authentication: string;
+  events: DeveloperApiDocWebsocketEvent[];
+  exampleCode: string;
+}
+
 export interface DeveloperApiPublicSpec {
   specVersion: number;
   generatedAt: string;
@@ -45,4 +61,5 @@ export interface DeveloperApiPublicSpec {
     envVar: string;
   };
   endpoints: DeveloperApiDocEndpoint[];
+  websockets: DeveloperApiDocWebsocket[];
 }

@@ -11,5 +11,7 @@ export interface DeveloperApiUsageTable {
   duration_ms: number;
   ip_hash: string | null;
   client_ip: string | null;
+  request_body: string | null;
+  response_body: string | null;
   created_at: Date;
 }

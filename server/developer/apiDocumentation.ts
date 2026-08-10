@@ -38,6 +38,22 @@ export interface DeveloperApiDocEndpoint {
   availableSince: 1 | 2;
 }
 
+export interface DeveloperApiDocWebsocketEvent {
+  name: string;
+  direction: 'server-to-client' | 'client-to-server';
+  description: string;
+}
+
+export interface DeveloperApiDocWebsocket {
+  title: string;
+  scopeId: string;
+  path: string;
+  description: string;
+  authentication: string;
+  events: DeveloperApiDocWebsocketEvent[];
+  exampleCode: string;
+}
+
 export interface DeveloperApiPublicSpec {
   specVersion: number;
   generatedAt: string;
@@ -55,6 +71,7 @@ export interface DeveloperApiPublicSpec {
     envVar: string;
   };
   endpoints: DeveloperApiDocEndpoint[];
+  websockets: DeveloperApiDocWebsocket[];
 }
 
 const DEFAULT_BASE = 'https://pfcontrol.com/api/ext/v2';
@@ -201,5 +218,32 @@ export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
       envVar: 'DEVELOPER_API_RATE_LIMIT_PER_MINUTE',
     },
     endpoints: [...DEVELOPER_EXT_ROUTES].map(endpointFromRoute),
+    websockets: [
+      {
+        title: 'Network Flights (live push)',
+        scopeId: 'sessions.network_overview',
+        path: '/sockets/ext/network-flights',
+        description:
+          'Server-to-server push channel for GET /sessions/network/flights, use this instead of polling that endpoint. Read-only: there is no client-to-server event on this socket. Requires the same sessions.network_overview scope as the REST endpoint. Not for browser clients, listeners with Origin headers will be rejected. Max 5 concurrent connections per API key.',
+        authentication:
+          'Pass your key as the socket.io `auth.token` option (or a `token` query param as a fallback) — the same pfc_live_... secret used for REST calls. Connections with a missing, invalid, or a under-scoped key are rejected before any data is sent. Connections with Origin headers are rejected before any data is sent.',
+        events: [
+          {
+            name: 'flights',
+            direction: 'server-to-client',
+            description:
+              'Same JSON array shape as GET /sessions/network/flights. Sent once immediately on connect, then again every ~5 seconds while connected.',
+          },
+          {
+            name: 'connect_error',
+            direction: 'server-to-client',
+            description:
+              'Fired instead of a successful connection if auth fails; err.message explains why (invalid/missing key, missing scope, or too many concurrent connections for this key).',
+          },
+        ],
+        exampleCode:
+          "import { io } from 'socket.io-client';\n\nconst socket = io('https://pfcontrol.com', {\n  path: '/sockets/ext/network-flights',\n  auth: { token: 'pfc_live_...' },\n  transports: ['websocket'],\n});\n\nsocket.on('flights', (flights) => {\n  // same shape as GET /sessions/network/flights\n});\nsocket.on('connect_error', (err) => console.error(err.message));",
+      },
+    ],
   };
 }

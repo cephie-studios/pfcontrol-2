@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { buildDeveloperApiPublicSpec } from '../server/developer/apiDocumentation.js';
 import type {
   DeveloperApiDocEndpoint,
+  DeveloperApiDocWebsocket,
   DeveloperApiPublicSpec,
 } from '../server/developer/apiDocumentation.js';
 
@@ -83,6 +84,36 @@ function renderEndpoint(endpoint: DeveloperApiDocEndpoint): string {
   return sections.filter((section) => section !== '').join('\n');
 }
 
+function renderWebsocket(ws: DeveloperApiDocWebsocket): string {
+  const sections = [
+    `### ${ws.title}`,
+    '',
+    `**Scope:** \`${ws.scopeId}\`  `,
+    '',
+    `- **Path:** \`${ws.path}\``,
+    '',
+    ws.description,
+    '',
+    '**Authentication**',
+    '',
+    ws.authentication,
+    '',
+    '**Events**',
+    '',
+    ...ws.events.map(
+      (e) => `- \`${e.name}\` (${e.direction}): ${e.description}`
+    ),
+    '',
+    '**Example**',
+    '',
+    '```js',
+    ws.exampleCode,
+    '```',
+    '',
+  ];
+  return sections.join('\n');
+}
+
 function renderMarkdown(spec: DeveloperApiPublicSpec): string {
   const lines = [
     '# Developer API (generated)',
@@ -115,6 +146,11 @@ function renderMarkdown(spec: DeveloperApiPublicSpec): string {
     '## Endpoints',
     '',
     ...spec.endpoints.map(renderEndpoint),
+    '## WebSockets',
+    '',
+    'Push channels for consumers who would otherwise poll a GET endpoint on a timer. Server-to-server only — connect with a socket.io client, not a raw WebSocket URL, and not from a browser.',
+    '',
+    ...spec.websockets.map(renderWebsocket),
   ];
 
   return `${lines

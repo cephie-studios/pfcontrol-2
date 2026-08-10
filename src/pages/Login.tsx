@@ -41,8 +41,8 @@ export default function Login() {
   }
 
   const buttonClass = agreed
-    ? 'w-full py-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
-    : 'w-full py-4 flex items-center justify-center gap-3 bg-zinc-700 text-zinc-400 border-zinc-700 hover:from-zinc-700 hover:to-zinc-800 pointer-events-none';
+    ? 'w-full py-4 flex items-center justify-center gap-3'
+    : 'w-full py-4 flex items-center justify-center gap-3 pointer-events-none';
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white relative">
@@ -63,7 +63,7 @@ export default function Login() {
             alt="Banner"
             className="object-cover w-full h-full scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950"></div>
         </div>
 
         <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
@@ -96,7 +96,7 @@ export default function Login() {
 
           <div
             className={`w-full flex items-center border-2 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
-                      ${agreed ? 'border-blue-600 bg-blue-600/30' : 'border-blue-700 bg-blue-600/10'}
+                      ${agreed ? 'bg-blue-600/30 border-blue-600' : 'bg-blue-600/10 border-blue-800'}
                       hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
           >
             <Checkbox

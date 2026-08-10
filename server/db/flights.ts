@@ -1070,6 +1070,22 @@ export async function toggleFeaturedOnProfile(
   return { ok: true, featured: newValue };
 }
 
+export async function adminUnfeatureFlight(
+  userId: string,
+  flightId: string
+): Promise<{ ok: boolean }> {
+  const validFlightId = validateFlightId(flightId);
+
+  const result = await mainDb
+    .updateTable('flights')
+    .set({ featured_on_profile: false, updated_at: createUTCDate() })
+    .where('id', '=', validFlightId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+
+  return { ok: Number(result.numUpdatedRows ?? 0) > 0 };
+}
+
 export async function getFeaturedFlightsByUser(userId: string) {
   try {
     const flights = await mainDb
@@ -1108,4 +1124,49 @@ export async function getFeaturedFlightsByUser(userId: string) {
     console.error(`Error fetching featured flights for user ${userId}:`, error);
     return [];
   }
+}
+
+/**
+ * Every featured flight platform-wide, joined with its owner, for the admin
+ * moderation view — same fields a public profile shows (including
+ * snap_images), so a reviewer sees exactly what's publicly visible.
+ */
+export async function getAllFeaturedFlightsForAdmin() {
+  const flights = await mainDb
+    .selectFrom('flights')
+    .innerJoin('users', 'users.id', 'flights.user_id')
+    .select([
+      'flights.id',
+      'flights.user_id',
+      'users.username',
+      'users.avatar',
+      'flights.callsign',
+      'flights.departure',
+      'flights.arrival',
+      'flights.aircraft',
+      'flights.status',
+      'flights.snap_images',
+      'flights.created_at',
+      'flights.updated_at',
+    ])
+    .where('flights.featured_on_profile', '=', true)
+    .orderBy('flights.updated_at', 'desc')
+    .execute();
+
+  return flights.map((f) => ({
+    id: f.id,
+    userId: f.user_id,
+    username: f.username,
+    avatar: f.avatar,
+    callsign: f.callsign,
+    departure: f.departure,
+    arrival: f.arrival,
+    aircraft: f.aircraft,
+    status: f.status,
+    snapImages:
+      (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
+      [],
+    createdAt: f.created_at,
+    updatedAt: f.updated_at,
+  }));
 }
