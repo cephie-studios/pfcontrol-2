@@ -612,7 +612,10 @@ router.post(
         isAdvancedATC: advancedAtc,
         developerApiKeyId: ext.keyId,
       });
-      await addSessionToUser(ext.userId, sessionId);
+      // API-created sessions don't count toward the public leaderboard/profile stats.
+      await addSessionToUser(ext.userId, sessionId, {
+        countTowardStats: false,
+      });
       await recordNewSession();
 
       const created = await getSessionById(sessionId);
@@ -835,7 +838,12 @@ router.post(
       );
       if (airportError) return res.status(400).json(airportError);
 
-      const ownerView = await addFlight(loaded.session.session_id, flightData);
+      // API-created flights don't count toward the public leaderboard/profile stats.
+      const ownerView = await addFlight(
+        loaded.session.session_id,
+        flightData,
+        { countTowardStats: false }
+      );
       await recordNewFlight();
 
       const inserted = ownerView.id
