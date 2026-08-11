@@ -26,6 +26,7 @@ import {
   getDeveloperUsageByScope,
   getDeveloperUsageByKey,
   getDeveloperRecentUsage,
+  getDeveloperRecentErrors,
 } from '../../db/developerDashboard.js';
 import { buildNewDeveloperKeyCredentials } from '../../developer/apiKeySecret.js';
 import {
@@ -464,21 +465,25 @@ router.get(
       let hours: number | undefined;
       let granularity: 'day' | 'hour' = 'day';
       let recent: Awaited<ReturnType<typeof getDeveloperRecentUsage>>;
+      let recentErrors: Awaited<ReturnType<typeof getDeveloperRecentErrors>>;
 
       if (typeof hoursParam === 'string') {
         const h = Math.min(168, Math.max(1, parseInt(hoursParam, 10) || 24));
         hours = h;
         const since = new Date(Date.now() - h * 60 * 60 * 1000);
-        const [hourly, scopeRows, keyRows, recentRows] = await Promise.all([
-          getDeveloperUsageHourlyCounts(userId, since),
-          getDeveloperUsageByScope(userId, since),
-          getDeveloperUsageByKey(userId, since),
-          getDeveloperRecentUsage(userId, 25, 0),
-        ]);
+        const [hourly, scopeRows, keyRows, recentRows, recentErrorRows] =
+          await Promise.all([
+            getDeveloperUsageHourlyCounts(userId, since),
+            getDeveloperUsageByScope(userId, since),
+            getDeveloperUsageByKey(userId, since),
+            getDeveloperRecentUsage(userId, 25, 0),
+            getDeveloperRecentErrors(userId, 25, 0),
+          ]);
         daily = hourly;
         byScope = scopeRows;
         byKey = keyRows;
         recent = recentRows;
+        recentErrors = recentErrorRows;
         granularity = 'hour';
       } else {
         const d =
@@ -489,18 +494,34 @@ router.get(
         const since = new Date();
         since.setDate(since.getDate() - d);
         since.setHours(0, 0, 0, 0);
-        const [dayRows, scopeRows, keyRows, recentRows] = await Promise.all([
-          getDeveloperUsageDailyCounts(userId, since),
-          getDeveloperUsageByScope(userId, since),
-          getDeveloperUsageByKey(userId, since),
-          getDeveloperRecentUsage(userId, 25, 0),
-        ]);
+        const [dayRows, scopeRows, keyRows, recentRows, recentErrorRows] =
+          await Promise.all([
+            getDeveloperUsageDailyCounts(userId, since),
+            getDeveloperUsageByScope(userId, since),
+            getDeveloperUsageByKey(userId, since),
+            getDeveloperRecentUsage(userId, 25, 0),
+            getDeveloperRecentErrors(userId, 25, 0),
+          ]);
         daily = dayRows;
         byScope = scopeRows;
         byKey = keyRows;
         recent = recentRows;
+        recentErrors = recentErrorRows;
       }
       const totalInRange = daily.reduce((s, d) => s + d.count, 0);
+      const mapRow = (r: (typeof recent)[number]) => ({
+        id: String(r.id),
+        keyId: String(r.key_id),
+        scopeId: r.scope_id,
+        method: r.method,
+        path: r.path,
+        statusCode: r.status_code,
+        durationMs: r.duration_ms,
+        createdAt: r.created_at,
+        clientIp: r.client_ip ?? null,
+        requestBody: r.request_body ?? null,
+        responseBody: r.response_body ?? null,
+      });
       res.json({
         days,
         hours,
@@ -508,19 +529,8 @@ router.get(
         daily,
         byScope,
         byKey,
-        recent: recent.map((r) => ({
-          id: String(r.id),
-          keyId: String(r.key_id),
-          scopeId: r.scope_id,
-          method: r.method,
-          path: r.path,
-          statusCode: r.status_code,
-          durationMs: r.duration_ms,
-          createdAt: r.created_at,
-          clientIp: r.client_ip ?? null,
-          requestBody: r.request_body ?? null,
-          responseBody: r.response_body ?? null,
-        })),
+        recent: recent.map(mapRow),
+        recentErrors: recentErrors.map(mapRow),
         totalInRange,
       });
     } catch (e) {

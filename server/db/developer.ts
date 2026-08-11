@@ -518,7 +518,10 @@ export async function insertDeveloperApiUsage(input: {
   }
 }
 
-/** Per-key request counts (all-time) for one developer's keys. */
+/**
+ * Per-key request counts (all-time) for one developer's keys. Excludes 'WS'
+ * rows
+ */
 export async function getDeveloperUsageCountsByKey(
   userId: string
 ): Promise<Map<string, number>> {
@@ -526,6 +529,7 @@ export async function getDeveloperUsageCountsByKey(
     .selectFrom('developer_api_usage')
     .select(['key_id', sql<string>`count(*)`.as('count')])
     .where('user_id', '=', userId)
+    .where('method', '!=', 'WS')
     .groupBy('key_id')
     .execute();
   return new Map(rows.map((r) => [String(r.key_id), Number(r.count)]));
@@ -548,6 +552,7 @@ export async function listApprovedDevelopersSummary() {
   const requestCounts = await mainDb
     .selectFrom('developer_api_usage')
     .select(['user_id', sql<string>`count(*)`.as('count')])
+    .where('method', '!=', 'WS')
     .groupBy('user_id')
     .execute();
   const lastByUser = new Map(lastUsage.map((r) => [r.user_id, r.last_at]));

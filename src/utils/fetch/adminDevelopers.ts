@@ -269,6 +269,20 @@ export async function reactivateDeveloperProfile(
   if (!res.ok) await apiError(res, 'Reactivate failed');
 }
 
+export interface AdminDeveloperUsageCallRow {
+  id: string;
+  keyId: string;
+  scopeId: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  durationMs: number;
+  createdAt: string;
+  clientIp?: string | null;
+  requestBody: string | null;
+  responseBody: string | null;
+}
+
 export interface AdminDeveloperUsageSummary {
   days?: number;
   hours?: number;
@@ -276,19 +290,8 @@ export interface AdminDeveloperUsageSummary {
   daily: { date: string; count: number }[];
   byScope: { scope_id: string; count: number }[];
   byKey: { key_id: string; count: number }[];
-  recent: {
-    id: string;
-    keyId: string;
-    scopeId: string;
-    method: string;
-    path: string;
-    statusCode: number;
-    durationMs: number;
-    createdAt: string;
-    clientIp?: string | null;
-    requestBody: string | null;
-    responseBody: string | null;
-  }[];
+  recent: AdminDeveloperUsageCallRow[];
+  recentErrors: AdminDeveloperUsageCallRow[];
   totalInRange: number;
 }
 

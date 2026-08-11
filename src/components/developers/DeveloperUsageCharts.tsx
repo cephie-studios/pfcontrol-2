@@ -284,7 +284,7 @@ export function DeveloperBreakdownDonutChart({
       {/* Legend along the inner-left edge of the right one-third */}
       <div className="flex w-1/3 min-w-0 shrink-0 flex-col justify-center pl-2 sm:pl-3">
         <ul
-          className="flex w-full min-w-0 flex-col justify-center gap-y-2 overflow-y-auto py-1 text-left"
+          className="flex w-full min-w-0 flex-col justify-start gap-y-2 overflow-y-auto py-1 text-left"
           aria-label={ariaLabel}
         >
           {pieData.map((d, i) => {
