@@ -19,6 +19,7 @@ export async function getDeveloperUsageDailyCounts(
       FROM developer_api_usage
       WHERE user_id = ${userId}
         AND created_at >= ${since}::timestamptz
+        AND method != 'WS'
       GROUP BY 1
     ) AS u ON u.d = day_bucket
     ORDER BY day_bucket ASC
@@ -48,6 +49,7 @@ export async function getDeveloperUsageHourlyCounts(
       FROM developer_api_usage
       WHERE user_id = ${userId}
         AND created_at >= ${since}::timestamptz
+        AND method != 'WS'
       GROUP BY 1
     ) AS u ON u.h = hour_bucket
     ORDER BY hour_bucket ASC
@@ -65,6 +67,7 @@ export async function getDeveloperUsageByScope(userId: string, since: Date) {
     .select(['scope_id', sql<number>`count(*)::int`.as('count')])
     .where('user_id', '=', userId)
     .where('created_at', '>=', since)
+    .where('method', '!=', 'WS')
     .groupBy('scope_id')
     .orderBy('count', 'desc')
     .execute();
@@ -76,6 +79,7 @@ export async function getDeveloperUsageByKey(userId: string, since: Date) {
     .select(['key_id', sql<number>`count(*)::int`.as('count')])
     .where('user_id', '=', userId)
     .where('created_at', '>=', since)
+    .where('method', '!=', 'WS')
     .groupBy('key_id')
     .orderBy('count', 'desc')
     .execute();
@@ -91,6 +95,22 @@ export async function getDeveloperRecentUsage(
     .selectFrom('developer_api_usage')
     .selectAll()
     .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
+    .limit(limit)
+    .offset(offset)
+    .execute();
+}
+
+export async function getDeveloperRecentErrors(
+  userId: string,
+  limit: number,
+  offset: number
+) {
+  return mainDb
+    .selectFrom('developer_api_usage')
+    .selectAll()
+    .where('user_id', '=', userId)
+    .where('status_code', '>=', 400)
     .orderBy('created_at', 'desc')
     .limit(limit)
     .offset(offset)

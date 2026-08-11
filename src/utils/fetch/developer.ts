@@ -259,6 +259,20 @@ export async function rotateDeveloperKey(id: string): Promise<{
   return res.json();
 }
 
+export interface DeveloperUsageCallRow {
+  id: string;
+  keyId: string;
+  scopeId: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  durationMs: number;
+  createdAt: string;
+  clientIp?: string | null;
+  requestBody?: string | null;
+  responseBody?: string | null;
+}
+
 export interface DeveloperDashboardSummary {
   days?: number;
   hours?: number;
@@ -266,17 +280,8 @@ export interface DeveloperDashboardSummary {
   daily: { date: string; count: number }[];
   byScope: { scope_id: string; count: number }[];
   byKey: { key_id: string; count: number }[];
-  recent: {
-    id: string;
-    keyId: string;
-    scopeId: string;
-    method: string;
-    path: string;
-    statusCode: number;
-    durationMs: number;
-    createdAt: string;
-    clientIp?: string | null;
-  }[];
+  recent: DeveloperUsageCallRow[];
+  recentErrors: DeveloperUsageCallRow[];
   totalInRange: number;
 }
 
