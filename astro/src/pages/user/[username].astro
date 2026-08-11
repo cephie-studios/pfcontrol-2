@@ -183,6 +183,24 @@ if (
 
 const pageDescription = truncateMeta(descParts.join(' — '), 200);
 
+const displaySessions = privacySettings.displayPilotStatsOnProfile
+  ? getStat(user.statistics, 'total_sessions_created')
+  : null;
+const displayFlights = privacySettings.displayPilotStatsOnProfile
+  ? getStat(user.statistics, 'total_flights_submitted')
+  : null;
+const displayCtrlMins = privacySettings.displayPilotStatsOnProfile
+  ? getStat(user.statistics, 'total_time_controlling_minutes')
+  : null;
+const displayVatsim =
+  privacySettings.displayLinkedAccountsOnProfile && user.vatsim_cid
+    ? `${user.vatsim_rating_long ?? user.vatsim_rating_short ?? ''} (CID ${user.vatsim_cid})`.trim()
+    : null;
+const displayRoblox =
+  privacySettings.displayLinkedAccountsOnProfile && user.roblox_username
+    ? user.roblox_username
+    : null;
+
 const ogImagePng = `${siteOrigin}/api/og/profile/${encodeURIComponent(user.username)}`;
 
 const keywordParts = [
@@ -358,5 +376,100 @@ const structuredData = {
   structuredData={structuredData}
   keywords={keywords}
 >
+  <section
+    id="ssr-profile-fallback"
+    class="max-w-2xl mx-auto px-4 py-12 text-white"
+  >
+    <div class="flex items-center gap-4 mb-4">
+      <img
+        src={avatarUrl}
+        alt={user.username}
+        width="64"
+        height="64"
+        class="rounded-full"
+      />
+      <div>
+        <h1 class="text-2xl font-bold">{user.username}</h1>
+        {topRole && <p class="text-blue-400">{topRole}</p>}
+      </div>
+    </div>
+    {plainBio && <p class="mb-4 text-gray-300">{plainBio}</p>}
+    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-300 mb-6">
+      <dt class="text-gray-500">Member since</dt>
+      <dd>{memberSince}</dd>
+      {
+        displaySessions != null && (
+          <>
+            <dt class="text-gray-500">Sessions created</dt>
+            <dd>{displaySessions.toLocaleString('en-US')}</dd>
+          </>
+        )
+      }
+      {
+        displayFlights != null && (
+          <>
+            <dt class="text-gray-500">Flights submitted</dt>
+            <dd>{displayFlights.toLocaleString('en-US')}</dd>
+          </>
+        )
+      }
+      {
+        displayCtrlMins != null && (
+          <>
+            <dt class="text-gray-500">Time controlling</dt>
+            <dd>{fmtTime(displayCtrlMins)}</dd>
+          </>
+        )
+      }
+      {
+        displayVatsim && (
+          <>
+            <dt class="text-gray-500">VATSIM</dt>
+            <dd>{displayVatsim}</dd>
+          </>
+        )
+      }
+      {
+        displayRoblox && (
+          <>
+            <dt class="text-gray-500">Roblox</dt>
+            <dd>{displayRoblox}</dd>
+          </>
+        )
+      }
+    </dl>
+    {
+      featuredFlights && featuredFlights.length > 0 && (
+        <div>
+          <h2 class="text-lg font-semibold mb-2">Featured flights</h2>
+          <ul class="space-y-1 text-sm text-gray-300">
+            {featuredFlights.map((f) => (
+              <li>
+                <a href={`/flight/${f.id}`} class="hover:text-blue-400">
+                  {f.callsign ?? `Flight ${String(f.id).slice(0, 8)}`}
+                  {f.departure && f.arrival && ` — ${f.departure} → ${f.arrival}`}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+  </section>
   <ProfileContent username={user.username} client:only="react" />
+  <script nonce={Astro.locals.cspNonce} is:inline>
+    (function () {
+      var island = document.currentScript.previousElementSibling;
+      var fallback = document.getElementById('ssr-profile-fallback');
+      if (island && fallback) {
+        island.addEventListener(
+          'astro:hydrate',
+          function () {
+            fallback.remove();
+          },
+          { once: true }
+        );
+      }
+    })();
+  </script>
 </BaseLayout>

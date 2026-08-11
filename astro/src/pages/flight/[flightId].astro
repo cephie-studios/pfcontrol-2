@@ -266,5 +266,47 @@ const statusClasses =
   structuredData={structuredData}
   keywords={keywords}
 >
+  <section
+    id="ssr-flight-fallback"
+    class="max-w-2xl mx-auto px-4 py-12 text-white"
+  >
+    <h1 class="text-2xl font-bold mb-1">
+      {flight.callsign ?? `Flight ${String(flightId).slice(0, 8)}`}
+    </h1>
+    <p class="text-gray-300 mb-1">
+      {routeSummary}
+      {flight.aircraft && ` · ${flight.aircraft}`}
+    </p>
+    <p class={`inline-block text-sm border rounded px-2 py-0.5 mb-4 ${statusClasses}`}>
+      {displayStatus}
+    </p>
+    {pilotName && <p class="text-gray-300 mb-1">Pilot: {pilotName}</p>}
+    {remarkPlain && <p class="text-gray-400 mb-4">{remarkPlain}</p>}
+    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-300">
+      {
+        activeFields.map((f) => (
+          <>
+            <dt class="text-gray-500">{f.label}</dt>
+            <dd>{f.value}</dd>
+          </>
+        ))
+      }
+    </dl>
+  </section>
   <FlightContent flightId={flightId} client:only="react" />
+  <script nonce={Astro.locals.cspNonce} is:inline>
+    (function () {
+      var island = document.currentScript.previousElementSibling;
+      var fallback = document.getElementById('ssr-flight-fallback');
+      if (island && fallback) {
+        island.addEventListener(
+          'astro:hydrate',
+          function () {
+            fallback.remove();
+          },
+          { once: true }
+        );
+      }
+    })();
+  </script>
 </BaseLayout>

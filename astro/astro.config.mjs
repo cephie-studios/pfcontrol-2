@@ -35,8 +35,7 @@ const SITE = 'https://pfcontrol.com';
 
 const STATIC_APP_SITEMAP_URLS = [
   `${SITE}/create`,
-  `${SITE}/sessions`,
-  `${SITE}/pfatc`,
+  `${SITE}/overview`,
   `${SITE}/login`,
 ];
 
