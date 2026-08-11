@@ -40,6 +40,7 @@ const securityMiddleware = [
           'https://us.posthog.com',
         ],
         frameSrc: ["'self'", 'https://status.cephie.app'],
+        workerSrc: ["'self'", 'blob:'],
         imgSrc: [
           "'self'",
           'https://cdn.discordapp.com',

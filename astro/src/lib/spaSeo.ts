@@ -20,7 +20,7 @@ export const SPA_TWITTER_TITLE =
 export const SPA_TWITTER_DESCRIPTION =
   'Professional flight strip platform for Project Flight, PTFS, and other Roblox aviation games. Real-time ATC coordination made easy.';
 
-export const SPA_GOOGLE_ADSENSE_ACCOUNT = 'ca-pub-3075420086521736';
+export const SPA_GOOGLE_ADSENSE_ACCOUNT = 'ca-pub-9646258595741108';
 
 export const SPA_WEBSITE_SEARCH_LD = {
   '@context': 'https://schema.org',
