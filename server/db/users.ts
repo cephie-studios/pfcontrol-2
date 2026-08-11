@@ -483,7 +483,11 @@ export async function updateUserSettings(id: string, settings: Settings) {
   return await getUserById(id);
 }
 
-export async function addSessionToUser(userId: string, _sessionId: string) {
+export async function addSessionToUser(
+  userId: string,
+  _sessionId: string,
+  options?: { countTowardStats?: boolean }
+) {
   await mainDb
     .updateTable('users')
     .set({
@@ -494,7 +498,9 @@ export async function addSessionToUser(userId: string, _sessionId: string) {
     .where('id', '=', userId)
     .execute();
 
-  incrementStat(userId, 'total_sessions_created');
+  if (options?.countTowardStats ?? true) {
+    incrementStat(userId, 'total_sessions_created');
+  }
   await invalidateUserCache(userId);
   return await getUserById(userId);
 }

@@ -663,7 +663,11 @@ export interface AddFlightData {
   [key: string]: unknown;
 }
 
-export async function addFlight(sessionId: string, flightData: AddFlightData) {
+export async function addFlight(
+  sessionId: string,
+  flightData: AddFlightData,
+  options?: { countTowardStats?: boolean }
+) {
   const validSessionId = validateSessionId(sessionId);
 
   // Airport/SID/STAR data is keyed uppercase; normalize so lookups aren't case-sensitive.
@@ -778,7 +782,7 @@ export async function addFlight(sessionId: string, flightData: AddFlightData) {
 
   if (!result) throw new Error('Failed to insert flight');
 
-  if (flightData.user_id) {
+  if (flightData.user_id && (options?.countTowardStats ?? true)) {
     incrementStat(
       String(flightData.user_id),
       'total_flights_submitted',
