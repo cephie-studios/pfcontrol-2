@@ -55,7 +55,7 @@ export default function CustomTooltip({
             }}
             variant="outline"
             size="sm"
-            className="text-red-400 border-red-700/50 hover:bg-red-900/20"
+            className="text-red-400 border-red-700/50 hover:bg-none hover:bg-red-900/20"
           >
             Skip
           </Button>

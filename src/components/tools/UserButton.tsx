@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
+import Button from '../common/Button';
 
 const ASTRO_SHELL_BADGE_SRC = '/app/icons/astro.svg';
 
@@ -100,19 +101,19 @@ export default function CustomUserButton({
 
   if (!user) {
     const baseClasses = isMobile
-      ? 'w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl'
-      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl';
+      ? 'w-full'
+      : 'py-2';
 
     return (
-      <button
+      <Button
         onClick={() => {
           handleAction();
-          window.location.href = '/login';
+          window.location.href = `/login?callback=${window.location.pathname + window.location.search}`;
         }}
         className={`${baseClasses} ${className}`}
       >
         Sign In with Discord
-      </button>
+      </Button>
     );
   }
 

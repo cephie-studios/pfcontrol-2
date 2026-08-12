@@ -62,6 +62,8 @@ export default function Home({ standalone = true }: HomeProps) {
   >({});
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
@@ -229,7 +231,7 @@ export default function Home({ standalone = true }: HomeProps) {
                     ? '/create?tutorial=true'
                     : '/create')
                 }
-                variant="outline"
+                variant="primary"
                 className="flex items-center justify-center px-8 py-4 text-base sm:text-lg font-semibold transition-all w-full sm:w-auto"
                 id="start-session-btn"
               >
@@ -538,29 +540,31 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      <Joyride
-        steps={steps}
-        run={startTutorial}
-        callback={handleJoyrideCallback}
-        continuous
-        showProgress
-        showSkipButton
-        disableScrolling={true}
-        tooltipComponent={CustomTooltip}
-        styles={{
-          options: {
-            primaryColor: '#3b82f6',
-            textColor: '#ffffff',
-            backgroundColor: '#1f2937',
-            zIndex: 1000,
-          },
-          spotlight: {
-            border: '2px solid #fbbf24',
-            borderRadius: '24px',
-            boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
-          },
-        }}
-      />
+      {mounted && (
+        <Joyride
+          steps={steps}
+          run={startTutorial}
+          callback={handleJoyrideCallback}
+          continuous
+          showProgress
+          showSkipButton
+          disableScrolling={true}
+          tooltipComponent={CustomTooltip}
+          styles={{
+            options: {
+              primaryColor: '#3b82f6',
+              textColor: '#ffffff',
+              backgroundColor: '#1f2937',
+              zIndex: 1000,
+            },
+            spotlight: {
+              border: '2px solid #fbbf24',
+              borderRadius: '24px',
+              boxShadow: '0 0 20px rgba(251, 191, 36, 0.5)',
+            },
+          }}
+        />
+      )}
 
       {showTutorialPrompt && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center">
@@ -576,7 +580,7 @@ export default function Home({ standalone = true }: HomeProps) {
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => handleTutorialChoice(false)}
                 >
                   Skip

@@ -40,15 +40,15 @@ function Button({
 
   const variants = {
     primary:
-      'bg-linear-to-b from-blue-500 to-blue-700 hover:bg-linear-to-b hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-xl border-1 border-blue-600 hover:border-blue-700 rounded-full',
+      'bg-linear-to-b from-blue-500 to-blue-700 border-none hover:bg-linear-to-b hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-xl border-1 border-blue-600 hover:border-blue-700 rounded-full',
     secondary:
       'bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl border-2 border-gray-600 rounded-full',
     outline:
       'text-blue-600 hover:bg-linear-to-b hover:from-blue-500 hover:to-blue-700 hover:text-white border-2  border-blue-600 rounded-full',
     success:
-      'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl border-2 border-green-600 rounded-full',
+      'bg-green-600 hover:bg-green-700 border-none text-white shadow-lg hover:shadow-xl border-2 border-green-600 rounded-full',
     danger:
-      'bg-linear-to-b from-red-500 to-red-700 hover:bg-linear-to-b hover:from-red-600 hover:to-red-800 text-white shadow-lg hover:shadow-xl border-1 border-red-600 hover:border-red-700 rounded-full',
+      'bg-linear-to-b from-red-500 to-red-700 border-none hover:bg-linear-to-b hover:from-red-600 hover:to-red-800 text-white shadow-lg hover:shadow-xl border-1 border-red-600 hover:border-red-700 rounded-full',
     ghost:
       'bg-transparent hover:text-white hover:border-white border-2 border-transparent text-gray-300 rounded-full',
     card: `group bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 ${cardAccents[accentColor]} rounded-lg text-left`,

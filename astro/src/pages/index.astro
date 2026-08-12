@@ -26,5 +26,8 @@ const structuredData = [SPA_WEB_APPLICATION_LD, SPA_WEBSITE_SEARCH_LD];
   canonicalUrl={`${SPA_SITE_URL}/`}
   structuredData={structuredData}
 >
-  <HomeContent client:only="react" />
+  <HomeContent
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
 </BaseLayout>

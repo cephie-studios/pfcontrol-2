@@ -43,6 +43,7 @@ import Dropdown from '../common/Dropdown';
 import FrequencyDisplay from './FrequencyDisplay';
 import { ChatSidebar } from '../chat';
 import ATIS from './ATIS';
+import DeveloperPillSegmentedControl from '../../pages/developers/DeveloperPillSegmentedControl';
 
 interface ToolbarProps {
   sessionId?: string;
@@ -481,31 +482,20 @@ export default function Toolbar({
                 "
         >
           {(isPFATC || isAdvancedATC) && showViewTabs && (
-            <div id="view-tabs" className="flex items-center gap-2">
-              <Button
-                className={`p-1 rounded ${
-                  currentView === 'departures'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-transparent text-gray-400 hover:text-white'
-                }`}
-                onClick={() => handleViewChange('departures')}
-                size="sm"
-                aria-label="Departures"
-              >
-                <PlaneTakeoff className="w-4 h-4" />
-              </Button>
-              <Button
-                className={`p-1 rounded ${
-                  currentView === 'arrivals'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-transparent text-gray-400 hover:text-white'
-                }`}
-                onClick={() => handleViewChange('arrivals')}
-                size="sm"
-                aria-label="Arrivals"
-              >
-                <PlaneLanding className="w-4 h-4" />
-              </Button>
+            <div id="view-tabs" className="w-[120px]">
+              <DeveloperPillSegmentedControl
+                tabs={[
+                  {
+                    id: 'departures',
+                    label: '',
+                    icon: PlaneTakeoff,
+                  },
+                  { id: 'arrivals', label: '', icon: PlaneLanding },
+                ]}
+                value={currentView}
+                onChange={handleViewChange}
+                aria-label="Departures or arrivals view"
+              />
             </div>
           )}
 

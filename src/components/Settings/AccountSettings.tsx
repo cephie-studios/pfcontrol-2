@@ -196,7 +196,7 @@ export default function AccountSettings({
                 onClick={handleRestartTutorial}
                 variant="outline"
                 size="sm"
-                className="border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600 text-xs whitespace-nowrap flex-shrink-0"
+                className="border-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 hover:border-yellow-600 text-xs whitespace-nowrap flex-shrink-0"
               >
                 <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Restart</span>
@@ -262,7 +262,7 @@ export default function AccountSettings({
                 onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
                 variant="outline"
                 size="sm"
-                className="border-zinc-600 text-zinc-300 hover:bg-zinc-800 p-2 flex-shrink-0"
+                className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
               >
                 {isPrivacyExpanded ? (
                   <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -332,7 +332,7 @@ export default function AccountSettings({
                       onClick={() => setShowRobloxConfirm(true)}
                       variant="outline"
                       size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
+                      className="border-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
                     >
                       <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Unlink</span>
@@ -342,7 +342,7 @@ export default function AccountSettings({
                       onClick={handleLinkRoblox}
                       variant="primary"
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 border-blue-600 text-xs whitespace-nowrap"
+                      className="text-xs whitespace-nowrap"
                     >
                       <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Link Account</span>
@@ -394,7 +394,7 @@ export default function AccountSettings({
                       onClick={() => setShowVatsimConfirm(true)}
                       variant="outline"
                       size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
+                      className="border-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
                     >
                       <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Unlink</span>
@@ -404,7 +404,7 @@ export default function AccountSettings({
                       onClick={handleLinkVatsim}
                       variant="primary"
                       size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-xs whitespace-nowrap"
+                      className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-700 border-emerald-600 text-xs whitespace-nowrap"
                     >
                       <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Link Account</span>
@@ -447,7 +447,7 @@ export default function AccountSettings({
                   onClick={handleJoinDiscord}
                   variant="primary"
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600 text-sm whitespace-nowrap flex-shrink-0"
+                  className="bg-none bg-indigo-600 hover:bg-none hover:bg-indigo-700 border-indigo-600 text-sm whitespace-nowrap flex-shrink-0"
                 >
                   <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Join Discord</span>

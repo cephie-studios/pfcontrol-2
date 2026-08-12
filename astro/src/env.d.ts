@@ -11,18 +11,17 @@ declare namespace App {
 }
 
 declare module '@app/islands/HomeContent' {
-  const HomeContent: () => import('react').JSX.Element;
+  interface HomeContentProps {
+    pathname?: string;
+  }
+  const HomeContent: (props: HomeContentProps) => import('react').JSX.Element;
   export default HomeContent;
-}
-
-declare module '@app/islands/PublicChrome' {
-  export function PublicNavbar(): import('react').JSX.Element;
-  export function PublicFooter(): import('react').JSX.Element;
 }
 
 declare module '@app/islands/ProfileContent' {
   interface ProfileContentProps {
     username: string;
+    pathname?: string;
   }
   const ProfileContent: (
     props: ProfileContentProps
@@ -33,6 +32,7 @@ declare module '@app/islands/ProfileContent' {
 declare module '@app/islands/FlightContent' {
   interface FlightContentProps {
     flightId: string;
+    pathname?: string;
   }
   const FlightContent: (
     props: FlightContentProps

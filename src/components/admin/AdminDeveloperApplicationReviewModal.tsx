@@ -128,7 +128,7 @@ export default function AdminDeveloperApplicationReviewModal({
             size={adminDownsizeButtonSize('sm')}
             disabled={busy || catalog.length === 0}
             onClick={() => void submitApprove()}
-            className="!bg-emerald-600 hover:!bg-emerald-500"
+            className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-500"
           >
             {busy ? (
               <MdRefresh className="w-4 h-4 animate-spin inline mr-1" />

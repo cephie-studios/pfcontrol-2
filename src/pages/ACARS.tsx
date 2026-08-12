@@ -591,7 +591,6 @@ NOTES:
                     onClick={() => {
                       window.location.href = `/login?callback=${encodeURIComponent(`/acars/${sessionId}/${flightId}?acars_token=${accessId}`)}`;
                     }}
-                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     Sign In with Discord
                   </Button>

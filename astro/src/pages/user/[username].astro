@@ -342,7 +342,6 @@ const structuredData = {
 ---
 
 <BaseLayout
-  showFooter={false}
   title={pageTitle}
   description={pageDescription}
   ogTitle={ogTitle}
@@ -358,5 +357,9 @@ const structuredData = {
   structuredData={structuredData}
   keywords={keywords}
 >
-  <ProfileContent username={user.username} client:only="react" />
+  <ProfileContent
+    username={user.username}
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
 </BaseLayout>

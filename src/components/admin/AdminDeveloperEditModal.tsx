@@ -455,7 +455,7 @@ export default function AdminDeveloperEditModal({
                                 size={adminDownsizeButtonSize('xs')}
                                 disabled={rowBusy === k.id}
                                 onClick={() => openApprove(k)}
-                                className="!bg-emerald-800/80 hover:!bg-emerald-700"
+                                className="bg-none bg-emerald-800/80 hover:bg-none hover:bg-emerald-700"
                               >
                                 Approve
                               </Button>
@@ -523,7 +523,7 @@ export default function AdminDeveloperEditModal({
               size={adminDownsizeButtonSize('sm')}
               disabled={approveScopes.size === 0 || rowBusy != null}
               onClick={() => void submitApprove()}
-              className="!bg-emerald-600 hover:!bg-emerald-500"
+              className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-500"
             >
               Approve & issue secret
             </Button>
@@ -582,7 +582,7 @@ export default function AdminDeveloperEditModal({
               variant="primary"
               size={adminDownsizeButtonSize('sm')}
               onClick={() => void copyRevealed()}
-              className="flex-1 !bg-emerald-700 hover:!bg-emerald-600"
+              className="flex-1 bg-none bg-emerald-700 hover:bg-none hover:bg-emerald-600"
             >
               {revealedCopied ? (
                 <MdCheck className="w-4 h-4 inline mr-1" />

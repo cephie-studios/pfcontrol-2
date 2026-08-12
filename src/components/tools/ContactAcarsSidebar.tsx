@@ -356,14 +356,14 @@ export default function ContactAcarsSidebar({
           variant="outline"
           onClick={onClose}
           disabled={sending}
-          className="border-gray-700 hover:bg-gray-800 text-gray-300"
+          className="border-gray-700 hover:bg-none hover:bg-gray-800 text-gray-300"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSend}
           disabled={!canSendMessage()}
-          className="disabled:bg-gray-600"
+          className="disabled:bg-none disabled:bg-gray-600"
         >
           {sending ? 'Sending...' : 'Send ACARS Message'}
         </Button>

@@ -222,42 +222,9 @@ const structuredData = {
   ],
 };
 
-type FieldItem = { label: string; value: string | undefined | null };
-const fields: FieldItem[] = [
-  { label: 'Callsign', value: flight.callsign },
-  { label: 'Aircraft', value: flight.aircraft },
-  { label: 'Type', value: flight.flight_type },
-  { label: 'Departure', value: flight.departure },
-  { label: 'Arrival', value: flight.arrival },
-  { label: 'Alternate', value: flight.alternate },
-  { label: 'SID', value: flight.sid },
-  { label: 'STAR', value: flight.star },
-  { label: 'Runway', value: flight.runway },
-  { label: 'Cleared FL', value: flight.clearedFL },
-  { label: 'Cruise FL', value: flight.cruisingFL },
-  { label: 'Squawk', value: flight.squawk },
-  { label: 'WTC', value: flight.wtc },
-  { label: 'Stand', value: flight.stand },
-  { label: 'Gate', value: flight.gate },
-];
-const activeFields = fields.filter((f) => f.value);
-
-const statusColorMap: Record<string, string> = {
-  PENDING: 'text-gray-400 border-gray-700',
-  PUSHBACK: 'text-yellow-400 border-yellow-800',
-  TAXI: 'text-yellow-300 border-yellow-700',
-  TAKEOFF: 'text-green-400 border-green-800',
-  AIRBORNE: 'text-blue-400 border-blue-700',
-  RWY: 'text-orange-400 border-orange-800',
-  LANDED: 'text-green-300 border-green-700',
-  PARKED: 'text-gray-300 border-gray-600',
-};
-const statusClasses =
-  statusColorMap[displayStatus] ?? 'text-gray-400 border-gray-700';
 ---
 
 <BaseLayout
-  showFooter={false}
   title={pageTitle}
   description={pageDescription}
   ogImage={ogImage}
@@ -266,5 +233,9 @@ const statusClasses =
   structuredData={structuredData}
   keywords={keywords}
 >
-  <FlightContent flightId={flightId} client:only="react" />
+  <FlightContent
+    flightId={flightId}
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
 </BaseLayout>

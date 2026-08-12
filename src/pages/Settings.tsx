@@ -462,7 +462,7 @@ export default function Settings() {
                 variant="outline"
                 size="sm"
                 disabled={saving}
-                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
               >
                 Discard
               </Button>
@@ -470,7 +470,7 @@ export default function Settings() {
                 onClick={handleSave}
                 disabled={saving}
                 size="sm"
-                className="flex-1 sm:flex-none text-xs bg-blue-600 hover:bg-blue-700 flex items-center justify-center space-x-2"
+                className="flex-1 sm:flex-none text-xs flex items-center justify-center space-x-2"
               >
                 {saving ? (
                   <>
@@ -509,7 +509,7 @@ export default function Settings() {
                 onClick={() => setShowDiscardToast(false)}
                 variant="outline"
                 size="sm"
-                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -517,7 +517,7 @@ export default function Settings() {
                 onClick={handleForceLeave}
                 variant="danger"
                 size="sm"
-                className="flex-1 sm:flex-none text-xs bg-red-600 hover:bg-red-700 whitespace-nowrap"
+                className="flex-1 sm:flex-none text-xs whitespace-nowrap"
               >
                 Leave anyway
               </Button>
@@ -542,7 +542,7 @@ export default function Settings() {
               }}
               variant="outline"
               size="sm"
-              className="border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/20 hover:border-yellow-600"
+              className="border-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 hover:border-yellow-600"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Restart Tutorial

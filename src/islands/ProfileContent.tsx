@@ -1,22 +1,27 @@
 import './loadIslandStyles';
-import { BrowserRouter } from 'react-router';
 import { AuthProvider } from '../hooks/auth/AuthProvider';
 import { DataProvider } from '../hooks/data/DataProvider';
+import Navbar from '../components/Navbar';
+import AppOverlays from '../components/AppOverlays';
 import PilotProfile from '../pages/PilotProfile';
 import { PostHogProviderWrapper } from './PostHogProviderWrapper';
+import { IsomorphicRouter } from './IsomorphicRouter';
 
 interface Props {
   username: string;
+  pathname?: string;
 }
 
-export default function ProfileContent({ username }: Props) {
+export default function ProfileContent({ username, pathname }: Props) {
   return (
     <PostHogProviderWrapper>
       <AuthProvider>
         <DataProvider>
-          <BrowserRouter>
+          <IsomorphicRouter pathname={pathname}>
+            <Navbar />
+            <AppOverlays />
             <PilotProfile standalone={false} usernameOverride={username} />
-          </BrowserRouter>
+          </IsomorphicRouter>
         </DataProvider>
       </AuthProvider>
     </PostHogProviderWrapper>
