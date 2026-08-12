@@ -174,7 +174,9 @@ export default function PublicFlightView({
   }, [logs]);
 
   const publicFlightUrl =
-    `${window.location.origin}/flight/${flightId}` || null;
+    typeof window !== "undefined"
+      ? `${window.location.origin}/flight/${flightId}`
+      : null;
 
   const handleShare = async () => {
     if (!publicFlightUrl) return;

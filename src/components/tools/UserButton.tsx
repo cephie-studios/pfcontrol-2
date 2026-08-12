@@ -108,7 +108,7 @@ export default function CustomUserButton({
       <Button
         onClick={() => {
           handleAction();
-          window.location.href = `/login?callback=${window.location.pathname}`;
+          window.location.href = `/login?callback=${window.location.pathname + window.location.search}`;
         }}
         className={`${baseClasses} ${className}`}
       >
