@@ -845,7 +845,7 @@ export default function Submit({
               <div className="mt-8">
                 <Button
                   type="submit"
-                  className="w-full flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-full transition-colors disabled:opacity-50"
+                  className="w-full flex justify-center items-center text-white py-3 px-6 rounded-full transition-colors disabled:opacity-50"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (

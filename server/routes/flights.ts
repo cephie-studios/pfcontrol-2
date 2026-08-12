@@ -349,8 +349,7 @@ router.get(
         return res.status(404).json({ error: 'Flight not found' });
       }
 
-      const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
-      void user_id;
+      const { ip_address, acars_token, ...sanitizedFlight } = flight;
       void ip_address;
       void acars_token;
       res.json(sanitizedFlight);
@@ -367,8 +366,7 @@ router.get('/public/:flightId', generalApiLimiter, async (req, res) => {
     if (!flight) {
       return res.status(404).json({ error: 'Flight not found' });
     }
-    const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
-    void user_id;
+    const { ip_address, acars_token, ...sanitizedFlight } = flight;
     void ip_address;
     void acars_token;
     res.json(sanitizedFlight);

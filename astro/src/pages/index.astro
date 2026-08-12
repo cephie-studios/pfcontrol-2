@@ -14,7 +14,6 @@ import {
 } from '../lib/spaSeo';
 
 const structuredData = [SPA_WEB_APPLICATION_LD, SPA_WEBSITE_SEARCH_LD];
-const cspNonce = Astro.locals.cspNonce;
 ---
 
 <BaseLayout
@@ -27,62 +26,8 @@ const cspNonce = Astro.locals.cspNonce;
   canonicalUrl={`${SPA_SITE_URL}/`}
   structuredData={structuredData}
 >
-  <section id="ssr-home-fallback" class="max-w-5xl mx-auto px-4 py-16 text-white">
-    <h1 class="text-4xl font-extrabold mb-4">
-      The safe, free ATC platform for Project Flight
-    </h1>
-    <p class="text-lg text-gray-300 mb-10 max-w-2xl">
-      Trusted by thousands of controllers. Real-time flight strips with the
-      security and reliability your sessions deserve, free, always.
-    </p>
-
-    <h2 class="text-2xl font-bold mb-4">How it works</h2>
-    <ol class="grid sm:grid-cols-3 gap-6 mb-10">
-      <li>
-        <strong>Create Session</strong>
-        <p class="text-gray-400 text-sm">
-          Start a new session and get your control session ready.
-        </p>
-      </li>
-      <li>
-        <strong>Share Link</strong>
-        <p class="text-gray-400 text-sm">
-          Send the link to pilots to receive flight plans.
-        </p>
-      </li>
-      <li>
-        <strong>Manage Strips</strong>
-        <p class="text-gray-400 text-sm">
-          Update status and track departures in real-time.
-        </p>
-      </li>
-    </ol>
-
-    <h2 class="text-2xl font-bold mb-2">PFControl</h2>
-    <p class="text-gray-300 mb-4 max-w-2xl">
-      The next-generation flight strip platform built for real-time
-      coordination between air traffic controllers.
-    </p>
-    <ul class="text-gray-300 space-y-2 max-w-lg">
-      <li>Enhanced real-time collaboration between controllers</li>
-      <li>Redesigned interface for improved usability</li>
-      <li>Advanced flight strip management system</li>
-    </ul>
-  </section>
-  <HomeContent client:only="react" />
-  <script nonce={cspNonce} is:inline>
-    (function () {
-      var island = document.currentScript.previousElementSibling;
-      var fallback = document.getElementById('ssr-home-fallback');
-      if (island && fallback) {
-        island.addEventListener(
-          'astro:hydrate',
-          function () {
-            fallback.remove();
-          },
-          { once: true }
-        );
-      }
-    })();
-  </script>
+  <HomeContent
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
 </BaseLayout>

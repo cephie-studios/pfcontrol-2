@@ -1,4 +1,5 @@
 import { getUserByUsername } from '../db/users.js';
+import {getUserById} from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
@@ -47,11 +48,16 @@ export async function getPublicPilotProfile(
 ): Promise<PublicPilotProfile | null> {
   if (!username) return null;
 
-  const userResult = await getUserByUsername(username);
+  let userResult = await getUserByUsername(username);
+  const userData = await getUserById(username);
 
-  if (!userResult) {
+  if (!userResult && !userData) {
     return null;
   }
+  if (!userResult && userData) {
+    userResult = userData;
+  }
+
 
   const rolesResult = await mainDb
     .selectFrom('roles as r')

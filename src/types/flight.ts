@@ -3,6 +3,7 @@ import type { Position } from './session';
 export interface Flight {
   id: string | number;
   session_id: string;
+  user_id?: string;
   callsign?: string;
   aircraft?: string;
   flight_type?: string;

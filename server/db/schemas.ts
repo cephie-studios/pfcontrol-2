@@ -452,6 +452,11 @@ export async function createMainTables() {
     .addColumn('pdc_remarks', 'text')
     .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
     .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('notes', 'text')
+    .addColumn('snap_images', 'jsonb')
+    .addColumn('featured_on_profile', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('req_at', 'timestamptz')
+    .addColumn('req_phase', 'varchar(4)')
     .execute();
 
   await mainDb.schema

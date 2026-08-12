@@ -161,6 +161,9 @@ export default defineConfig({
         '@app': fileURLToPath(new URL('../src', import.meta.url)),
       },
     },
+    ssr: {
+      noExternal: ['react-router', '@posthog/react', 'posthog-js'],
+    },
     define: {
       'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(posthogKey),
       'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(posthogHost),

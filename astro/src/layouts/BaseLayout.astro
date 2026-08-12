@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import { PublicNavbar, PublicFooter } from '@app/islands/PublicChrome';
 import {
   SPA_DEFAULT_KEYWORDS,
   SPA_GOOGLE_ADSENSE_ACCOUNT,
@@ -10,7 +9,6 @@ import {
 interface Props {
   title: string;
   description: string;
-  showFooter?: boolean;
   canonicalUrl?: string;
   ogImage?: string;
   ogImageType?: string;
@@ -33,7 +31,6 @@ interface Props {
 const {
   title,
   description,
-  showFooter = true,
   canonicalUrl,
   ogImage = 'https://pfcontrol.com/assets/images/hero.webp',
   ogImageType,
@@ -139,8 +136,6 @@ const twitterDescEffective = twitterDescription ?? ogDescEffective;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   </head>
   <body class="bg-black text-white antialiased">
-    <PublicNavbar client:only="react" />
     <slot />
-    {showFooter && <PublicFooter client:only="react" />}
   </body>
 </html>

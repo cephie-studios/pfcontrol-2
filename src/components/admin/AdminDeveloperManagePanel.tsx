@@ -403,7 +403,7 @@ export default function AdminDeveloperManagePanel({
                             size={adminDownsizeButtonSize('xs')}
                             disabled={rowBusy === k.id}
                             onClick={() => openApprove(k)}
-                            className="!bg-emerald-800/80 hover:!bg-emerald-700"
+                            className="bg-none bg-emerald-800/80 hover:bg-none hover:bg-emerald-700"
                           >
                             Approve
                           </Button>
@@ -469,7 +469,7 @@ export default function AdminDeveloperManagePanel({
               size={adminDownsizeButtonSize('sm')}
               disabled={approveScopes.size === 0 || rowBusy != null}
               onClick={() => void submitApprove()}
-              className="!bg-emerald-600 hover:!bg-emerald-500"
+              className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-500"
             >
               Approve & issue secret
             </Button>

@@ -222,42 +222,9 @@ const structuredData = {
   ],
 };
 
-type FieldItem = { label: string; value: string | undefined | null };
-const fields: FieldItem[] = [
-  { label: 'Callsign', value: flight.callsign },
-  { label: 'Aircraft', value: flight.aircraft },
-  { label: 'Type', value: flight.flight_type },
-  { label: 'Departure', value: flight.departure },
-  { label: 'Arrival', value: flight.arrival },
-  { label: 'Alternate', value: flight.alternate },
-  { label: 'SID', value: flight.sid },
-  { label: 'STAR', value: flight.star },
-  { label: 'Runway', value: flight.runway },
-  { label: 'Cleared FL', value: flight.clearedFL },
-  { label: 'Cruise FL', value: flight.cruisingFL },
-  { label: 'Squawk', value: flight.squawk },
-  { label: 'WTC', value: flight.wtc },
-  { label: 'Stand', value: flight.stand },
-  { label: 'Gate', value: flight.gate },
-];
-const activeFields = fields.filter((f) => f.value);
-
-const statusColorMap: Record<string, string> = {
-  PENDING: 'text-gray-400 border-gray-700',
-  PUSHBACK: 'text-yellow-400 border-yellow-800',
-  TAXI: 'text-yellow-300 border-yellow-700',
-  TAKEOFF: 'text-green-400 border-green-800',
-  AIRBORNE: 'text-blue-400 border-blue-700',
-  RWY: 'text-orange-400 border-orange-800',
-  LANDED: 'text-green-300 border-green-700',
-  PARKED: 'text-gray-300 border-gray-600',
-};
-const statusClasses =
-  statusColorMap[displayStatus] ?? 'text-gray-400 border-gray-700';
 ---
 
 <BaseLayout
-  showFooter={false}
   title={pageTitle}
   description={pageDescription}
   ogImage={ogImage}
@@ -266,47 +233,9 @@ const statusClasses =
   structuredData={structuredData}
   keywords={keywords}
 >
-  <section
-    id="ssr-flight-fallback"
-    class="max-w-2xl mx-auto px-4 py-12 text-white"
-  >
-    <h1 class="text-2xl font-bold mb-1">
-      {flight.callsign ?? `Flight ${String(flightId).slice(0, 8)}`}
-    </h1>
-    <p class="text-gray-300 mb-1">
-      {routeSummary}
-      {flight.aircraft && ` · ${flight.aircraft}`}
-    </p>
-    <p class={`inline-block text-sm border rounded px-2 py-0.5 mb-4 ${statusClasses}`}>
-      {displayStatus}
-    </p>
-    {pilotName && <p class="text-gray-300 mb-1">Pilot: {pilotName}</p>}
-    {remarkPlain && <p class="text-gray-400 mb-4">{remarkPlain}</p>}
-    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-300">
-      {
-        activeFields.map((f) => (
-          <>
-            <dt class="text-gray-500">{f.label}</dt>
-            <dd>{f.value}</dd>
-          </>
-        ))
-      }
-    </dl>
-  </section>
-  <FlightContent flightId={flightId} client:only="react" />
-  <script nonce={Astro.locals.cspNonce} is:inline>
-    (function () {
-      var island = document.currentScript.previousElementSibling;
-      var fallback = document.getElementById('ssr-flight-fallback');
-      if (island && fallback) {
-        island.addEventListener(
-          'astro:hydrate',
-          function () {
-            fallback.remove();
-          },
-          { once: true }
-        );
-      }
-    })();
-  </script>
+  <FlightContent
+    flightId={flightId}
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
 </BaseLayout>

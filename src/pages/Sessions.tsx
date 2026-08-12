@@ -515,9 +515,9 @@ export default function Sessions() {
 
             <div className="flex justify-end space-x-3">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => setSessionToDelete(null)}
-                className="px-4 py-2 rounded transition-colors"
+                className="px-4 py-2 transition-colors"
               >
                 Cancel
               </Button>
@@ -528,7 +528,7 @@ export default function Sessions() {
               >
                 {deleteInProgress ? (
                   <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-white"></div>
+                    <div className="mr-2 h-4 w-4 animate-spin border-2 border-zinc-300 border-t-white"></div>
                     Deleting...
                   </>
                 ) : (
@@ -576,16 +576,16 @@ export default function Sessions() {
             </div>
             <div className="flex justify-end space-x-3">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => setEditingName(null)}
-                className="px-4 py-2 rounded transition-colors"
+                className="px-4 py-2 transition-colors"
               >
                 Cancel
               </Button>
               <Button
                 onClick={() => saveSessionName(editingName)}
                 disabled={savingName === editingName || !editNameValue.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors flex items-center"
+                className="px-4 py-2 transition-colors flex items-center"
               >
                 {savingName === editingName ? (
                   <>

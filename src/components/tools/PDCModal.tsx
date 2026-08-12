@@ -297,7 +297,7 @@ IDENTIFIER: ${identifier}`;
                 variant="outline"
                 className={`flex items-center gap-1 transition-all duration-300 ${
                   copied
-                    ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600 text-white'
+                    ? 'bg-emerald-600 hover:bg-none hover:bg-emerald-600 border-emerald-600 text-white'
                     : ''
                 }`}
               >

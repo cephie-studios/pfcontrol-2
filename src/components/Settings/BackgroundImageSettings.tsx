@@ -434,7 +434,7 @@ export default function BackgroundImageSettings({
                     disabled={deleting}
                     variant="danger"
                     size="sm"
-                    className="bg-red-600/90 hover:bg-red-700 backdrop-blur-sm"
+                    className="bg-none bg-red-600/90 hover:bg-none hover:bg-red-700 backdrop-blur-sm"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {deleting ? 'Deleting...' : 'Delete'}

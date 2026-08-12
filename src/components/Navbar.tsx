@@ -12,7 +12,7 @@ import {
   ChevronUp,
   HelpCircle,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { linkify } from '../utils/linkify';
 import { useAuth } from '../hooks/auth/useAuth';
@@ -48,9 +48,10 @@ export default function Navbar({
   const [utcTime, setUtcTime] = useState<string>(
     new Date().toISOString().slice(11, 19)
   );
-  const [isCompact, setIsCompact] = useState<boolean>(window.innerWidth < 1150);
-  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 925);
-  const [isScrolled, setIsScrolled] = useState<boolean>(window.scrollY > 0);
+  const [isCompact, setIsCompact] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [hostname, setHostname] = useState<string>('');
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [showFeedbackBanner, setShowFeedbackBanner] = useState(false);
 
@@ -77,13 +78,14 @@ export default function Navbar({
     checkFeedbackCookies();
   }, [filteredNotifications.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const handleResize = () => {
       setIsCompact(window.innerWidth < 1150);
       setIsMobile(window.innerWidth < 925);
     };
     window.addEventListener('resize', handleResize);
     handleResize();
+    setHostname(window.location.hostname);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -131,7 +133,7 @@ export default function Navbar({
     if (!user && isMobile) setIsMenuOpen(false);
   }, [user, isMobile]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const isTrustedScrollSource = (target: EventTarget | null): boolean => {
       if (target == null || target === document || target === window) {
         return true;
@@ -168,8 +170,10 @@ export default function Navbar({
       : 'bg-transparent border-none',
   ].join(' ');
 
-  const submitLink = `${window.location.origin}/submit/${sessionId}`;
-  const viewLink = `${window.location.origin}/view/${sessionId}?accessId=${accessId}`;
+  const origin =
+    typeof window !== 'undefined' ? window.location.origin : '';
+  const submitLink = `${origin}/submit/${sessionId}`;
+  const viewLink = `${origin}/view/${sessionId}?accessId=${accessId}`;
 
   const handleCopy = async (text: string) => {
     try {
@@ -348,13 +352,13 @@ export default function Navbar({
                 <TowerControl className="h-8 w-8 text-blue-400" />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                   PFControl
-                  {window.location.hostname === 'canary.pfcontrol.com' && (
+                  {hostname === 'canary.pfcontrol.com' && (
                     <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
                       {' '}
                       Canary
                     </span>
                   )}
-                  {window.location.hostname === 'localhost' && (
+                  {hostname === 'localhost' && (
                     <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent italic text-md">
                       {' '}
                       Developers
@@ -372,7 +376,7 @@ export default function Navbar({
                       href="https://cephie.app/discord"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center font-medium focus:outline-none bg-linear-to-b from-yellow-500 to-yellow-700 hover:bg-linear-to-b hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl border-1 border-yellow-600 hover:border-yellow-700 rounded-full px-4 py-2 text-sm relative overflow-hidden transition-all duration-300"
+                      className="inline-flex items-center justify-center font-medium focus:outline-none bg-linear-to-b from-yellow-500 to-yellow-700  border-none hover:bg-linear-to-b hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl border-none rounded-full px-4 py-2 text-sm relative overflow-hidden transition-all duration-300"
                     >
                       <div className="flex items-center space-x-2 transition-transform duration-300">
                         {isCompact ? (
@@ -401,7 +405,7 @@ export default function Navbar({
                     variant="primary"
                     className={`relative overflow-hidden transition-all duration-300 ${
                       copied === submitLink
-                        ? 'bg-emerald-600 hover:bg-emerald-600 border-emerald-600'
+                        ? 'bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-600 border-emerald-600'
                         : ''
                     }`}
                     size="sm"
@@ -443,7 +447,7 @@ export default function Navbar({
                     variant="danger"
                     className={`relative overflow-hidden transition-all duration-300 ${
                       copied === viewLink
-                        ? '!bg-emerald-600 hover:!bg-emerald-600 !border-emerald-600'
+                        ? 'bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-600 border-emerald-600'
                         : ''
                     }`}
                     size="sm"
@@ -525,7 +529,7 @@ export default function Navbar({
               <div>
                 {!user ? (
                   <a
-                    href="/login"
+                    href={`/login?callback=${window.location.pathname + window.location.search}`}
                     onClick={() => setIsMenuOpen(false)}
                     className="text-white hover:text-blue-400 transition-colors duration-300 p-2 rounded-lg hover:bg-white/10 font-medium"
                   >

@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import type { ComponentType } from 'react';
 
 export type PillTab<T extends string | number> = {
   id: T;
   label: string;
+  icon?: ComponentType<{ className?: string }>;
 };
 
 type Props<T extends string | number> = {
@@ -30,7 +32,7 @@ export default function DeveloperPillSegmentedControl<
   const tabCount = tabs.length;
 
   const btnClass = (active: boolean) =>
-    `relative z-10 flex flex-1 min-w-0 items-center justify-center rounded-full px-2 py-2 text-xs font-semibold transition-colors sm:px-3 ${
+    `relative z-10 flex flex-1 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-xs font-semibold transition-colors sm:px-3 ${
       active ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
     }`;
 
@@ -54,6 +56,7 @@ export default function DeveloperPillSegmentedControl<
       />
       {tabs.map((t) => {
         const active = value === t.id;
+        const Icon = t.icon;
         return (
           <button
             key={String(t.id)}
@@ -63,6 +66,7 @@ export default function DeveloperPillSegmentedControl<
             onClick={() => onChange(t.id)}
             className={btnClass(active)}
           >
+            {Icon && <Icon className="w-4 h-4 shrink-0 opacity-90" />}
             {t.label}
           </button>
         );
