@@ -718,6 +718,7 @@ export default function Submit({
                       value={form.stand}
                       onChange={(e) => handleChange('stand')(e.target.value)}
                       placeholder="e.g. A12"
+                      maxLength={8}
                       className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                     />
                   </div>
@@ -794,6 +795,7 @@ export default function Submit({
                       setRouteStar(undefined);
                     }}
                     placeholder="e.g. HAZEL NOVMA LEDGO"
+                    maxLength={500}
                     className="flex items-center w-full pl-6 pr-28 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                   />
                   <button
@@ -838,6 +840,7 @@ export default function Submit({
                   value={form.remark}
                   onChange={(e) => handleChange('remark')(e.target.value)}
                   placeholder="Any additional information"
+                  maxLength={255}
                   className="flex items-center w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                 />
               </div>
