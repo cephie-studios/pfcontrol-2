@@ -8,6 +8,7 @@ import Sessions from './pages/Sessions';
 import Submit from './pages/Submit';
 import Flights from './pages/Flights';
 import MyFlights from './pages/MyFlights';
+import MyFeedback from './pages/MyFeedback';
 import MyFlightDetail from './pages/MyFlightDetail';
 import Settings from './pages/Settings';
 import PFATCFlights from './pages/PFATCFlights';
@@ -138,6 +139,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <MyFlights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-feedback"
+            element={
+              <ProtectedRoute>
+                <MyFeedback />
               </ProtectedRoute>
             }
           />

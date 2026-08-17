@@ -66,7 +66,9 @@ export function createFlightsSocket(
       socket.emit('deleteFlight', flightId);
     },
     // Update session metadata via websocket
-    updateSession: (updates: Partial<{ activeRunway: string }>) => {
+    updateSession: (
+      updates: Partial<{ activeRunway: string; feedbackEnabled: boolean }>
+    ) => {
       socket.emit('updateSession', updates);
     },
   };

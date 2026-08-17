@@ -857,6 +857,51 @@ export async function fetchControllerDailyRatingStats(
   return makeAdminRequest(`/ratings/daily?days=${days}`);
 }
 
+export interface AdminControllerRating {
+  id: number;
+  rating: number;
+  comment: string | null;
+  session_id: string | null;
+  created_at: string;
+  controller_id: string;
+  controller_username: string | null;
+  controller_avatar: string | null;
+  pilot_id: string;
+  pilot_username: string | null;
+  pilot_avatar: string | null;
+}
+
+export interface AdminControllerRatingsResponse {
+  ratings: AdminControllerRating[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export async function fetchAdminControllerRatings(
+  page: number = 1,
+  limit: number = 25,
+  search: string = '',
+  rating?: number
+): Promise<AdminControllerRatingsResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...(search && { search }),
+    ...(rating !== undefined && { rating: rating.toString() }),
+  });
+  return makeAdminRequest(`/ratings?${params.toString()}`);
+}
+
+export async function deleteAdminControllerRating(id: number): Promise<void> {
+  await makeAdminRequest(`/ratings/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export interface VpnException {
   id: number;
   user_id: string;

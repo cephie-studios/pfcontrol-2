@@ -9,6 +9,7 @@ export interface PublicSubmitSession {
   activeRunway?: string;
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
+  feedbackEnabled?: boolean;
   createdBy: string;
   flightCount: number;
   atisLetter?: string;
@@ -46,6 +47,7 @@ export async function getPublicSubmitSession(
     activeRunway: session.active_runway ?? undefined,
     isPFATC: session.is_pfatc,
     isAdvancedATC: session.is_advanced_atc,
+    feedbackEnabled: session.feedback_enabled ?? true,
     createdBy: session.created_by,
     flightCount,
     atisLetter,

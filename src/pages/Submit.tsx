@@ -48,6 +48,7 @@ interface SessionData {
   atis?: unknown;
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
+  feedbackEnabled?: boolean;
   createdBy: string;
   flightCount?: number;
   atisLetter?: string;
@@ -201,7 +202,11 @@ export default function Submit({
         setSubmittedFlight(flight);
         setSuccess(true);
         setIsSubmitting(false);
-        if (session?.createdBy && session.createdBy !== user?.userId) {
+        if (
+          session?.createdBy &&
+          session.createdBy !== user?.userId &&
+          session.feedbackEnabled
+        ) {
           setShowRating(true);
         }
       },
@@ -227,6 +232,7 @@ export default function Submit({
     user?.userId,
     user?.username,
     session?.createdBy,
+    session?.feedbackEnabled,
   ]);
 
   const backgroundImage = useMemo(() => {
@@ -350,7 +356,11 @@ export default function Submit({
         });
         setSubmittedFlight(flight);
         setSuccess(true);
-        if (session?.createdBy && session.createdBy !== user?.userId) {
+        if (
+          session?.createdBy &&
+          session.createdBy !== user?.userId &&
+          session.feedbackEnabled
+        ) {
           setShowRating(true);
         }
       } catch (error) {
@@ -511,16 +521,14 @@ export default function Submit({
           <WindDisplay icao={session.airportIcao} />
         </div>
 
-        {/* Controller Rating (Inline Version) */}
+        {/* Controller Rating Popup */}
         {showRating && session?.createdBy && (
-          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-            <ControllerRatingPopup
-              controllerId={session.createdBy}
-              flightId={submittedFlight?.id?.toString()}
-              onClose={() => setShowRating(false)}
-              isInline={true}
-            />
-          </div>
+          <ControllerRatingPopup
+            controllerId={session.createdBy}
+            flightId={submittedFlight?.id?.toString()}
+            sessionId={sessionId}
+            onClose={() => setShowRating(false)}
+          />
         )}
 
         {/* Success Message */}

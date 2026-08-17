@@ -4,21 +4,24 @@ import { submitControllerRating } from '../../utils/fetch/ratings';
 import Button from '../common/Button';
 import { Portal } from './Portal';
 
+const MAX_COMMENT_LENGTH = 500;
+
 interface ControllerRatingPopupProps {
   controllerId: string;
   flightId?: string;
+  sessionId?: string;
   onClose: () => void;
-  isInline?: boolean;
 }
 
 export default function ControllerRatingPopup({
   controllerId,
   flightId,
+  sessionId,
   onClose,
-  isInline = false,
 }: ControllerRatingPopupProps) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +33,13 @@ export default function ControllerRatingPopup({
     setError('');
 
     try {
-      await submitControllerRating(controllerId, rating, flightId);
+      await submitControllerRating(
+        controllerId,
+        rating,
+        flightId,
+        sessionId,
+        comment.trim() || undefined
+      );
       setIsSuccess(true);
       setTimeout(() => {
         onClose();
@@ -42,24 +51,18 @@ export default function ControllerRatingPopup({
   };
 
   const content = (
-    <div
-      className={`${isInline ? 'bg-zinc-900/70 backdrop-blur-md mb-6' : 'bg-zinc-900 max-w-md mx-auto mb-8 shadow-2xl'} border border-zinc-800 rounded-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200`}
-    >
+    <div className="bg-zinc-900 max-w-md mx-auto shadow-2xl border border-zinc-800 rounded-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200">
       <div className="p-6">
-        <div
-          className={`flex ${isInline ? 'justify-center' : 'justify-between'} items-center mb-4`}
-        >
+        <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white italic">
             Rate your Controller
           </h3>
-          {!isInline && (
-            <button
-              onClick={onClose}
-              className="text-zinc-400 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="text-zinc-400 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         {isSuccess ? (
@@ -102,6 +105,16 @@ export default function ControllerRatingPopup({
               ))}
             </div>
 
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Add a comment (optional)"
+              className="w-full mb-6 px-3 py-3 bg-zinc-800 border-2 border-zinc-700/50 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none resize-none text-sm"
+              rows={3}
+              maxLength={MAX_COMMENT_LENGTH}
+              disabled={isSubmitting}
+            />
+
             {error && (
               <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 text-sm text-center">
                 {error}
@@ -137,10 +150,6 @@ export default function ControllerRatingPopup({
       </div>
     </div>
   );
-
-  if (isInline) {
-    return content;
-  }
 
   return (
     <Portal>

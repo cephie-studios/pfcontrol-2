@@ -56,6 +56,7 @@ interface SessionData {
   };
   isPFATC: boolean;
   isAdvancedATC?: boolean;
+  feedbackEnabled?: boolean;
 }
 
 interface AvailableImage {
@@ -722,6 +723,31 @@ export default function Flights() {
     }
   };
 
+  const handleFeedbackToggle = async () => {
+    if (!sessionId) return;
+    const next = !(session?.feedbackEnabled ?? true);
+    try {
+      await updateSession(sessionId, accessId ?? '', {
+        feedbackEnabled: next,
+      });
+      setSession((prev) =>
+        prev ? { ...prev, feedbackEnabled: next } : null
+      );
+      if (flightsSocket?.socket?.connected) {
+        flightsSocket.updateSession({ feedbackEnabled: next });
+      } else {
+        console.warn('Socket not connected, feedback setting updated via API only');
+      }
+    } catch (error) {
+      console.error('Failed to update feedback setting:', error);
+      showError(
+        error instanceof Error
+          ? `Failed to update feedback setting: ${error.message}`
+          : 'Failed to update feedback setting'
+      );
+    }
+  };
+
   const handleViewChange = (view: 'departures' | 'arrivals') => {
     setCurrentView(view);
   };
@@ -1095,6 +1121,8 @@ export default function Flights() {
             currentView={currentView}
             onViewChange={handleViewChange}
             showViewTabs={!showCombinedView}
+            feedbackEnabled={session?.feedbackEnabled ?? true}
+            onFeedbackToggle={handleFeedbackToggle}
             position={position}
             onPositionChange={setPosition}
             onContactAcarsClick={() => {

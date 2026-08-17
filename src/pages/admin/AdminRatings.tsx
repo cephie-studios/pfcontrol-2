@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { MdStar, MdThumbUp } from 'react-icons/md';
+import { MdStar, MdThumbUp, MdDelete, MdBlock, MdPeople } from 'react-icons/md';
 import { Link } from 'react-router';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
 import AdminTable from '../../components/admin/AdminTable';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminToolbar from '../../components/admin/AdminToolbar';
 import {
   adminDownsizeButtonSize,
   adminSectionClass,
@@ -12,6 +14,10 @@ import {
   ADMIN_TH,
   ADMIN_TD,
   ADMIN_TABLE_HEAD,
+  ADMIN_TOOLBAR_MOBILE_COL,
+  ADMIN_TOOLBAR_MOBILE_SEARCH,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
+  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
 } from '../../components/admin/adminConstants';
 import {
   AdminAreaChart,
@@ -19,13 +25,40 @@ import {
 } from '../../components/admin/AdminChart';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
 import {
   fetchControllerRatingStats,
   fetchControllerDailyRatingStats,
+  fetchAdminControllerRatings,
+  deleteAdminControllerRating,
   type ControllerRatingStats,
   type DailyRatingStats,
+  type AdminControllerRating,
 } from '../../utils/fetch/admin';
 import ErrorScreen from '../../components/common/ErrorScreen';
+
+const RATING_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Ratings' },
+  { value: '5', label: '5 Stars' },
+  { value: '4', label: '4 Stars' },
+  { value: '3', label: '3 Stars' },
+  { value: '2', label: '2 Stars' },
+  { value: '1', label: '1 Star' },
+];
+
+function renderStars(rating: number) {
+  return (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <MdStar
+          key={star}
+          size={16}
+          className={star <= rating ? 'text-yellow-400' : 'text-zinc-600'}
+        />
+      ))}
+    </div>
+  );
+}
 
 const getAvatarUrl = (userId: string, avatar: string | null) => {
   if (!avatar) return null;
@@ -33,6 +66,8 @@ const getAvatarUrl = (userId: string, avatar: string | null) => {
 };
 
 export default function AdminRatings() {
+  const [view, setView] = useState<'overview' | 'individual'>('overview');
+
   const [stats, setStats] = useState<ControllerRatingStats | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyRatingStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +77,62 @@ export default function AdminRatings() {
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+
+  const [ratings, setRatings] = useState<AdminControllerRating[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
+  const [ratingsError, setRatingsError] = useState<string | null>(null);
+  const [ratingsSearch, setRatingsSearch] = useState('');
+  const [ratingsFilter, setRatingsFilter] = useState('all');
+  const [ratingsPage, setRatingsPage] = useState(1);
+  const [ratingsPages, setRatingsPages] = useState(1);
+
+  const fetchRatingsList = useCallback(async () => {
+    try {
+      setRatingsLoading(true);
+      setRatingsError(null);
+      const rating =
+        ratingsFilter === 'all' ? undefined : Number(ratingsFilter);
+      const result = await fetchAdminControllerRatings(
+        ratingsPage,
+        25,
+        ratingsSearch,
+        rating
+      );
+      setRatings(result.ratings);
+      setRatingsPages(result.pagination.pages);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to fetch ratings';
+      setRatingsError(message);
+      setToast({ message, type: 'error' });
+    } finally {
+      setRatingsLoading(false);
+    }
+  }, [ratingsPage, ratingsSearch, ratingsFilter]);
+
+  useEffect(() => {
+    if (view === 'individual') {
+      fetchRatingsList();
+    }
+  }, [view, fetchRatingsList]);
+
+  useEffect(() => {
+    setRatingsPage(1);
+  }, [ratingsSearch, ratingsFilter]);
+
+  const handleDeleteRating = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this rating?')) return;
+    try {
+      await deleteAdminControllerRating(id);
+      setToast({ message: 'Rating deleted successfully', type: 'success' });
+      fetchRatingsList();
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to delete rating',
+        type: 'error',
+      });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -97,6 +188,27 @@ export default function AdminRatings() {
         actionsClassName={ADMIN_HEADER_ACTIONS_MOBILE}
         actions={
           <div className="flex flex-wrap gap-2 max-md:w-full">
+            <Button
+              onClick={() => setView('overview')}
+              variant={view === 'overview' ? 'primary' : 'outline'}
+              size={adminDownsizeButtonSize('sm')}
+            >
+              Overview
+            </Button>
+            <Button
+              onClick={() => setView('individual')}
+              variant={view === 'individual' ? 'primary' : 'outline'}
+              size={adminDownsizeButtonSize('sm')}
+            >
+              Individual Feedback
+            </Button>
+          </div>
+        }
+      />
+
+      {view === 'overview' && (
+        <>
+          <div className="flex flex-wrap gap-2 mb-4">
             {[7, 30, 90].map((days) => (
               <Button
                 key={days}
@@ -108,10 +220,8 @@ export default function AdminRatings() {
               </Button>
             ))}
           </div>
-        }
-      />
 
-      {loading ? (
+          {loading ? (
         <div className="flex justify-center py-16">
           <Loader />
         </div>
@@ -334,6 +444,186 @@ export default function AdminRatings() {
         <div className="text-center py-12 text-zinc-400">
           No statistics available
         </div>
+      )}
+        </>
+      )}
+
+      {view === 'individual' && (
+        <>
+          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
+            <AdminSearchInput
+              value={ratingsSearch}
+              onChange={setRatingsSearch}
+              placeholder="Search by controller or pilot username…"
+              loading={ratingsLoading}
+              className={ADMIN_TOOLBAR_MOBILE_SEARCH}
+            />
+            <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
+              <Dropdown
+                options={RATING_FILTER_OPTIONS}
+                value={ratingsFilter}
+                onChange={setRatingsFilter}
+                size="sm"
+                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+              />
+            </div>
+          </AdminToolbar>
+
+          {ratingsLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader />
+            </div>
+          ) : ratingsError ? (
+            <ErrorScreen
+              title="Error loading ratings"
+              message={ratingsError}
+              onRetry={fetchRatingsList}
+            />
+          ) : (
+            <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {ratings.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-zinc-400">
+                    No ratings found matching your criteria.
+                  </div>
+                ) : (
+                  ratings.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3"
+                    >
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Link
+                            to={`/user/${item.controller_username}`}
+                            className="flex items-center space-x-2 group/link"
+                          >
+                            {getAvatarUrl(
+                              item.controller_id,
+                              item.controller_avatar
+                            ) ? (
+                              <img
+                                src={
+                                  getAvatarUrl(
+                                    item.controller_id,
+                                    item.controller_avatar
+                                  )!
+                                }
+                                alt={item.controller_username ?? 'Controller'}
+                                className="w-8 h-8 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
+                                <MdPeople size={16} className="text-zinc-400" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium text-white group-hover/link:text-blue-400 transition-colors">
+                                {item.controller_username ?? 'Unknown'}
+                              </div>
+                              <div className="text-xs text-zinc-500">
+                                Controller
+                              </div>
+                            </div>
+                          </Link>
+                          <div className="text-xs text-zinc-500">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-left">
+                          {renderStars(item.rating)}
+                        </div>
+
+                        {item.comment && (
+                          <p className="text-sm text-zinc-300 break-words">
+                            {item.comment}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+                          <Link
+                            to={`/user/${item.pilot_username}`}
+                            className="flex items-center space-x-2 group/link"
+                          >
+                            {getAvatarUrl(item.pilot_id, item.pilot_avatar) ? (
+                              <img
+                                src={
+                                  getAvatarUrl(item.pilot_id, item.pilot_avatar)!
+                                }
+                                alt={item.pilot_username ?? 'Pilot'}
+                                className="w-6 h-6 rounded-full"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-zinc-600 rounded-full flex items-center justify-center">
+                                <MdPeople size={12} className="text-zinc-400" />
+                              </div>
+                            )}
+                            <span className="text-xs text-zinc-400 group-hover/link:text-blue-400 transition-colors">
+                              {item.pilot_username ?? 'Unknown'} (pilot)
+                            </span>
+                          </Link>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size={adminDownsizeButtonSize('sm')}
+                              onClick={() =>
+                                (window.location.href = `/admin/bans?userId=${
+                                  item.pilot_id
+                                }&username=${encodeURIComponent(
+                                  item.pilot_username ?? ''
+                                )}`)
+                              }
+                              className="p-1 text-zinc-400 hover:text-white"
+                              aria-label="Moderate pilot"
+                            >
+                              <MdBlock size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size={adminDownsizeButtonSize('sm')}
+                              onClick={() => handleDeleteRating(item.id)}
+                              className="p-1 text-red-400 hover:text-red-300"
+                              aria-label="Delete rating"
+                            >
+                              <MdDelete size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {ratingsPages > 1 && (
+                <div className="flex justify-center mt-8 space-x-2">
+                  <Button
+                    onClick={() => setRatingsPage(Math.max(1, ratingsPage - 1))}
+                    disabled={ratingsPage === 1}
+                    variant="outline"
+                    size="xs"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-zinc-400 py-2">
+                    Page {ratingsPage} of {ratingsPages}
+                  </span>
+                  <Button
+                    onClick={() =>
+                      setRatingsPage(Math.min(ratingsPages, ratingsPage + 1))
+                    }
+                    disabled={ratingsPage === ratingsPages}
+                    variant="outline"
+                    size="xs"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </AdminLayout>
   );

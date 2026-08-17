@@ -174,6 +174,7 @@ export async function updateSession(
     refreshed_at: Date;
     is_pfatc: boolean;
     is_advanced_atc: boolean;
+    feedback_enabled: boolean;
   }>
 ) {
   const patch = { ...updates };

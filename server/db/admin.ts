@@ -673,12 +673,16 @@ export async function getControllerRatingStats() {
       ]),
     ];
     const pilotIds = topRatingPilots.map((p) => p.pilot_id);
+    const allIds = [...controllerIds, ...pilotIds];
 
-    const users = await mainDb
-      .selectFrom('users')
-      .select(['id', 'username', 'avatar'])
-      .where('id', 'in', [...controllerIds, ...pilotIds])
-      .execute();
+    const users =
+      allIds.length > 0
+        ? await mainDb
+            .selectFrom('users')
+            .select(['id', 'username', 'avatar'])
+            .where('id', 'in', allIds)
+            .execute()
+        : [];
 
     const userMap = new Map(
       users.map((u) => [u.id, { username: u.username, avatar: u.avatar }])
@@ -775,6 +779,78 @@ export async function getControllerRatingsDailyStats(days: number = 30) {
     console.error('Error fetching daily controller rating stats:', error);
     throw error;
   }
+}
+
+export async function getAllControllerRatingsAdmin(
+  page = 1,
+  limit = 25,
+  search = '',
+  rating?: number
+) {
+  const offset = (page - 1) * limit;
+
+  let query = mainDb
+    .selectFrom('controller_ratings as cr')
+    .leftJoin('users as controller', 'cr.controller_id', 'controller.id')
+    .leftJoin('users as pilot', 'cr.pilot_id', 'pilot.id')
+    .select([
+      'cr.id',
+      'cr.rating',
+      'cr.comment',
+      'cr.session_id',
+      'cr.created_at',
+      'cr.controller_id',
+      'controller.username as controller_username',
+      'controller.avatar as controller_avatar',
+      'cr.pilot_id',
+      'pilot.username as pilot_username',
+      'pilot.avatar as pilot_avatar',
+    ])
+    .orderBy('cr.created_at', 'desc');
+
+  let countQuery = mainDb
+    .selectFrom('controller_ratings as cr')
+    .leftJoin('users as controller', 'cr.controller_id', 'controller.id')
+    .leftJoin('users as pilot', 'cr.pilot_id', 'pilot.id')
+    .select(({ fn }) => [fn.count<number>('cr.id').as('total')]);
+
+  const trimmedSearch = search && search.trim() ? search.trim() : '';
+  if (trimmedSearch) {
+    query = query.where((eb) =>
+      eb.or([
+        eb('controller.username', 'ilike', `%${trimmedSearch}%`),
+        eb('pilot.username', 'ilike', `%${trimmedSearch}%`),
+      ])
+    );
+    countQuery = countQuery.where((eb) =>
+      eb.or([
+        eb('controller.username', 'ilike', `%${trimmedSearch}%`),
+        eb('pilot.username', 'ilike', `%${trimmedSearch}%`),
+      ])
+    );
+  }
+
+  if (rating !== undefined && !Number.isNaN(rating)) {
+    query = query.where('cr.rating', '=', rating);
+    countQuery = countQuery.where('cr.rating', '=', rating);
+  }
+
+  const [rows, countResult] = await Promise.all([
+    query.limit(limit).offset(offset).execute(),
+    countQuery.executeTakeFirst(),
+  ]);
+
+  const total = countResult?.total ? Number(countResult.total) : 0;
+
+  return {
+    ratings: rows,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit) || 1,
+    },
+  };
 }
 
 export async function invalidateAllUsersCache() {

@@ -120,6 +120,7 @@ export default function AdminAudit() {
     { value: 'UPDATE_MODAL_UPDATED', label: 'Update Modal Updated' },
     { value: 'FLIGHT_LOG_IP_REVEALED', label: 'Flight Log IP Revealed' },
     { value: 'FEEDBACK_DELETED', label: 'Feedback Deleted' },
+    { value: 'CONTROLLER_RATING_DELETED', label: 'Controller Rating Deleted' },
   ];
 
   useEffect(() => {
@@ -284,6 +285,8 @@ export default function AdminAudit() {
         return 'Flight Log IP Revealed';
       case 'FEEDBACK_DELETED':
         return 'Feedback Deleted';
+      case 'CONTROLLER_RATING_DELETED':
+        return 'Controller Rating Deleted';
       case 'EVENT_MODE_UPDATED':
         return 'Event Mode Updated';
       case 'ADMIN_DEVELOPER_SCOPE_CATALOG':
@@ -387,6 +390,8 @@ export default function AdminAudit() {
       case 'FLIGHT_LOG_IP_REVEALED':
         return <MdVisibility size={16} className="text-orange-400" />;
       case 'FEEDBACK_DELETED':
+        return <MdDelete size={16} className="text-red-400" />;
+      case 'CONTROLLER_RATING_DELETED':
         return <MdDelete size={16} className="text-red-400" />;
       case 'EVENT_MODE_UPDATED':
         return <MdEvent size={16} className="text-amber-400" />;

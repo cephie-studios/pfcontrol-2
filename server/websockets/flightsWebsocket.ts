@@ -58,6 +58,7 @@ interface ContactMeData {
 
 interface SessionUpdateData {
   activeRunway?: string;
+  feedbackEnabled?: boolean;
 }
 
 let io: SocketIOServer;
@@ -427,11 +428,15 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         if (updates.activeRunway !== undefined) {
           dbUpdates.active_runway = updates.activeRunway;
         }
+        if (updates.feedbackEnabled !== undefined) {
+          dbUpdates.feedback_enabled = updates.feedbackEnabled;
+        }
 
         const updatedSession = await updateSession(sessionId, dbUpdates);
         if (updatedSession) {
           io.to(sessionId).emit('sessionUpdated', {
             activeRunway: updatedSession.active_runway,
+            feedbackEnabled: updatedSession.feedback_enabled ?? true,
           });
         } else {
           socket.emit('sessionError', {
