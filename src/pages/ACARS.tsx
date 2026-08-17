@@ -428,6 +428,7 @@ NOTES:
       flight &&
       user &&
       session.createdBy !== user.userId &&
+      session.feedbackEnabled &&
       (settings?.acars?.autoRedirectToAcars ?? true) &&
       !localStorage.getItem(`rating_dismissed_${flightId}`)
     ) {
@@ -670,17 +671,15 @@ NOTES:
 
       {/* Controller Rating Popup */}
       {showRating && session?.createdBy && (
-        <div className="max-w-3xl mx-auto px-4 pt-6">
-          <ControllerRatingPopup
-            controllerId={session.createdBy}
-            flightId={flightId}
-            onClose={() => {
-              localStorage.setItem(`rating_dismissed_${flightId}`, '1');
-              setShowRating(false);
-            }}
-            isInline={true}
-          />
-        </div>
+        <ControllerRatingPopup
+          controllerId={session.createdBy}
+          flightId={flightId}
+          sessionId={sessionId}
+          onClose={() => {
+            localStorage.setItem(`rating_dismissed_${flightId}`, '1');
+            setShowRating(false);
+          }}
+        />
       )}
 
       {/* Desktop Layout */}

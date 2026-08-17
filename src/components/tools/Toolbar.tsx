@@ -25,6 +25,7 @@ import {
   Braces,
   Radio,
   Map,
+  X,
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
@@ -56,6 +57,8 @@ interface ToolbarProps {
   currentView?: 'departures' | 'arrivals';
   onViewChange?: (view: 'departures' | 'arrivals') => void;
   showViewTabs?: boolean;
+  feedbackEnabled?: boolean;
+  onFeedbackToggle?: () => void;
   position: Position;
   onPositionChange: (position: Position) => void;
   onContactAcarsClick?: () => void;
@@ -64,6 +67,9 @@ interface ToolbarProps {
   showContactAcarsModal?: boolean;
   onCloseAllSidebars?: () => void;
 }
+
+const SETTINGS_TIP_STORAGE_KEY = 'settingsTipDismissedUntil';
+const SETTINGS_TIP_DISMISS_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 
 const getIconComponent = (iconName: string) => {
   const icons: Record<
@@ -114,6 +120,8 @@ export default function Toolbar({
   currentView = 'departures',
   onViewChange,
   showViewTabs = true,
+  feedbackEnabled = true,
+  onFeedbackToggle,
   position,
   onPositionChange,
   onContactAcarsClick,
@@ -126,6 +134,9 @@ export default function Toolbar({
   const [chatOpen, setChatOpen] = useState(false);
   const [isInVoice, setIsInVoice] = useState(false);
   const [atisOpen, setAtisOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const [showSettingsTip, setShowSettingsTip] = useState(false);
   const [activeUsers, setActiveUsers] = useState<SessionUser[]>([]);
   const [unreadMentions, setUnreadMentions] = useState<ChatMention[]>([]);
   const [unreadSessionMentions, setUnreadSessionMentions] = useState<
@@ -141,6 +152,36 @@ export default function Toolbar({
   const [atisFlash, setAtisFlash] = useState<boolean>(false);
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!settingsMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        settingsMenuRef.current &&
+        !settingsMenuRef.current.contains(event.target as Node)
+      ) {
+        setSettingsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsMenuOpen]);
+
+  useEffect(() => {
+    if (!isPFATC && !isAdvancedATC) return;
+    const dismissedUntil = localStorage.getItem(SETTINGS_TIP_STORAGE_KEY);
+    if (!dismissedUntil || Date.now() > Number(dismissedUntil)) {
+      setShowSettingsTip(true);
+    }
+  }, [isPFATC, isAdvancedATC]);
+
+  const dismissSettingsTip = () => {
+    localStorage.setItem(
+      SETTINGS_TIP_STORAGE_KEY,
+      String(Date.now() + SETTINGS_TIP_DISMISS_DURATION_MS)
+    );
+    setShowSettingsTip(false);
+  };
 
   useEffect(() => {
     const loadInitialAtisData = async () => {
@@ -590,20 +631,88 @@ export default function Toolbar({
             </Button>
           )}
 
-          <Button
-            className="flex items-center gap-2 px-4 py-2"
-            aria-label="Settings"
-            size="sm"
-            onClick={() => {
-              const isTutorial = window.location.search.includes('tutorial');
-              window.location.href =
-                '/settings' + (isTutorial ? '?tutorial=true' : '');
-            }}
-            id="settings-button"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="hidden sm:inline font-medium">Settings</span>
-          </Button>
+          <div className="relative" ref={settingsMenuRef}>
+            <Button
+              className="flex items-center gap-2 px-4 py-2"
+              aria-label="Settings menu"
+              aria-expanded={settingsMenuOpen}
+              size="sm"
+              onClick={() => {
+                setSettingsMenuOpen((prev) => !prev);
+                if (showSettingsTip) dismissSettingsTip();
+              }}
+              id="settings-button"
+            >
+              <Settings className="w-5 h-5" />
+              <span className="hidden sm:inline font-medium">Settings</span>
+            </Button>
+
+            {showSettingsTip && (
+              <div className="absolute right-0 bottom-full mb-2.5 w-64 bg-zinc-900 border border-blue-600 rounded-2xl shadow-2xl z-[10000] p-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm text-zinc-200 font-medium leading-snug">
+                    More Layout options are available in the Settings menu.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={dismissSettingsTip}
+                    aria-label="Dismiss"
+                    className="shrink-0 text-zinc-500 hover:text-zinc-200 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-zinc-900 border-b border-r border-blue-600 rotate-45" />
+              </div>
+            )}
+
+            {settingsMenuOpen && (
+              <div className="absolute right-0 mt-2 w-45 bg-zinc-900 border border-blue-600 rounded-3xl shadow-2xl backdrop-blur-xl z-[10000] overflow-hidden animate-in slide-in-from-top-1 duration-150">
+                <div className="p-1.5">
+                  {(isPFATC || isAdvancedATC) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onFeedbackToggle?.()}
+                        aria-pressed={feedbackEnabled}
+                        className="w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                      >
+                        <span className="flex items-center gap-2.5 min-w-0">
+                          <Star className="w-4 h-4 shrink-0" />
+                          <span className="font-medium truncate">
+                            Feedback
+                          </span>
+                        </span>
+                        <span
+                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${feedbackEnabled ? 'bg-blue-600' : 'bg-zinc-700'}`}
+                        >
+                          <span
+                            className={`absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform ${feedbackEnabled ? 'translate-x-full' : ''}`}
+                          />
+                        </span>
+                      </button>
+                      <div className="my-1 border-t border-zinc-800" />
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsMenuOpen(false);
+                      const isTutorial =
+                        window.location.search.includes('tutorial');
+                      window.location.href =
+                        '/settings' + (isTutorial ? '?tutorial=true' : '');
+                    }}
+                    className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-blue-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+                  >
+                    <Settings className="w-4 h-4 shrink-0" />
+                    <span className="font-medium">Settings</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <ChatSidebar
             sessionId={sessionId ?? ''}

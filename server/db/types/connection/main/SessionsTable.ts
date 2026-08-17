@@ -13,4 +13,5 @@ export interface SessionsTable {
   custom_name?: string;
   refreshed_at?: Date;
   developer_api_key_id?: string | null;
+  feedback_enabled?: boolean;
 }

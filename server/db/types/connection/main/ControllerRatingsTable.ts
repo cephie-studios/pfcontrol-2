@@ -6,5 +6,7 @@ export interface ControllerRatingsTable {
   pilot_id: string;
   rating: number;
   flight_id: string | null;
+  session_id: string | null;
+  comment: string | null;
   created_at: Generated<Date>;
 }

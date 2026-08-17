@@ -8,10 +8,12 @@ import {
   LayoutDashboard,
   ChevronDown,
   Code2,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
 import Button from '../common/Button';
+import { fetchMyRatingStats } from '../../utils/fetch/ratings';
 
 const ASTRO_SHELL_BADGE_SRC = '/app/icons/astro.svg';
 
@@ -29,11 +31,30 @@ export default function CustomUserButton({
   const { user, isLoading, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [hasFeedback, setHasFeedback] = useState(false);
   const [isAstroShell] = useState(
     () =>
       typeof document !== 'undefined' &&
       document.documentElement.getAttribute('data-pf-renderer') === 'astro'
   );
+
+  useEffect(() => {
+    if (!user) {
+      setHasFeedback(false);
+      return;
+    }
+    let cancelled = false;
+    fetchMyRatingStats()
+      .then((stats) => {
+        if (!cancelled) setHasFeedback(stats.ratingCount > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasFeedback(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -164,6 +185,19 @@ export default function CustomUserButton({
             <List className="w-4 h-4 shrink-0" />
             <span>My Sessions</span>
           </button>
+
+          {hasFeedback && (
+            <button
+              onClick={() =>
+                handleAction(() => (window.location.href = '/my-feedback'))
+              }
+              className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
+            >
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>View Feedback</span>
+            </button>
+          )}
+
           <button
             onClick={() =>
               handleAction(() => (window.location.href = '/my-flights'))
@@ -306,6 +340,20 @@ export default function CustomUserButton({
               <List className="w-4 h-4 shrink-0" />
               <span className="font-medium">My Sessions</span>
             </button>
+
+            {hasFeedback && (
+              <button
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  window.location.href = '/my-feedback';
+                }}
+                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm"
+              >
+                <MessageSquare className="w-4 h-4 shrink-0" />
+                <span className="font-medium">View Feedback</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setIsDropdownOpen(false);

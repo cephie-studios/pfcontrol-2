@@ -1019,3 +1019,34 @@ export async function syncVersionFromEnv(redis?: Redis) {
 
   console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${envVersion}`);
 }
+
+export async function ensureSessionsFeedbackEnabledColumn() {
+  await sql`
+    ALTER TABLE sessions
+    ADD COLUMN IF NOT EXISTS feedback_enabled boolean NOT NULL DEFAULT true
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE sessions
+    ALTER COLUMN feedback_enabled SET DEFAULT true
+  `.execute(mainDb);
+}
+
+export async function ensureControllerRatingsCommentAndSessionColumns() {
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS comment text
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS session_id varchar(255)
+    REFERENCES sessions(session_id) ON DELETE SET NULL
+  `.execute(mainDb);
+
+  await mainDb.schema
+    .createIndex('idx_ctrl_ratings_session')
+    .ifNotExists()
+    .on('controller_ratings')
+    .column('session_id')
+    .execute();
+}

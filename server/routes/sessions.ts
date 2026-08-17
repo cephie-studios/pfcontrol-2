@@ -348,6 +348,7 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
       createdBy: session.created_by,
       isPFATC: session.is_pfatc,
       isAdvancedATC: session.is_advanced_atc,
+      feedbackEnabled: session.feedback_enabled ?? true,
       atis,
     });
   } catch (error) {
@@ -363,7 +364,7 @@ router.get('/:sessionId', requireSessionAccess, async (req, res) => {
 router.put('/:sessionId', requireSessionAccess, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { activeRunway, atis } = req.body;
+    const { activeRunway, atis, feedbackEnabled } = req.body;
     let encryptedAtis = undefined;
     if (atis) {
       const encrypted = encrypt(atis);
@@ -375,6 +376,7 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
       session = await updateSession(sessionId, {
         active_runway: activeRunway,
         atis: encryptedAtis,
+        feedback_enabled: feedbackEnabled,
       });
     } catch (error) {
       if (error instanceof ExclusiveSessionNetworkFlagsError) {
@@ -416,6 +418,7 @@ router.put('/:sessionId', requireSessionAccess, async (req, res) => {
       createdBy: session.created_by,
       isPFATC: session.is_pfatc,
       isAdvancedATC: session.is_advanced_atc,
+      feedbackEnabled: session.feedback_enabled ?? true,
       atis: decryptedAtis,
     });
   } catch (error) {
