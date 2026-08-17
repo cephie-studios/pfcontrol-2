@@ -869,6 +869,11 @@ export interface AdminControllerRating {
   pilot_id: string;
   pilot_username: string | null;
   pilot_avatar: string | null;
+  reported: boolean;
+  report_reason: string | null;
+  reported_at: string | null;
+  automod_flagged: boolean;
+  automod_reason: string | null;
 }
 
 export interface AdminControllerRatingsResponse {
@@ -885,15 +890,33 @@ export async function fetchAdminControllerRatings(
   page: number = 1,
   limit: number = 25,
   search: string = '',
-  rating?: number
+  rating?: number,
+  flagged?: 'reported' | 'automod',
+  hasComment?: boolean
 ): Promise<AdminControllerRatingsResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
     ...(search && { search }),
     ...(rating !== undefined && { rating: rating.toString() }),
+    ...(flagged && { flagged }),
+    ...(hasComment && { hasComment: 'true' }),
   });
   return makeAdminRequest(`/ratings?${params.toString()}`);
+}
+
+export async function dismissControllerRatingReport(
+  id: number
+): Promise<void> {
+  await makeAdminRequest(`/ratings/${id}/dismiss-report`, {
+    method: 'PATCH',
+  });
+}
+
+export async function dismissAutomodFlag(id: number): Promise<void> {
+  await makeAdminRequest(`/ratings/${id}/dismiss-automod`, {
+    method: 'PATCH',
+  });
 }
 
 export async function deleteAdminControllerRating(id: number): Promise<void> {

@@ -4,6 +4,8 @@ import {
   getControllerRatingStats,
   getControllerRatingsForController,
   getControllerRatingsDailyStatsForController,
+  getControllerRatingsDistributionForController,
+  reportControllerRating,
 } from '../db/ratings.js';
 import requireAuth from '../middleware/auth.js';
 import { capture } from '../utils/posthog.js';
@@ -98,6 +100,44 @@ router.get('/mine', requireAuth, async (req, res) => {
   }
 });
 
+// POST: /api/ratings/:id/report - Controller reports a comment left on their feedback
+router.post('/:id/report', requireAuth, generalApiLimiter, async (req, res) => {
+  try {
+    const ratingId = Number(req.params.id);
+    if (Number.isNaN(ratingId)) {
+      return res.status(400).json({ error: 'Invalid rating ID' });
+    }
+
+    const { reason } = req.body;
+    if (typeof reason !== 'string' || reason.length > 500) {
+      return res.status(400).json({ error: 'Invalid or too long reason' });
+    }
+
+    const result = await reportControllerRating(
+      ratingId,
+      req.user!.userId,
+      reason
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        error: 'Rating not found, not yours, or already reported',
+      });
+    }
+
+    capture(req, {
+      distinctId: req.user!.userId,
+      event: 'rating_reported',
+      properties: { rating_id: ratingId },
+    });
+
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Error reporting controller rating:', error);
+    res.status(500).json({ error: 'Failed to report rating' });
+  }
+});
+
 // GET: /api/ratings/mine/stats - Controller's own rating stats
 router.get('/mine/stats', requireAuth, async (req, res) => {
   try {
@@ -128,6 +168,28 @@ router.get('/mine/daily', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching own daily controller rating stats:', error);
     res.status(500).json({ error: 'Failed to fetch daily rating stats' });
+  }
+});
+
+// GET: /api/ratings/mine/distribution - Controller's own rating breakdown by star
+router.get('/mine/distribution', requireAuth, async (req, res) => {
+  try {
+    const daysParam = req.query.days;
+    const days =
+      typeof daysParam === 'string'
+        ? parseInt(daysParam)
+        : Array.isArray(daysParam) && typeof daysParam[0] === 'string'
+          ? parseInt(daysParam[0])
+          : 30;
+
+    const distribution = await getControllerRatingsDistributionForController(
+      req.user!.userId,
+      days
+    );
+    res.json(distribution);
+  } catch (error) {
+    console.error('Error fetching own controller rating distribution:', error);
+    res.status(500).json({ error: 'Failed to fetch rating distribution' });
   }
 });
 

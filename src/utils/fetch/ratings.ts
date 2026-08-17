@@ -37,6 +37,8 @@ export interface MyControllerRating {
   id: number;
   rating: number;
   comment: string | null;
+  reported: boolean;
+  automod_flagged: boolean;
   created_at: string;
 }
 
@@ -59,6 +61,11 @@ export interface MyDailyRatingStats {
   date: string;
   count: number;
   avg_rating: number;
+}
+
+export interface MyRatingDistributionBucket {
+  rating: number;
+  count: number;
 }
 
 async function ratingsRequest(path: string) {
@@ -89,4 +96,31 @@ export async function fetchMyRatingsDaily(
   days: number = 30
 ): Promise<MyDailyRatingStats[]> {
   return ratingsRequest(`/mine/daily?days=${days}`);
+}
+
+export async function fetchMyRatingsDistribution(
+  days: number = 30
+): Promise<MyRatingDistributionBucket[]> {
+  return ratingsRequest(`/mine/distribution?days=${days}`);
+}
+
+export async function reportMyRating(
+  id: number,
+  reason: string
+): Promise<void> {
+  const response = await apiFetch(
+    `${import.meta.env.VITE_SERVER_URL}/api/ratings/${id}/report`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    }
+  );
+
+  if (!response.ok) {
+    await apiError(response, 'Failed to report feedback');
+  }
 }

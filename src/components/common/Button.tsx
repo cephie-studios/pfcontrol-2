@@ -44,7 +44,7 @@ function Button({
     secondary:
       'bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl border-2 border-gray-600 rounded-full',
     outline:
-      'text-blue-600 hover:bg-linear-to-b hover:from-blue-500 hover:to-blue-700 hover:text-white ring-2 ring-inset ring-blue-600 hover:ring-transparent rounded-full',
+      'text-blue-600 hover:bg-linear-to-b hover:from-blue-500 hover:to-blue-700 hover:text-white border-2 border-blue-600 hover:border-blue-700 rounded-full',
     success:
       'bg-green-600 hover:bg-green-700 border-none text-white shadow-lg hover:shadow-xl border-2 border-green-600 rounded-full',
     danger:

@@ -121,6 +121,14 @@ export default function AdminAudit() {
     { value: 'FLIGHT_LOG_IP_REVEALED', label: 'Flight Log IP Revealed' },
     { value: 'FEEDBACK_DELETED', label: 'Feedback Deleted' },
     { value: 'CONTROLLER_RATING_DELETED', label: 'Controller Rating Deleted' },
+    {
+      value: 'CONTROLLER_RATING_REPORT_DISMISSED',
+      label: 'Controller Rating Report Dismissed',
+    },
+    {
+      value: 'CONTROLLER_RATING_AUTOMOD_DISMISSED',
+      label: 'Controller Rating Automod Flag Dismissed',
+    },
   ];
 
   useEffect(() => {
@@ -287,6 +295,10 @@ export default function AdminAudit() {
         return 'Feedback Deleted';
       case 'CONTROLLER_RATING_DELETED':
         return 'Controller Rating Deleted';
+      case 'CONTROLLER_RATING_REPORT_DISMISSED':
+        return 'Controller Rating Report Dismissed';
+      case 'CONTROLLER_RATING_AUTOMOD_DISMISSED':
+        return 'Controller Rating Automod Flag Dismissed';
       case 'EVENT_MODE_UPDATED':
         return 'Event Mode Updated';
       case 'ADMIN_DEVELOPER_SCOPE_CATALOG':
@@ -393,6 +405,10 @@ export default function AdminAudit() {
         return <MdDelete size={16} className="text-red-400" />;
       case 'CONTROLLER_RATING_DELETED':
         return <MdDelete size={16} className="text-red-400" />;
+      case 'CONTROLLER_RATING_REPORT_DISMISSED':
+        return <MdCheckCircle size={16} className="text-green-400" />;
+      case 'CONTROLLER_RATING_AUTOMOD_DISMISSED':
+        return <MdCheckCircle size={16} className="text-green-400" />;
       case 'EVENT_MODE_UPDATED':
         return <MdEvent size={16} className="text-amber-400" />;
       case 'ADMIN_DEVELOPER_SCOPE_CATALOG':

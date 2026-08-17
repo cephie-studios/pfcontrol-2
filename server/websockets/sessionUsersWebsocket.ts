@@ -104,10 +104,43 @@ export interface SessionUsersServer extends Server {
 const sessionATISConfigs = new Map();
 const atisTimers = new Map<string, NodeJS.Timeout>();
 const fieldEditingStates = new Map();
-const userActivity = new Map<
-  string,
-  { lastActive: number; sessionStart: number; totalActive: number }
->();
+
+// A user counts as inactive once this long passes with no mouse/keyboard
+// activity; time stops accruing while inactive.
+const IDLE_THRESHOLD_MS = 5 * 60 * 1000;
+// How often accumulated active time is credited for connected users.
+const ACTIVITY_ACCRUAL_INTERVAL_MS = 60 * 1000;
+
+interface UserActivityEntry {
+  lastActive: number;
+  lastAccrual: number;
+  totalActive: number;
+}
+
+const userActivity = new Map<string, UserActivityEntry>();
+
+function accrueActiveTime(entry: UserActivityEntry, now: number) {
+  const idleMs = now - entry.lastActive;
+  if (idleMs <= IDLE_THRESHOLD_MS) {
+    entry.totalActive += (now - entry.lastAccrual) / 60000;
+  }
+  entry.lastAccrual = now;
+}
+
+function flushActiveTime(userKey: string, entry: UserActivityEntry) {
+  accrueActiveTime(entry, Date.now());
+  if (entry.totalActive > 0) {
+    const userId = userKey.split('-')[0];
+    incrementStat(userId, 'total_time_controlling_minutes', entry.totalActive);
+  }
+}
+
+const activityAccrualInterval = setInterval(() => {
+  const now = Date.now();
+  for (const entry of userActivity.values()) {
+    accrueActiveTime(entry, now);
+  }
+}, ACTIVITY_ACCRUAL_INTERVAL_MS);
 
 const cleanupOldSessions = async () => {
   try {
@@ -147,9 +180,10 @@ const cleanupOldSessions = async () => {
       }
     }
 
-    for (const userKey of userActivity.keys()) {
+    for (const [userKey, entry] of userActivity.entries()) {
       const sessionId = userKey.split('-')[1];
       if (sessionId && !activeSessionIds.has(sessionId)) {
+        flushActiveTime(userKey, entry);
         userActivity.delete(userKey);
       }
     }
@@ -530,7 +564,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       const userKey = `${user.userId}-${sessionId}`;
       userActivity.set(userKey, {
         lastActive: Date.now(),
-        sessionStart: Date.now(),
+        lastAccrual: Date.now(),
         totalActive: 0,
       });
 
@@ -542,17 +576,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       socket.on('disconnect', async () => {
         const entry = userActivity.get(userKey);
         if (entry) {
-          const now = Date.now();
-          const remainingActiveTime = Math.max(
-            0,
-            (now - entry.lastActive) / 60000 - 0.1
-          );
-          entry.totalActive += remainingActiveTime;
-          incrementStat(
-            user.userId,
-            'total_time_controlling_minutes',
-            entry.totalActive
-          );
+          flushActiveTime(userKey, entry);
           userActivity.delete(userKey);
         }
 
@@ -591,12 +615,16 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   process.on('SIGTERM', () => {
     console.log('[SessionUsers] Cleaning up timers...');
     clearInterval(sessionCleanupInterval);
+    clearInterval(activityAccrualInterval);
     for (const timer of atisTimers.values()) {
       clearInterval(timer);
     }
     atisTimers.clear();
     sessionATISConfigs.clear();
     fieldEditingStates.clear();
+    for (const [userKey, entry] of userActivity.entries()) {
+      flushActiveTime(userKey, entry);
+    }
     userActivity.clear();
   });
 

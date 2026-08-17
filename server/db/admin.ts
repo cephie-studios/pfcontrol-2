@@ -785,7 +785,9 @@ export async function getAllControllerRatingsAdmin(
   page = 1,
   limit = 25,
   search = '',
-  rating?: number
+  rating?: number,
+  flagged?: 'reported' | 'automod',
+  hasComment?: boolean
 ) {
   const offset = (page - 1) * limit;
 
@@ -805,6 +807,11 @@ export async function getAllControllerRatingsAdmin(
       'cr.pilot_id',
       'pilot.username as pilot_username',
       'pilot.avatar as pilot_avatar',
+      'cr.reported',
+      'cr.report_reason',
+      'cr.reported_at',
+      'cr.automod_flagged',
+      'cr.automod_reason',
     ])
     .orderBy('cr.created_at', 'desc');
 
@@ -835,6 +842,19 @@ export async function getAllControllerRatingsAdmin(
     countQuery = countQuery.where('cr.rating', '=', rating);
   }
 
+  if (flagged === 'reported') {
+    query = query.where('cr.reported', '=', true);
+    countQuery = countQuery.where('cr.reported', '=', true);
+  } else if (flagged === 'automod') {
+    query = query.where('cr.automod_flagged', '=', true);
+    countQuery = countQuery.where('cr.automod_flagged', '=', true);
+  }
+
+  if (hasComment) {
+    query = query.where('cr.comment', 'is not', null);
+    countQuery = countQuery.where('cr.comment', 'is not', null);
+  }
+
   const [rows, countResult] = await Promise.all([
     query.limit(limit).offset(offset).execute(),
     countQuery.executeTakeFirst(),
@@ -851,6 +871,31 @@ export async function getAllControllerRatingsAdmin(
       pages: Math.ceil(total / limit) || 1,
     },
   };
+}
+
+export async function dismissControllerRatingReport(id: number) {
+  return await mainDb
+    .updateTable('controller_ratings')
+    .set({
+      reported: false,
+      report_reason: null,
+      reported_at: null,
+    })
+    .where('id', '=', id)
+    .returning(['id', 'controller_id'])
+    .executeTakeFirst();
+}
+
+export async function dismissAutomodFlag(id: number) {
+  return await mainDb
+    .updateTable('controller_ratings')
+    .set({
+      automod_flagged: false,
+      automod_reason: null,
+    })
+    .where('id', '=', id)
+    .returning(['id', 'controller_id'])
+    .executeTakeFirst();
 }
 
 export async function invalidateAllUsersCache() {
