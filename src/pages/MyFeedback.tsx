@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star, MessageSquare, Flag } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import ErrorScreen from '../components/common/ErrorScreen';
+import Modal from '../components/common/Modal';
+import Toast from '../components/common/Toast';
 import { useSettings } from '../hooks/settings/useSettings';
 import { fetchBackgrounds } from '../utils/fetch/data';
-import {
-  AdminAreaChart,
-  AdminMultiSeriesAreaChart,
-} from '../components/admin/AdminChart';
+import { AdminAreaChart } from '../components/admin/AdminChart';
 import {
   fetchMyRatings,
   fetchMyRatingStats,
   fetchMyRatingsDaily,
+  fetchMyRatingsDistribution,
+  reportMyRating,
   type MyControllerRating,
   type MyControllerRatingStats,
   type MyDailyRatingStats,
+  type MyRatingDistributionBucket,
 } from '../utils/fetch/ratings';
+import type { ToastType } from '../components/common/Toast';
+
+const MAX_REPORT_REASON_LENGTH = 500;
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -42,18 +47,85 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-function FeedbackEntry({ entry }: { entry: MyControllerRating }) {
+function RatingDistribution({
+  buckets,
+}: {
+  buckets: MyRatingDistributionBucket[];
+}) {
+  const max = Math.max(...buckets.map((b) => b.count), 1);
+
+  return (
+    <div className="space-y-2">
+      {buckets.map(({ rating, count }) => (
+        <div key={rating} className="flex items-center gap-3">
+          <span className="w-8 text-sm text-zinc-400 flex items-center gap-1 shrink-0">
+            {rating}
+            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+          </span>
+          <div className="flex-1 h-3 rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className="h-full bg-yellow-500 rounded-full transition-all duration-300"
+              style={{ width: `${(count / max) * 100}%` }}
+            />
+          </div>
+          <span className="w-6 text-sm text-zinc-400 text-right shrink-0">
+            {count}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FeedbackEntry({
+  entry,
+  onReport,
+}: {
+  entry: MyControllerRating;
+  onReport: (id: number) => void;
+}) {
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
         <StarRow rating={entry.rating} />
-        <span className="text-xs text-zinc-500">
-          {new Date(entry.created_at).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-zinc-500">
+            {new Date(entry.created_at).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+          {entry.automod_flagged ? (
+            <div className="relative group inline-block">
+              <img
+                src="/assets/images/automod.webp"
+                alt="Flagged by automod"
+                className="w-4 h-4 cursor-help rounded-full"
+              />
+              <div className="absolute bottom-full right-0 mb-2 w-56 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-[9999]">
+                <div className="px-3 py-1.5 bg-zinc-900/95 backdrop-blur-md rounded-lg border border-zinc-700">
+                  <p className="text-xs text-white">
+                    This comment was already flagged by automod. Wait for a
+                    moderator to review it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : entry.reported ? (
+            <span className="text-xs text-zinc-600">Reported</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onReport(entry.id)}
+              className="text-zinc-600 hover:text-red-400 transition-colors"
+              title="Report this comment"
+              aria-label="Report this comment"
+            >
+              <Flag className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
       {entry.comment && (
         <p className="text-sm text-zinc-300 whitespace-pre-wrap">
@@ -68,6 +140,9 @@ export default function MyFeedback() {
   const { settings } = useSettings();
   const [stats, setStats] = useState<MyControllerRatingStats | null>(null);
   const [dailyStats, setDailyStats] = useState<MyDailyRatingStats[]>([]);
+  const [distribution, setDistribution] = useState<
+    MyRatingDistributionBucket[]
+  >([]);
   const [ratings, setRatings] = useState<MyControllerRating[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -78,18 +153,54 @@ export default function MyFeedback() {
   const [error, setError] = useState<string | null>(null);
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
+  const [reportingId, setReportingId] = useState<number | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+  } | null>(null);
+
+  const handleReportClick = (id: number) => {
+    setReportingId(id);
+    setReportReason('');
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportingId || !reportReason.trim()) return;
+    setSubmittingReport(true);
+    try {
+      await reportMyRating(reportingId, reportReason.trim());
+      setRatings((prev) =>
+        prev.map((r) => (r.id === reportingId ? { ...r, reported: true } : r))
+      );
+      setToast({ message: 'Comment reported for review.', type: 'success' });
+      setReportingId(null);
+      setReportReason('');
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : 'Failed to report comment',
+        type: 'error',
+      });
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [statsData, dailyData, ratingsData] = await Promise.all([
-        fetchMyRatingStats(),
-        fetchMyRatingsDaily(timeRange),
-        fetchMyRatings(page, 20),
-      ]);
+      const [statsData, dailyData, distributionData, ratingsData] =
+        await Promise.all([
+          fetchMyRatingStats(),
+          fetchMyRatingsDaily(timeRange),
+          fetchMyRatingsDistribution(timeRange),
+          fetchMyRatings(page, 20),
+        ]);
       setStats(statsData);
       setDailyStats(dailyData);
+      setDistribution(distributionData);
       setRatings(ratingsData.ratings);
       setPages(ratingsData.pagination.pages);
     } catch (err) {
@@ -115,9 +226,15 @@ export default function MyFeedback() {
     }
     let cancelled = false;
     setChartsLoading(true);
-    fetchMyRatingsDaily(timeRange)
-      .then((data) => {
-        if (!cancelled) setDailyStats(data);
+    Promise.all([
+      fetchMyRatingsDaily(timeRange),
+      fetchMyRatingsDistribution(timeRange),
+    ])
+      .then(([dailyData, distributionData]) => {
+        if (!cancelled) {
+          setDailyStats(dailyData);
+          setDistribution(distributionData);
+        }
       })
       .catch((err) => {
         console.error('Error fetching daily stats:', err);
@@ -220,16 +337,6 @@ export default function MyFeedback() {
       setCustomLoaded(true);
     }
   }, [backgroundImage]);
-
-  const multiSeriesData = useMemo(
-    () =>
-      dailyStats.map((d) => ({
-        label: d.date,
-        count: d.count,
-        avg_rating: Number(d.avg_rating),
-      })),
-    [dailyStats]
-  );
 
   const avgRatingData = useMemo(
     () =>
@@ -380,25 +487,15 @@ export default function MyFeedback() {
                     <div className="space-y-8">
                       <div>
                         <h2 className="text-sm font-semibold text-zinc-300 mb-1">
-                          Ratings count
+                          Rating breakdown
                         </h2>
-                        <p className="text-xs text-zinc-500 mb-2">
-                          Hover for daily values
+                        <p className="text-xs text-zinc-500 mb-3">
+                          How your stars break down in this range
                         </p>
                         {chartsLoading ? (
                           <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
                         ) : (
-                          <AdminMultiSeriesAreaChart
-                            data={multiSeriesData}
-                            series={[
-                              {
-                                key: 'count',
-                                label: 'Ratings count',
-                                color: '#3B82F6',
-                              },
-                            ]}
-                            height={180}
-                          />
+                          <RatingDistribution buckets={distribution} />
                         )}
                       </div>
                       <div>
@@ -410,6 +507,12 @@ export default function MyFeedback() {
                         </p>
                         {chartsLoading ? (
                           <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
+                        ) : dailyStats.length < 3 ? (
+                          <div className="h-[180px] rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center">
+                            <p className="text-sm text-zinc-500">
+                              Not enough data yet
+                            </p>
+                          </div>
                         ) : (
                           <AdminAreaChart
                             data={avgRatingData}
@@ -437,7 +540,11 @@ export default function MyFeedback() {
                       ) : (
                         <div className="space-y-3">
                           {ratings.map((entry) => (
-                            <FeedbackEntry key={entry.id} entry={entry} />
+                            <FeedbackEntry
+                              key={entry.id}
+                              entry={entry}
+                              onReport={handleReportClick}
+                            />
                           ))}
                         </div>
                       )}
@@ -494,6 +601,41 @@ export default function MyFeedback() {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={reportingId !== null}
+        onClose={() => setReportingId(null)}
+        title="Report Comment"
+        variant="danger"
+        icon={<Flag />}
+        footer={
+          <Button
+            onClick={handleSubmitReport}
+            variant="danger"
+            disabled={submittingReport || !reportReason.trim()}
+          >
+            {submittingReport ? 'Reporting…' : 'Report'}
+          </Button>
+        }
+      >
+        <textarea
+          value={reportReason}
+          onChange={(e) => setReportReason(e.target.value)}
+          placeholder="Enter reason for reporting..."
+          className="w-full p-2 bg-zinc-800 text-white rounded border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-800 resize-y max-h-48"
+          maxLength={MAX_REPORT_REASON_LENGTH}
+          rows={4}
+          disabled={submittingReport}
+        />
+      </Modal>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   ensurePerformanceIndexes,
   ensureSessionsFeedbackEnabledColumn,
   ensureControllerRatingsCommentAndSessionColumns,
+  ensureControllerRatingsModerationColumns,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -86,6 +87,7 @@ try {
   await ensurePerformanceIndexes();
   await ensureSessionsFeedbackEnabledColumn();
   await ensureControllerRatingsCommentAndSessionColumns();
+  await ensureControllerRatingsModerationColumns();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

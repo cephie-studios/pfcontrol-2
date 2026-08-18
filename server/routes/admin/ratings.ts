@@ -4,10 +4,13 @@ import {
   getControllerRatingStats,
   getControllerRatingsDailyStats,
   getAllControllerRatingsAdmin,
+  dismissControllerRatingReport,
+  dismissAutomodFlag,
 } from '../../db/admin.js';
 import { deleteControllerRating } from '../../db/ratings.js';
 import { logAdminAction } from '../../db/audit.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
+import { createUserNotification } from '../../db/userNotifications.js';
 
 const router = express.Router();
 
@@ -25,12 +28,20 @@ router.get('/', requirePermission('admin'), async (req, res) => {
       typeof ratingParam === 'string' && ratingParam !== ''
         ? parseInt(ratingParam, 10)
         : undefined;
+    const flaggedParam = req.query.flagged;
+    const flagged =
+      flaggedParam === 'reported' || flaggedParam === 'automod'
+        ? flaggedParam
+        : undefined;
+    const hasComment = req.query.hasComment === 'true';
 
     const result = await getAllControllerRatingsAdmin(
       page,
       limit,
       search,
-      rating
+      rating,
+      flagged,
+      hasComment
     );
     res.json(result);
   } catch (error) {
@@ -39,13 +50,116 @@ router.get('/', requirePermission('admin'), async (req, res) => {
   }
 });
 
+// PATCH: /api/admin/ratings/:id/dismiss-report - Clear a report flag
+router.patch(
+  '/:id/dismiss-report',
+  requirePermission('admin'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const numericId = Number(id);
+
+      const result = await dismissControllerRatingReport(numericId);
+      if (!result) {
+        return res.status(404).json({ error: 'Rating not found' });
+      }
+
+      void createUserNotification({
+        userId: result.controller_id,
+        type: 'moderation',
+        title: 'Report reviewed',
+        message:
+          'A report you submitted on a feedback comment has been reviewed and resolved.',
+      });
+
+      if (req.user?.userId) {
+        await logAdminAction({
+          adminId: req.user.userId,
+          adminUsername: req.user.username || 'Unknown',
+          actionType: 'CONTROLLER_RATING_REPORT_DISMISSED',
+          ipAddress: getClientIp(req),
+          details: {
+            message: `Dismissed report on controller rating with ID: ${numericId}`,
+          },
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error dismissing controller rating report:', error);
+      res.status(500).json({ error: 'Failed to dismiss report' });
+    }
+  }
+);
+
+// PATCH: /api/admin/ratings/:id/dismiss-automod - Clear an automod flag
+router.patch(
+  '/:id/dismiss-automod',
+  requirePermission('admin'),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const numericId = Number(id);
+
+      const result = await dismissAutomodFlag(numericId);
+      if (!result) {
+        return res.status(404).json({ error: 'Rating not found' });
+      }
+
+      if (req.user?.userId) {
+        await logAdminAction({
+          adminId: req.user.userId,
+          adminUsername: req.user.username || 'Unknown',
+          actionType: 'CONTROLLER_RATING_AUTOMOD_DISMISSED',
+          ipAddress: getClientIp(req),
+          details: {
+            message: `Dismissed automod flag on controller rating with ID: ${numericId}`,
+          },
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error dismissing automod flag:', error);
+      res.status(500).json({ error: 'Failed to dismiss automod flag' });
+    }
+  }
+);
+
 // DELETE: /api/admin/ratings/:id - Delete a controller rating
 router.delete('/:id', requirePermission('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const numericId = Number(id);
 
+    const flaggedParam = req.query.flagged;
+    const flagged =
+      flaggedParam === 'reported' || flaggedParam === 'automod'
+        ? flaggedParam
+        : undefined;
+
     const rating = await deleteControllerRating(numericId);
+
+    if (rating) {
+      const controllerMessage =
+        flagged === 'automod'
+          ? 'Feedback submitted on one of your controlling sessions was flagged by automod, and was removed by a moderator. If you have any questions contact support.'
+          : 'Reported feedback on one of your controlling sessions was removed by a moderator.';
+
+      void createUserNotification({
+        userId: rating.controller_id,
+        type: 'moderation',
+        title: 'Feedback removed',
+        message: controllerMessage,
+      });
+      void createUserNotification({
+        userId: rating.pilot_id,
+        type: 'moderation',
+        title: 'Feedback removed',
+        message:
+          'Feedback you submitted was removed by a moderator. It might have violated our policies. Contact support for more information.',
+      });
+    }
 
     if (req.user?.userId) {
       await logAdminAction({

@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { MdStar, MdThumbUp, MdDelete, MdBlock, MdPeople } from 'react-icons/md';
+import {
+  MdStar,
+  MdThumbUp,
+  MdDelete,
+  MdPeople,
+  MdFlag,
+  MdExpandMore,
+} from 'react-icons/md';
 import { Link } from 'react-router';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
@@ -31,6 +38,8 @@ import {
   fetchControllerDailyRatingStats,
   fetchAdminControllerRatings,
   deleteAdminControllerRating,
+  dismissControllerRatingReport,
+  dismissAutomodFlag,
   type ControllerRatingStats,
   type DailyRatingStats,
   type AdminControllerRating,
@@ -44,6 +53,12 @@ const RATING_FILTER_OPTIONS = [
   { value: '3', label: '3 Stars' },
   { value: '2', label: '2 Stars' },
   { value: '1', label: '1 Star' },
+];
+
+const FLAG_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Feedback' },
+  { value: 'reported', label: 'Reported' },
+  { value: 'automod', label: 'Automod Flagged' },
 ];
 
 function renderStars(rating: number) {
@@ -83,8 +98,25 @@ export default function AdminRatings() {
   const [ratingsError, setRatingsError] = useState<string | null>(null);
   const [ratingsSearch, setRatingsSearch] = useState('');
   const [ratingsFilter, setRatingsFilter] = useState('all');
+  const [ratingsFlagFilter, setRatingsFlagFilter] = useState('all');
+  const [ratingsHasCommentOnly, setRatingsHasCommentOnly] = useState(false);
   const [ratingsPage, setRatingsPage] = useState(1);
   const [ratingsPages, setRatingsPages] = useState(1);
+  const [expandedReportIds, setExpandedReportIds] = useState<Set<number>>(
+    new Set()
+  );
+
+  const toggleReportExpanded = (id: number) => {
+    setExpandedReportIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const fetchRatingsList = useCallback(async () => {
     try {
@@ -92,11 +124,17 @@ export default function AdminRatings() {
       setRatingsError(null);
       const rating =
         ratingsFilter === 'all' ? undefined : Number(ratingsFilter);
+      const flagged =
+        ratingsFlagFilter === 'reported' || ratingsFlagFilter === 'automod'
+          ? ratingsFlagFilter
+          : undefined;
       const result = await fetchAdminControllerRatings(
         ratingsPage,
         25,
         ratingsSearch,
-        rating
+        rating,
+        flagged,
+        ratingsHasCommentOnly
       );
       setRatings(result.ratings);
       setRatingsPages(result.pagination.pages);
@@ -108,7 +146,13 @@ export default function AdminRatings() {
     } finally {
       setRatingsLoading(false);
     }
-  }, [ratingsPage, ratingsSearch, ratingsFilter]);
+  }, [
+    ratingsPage,
+    ratingsSearch,
+    ratingsFilter,
+    ratingsFlagFilter,
+    ratingsHasCommentOnly,
+  ]);
 
   useEffect(() => {
     if (view === 'individual') {
@@ -118,7 +162,12 @@ export default function AdminRatings() {
 
   useEffect(() => {
     setRatingsPage(1);
-  }, [ratingsSearch, ratingsFilter]);
+  }, [
+    ratingsSearch,
+    ratingsFilter,
+    ratingsFlagFilter,
+    ratingsHasCommentOnly,
+  ]);
 
   const handleDeleteRating = async (id: number) => {
     if (!confirm('Are you sure you want to delete this rating?')) return;
@@ -129,6 +178,46 @@ export default function AdminRatings() {
     } catch (err) {
       setToast({
         message: err instanceof Error ? err.message : 'Failed to delete rating',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleDismissReport = async (id: number) => {
+    try {
+      await dismissControllerRatingReport(id);
+      setToast({ message: 'Report dismissed', type: 'success' });
+      setRatings((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, reported: false, report_reason: null } : r
+        )
+      );
+    } catch (err) {
+      setToast({
+        message:
+          err instanceof Error ? err.message : 'Failed to dismiss report',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleDismissAutomod = async (id: number) => {
+    try {
+      await dismissAutomodFlag(id);
+      setToast({ message: 'Automod flag dismissed', type: 'success' });
+      setRatings((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, automod_flagged: false, automod_reason: null }
+            : r
+        )
+      );
+    } catch (err) {
+      setToast({
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Failed to dismiss automod flag',
         type: 'error',
       });
     }
@@ -466,6 +555,21 @@ export default function AdminRatings() {
                 size="sm"
                 className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
               />
+              <Dropdown
+                options={FLAG_FILTER_OPTIONS}
+                value={ratingsFlagFilter}
+                onChange={setRatingsFlagFilter}
+                size="sm"
+                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+              />
+              <Button
+                onClick={() => setRatingsHasCommentOnly((prev) => !prev)}
+                variant={ratingsHasCommentOnly ? 'primary' : 'outline'}
+                size={adminDownsizeButtonSize('sm')}
+                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+              >
+                Has comment
+              </Button>
             </div>
           </AdminToolbar>
 
@@ -541,6 +645,88 @@ export default function AdminRatings() {
                           </p>
                         )}
 
+                        {(item.reported || item.automod_flagged) && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.reported && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20"
+                                title={item.report_reason ?? undefined}
+                              >
+                                <MdFlag size={12} />
+                                Reported
+                              </span>
+                            )}
+                            {item.automod_flagged && (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                title={item.automod_reason ?? undefined}
+                              >
+                                <img
+                                  src="/assets/images/automod.webp"
+                                  alt=""
+                                  className="w-3 h-3 rounded-full"
+                                />
+                                Automod
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {expandedReportIds.has(item.id) && (
+                          <div className="p-2.5 rounded-lg bg-zinc-950/50 border border-zinc-800/60 space-y-2">
+                            {item.reported && (
+                              <>
+                                <p className="text-xs text-zinc-400">
+                                  <span className="text-zinc-500">
+                                    Report reason:
+                                  </span>{' '}
+                                  {item.report_reason || 'No reason provided'}
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={() => handleDismissReport(item.id)}
+                                  className="text-green-400 border-green-700/50 hover:bg-none hover:bg-green-900/20 hover:border-green-600"
+                                >
+                                  Dismiss report
+                                </Button>
+                              </>
+                            )}
+                            {item.automod_flagged && (
+                              <>
+                                <p className="text-xs text-zinc-400">
+                                  <span className="text-zinc-500">
+                                    Automod reason:
+                                  </span>{' '}
+                                  {item.automod_reason || 'No reason provided'}
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={() => handleDismissAutomod(item.id)}
+                                  className="text-green-400 border-green-700/50 hover:bg-none hover:bg-green-900/20 hover:border-green-600"
+                                >
+                                  Dismiss automod flag
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() =>
+                                (window.location.href = `/admin/bans?userId=${
+                                  item.pilot_id
+                                }&username=${encodeURIComponent(
+                                  item.pilot_username ?? ''
+                                )}`)
+                              }
+                              className="text-zinc-300 border-zinc-600 hover:bg-none hover:bg-zinc-800"
+                            >
+                              Moderate pilot
+                            </Button>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
                           <Link
                             to={`/user/${item.pilot_username}`}
@@ -567,17 +753,20 @@ export default function AdminRatings() {
                             <Button
                               variant="ghost"
                               size={adminDownsizeButtonSize('sm')}
-                              onClick={() =>
-                                (window.location.href = `/admin/bans?userId=${
-                                  item.pilot_id
-                                }&username=${encodeURIComponent(
-                                  item.pilot_username ?? ''
-                                )}`)
-                              }
+                              onClick={() => toggleReportExpanded(item.id)}
                               className="p-1 text-zinc-400 hover:text-white"
-                              aria-label="Moderate pilot"
+                              aria-label="More options"
+                              aria-expanded={expandedReportIds.has(item.id)}
+                              title="More options"
                             >
-                              <MdBlock size={16} />
+                              <MdExpandMore
+                                size={16}
+                                className={`transition-transform ${
+                                  expandedReportIds.has(item.id)
+                                    ? 'rotate-180'
+                                    : ''
+                                }`}
+                              />
                             </Button>
                             <Button
                               variant="ghost"

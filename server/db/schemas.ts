@@ -1050,3 +1050,30 @@ export async function ensureControllerRatingsCommentAndSessionColumns() {
     .column('session_id')
     .execute();
 }
+
+export async function ensureControllerRatingsModerationColumns() {
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS reported boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS report_reason text
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS reported_at timestamptz
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS automod_flagged boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE controller_ratings
+    ADD COLUMN IF NOT EXISTS automod_reason text
+  `.execute(mainDb);
+}
