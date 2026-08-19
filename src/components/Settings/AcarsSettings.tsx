@@ -284,7 +284,7 @@ export default function AcarsSettings({
             onClick={() => setIsExpanded(!isExpanded)}
             variant="outline"
             size="sm"
-            className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
+            className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
           >
             {isExpanded ? (
               <ChevronUp className="h-4 w-4" />

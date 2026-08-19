@@ -128,13 +128,17 @@ export function buildProfileOgCardProps(
   const memberSinceLabel = formatMemberSinceLabel(user.member_since);
   const metaLine = buildMetaLine(user.roles, memberSinceLabel);
 
-  const sessionsN = privacySettings.displayPilotStatsOnProfile
+  const statsVisible =
+    profile.profileCustomization?.sectionOrder?.find((s) => s.key === 'stats')
+      ?.visible ?? true;
+
+  const sessionsN = statsVisible
     ? getStat(user.statistics, 'total_sessions_created')
     : null;
-  const flightsN = privacySettings.displayPilotStatsOnProfile
+  const flightsN = statsVisible
     ? getStat(user.statistics, 'total_flights_submitted')
     : null;
-  const ctrlMins = privacySettings.displayPilotStatsOnProfile
+  const ctrlMins = statsVisible
     ? getStat(user.statistics, 'total_time_controlling_minutes')
     : null;
 

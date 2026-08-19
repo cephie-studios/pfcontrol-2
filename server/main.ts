@@ -28,6 +28,7 @@ import { updateLeaderboard } from './db/leaderboard.js';
 import { startFlightLogsCleanup } from './db/flightLogs.js';
 import { apiLogger, cleanupOldApiLogs } from './middleware/apiLogger.js';
 import { securityMiddleware } from './middleware/security.js';
+import { platformIdentityCors } from './middleware/platformIdentityCors.js';
 import { httpErrorHandler } from './middleware/httpErrorHandler.js';
 import {
   applyImmutableAsset,
@@ -137,6 +138,9 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(securityMiddleware);
+
+app.use('/api/auth/platform-identity', platformIdentityCors);
+
 app.use(
   cors({
     origin:

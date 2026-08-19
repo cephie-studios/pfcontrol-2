@@ -31,4 +31,7 @@ export interface UsersTable {
   ip_hash?: string | null;
   ip_history?: unknown;
   fingerprint_history?: unknown;
+  bio_automod_flagged?: boolean;
+  bio_automod_reason?: string | null;
+  platform_token?: string | null;
 }

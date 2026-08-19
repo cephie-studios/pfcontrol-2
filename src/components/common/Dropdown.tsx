@@ -437,7 +437,7 @@ function Dropdown({
           ref={triggerWrapperRef}
           className={`relative bg-gray-800 border-2 border-blue-600 ${
             isOpen ? triggerOpenClass : 'rounded-full'
-          } ${disabled ? 'opacity-70' : ''} ${className}`}
+          } ${disabled ? 'opacity-60' : ''} ${className}`}
         >
           <input
             ref={inputRef}

@@ -18,6 +18,10 @@ import {
   ensureSessionsFeedbackEnabledColumn,
   ensureControllerRatingsCommentAndSessionColumns,
   ensureControllerRatingsModerationColumns,
+  ensureUserBioModerationColumns,
+  ensurePlatformTokenColumn,
+  ensureUserNotificationsIssuerColumns,
+  ensureUserNotificationsCreatedAtDefault,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -88,6 +92,10 @@ try {
   await ensureSessionsFeedbackEnabledColumn();
   await ensureControllerRatingsCommentAndSessionColumns();
   await ensureControllerRatingsModerationColumns();
+  await ensureUserBioModerationColumns();
+  await ensurePlatformTokenColumn();
+  await ensureUserNotificationsIssuerColumns();
+  await ensureUserNotificationsCreatedAtDefault();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

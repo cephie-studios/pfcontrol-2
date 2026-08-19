@@ -9,6 +9,7 @@ import {
   unlinkRobloxAccount,
   updateTutorialStatus,
   updateUserFingerprint,
+  ensureUserPlatformToken,
 } from '../db/users.js';
 import { authLimiter } from '../middleware/security.js';
 import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
@@ -20,7 +21,10 @@ import { isTester } from '../db/testers.js';
 import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
-import requireAuth, { requireAuthSoft } from '../middleware/auth.js';
+import requireAuth, {
+  requireAuthSoft,
+  requirePlatformIdentity,
+} from '../middleware/auth.js';
 import posthog, { capture } from '../utils/posthog.js';
 
 const router = express.Router();
@@ -39,6 +43,14 @@ const VATSIM_CLIENT_ID = process.env.VATSIM_CLIENT_ID ?? '';
 const VATSIM_CLIENT_SECRET = process.env.VATSIM_CLIENT_SECRET ?? '';
 const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI ?? '';
 const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE ?? '';
+
+const platformTokenCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  domain: process.env.COOKIE_DOMAIN || undefined,
+};
 
 // GET: /api/auth/discord - redirect to Discord for authentication
 router.get('/discord', (req, res) => {
@@ -182,6 +194,12 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
       path: '/',
+    });
+
+    const platformToken = await ensureUserPlatformToken(discordUser.id);
+    res.cookie('platform_token', platformToken, {
+      ...platformTokenCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
     });
 
     const redirectUrl =
@@ -940,6 +958,15 @@ router.post('/fingerprint', requireAuthSoft, async (req, res) => {
   }
 });
 
+// GET: /api/auth/platform-identity - minimal cross-subdomain identity lookup
+router.get('/platform-identity', requirePlatformIdentity, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!req.platformIdentity) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, username, discriminator, avatar, isAdmin: admin } =
+    req.platformIdentity;
+  res.json({ userId, username, discriminator, avatar, isAdmin: admin });
+});
+
 // POST: /api/auth/logout - log out user
 router.post('/logout', (req, res) => {
   const token = req.cookies?.auth_token;
@@ -958,6 +985,7 @@ router.post('/logout', (req, res) => {
     sameSite: 'strict',
     path: '/',
   });
+  res.clearCookie('platform_token', platformTokenCookieOptions);
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -995,6 +1023,7 @@ router.delete('/delete-account', requireAuth, async (req, res) => {
       sameSite: 'strict',
       path: '/',
     });
+    res.clearCookie('platform_token', platformTokenCookieOptions);
 
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {

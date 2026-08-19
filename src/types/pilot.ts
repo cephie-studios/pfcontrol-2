@@ -1,3 +1,5 @@
+import type { ProfileSectionConfig } from './settings';
+
 export interface Role {
   id: number;
   name: string;
@@ -5,6 +7,17 @@ export interface Role {
   color: string;
   icon: string;
   priority: number;
+}
+
+export interface ResolvedProfileCustomization {
+  accentColor: string | null;
+  backgroundColor: string | null;
+  cardColor: string | null;
+  bannerTintColor: string | null;
+  bannerTintOpacity: number;
+  hiddenRoleIds: number[];
+  hiddenStatIds: string[];
+  sectionOrder: ProfileSectionConfig[];
 }
 
 export interface PilotProfile {
@@ -36,12 +49,12 @@ export interface PilotProfile {
     } | null;
   };
   privacySettings: {
-    displayControllerStatsOnProfile: boolean;
-    displayPilotStatsOnProfile: boolean;
     displayControllerRatingOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
     displayBackgroundOnProfile: boolean;
+    displayBioOnProfile: boolean;
   };
+  profileCustomization: ResolvedProfileCustomization | null;
   featuredFlights?: FeaturedFlight[];
 }
 

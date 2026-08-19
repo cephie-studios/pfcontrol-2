@@ -13,14 +13,29 @@ export interface AdminUserAlert {
   message: string;
   read: boolean;
   created_at: string;
+  issued_by_admin_id: string | null;
+  issued_by_admin_username: string | null;
 }
 
-export async function fetchAdminUserAlerts(): Promise<{
+export interface AdminUserAlertsResponse {
   alerts: AdminUserAlert[];
-}> {
-  const res = await apiFetch(`${API_BASE_URL}/api/admin/user-alerts`, {
-    credentials: 'include',
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+export async function fetchAdminUserAlerts(
+  page = 1,
+  limit = 50,
+  search = ''
+): Promise<AdminUserAlertsResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    ...(search && { search }),
   });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/user-alerts?${params.toString()}`,
+    { credentials: 'include' }
+  );
   if (!res.ok) await apiError(res, 'Failed to load alerts');
   return res.json();
 }

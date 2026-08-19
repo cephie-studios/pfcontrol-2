@@ -8,4 +8,6 @@ export interface UserNotificationsTable {
   message: string;
   read?: boolean;
   created_at?: Date;
+  issued_by_admin_id?: string | null;
+  issued_by_admin_username?: string | null;
 }

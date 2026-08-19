@@ -1,7 +1,11 @@
 import { memo } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-interface ButtonProps {
+interface ButtonProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    'onClick' | 'type' | 'disabled' | 'className' | 'id'
+  > {
   children: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   variant?:
@@ -30,6 +34,7 @@ function Button({
   type = 'button',
   id,
   accentColor = 'blue',
+  ...rest
 }: ButtonProps) {
   const cardAccents = {
     green: 'hover:border-green-500/50 group-hover:text-green-400',
@@ -44,7 +49,7 @@ function Button({
     secondary:
       'bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl border-2 border-gray-600 rounded-full',
     outline:
-      'text-blue-600 hover:bg-linear-to-b hover:from-blue-500 hover:to-blue-700 hover:text-white border-2 border-blue-600 hover:border-blue-700 rounded-full',
+      'text-blue-600 hover:bg-linear-to-b hover:from-blue-500 hover:to-blue-700 hover:text-white ring-2 ring-inset ring-blue-600 hover:ring-transparent rounded-full',
     success:
       'bg-green-600 hover:bg-green-700 border-none text-white shadow-lg hover:shadow-xl border-2 border-green-600 rounded-full',
     danger:
@@ -72,6 +77,7 @@ function Button({
       disabled={disabled}
       className={twMerge(baseStyles, variants[variant], sizes[size], className)}
       id={id}
+      {...rest}
     >
       {children}
     </button>
