@@ -47,6 +47,8 @@ router.post(
         title: 'A featured flight was removed',
         message:
           'One of your featured flights was removed from your public profile by a moderator.',
+        issuedByAdminId: req.user?.userId,
+        issuedByAdminUsername: req.user?.username,
       });
 
       if (req.user?.userId) {
@@ -88,6 +90,8 @@ router.delete(
         title: 'An image was removed',
         message:
           'An image on one of your featured flights was removed by a moderator for violating platform guidelines.',
+        issuedByAdminId: req.user?.userId,
+        issuedByAdminUsername: req.user?.username,
       });
 
       if (req.user?.userId) {

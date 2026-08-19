@@ -32,6 +32,7 @@ import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
 import ErrorScreen from '../../components/common/ErrorScreen';
 import Dropdown from '../../components/common/Dropdown';
+import ColorPicker from '../../components/common/ColorPicker';
 import {
   fetchRoles,
   createRole,
@@ -418,39 +419,12 @@ export default function AdminRoles() {
             })}
           </div>
         </div>
-        <div>
-          <span className="block text-xs text-zinc-500 mb-1.5">Color</span>
-          <div className="grid grid-cols-5 gap-2 mb-2">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => setFormColor(color)}
-                className={`h-9 rounded-lg border-2 transition-all ${
-                  formColor === color
-                    ? 'border-white ring-2 ring-white/40'
-                    : 'border-transparent'
-                }`}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              value={formColor}
-              onChange={(e) => setFormColor(e.target.value)}
-              className="h-10 flex-1 rounded-full border-2 border-blue-600 bg-zinc-900 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={formColor}
-              onChange={(e) => setFormColor(e.target.value)}
-              className="w-24 h-10 px-3 rounded-full border-2 border-blue-600 bg-gray-800 text-white text-sm font-mono"
-            />
-          </div>
-        </div>
+        <ColorPicker
+          label="Color"
+          value={formColor}
+          onChange={setFormColor}
+          presets={PRESET_COLORS}
+        />
       </div>
       <AdminTextInput
         label="Priority (higher = more important)"

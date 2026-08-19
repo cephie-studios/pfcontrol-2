@@ -65,6 +65,22 @@ export interface AcarsSettings {
   autoRedirectToAcars: boolean;
 }
 
+export interface ProfileSectionConfig {
+  key: 'stats' | 'featuredFlights';
+  visible: boolean;
+}
+
+export interface ProfileCustomization {
+  accentColor: string | null;
+  backgroundColor: string | null;
+  cardColor: string | null;
+  bannerTintColor: string | null;
+  bannerTintOpacity: number;
+  hiddenRoleIds: number[];
+  hiddenStatIds: string[];
+  sectionOrder: ProfileSectionConfig[];
+}
+
 export interface Settings {
   backgroundImage: BackgroundImageSettings;
   sounds: {
@@ -84,5 +100,7 @@ export interface Settings {
   displayLinkedAccountsOnProfile: boolean;
   hideFromLeaderboard: boolean;
   displayBackgroundOnProfile: boolean;
+  displayBioOnProfile: boolean;
   bio: string;
+  profileCustomization: ProfileCustomization;
 }

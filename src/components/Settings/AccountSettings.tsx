@@ -10,7 +10,6 @@ import {
   ChevronUp,
   Shield,
   AlertTriangle,
-  FileText,
   MessageSquare,
 } from 'lucide-react';
 import { SiRoblox, SiDiscord } from 'react-icons/si';
@@ -109,15 +108,6 @@ export default function AccountSettings({
     }
   };
 
-  const handleBioChange = (bio: string) => {
-    if (!settings) return;
-    const updatedSettings = {
-      ...settings,
-      bio,
-    };
-    onChange(updatedSettings);
-  };
-
   const handleDeleteAccount = async () => {
     setShowDeleteConfirm(false);
     setDeleteInProgress(true);
@@ -196,45 +186,12 @@ export default function AccountSettings({
                 onClick={handleRestartTutorial}
                 variant="outline"
                 size="sm"
-                className="border-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 hover:border-yellow-600 text-xs whitespace-nowrap flex-shrink-0"
+                className="ring-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 text-xs whitespace-nowrap flex-shrink-0"
               >
                 <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Restart</span>
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Bio Section */}
-        <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-          <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                Biography
-              </h4>
-              <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                Add a personal description to your profile (max 500 characters).
-              </p>
-            </div>
-          </div>
-          <textarea
-            value={settings?.bio ?? ''}
-            onChange={(e) => handleBioChange(e.target.value)}
-            placeholder="Tell others about yourself, your aviation interests, or anything you'd like to share..."
-            maxLength={500}
-            rows={6}
-            className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-zinc-900/50 border-2 border-zinc-700 rounded-lg text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          />
-          <div className="flex justify-between items-center mt-2">
-            <p className="text-xs text-zinc-500 line-clamp-1">
-              Your biography is always visible to others on your profile
-            </p>
-            <p className="text-xs text-zinc-400 flex-shrink-0">
-              {(settings?.bio ?? '').length}/500
-            </p>
           </div>
         </div>
 
@@ -262,7 +219,7 @@ export default function AccountSettings({
                 onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
                 variant="outline"
                 size="sm"
-                className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
+                className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
               >
                 {isPrivacyExpanded ? (
                   <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -332,7 +289,7 @@ export default function AccountSettings({
                       onClick={() => setShowRobloxConfirm(true)}
                       variant="outline"
                       size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
+                      className="ring-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 text-xs whitespace-nowrap"
                     >
                       <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Unlink</span>
@@ -394,7 +351,7 @@ export default function AccountSettings({
                       onClick={() => setShowVatsimConfirm(true)}
                       variant="outline"
                       size="sm"
-                      className="border-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 hover:border-red-600 text-xs whitespace-nowrap"
+                      className="ring-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 text-xs whitespace-nowrap"
                     >
                       <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Unlink</span>

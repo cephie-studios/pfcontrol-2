@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { MdNotificationsActive } from 'react-icons/md';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+import { MdNotificationsActive, MdExpandMore } from 'react-icons/md';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPageHeader from '../../components/admin/AdminPageHeader';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import AdminTable from '../../components/admin/AdminTable';
+import AdminToolbar from '../../components/admin/AdminToolbar';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
 import {
   ADMIN_TABLE_HEAD,
   ADMIN_TH,
   ADMIN_TD,
+  adminDownsizeButtonSize,
 } from '../../components/admin/adminConstants';
 import Loader from '../../components/common/Loader';
 import Button from '../../components/common/Button';
@@ -21,6 +24,7 @@ import {
 } from '../../utils/fetch/adminUserAlerts';
 
 const REFRESH_ICON_MIN_SPIN_MS = 500;
+const PAGE_SIZE = 50;
 
 export default function AdminUserAlerts() {
   const { showToast, showError } = useToast();
@@ -28,6 +32,17 @@ export default function AdminUserAlerts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshIconBusy, setRefreshIconBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const btnSize = adminDownsizeButtonSize('sm');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const [recipient, setRecipient] = useState('');
   const [title, setTitle] = useState('');
@@ -36,33 +51,51 @@ export default function AdminUserAlerts() {
 
   const isDiscordId = (s: string) => /^\d{15,20}$/.test(s);
 
-  const load = useCallback(async (opts?: { headerRefresh?: boolean }) => {
-    const showHeaderRefresh = opts?.headerRefresh === true;
-    const spinStartedAt = Date.now();
-    if (showHeaderRefresh) setRefreshIconBusy(true);
-    else setLoading(true);
-    setError(null);
-    try {
-      const { alerts } = await fetchAdminUserAlerts();
-      setAlerts(alerts);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
-    } finally {
-      if (showHeaderRefresh) {
-        const wait = Math.max(
-          0,
-          REFRESH_ICON_MIN_SPIN_MS - (Date.now() - spinStartedAt)
+  const load = useCallback(
+    async (opts?: { headerRefresh?: boolean; page?: number }) => {
+      const showHeaderRefresh = opts?.headerRefresh === true;
+      const targetPage = opts?.page ?? page;
+      const spinStartedAt = Date.now();
+      if (showHeaderRefresh) setRefreshIconBusy(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchAdminUserAlerts(
+          targetPage,
+          PAGE_SIZE,
+          debouncedSearch
         );
-        setTimeout(() => setRefreshIconBusy(false), wait);
-      } else {
-        setLoading(false);
+        setAlerts(data.alerts);
+        setTotalPages(data.pagination.pages);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load');
+      } finally {
+        if (showHeaderRefresh) {
+          const wait = Math.max(
+            0,
+            REFRESH_ICON_MIN_SPIN_MS - (Date.now() - spinStartedAt)
+          );
+          setTimeout(() => setRefreshIconBusy(false), wait);
+        } else {
+          setLoading(false);
+        }
       }
-    }
-  }, []);
+    },
+    [page, debouncedSearch]
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const toggleExpanded = (id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleSend = async () => {
     const target = recipient.trim();
@@ -81,7 +114,8 @@ export default function AdminUserAlerts() {
       setRecipient('');
       setTitle('');
       setMessage('');
-      await load();
+      setPage(1);
+      await load({ page: 1 });
     } catch (e) {
       showError(e instanceof Error ? e.message : 'Failed to send alert');
     } finally {
@@ -141,6 +175,18 @@ export default function AdminUserAlerts() {
         </Button>
       </div>
 
+      <AdminToolbar className="mb-4">
+        <AdminSearchInput
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Search by user, title, or message…"
+          loading={loading && search !== debouncedSearch}
+        />
+      </AdminToolbar>
+
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader />
@@ -152,70 +198,137 @@ export default function AdminUserAlerts() {
           onRetry={() => void load()}
         />
       ) : (
-        <AdminTable minWidth="700px">
-          <thead className={ADMIN_TABLE_HEAD}>
-            <tr>
-              <th className={ADMIN_TH}>User</th>
-              <th className={ADMIN_TH}>Alert</th>
-              <th className={ADMIN_TH}>Status</th>
-              <th className={ADMIN_TH}>Sent</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/80">
-            {alerts.length === 0 ? (
+        <>
+          <AdminTable minWidth="700px">
+            <thead className={ADMIN_TABLE_HEAD}>
               <tr>
-                <td
-                  colSpan={4}
-                  className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
-                >
-                  No alerts sent yet.
-                </td>
+                <th className={ADMIN_TH}>User</th>
+                <th className={ADMIN_TH}>Alert</th>
+                <th className={ADMIN_TH}>Status</th>
+                <th className={ADMIN_TH}>Sent</th>
+                <th className={ADMIN_TH} />
               </tr>
-            ) : (
-              alerts.map((a) => (
-                <tr key={a.id} className="hover:bg-zinc-800/30">
-                  <td className={ADMIN_TD}>
-                    <div className="flex items-center gap-2">
-                      <DeveloperDiscordAvatar
-                        userId={a.user_id}
-                        username={a.username}
-                        avatar={a.avatar}
-                        className="h-7 w-7"
-                      />
-                      <span className="text-sm text-zinc-200">
-                        {a.username}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} max-w-sm`}>
-                    <p className="text-sm text-zinc-200 truncate">
-                      {a.title}
-                    </p>
-                    <p className="text-xs text-zinc-500 line-clamp-1">
-                      {a.message}
-                    </p>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <span
-                      className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${
-                        a.read
-                          ? 'bg-zinc-800 text-zinc-400'
-                          : 'bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35'
-                      }`}
-                    >
-                      {a.read ? 'Read' : 'Unread'}
-                    </span>
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/80">
+              {alerts.length === 0 ? (
+                <tr>
                   <td
-                    className={`${ADMIN_TD} text-xs text-zinc-500 whitespace-nowrap`}
+                    colSpan={5}
+                    className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
                   >
-                    {new Date(a.created_at).toLocaleString()}
+                    {debouncedSearch
+                      ? 'No alerts match your search.'
+                      : 'No alerts sent yet.'}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </AdminTable>
+              ) : (
+                alerts.map((a) => {
+                  const isExpanded = expandedIds.has(a.id);
+                  return (
+                    <Fragment key={a.id}>
+                      <tr className="hover:bg-zinc-800/30">
+                        <td className={ADMIN_TD}>
+                          <div className="flex items-center gap-2">
+                            <DeveloperDiscordAvatar
+                              userId={a.user_id}
+                              username={a.username}
+                              avatar={a.avatar}
+                              className="h-7 w-7"
+                            />
+                            <span className="text-sm text-zinc-200">
+                              {a.username}
+                            </span>
+                          </div>
+                        </td>
+                        <td className={`${ADMIN_TD} max-w-sm`}>
+                          <p className="text-sm text-zinc-200 truncate">
+                            {a.title}
+                          </p>
+                          <p className="text-xs text-zinc-500 line-clamp-1">
+                            {a.message}
+                          </p>
+                        </td>
+                        <td className={ADMIN_TD}>
+                          <span
+                            className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${
+                              a.read
+                                ? 'bg-zinc-800 text-zinc-400'
+                                : 'bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35'
+                            }`}
+                          >
+                            {a.read ? 'Read' : 'Unread'}
+                          </span>
+                        </td>
+                        <td
+                          className={`${ADMIN_TD} text-xs text-zinc-500 whitespace-nowrap`}
+                        >
+                          {new Date(a.created_at).toLocaleString()}
+                        </td>
+                        <td className={`${ADMIN_TD} text-right`}>
+                          <Button
+                            variant="ghost"
+                            size={btnSize}
+                            onClick={() => toggleExpanded(a.id)}
+                            className="p-1 text-zinc-400 hover:text-white"
+                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                            aria-expanded={isExpanded}
+                            title={isExpanded ? 'Collapse' : 'Expand'}
+                          >
+                            <MdExpandMore
+                              size={18}
+                              className={`transition-transform ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </Button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-zinc-950/40">
+                          <td colSpan={5} className={ADMIN_TD}>
+                            <div className="space-y-2 py-1">
+                              <p className="text-xs text-zinc-500">
+                                <span className="text-zinc-600">
+                                  Issued by:
+                                </span>{' '}
+                                {a.issued_by_admin_username ?? 'System'}
+                              </p>
+                              <p className="text-sm text-zinc-200 whitespace-pre-wrap break-words">
+                                {a.message}
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </AdminTable>
+
+          <AdminToolbar className="justify-center mt-4">
+            <Button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              variant="outline"
+              size={btnSize}
+            >
+              Previous
+            </Button>
+            <span className="text-zinc-500 text-sm px-2">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              variant="outline"
+              size={btnSize}
+            >
+              Next
+            </Button>
+          </AdminToolbar>
+        </>
       )}
     </AdminLayout>
   );

@@ -25,6 +25,7 @@ import {
   MdQueryStats,
   MdImage,
   MdNotificationsActive,
+  MdArticle,
 } from 'react-icons/md';
 import type { IconType } from 'react-icons';
 import { useState, useEffect } from 'react';
@@ -196,6 +197,13 @@ export default function AdminSidebar({
           label: 'Featured Flights',
           path: '/admin/featured-flights',
           textColor: 'yellow-400',
+          permission: 'admin',
+        },
+        {
+          icon: MdArticle,
+          label: 'Profile Content',
+          path: '/admin/profile-content',
+          textColor: 'blue-400',
           permission: 'admin',
         },
         {

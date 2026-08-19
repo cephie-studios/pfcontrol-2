@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getUserById } from '../db/users.js';
+import { getUserById, getUserByPlatformToken } from '../db/users.js';
 import { isAdmin } from './admin.js';
 import { Request, Response, NextFunction } from 'express';
 import { JwtPayload } from '../types/JwtPayload.js';
@@ -77,6 +77,37 @@ export async function optionalAuth(
   }
 
   next();
+}
+
+export async function requirePlatformIdentity(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const token = req.cookies.platform_token;
+  if (!token) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const identity = await getUserByPlatformToken(token);
+    if (!identity) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    req.platformIdentity = {
+      userId: identity.id,
+      username: identity.username,
+      discriminator: identity.discriminator ?? '0',
+      avatar: identity.avatar ?? null,
+      isAdmin: isAdmin(identity.id),
+    };
+
+    next();
+  } catch (err) {
+    console.error('Platform identity error:', err);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 }
 
 export default async function requireAuth(

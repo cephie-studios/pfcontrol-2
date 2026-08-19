@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { encrypt, decrypt, hashIp } from '../utils/encryption.js';
 import type { Settings } from './types/Settings.js';
 import { mainDb } from './connection.js';
@@ -5,6 +6,7 @@ import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { getUserRoles } from './roles.js';
+import { containsProfanity, getHateSpeechReason } from '../utils/hateSpeechFilter.js';
 
 export async function invalidateUserCache(userId: string) {
   try {
@@ -405,10 +407,22 @@ export async function createOrUpdateUser(userData: {
     },
     tutorialCompleted: false,
     displayStatsOnProfile: true,
+    displayControllerRatingOnProfile: true,
     displayLinkedAccountsOnProfile: true,
     hideFromLeaderboard: false,
     displayBackgroundOnProfile: true,
+    displayBioOnProfile: true,
     bio: '',
+    profileCustomization: {
+      accentColor: null,
+      backgroundColor: null,
+      cardColor: null,
+      bannerTintColor: null,
+      bannerTintOpacity: 0,
+      hiddenRoleIds: [],
+      hiddenStatIds: [],
+      sectionOrder: [],
+    },
   };
 
   const encryptedAccessToken = encrypt(accessToken);
@@ -459,7 +473,7 @@ export async function createOrUpdateUser(userData: {
   return await getUserById(id);
 }
 
-export async function updateUserSettings(id: string, settings: Settings) {
+export async function updateUserSettings(id: string, settings: Partial<Settings>) {
   const existingUser = await getUserById(id);
   if (!existingUser) {
     throw new Error('User not found');
@@ -468,19 +482,84 @@ export async function updateUserSettings(id: string, settings: Settings) {
   const mergedSettings = { ...existingUser.settings, ...settings };
   const encryptedSettings = encrypt(mergedSettings);
 
+  const updateValues: Record<string, unknown> = {
+    settings: JSON.stringify(encryptedSettings),
+    settings_updated_at: sql`NOW()`,
+    updated_at: sql`NOW()`,
+  };
+
+  if ('bio' in settings && settings.bio !== existingUser.settings?.bio) {
+    const trimmedBio = settings.bio?.trim() || null;
+    const automodFlagged = trimmedBio ? containsProfanity(trimmedBio) : false;
+    updateValues.bio_automod_flagged = automodFlagged;
+    updateValues.bio_automod_reason = automodFlagged
+      ? getHateSpeechReason(trimmedBio!)
+      : null;
+  }
+
   await mainDb
     .updateTable('users')
-    .set({
-      settings: JSON.stringify(encryptedSettings),
-      settings_updated_at: sql`NOW()`,
-      updated_at: sql`NOW()`,
-    })
+    .set(updateValues)
     .where('id', '=', id)
     .execute();
 
   await invalidateUserCache(id);
   await invalidateUsernameCache(existingUser.username);
   return await getUserById(id);
+}
+
+export async function adminClearUserBio(userId: string) {
+  return updateUserSettings(userId, { bio: '' });
+}
+
+export async function getUsersWithProfileContentForAdmin() {
+  const rows = await mainDb
+    .selectFrom('users')
+    .select([
+      'id',
+      'username',
+      'avatar',
+      'settings',
+      'bio_automod_flagged',
+      'bio_automod_reason',
+    ])
+    .execute();
+
+  const results: Array<{
+    userId: string;
+    username: string;
+    avatar: string | null;
+    bio: string;
+    bioAutomodFlagged: boolean;
+    bioAutomodReason: string | null;
+  }> = [];
+
+  for (const row of rows) {
+    let settings: Settings | null = null;
+    try {
+      const raw =
+        typeof row.settings === 'string'
+          ? JSON.parse(row.settings)
+          : row.settings;
+      settings = raw ? decrypt(raw) : null;
+    } catch {
+      continue;
+    }
+
+    const bio = (settings?.bio ?? '').trim();
+    if (!bio) continue;
+
+    results.push({
+      userId: row.id,
+      username: row.username,
+      avatar: row.avatar ?? null,
+      bio,
+      bioAutomodFlagged: Boolean(row.bio_automod_flagged),
+      bioAutomodReason: row.bio_automod_reason ?? null,
+    });
+  }
+
+  return results;
 }
 
 export async function addSessionToUser(
@@ -713,6 +792,38 @@ export async function setUserVpnFlag(userId: string, isVpn: boolean) {
 
   await invalidateUserCache(userId);
   await invalidateUsernameCache(user.username);
+}
+
+export async function ensureUserPlatformToken(userId: string): Promise<string> {
+  const candidate = crypto.randomBytes(32).toString('hex');
+
+  const result = await sql<{ platform_token: string }>`
+    UPDATE users
+    SET platform_token = COALESCE(platform_token, ${candidate})
+    WHERE id = ${userId}
+    RETURNING platform_token
+  `.execute(mainDb);
+
+  const token = result.rows[0]?.platform_token;
+  if (!token) {
+    throw new Error('Failed to assign platform token');
+  }
+
+  await invalidateUserCache(userId);
+  return token;
+}
+
+/**
+ * Lean lookup for the platform-identity endpoint — deliberately not the
+ * full-fat getUserById pattern (no cache, no decrypt, no joins), since this
+ * only ever needs to answer "who is this."
+ */
+export async function getUserByPlatformToken(token: string) {
+  return mainDb
+    .selectFrom('users')
+    .select(['id', 'username', 'discriminator', 'avatar'])
+    .where('platform_token', '=', token)
+    .executeTakeFirst();
 }
 
 export async function deleteUser(userId: string) {

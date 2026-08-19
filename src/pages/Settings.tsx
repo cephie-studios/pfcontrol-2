@@ -462,7 +462,7 @@ export default function Settings() {
                 variant="outline"
                 size="sm"
                 disabled={saving}
-                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
+                className="flex-1 sm:flex-none text-xs ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
               >
                 Discard
               </Button>
@@ -509,7 +509,7 @@ export default function Settings() {
                 onClick={() => setShowDiscardToast(false)}
                 variant="outline"
                 size="sm"
-                className="flex-1 sm:flex-none text-xs border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
+                className="flex-1 sm:flex-none text-xs ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -542,7 +542,7 @@ export default function Settings() {
               }}
               variant="outline"
               size="sm"
-              className="border-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 hover:border-yellow-600"
+              className="ring-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Restart Tutorial

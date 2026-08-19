@@ -1077,3 +1077,47 @@ export async function ensureControllerRatingsModerationColumns() {
     ADD COLUMN IF NOT EXISTS automod_reason text
   `.execute(mainDb);
 }
+
+export async function ensureUserBioModerationColumns() {
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS bio_automod_flagged boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS bio_automod_reason text
+  `.execute(mainDb);
+}
+
+export async function ensureUserNotificationsIssuerColumns() {
+  await sql`
+    ALTER TABLE user_notifications
+    ADD COLUMN IF NOT EXISTS issued_by_admin_id varchar(255)
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE user_notifications
+    ADD COLUMN IF NOT EXISTS issued_by_admin_username varchar(255)
+  `.execute(mainDb);
+}
+
+export async function ensureUserNotificationsCreatedAtDefault() {
+  await sql`
+    ALTER TABLE user_notifications
+    ALTER COLUMN created_at SET DEFAULT now()
+  `.execute(mainDb);
+}
+
+export async function ensurePlatformTokenColumn() {
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS platform_token text
+  `.execute(mainDb);
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_platform_token
+    ON users (platform_token)
+    WHERE platform_token IS NOT NULL
+  `.execute(mainDb);
+}

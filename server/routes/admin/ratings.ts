@@ -70,6 +70,8 @@ router.patch(
         title: 'Report reviewed',
         message:
           'A report you submitted on a feedback comment has been reviewed and resolved.',
+        issuedByAdminId: req.user?.userId,
+        issuedByAdminUsername: req.user?.username,
       });
 
       if (req.user?.userId) {
@@ -151,6 +153,8 @@ router.delete('/:id', requirePermission('admin'), async (req, res) => {
         type: 'moderation',
         title: 'Feedback removed',
         message: controllerMessage,
+        issuedByAdminId: req.user?.userId,
+        issuedByAdminUsername: req.user?.username,
       });
       void createUserNotification({
         userId: rating.pilot_id,
@@ -158,6 +162,8 @@ router.delete('/:id', requirePermission('admin'), async (req, res) => {
         title: 'Feedback removed',
         message:
           'Feedback you submitted was removed by a moderator. It might have violated our policies. Contact support for more information.',
+        issuedByAdminId: req.user?.userId,
+        issuedByAdminUsername: req.user?.username,
       });
     }
 

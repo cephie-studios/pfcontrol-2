@@ -76,7 +76,18 @@ const defaultSettings: Settings = {
   displayControllerRatingOnProfile: true,
   hideFromLeaderboard: false,
   displayBackgroundOnProfile: true,
+  displayBioOnProfile: true,
   bio: '',
+  profileCustomization: {
+    accentColor: null,
+    backgroundColor: null,
+    cardColor: null,
+    bannerTintColor: null,
+    bannerTintOpacity: 0,
+    hiddenRoleIds: [],
+    hiddenStatIds: [],
+    sectionOrder: [],
+  },
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -117,6 +128,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         acars: {
           ...defaultSettings.acars,
           ...userSettings.acars,
+        },
+        profileCustomization: {
+          ...defaultSettings.profileCustomization,
+          ...userSettings.profileCustomization,
         },
       };
 

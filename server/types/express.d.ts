@@ -4,6 +4,13 @@ declare global {
   namespace Express {
     interface Request {
       user?: JwtPayloadClient;
+      platformIdentity?: {
+        userId: string;
+        username: string;
+        discriminator: string;
+        avatar: string | null;
+        isAdmin: boolean;
+      };
       developerExt?: {
         keyId: string;
         userId: string;

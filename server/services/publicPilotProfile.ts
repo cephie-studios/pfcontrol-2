@@ -5,6 +5,11 @@ import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
 import { getFeaturedFlightsByUser } from '../db/flights.js';
 
+export interface ProfileSectionConfig {
+  key: 'stats' | 'featuredFlights';
+  visible: boolean;
+}
+
 export interface PublicPilotProfile {
   user: {
     id: string;
@@ -34,17 +39,47 @@ export interface PublicPilotProfile {
     background_image: unknown;
   };
   privacySettings: {
-    displayControllerStatsOnProfile: boolean;
-    displayPilotStatsOnProfile: boolean;
     displayControllerRatingOnProfile: boolean;
     displayLinkedAccountsOnProfile: boolean;
     displayBackgroundOnProfile: boolean;
+    displayBioOnProfile: boolean;
+  };
+  profileCustomization: {
+    accentColor: string | null;
+    backgroundColor: string | null;
+    cardColor: string | null;
+    bannerTintColor: string | null;
+    bannerTintOpacity: number;
+    hiddenRoleIds: number[];
+    hiddenStatIds: string[];
+    sectionOrder: ProfileSectionConfig[];
   };
   featuredFlights: unknown[];
 }
 
+const KNOWN_SECTION_KEYS: ProfileSectionConfig['key'][] = ['stats', 'featuredFlights'];
+
+function resolveSectionOrder(
+  settings: Record<string, unknown> | undefined | null
+): ProfileSectionConfig[] {
+  const stored = (
+    settings?.profileCustomization as { sectionOrder?: unknown } | undefined
+  )?.sectionOrder;
+  if (Array.isArray(stored)) {
+    const known = (stored as ProfileSectionConfig[]).filter((s) =>
+      KNOWN_SECTION_KEYS.includes(s?.key)
+    );
+    if (known.length > 0) return known;
+  }
+  return [
+    { key: 'stats', visible: (settings?.displayStatsOnProfile as boolean) ?? true },
+    { key: 'featuredFlights', visible: true },
+  ];
+}
+
 export async function getPublicPilotProfile(
-  username: string | undefined
+  username: string | undefined,
+  viewerId?: string
 ): Promise<PublicPilotProfile | null> {
   if (!username) return null;
 
@@ -57,6 +92,8 @@ export async function getPublicPilotProfile(
   if (!userResult && userData) {
     userResult = userData;
   }
+
+  const isOwner = !!viewerId && viewerId === userResult.id;
 
 
   const rolesResult = await mainDb
@@ -85,30 +122,41 @@ export async function getPublicPilotProfile(
   }));
 
   const privacySettings = {
-    displayControllerStatsOnProfile:
-      userResult.settings?.displayControllerStatsOnProfile ?? true,
-    displayPilotStatsOnProfile:
-      userResult.settings?.displayPilotStatsOnProfile ?? true,
     displayControllerRatingOnProfile:
       userResult.settings?.displayControllerRatingOnProfile ?? true,
     displayLinkedAccountsOnProfile:
       userResult.settings?.displayLinkedAccountsOnProfile ?? true,
     displayBackgroundOnProfile:
       userResult.settings?.displayBackgroundOnProfile ?? true,
+    displayBioOnProfile: userResult.settings?.displayBioOnProfile ?? true,
   };
 
-  const shouldIncludeStats = privacySettings.displayPilotStatsOnProfile;
+  const resolvedSectionOrder = resolveSectionOrder(userResult.settings);
+  const shouldIncludeStats =
+    isOwner ||
+    (resolvedSectionOrder.find((s) => s.key === 'stats')?.visible ?? true);
+  const shouldIncludeFeaturedFlights =
+    isOwner ||
+    (resolvedSectionOrder.find((s) => s.key === 'featuredFlights')?.visible ??
+      true);
   const shouldIncludeLinkedAccounts =
-    privacySettings.displayLinkedAccountsOnProfile;
-  const shouldIncludeBackground = privacySettings.displayBackgroundOnProfile;
-  const shouldIncludeRating = privacySettings.displayControllerRatingOnProfile;
+    isOwner || privacySettings.displayLinkedAccountsOnProfile;
+  const shouldIncludeBackground =
+    isOwner || privacySettings.displayBackgroundOnProfile;
+  const shouldIncludeRating =
+    isOwner || privacySettings.displayControllerRatingOnProfile;
+  const shouldIncludeBio = isOwner || privacySettings.displayBioOnProfile;
 
   let ratingStats = null;
   if (shouldIncludeRating) {
     ratingStats = await getControllerRatingStats(userResult.id);
   }
 
-  const featuredFlights = await getFeaturedFlightsByUser(userResult.id);
+  const featuredFlights = shouldIncludeFeaturedFlights
+    ? await getFeaturedFlightsByUser(userResult.id)
+    : [];
+
+  const customization = userResult.settings?.profileCustomization ?? {};
 
   return {
     user: {
@@ -134,7 +182,7 @@ export async function getPublicPilotProfile(
       roles,
       role_name: roles[0]?.name || null,
       role_description: roles[0]?.description ?? null,
-      bio: userResult.settings?.bio ?? '',
+      bio: shouldIncludeBio ? userResult.settings?.bio ?? '' : '',
       statistics: shouldIncludeStats ? userResult.statistics || {} : {},
       rating: ratingStats,
       background_image: shouldIncludeBackground
@@ -142,6 +190,16 @@ export async function getPublicPilotProfile(
         : null,
     },
     privacySettings,
+    profileCustomization: {
+      accentColor: customization.accentColor ?? null,
+      backgroundColor: customization.backgroundColor ?? null,
+      cardColor: customization.cardColor ?? null,
+      bannerTintColor: customization.bannerTintColor ?? null,
+      bannerTintOpacity: customization.bannerTintOpacity ?? 0,
+      hiddenRoleIds: customization.hiddenRoleIds ?? [],
+      hiddenStatIds: customization.hiddenStatIds ?? [],
+      sectionOrder: resolvedSectionOrder,
+    },
     featuredFlights,
   };
 }

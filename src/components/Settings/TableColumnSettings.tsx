@@ -119,7 +119,7 @@ export default function TableColumnSettings({
               onClick={onReset}
               variant="outline"
               size="sm"
-              className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 hidden sm:flex"
+              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 hidden sm:flex"
             >
               <RotateCcw className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Reset</span>
@@ -128,7 +128,7 @@ export default function TableColumnSettings({
               onClick={onReset}
               variant="outline"
               size="sm"
-              className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 sm:hidden p-2"
+              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 sm:hidden p-2"
             >
               <RotateCcw className="h-4 w-4" />
             </Button>
@@ -136,7 +136,7 @@ export default function TableColumnSettings({
               onClick={() => setIsExpanded(!isExpanded)}
               variant="outline"
               size="sm"
-              className="border-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2"
+              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2"
             >
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4" />

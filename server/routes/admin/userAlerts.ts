@@ -10,11 +10,17 @@ import {
 
 const router = express.Router();
 
-// GET: /api/admin/user-alerts - Every alert ever sent, newest first
-router.get('/', requirePermission('admin'), async (_req, res) => {
+// GET: /api/admin/user-alerts - Every alert ever sent, newest first, paginated
+router.get('/', requirePermission('admin'), async (req, res) => {
   try {
-    const alerts = await getAllUserNotificationsForAdmin();
-    res.json({ alerts });
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.max(
+      1,
+      Math.min(100, parseInt(req.query.limit as string, 10) || 50)
+    );
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const result = await getAllUserNotificationsForAdmin(page, limit, search);
+    res.json(result);
   } catch (error) {
     console.error('Error fetching user alerts:', error);
     res.status(500).json({ error: 'Failed to fetch alerts' });
@@ -52,6 +58,8 @@ router.post('/', requirePermission('admin'), async (req, res) => {
       type: typeof type === 'string' && type.trim() ? type.trim() : 'alert',
       title: title.trim(),
       message: message.trim(),
+      issuedByAdminId: req.user?.userId,
+      issuedByAdminUsername: req.user?.username,
     });
 
     if (req.user?.userId) {
