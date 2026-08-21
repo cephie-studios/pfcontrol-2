@@ -53,13 +53,8 @@ export default function AcarsTerminal({
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant="outline"
-            onClick={pdcRequested ? undefined : handleRequestPDC}
-            className={`text-left py-2 px-3 transition-colors items-start rounded-xl border-[0.5px] ${
-              pdcRequested
-                ? 'bg-purple-600/20 border-purple-500 text-purple-200 hover:bg-purple-600/20 hover:border-purple-500 hover:text-purple-200 pointer-events-none'
-                : 'text-purple-600 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border-purple-700 hover:bg-none hover:from-purple-800/90 hover:to-purple-800/90 hover:bg-purple-800/90 hover:border-purple-600 hover:text-purple-200'
-            }`}
+            variant="primary"
+            onClick={handleRequestPDC}
             disabled={pdcRequested}
           >
             {pdcRequested ? 'PDC REQUESTED' : 'REQUEST PDC'}

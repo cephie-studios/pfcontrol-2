@@ -44,6 +44,9 @@ const VATSIM_CLIENT_SECRET = process.env.VATSIM_CLIENT_SECRET ?? '';
 const VATSIM_REDIRECT_URI = process.env.VATSIM_REDIRECT_URI ?? '';
 const VATSIM_AUTH_BASE = process.env.VATSIM_AUTH_BASE ?? '';
 
+const BIO_MAX_LENGTH = 300;
+const BIO_MAX_LINES = 5;
+
 const platformTokenCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -892,6 +895,23 @@ router.put('/me', requireAuth, async (req, res) => {
     const { settings } = req.body;
     if (!settings || typeof settings !== 'object') {
       return res.status(400).json({ error: 'Invalid settings payload' });
+    }
+
+    if ('bio' in settings) {
+      if (typeof settings.bio !== 'string') {
+        return res.status(400).json({ error: 'Bio must be a string' });
+      }
+      if (settings.bio.length > BIO_MAX_LENGTH) {
+        return res.status(400).json({
+          error: `Bio must be ${BIO_MAX_LENGTH} characters or fewer`,
+        });
+      }
+      const newlineCount = (settings.bio.match(/\n/g) || []).length;
+      if (newlineCount > BIO_MAX_LINES - 1) {
+        return res.status(400).json({
+          error: `Bio can have at most ${BIO_MAX_LINES} lines`,
+        });
+      }
     }
 
     const updatedUser = await updateUserSettings(req.user.userId, settings);

@@ -58,6 +58,42 @@ function fuzzyMatchesBadWord(word: string): boolean {
   return false;
 }
 
+const SUBSTRING_MATCH_WORDS = [
+  'fuck',
+  'shit',
+  'bitch',
+  'cunt',
+  'nigger',
+  'nigga',
+  'faggot',
+  'retard',
+  'whore',
+  'slut',
+];
+
+const SUBSTRING_SAFE_WORDS = [
+  'niggardly',
+  'niggard',
+  'niggarded',
+  'niggarding',
+  'niggardliness',
+  'niggardness',
+  'scunthorpe',
+  'shitake',
+  'retardant',
+  'retardants',
+  'retardation',
+  'retardations',
+];
+
+function hasSubstringMatch(raw: string): boolean {
+  let cleaned = raw;
+  for (const safe of SUBSTRING_SAFE_WORDS) {
+    cleaned = cleaned.split(safe).join(' ');
+  }
+  return SUBSTRING_MATCH_WORDS.some((bad) => cleaned.includes(bad));
+}
+
 export function containsProfanity(message: string): boolean {
   if (!message || typeof message !== 'string') return false;
 
@@ -75,6 +111,8 @@ export function containsProfanity(message: string): boolean {
     // ignore
   }
 
+  if (hasSubstringMatch(raw)) return true;
+
   const words = raw
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
@@ -89,6 +127,15 @@ export function containsProfanity(message: string): boolean {
 
 export function containsHateSpeech(message: string): boolean {
   return containsProfanity(message);
+}
+
+
+const BIO_BLACKLISTED_LINK_DOMAINS = ['discord.com', 'discord.gg', 'discordapp.com', 'discord.app'];
+
+export function containsBlacklistedBioLink(message: string): boolean {
+  if (!message || typeof message !== 'string') return false;
+  const lower = message.toLowerCase();
+  return BIO_BLACKLISTED_LINK_DOMAINS.some((domain) => lower.includes(domain));
 }
 
 export function getHateSpeechReason(message: string): string {

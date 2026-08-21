@@ -686,7 +686,7 @@ export default function AdminRatings() {
                                   variant="outline"
                                   size="xs"
                                   onClick={() => handleDismissReport(item.id)}
-                                  className="text-green-400 border-green-700/50 hover:bg-none hover:bg-green-900/20 hover:border-green-600"
+                                  className="text-green-400 ring-green-700/50 hover:bg-none hover:bg-green-900/20"
                                 >
                                   Dismiss report
                                 </Button>
@@ -704,7 +704,7 @@ export default function AdminRatings() {
                                   variant="outline"
                                   size="xs"
                                   onClick={() => handleDismissAutomod(item.id)}
-                                  className="text-green-400 border-green-700/50 hover:bg-none hover:bg-green-900/20 hover:border-green-600"
+                                  className="text-green-400 ring-green-700/50 hover:bg-none hover:bg-green-900/20"
                                 >
                                   Dismiss automod flag
                                 </Button>
@@ -720,7 +720,7 @@ export default function AdminRatings() {
                                   item.pilot_username ?? ''
                                 )}`)
                               }
-                              className="text-zinc-300 border-zinc-600 hover:bg-none hover:bg-zinc-800"
+                              className="text-zinc-300 ring-zinc-600 hover:bg-none hover:bg-zinc-800"
                             >
                               Moderate pilot
                             </Button>

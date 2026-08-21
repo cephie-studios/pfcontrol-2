@@ -6,7 +6,11 @@ import { sql } from 'kysely';
 import { redisConnection } from './connection.js';
 import { incrementStat } from '../utils/statisticsCache.js';
 import { getUserRoles } from './roles.js';
-import { containsProfanity, getHateSpeechReason } from '../utils/hateSpeechFilter.js';
+import {
+  containsProfanity,
+  containsBlacklistedBioLink,
+  getHateSpeechReason,
+} from '../utils/hateSpeechFilter.js';
 
 export async function invalidateUserCache(userId: string) {
   try {
@@ -490,10 +494,17 @@ export async function updateUserSettings(id: string, settings: Partial<Settings>
 
   if ('bio' in settings && settings.bio !== existingUser.settings?.bio) {
     const trimmedBio = settings.bio?.trim() || null;
-    const automodFlagged = trimmedBio ? containsProfanity(trimmedBio) : false;
+    const hasBlacklistedLink = trimmedBio
+      ? containsBlacklistedBioLink(trimmedBio)
+      : false;
+    const automodFlagged = trimmedBio
+      ? containsProfanity(trimmedBio) || hasBlacklistedLink
+      : false;
     updateValues.bio_automod_flagged = automodFlagged;
     updateValues.bio_automod_reason = automodFlagged
-      ? getHateSpeechReason(trimmedBio!)
+      ? hasBlacklistedLink
+        ? 'Blacklisted link detected'
+        : getHateSpeechReason(trimmedBio!)
       : null;
   }
 

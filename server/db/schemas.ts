@@ -1121,3 +1121,32 @@ export async function ensurePlatformTokenColumn() {
     WHERE platform_token IS NOT NULL
   `.execute(mainDb);
 }
+
+export async function ensureFlightLogsTrigramIndexes() {
+  await sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flight_logs_username_trgm
+    ON flight_logs USING gin (username gin_trgm_ops)
+  `.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flight_logs_flight_id_trgm
+    ON flight_logs USING gin (flight_id gin_trgm_ops)
+  `.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flight_logs_user_id_trgm
+    ON flight_logs USING gin (user_id gin_trgm_ops)
+  `.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flight_logs_old_data_trgm
+    ON flight_logs USING gin ((old_data::text) gin_trgm_ops)
+  `.execute(mainDb);
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_flight_logs_new_data_trgm
+    ON flight_logs USING gin ((new_data::text) gin_trgm_ops)
+  `.execute(mainDb);
+}
