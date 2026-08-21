@@ -33,6 +33,8 @@ import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import Modal from '../components/common/Modal';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 
+const PDC_REQUESTED_KEY_PREFIX = 'pdc_requested_';
+
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
     sessionId: string;
@@ -52,7 +54,12 @@ export default function ACARS() {
   const [activeSessions, setActiveSessions] = useState<OverviewSession[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isAuthError, setIsAuthError] = useState(false);
-  const [pdcRequested, setPdcRequested] = useState(false);
+  const [pdcRequested, setPdcRequested] = useState(() =>
+    flightId
+      ? localStorage.getItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`) ===
+        'true'
+      : false
+  );
   const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
   const [selectedChart, setSelectedChart] = useState<string | null>(null);
@@ -335,6 +342,20 @@ NOTES:
       type: 'system',
     };
     const initialMessages = [warningMsg, detailsMsg, successMsg];
+    if (
+      flightId &&
+      localStorage.getItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`) ===
+        'true'
+    ) {
+      const pdcRequestMsg: AcarsMessage = {
+        id: `${Date.now()}-pdc-request-restored`,
+        timestamp: new Date().toISOString(),
+        station: 'SYSTEM',
+        text: 'PDC REQUEST SENT TO CONTROLLERS',
+        type: 'Success',
+      };
+      initialMessages.push(pdcRequestMsg);
+    }
     if (flight.pdc_remarks) {
       const pdcMsg: AcarsMessage = {
         id: `${Date.now()}-pdc-existing`,
@@ -348,7 +369,7 @@ NOTES:
     setMessages(initialMessages);
     if (settings) playNotificationSound('warning', settings);
     initializedRef.current = true;
-  }, [flight, dataLoading, airlines, airports, settings]);
+  }, [flight, dataLoading, airlines, airports, settings, flightId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -463,6 +484,9 @@ NOTES:
     };
     setMessages((prev) => [...prev, confirmMsg]);
     if (settings) playNotificationSound('system', settings);
+    if (flightId) {
+      localStorage.setItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`, 'true');
+    }
     setPdcRequested(true);
   };
 

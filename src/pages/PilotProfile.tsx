@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import {
   User,
@@ -38,6 +38,12 @@ import { useAuth } from '../hooks/auth/useAuth';
 import { useToast } from '../hooks/useToast';
 import { fetchBackgrounds, fetchUserRanks } from '../utils/fetch/data';
 import { updateUserSettings } from '../utils/fetch/settings';
+import {
+  containsProfanity,
+  containsHateSpeech,
+  containsBlacklistedBioLink,
+} from '../utils/hateSpeechFilter';
+import { linkifyBio } from '../utils/linkify';
 import { useData } from '../hooks/data/useData';
 import {
   hexToRgba,
@@ -62,6 +68,9 @@ const DEFAULT_SECTION_ORDER: ProfileSectionConfig[] = [
   { key: 'stats', visible: true },
   { key: 'featuredFlights', visible: true },
 ];
+
+const BIO_MAX_LENGTH = 300;
+const BIO_MAX_LINES = 5;
 
 const DEFAULT_ACCENT_COLOR = '#2563EB';
 const DEFAULT_BACKGROUND_COLOR = '#09090B';
@@ -357,6 +366,14 @@ export default function PilotProfile({
   const isCurrentUser = !!(user && profile && profile.user.id === user.userId);
   const isOwnerEditing = isCurrentUser && isEditing;
   const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
+
+  const bioHasContentViolation = useMemo(
+    () =>
+      containsProfanity(draft.bio) ||
+      containsHateSpeech(draft.bio) ||
+      containsBlacklistedBioLink(draft.bio),
+    [draft.bio]
+  );
 
   const resizeBioTextarea = useCallback(() => {
     const el = bioTextareaRef.current;
@@ -1162,14 +1179,28 @@ export default function PilotProfile({
                             <textarea
                               ref={bioTextareaRef}
                               value={draft.bio}
-                              onChange={(e) =>
-                                setDraft((d) => ({ ...d, bio: e.target.value }))
-                              }
-                              maxLength={500}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const newlineCount = (value.match(/\n/g) || [])
+                                  .length;
+                                if (newlineCount > BIO_MAX_LINES - 1) return;
+                                setDraft((d) => ({ ...d, bio: value }));
+                              }}
+                              maxLength={BIO_MAX_LENGTH}
                               rows={1}
                               placeholder="Add a bio..."
-                              className="w-full bg-transparent text-zinc-300 text-sm leading-relaxed resize-none focus:outline-none placeholder-zinc-500 rounded-xl border-2 border-dashed border-zinc-700 focus:border-zinc-400 p-3 transition-colors"
+                              className={`w-full bg-transparent text-zinc-300 text-sm leading-relaxed resize-none focus:outline-none placeholder-zinc-500 rounded-xl border-2 border-dashed p-3 transition-colors ${
+                                bioHasContentViolation
+                                  ? 'border-red-500 focus:border-red-500'
+                                  : 'border-zinc-700 focus:border-zinc-400'
+                              }`}
                             />
+                            {bioHasContentViolation && (
+                              <p className="text-xs text-red-500 mt-1.5">
+                                This bio violates our guidelines and may be
+                                flagged for review
+                              </p>
+                            )}
                             <div className="flex items-center gap-3 mt-1.5">
                               <button
                                 type="button"
@@ -1188,14 +1219,23 @@ export default function PilotProfile({
                                 )}
                                 Bio {draft.displayBioOnProfile ? 'visible' : 'hidden'}
                               </button>
-                              <span className="text-xs text-zinc-600">
-                                {draft.bio.length}/500
+                              <span
+                                className={`text-xs ${
+                                  draft.bio.split('\n').length >= BIO_MAX_LINES
+                                    ? 'text-amber-500'
+                                    : 'text-zinc-600'
+                                }`}
+                              >
+                                {draft.bio.length}/{BIO_MAX_LENGTH} ·{' '}
+                                {draft.bio.split('\n').length}/{BIO_MAX_LINES}{' '}
+                                lines
                               </span>
                             </div>
                           </div>
                         ) : (
-                          <p className="flex-1 max-w-xl text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">
-                            {effectiveBio}
+                          // line-clamp-5 must match BIO_MAX_LINES
+                          <p className="flex-1 max-w-xl text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap break-words line-clamp-5">
+                            {linkifyBio(effectiveBio)}
                           </p>
                         )}
                       </div>

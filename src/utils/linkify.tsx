@@ -23,3 +23,26 @@ export function linkify(text: string): React.ReactNode {
     return <React.Fragment key={index}>{part}</React.Fragment>;
   });
 }
+
+export function linkifyBio(text: string): React.ReactNode {
+  const urlRegex = /(https:\/\/[^\s]+\.[^\s]+?)(?=[.,;:!?)}\]]*(?:\s|$))/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:opacity-70 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
+}

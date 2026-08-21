@@ -22,6 +22,7 @@ import {
   ensurePlatformTokenColumn,
   ensureUserNotificationsIssuerColumns,
   ensureUserNotificationsCreatedAtDefault,
+  ensureFlightLogsTrigramIndexes,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -96,6 +97,7 @@ try {
   await ensurePlatformTokenColumn();
   await ensureUserNotificationsIssuerColumns();
   await ensureUserNotificationsCreatedAtDefault();
+  await ensureFlightLogsTrigramIndexes();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {
