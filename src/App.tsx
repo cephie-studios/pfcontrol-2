@@ -26,6 +26,8 @@ import Loader from './components/common/Loader';
 import AppOverlays from './components/AppOverlays';
 import PostHogPageView from './components/PostHogPageView';
 
+const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
+
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminAudit = lazy(() => import('./pages/admin/AdminAudit'));
@@ -83,6 +85,20 @@ export default function App() {
           <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
           <Route path="flight/:flightId" element={<PublicFlightView />} />
           <Route path="/user/:username" element={<PilotProfile />} />
+          <Route
+            path="/howtousepfcontrol"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                    <Loader />
+                  </div>
+                }
+              >
+                <HowToUsePFControl />
+              </Suspense>
+            }
+          />
 
           <Route
             path="/create"

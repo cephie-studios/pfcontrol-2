@@ -121,10 +121,90 @@ async function loadUserProfileSitemapUrls() {
   }
 }
 
+async function loadFeaturedFlightSitemapUrls() {
+  const fromEnv =
+    rootSitemapEnv.SITEMAP_FLIGHT_IDS ?? process.env.SITEMAP_FLIGHT_IDS ?? '';
+  if (fromEnv.trim()) {
+    const urls = [];
+    for (const part of fromEnv.split(/[,\n]/)) {
+      const id = part.trim();
+      if (id) urls.push(`${SITE}/flight/${encodeURIComponent(id)}`);
+    }
+    if (urls.length) return urls;
+  }
+
+  const flightListUrl =
+    rootSitemapEnv.SITEMAP_FLIGHT_LIST_URL ??
+    process.env.SITEMAP_FLIGHT_LIST_URL ??
+    '';
+  if (flightListUrl.trim()) {
+    try {
+      const res = await fetch(flightListUrl.trim());
+      if (res.ok) {
+        const data = await res.json();
+        const ids = Array.isArray(data.ids) ? data.ids : [];
+        if (ids.length) {
+          return ids.map(
+            (id) => `${SITE}/flight/${encodeURIComponent(String(id))}`
+          );
+        }
+      }
+    } catch (e) {
+      console.warn(
+        '[@astrojs/sitemap] SITEMAP_FLIGHT_LIST_URL fetch failed:',
+        e instanceof Error ? e.message : e
+      );
+    }
+  }
+
+  const dbUrl =
+    rootSitemapEnv.POSTGRES_DB_URL ?? process.env.POSTGRES_DB_URL ?? '';
+  if (!dbUrl) {
+    return [];
+  }
+
+  const sitemapModulePath = fileURLToPath(
+    new URL('../server/dist/db/sitemapFlights.js', import.meta.url)
+  );
+  if (!existsSync(sitemapModulePath)) {
+    console.warn(
+      '[@astrojs/sitemap] No /flight/* URLs: run `npm run build:server` before `astro build`, or set SITEMAP_FLIGHT_LIST_URL / SITEMAP_FLIGHT_IDS.'
+    );
+    return [];
+  }
+
+  try {
+    const mod = await import(pathToFileURL(sitemapModulePath).href);
+    const ids = await mod.querySitemapFeaturedFlightIds(dbUrl);
+    return ids.map((id) => `${SITE}/flight/${encodeURIComponent(String(id))}`);
+  } catch (e) {
+    const code =
+      typeof e === 'object' && e !== null && 'code' in e ? e.code : undefined;
+    if (
+      code !== 'ECONNREFUSED' &&
+      code !== 'ENOTFOUND' &&
+      code !== 'ETIMEDOUT'
+    ) {
+      console.warn(
+        '[@astrojs/sitemap] Skipping /flight/* URLs:',
+        e instanceof Error ? e.message : e
+      );
+    }
+    return [];
+  }
+}
+
 const profileSitemapUrls = await loadUserProfileSitemapUrls();
 const allowedUserProfileUrls = new Set(profileSitemapUrls);
 
-const customPages = [...STATIC_APP_SITEMAP_URLS, ...profileSitemapUrls];
+const featuredFlightSitemapUrls = await loadFeaturedFlightSitemapUrls();
+const allowedFlightUrls = new Set(featuredFlightSitemapUrls);
+
+const customPages = [
+  ...STATIC_APP_SITEMAP_URLS,
+  ...profileSitemapUrls,
+  ...featuredFlightSitemapUrls,
+];
 
 export default defineConfig({
   site: SITE,
@@ -137,14 +217,23 @@ export default defineConfig({
       filter: (page) => {
         try {
           const pathname = new URL(page).pathname.replace(/\/$/, '') || '/';
-          if (!pathname.startsWith('/user/')) return true;
           const base = `${SITE}${pathname}`;
           const withSlash = `${base}/`;
-          return (
-            allowedUserProfileUrls.has(base) ||
-            allowedUserProfileUrls.has(withSlash) ||
-            allowedUserProfileUrls.has(page)
-          );
+          if (pathname.startsWith('/user/')) {
+            return (
+              allowedUserProfileUrls.has(base) ||
+              allowedUserProfileUrls.has(withSlash) ||
+              allowedUserProfileUrls.has(page)
+            );
+          }
+          if (pathname.startsWith('/flight/')) {
+            return (
+              allowedFlightUrls.has(base) ||
+              allowedFlightUrls.has(withSlash) ||
+              allowedFlightUrls.has(page)
+            );
+          }
+          return true;
         } catch {
           return true;
         }

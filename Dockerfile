@@ -21,6 +21,13 @@ COPY . .
 # Copy frontend env for Vite build
 COPY .env.vite.production .env.production
 
+# Points the sitemap generator (astro.config.mjs) at this environment's own
+# live profile-list endpoint at build time.
+ARG SITEMAP_PROFILE_LIST_URL=https://pfcontrol.com/api/seo/sitemap-profiles
+ENV SITEMAP_PROFILE_LIST_URL=${SITEMAP_PROFILE_LIST_URL}
+ARG SITEMAP_FLIGHT_LIST_URL=https://pfcontrol.com/api/seo/sitemap-flights
+ENV SITEMAP_FLIGHT_LIST_URL=${SITEMAP_FLIGHT_LIST_URL}
+
 # Build the backend (TypeScript compilation)
 RUN npm run build:server
 

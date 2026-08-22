@@ -248,6 +248,10 @@ export default function Footer() {
             >
               PFATC
             </a>
+            {' · '}
+            <a href="/howToUsePFControl" className="text-gray-500 hover:text-gray-400 underline">
+              Guide
+            </a>
           </div>
 
           <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-end gap-4 w-full">

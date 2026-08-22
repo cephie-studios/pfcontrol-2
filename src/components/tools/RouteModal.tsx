@@ -113,8 +113,8 @@ export default function RouteModal({
     mapDebounceRef.current = setTimeout(() => setMapRoute(value), 600);
   };
 
-  const handleGripMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handleGripPointerDown = useCallback(
+    (e: React.PointerEvent) => {
       e.preventDefault();
       setIsDragging(true);
       setDragStart({
@@ -126,22 +126,24 @@ export default function RouteModal({
   );
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (!isDragging) return;
       setTranslate({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       });
     };
-    const handleMouseUp = () => setIsDragging(false);
+    const handlePointerUp = () => setIsDragging(false);
 
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+      document.addEventListener('pointercancel', handlePointerUp);
     }
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
     };
   }, [isDragging, dragStart]);
 
@@ -188,8 +190,8 @@ export default function RouteModal({
       {/* Header — only this area is draggable */}
       <div
         className="flex justify-between items-center px-5 pt-4 pb-3 border-b border-zinc-700"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-        onMouseDown={handleGripMouseDown}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+        onPointerDown={handleGripPointerDown}
       >
         <div className="flex items-center gap-3">
           <GripHorizontal className="h-5 w-5 text-zinc-400" />
@@ -198,7 +200,7 @@ export default function RouteModal({
           </h3>
         </div>
         <button
-          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
           className="p-1 rounded-full hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
         >
