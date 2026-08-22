@@ -27,6 +27,8 @@ import AppOverlays from './components/AppOverlays';
 import PostHogPageView from './components/PostHogPageView';
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
+const Glossary = lazy(() => import('./pages/Glossary'));
+const DeveloperDocsPage = lazy(() => import('./pages/DeveloperDocsPage'));
 
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
@@ -60,7 +62,6 @@ const DeveloperLayout = lazy(
 const DeveloperOverview = lazy(() => import('./pages/developers/Overview'));
 const DeveloperConsole = lazy(() => import('./pages/developers/Console'));
 const DeveloperKeys = lazy(() => import('./pages/developers/Keys'));
-const DeveloperDocs = lazy(() => import('./pages/developers/Docs'));
 
 export default function App() {
   const { user } = useAuth();
@@ -96,6 +97,34 @@ export default function App() {
                 }
               >
                 <HowToUsePFControl />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/glossary"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                    <Loader />
+                  </div>
+                }
+              >
+                <Glossary />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/developers/docs"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                    <Loader />
+                  </div>
+                }
+              >
+                <DeveloperDocsPage />
               </Suspense>
             }
           />
@@ -151,7 +180,6 @@ export default function App() {
             <Route index element={<DeveloperOverview />} />
             <Route path="console" element={<DeveloperConsole />} />
             <Route path="keys" element={<DeveloperKeys />} />
-            <Route path="docs" element={<DeveloperDocs />} />
           </Route>
           <Route
             path="/my-flights"

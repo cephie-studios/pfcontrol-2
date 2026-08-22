@@ -7,13 +7,21 @@ import AppOverlays from '../components/AppOverlays';
 import PilotProfile from '../pages/PilotProfile';
 import { PostHogProviderWrapper } from './PostHogProviderWrapper';
 import { IsomorphicRouter } from './IsomorphicRouter';
+import type { PilotProfile as PilotProfileType } from '../types/pilot';
 
 interface Props {
   username: string;
   pathname?: string;
+  initialProfile?: PilotProfileType | null;
+  initialRanks?: Record<string, number | string | null>;
 }
 
-export default function ProfileContent({ username, pathname }: Props) {
+export default function ProfileContent({
+  username,
+  pathname,
+  initialProfile,
+  initialRanks,
+}: Props) {
   return (
     <PostHogProviderWrapper>
       <ToastProvider>
@@ -22,7 +30,12 @@ export default function ProfileContent({ username, pathname }: Props) {
             <IsomorphicRouter pathname={pathname}>
               <Navbar />
               <AppOverlays />
-              <PilotProfile standalone={false} usernameOverride={username} />
+              <PilotProfile
+                standalone={false}
+                usernameOverride={username}
+                initialProfile={initialProfile}
+                initialRanks={initialRanks}
+              />
             </IsomorphicRouter>
           </DataProvider>
         </AuthProvider>

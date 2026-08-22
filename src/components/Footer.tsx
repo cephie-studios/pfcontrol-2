@@ -218,7 +218,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-8 border-t border-zinc-700/50 pt-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        <div className="mt-8 border-t border-zinc-700/50 pt-6 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-center">
           <div className="text-gray-500 text-sm text-center md:text-left space-x-2">
             METAR by{' '}
             <a
@@ -249,8 +249,12 @@ export default function Footer() {
               PFATC
             </a>
             {' · '}
-            <a href="/howToUsePFControl" className="text-gray-500 hover:text-gray-400 underline">
+            <a href="/howToUsePFControl" className="text-gray-500 pl-2 hover:text-gray-400 underline">
               Guide
+            </a>
+            {' · '}
+            <a href="/glossary" className="text-gray-500 pl-2 hover:text-gray-400 underline">
+              Glossary
             </a>
           </div>
 

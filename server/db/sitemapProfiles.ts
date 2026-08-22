@@ -1,17 +1,7 @@
-import { Kysely, PostgresDialect } from 'kysely';
-import pg from 'pg';
+import type { Kysely } from 'kysely';
 import type { MainDatabase } from './types/connection/MainDatabase.js';
 import { decrypt } from '../utils/encryption.js';
 import type { Settings } from './types/Settings.js';
-
-function sslForConnectionString(connectionString: string) {
-  const url = new URL(connectionString);
-  const isLocalhost =
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    url.hostname === 'postgres';
-  return isLocalhost ? false : { rejectUnauthorized: false };
-}
 
 export async function getSitemapProfileUsernames(
   db: Kysely<MainDatabase>,
@@ -67,22 +57,4 @@ export async function getSitemapProfileUsernames(
   }
 
   return Array.from(usernames).sort((a, b) => a.localeCompare(b));
-}
-
-export async function querySitemapProfileUsernames(
-  connectionString: string,
-  adminIds: string[]
-): Promise<string[]> {
-  const pool = new pg.Pool({
-    connectionString,
-    ssl: sslForConnectionString(connectionString),
-  });
-  const db = new Kysely<MainDatabase>({
-    dialect: new PostgresDialect({ pool }),
-  });
-  try {
-    return await getSitemapProfileUsernames(db, adminIds);
-  } finally {
-    await db.destroy();
-  }
 }

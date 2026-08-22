@@ -70,6 +70,11 @@ if (!profile) {
   return new Response(null, { status: 404 });
 }
 
+const ranks =
+  (await fetchApi<Record<string, number | string | null>>(
+    `/api/data/ranks/${encodeURIComponent(profile.user.id)}`
+  )) ?? {};
+
 const { user, privacySettings, featuredFlights } = profile;
 
 const siteOrigin = getSiteOrigin(Astro.request);
@@ -360,6 +365,8 @@ const structuredData = {
   <ProfileContent
     username={user.username}
     pathname={Astro.url.pathname + Astro.url.search}
+    initialProfile={profile}
+    initialRanks={ranks}
     client:load
   />
 </BaseLayout>

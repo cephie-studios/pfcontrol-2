@@ -1,0 +1,55 @@
+---
+import { SPA_SITE_URL } from '../../lib/spaSeo';
+import { fetchApi } from '../../lib/api';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DeveloperDocsContent from '@app/islands/DeveloperDocsContent';
+import type { DeveloperApiPublicSpec } from '@app/types/developerApiSpec';
+
+const PAGE_URL = `${SPA_SITE_URL}/developers/docs`;
+const TITLE = 'PFControl Developer API Reference — Endpoints & WebSockets';
+
+const spec = await fetchApi<DeveloperApiPublicSpec>('/api/developer/docs');
+
+const DESCRIPTION =
+  spec?.description ??
+  'Reference documentation for the PFControl Developer API: authentication, rate limits, REST endpoints, and WebSocket events for sessions, flights, ratings, and notifications.';
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'APIReference',
+    '@id': `${PAGE_URL}#article`,
+    headline: TITLE,
+    name: spec?.title ?? 'PFControl Developer API',
+    description: DESCRIPTION,
+    url: PAGE_URL,
+    inLanguage: 'en',
+    programmingModel: 'REST',
+    author: { '@type': 'Organization', name: 'Cephie Studios' },
+    publisher: { '@type': 'Organization', name: 'Cephie Studios', url: SPA_SITE_URL },
+    about: { '@type': 'SoftwareApplication', name: 'PFControl' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'PFControl', item: SPA_SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Developer API Reference', item: PAGE_URL },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title={TITLE}
+  description={DESCRIPTION}
+  ogType="article"
+  canonicalUrl={PAGE_URL}
+  structuredData={structuredData}
+>
+  <DeveloperDocsContent
+    spec={spec}
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
+</BaseLayout>

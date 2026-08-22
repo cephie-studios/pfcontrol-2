@@ -7,13 +7,19 @@ import AppOverlays from '../components/AppOverlays';
 import PublicFlightView from '../pages/PublicFlightView';
 import { PostHogProviderWrapper } from './PostHogProviderWrapper';
 import { IsomorphicRouter } from './IsomorphicRouter';
+import type { Flight } from '../types/flight';
 
 interface Props {
   flightId: string;
   pathname?: string;
+  initialFlight?: Flight | null;
 }
 
-export default function FlightContent({ flightId, pathname }: Props) {
+export default function FlightContent({
+  flightId,
+  pathname,
+  initialFlight,
+}: Props) {
   return (
     <PostHogProviderWrapper>
       <AuthProvider>
@@ -25,6 +31,7 @@ export default function FlightContent({ flightId, pathname }: Props) {
               <PublicFlightView
                 standalone={false}
                 flightIdOverride={flightId}
+                initialFlight={initialFlight}
               />
             </IsomorphicRouter>
           </DataProvider>

@@ -6,6 +6,7 @@ import type { RequestHandler, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import sitemapXmlRouter from './routes/sitemapXml.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import chalk from 'chalk';
@@ -186,6 +187,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api', apiRoutes);
+app.use(sitemapXmlRouter);
 
 function setHashedStaticHeaders(res: Response, filePath: string): void {
   if (filenameLooksContentHashed(filePath)) {
