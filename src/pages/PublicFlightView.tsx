@@ -195,10 +195,9 @@ export default function PublicFlightView({
       .reverse();
   }, [logs]);
 
-  const publicFlightUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/flight/${flightId}`
-      : null;
+  const publicFlightUrl = hasMounted
+    ? `${window.location.origin}/flight/${flightId}`
+    : null;
 
   const handleShare = async () => {
     if (!publicFlightUrl) return;
@@ -271,7 +270,11 @@ export default function PublicFlightView({
     );
   }
 
-  const formattedCallsign = parseCallsign(flight.callsign || "", airlines);
+
+  const formattedCallsign =
+    hasMounted && airlines.length > 0
+      ? parseCallsign(flight.callsign || "", airlines)
+      : flight.callsign || "";
   const hasSpokenName =
     formattedCallsign !== (flight.callsign || "").toUpperCase();
 

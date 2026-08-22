@@ -15,7 +15,11 @@ const formatTime = (iso: string) => {
   if (!iso) return '--:--';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '--:--';
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  });
 };
 
 const formatDate = (iso: string) => {
@@ -26,6 +30,7 @@ const formatDate = (iso: string) => {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 };
 

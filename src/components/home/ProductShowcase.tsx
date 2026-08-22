@@ -220,17 +220,17 @@ function MockNavbar({
   submitCopied: boolean;
   submitHighlight: boolean;
 }) {
-  const [utc, setUtc] = useState(() => {
-    const n = new Date();
-    return `${String(n.getUTCHours()).padStart(2, '0')}:${String(n.getUTCMinutes()).padStart(2, '0')}:${String(n.getUTCSeconds()).padStart(2, '0')} UTC`;
-  });
+  
+  const [utc, setUtc] = useState('');
   useEffect(() => {
-    const iv = setInterval(() => {
+    const tick = () => {
       const n = new Date();
       setUtc(
         `${String(n.getUTCHours()).padStart(2, '0')}:${String(n.getUTCMinutes()).padStart(2, '0')}:${String(n.getUTCSeconds()).padStart(2, '0')} UTC`
       );
-    }, 1000);
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
   }, []);
 
