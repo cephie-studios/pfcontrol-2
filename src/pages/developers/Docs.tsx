@@ -482,9 +482,15 @@ function WebSocketCard({
   );
 }
 
-export default function DeveloperDocs() {
-  const [spec, setSpec] = useState<DeveloperApiPublicSpec | null>(null);
-  const [loading, setLoading] = useState(true);
+interface DeveloperDocsProps {
+  initialSpec?: DeveloperApiPublicSpec | null;
+}
+
+export default function DeveloperDocs({ initialSpec }: DeveloperDocsProps = {}) {
+  const [spec, setSpec] = useState<DeveloperApiPublicSpec | null>(
+    initialSpec ?? null
+  );
+  const [loading, setLoading] = useState(!initialSpec);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [endpointSearch, setEndpointSearch] = useState('');
@@ -495,6 +501,7 @@ export default function DeveloperDocs() {
   );
 
   useEffect(() => {
+    if (initialSpec) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -512,7 +519,7 @@ export default function DeveloperDocs() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialSpec]);
 
   const copy = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);

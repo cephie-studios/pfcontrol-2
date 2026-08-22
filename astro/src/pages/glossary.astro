@@ -1,0 +1,54 @@
+---
+import { SPA_SITE_URL } from '../lib/spaSeo';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GlossaryContent from '@app/islands/GlossaryContent';
+
+const PAGE_URL = `${SPA_SITE_URL}/glossary`;
+const TITLE = 'ATC & Flight Glossary — PFControl';
+const DESCRIPTION =
+  'Definitions for the air traffic control and flight planning terms used in PFControl: SID, STAR, RFL, CFL, PDC, ACARS, squawk codes, flight strips, the PFATC network, and more.';
+
+const TERMS = [
+  'Flight Plan', 'Callsign', 'ICAO Code', 'Route', 'SID', 'STAR', 'RFL', 'CFL',
+  'Alternate Airport', 'PDC', 'Clearance', 'Flight Strip', 'Squawk Code', 'Stand',
+  'ADEP', 'ADES', 'Wake Turbulence Category', 'Status Flow', 'ACARS', 'ATIS',
+  'Contact Me Message', 'Session', 'PFATC Network', 'Network Overview', 'Sector',
+  'IFR', 'VFR', 'Featured Flight', 'Controller Rating', 'Developer API',
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    '@id': `${PAGE_URL}#glossary`,
+    name: TITLE,
+    description: DESCRIPTION,
+    url: PAGE_URL,
+    inLanguage: 'en',
+    publisher: { '@type': 'Organization', name: 'Cephie Studios', url: SPA_SITE_URL },
+    hasDefinedTerm: TERMS.map((name) => ({
+      '@type': 'DefinedTerm',
+      name,
+      inDefinedTermSet: PAGE_URL,
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'PFControl', item: SPA_SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'ATC & Flight Glossary', item: PAGE_URL },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title={TITLE}
+  description={DESCRIPTION}
+  ogType="article"
+  canonicalUrl={PAGE_URL}
+  structuredData={structuredData}
+>
+  <GlossaryContent pathname={Astro.url.pathname + Astro.url.search} client:load />
+</BaseLayout>
