@@ -1,15 +1,5 @@
-import { Kysely, PostgresDialect } from 'kysely';
-import pg from 'pg';
+import type { Kysely } from 'kysely';
 import type { MainDatabase } from './types/connection/MainDatabase.js';
-
-function sslForConnectionString(connectionString: string) {
-  const url = new URL(connectionString);
-  const isLocalhost =
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    url.hostname === 'postgres';
-  return isLocalhost ? false : { rejectUnauthorized: false };
-}
 
 // Only flights a pilot has chosen to feature on their public profile are
 // actually linked anywhere public — every other submitted flight is reachable
@@ -24,21 +14,4 @@ export async function getSitemapFeaturedFlightIds(
     .execute();
 
   return rows.map((r) => r.id).sort();
-}
-
-export async function querySitemapFeaturedFlightIds(
-  connectionString: string
-): Promise<string[]> {
-  const pool = new pg.Pool({
-    connectionString,
-    ssl: sslForConnectionString(connectionString),
-  });
-  const db = new Kysely<MainDatabase>({
-    dialect: new PostgresDialect({ pool }),
-  });
-  try {
-    return await getSitemapFeaturedFlightIds(db);
-  } finally {
-    await db.destroy();
-  }
 }

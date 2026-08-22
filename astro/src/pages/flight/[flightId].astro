@@ -236,6 +236,7 @@ const structuredData = {
   <FlightContent
     flightId={flightId}
     pathname={Astro.url.pathname + Astro.url.search}
+    initialFlight={flight}
     client:load
   />
 </BaseLayout>

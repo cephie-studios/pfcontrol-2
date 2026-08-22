@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import RouteMap from "../components/map/RouteMap";
 import AircraftPhotoCard from "../components/flight/AircraftPhotoCard";
@@ -34,11 +34,13 @@ interface AvailableImage {
 interface PublicFlightViewProps {
   standalone?: boolean;
   flightIdOverride?: string;
+  initialFlight?: Flight | null;
 }
 
 export default function PublicFlightView({
   standalone = true,
   flightIdOverride,
+  initialFlight,
 }: PublicFlightViewProps) {
   const navigate = useNavigate();
   const params = useParams<{ flightId: string }>();
@@ -47,8 +49,8 @@ export default function PublicFlightView({
   const { airlines } = useData();
 
   const { user } = useAuth();
-  const [flight, setFlight] = useState<Flight | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [flight, setFlight] = useState<Flight | null>(initialFlight ?? null);
+  const [loading, setLoading] = useState(!initialFlight);
   const [error, setError] = useState("");
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
@@ -64,6 +66,12 @@ export default function PublicFlightView({
     avatar_url: string | null;
     user_id: string;
   } | null>(null);
+  const initialFlightConsumedRef = useRef(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchBackgrounds()
@@ -77,70 +85,84 @@ export default function PublicFlightView({
       setLoading(false);
       return;
     }
+
+    const loadFollowUpData = (data: Flight) => {
+      fetch(`${API_BASE_URL}/api/sessions/${data.session_id}/submit`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((info) => {
+          if (info?.isPFATC) setIsPFATC(true);
+          if (info?.isAdvancedATC) setIsAdvancedATC(true);
+        })
+        .catch(() => {});
+
+      fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
+        credentials: "include",
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((logsData) => {
+          if (!logsData?.logs) return;
+          setLogs(logsData.logs);
+          setLogsAvailable(true);
+
+          fetch(`${API_BASE_URL}/api/pilot/${data.user_id}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((userData) => {
+              if (userData.user.username && userData.user.avatar) {
+                setPilot({
+                  username: userData.user.username,
+                  avatar_url: userData.user.avatar,
+                  user_id: userData.user.id,
+                });
+              } else {
+                setError("User not found.");
+              }
+            });
+
+          const pilotUserId: string | undefined = logsData.pilotUserId;
+          const seen = new Set<string>();
+          const ctrlList: {
+            user_id: string;
+            username: string;
+            avatar_url: string | null;
+          }[] = [];
+          for (const log of logsData.logs as FlightLogItem[]) {
+            if (
+              log.action === "update" &&
+              log.user_id !== pilotUserId &&
+              !seen.has(log.user_id)
+            ) {
+              seen.add(log.user_id);
+              ctrlList.push({
+                user_id: log.user_id,
+                username: log.username,
+                avatar_url: log.avatar_url,
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    };
+
+    if (
+      !initialFlightConsumedRef.current &&
+      initialFlight &&
+      String(initialFlight.id) === String(flightId)
+    ) {
+      initialFlightConsumedRef.current = true;
+      setLoading(false);
+      loadFollowUpData(initialFlight);
+      return;
+    }
+    initialFlightConsumedRef.current = true;
+
     fetchPublicFlight(flightId)
       .then((data) => {
         setFlight(data);
-        console.log("Flight data:", data);
-
-        fetch(`${API_BASE_URL}/api/sessions/${data.session_id}/submit`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((info) => {
-            if (info?.isPFATC) setIsPFATC(true);
-            if (info?.isAdvancedATC) setIsAdvancedATC(true);
-          })
-          .catch(() => {});
-
-        fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
-          credentials: "include",
-        })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((logsData) => {
-            if (!logsData?.logs) return;
-            setLogs(logsData.logs);
-            setLogsAvailable(true);
-
-            fetch(`${API_BASE_URL}/api/pilot/${data.user_id}`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((userData) => {
-                console.log("Pilot data:", userData);
-                if (userData.user.username && userData.user.avatar) {
-                  setPilot({
-                    username: userData.user.username,
-                    avatar_url: userData.user.avatar,
-                    user_id: userData.user.id,
-                  });
-                } else {
-                  setError("User not found.");
-                }
-              });
-
-            const pilotUserId: string | undefined = logsData.pilotUserId;
-            const seen = new Set<string>();
-            const ctrlList: {
-              user_id: string;
-              username: string;
-              avatar_url: string | null;
-            }[] = [];
-            for (const log of logsData.logs as FlightLogItem[]) {
-              if (
-                log.action === "update" &&
-                log.user_id !== pilotUserId &&
-                !seen.has(log.user_id)
-              ) {
-                seen.add(log.user_id);
-                ctrlList.push({
-                  user_id: log.user_id,
-                  username: log.username,
-                  avatar_url: log.avatar_url,
-                });
-              }
-            }
-          })
-          .catch(() => {});
+        loadFollowUpData(data);
       })
       .catch(() => setError("This flight is not available or does not exist."))
       .finally(() => setLoading(false));
-  }, [flightId]);
+  }, [flightId, initialFlight]);
 
   const statusTimeline = useMemo(() => {
     return logs
@@ -378,13 +400,15 @@ export default function PublicFlightView({
                     className="rounded-2xl overflow-hidden mb-2"
                     style={{ height: "300px" }}
                   >
-                    <RouteMap
-                      route={flight.route}
-                      departure={flight.departure}
-                      arrival={flight.arrival}
-                      sid={flight.sid}
-                      star={flight.star}
-                    />
+                    {hasMounted && (
+                      <RouteMap
+                        route={flight.route}
+                        departure={flight.departure}
+                        arrival={flight.arrival}
+                        sid={flight.sid}
+                        star={flight.star}
+                      />
+                    )}
                   </div>
                   <p className="text-xs font-mono text-zinc-500 mb-5 break-words">
                     {flight.route}

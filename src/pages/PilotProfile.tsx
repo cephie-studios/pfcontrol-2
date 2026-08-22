@@ -339,22 +339,30 @@ interface AvailableImage {
 interface PilotProfileProps {
   standalone?: boolean;
   usernameOverride?: string;
+  initialProfile?: PilotProfile | null;
+  initialRanks?: Ranks;
 }
 
 export default function PilotProfile({
   standalone = true,
   usernameOverride,
+  initialProfile,
+  initialRanks,
 }: PilotProfileProps) {
   const params = useParams<{ username: string }>();
   const username = usernameOverride ?? params.username;
   const { user, refreshUser } = useAuth();
   const { showError } = useToast();
-  const [profile, setProfile] = useState<PilotProfile | null>(null);
-  const [userStats, setUserStats] = useState<UserStatistics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<PilotProfile | null>(
+    initialProfile ?? null
+  );
+  const [userStats, setUserStats] = useState<UserStatistics | null>(
+    (initialProfile?.user.statistics as UserStatistics | undefined) ?? null
+  );
+  const [loading, setLoading] = useState(!initialProfile);
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
-  const [ranks, setRanks] = useState<Ranks>({});
+  const [ranks, setRanks] = useState<Ranks>(initialRanks ?? {});
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -362,6 +370,7 @@ export default function PilotProfile({
   const [colorEditor, setColorEditor] = useState<ColorEditorTarget | null>(null);
   const [draggedSectionKey, setDraggedSectionKey] = useState<string | null>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialProfileConsumedRef = useRef(false);
 
   const isCurrentUser = !!(user && profile && profile.user.id === user.userId);
   const isOwnerEditing = isCurrentUser && isEditing;
@@ -410,6 +419,17 @@ export default function PilotProfile({
   }, []);
 
   const fetchProfile = useCallback(async () => {
+    if (
+      !initialProfileConsumedRef.current &&
+      initialProfile &&
+      initialProfile.user.username.toLowerCase() === username?.toLowerCase()
+    ) {
+      initialProfileConsumedRef.current = true;
+      setLoading(false);
+      return;
+    }
+    initialProfileConsumedRef.current = true;
+
     try {
       const data = await fetchPilotProfile(username!);
       if (data) {
@@ -430,7 +450,7 @@ export default function PilotProfile({
     } finally {
       setLoading(false);
     }
-  }, [username]);
+  }, [username, initialProfile]);
 
   useEffect(() => {
     fetchProfile();

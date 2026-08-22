@@ -23,21 +23,21 @@ const securityMiddleware = [
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://*.posthog.com'],
         scriptSrc: [
           "'self'",
           (_req, res) =>
             `'nonce-${(res as unknown as Response).locals.cspNonce}'`,
           'https://tpfcu.pfcontrol.com',
           'https://pilot.pfcontrol.com',
+          'https://*.posthog.com',
         ],
         connectSrc: [
           "'self'",
           'https://tpfcu.pfcontrol.com',
           'https://pilot.pfcontrol.com',
           'https://api.cephie.app',
-          'https://us.i.posthog.com',
-          'https://us.posthog.com',
+          'https://*.posthog.com',
         ],
         frameSrc: ["'self'", 'https://status.cephie.app'],
         workerSrc: ["'self'", 'blob:'],

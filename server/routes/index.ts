@@ -17,7 +17,6 @@ import ratingsRouter from './ratings.js';
 import developerRouter from './developer.js';
 import extV1Router from './ext/v1.js';
 import extV2Router from './ext/v2.js';
-import seoRouter from './seo.js';
 import ogImagesRouter from './ogImages.js';
 import userNotificationsRouter from './userNotifications.js';
 
@@ -40,7 +39,6 @@ router.use('/ratings', ratingsRouter);
 router.use('/developer', developerRouter);
 router.use('/ext/v1', extV1Router);
 router.use('/ext/v2', extV2Router);
-router.use('/seo', seoRouter);
 router.use('/og', ogImagesRouter);
 router.use('/user-notifications', userNotificationsRouter);
 
