@@ -1,0 +1,66 @@
+---
+import { SPA_SITE_URL } from '../lib/spaSeo';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HowToUsePFControlContent from '@app/islands/HowToUsePFControlContent';
+
+const PAGE_URL = `${SPA_SITE_URL}/howToUsePFControl`;
+const TITLE = 'How to Use PFControl — Complete Guide for Controllers & Pilots';
+const DESCRIPTION =
+  'A complete, in-depth guide to using PFControl: creating ATC sessions, managing flight strips, submitting flight plans, using the ACARS terminal and requesting PDC, reading charts, the Network Overview, public profiles, and controller ratings — for Project Flight.';
+
+const howToSteps = [
+  { name: 'Sign in with Discord', url: `${PAGE_URL}#getting-started` },
+  { name: 'Create a session', url: `${PAGE_URL}#creating-a-session` },
+  { name: 'Manage flight strips', url: `${PAGE_URL}#flight-strips` },
+  { name: 'Submit a flight plan', url: `${PAGE_URL}#submitting-a-flight-plan` },
+  { name: 'Use ACARS and request PDC', url: `${PAGE_URL}#acars-and-pdc` },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    '@id': `${PAGE_URL}#article`,
+    headline: TITLE,
+    description: DESCRIPTION,
+    url: PAGE_URL,
+    inLanguage: 'en',
+    author: { '@type': 'Organization', name: 'Cephie Studios' },
+    publisher: { '@type': 'Organization', name: 'Cephie Studios', url: SPA_SITE_URL },
+    about: { '@type': 'SoftwareApplication', name: 'PFControl' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to use PFControl',
+    description: DESCRIPTION,
+    step: howToSteps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      url: s.url,
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'PFControl', item: SPA_SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'How to Use PFControl', item: PAGE_URL },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title={TITLE}
+  description={DESCRIPTION}
+  ogType="article"
+  canonicalUrl={PAGE_URL}
+  structuredData={structuredData}
+>
+  <HowToUsePFControlContent
+    pathname={Astro.url.pathname + Astro.url.search}
+    client:load
+  />
+</BaseLayout>

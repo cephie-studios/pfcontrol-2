@@ -1,6 +1,7 @@
 import express from 'express';
 import { mainDb } from '../db/connection.js';
 import { getSitemapProfileUsernames } from '../db/sitemapProfiles.js';
+import { getSitemapFeaturedFlightIds } from '../db/sitemapFlights.js';
 
 const router = express.Router();
 
@@ -16,6 +17,17 @@ router.get('/sitemap-profiles', async (_req, res) => {
   } catch (err) {
     console.error('[seo] sitemap-profiles:', err);
     res.status(500).json({ error: 'Failed to load sitemap profile list' });
+  }
+});
+
+router.get('/sitemap-flights', async (_req, res) => {
+  try {
+    const ids = await getSitemapFeaturedFlightIds(mainDb);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.json({ ids });
+  } catch (err) {
+    console.error('[seo] sitemap-flights:', err);
+    res.status(500).json({ error: 'Failed to load sitemap flight list' });
   }
 });
 

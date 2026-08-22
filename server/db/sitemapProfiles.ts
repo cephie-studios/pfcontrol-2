@@ -1,6 +1,8 @@
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 import type { MainDatabase } from './types/connection/MainDatabase.js';
+import { decrypt } from '../utils/encryption.js';
+import type { Settings } from './types/Settings.js';
 
 function sslForConnectionString(connectionString: string) {
   const url = new URL(connectionString);
@@ -36,6 +38,31 @@ export async function getSitemapProfileUsernames(
       .execute();
     for (const row of admins) {
       if (row.username) usernames.add(row.username);
+    }
+  }
+
+  const remaining = await db
+    .selectFrom('users')
+    .select(['username', 'settings'])
+    .execute();
+
+  for (const row of remaining) {
+    if (!row.username || usernames.has(row.username)) continue;
+    if (!row.settings) continue;
+    try {
+      const raw =
+        typeof row.settings === 'string'
+          ? JSON.parse(row.settings)
+          : row.settings;
+      const settings = decrypt(raw) as Settings | null;
+      if (
+        settings?.bio?.trim() &&
+        settings.displayBioOnProfile !== false
+      ) {
+        usernames.add(row.username);
+      }
+    } catch {
+      continue;
     }
   }
 
