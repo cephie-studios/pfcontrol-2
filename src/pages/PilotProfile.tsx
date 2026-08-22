@@ -1033,6 +1033,7 @@ export default function PilotProfile({
                             {
                               month: 'long',
                               year: 'numeric',
+                              timeZone: 'UTC',
                             }
                           )}
                         </span>
@@ -1681,6 +1682,7 @@ function StatsSection({
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: 'UTC',
                 })
               : 'Never'}
           </h3>
@@ -1751,10 +1753,11 @@ function FeaturedFlightCard({
   const spoken = parseCallsign(flight.callsign || '', airlines);
 
   const formattedDate = flight.created_at
-    ? new Date(flight.created_at).toLocaleDateString(undefined, {
+    ? new Date(flight.created_at).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
+        timeZone: 'UTC',
       })
     : null;
 

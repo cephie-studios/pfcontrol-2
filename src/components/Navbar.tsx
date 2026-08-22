@@ -45,15 +45,17 @@ export default function Navbar({
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [utcTime, setUtcTime] = useState<string>(
-    new Date().toISOString().slice(11, 19)
-  );
+  const [utcTime, setUtcTime] = useState<string>('');
   const [isCompact, setIsCompact] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [hostname, setHostname] = useState<string>('');
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [showFeedbackBanner, setShowFeedbackBanner] = useState(false);
+
+  useEffect(() => {
+    setUtcTime(new Date().toISOString().slice(11, 19));
+  }, []);
 
   useEffect(() => {
     const checkFeedbackCookies = () => {
