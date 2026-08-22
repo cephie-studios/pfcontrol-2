@@ -17,7 +17,7 @@ interface AccessDeniedProps {
 }
 
 export default function AccessDenied({
-  standalone = true, 
+  standalone = true,
   message,
   description,
   errorType = 'access-denied',
