@@ -132,12 +132,17 @@ export default function Submit({
       submittedFlight &&
       user &&
       session &&
-      hasAdvancedNetworkFeatures(session) &&
+      (hasAdvancedNetworkFeatures(session) ||
+        submittedFlight.acarsRedirectUrl) &&
       (settings?.acars?.autoRedirectToAcars ?? true)
     ) {
-      goToPath(
-        `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
-      );
+      if (submittedFlight.acarsRedirectUrl) {
+        window.location.href = submittedFlight.acarsRedirectUrl;
+      } else {
+        goToPath(
+          `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`
+        );
+      }
     }
   }, [
     success,
@@ -623,22 +628,32 @@ export default function Submit({
                   </div>
                 )}
                 <div className="mt-6 pt-4 border-t border-green-800 space-x-2">
-                  {session && hasAdvancedNetworkFeatures(session) && (
-                    <Button
-                      onClick={() => {
-                        setShowRating(false);
-                        const acarsPath = `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`;
-                        if (user) {
-                          goToPath(acarsPath);
-                        } else {
-                          window.location.href = getDiscordLoginUrl(acarsPath);
-                        }
-                      }}
-                    >
-                      <TowerControl className="h-5 w-5 mr-2" />
-                      {user ? 'Go to ACARS' : 'Log in to access ACARS and PDCs'}
-                    </Button>
-                  )}
+                  {session &&
+                    (hasAdvancedNetworkFeatures(session) ||
+                      submittedFlight.acarsRedirectUrl) && (
+                      <Button
+                        onClick={() => {
+                          setShowRating(false);
+                          if (submittedFlight.acarsRedirectUrl) {
+                            window.location.href =
+                              submittedFlight.acarsRedirectUrl;
+                            return;
+                          }
+                          const acarsPath = `/acars/${sessionId}/${submittedFlight.id}?acars_token=${submittedFlight.acars_token}`;
+                          if (user) {
+                            goToPath(acarsPath);
+                          } else {
+                            window.location.href =
+                              getDiscordLoginUrl(acarsPath);
+                          }
+                        }}
+                      >
+                        <TowerControl className="h-5 w-5 mr-2" />
+                        {user
+                          ? 'Go to ACARS'
+                          : 'Log in to access ACARS and PDCs'}
+                      </Button>
+                    )}
                   <Button onClick={handleCreateAnother} variant="outline">
                     <PlusCircle className="h-5 w-5 mr-2" />
                     Create Another Flight Plan

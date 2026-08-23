@@ -168,6 +168,7 @@ function sessionToDeveloperJson(
     custom_name?: string | null;
     refreshed_at?: Date | null;
     developer_api_key_id?: string | null;
+    external_session?: boolean | null;
   },
   keyId: string
 ) {
@@ -187,6 +188,9 @@ function sessionToDeveloperJson(
     apiManaged:
       row.developer_api_key_id != null &&
       String(row.developer_api_key_id) === keyId,
+    ...(row.external_session != null
+      ? { externalSession: row.external_session }
+      : {}),
   };
 }
 
@@ -532,7 +536,10 @@ router.post(
         isAdvancedATC = false,
         activeRunway = null,
         arrivalRunway = null,
+        externalSession,
       } = req.body ?? {};
+      const externalSessionFlag: boolean | null =
+        typeof externalSession === 'boolean' ? externalSession : null;
       if (!airportIcao || typeof airportIcao !== 'string') {
         return res.status(400).json({ error: 'Airport ICAO is required' });
       }
@@ -611,6 +618,7 @@ router.post(
         isPFATC: pfatc,
         isAdvancedATC: advancedAtc,
         developerApiKeyId: ext.keyId,
+        externalSession: externalSessionFlag,
       });
       // API-created sessions don't count toward the public leaderboard/profile stats.
       await addSessionToUser(ext.userId, sessionId, {

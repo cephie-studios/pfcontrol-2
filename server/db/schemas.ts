@@ -1031,6 +1031,21 @@ export async function ensureSessionsFeedbackEnabledColumn() {
   `.execute(mainDb);
 }
 
+export async function ensureSessionsExternalSessionColumn() {
+  await sql`
+    ALTER TABLE sessions
+    ADD COLUMN IF NOT EXISTS external_session boolean
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE sessions
+    ALTER COLUMN external_session DROP DEFAULT
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE sessions
+    ALTER COLUMN external_session DROP NOT NULL
+  `.execute(mainDb);
+}
+
 export async function ensureControllerRatingsCommentAndSessionColumns() {
   await sql`
     ALTER TABLE controller_ratings

@@ -17,5 +17,5 @@ export const platformIdentityCors = cors({
   },
   credentials: true,
   methods: ['GET', 'OPTIONS'],
-  allowedHeaders: ['Accept'],
+  allowedHeaders: ['Accept', 'Content-Type'],
 });
