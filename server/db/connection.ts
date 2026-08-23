@@ -16,6 +16,7 @@ import {
   ensureWebsocketSnapshotsTable,
   ensurePerformanceIndexes,
   ensureSessionsFeedbackEnabledColumn,
+  ensureSessionsExternalSessionColumn,
   ensureControllerRatingsCommentAndSessionColumns,
   ensureControllerRatingsModerationColumns,
   ensureUserBioModerationColumns,
@@ -91,6 +92,7 @@ try {
   await ensureWebsocketSnapshotsTable();
   await ensurePerformanceIndexes();
   await ensureSessionsFeedbackEnabledColumn();
+  await ensureSessionsExternalSessionColumn();
   await ensureControllerRatingsCommentAndSessionColumns();
   await ensureControllerRatingsModerationColumns();
   await ensureUserBioModerationColumns();

@@ -18,6 +18,7 @@ interface CreateSessionParams {
   isPFATC?: boolean;
   isAdvancedATC?: boolean;
   developerApiKeyId?: string | null;
+  externalSession?: boolean | null;
 }
 
 export async function createSession({
@@ -31,6 +32,7 @@ export async function createSession({
   isAdvancedATC,
   isTutorial,
   developerApiKeyId,
+  externalSession,
 }: CreateSessionParams & { isTutorial?: boolean }) {
   const validSessionId = validateSessionId(sessionId);
 
@@ -58,6 +60,7 @@ export async function createSession({
       is_pfatc: isPfatc,
       is_advanced_atc: isAdvancedAtc,
       atis: JSON.stringify(encryptedAtis),
+      external_session: externalSession ?? null,
       ...(developerApiKeyId ? { developer_api_key_id: developerApiKeyId } : {}),
     };
     await mainDb.insertInto('sessions').values(baseValues).execute();

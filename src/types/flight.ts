@@ -33,6 +33,7 @@ export interface Flight {
   };
   hidden?: boolean;
   acars_token?: string;
+  acarsRedirectUrl?: string;
   pdc_remarks?: string;
   notes?: string;
   snap_images?: Array<{ cephie_id: string; url: string }>;
