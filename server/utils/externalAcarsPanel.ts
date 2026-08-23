@@ -26,7 +26,7 @@ export async function fetchExternalAcarsPanelUrl(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `ApiKey ${apiKey}`,
       },
       body: JSON.stringify({ callsign, acars_token: acarsToken }),
       signal: controller.signal,
