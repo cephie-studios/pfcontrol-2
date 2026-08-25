@@ -38,6 +38,7 @@ import {
   generalApiLimiter,
 } from '../middleware/rateLimiting.js';
 import { validateCallsign } from '../utils/validation.js';
+import { validateRoute } from '../utils/routeValidation.js';
 
 const snapUpload = multer({ storage: multer.memoryStorage() });
 const CEPHIE_API_KEY = process.env.CEPHIE_API_KEY;
@@ -376,6 +377,24 @@ router.get('/public/:flightId', generalApiLimiter, async (req, res) => {
   }
 });
 
+// POST: /api/flights/validate-route
+router.post('/validate-route', generalApiLimiter, (req, res) => {
+  const { route, departure, arrival, flight_type } = req.body ?? {};
+  if (
+    typeof route !== 'string' ||
+    !route.trim() ||
+    flight_type === 'VFR'
+  ) {
+    return res.json({ error: null });
+  }
+  const error = validateRoute(
+    route,
+    typeof departure === 'string' ? departure : undefined,
+    typeof arrival === 'string' ? arrival : undefined
+  );
+  res.json({ error: error ?? null });
+});
+
 // GET: /api/flights/:sessionId - get all flights for a session
 router.get('/:sessionId', requireAuth, async (req, res) => {
   try {
@@ -393,23 +412,15 @@ router.post(
   optionalAuth,
   async (req, res) => {
     try {
-      if (req.body.callsign) {
-        try {
-          req.body.callsign = validateCallsign(req.body.callsign);
-        } catch (err) {
-          return res.status(400).json({
-            error: err instanceof Error ? err.message : 'Invalid callsign',
-          });
-        }
-      }
-
       const flightData = {
         ...req.body,
         user_id: req.user?.userId,
         ip_address: getClientIp(req),
       };
 
-      const flight = await addFlight(req.params.sessionId, flightData);
+      const flight = await addFlight(req.params.sessionId, flightData, {
+        submitterUserId: req.user?.userId,
+      });
 
       await recordNewFlight();
 
@@ -460,6 +471,10 @@ router.post(
         });
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (message.startsWith('Callsign') || message.startsWith('Route error')) {
+        return res.status(400).json({ error: message });
+      }
       console.error('Failed to add flight:', err);
       res.status(500).json({ error: 'Failed to add flight' });
     }

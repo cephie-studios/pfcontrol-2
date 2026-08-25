@@ -114,6 +114,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
       socket.handshake.query.isEventController === 'true';
 
     let userId = socket.handshake.query.userId as string;
+    let verifiedUserId: string | undefined;
     try {
       const cookieHeader = socket.handshake.headers.cookie ?? '';
       const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
@@ -122,7 +123,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         const decoded = jwt.verify(match[1], JWT_SECRET as string) as {
           userId: string;
         };
-        if (decoded.userId) userId = decoded.userId;
+        if (decoded.userId) {
+          userId = decoded.userId;
+          verifiedUserId = decoded.userId;
+        }
       }
     } catch {
       // Cookie absent or invalid — fall back to query param
@@ -204,7 +208,8 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
         const flight = await addFlight(
           sessionId,
-          enhancedFlightData as AddFlightData
+          enhancedFlightData as AddFlightData,
+          { submitterUserId: verifiedUserId }
         );
 
         socket.emit('flightAdded', flight);
@@ -226,10 +231,14 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           },
           ipAddress: getSocketClientIp(socket),
         });
-      } catch {
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '';
         socket.emit('flightError', {
           action: 'add',
-          error: 'Failed to add flight',
+          error:
+            message.startsWith('Callsign') || message.startsWith('Route error')
+              ? message
+              : 'Failed to add flight',
         });
       }
     });

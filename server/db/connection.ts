@@ -12,6 +12,8 @@ import {
   ensureAppSettingsChannelColumn,
   ensureEventModeColumns,
   ensureFlightReqColumns,
+  ensureFlightRobloxUsernameColumn,
+  ensureFlightRobloxLinkedColumn,
   ensureDailyDatabaseMetricsTables,
   ensureWebsocketSnapshotsTable,
   ensurePerformanceIndexes,
@@ -88,6 +90,8 @@ try {
   await ensureAppSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFlightReqColumns();
+  await ensureFlightRobloxUsernameColumn();
+  await ensureFlightRobloxLinkedColumn();
   await ensureDailyDatabaseMetricsTables();
   await ensureWebsocketSnapshotsTable();
   await ensurePerformanceIndexes();

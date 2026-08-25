@@ -884,6 +884,20 @@ export async function ensureFlightReqColumns() {
   `.execute(mainDb);
 }
 
+export async function ensureFlightRobloxUsernameColumn() {
+  await sql`
+    ALTER TABLE flights
+    ADD COLUMN IF NOT EXISTS roblox_username varchar(255) NULL
+  `.execute(mainDb);
+}
+
+export async function ensureFlightRobloxLinkedColumn() {
+  await sql`
+    ALTER TABLE flights
+    ADD COLUMN IF NOT EXISTS roblox_linked boolean NOT NULL DEFAULT false
+  `.execute(mainDb);
+}
+
 export async function ensureDailyDatabaseMetricsTables() {
   await mainDb.schema
     .createTable('daily_table_activity')

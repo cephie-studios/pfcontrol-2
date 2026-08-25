@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
@@ -12,18 +18,17 @@ import {
   ArrowUpDown,
   Route,
   StickyNote,
-  BadgeCheck,
   PlusCircle,
   ClipboardList,
   ParkingCircle,
   Loader2,
   Plane,
-  HelpCircle,
   TowerControl,
 } from 'lucide-react';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { addFlight } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
+import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
 import type { Flight } from '../types/flight';
@@ -32,7 +37,6 @@ import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
 import Loader from '../components/common/Loader';
 import AccessDenied from '../components/AccessDenied';
-import CallsignInput from '../components/common/CallsignInput';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import Modal from '../components/common/Modal';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
@@ -53,6 +57,7 @@ interface SessionData {
   flightCount?: number;
   atisLetter?: string;
   controllerUsername?: string;
+  externalSession?: boolean;
 }
 
 interface AvailableImage {
@@ -74,8 +79,17 @@ export default function Submit({
   const [searchParams] = useSearchParams();
   const accessId = searchParams.get('accessId') ?? undefined;
   const { user, isLoading: authLoading } = useAuth();
+  const { airlines } = useData();
   const { settings } = useSettings();
   const navigate = useNavigate();
+
+  const airlineOptions = useMemo(
+    () =>
+      airlines
+        .map((a) => ({ value: a.icao, label: `${a.icao} - ${a.callsign}` }))
+        .sort((a, b) => a.value.localeCompare(b.value)),
+    [airlines]
+  );
 
   const goToPath = useCallback(
     (path: string) => {
@@ -91,12 +105,12 @@ export default function Submit({
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [routeError, setRouteError] = useState('');
   const [success, setSuccess] = useState(false);
   const [submittedFlight, setSubmittedFlight] = useState<Flight | null>(null);
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
   const [form, setForm] = useState({
-    callsign: '',
     aircraft_type: '',
     departure: initialAirportIcao ?? '',
     arrival: '',
@@ -105,6 +119,10 @@ export default function Submit({
     remark: '',
     flight_type: 'IFR',
     cruisingFL: '',
+    airlineIcao: '',
+    registration: '',
+    flightNumber: '',
+    robloxUsername: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
@@ -125,6 +143,43 @@ export default function Submit({
       setShowAccountPrompt(true);
     }
   }, [success, submittedFlight, user]);
+
+  useEffect(() => {
+    if (user?.robloxUsername) {
+      setForm((f) =>
+        f.robloxUsername ? f : { ...f, robloxUsername: user.robloxUsername! }
+      );
+    }
+  }, [user?.robloxUsername]);
+
+  const routeValidationSeq = useRef(0);
+  useEffect(() => {
+    if (!form.route.trim() || form.flight_type === 'VFR') {
+      setRouteError('');
+      return;
+    }
+    const seq = ++routeValidationSeq.current;
+    const timeoutId = setTimeout(() => {
+      fetch(`${import.meta.env.VITE_SERVER_URL}/api/flights/validate-route`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          route: form.route,
+          departure: form.departure,
+          arrival: form.arrival,
+          flight_type: form.flight_type,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data: { error: string | null }) => {
+          if (routeValidationSeq.current === seq) {
+            setRouteError(data.error || '');
+          }
+        })
+        .catch(() => {});
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.route, form.departure, form.arrival, form.flight_type]);
 
   useEffect(() => {
     if (
@@ -219,7 +274,16 @@ export default function Submit({
       () => {},
       (error) => {
         console.error('Flight error:', error);
-        setError('Failed to submit flight.');
+        setRouteError('');
+        if (error.error?.startsWith('Callsign')) {
+          setError(
+            `Callsign error: ${error.error}. Callsign must contain at least one number.`
+          );
+        } else if (error.error?.startsWith('Route error')) {
+          setRouteError(error.error);
+        } else {
+          setError('Failed to submit flight.');
+        }
         setIsSubmitting(false);
       }
     );
@@ -297,6 +361,31 @@ export default function Submit({
     setForm((f) => ({ ...f, [name]: value }));
   };
 
+  const handleAirlineChange = (icao: string) => {
+    setForm((f) => ({
+      ...f,
+      airlineIcao: icao,
+      registration: icao ? '' : f.registration,
+    }));
+  };
+
+  const handleRegistrationChange = (value: string) => {
+    const upper = value.toUpperCase();
+    setForm((f) => ({
+      ...f,
+      registration: upper,
+      airlineIcao: upper ? '' : f.airlineIcao,
+    }));
+  };
+
+  const deriveCallsign = (): string | null => {
+    if (form.registration.trim()) return form.registration.trim().toUpperCase();
+    if (form.airlineIcao && form.flightNumber.trim()) {
+      return `${form.airlineIcao}${form.flightNumber.trim()}`.toUpperCase();
+    }
+    return null;
+  };
+
   const needsRadarVectors = (arrival: string, flightType: string) =>
     flightType === 'VFR' ||
     (!!arrival &&
@@ -327,10 +416,21 @@ export default function Submit({
     if (isSubmitting) return;
 
     setError('');
+    setRouteError('');
     setSuccess(false);
     setIsSubmitting(true);
 
-    if (!form.callsign || !form.arrival || !form.aircraft_type) {
+    const isExternal = Boolean(session?.externalSession);
+    const effectiveCallsign = deriveCallsign();
+    if (!effectiveCallsign) {
+      setError(
+        'Select an airline with a flight number, or enter a registration.'
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!form.arrival || !form.aircraft_type) {
       setError('Please fill all required fields.');
       setIsSubmitting(false);
       return;
@@ -340,25 +440,36 @@ export default function Submit({
       ? 'RADAR VECTORS'
       : routeSid;
 
+    const effectiveRobloxUsername = isExternal
+      ? form.robloxUsername.trim() || user?.robloxUsername || undefined
+      : undefined;
+      
+    const {
+      airlineIcao: _airlineIcao,
+      registration: _registration,
+      flightNumber: _flightNumber,
+      robloxUsername: _robloxUsername,
+      ...formForSubmit
+    } = form;
+
+    const payload = {
+      ...formForSubmit,
+      callsign: effectiveCallsign,
+      flight_type: form.flight_type,
+      cruisingFL: form.cruisingFL,
+      status: 'PENDING',
+      ...(effectiveSid ? { sid: effectiveSid } : {}),
+      ...(routeStar ? { star: routeStar } : {}),
+      ...(effectiveRobloxUsername
+        ? { roblox_username: effectiveRobloxUsername }
+        : {}),
+    };
+
     if (flightsSocket) {
-      flightsSocket.addFlight({
-        ...form,
-        flight_type: form.flight_type,
-        cruisingFL: form.cruisingFL,
-        status: 'PENDING',
-        ...(effectiveSid ? { sid: effectiveSid } : {}),
-        ...(routeStar ? { star: routeStar } : {}),
-      });
+      flightsSocket.addFlight(payload);
     } else {
       try {
-        const flight = await addFlight(sessionId!, {
-          ...form,
-          flight_type: form.flight_type,
-          cruisingFL: form.cruisingFL,
-          status: 'PENDING',
-          ...(effectiveSid ? { sid: effectiveSid } : {}),
-          ...(routeStar ? { star: routeStar } : {}),
-        });
+        const flight = await addFlight(sessionId!, payload);
         setSubmittedFlight(flight);
         setSuccess(true);
         if (
@@ -369,11 +480,14 @@ export default function Submit({
           setShowRating(true);
         }
       } catch (error) {
+        setRouteError('');
         if (error instanceof Error) {
           if (error.message.includes('Callsign')) {
             setError(
               `Callsign error: ${error.message}. Callsign must contain at least one number.`
             );
+          } else if (error.message.includes('Route error')) {
+            setRouteError(error.message);
           } else if (error.message.includes('Stand')) {
             setError(
               `Stand error: ${error.message}. Stand can only contain numbers and letters.`
@@ -400,7 +514,6 @@ export default function Submit({
     setShowRating(false);
     setShowAccountPrompt(false);
     setForm({
-      callsign: '',
       aircraft_type: '',
       departure: session?.airportIcao || '',
       arrival: '',
@@ -409,6 +522,10 @@ export default function Submit({
       remark: '',
       flight_type: 'IFR',
       cruisingFL: '',
+      airlineIcao: '',
+      registration: '',
+      flightNumber: '',
+      robloxUsername: user?.robloxUsername ?? '',
     });
     setRouteSid(undefined);
     setRouteStar(undefined);
@@ -424,6 +541,7 @@ export default function Submit({
     }
 
     setError('');
+    setRouteError('');
     setIsGeneratingRoute(true);
     setRouteFlParity(null);
 
@@ -673,45 +791,82 @@ export default function Submit({
                   {error}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="space-y-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
-                      <BadgeCheck className="h-4 w-4 mr-2 text-gray-400" />
-                      Callsign <span className="text-red-400 ml-1">*</span>
-                      <button
-                        type="button"
-                        className="ml-2 text-blue-400 hover:text-blue-300 transition-colors"
-                        aria-label="Callsign formatting help"
-                        title="Callsign formatting help"
-                      >
-                        <HelpCircle
-                          onClick={() =>
-                            window.open(
-                              'https://vatsim.net/docs/basics/choosing-a-callsign#2-flight-identification-flight-number',
-                              '_blank'
-                            )
-                          }
-                          className="h-4 w-4"
-                        />
-                      </button>
+                      Airline
                     </label>
-                    <CallsignInput
-                      value={form.callsign}
-                      onChange={handleChange('callsign')}
-                      required
-                      placeholder="e.g. DLH123"
-                      maxLength={16}
+                    <Dropdown
+                      value={form.airlineIcao}
+                      onChange={handleAirlineChange}
+                      options={airlineOptions}
+                      placeholder="Select airline"
+                      allowClear
+                      searchable
                     />
                   </div>
                   <div>
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
-                      <Plane className="h-4 w-4 mr-2 text-gray-400" />
-                      Aircraft Type <span className="text-red-400 ml-1">*</span>
+                      Registration
                     </label>
-                    <AircraftDropdown
-                      value={form.aircraft_type}
-                      onChange={handleChange('aircraft_type')}
+                    <input
+                      type="text"
+                      value={form.registration}
+                      onChange={(e) =>
+                        handleRegistrationChange(e.target.value)
+                      }
+                      placeholder="e.g. N17AG"
+                      maxLength={16}
+                      className="w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
+                      Flight number
+                      <span className="text-red-400 ml-1">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.flightNumber}
+                      onChange={(e) =>
+                        handleChange('flightNumber')(e.target.value)
+                      }
+                      placeholder="1234"
+                      maxLength={8}
+                      className="w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                    />
+                  </div>
+                </div>
+                {session?.externalSession && (
+                  <div>
+                    <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
+                      Roblox username (not display name)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.robloxUsername}
+                      onChange={(e) =>
+                        handleChange('robloxUsername')(e.target.value)
+                      }
+                      placeholder="Optional"
+                      maxLength={32}
+                      className="w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
+                      <PlaneTakeoff className="h-4 w-4 mr-2 text-gray-400" />
+                      Departure Airport
+                    </label>
+                    <AirportDropdown
+                      value={form.departure}
+                      onChange={handleChange('departure')}
+                      disabled
                       searchable
                     />
                   </div>
@@ -749,18 +904,6 @@ export default function Submit({
                 <div className="space-y-4">
                   <div>
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
-                      <PlaneTakeoff className="h-4 w-4 mr-2 text-gray-400" />
-                      Departure Airport
-                    </label>
-                    <AirportDropdown
-                      value={form.departure}
-                      onChange={handleChange('departure')}
-                      disabled
-                      searchable
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
                       <PlaneLanding className="h-4 w-4 mr-2 text-gray-400" />
                       Arrival Airport{' '}
                       <span className="text-red-400 ml-1">*</span>
@@ -768,6 +911,17 @@ export default function Submit({
                     <AirportDropdown
                       value={form.arrival}
                       onChange={handleArrivalChange}
+                      searchable
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
+                      <Plane className="h-4 w-4 mr-2 text-gray-400" />
+                      Aircraft Type <span className="text-red-400 ml-1">*</span>
+                    </label>
+                    <AircraftDropdown
+                      value={form.aircraft_type}
+                      onChange={handleChange('aircraft_type')}
                       searchable
                     />
                   </div>
@@ -813,9 +967,10 @@ export default function Submit({
                     name="route"
                     value={form.route}
                     onChange={(e) => {
-                      handleChange('route')(e.target.value);
+                      handleChange('route')(e.target.value.toUpperCase());
                       setRouteSid(undefined);
                       setRouteStar(undefined);
+                      setRouteError('');
                     }}
                     placeholder="e.g. HAZEL NOVMA LEDGO"
                     maxLength={500}
@@ -836,6 +991,11 @@ export default function Submit({
                     )}
                   </button>
                 </div>
+                {routeError && (
+                  <p className="mt-1.5 ml-2 text-xs text-red-400">
+                    {routeError}
+                  </p>
+                )}
               </div>
               {form.route.trim() && (
                 <div

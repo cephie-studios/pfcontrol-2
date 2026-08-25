@@ -51,8 +51,12 @@ export function validateCallsign(callsign: unknown) {
     throw new Error('Callsign must be 1-16 characters');
   }
 
-  if (!/^[A-Z0-9\s]+$/i.test(trimmed)) {
-    throw new Error('Callsign can only contain letters and numbers');
+  if (!/^[A-Z0-9\s-]+$/i.test(trimmed)) {
+    throw new Error('Callsign can only contain letters, numbers, and dashes');
+  }
+
+  if (!/\d/.test(trimmed)) {
+    throw new Error('Callsign must contain at least one number');
   }
 
   return trimmed.toUpperCase();
