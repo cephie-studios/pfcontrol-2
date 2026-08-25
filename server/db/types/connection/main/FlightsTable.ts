@@ -32,6 +32,8 @@ export interface FlightsTable {
   featured_on_profile?: boolean;
   req_at?: Date | null;
   req_phase?: string | null;
+  roblox_username?: string | null;
+  roblox_linked?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }

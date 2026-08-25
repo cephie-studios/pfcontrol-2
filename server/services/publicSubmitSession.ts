@@ -15,6 +15,7 @@ export interface PublicSubmitSession {
   atisLetter?: string;
   atisText?: string;
   controllerUsername?: string;
+  externalSession?: boolean;
 }
 
 export async function getPublicSubmitSession(
@@ -53,5 +54,6 @@ export async function getPublicSubmitSession(
     atisLetter,
     atisText,
     controllerUsername: controller?.username ?? undefined,
+    externalSession: session.external_session === true,
   };
 }

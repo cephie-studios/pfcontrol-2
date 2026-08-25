@@ -188,6 +188,14 @@ function Dropdown({
     }
   };
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (visibleOptions.length > 0) {
+      handleOptionClick(visibleOptions[0].value);
+    }
+  };
+
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue);
     if (searchable) {
@@ -450,6 +458,7 @@ function Dropdown({
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
             className={`w-full bg-transparent text-white font-semibold focus:outline-none placeholder:text-gray-400 ${inputPaddingClasses[size]} ${sizeClasses[size]} ${
               disabled ? 'cursor-not-allowed' : 'cursor-text'
             }`}

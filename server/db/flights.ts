@@ -1,6 +1,12 @@
 import { mainDb } from './connection.js';
-import { validateSessionId, validateFlightId } from '../utils/validation.js';
+import {
+  validateSessionId,
+  validateFlightId,
+  validateCallsign,
+} from '../utils/validation.js';
+import { validateRoute } from '../utils/routeValidation.js';
 import { getSessionById } from './sessions.js';
+import { getUserById } from './users.js';
 import {
   generateRandomId,
   generateSID,
@@ -660,13 +666,17 @@ export interface AddFlightData {
   clearedFL?: number;
   cruisingfl?: number | string;
   clearedfl?: number | string;
+  roblox_username?: string;
   [key: string]: unknown;
 }
 
 export async function addFlight(
   sessionId: string,
   flightData: AddFlightData,
-  options?: { countTowardStats?: boolean }
+  options?: {
+    countTowardStats?: boolean;
+    submitterUserId?: string;
+  }
 ) {
   const validSessionId = validateSessionId(sessionId);
 
@@ -695,6 +705,25 @@ export async function addFlight(
   ) {
     flightData.flight_type = 'IFR';
   }
+
+  flightData.callsign = validateCallsign(flightData.callsign);
+
+  if (typeof flightData.route === 'string' && flightData.route.trim()) {
+    const routeError =
+      flightData.flight_type === 'VFR'
+        ? undefined
+        : validateRoute(
+            flightData.route,
+            flightData.departure,
+            typeof flightData.arrival === 'string'
+              ? flightData.arrival
+              : undefined
+          );
+    if (routeError) {
+      throw new Error(`Route error: ${routeError}`);
+    }
+  }
+
   flightData.clearance = normalizeClearance(flightData.clearance);
 
   flightData.id = generateRandomId();
@@ -749,6 +778,22 @@ export async function addFlight(
     flightData.clearedfl = flightData.clearedFL;
     delete flightData.clearedFL;
   }
+
+  let robloxLinked = false;
+  if (
+    options?.submitterUserId &&
+    typeof flightData.roblox_username === 'string' &&
+    flightData.roblox_username.trim()
+  ) {
+    const submitter = await getUserById(options.submitterUserId);
+    if (
+      submitter?.roblox_username &&
+      submitter.roblox_username === flightData.roblox_username
+    ) {
+      robloxLinked = true;
+    }
+  }
+  flightData.roblox_linked = robloxLinked;
 
   // Strip non-column fields
   const {
@@ -867,6 +912,7 @@ export async function updateFlight(
     'route',
     'req_at',
     'req_phase',
+    'roblox_username',
   ];
 
   const dbUpdates: Record<string, unknown> = {};
@@ -885,6 +931,10 @@ export async function updateFlight(
           dbKey === 'clearance' ? normalizeClearance(value) : value;
       }
     }
+  }
+
+  if ('roblox_username' in dbUpdates) {
+    dbUpdates.roblox_linked = false;
   }
 
   validateFlightFields(dbUpdates as Partial<FlightsTable>);
