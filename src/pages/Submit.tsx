@@ -124,6 +124,9 @@ export default function Submit({
     flightNumber: '',
     robloxUsername: '',
   });
+  
+  const [airlineFocused, setAirlineFocused] = useState(false);
+  const [registrationFocused, setRegistrationFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
@@ -797,18 +800,31 @@ export default function Submit({
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
                       Airline
                     </label>
-                    <Dropdown
-                      value={form.airlineIcao}
-                      onChange={handleAirlineChange}
-                      options={airlineOptions}
-                      placeholder="Select airline"
-                      allowClear
-                      searchable
-                    />
+                    <div
+                      onFocus={() => setAirlineFocused(true)}
+                      onBlur={() => setAirlineFocused(false)}
+                      style={
+                        form.registration.trim() && !airlineFocused
+                          ? { filter: 'grayscale(1)' }
+                          : undefined
+                      }
+                    >
+                      <Dropdown
+                        value={form.airlineIcao}
+                        onChange={handleAirlineChange}
+                        options={airlineOptions}
+                        placeholder="Select airline"
+                        allowClear
+                        searchable
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
                       Registration
+                      <span className="ml-1.5 text-xs font-normal text-gray-500">
+                        for GA aircraft
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -818,7 +834,14 @@ export default function Submit({
                       }
                       placeholder="e.g. N17AG"
                       maxLength={16}
+                      onFocus={() => setRegistrationFocused(true)}
+                      onBlur={() => setRegistrationFocused(false)}
                       className="w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                      style={
+                        form.airlineIcao && !registrationFocused
+                          ? { filter: 'grayscale(1)' }
+                          : undefined
+                      }
                     />
                   </div>
                   <div>
