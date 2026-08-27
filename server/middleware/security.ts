@@ -31,6 +31,7 @@ const securityMiddleware = [
           'https://tpfcu.pfcontrol.com',
           'https://pilot.pfcontrol.com',
           'https://*.posthog.com',
+          'https://static.cloudflareinsights.com',
         ],
         connectSrc: [
           "'self'",
@@ -38,6 +39,7 @@ const securityMiddleware = [
           'https://pilot.pfcontrol.com',
           'https://api.cephie.app',
           'https://*.posthog.com',
+          'https://cloudflareinsights.com',
         ],
         frameSrc: ["'self'", 'https://status.cephie.app'],
         workerSrc: ["'self'", 'blob:'],
