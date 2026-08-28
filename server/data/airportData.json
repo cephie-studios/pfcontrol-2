@@ -314,8 +314,10 @@
       "RADAR VECTORS"
     ],
     "runways": [
+      "08L",
+      "08R",
       "26L",
-      "08R"
+      "26R"
     ],
     "departures": {
       "26L": {
@@ -345,26 +347,40 @@
         "MDAB": "RADAR VECTORS",
         "MDCR": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS"
+      },
+      "08L": {
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "RADAR VECTORS",
+        "LEMH": "RADAR VECTORS",
+        "EGHI": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
       "BOGNA1X": [
-        "KKWO6",
-        "KKWO8",
+        "KKW06",
+        "KKW08",
         "KKS11",
-        "KKS2O",
+        "KKS20",
         "KKS25",
         "BOGNA"
       ],
       "NOVMA1X": [
-        "KKWO7",
-        "KKWO9",
+        "KKW07",
+        "KKW09",
         "NOVMA"
       ],
       "WIZAD1X": [
-        "KKWO4",
-        "KKSO6",
-        "KKSO9",
+        "KKW04",
+        "KKW06",
+        "KKS09",
         "KKS14",
         "KKS33",
         "WIZAD"
@@ -387,8 +403,7 @@
         "VASUX",
         "DISVO",
         "TELTU",
-        "HOLLY",
-        "WILLO"
+        "HOLLY"
       ],
       "RADAR VECTORS": []
     },
@@ -407,7 +422,35 @@
         "MDCR": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS"
       },
+      "26R": {
+        "MDPC": "RADAR VECTORS",
+        "LCLK": "KUNAV1G",
+        "LCPH": "KUNAV1G",
+        "LCRA": "KUNAV1G",
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "KUNAV1G",
+        "LEMH": "KUNAV1G",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS"
+      },
       "08R": {
+        "MDPC": "RADAR VECTORS",
+        "LCLK": "KUNAV1G",
+        "LCPH": "KUNAV1G",
+        "LCRA": "KUNAV1G",
+        "GCLP": "RADAR VECTORS",
+        "EFKT": "KUNAV1G",
+        "LEMH": "KUNAV1G",
+        "EGHI": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MDCR": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS"
+      },
+      "08L": {
         "MDPC": "RADAR VECTORS",
         "LCLK": "KUNAV1G",
         "LCPH": "KUNAV1G",
@@ -506,6 +549,7 @@
       ],
       "LUBES1W": [
         "LK601",
+        "RIMEX",
         "PEEKO",
         "NORDI",
         "LUBES"
