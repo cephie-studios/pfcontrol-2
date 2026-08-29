@@ -2,6 +2,10 @@ import jwt from 'jsonwebtoken';
 import { isTester as checkIsTester, getTesterSettings } from '../db/testers.js';
 import { Request, Response, NextFunction } from 'express';
 import type { JwtPayload } from '../types/JwtPayload.js';
+import {
+  resolveChannelFromHost,
+  resolveChannelFromHostname,
+} from '../utils/deploymentChannel.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -20,7 +24,7 @@ export async function requireTester(
       return next();
     }
 
-    const settings = await getTesterSettings();
+    const settings = await getTesterSettings(resolveChannelFromHost(req));
     if (!settings.tester_gate_enabled) {
       return next();
     }
@@ -75,7 +79,9 @@ export async function checkTesterGateStatusWithDomain(host?: string) {
       return false;
     }
 
-    const settings = await getTesterSettings();
+    const settings = await getTesterSettings(
+      resolveChannelFromHostname(host || '')
+    );
     return settings.tester_gate_enabled || false;
   } catch (error) {
     console.error('Error checking tester gate status:', error);

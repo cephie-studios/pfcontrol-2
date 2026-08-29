@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
+import { resolveChannelFromHost } from '../utils/deploymentChannel.js';
 import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
@@ -742,8 +743,12 @@ router.get('/statistics', async (req, res) => {
 // GET: /api/data/settings
 router.get('/settings', async (req, res) => {
   try {
-    const settings = await getTesterSettings();
-    applyPublicCache(res, { browserMaxAge: 30, edgeMaxAge: 120 });
+    const settings = await getTesterSettings(resolveChannelFromHost(req));
+    applyPublicCache(res, {
+      browserMaxAge: 30,
+      edgeMaxAge: 120,
+      vary: 'Host',
+    });
     res.json(settings);
   } catch (error) {
     console.error('Error fetching tester settings:', error);
@@ -850,7 +855,7 @@ router.get('/tester-settings', async (req, res) => {
       return res.json({ tester_gate_enabled: false });
     }
 
-    const settings = await getTesterSettings();
+    const settings = await getTesterSettings(resolveChannelFromHost(req));
     applyPublicCache(res, {
       browserMaxAge: 0,
       edgeMaxAge: 120,
