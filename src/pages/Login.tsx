@@ -7,7 +7,6 @@ import { FaDiscord } from "react-icons/fa";
 import { useAuth } from "../hooks/auth/useAuth";
 import Checkbox from "../components/common/Checkbox";
 import Button from "../components/common/Button";
-import Footer from "../components/Footer";
 
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
@@ -93,7 +92,7 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="container mx-auto max-w-md px-4 pb-8 mb-68 relative z-10">
+      <div className="container mx-auto max-w-md px-4 pb-8 relative z-10">
         <div className="bg-zinc-900/70 backdrop-blur-md border border-zinc-800 rounded-[3rem] p-6 space-y-6 animate-fade-in">
           <Button
             onClick={handleLogin}
@@ -162,7 +161,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
