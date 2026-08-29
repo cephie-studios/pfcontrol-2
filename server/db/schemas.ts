@@ -860,6 +860,31 @@ export async function ensureAppSettingsChannelColumn() {
   `.execute(mainDb);
 }
 
+export async function ensureTesterSettingsChannelColumn() {
+  await sql`
+    ALTER TABLE tester_settings
+    ADD COLUMN IF NOT EXISTS channel varchar(50) NOT NULL DEFAULT 'production'
+  `.execute(mainDb);
+
+  await sql`
+    ALTER TABLE tester_settings
+    DROP CONSTRAINT IF EXISTS tester_settings_setting_key_key
+  `.execute(mainDb);
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_tester_settings_key_channel
+    ON tester_settings (setting_key, channel)
+  `.execute(mainDb);
+
+  await sql`
+    INSERT INTO tester_settings (setting_key, setting_value, channel, updated_at)
+    SELECT setting_key, setting_value, 'canary', now()
+    FROM tester_settings
+    WHERE channel = 'production'
+    ON CONFLICT (setting_key, channel) DO NOTHING
+  `.execute(mainDb);
+}
+
 export async function ensureEventModeColumns() {
   await sql`
     ALTER TABLE app_settings

@@ -1,5 +1,6 @@
 import { mainDb } from './connection.js';
 import { sql } from 'kysely';
+import { DEPLOYMENT } from '../utils/cacheTtl.js';
 
 export async function addTester(
   userId: string,
@@ -112,10 +113,11 @@ export async function getAllTesters(
   };
 }
 
-export async function getTesterSettings() {
+export async function getTesterSettings(channel: string = DEPLOYMENT) {
   const rows = await mainDb
     .selectFrom('tester_settings')
     .select(['setting_key', 'setting_value'])
+    .where('channel', '=', channel)
     .execute();
 
   const settings: Record<string, boolean> = {};
@@ -128,17 +130,40 @@ export async function getTesterSettings() {
   return settings;
 }
 
-export async function updateTesterSetting(key: string, value: boolean) {
+export async function getTesterSettingsByChannel(channels: string[]) {
+  const rows = await mainDb
+    .selectFrom('tester_settings')
+    .select(['setting_key', 'setting_value', 'channel'])
+    .where('channel', 'in', channels)
+    .execute();
+
+  const settingsByChannel: Record<string, Record<string, boolean>> = {};
+  for (const channel of channels) {
+    settingsByChannel[channel] = { tester_gate_enabled: true };
+  }
+  for (const row of rows) {
+    settingsByChannel[row.channel] ??= {};
+    settingsByChannel[row.channel][row.setting_key] = row.setting_value;
+  }
+  return settingsByChannel;
+}
+
+export async function updateTesterSetting(
+  key: string,
+  value: boolean,
+  channel: string = DEPLOYMENT
+) {
   await mainDb
     .insertInto('tester_settings')
     .values({
       id: sql`DEFAULT`,
       setting_key: key,
       setting_value: value,
+      channel,
       updated_at: new Date(),
     })
     .onConflict((oc) =>
-      oc.column('setting_key').doUpdateSet({
+      oc.columns(['setting_key', 'channel']).doUpdateSet({
         setting_value: value,
         updated_at: new Date(),
       })

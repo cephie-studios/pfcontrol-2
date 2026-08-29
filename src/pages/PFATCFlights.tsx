@@ -716,12 +716,17 @@ export default function PFATCFlights() {
 
   const sectorStations = [
     { label: 'Select Station', value: '', frequency: '' },
-    { label: 'LECB CTR', value: 'LECB_CTR', frequency: '132.355' },
-    { label: 'GCCC R6 CTR', value: 'GCCC_R6_CTR', frequency: '123.650' },
-    { label: 'EGTT CTR', value: 'EGTT_CTR', frequency: '127.830' },
-    { label: 'EFIN D CTR', value: 'EFIN_D_CTR', frequency: '121.300' },
-    { label: 'LCCC CTR', value: 'LCCC_CTR', frequency: '128.600' },
-    { label: 'MDCS CTR', value: 'MDCS_CTR', frequency: '124.300' },
+    { label: 'EGTT CTR', value: 'EGTT_CTR', frequency: '132.605' },
+    { label: 'EGPX CTR', value: 'EGPX_CTR', frequency: '124.500' },
+    { label: 'LPPC CTR', value: 'LPPC_CTR', frequency: '130.900' },
+    { label: 'ANC CTR', value: 'ANC_CTR', frequency: '132.300' },
+    { label: 'LCCC CTR', value: 'LCCC_CTR', frequency: '124.200' },
+    { label: 'LCCC E CTR', value: 'LCCC_E_CTR', frequency: '126.300' },
+    { label: 'LCCC W CTR', value: 'LCCC_W_CTR', frequency: '125.500' },
+    { label: 'LCCC S1 CTR', value: 'LCCC_S1_CTR', frequency: '128.600' },
+    { label: 'LCCC S2 CTR', value: 'LCCC_S2_CTR', frequency: '129.550' },
+    { label: 'MDCS N CTR', value: 'MDCS_N_CTR', frequency: '124.300' },
+    { label: 'MDCS S CTR', value: 'MDCS_S_CTR', frequency: '124.600' },
   ];
 
   const getStatusClass = (status: string) => {

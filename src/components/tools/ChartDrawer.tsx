@@ -87,12 +87,17 @@ export default function ChartDrawer({
   const viewMode = settings?.layout?.chartDrawerViewMode || 'legacy';
 
   const sectorAirportMap: Record<string, string[]> = {
-    LECB_CTR: ['LEMH'],
-    EGTT_CTR: ['EGKK', 'EGHI'],
-    GCCC_R6_CTR: ['GCLP'],
+    EGTT_CTR: ['EGKK', 'EGLC', 'EGFF', 'EGHC', 'EGHJ', 'EGCK', 'X2BH'],
+    EGPX_CTR: [],
+    LPPC_CTR: ['LPMA'],
+    ANC_CTR: ['PAFA'],
     LCCC_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    MDCS_CTR: ['MDPC', 'MDST', 'MDAB', 'MDCR', 'MTCA'],
-    EFIN_CTR: ['EFKT'],
+    LCCC_E_CTR: ['LCLK', 'LCPH', 'LCRA'],
+    LCCC_W_CTR: ['LCLK', 'LCPH', 'LCRA'],
+    LCCC_S1_CTR: ['LCLK', 'LCPH', 'LCRA'],
+    LCCC_S2_CTR: ['LCLK', 'LCPH', 'LCRA'],
+    MDCS_N_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
+    MDCS_S_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
   };
 
   const sectorAirports = sectorStation
@@ -110,19 +115,22 @@ export default function ChartDrawer({
     : [];
 
   const availableAirports = [
-    'EFKT',
-    'EGHI',
+    'EGCK',
+    'EGFF',
+    'EGHC',
+    'EGHJ',
     'EGKK',
-    'GCLP',
+    'EGLC',
     'LCLK',
     'LCPH',
     'LCRA',
-    'LEMH',
+    'LPMA',
     'MDAB',
-    'MDCR',
     'MDPC',
     'MDST',
     'MTCA',
+    'PAFA',
+    'X2BH',
   ];
 
   const otherAirports = hasSectorAirports

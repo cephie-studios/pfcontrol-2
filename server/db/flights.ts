@@ -4,7 +4,8 @@ import {
   validateFlightId,
   validateCallsign,
 } from '../utils/validation.js';
-import { validateRoute } from '../utils/routeValidation.js';
+// Update 9: unused while server-side route validation is disabled below.
+// import { validateRoute } from '../utils/routeValidation.js';
 import { getSessionById } from './sessions.js';
 import { getUserById } from './users.js';
 import {
@@ -708,21 +709,24 @@ export async function addFlight(
 
   flightData.callsign = validateCallsign(flightData.callsign);
 
-  if (typeof flightData.route === 'string' && flightData.route.trim()) {
-    const routeError =
-      flightData.flight_type === 'VFR'
-        ? undefined
-        : validateRoute(
-            flightData.route,
-            flightData.departure,
-            typeof flightData.arrival === 'string'
-              ? flightData.arrival
-              : undefined
-          );
-    if (routeError) {
-      throw new Error(`Route error: ${routeError}`);
-    }
-  }
+  // Update 9: disabled — the fix database (waypointData.json) doesn't cover
+  // the new airport roster yet, so this would reject legitimate routes.
+  // Re-enable once waypoint data catches up.
+  // if (typeof flightData.route === 'string' && flightData.route.trim()) {
+  //   const routeError =
+  //     flightData.flight_type === 'VFR'
+  //       ? undefined
+  //       : validateRoute(
+  //           flightData.route,
+  //           flightData.departure,
+  //           typeof flightData.arrival === 'string'
+  //             ? flightData.arrival
+  //             : undefined
+  //         );
+  //   if (routeError) {
+  //     throw new Error(`Route error: ${routeError}`);
+  //   }
+  // }
 
   flightData.clearance = normalizeClearance(flightData.clearance);
 

@@ -28,6 +28,10 @@ export interface TesterSettings {
   tester_gate_enabled: boolean;
 }
 
+export type TesterGateChannel = 'production' | 'canary';
+
+export type TesterSettingsByChannel = Record<TesterGateChannel, TesterSettings>;
+
 async function makeTesterRequest(endpoint: string, options?: RequestInit) {
   const response = await apiFetch(
     `${API_BASE_URL}/api/admin/testers${endpoint}`,
@@ -86,11 +90,16 @@ export async function removeTester(
   });
 }
 
+export async function fetchAdminTesterSettings(): Promise<TesterSettingsByChannel> {
+  return makeTesterRequest('/settings');
+}
+
 export async function updateTesterSettings(
+  channel: TesterGateChannel,
   settings: Partial<TesterSettings>
 ): Promise<TesterSettings> {
   return makeTesterRequest('/settings', {
     method: 'PUT',
-    body: JSON.stringify(settings),
+    body: JSON.stringify({ ...settings, channel }),
   });
 }

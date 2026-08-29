@@ -30,8 +30,9 @@ async function fetchData<T>(endpoint: string): Promise<T[]> {
   }
 }
 
-export function fetchAirports(): Promise<Airport[]> {
-  return fetchData<Airport>('airports');
+export async function fetchAirports(): Promise<Airport[]> {
+  const airports = await fetchData<Airport>('airports');
+  return airports.filter((a) => !a.retired);
 }
 
 export function fetchAircrafts(): Promise<Aircraft[]> {

@@ -31,10 +31,17 @@ import {
   fetchTesters,
   addTester,
   removeTester,
+  fetchAdminTesterSettings,
   updateTesterSettings,
   type Tester,
+  type TesterGateChannel,
+  type TesterSettingsByChannel,
 } from '../../utils/fetch/testers';
-import { getTesterSettings } from '../../utils/fetch/data';
+
+const TESTER_GATE_CHANNELS: { channel: TesterGateChannel; label: string }[] = [
+  { channel: 'production', label: 'Production' },
+  { channel: 'canary', label: 'Canary' },
+];
 
 export default function AdminTesters() {
   const [testers, setTesters] = useState<Tester[]>([]);
@@ -48,8 +55,12 @@ export default function AdminTesters() {
   const [removingTester, setRemovingTester] = useState<string | null>(null);
   const [newTesterUserId, setNewTesterUserId] = useState('');
   const [newTesterNotes, setNewTesterNotes] = useState('');
-  const [gateEnabled, setGateEnabled] = useState(true);
-  const [updatingGate, setUpdatingGate] = useState(false);
+  const [gateSettings, setGateSettings] = useState<TesterSettingsByChannel>({
+    production: { tester_gate_enabled: true },
+    canary: { tester_gate_enabled: true },
+  });
+  const [updatingChannel, setUpdatingChannel] =
+    useState<TesterGateChannel | null>(null);
 
   const [toast, setToast] = useState<{
     message: string;
@@ -63,13 +74,13 @@ export default function AdminTesters() {
 
       const [testersData, settings] = await Promise.all([
         fetchTesters(currentPage, 50, searchTerm),
-        getTesterSettings(),
+        fetchAdminTesterSettings(),
       ]);
 
       setTesters(testersData.testers);
       setTotalPages(testersData.pagination.pages);
       setTotalTesters(testersData.pagination.total);
-      setGateEnabled(settings.tester_gate_enabled);
+      setGateSettings(settings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch testers');
     } finally {
@@ -125,14 +136,20 @@ export default function AdminTesters() {
     }
   };
 
-  const handleToggleGate = async () => {
+  const handleToggleGate = async (channel: TesterGateChannel) => {
+    const nextEnabled = !gateSettings[channel].tester_gate_enabled;
     try {
-      setUpdatingGate(true);
-      await updateTesterSettings({ tester_gate_enabled: !gateEnabled });
-      setGateEnabled(!gateEnabled);
+      setUpdatingChannel(channel);
+      await updateTesterSettings(channel, {
+        tester_gate_enabled: nextEnabled,
+      });
+      setGateSettings((prev) => ({
+        ...prev,
+        [channel]: { tester_gate_enabled: nextEnabled },
+      }));
 
       setToast({
-        message: `Tester gate ${!gateEnabled ? 'enabled' : 'disabled'}`,
+        message: `Tester gate ${nextEnabled ? 'enabled' : 'disabled'} on ${channel}`,
         type: 'success',
       });
     } catch (err) {
@@ -142,7 +159,7 @@ export default function AdminTesters() {
         type: 'error',
       });
     } finally {
-      setUpdatingGate(false);
+      setUpdatingChannel(null);
     }
   };
 
@@ -161,44 +178,55 @@ export default function AdminTesters() {
 
       <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
         <AdminSectionTitle>Tester gate</AdminSectionTitle>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`p-2.5 rounded-lg shrink-0 ${
-                gateEnabled ? 'bg-emerald-950/40' : 'bg-red-950/40'
-              }`}
-            >
-              {gateEnabled ? (
-                <MdVerifiedUser size={20} className="text-emerald-400" />
-              ) : (
-                <MdGppBad size={20} className="text-red-400" />
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-zinc-200">
-                {gateEnabled ? 'Gate enabled' : 'Gate disabled'}
-              </p>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                {gateEnabled
-                  ? 'Only approved testers can access the application'
-                  : 'All users can access the application'}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={handleToggleGate}
-            disabled={updatingGate}
-            variant={gateEnabled ? 'danger' : 'primary'}
-            size={adminDownsizeButtonSize('sm')}
-          >
-            {updatingGate ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : gateEnabled ? (
-              'Disable gate'
-            ) : (
-              'Enable gate'
-            )}
-          </Button>
+        <div className="flex flex-col gap-4">
+          {TESTER_GATE_CHANNELS.map(({ channel, label }) => {
+            const gateEnabled = gateSettings[channel].tester_gate_enabled;
+            const updatingGate = updatingChannel === channel;
+            return (
+              <div
+                key={channel}
+                className="flex flex-wrap items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`p-2.5 rounded-lg shrink-0 ${
+                      gateEnabled ? 'bg-emerald-950/40' : 'bg-red-950/40'
+                    }`}
+                  >
+                    {gateEnabled ? (
+                      <MdVerifiedUser size={20} className="text-emerald-400" />
+                    ) : (
+                      <MdGppBad size={20} className="text-red-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">
+                      {label} — {gateEnabled ? 'Gate enabled' : 'Gate disabled'}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {gateEnabled
+                        ? 'Only approved testers can access the application'
+                        : 'All users can access the application'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => handleToggleGate(channel)}
+                  disabled={updatingChannel !== null}
+                  variant={gateEnabled ? 'danger' : 'primary'}
+                  size={adminDownsizeButtonSize('sm')}
+                >
+                  {updatingGate ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : gateEnabled ? (
+                    'Disable gate'
+                  ) : (
+                    'Enable gate'
+                  )}
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
