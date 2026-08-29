@@ -1054,6 +1054,23 @@ export async function syncVersionFromEnv(redis?: Redis) {
     } catch (error) {
       console.warn('[Version] Failed to invalidate version cache:', error);
     }
+    
+    try {
+      const staticDataKeys = [
+        'data:airports',
+        'data:aircrafts',
+        'data:airlines',
+        'data:waypoints',
+        'data:islands',
+        'data:frequencies',
+      ].map(prefixKey);
+      await redis.del(...staticDataKeys);
+    } catch (error) {
+      console.warn(
+        '[Version] Failed to invalidate static data cache:',
+        error
+      );
+    }
   }
 
   console.log(`[Version] Synced channel '${DEPLOYMENT}' to ${envVersion}`);
