@@ -7,6 +7,7 @@ import {
   addTester,
   removeTester,
   updateTesterSetting,
+  getTesterSettingsByChannel,
 } from '../../db/testers.js';
 import { getUserById } from '../../db/users.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
@@ -207,25 +208,42 @@ router.delete('/:userId', async (req, res) => {
   }
 });
 
-// PUT: /api/admin/testers/settings - Update tester gate settings
+const TESTER_GATE_CHANNELS = ['production', 'canary'];
+
+// GET: /api/admin/testers/settings - Get tester gate settings for every deployment channel
+router.get('/settings', async (_req, res) => {
+  try {
+    const settings = await getTesterSettingsByChannel(TESTER_GATE_CHANNELS);
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching tester settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// PUT: /api/admin/testers/settings - Update tester gate settings for a specific channel
 router.put('/settings', async (req, res) => {
   try {
-    const { tester_gate_enabled } = req.body;
+    const { tester_gate_enabled, channel } = req.body;
 
     if (typeof tester_gate_enabled !== 'boolean') {
       return res.status(400).json({ error: 'Invalid setting value' });
     }
+    if (!TESTER_GATE_CHANNELS.includes(channel)) {
+      return res.status(400).json({ error: 'Invalid channel' });
+    }
 
     const updated = await updateTesterSetting(
       'tester_gate_enabled',
-      tester_gate_enabled
+      tester_gate_enabled,
+      channel
     );
 
     if (req.user?.userId)
       capture(req, {
         distinctId: req.user.userId,
         event: 'admin_tester_gate_toggled',
-        properties: { enabled: tester_gate_enabled },
+        properties: { enabled: tester_gate_enabled, channel },
       });
 
     if (req.user?.userId) {
@@ -243,6 +261,7 @@ router.put('/settings', async (req, res) => {
             url: req.originalUrl,
             settingChanged: 'tester_gate_enabled',
             newValue: tester_gate_enabled,
+            channel,
             timestamp: new Date().toISOString(),
           },
         });
@@ -251,7 +270,7 @@ router.put('/settings', async (req, res) => {
       }
     }
 
-    res.json(updated);
+    res.json({ ...updated, channel });
   } catch (error) {
     console.error('Error updating tester settings:', error);
     res.status(500).json({ error: 'Failed to update settings' });

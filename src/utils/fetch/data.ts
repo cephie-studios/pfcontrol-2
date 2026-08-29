@@ -5,6 +5,7 @@ import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 import { clientApiUrl } from '../clientApiBase';
 import { errorFromResponse } from '../errorMessage';
+import { getCurrentDeploymentChannel } from '../deploymentChannel';
 
 interface AvailableImage {
   filename: string;
@@ -30,8 +31,9 @@ async function fetchData<T>(endpoint: string): Promise<T[]> {
   }
 }
 
-export function fetchAirports(): Promise<Airport[]> {
-  return fetchData<Airport>('airports');
+export async function fetchAirports(): Promise<Airport[]> {
+  const airports = await fetchData<Airport>('airports');
+  return airports.filter((a) => !a.retired);
 }
 
 export function fetchAircrafts(): Promise<Aircraft[]> {
@@ -87,8 +89,10 @@ export async function fetchLeaderboard(): Promise<
 
 export async function getTesterSettings(): Promise<TesterSettings> {
   try {
+    const channel = getCurrentDeploymentChannel();
+    const query = channel ? `?channel=${channel}` : '';
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/settings`,
+      `${import.meta.env.VITE_SERVER_URL}/api/data/settings${query}`,
       publicDataFetchInit
     );
     if (!response.ok) {

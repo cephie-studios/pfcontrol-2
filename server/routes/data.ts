@@ -3,6 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
+import {
+  resolveChannelFromHost,
+  KNOWN_DEPLOYMENT_CHANNELS,
+} from '../utils/deploymentChannel.js';
 import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
@@ -36,6 +40,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const airportsPath = path.join(__dirname, '..', 'data', 'airportData.json');
+const airportsLegacyPath = path.join(
+  __dirname,
+  '..',
+  'data',
+  'airportDataLegacy.json'
+);
+
+function readAllAirports(): Airport[] {
+  const base: Airport[] = fs.existsSync(airportsPath)
+    ? JSON.parse(fs.readFileSync(airportsPath, 'utf8'))
+    : [];
+  const legacy: Airport[] = fs.existsSync(airportsLegacyPath)
+    ? JSON.parse(fs.readFileSync(airportsLegacyPath, 'utf8'))
+    : [];
+  return [...base, ...legacy];
+}
 const aircraftPath = path.join(__dirname, '..', 'data', 'aircraftData.json');
 const airlinesPath = path.join(__dirname, '..', 'data', 'airlineData.json');
 const waypointsPath = path.join(__dirname, '..', 'data', 'waypointData.json');
@@ -70,14 +90,18 @@ interface Airport {
   icao: string;
   name: string;
   controlName?: string;
-  elevation: number;
+  elevation?: number;
   picture: string;
   allFrequencies: AirportFrequencies;
   sids: string[];
+  sidWaypoints?: Record<string, string[]>;
   runways: string[];
   departures: Record<string, Record<string, string>>;
   stars: string[];
+  starWaypoints?: Record<string, string[]>;
   arrivals: Record<string, Record<string, string>>;
+  // Update 9: true only for airports pulled in from airportDataLegacy.json
+  retired?: boolean;
   location?: {
     x: number;
     y: number;
@@ -129,7 +153,7 @@ router.get('/airports', async (req, res) => {
       return res.status(404).json({ error: 'Airport data not found' });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
 
     try {
       await redisConnection.set(
@@ -165,7 +189,7 @@ router.get('/airports/:icao', (req, res) => {
     }
 
     const icao = req.params.icao.toUpperCase();
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
     const airport = data.find((a: Airport) => a.icao === icao);
     if (!airport) {
       return res.status(404).json({ error: 'Airport not found' });
@@ -448,7 +472,7 @@ router.get('/frequencies', async (req, res) => {
       approach: 'APP',
     };
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
     const frequencies = data.map((airport: Airport) => {
       const allFreqs = airport.allFrequencies || {};
       const displayFreqs = freqOrder
@@ -567,7 +591,7 @@ router.get('/airports/:icao/runways', (req, res) => {
       return res.status(404).json({ error: 'Airport data not found' });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
       return res.status(404).json({ error: 'Airport not found' });
@@ -593,7 +617,7 @@ router.get('/airports/:icao/sids', (req, res) => {
       return res.status(404).json({ error: 'Airport data not found' });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
       return res.status(404).json({ error: 'Airport not found' });
@@ -619,7 +643,7 @@ router.get('/airports/:icao/stars', (req, res) => {
       return res.status(404).json({ error: 'Airport data not found' });
     }
 
-    const data: Airport[] = JSON.parse(fs.readFileSync(airportsPath, 'utf8'));
+    const data: Airport[] = readAllAirports();
     const airport = data.find((a: Airport) => a.icao === req.params.icao);
     if (!airport) {
       return res.status(404).json({ error: 'Airport not found' });
@@ -722,8 +746,19 @@ router.get('/statistics', async (req, res) => {
 // GET: /api/data/settings
 router.get('/settings', async (req, res) => {
   try {
-    const settings = await getTesterSettings();
-    applyPublicCache(res, { browserMaxAge: 30, edgeMaxAge: 120 });
+    const queryChannel = req.query.channel;
+    const channel =
+      typeof queryChannel === 'string' &&
+      KNOWN_DEPLOYMENT_CHANNELS.includes(queryChannel)
+        ? queryChannel
+        : resolveChannelFromHost(req);
+
+    const settings = await getTesterSettings(channel);
+    applyPublicCache(res, {
+      browserMaxAge: 30,
+      edgeMaxAge: 120,
+      vary: 'Host',
+    });
     res.json(settings);
   } catch (error) {
     console.error('Error fetching tester settings:', error);
@@ -830,7 +865,7 @@ router.get('/tester-settings', async (req, res) => {
       return res.json({ tester_gate_enabled: false });
     }
 
-    const settings = await getTesterSettings();
+    const settings = await getTesterSettings(resolveChannelFromHost(req));
     applyPublicCache(res, {
       browserMaxAge: 0,
       edgeMaxAge: 120,

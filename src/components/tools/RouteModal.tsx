@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, GripHorizontal, Wand2, Loader2, Check } from 'lucide-react';
 import type { Flight } from '../../types/flight';
-import RouteMap from '../map/RouteMap';
+import RouteMapOrUnavailable from '../map/RouteMapOrUnavailable';
 import { fetchRoute } from '../../utils/fetch/data';
+import { isPastCutover } from '../../utils/cutover';
 
 interface RouteModalProps {
   isOpen: boolean;
@@ -175,6 +176,9 @@ export default function RouteModal({
   if (!isOpen || !flight) return null;
 
   const showMap = mapRoute.trim().length > 0;
+  const routeUnavailable = flight.created_at
+    ? isPastCutover(flight.created_at)
+    : false;
 
   return (
     <div
@@ -250,7 +254,12 @@ export default function RouteModal({
           <div className="flex items-center gap-2">
             <button
               onClick={handleGenerate}
-              disabled={generating || !flight.departure || !flight.arrival}
+              disabled={
+                generating ||
+                !flight.departure ||
+                !flight.arrival ||
+                routeUnavailable
+              }
               className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-zinc-700 hover:bg-zinc-600 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {generating ? (
@@ -288,7 +297,8 @@ export default function RouteModal({
             className="mt-3 rounded-lg overflow-hidden border border-zinc-700"
             style={{ height: 220 }}
           >
-            <RouteMap
+            <RouteMapOrUnavailable
+              createdAt={flight.created_at}
               route={mapRoute}
               departure={flight.departure}
               arrival={flight.arrival}

@@ -6,10 +6,11 @@
     "elevation": 46,
     "picture": "/images/destinations/mdpc.png",
     "allFrequencies": {
-      "APP": "119.750",
+      "APP": "119.700",
       "TWR": "118.800",
       "GND": "121.900",
-      "DEL": "121.650"
+      "DEL": "121.650",
+      "RMP": "131.750"
     },
     "sids": [
       "CHUMA2T",
@@ -29,19 +30,22 @@
       "27"
     ],
     "departures": {
-        "08": {
+      "08": {
         "LCLK": "KATOK2T",
         "LCPH": "KATOK2T",
         "LCRA": "KATOK2T",
         "EGKK": "CHUMA2T",
         "MDST": "PIXAR2T",
-        "GCLP": "CHUMA2T",
-        "EFKT": "KATOK2T",
-        "LEMH": "KATOK2T",
-        "EGHI": "CHUMA2T",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "ETBOD2T",
-        "MTCA": "ETBOD2T"
+        "MTCA": "ETBOD2T",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "09": {
         "LCLK": "KATOK2T",
@@ -49,13 +53,16 @@
         "LCRA": "KATOK2T",
         "EGKK": "KATOK2T",
         "MDST": "PIXAR2T",
-        "GCLP": "CHUMA2T",
-        "EFKT": "KATOK2T",
-        "LEMH": "KATOK2T",
-        "EGHI": "KATOK2T",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "ETBOD2T",
-        "MTCA": "ETBOD2T"
+        "MTCA": "ETBOD2T",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "26": {
         "LCLK": "KATOK3T",
@@ -63,13 +70,16 @@
         "LCRA": "KATOK3T",
         "EGKK": "CHUMA3T",
         "MDST": "PIXAR3T",
-        "GCLP": "CHUMA3T",
-        "EFKT": "KATOK3T",
-        "LEMH": "KATOK3T",
-        "EGHI": "CHUMA3T",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "ETBOD3T",
-        "MTCA": "ETBOD3T"
+        "MTCA": "ETBOD3T",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "27": {
         "LCLK": "KATOK3T",
@@ -77,13 +87,16 @@
         "LCRA": "KATOK3T",
         "EGKK": "CHUMA3T",
         "MDST": "PIXAR3T",
-        "GCLP": "CHUMA3T",
-        "EFKT": "KATOK3T",
-        "LEMH": "KATOK3T",
-        "EGHI": "CHUMA3T",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "ETBOD3T",
-        "MTCA": "ETBOD3T"
+        "MTCA": "ETBOD3T",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -237,61 +250,73 @@
       "RADAR VECTORS": []
     },
     "arrivals": {
-        "08": {
+      "08": {
         "EGKK": "BETIR1W",
         "LCLK": "ANTEX1W",
         "LCPH": "ANTEX1W",
         "LCRA": "ANTEX1W",
-        "GCLP": "BETIR1W",
-        "EFKT": "BETIR1W",
-        "LEMH": "BETIR1W",
-        "EGHI": "BETIR1W",
         "MDST": "POKEG1W",
         "MDAB": "POKEG1W",
-        "MDCR": "POKEG1W",
-        "MTCA": "POKEG1W"
+        "MTCA": "POKEG1W",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "09": {
         "EGKK": "BETIR1W",
         "LCLK": "ANTEX1W",
         "LCPH": "ANTEX1W",
         "LCRA": "ANTEX1W",
-        "GCLP": "BETIR1W",
-        "EFKT": "BETIR1W",
-        "LEMH": "BETIR1W",
-        "EGHI": "BETIR1W",
         "MDST": "POKEG1W",
         "MDAB": "POKEG1W",
-        "MDCR": "POKEG1W",
-        "MTCA": "POKEG1W"
+        "MTCA": "POKEG1W",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "26": {
         "EGKK": "BETIR1C",
         "LCLK": "ANTEX1C",
         "LCPH": "ANTEX1C",
         "LCRA": "ANTEX1C",
-        "GCLP": "BETIR1C",
-        "EFKT": "BETIR1C",
-        "LEMH": "BETIR1C",
-        "EGHI": "BETIR1C",
         "MDST": "POKEG1C",
         "MDAB": "POKEG1C",
-        "MDCR": "POKEG1C",
-        "MTCA": "POKEG1C"
+        "MTCA": "POKEG1C",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "27": {
         "EGKK": "BETIR2C",
         "LCLK": "ANTEX2C",
         "LCPH": "ANTEX2C",
         "LCRA": "ANTEX2C",
-        "GCLP": "BETIR2C",
-        "EFKT": "BETIR2C",
-        "LEMH": "BETIR2C",
-        "EGHI": "BETIR2C",
         "MDST": "POKEG2C",
         "MDAB": "POKEG2C",
-        "MDCR": "POKEG2C",
-        "MTCA": "POKEG2C"
+        "MTCA": "POKEG2C",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
@@ -304,7 +329,8 @@
     "allFrequencies": {
       "APP": "126.825",
       "TWR": "124.230",
-      "GND": "121.805",
+      "N_GND": "121.540",
+      "S_GND": "121.805",
       "DEL": "121.955"
     },
     "sids": [
@@ -324,13 +350,16 @@
         "LCRA": "BOGNA1X",
         "MDPC": "NOVMA1X",
         "MDST": "NOVMA1X",
-        "GCLP": "NOVMA1X",
-        "EFKT": "WIZAD1X",
-        "LEMH": "BOGNA1X",
-        "EGHI": "RADAR VECTORS",
         "MDAB": "NOVMA1X",
-        "MDCR": "NOVMA1X",
-        "MTCA": "NOVMA1X"
+        "MTCA": "NOVMA1X",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "08R": {
         "LCLK": "RADAR VECTORS",
@@ -338,13 +367,16 @@
         "LCRA": "RADAR VECTORS",
         "MDPC": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -393,36 +425,42 @@
       "RADAR VECTORS": []
     },
     "arrivals": {
-            "26L": {
+      "26L": {
         "MDPC": "RADAR VECTORS",
         "LCLK": "KUNAV1G",
         "LCPH": "KUNAV1G",
         "LCRA": "KUNAV1G",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "KUNAV1G",
-        "LEMH": "KUNAV1G",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "08R": {
         "MDPC": "RADAR VECTORS",
         "LCLK": "KUNAV1G",
         "LCPH": "KUNAV1G",
         "LCRA": "KUNAV1G",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "KUNAV1G",
-        "LEMH": "KUNAV1G",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
-      }
-    },
+    }
+  },
   {
     "icao": "LCLK",
     "name": "Larnaca International Airport",
@@ -430,10 +468,10 @@
     "elevation": 75,
     "picture": "/images/destinations/lclk.png",
     "allFrequencies": {
-      "APP": "130.200",
-      "TWR": "121.200",
+      "APP": "130.205",
+      "TWR": "121.205",
       "GND": "119.400",
-      "DEL": "120.575"
+      "DEL": "120.580"
     },
     "sids": [
       "BONEK2W",
@@ -455,29 +493,35 @@
         "MDPC": "LUBES1W",
         "EGKK": "RUDER1D",
         "MDST": "LUBES1W",
-        "GCLP": "LUBES1W",
-        "EFKT": "RUDER1D",
-        "LEMH": "LUBES1W",
-        "EGHI": "RUDER1D",
         "MDAB": "LUBES1W",
-        "MDCR": "LUBES1W",
         "MTCA": "LUBES1W",
         "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS"
+        "LCRA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "04": {
         "MDPC": "BONEK2W",
         "EGKK": "RUDER1W",
         "MDST": "BONEK2W",
-        "GCLP": "BONEK2W",
-        "EFKT": "RUDER1W",
-        "LEMH": "BONEK2W",
-        "EGHI": "RUDER1W",
         "MDAB": "BONEK2W",
-        "MDCR": "BONEK2W",
         "MTCA": "BONEK2W",
         "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS"
+        "LCRA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -576,30 +620,36 @@
       "22": {
         "MDPC": "BONEK1R",
         "EGKK": "KRASI1V",
-        "GCLP": "BONEK1R",
-        "EFKT": "KRASI1V",
-        "LEMH": "BONEK1R",
-        "EGHI": "KRASI1V",
         "MDST": "BONEK1R",
         "MDAB": "BONEK1R",
-        "MDCR": "BONEK1R",
         "MTCA": "BONEK1R",
         "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS"
+        "LCRA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "04": {
         "MDPC": "LUBES1R",
         "EGKK": "LUBES1R",
-        "GCLP": "LUBES1R",
-        "EFKT": "LUBES1R",
-        "LEMH": "LUBES1R",
-        "EGHI": "LUBES1R",
         "MDST": "KURSA1R",
         "MDAB": "KURSA1R",
-        "MDCR": "KURSA1R",
         "MTCA": "KURSA1R",
         "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS"
+        "LCRA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
@@ -609,7 +659,7 @@
     "controlName": "Paphos",
     "elevation": 98,
     "allFrequencies": {
-      "APP": "130.625",
+      "APP": "120.800",
       "TWR": "119.900",
       "GND": "120.800",
       "DEL": "n/a"
@@ -628,28 +678,34 @@
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -667,28 +723,34 @@
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
@@ -698,10 +760,11 @@
     "controlName": "Akrotiri",
     "elevation": 88,
     "allFrequencies": {
-      "APP": "n/a",
-      "TWR": "130.075",
+      "APP": "123.600",
+      "TWR": "128.00",
       "GND": "122.100",
-      "DEL": "n/a"
+      "DEL": "n/a",
+      "P_APP": "129.150"
     },
     "picture": "",
     "sids": [
@@ -717,28 +780,34 @@
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "28": {
         "MDPC": "RADAR VECTORS",
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -756,553 +825,34 @@
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "28": {
         "MDPC": "RADAR VECTORS",
         "EGKK": "RADAR VECTORS",
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
-      }
-    }
-  },
-  {
-    "icao": "GCLP",
-    "name": "Gran Canaria Airport",
-    "controlName": "Gran Canaria",
-    "elevation": 96,
-    "picture": "/images/destinations/gclp.png",
-    "allFrequencies": {
-      "APP": "124.300",
-      "TWR": "118.300",
-      "GND": "121.700",
-      "DEL": "n/a"
-    },
-    "sids": [
-      "COSTI4A",
-      "COSTI4B",
-      "KOPUD1A",
-      "KOPUD1B",
-      "ODEGI2A",
-      "ODEGI2B",
-      "RADAR VECTORS"
-    ],
-    "runways": [
-      "03L",
-      "03R",
-      "21L",
-      "21R"
-    ],
-    "departures": {
-      "03L": {
-        "MDPC": "ODEGI2A",
-        "EGKK": "KOPUD1A",
-        "LCLK": "COSTI4A",
-        "LCPH": "COSTI4A",
-        "LCRA": "COSTI4A",
-        "MDST": "ODEGI2A",
-        "EFKT": "COSTI4A",
-        "LEMH": "COSTI4A",
-        "EGHI": "KOPUD1A",
-        "MDAB": "ODEGI2A",
-        "MDCR": "ODEGI2A",
-        "MTCA": "ODEGI2A"
-      },
-      "03R": {
-        "MDPC": "ODEGI2A",
-        "EGKK": "KOPUD1A",
-        "LCLK": "COSTI4A",
-        "LCPH": "COSTI4A",
-        "LCRA": "COSTI4A",
-        "MDST": "ODEGI2A",
-        "EFKT": "COSTI4A",
-        "LEMH": "COSTI4A",
-        "EGHI": "KOPUD1A",
-        "MDAB": "ODEGI2A",
-        "MDCR": "ODEGI2A",
-        "MTCA": "ODEGI2A"
-      },
-      "21L": {
-        "MDPC": "ODEGI2B",
-        "EGKK": "KOPUD1B",
-        "LCLK": "COSTI4B",
-        "LCPH": "COSTI4B",
-        "LCRA": "COSTI4B",
-        "MDST": "ODEGI2B",
-        "EFKT": "COSTI4B",
-        "LEMH": "COSTI4B",
-        "EGHI": "KOPUD1B",
-        "MDAB": "ODEGI2B",
-        "MDCR": "ODEGI2B",
-        "MTCA": "ODEGI2B"
-      },
-      "21R": {
-        "MDPC": "ODEGI2B",
-        "EGKK": "KOPUD1B",
-        "LCLK": "COSTI4B",
-        "LCPH": "COSTI4B",
-        "LCRA": "COSTI4B",
-        "MDST": "ODEGI2B",
-        "EFKT": "COSTI4B",
-        "LEMH": "COSTI4B",
-        "EGHI": "KOPUD1B",
-        "MDAB": "ODEGI2B",
-        "MDCR": "ODEGI2B",
-        "MTCA": "ODEGI2B"
-      }
-    },
-    "sidWaypoints": {
-      "KOPUD1A": [
-        "ECKOS",
-        "KOPUD"
-      ],
-      "KOPUD1B": [
-        "LP101",
-        "TUPIK",
-        "KOPUD"
-      ],
-      "COSTI4A": [
-        "ECKOS",
-        "COSTI"
-      ],
-      "COSTI4B": [
-        "LP101",
-        "COSTI"
-      ],
-      "ODEGI2A": [
-        "ECKOS",
-        "LP102",
-        "LP103",
-        "ODEGI"
-      ],
-      "ODEGI2B": [
-        "DRANO",
-        "ODEGI"
-      ],
-      "RADAR VECTORS": []
-    },
-    "stars": [
-      "LORPO1C",
-      "LORPO1Z",
-      "ORTIS5C",
-      "KONBA4D",
-      "COSTI1C",
-      "RADAR VECTORS"
-    ],
-    "starWaypoints": {
-      "LORPO1C": [
-        "LORPO",
-        "ENETA"
-      ],
-      "LORPO1Z": [
-        "LORPO",
-        "LALTO"
-      ],
-      "ORTIS5C": [
-        "BRICK",
-        "DELAP"
-      ],
-      "KONBA4D": [
-        "BRICK",
-        "LP104",
-        "MADAS"
-      ],
-      "COSTI1C": [
-        "COSTI",
-        "CANIS"
-      ],
-      "RADAR VECTORS": []
-    },
-    "arrivals": {
-      "03L": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "LORPO1Z",
-        "LCLK": "COSTI1C",
-        "LCPH": "COSTI1C",
-        "LCRA": "COSTI1C",
-        "MDST": "RADAR VECTORS",
-        "EFKT": "LORPO1Z",
-        "LEMH": "COSTI1C",
-        "EGHI": "LORPO1Z",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-      "03R": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "LORPO1Z",
-        "LCLK": "COSTI1C",
-        "LCPH": "COSTI1C",
-        "LCRA": "COSTI1C",
-        "MDST": "RADAR VECTORS",
-        "EFKT": "LORPO1Z",
-        "LEMH": "COSTI1C",
-        "EGHI": "LORPO1Z",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-      "21L": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "ORTIS5C",
-        "LCLK": "COSTI1C",
-        "LCPH": "COSTI1C",
-        "LCRA": "COSTI1C",
-        "MDST": "RADAR VECTORS",
-        "EFKT": "LORPO1C",
-        "LEMH": "LORPO1C",
-        "EGHI": "ORTIS5C",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-      "21R": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "ORTIS5C",
-        "LCLK": "COSTI1C",
-        "LCPH": "COSTI1C",
-        "LCRA": "COSTI1C",
-        "MDST": "RADAR VECTORS",
-        "EFKT": "LORPO1C",
-        "LEMH": "LORPO1C",
-        "EGHI": "ORTIS5C",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    }
-  },
-  {
-    "icao": "EGHI",
-    "name": "Southampton Airport",
-    "controlName": "Southampton",
-    "elevation": 44,
-    "picture": "/images/destinations/eghi.png",
-    "allFrequencies": {
-      "APP": "n/a",
-      "TWR": "118.205",
-      "GND": "n/a",
-      "DEL": "n/a"
-    },
-    "sids": [
-      "RADAR VECTORS"
-    ],
-    "runways": [
-      "02",
-      "20"
-    ],
-    "departures": {
-            "02": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-      "20": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    },
-    "sidWaypoints": {
-      "RADAR VECTORS": []
-    },
-    "stars": [
-      "RADAR VECTORS"
-    ],
-    "starWaypoints": {
-      "RADAR VECTORS": []
-    },
-    "arrivals": {
-      "02": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-      "20":{
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    }
-  },
-  {
-    "icao": "EFKT",
-    "name": "Kittila Airport",
-    "controlName": "Kittila",
-    "elevation": 124,
-    "picture": "/images/destinations/efkt.png",
-    "allFrequencies": {
-      "APP": "n/a",
-      "TWR": "118.950",
-      "GND": "n/a",
-      "DEL": "n/a"
-    },
-    "sids": [
-      "KEFT2D",
-      "RADAR VECTORS",
-      "ROSE3C"
-    ],
-    "runways": [
-      "16",
-      "34"
-    ],
-    "departures": {
-        "34": {
-        "MDPC": "ROSE3C",
-        "EGKK": "ROSE3C",
-        "LCLK": "ROSE3C",
-        "LCPH": "ROSE3C",
-        "LCRA": "ROSE3C",
-        "MDST": "ROSE3C",
-        "GCLP": "ROSE3C",
-        "LEMH": "ROSE3C",
-        "EGHI": "ROSE3C",
-        "MDAB": "ROSE3C",
-        "MDCR": "ROSE3C",
-        "MTCA": "ROSE3C"
-      },
-      "16": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    },
-    "sidWaypoints": {
-      "KEFT2D": [
-        "KITTL",
-        "KRDSH",
-        "KETF"
-      ],
-      "ROSE3C": [
-        "KITTL",
-        "DELTA",
-        "ROSE"
-      ],
-      "RADAR VECTORS": []
-    },
-    "stars": [
-      "KRDSH1A",
-      "KIT2D",
-      "KEFLA3C",
-      "RADAR VECTORS"
-    ],
-    "starWaypoints": {
-      "KRDSH1A": [
-        "KRDSH",
-        "DELTA",
-        "LIMA",
-        "SUDIP"
-      ],
-      "KIT2D": [
-        "KIT",
-        "SUDIP"
-      ],
-      "KEFLA3C": [
-        "EFLA",
-        "BRAVO",
-        "SUDIP"
-      ],
-      "RADAR VECTORS": []
-    },
-    "arrivals": {
-      "34": {
-        "MDPC": "KEFLA3C",
-        "EGKK": "KRDSH1A",
-        "LCLK": "KEFLA3C",
-        "LCPH": "KEFLA3C",
-        "LCRA": "KEFLA3C",
-        "MDST": "KEFLA3C",
-        "GCLP": "KEFLA3C",
-        "LEMH": "KEFLA3C",
-        "EGHI": "KRDSH1A",
-        "MDAB": "KEFLA3C",
-        "MDCR": "KEFLA3C",
-        "MTCA": "KEFLA3C"
-      },
-            "16": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    }
-  },
-  {
-    "icao": "LEMH",
-    "name": "Menorca Airport",
-    "controlName": "Menorca",
-    "elevation": 299,
-    "picture": "/images/destinations/lemh.png",
-    "allFrequencies": {
-      "APP": "120.700",
-      "TWR": "119.650",
-      "GND": "121.755",
-      "DEL": "n/a"
-    },
-    "sids": [
-      "AVI4D",
-      "ISKAL1A",
-      "MEROS3C",
-      "RADAR VECTORS",
-      "SARGO2B"
-    ],
-    "runways": [
-      "01",
-      "19"
-    ],
-    "departures": {
-        "01": {
-        "MDPC": "AVI4D",
-        "EGKK": "MEROS3C",
-        "LCLK": "AVI4D",
-        "LCPH": "AVI4D",
-        "LCRA": "AVI4D",
-        "MDST": "AVI4D",
-        "GCLP": "ISKAL1A",
-        "EFKT": "MEROS3C",
-        "EGHI": "SARGO2B",
-        "MDAB": "ISKAL1A",
-        "MDCR": "ISKAL1A",
-        "MTCA": "ISKAL1A"
-      },
-      "19": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      }
-    },
-    "sidWaypoints": {
-      "AVI4D": [
-        "TIMOR",
-        "MORSS",
-        "AVI"
-      ],
-      "ISKAL1A": [
-        "TIMOR",
-        "LUNIK",
-        "ISKAL"
-      ],
-      "MEROS3C": [
-        "TIMOR",
-        "HEROS"
-      ],
-      "SARGO2B": [
-        "TIMOR",
-        "SARGO"
-      ],
-      "RADAR VECTORS": []
-    },
-    "stars": [
-      "RADAR VECTORS"
-    ],
-    "starWaypoints": {
-      "RADAR VECTORS": []
-    },
-    "arrivals": {
-      "01": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
-      },
-        "19": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
@@ -1313,9 +863,9 @@
     "elevation": 624,
     "picture": "/images/destinations/mdst.png",
     "allFrequencies": {
-      "APP": "n/a",
+      "APP": "119.000",
       "TWR": "118.300",
-      "GND": "n/a",
+      "GND": "121.900",
       "DEL": "n/a"
     },
     "sids": [
@@ -1332,13 +882,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
@@ -1346,13 +899,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -1371,13 +927,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
@@ -1385,20 +944,23 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
         "MDAB": "RADAR VECTORS",
         "MTCA": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS"
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
   {
     "icao": "MDAB",
     "name": "Arroyo Barril Airport",
-    "controlName": "SamanÃ¡",
+    "controlName": "Saman\u00c3\u00a1",
     "elevation": 30,
     "picture": "/images/destinations/mdab.png",
     "allFrequencies": {
@@ -1421,13 +983,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
@@ -1435,13 +1000,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -1460,13 +1028,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "29": {
         "MDPC": "RADAR VECTORS",
@@ -1474,13 +1045,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS"
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
   },
@@ -1494,7 +1068,8 @@
       "APP": "n/a",
       "TWR": "n/a",
       "GND": "n/a",
-      "DEL": "n/a"
+      "DEL": "n/a",
+      "RDO": "118.900"
     },
     "sids": [
       "RADAR VECTORS"
@@ -1510,13 +1085,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
+        "MDAB": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "08": {
         "MDPC": "RADAR VECTORS",
@@ -1524,13 +1102,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
+        "MDAB": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     },
     "sidWaypoints": {
@@ -1549,13 +1130,16 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
+        "MDAB": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       },
       "08": {
         "MDPC": "RADAR VECTORS",
@@ -1563,132 +1147,18 @@
         "LCLK": "RADAR VECTORS",
         "LCPH": "RADAR VECTORS",
         "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
         "MDST": "RADAR VECTORS",
-        "MDCR": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
+        "MDAB": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
       }
     }
-  },
-  {
-    "icao": "MDCR",
-    "name": "Cabo Rojo Airport",
-    "controlName": "Cabo Rojo",
-    "elevation": 30,
-    "allFrequencies": {
-      "APP": "n/a",
-      "TWR": "n/a",
-      "GND": "n/a",
-      "DEL": "n/a"
-    },
-    "picture": "/images/destinations/mdcr.png",
-    "sids": [
-      "RADAR VECTORS"
-    ],
-    "runways": [
-      "12",
-      "30"
-    ],
-    "departures": {
-      "12": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
-      },
-      "30": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
-      }
-    },
-    "sidWaypoints": {
-      "RADAR VECTORS": []
-    },
-    "stars": [
-      "RADAR VECTORS"
-    ],
-    "starWaypoints": {
-      "RADAR VECTORS": []
-    },
-    "arrivals": {
-      "12": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
-      },
-      "30": {
-        "MDPC": "RADAR VECTORS",
-        "EGKK": "RADAR VECTORS",
-        "LCLK": "RADAR VECTORS",
-        "LCPH": "RADAR VECTORS",
-        "LCRA": "RADAR VECTORS",
-        "GCLP": "RADAR VECTORS",
-        "EFKT": "RADAR VECTORS",
-        "LEMH": "RADAR VECTORS",
-        "EGHI": "RADAR VECTORS",
-        "MDST": "RADAR VECTORS",
-        "MTCA": "RADAR VECTORS",
-        "MDAB": "RADAR VECTORS"
-      }
-    }
-  },
-  {
-    "icao": "LECB",
-    "name": "Barcelona Control",
-    "controlName": "Barcelona Center",
-    "picture": "",
-    "allFrequencies": {
-      "CTR": "132.355"
-    },
-    "sids": [],
-    "runways": [],
-    "departures": {},
-    "stars": [],
-    "arrivals": {}
-  },
-  {
-    "icao": "GCCC_R6",
-    "name": "Canarias Control R6",
-    "controlName": "Canarias Center",
-    "picture": "",
-    "allFrequencies": {
-      "CTR": "123.650"
-    },
-    "sids": [],
-    "runways": [],
-    "departures": {},
-    "stars": [],
-    "arrivals": {}
   },
   {
     "icao": "EGTT",
@@ -1696,21 +1166,7 @@
     "controlName": "London Center",
     "picture": "",
     "allFrequencies": {
-      "CTR": "127.830"
-    },
-    "sids": [],
-    "runways": [],
-    "departures": {},
-    "stars": [],
-    "arrivals": {}
-  },
-  {
-    "icao": "EFIN",
-    "name": "Finland Control D",
-    "controlName": "Finland Center",
-    "picture": "",
-    "allFrequencies": {
-      "CTR": "121.300"
+      "CTR": "132.605"
     },
     "sids": [],
     "runways": [],
@@ -1745,5 +1201,819 @@
     "departures": {},
     "stars": [],
     "arrivals": {}
+  },
+  {
+    "icao": "EGLC",
+    "name": "London City Airport",
+    "controlName": "London City",
+    "elevation": 19,
+    "picture": "",
+    "allFrequencies": {
+      "APP": "132.700",
+      "TWR": "118.080",
+      "GND": "121.830"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "09",
+      "27"
+    ],
+    "departures": {
+      "09": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "27": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "09": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "27": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "EGFF",
+    "name": "Cardiff Airport",
+    "controlName": "Cardiff",
+    "elevation": 220,
+    "picture": "",
+    "allFrequencies": {
+      "APP": "119.155",
+      "TWR": "133.105"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "12",
+      "30"
+    ],
+    "departures": {
+      "12": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "30": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "12": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "30": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "EGHC",
+    "name": "Land's End Airport",
+    "controlName": "Land's End",
+    "elevation": 400,
+    "picture": "",
+    "allFrequencies": {
+      "TWR": "120.225"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "13",
+      "31"
+    ],
+    "departures": {
+      "13": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "31": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "13": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "31": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "EGHJ",
+    "name": "Bembridge Airport",
+    "controlName": "Bembridge",
+    "elevation": 42,
+    "picture": "",
+    "allFrequencies": {
+      "RDO": "123.255"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "12",
+      "30"
+    ],
+    "departures": {
+      "12": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "30": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "12": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "30": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "EGCK",
+    "name": "Caernarfon Airport",
+    "controlName": "Caernarfon",
+    "elevation": 15,
+    "picture": "",
+    "allFrequencies": {
+      "RDO": "122.255"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "07",
+      "25"
+    ],
+    "departures": {
+      "07": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "25": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "07": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "25": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "X2BH",
+    "name": "Bolt Head Airfield",
+    "controlName": "Bolt Head",
+    "elevation": 420,
+    "picture": "",
+    "allFrequencies": {
+      "RDO": "135.480"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "11",
+      "29"
+    ],
+    "departures": {
+      "11": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "29": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "11": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "29": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "LPMA",
+    "name": "Madeira Airport",
+    "controlName": "Madeira",
+    "elevation": 190,
+    "picture": "",
+    "allFrequencies": {
+      "APP": "119.605",
+      "TWR": "124.660"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "05",
+      "23"
+    ],
+    "departures": {
+      "05": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "23": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "05": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      },
+      "23": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "PAFA": "RADAR VECTORS"
+      }
+    }
+  },
+  {
+    "icao": "PAFA",
+    "name": "Fairbanks International Airport",
+    "controlName": "Fairbanks",
+    "elevation": 439,
+    "picture": "",
+    "allFrequencies": {
+      "E_APP": "127.100",
+      "W_APP": "125.350",
+      "TWR": "118.300",
+      "GND": "121.900",
+      "DEL": "127.600"
+    },
+    "sids": [
+      "RADAR VECTORS"
+    ],
+    "runways": [
+      "02L",
+      "20R",
+      "02R",
+      "20L"
+    ],
+    "departures": {
+      "02L": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "20R": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "02R": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "20L": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      }
+    },
+    "stars": [
+      "RADAR VECTORS"
+    ],
+    "arrivals": {
+      "02L": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "20R": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "02R": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      },
+      "20L": {
+        "EGKK": "RADAR VECTORS",
+        "LCLK": "RADAR VECTORS",
+        "LCPH": "RADAR VECTORS",
+        "LCRA": "RADAR VECTORS",
+        "MDPC": "RADAR VECTORS",
+        "MDST": "RADAR VECTORS",
+        "MDAB": "RADAR VECTORS",
+        "MTCA": "RADAR VECTORS",
+        "EGLC": "RADAR VECTORS",
+        "EGFF": "RADAR VECTORS",
+        "EGHC": "RADAR VECTORS",
+        "EGHJ": "RADAR VECTORS",
+        "EGCK": "RADAR VECTORS",
+        "X2BH": "RADAR VECTORS",
+        "LPMA": "RADAR VECTORS"
+      }
+    }
   }
 ]

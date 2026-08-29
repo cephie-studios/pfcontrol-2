@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import RouteMap from "../components/map/RouteMap";
+import RouteMapOrUnavailable from "../components/map/RouteMapOrUnavailable";
 import AircraftPhotoCard from "../components/flight/AircraftPhotoCard";
 import FlightTimingBlock from "../components/flight/FlightTimingBlock";
 import FlightTabs, { type FlightTab } from "../components/flight/FlightTabs";
@@ -404,7 +404,8 @@ export default function PublicFlightView({
                     style={{ height: "300px" }}
                   >
                     {hasMounted && (
-                      <RouteMap
+                      <RouteMapOrUnavailable
+                        createdAt={flight.created_at}
                         route={flight.route}
                         departure={flight.departure}
                         arrival={flight.arrival}

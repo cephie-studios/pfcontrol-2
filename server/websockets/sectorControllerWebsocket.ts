@@ -191,7 +191,7 @@ export function setupSectorControllerWebsocket(
           return;
         }
 
-        if (!station || typeof station !== 'string' || station.length > 10) {
+        if (!station || typeof station !== 'string' || station.length > 15) {
           socket.emit('error', { message: 'Invalid station format' });
           return;
         }

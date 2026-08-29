@@ -17,6 +17,17 @@ interface WindDisplayProps {
   size?: 'normal' | 'small';
 }
 
+// Airports with no METAR station of their own — nearest reporting station
+// used instead, with a warning shown to the user (see isSpecial below).
+const METAR_SUBSTITUTE_STATIONS: Record<
+  string,
+  { icao: string; distance: string }
+> = {
+  MDCR: { icao: 'MDBH', distance: '65km' },
+  MTCA: { icao: 'MTPP', distance: '166km' },
+  X2BH: { icao: 'EGTE', distance: '72km' }, // ~39nm
+};
+
 function metarMatchesSessionIcao(
   metar: MetarData | null,
   sessionIcao: string
@@ -24,8 +35,8 @@ function metarMatchesSessionIcao(
   if (!metar?.icaoId) return false;
   const u = sessionIcao.trim().toUpperCase();
   const id = String(metar.icaoId).toUpperCase();
-  if (u === 'MDCR') return id === 'MDBH';
-  if (u === 'MTCA') return id === 'MTPP';
+  const substitute = METAR_SUBSTITUTE_STATIONS[u];
+  if (substitute) return id === substitute.icao;
   return id === u;
 }
 
@@ -68,13 +79,8 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
 
       try {
         let data: MetarData | null = null;
-        if (icao.toLowerCase() === 'mdcr') {
-          data = await fetchMetar('MDBH');
-        } else if (icao.toLowerCase() === 'mtca') {
-          data = await fetchMetar('MTPP');
-        } else {
-          data = await fetchMetar(icao);
-        }
+        const substitute = METAR_SUBSTITUTE_STATIONS[icao.toUpperCase()];
+        data = await fetchMetar(substitute ? substitute.icao : icao);
 
         if (data) {
           setMetarData(data);
@@ -245,8 +251,10 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
     }
   };
 
-  const isSpecial =
-    icao && (icao.toLowerCase() === 'mdcr' || icao.toLowerCase() === 'mtca');
+  const metarSubstitute = icao
+    ? METAR_SUBSTITUTE_STATIONS[icao.toUpperCase()]
+    : undefined;
+  const isSpecial = Boolean(metarSubstitute);
 
   if (forceHide) {
     return null;
@@ -376,8 +384,8 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
                 className="absolute top-8 left-0 z-10 w-max px-2 py-1 text-xs bg-yellow-800 text-white rounded shadow pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-0 whitespace-nowrap"
               >
                 There is no data for {icao}. This data is from{' '}
-                {icao.toLowerCase() === 'mdcr' ? 'MDBH' : 'MTPP'} which is{' '}
-                {icao.toLowerCase() === 'mdcr' ? '65km' : '166km'} away.
+                {metarSubstitute?.icao} which is {metarSubstitute?.distance}{' '}
+                away.
               </div>
             )}
           </div>
@@ -473,8 +481,8 @@ const WindDisplay: React.FC<WindDisplayProps> = ({
                 className="absolute top-8 left-0 z-10 w-max px-2 py-1 text-xs bg-yellow-800 text-white rounded shadow pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-0 whitespace-nowrap"
               >
                 There is no data for {icao}. This data is from{' '}
-                {icao.toLowerCase() === 'mdcr' ? 'MDBH' : 'MTPP'} which is{' '}
-                {icao.toLowerCase() === 'mdcr' ? '65km' : '166km'} away.
+                {metarSubstitute?.icao} which is {metarSubstitute?.distance}{' '}
+                away.
               </div>
             )}
           </div>

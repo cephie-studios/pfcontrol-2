@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-  useRef,
-} from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
@@ -30,7 +24,7 @@ import { addFlight } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds, fetchRoute } from '../utils/fetch/data';
+import { fetchBackgrounds } from '../utils/fetch/data';
 import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
@@ -41,7 +35,8 @@ import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import Modal from '../components/common/Modal';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
-import RouteMap from '../components/map/RouteMap';
+// Update 9: unused while the route map is disabled on this page.
+// import RouteMap from '../components/map/RouteMap';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -129,7 +124,8 @@ export default function Submit({
   const [registrationFocused, setRegistrationFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRating, setShowRating] = useState(false);
-  const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  // Update 9: unused while route generation is disabled (see handleGenerateRoute).
+  // const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
   const [routeFlParity, setRouteFlParity] = useState<'ODD' | 'EVEN' | null>(
     null
   );
@@ -155,34 +151,37 @@ export default function Submit({
     }
   }, [user?.robloxUsername]);
 
-  const routeValidationSeq = useRef(0);
-  useEffect(() => {
-    if (!form.route.trim() || form.flight_type === 'VFR') {
-      setRouteError('');
-      return;
-    }
-    const seq = ++routeValidationSeq.current;
-    const timeoutId = setTimeout(() => {
-      fetch(`${import.meta.env.VITE_SERVER_URL}/api/flights/validate-route`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route: form.route,
-          departure: form.departure,
-          arrival: form.arrival,
-          flight_type: form.flight_type,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data: { error: string | null }) => {
-          if (routeValidationSeq.current === seq) {
-            setRouteError(data.error || '');
-          }
-        })
-        .catch(() => {});
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [form.route, form.departure, form.arrival, form.flight_type]);
+  // Update 9: disabled — the fix database (waypointData.json) doesn't cover
+  // the new airport roster yet, so this would flag legitimate routes as
+  // errors. Re-enable once waypoint data catches up.
+  // const routeValidationSeq = useRef(0);
+  // useEffect(() => {
+  //   if (!form.route.trim() || form.flight_type === 'VFR') {
+  //     setRouteError('');
+  //     return;
+  //   }
+  //   const seq = ++routeValidationSeq.current;
+  //   const timeoutId = setTimeout(() => {
+  //     fetch(`${import.meta.env.VITE_SERVER_URL}/api/flights/validate-route`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         route: form.route,
+  //         departure: form.departure,
+  //         arrival: form.arrival,
+  //         flight_type: form.flight_type,
+  //       }),
+  //     })
+  //       .then((res) => res.json())
+  //       .then((data: { error: string | null }) => {
+  //         if (routeValidationSeq.current === seq) {
+  //           setRouteError(data.error || '');
+  //         }
+  //       })
+  //       .catch(() => {});
+  //   }, 500);
+  //   return () => clearTimeout(timeoutId);
+  // }, [form.route, form.departure, form.arrival, form.flight_type]);
 
   useEffect(() => {
     if (
@@ -535,46 +534,49 @@ export default function Submit({
     setRouteFlParity(null);
   };
 
-  const handleGenerateRoute = async () => {
-    if (!form.departure || !form.arrival) {
-      setError(
-        'Please select both departure and arrival airports to generate a route.'
-      );
-      return;
-    }
-
-    setError('');
-    setRouteError('');
-    setIsGeneratingRoute(true);
-    setRouteFlParity(null);
-
-    const minimumDelay = new Promise((resolve) => setTimeout(resolve, 500));
-
-    try {
-      const [routeData] = await Promise.all([
-        fetchRoute(
-          form.departure,
-          form.arrival,
-          session?.activeRunway ?? undefined
-        ),
-        minimumDelay,
-      ]);
-
-      if (routeData.success) {
-        setForm((f) => ({ ...f, route: routeData.route }));
-        setRouteFlParity(routeData.flParity ?? null);
-        setRouteSid(routeData.sid);
-        setRouteStar(routeData.star);
-      } else {
-        setError('Failed to generate a route. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error generating route:', error);
-      setError('An error occurred while generating the route.');
-    } finally {
-      setIsGeneratingRoute(false);
-    }
-  };
+  // Update 9: route generation disabled — no waypoint data for the new
+  // airport roster yet (see the commented-out Generate button below).
+  // Re-enable once it's available.
+  // const handleGenerateRoute = async () => {
+  //   if (!form.departure || !form.arrival) {
+  //     setError(
+  //       'Please select both departure and arrival airports to generate a route.'
+  //     );
+  //     return;
+  //   }
+  //
+  //   setError('');
+  //   setRouteError('');
+  //   setIsGeneratingRoute(true);
+  //   setRouteFlParity(null);
+  //
+  //   const minimumDelay = new Promise((resolve) => setTimeout(resolve, 500));
+  //
+  //   try {
+  //     const [routeData] = await Promise.all([
+  //       fetchRoute(
+  //         form.departure,
+  //         form.arrival,
+  //         session?.activeRunway ?? undefined
+  //       ),
+  //       minimumDelay,
+  //     ]);
+  //
+  //     if (routeData.success) {
+  //       setForm((f) => ({ ...f, route: routeData.route }));
+  //       setRouteFlParity(routeData.flParity ?? null);
+  //       setRouteSid(routeData.sid);
+  //       setRouteStar(routeData.star);
+  //     } else {
+  //       setError('Failed to generate a route. Please try again.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating route:', error);
+  //     setError('An error occurred while generating the route.');
+  //   } finally {
+  //     setIsGeneratingRoute(false);
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -999,6 +1001,9 @@ export default function Submit({
                     maxLength={500}
                     className="flex items-center w-full pl-6 pr-28 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                   />
+                  {/* Update 9: route generation disabled — no waypoint data
+                      for the new airport roster yet. Re-enable once it's
+                      available.
                   <button
                     type="button"
                     onClick={handleGenerateRoute}
@@ -1013,6 +1018,7 @@ export default function Submit({
                       'Generate'
                     )}
                   </button>
+                  */}
                 </div>
                 {routeError && (
                   <p className="mt-1.5 ml-2 text-xs text-red-400">
@@ -1020,6 +1026,8 @@ export default function Submit({
                   </p>
                 )}
               </div>
+              {/* Update 9: route map disabled — no waypoint/island data for
+                  the new airport roster yet. Re-enable once it's available.
               {form.route.trim() && (
                 <div
                   className="rounded-2xl overflow-hidden border border-gray-700"
@@ -1034,6 +1042,7 @@ export default function Submit({
                   />
                 </div>
               )}
+              */}
 
               <div>
                 <label className="flex items-center mb-2 text-sm font-medium text-gray-300">
