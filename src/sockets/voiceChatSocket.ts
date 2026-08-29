@@ -1,5 +1,6 @@
 import io from 'socket.io-client';
 import { playSound, SOUNDS } from '../utils/playSound';
+import { apiFetch } from '../utils/apiFetch';
 
 const SOCKET_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -81,14 +82,52 @@ export function createVoiceChatSocket(
   let selectedAudioInputId = 'default';
   let wasTalking = false;
 
+  const STUN_ONLY_SERVERS: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
+
   const rtcConfig: RTCConfiguration = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-    ],
+    iceServers: STUN_ONLY_SERVERS,
     iceCandidatePoolSize: 0,
     bundlePolicy: 'max-bundle',
     rtcpMuxPolicy: 'require',
+  };
+
+  let turnFetchedAt = 0;
+  const TURN_REFRESH_MS = 60 * 60 * 1000;
+
+  const ensureIceServers = async () => {
+    if (turnFetchedAt && Date.now() - turnFetchedAt < TURN_REFRESH_MS) return;
+
+    try {
+      const res = await apiFetch(
+        `${import.meta.env.VITE_SERVER_URL || ''}/api/turn/credentials`,
+        { credentials: 'include' }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = (await res.json()) as {
+        iceServers?: RTCIceServer[];
+        turnAvailable?: boolean;
+      };
+
+      if (data.turnAvailable && data.iceServers?.length) {
+        rtcConfig.iceServers = [...STUN_ONLY_SERVERS, ...data.iceServers];
+        turnFetchedAt = Date.now();
+        console.info(
+          `[VoiceChat] TURN relay enabled (${data.iceServers.length} ICE server entries)`
+        );
+      } else {
+        rtcConfig.iceServers = STUN_ONLY_SERVERS;
+        console.warn(
+          '[VoiceChat] TURN unavailable, falling back to STUN-only. Peers behind restrictive NAT may fail to connect.'
+        );
+      }
+    } catch (err) {
+      rtcConfig.iceServers = STUN_ONLY_SERVERS;
+      console.warn('[VoiceChat] Could not fetch TURN credentials:', err);
+    }
   };
 
   const getOrCreateAudioContext = () => {
@@ -155,6 +194,8 @@ export function createVoiceChatSocket(
 
   const initializeAudio = async () => {
     try {
+      const iceServersReady = ensureIceServers();
+
       const ctx = await resumeAudioContext();
       if (localStream) {
         localStream.getTracks().forEach((t) => t.stop());
@@ -175,6 +216,7 @@ export function createVoiceChatSocket(
       });
 
       await refreshDeviceList();
+      await iceServersReady;
 
       if (analyser) analyser.disconnect();
       if (microphone) microphone.disconnect();

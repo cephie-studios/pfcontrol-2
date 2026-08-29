@@ -5,8 +5,23 @@
     "wtc": "M"
   },
   {
+    "type": "A318",
+    "name": "Airbus A318",
+    "wtc": "M"
+  },
+  {
+    "type": "A319",
+    "name": "Airbus A319",
+    "wtc": "M"
+  },
+  {
     "type": "A320",
     "name": "Airbus A320",
+    "wtc": "M"
+  },
+  {
+    "type": "A321",
+    "name": "Airbus A321",
     "wtc": "M"
   },
   {
@@ -15,8 +30,18 @@
     "wtc": "H"
   },
   {
+    "type": "A340",
+    "name": "Airbus A340",
+    "wtc": "H"
+  },
+  {
     "type": "A350",
     "name": "Airbus A350",
+    "wtc": "H"
+  },
+  {
+    "type": "A337",
+    "name": "Airbus BelugaXL",
     "wtc": "H"
   },
   {
@@ -55,8 +80,8 @@
     "wtc": "L"
   },
   {
-    "type": "C150",
-    "name": "Cessna 150A",
+    "type": "C152",
+    "name": "Cessna 152",
     "wtc": "L"
   },
   {
@@ -95,8 +120,8 @@
     "wtc": "L"
   },
   {
-    "type": "P46T",
-    "name": "Piper M350",
+    "type": "P28A",
+    "name": "Piper PA-28",
     "wtc": "L"
   },
   {
