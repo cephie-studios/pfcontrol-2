@@ -15,6 +15,7 @@ export async function getAppVersion() {
   if (!result) {
     return {
       version: '2.0.0',
+      channel: DEPLOYMENT,
       updated_at: new Date().toISOString(),
       updated_by: 'system',
     };
@@ -22,6 +23,7 @@ export async function getAppVersion() {
 
   const versionData = {
     ...result,
+    channel: DEPLOYMENT,
     updated_at: result.updated_at?.toISOString() ?? null,
   };
 
