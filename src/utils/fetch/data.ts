@@ -5,6 +5,7 @@ import type { TesterSettings } from './testers';
 import type { Notification as AdminNotification } from '../fetch/admin';
 import { clientApiUrl } from '../clientApiBase';
 import { errorFromResponse } from '../errorMessage';
+import { getCurrentDeploymentChannel } from '../deploymentChannel';
 
 interface AvailableImage {
   filename: string;
@@ -88,8 +89,10 @@ export async function fetchLeaderboard(): Promise<
 
 export async function getTesterSettings(): Promise<TesterSettings> {
   try {
+    const channel = getCurrentDeploymentChannel();
+    const query = channel ? `?channel=${channel}` : '';
     const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/api/data/settings`,
+      `${import.meta.env.VITE_SERVER_URL}/api/data/settings${query}`,
       publicDataFetchInit
     );
     if (!response.ok) {

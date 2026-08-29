@@ -3,7 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getTesterSettings } from '../db/testers.js';
-import { resolveChannelFromHost } from '../utils/deploymentChannel.js';
+import {
+  resolveChannelFromHost,
+  KNOWN_DEPLOYMENT_CHANNELS,
+} from '../utils/deploymentChannel.js';
 import { getActiveNotifications } from '../db/notifications.js';
 import { mainDb, redisConnection } from '../db/connection.js';
 import { getTopUsers, STATS_KEYS, getUserRank } from '../db/leaderboard.js';
@@ -743,7 +746,14 @@ router.get('/statistics', async (req, res) => {
 // GET: /api/data/settings
 router.get('/settings', async (req, res) => {
   try {
-    const settings = await getTesterSettings(resolveChannelFromHost(req));
+    const queryChannel = req.query.channel;
+    const channel =
+      typeof queryChannel === 'string' &&
+      KNOWN_DEPLOYMENT_CHANNELS.includes(queryChannel)
+        ? queryChannel
+        : resolveChannelFromHost(req);
+
+    const settings = await getTesterSettings(channel);
     applyPublicCache(res, {
       browserMaxAge: 30,
       edgeMaxAge: 120,

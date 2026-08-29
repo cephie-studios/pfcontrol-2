@@ -1,6 +1,8 @@
 import type { Request } from 'express';
 import { DEPLOYMENT } from './cacheTtl.js';
 
+export const KNOWN_DEPLOYMENT_CHANNELS = ['production', 'canary'];
+
 export function resolveChannelFromHostname(host: string): string {
   const normalized = host.split(',')[0].trim().toLowerCase();
 
