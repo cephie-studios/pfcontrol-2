@@ -63,13 +63,24 @@ describe('validateCallsign', () => {
     expect(validateCallsign('  dlh123  ')).toBe('DLH123');
   });
 
+  it('allows dashes and spaces', () => {
+    expect(validateCallsign('  dlh-123  ')).toBe('DLH-123');
+    expect(validateCallsign('dlh 123')).toBe('DLH 123');
+  });
+
   it('rejects invalid callsigns', () => {
     expect(() => validateCallsign('')).toThrow('Callsign is required');
     expect(() => validateCallsign('A'.repeat(17))).toThrow(
       'Callsign must be 1-16 characters'
     );
-    expect(() => validateCallsign('DLH-123')).toThrow(
-      'Callsign can only contain letters and numbers'
+    expect(() => validateCallsign('DLH_123')).toThrow(
+      'Callsign can only contain letters, numbers, and dashes'
+    );
+  });
+
+  it('requires at least one number', () => {
+    expect(() => validateCallsign('DLHXYZ')).toThrow(
+      'Callsign must contain at least one number'
     );
   });
 });

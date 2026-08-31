@@ -31,7 +31,13 @@ vi.mock('../../../server/db/connection.js', () => ({
         offset: vi.fn(() => ({ execute: mocks.execute })),
         select: vi.fn((arg: unknown) => {
           if (Array.isArray(arg)) {
-            return { execute: mocks.execute };
+            // getTesterSettings filters by channel, so the array-select
+            // branch has to stay chainable through .where().
+            const selected: Record<string, unknown> = {
+              execute: mocks.execute,
+            };
+            selected.where = vi.fn(() => selected);
+            return selected;
           }
           return {
             where: vi.fn(() => ({ executeTakeFirst: mocks.executeTakeFirst })),
