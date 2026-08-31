@@ -20,7 +20,7 @@ import { sql } from 'kysely';
 const BATCH_SIZE = 50;
 
 async function run() {
-  let offset = 0;
+  const offset = 0;
   let totalUpdated = 0;
   let totalSkipped = 0;
   let totalEmpty = 0;
