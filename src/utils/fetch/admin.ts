@@ -905,9 +905,7 @@ export async function fetchAdminControllerRatings(
   return makeAdminRequest(`/ratings?${params.toString()}`);
 }
 
-export async function dismissControllerRatingReport(
-  id: number
-): Promise<void> {
+export async function dismissControllerRatingReport(id: number): Promise<void> {
   await makeAdminRequest(`/ratings/${id}/dismiss-report`, {
     method: 'PATCH',
   });

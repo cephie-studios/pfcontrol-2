@@ -477,7 +477,10 @@ export async function createOrUpdateUser(userData: {
   return await getUserById(id);
 }
 
-export async function updateUserSettings(id: string, settings: Partial<Settings>) {
+export async function updateUserSettings(
+  id: string,
+  settings: Partial<Settings>
+) {
   const existingUser = await getUserById(id);
   if (!existingUser) {
     throw new Error('User not found');

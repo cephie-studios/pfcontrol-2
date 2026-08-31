@@ -87,9 +87,9 @@ export default function DeveloperAccessRequestForm({
       </div>
 
       <p className="mt-4 mb-6 rounded-2xl border border-sky-800/35 bg-sky-950/30 px-4 py-3 text-sm text-sky-100/90 leading-relaxed">
-        <span className="font-medium text-sky-200">Note:</span> you only have
-        to pick what you need today. Extra scopes on a key request later go
-        through admin approval same as this one.
+        <span className="font-medium text-sky-200">Note:</span> you only have to
+        pick what you need today. Extra scopes on a key request later go through
+        admin approval same as this one.
       </p>
 
       <div className="space-y-6 mt-2">

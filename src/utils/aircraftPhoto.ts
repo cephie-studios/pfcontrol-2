@@ -54,7 +54,10 @@ export function extractAirlineIcaoPrefix(
   callsign: string | undefined
 ): string | null {
   if (!callsign) return null;
-  const match = callsign.trim().toUpperCase().match(/^([A-Z]{2,3})(.+)$/);
+  const match = callsign
+    .trim()
+    .toUpperCase()
+    .match(/^([A-Z]{2,3})(.+)$/);
   return match ? match[1] : null;
 }
 

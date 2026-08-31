@@ -125,9 +125,7 @@ function relativeLuminance({
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
   };
-  return (
-    0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
-  );
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
 export function contrastRatio(hexA: string, hexB: string): number {

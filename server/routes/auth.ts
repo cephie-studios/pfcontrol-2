@@ -981,9 +981,15 @@ router.post('/fingerprint', requireAuthSoft, async (req, res) => {
 // GET: /api/auth/platform-identity - minimal cross-subdomain identity lookup
 router.get('/platform-identity', requirePlatformIdentity, (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (!req.platformIdentity) return res.status(401).json({ error: 'Unauthorized' });
-  const { userId, username, discriminator, avatar, isAdmin: admin } =
-    req.platformIdentity;
+  if (!req.platformIdentity)
+    return res.status(401).json({ error: 'Unauthorized' });
+  const {
+    userId,
+    username,
+    discriminator,
+    avatar,
+    isAdmin: admin,
+  } = req.platformIdentity;
   res.json({ userId, username, discriminator, avatar, isAdmin: admin });
 });
 

@@ -22,7 +22,10 @@ async function fetchData<T>(endpoint: string): Promise<T[]> {
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(
+        response,
+        `HTTP error! status: ${response.status}`
+      );
     }
     return await response.json();
   } catch (error) {
@@ -83,7 +86,8 @@ export async function fetchLeaderboard(): Promise<
     `${import.meta.env.VITE_SERVER_URL}/api/data/leaderboard`,
     publicDataFetchInit
   );
-  if (!response.ok) throw await errorFromResponse(response, 'Failed to fetch leaderboard');
+  if (!response.ok)
+    throw await errorFromResponse(response, 'Failed to fetch leaderboard');
   return response.json();
 }
 
@@ -96,7 +100,10 @@ export async function getTesterSettings(): Promise<TesterSettings> {
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(
+        response,
+        `HTTP error! status: ${response.status}`
+      );
     }
     const settings: TesterSettings = await response.json();
     return settings;
@@ -154,7 +161,10 @@ export async function fetchRoute(
       publicDataFetchInit
     );
     if (!response.ok) {
-      throw await errorFromResponse(response, `HTTP error! status: ${response.status}`);
+      throw await errorFromResponse(
+        response,
+        `HTTP error! status: ${response.status}`
+      );
     }
     const data = await response.json();
     return { ...data, success: true };

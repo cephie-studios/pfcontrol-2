@@ -486,7 +486,9 @@ interface DeveloperDocsProps {
   initialSpec?: DeveloperApiPublicSpec | null;
 }
 
-export default function DeveloperDocs({ initialSpec }: DeveloperDocsProps = {}) {
+export default function DeveloperDocs({
+  initialSpec,
+}: DeveloperDocsProps = {}) {
   const [spec, setSpec] = useState<DeveloperApiPublicSpec | null>(
     initialSpec ?? null
   );
@@ -550,7 +552,11 @@ export default function DeveloperDocs({ initialSpec }: DeveloperDocsProps = {}) 
       if (ib === -1) return -1;
       return ia - ib;
     });
-    return ids.map((id) => ({ id, label: groupLabelFor(id), items: m.get(id)! }));
+    return ids.map((id) => ({
+      id,
+      label: groupLabelFor(id),
+      items: m.get(id)!,
+    }));
   }, [filteredEndpoints]);
 
   const goToEndpoint = (id: string) => {
@@ -759,7 +765,11 @@ export default function DeveloperDocs({ initialSpec }: DeveloperDocsProps = {}) 
                 <div className="mb-3">{searchBox}</div>
                 {navList((id) => {
                   setMobileNavOpen(false);
-                  if (id === 'overview' || id === 'auth' || id === 'websockets') {
+                  if (
+                    id === 'overview' ||
+                    id === 'auth' ||
+                    id === 'websockets'
+                  ) {
                     setActiveId(null);
                     requestAnimationFrame(() => {
                       document

@@ -1,6 +1,9 @@
 import { mainDb, redisConnection } from './connection.js';
 import { sql } from 'kysely';
-import { containsProfanity, getHateSpeechReason } from '../utils/hateSpeechFilter.js';
+import {
+  containsProfanity,
+  getHateSpeechReason,
+} from '../utils/hateSpeechFilter.js';
 
 export async function addControllerRating(
   controllerId: string,

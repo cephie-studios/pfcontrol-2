@@ -121,9 +121,7 @@ export default function CustomUserButton({
   }
 
   if (!user) {
-    const baseClasses = isMobile
-      ? 'w-full'
-      : 'py-2';
+    const baseClasses = isMobile ? 'w-full' : 'py-2';
 
     return (
       <Button

@@ -52,8 +52,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     pathParams: [
       {
         name: 'controllerId',
-        description:
-          "The controller's user id",
+        description: "The controller's user id",
         example: '123456789012345678',
       },
     ],
@@ -204,8 +203,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       regex: /^\/sessions\/[^/]+\/flights\/[^/]+$/i,
       pathTemplate: '/sessions/{sessionId}/flights/{flightId}',
     },
-    responseSummary:
-      'Single flight JSON (sanitized).',
+    responseSummary: 'Single flight JSON (sanitized).',
     pathParams: [
       {
         name: 'sessionId',
@@ -242,7 +240,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       },
     ],
     requestBodySummary:
-      'Every field is optional; send only what changed. Complete accepted field list: callsign, aircraft, departure, arrival (ICAO — see GET /data/airports; rejected with 400 if not a real airport), flightType (IFR/VFR), route, sid, star (see GET /data/airports/{icao}/sids and /stars), runway (see GET /data/airports/{icao}/runways — rejected with 400 if not a real runway at the flight\'s departure airport, using the new departure if you\'re also changing it in the same request), cruisingFL, clearedFL, squawk, wtc, status, remark, clearance (boolean), stand, gate, hidden (boolean), pdcRemarks, reqAt (ISO timestamp or null), reqPhase (one of C, P, T, G, or null). Unrecognized fields are silently ignored. This action is logged — see GET /flight-logs.',
+      "Every field is optional; send only what changed. Complete accepted field list: callsign, aircraft, departure, arrival (ICAO — see GET /data/airports; rejected with 400 if not a real airport), flightType (IFR/VFR), route, sid, star (see GET /data/airports/{icao}/sids and /stars), runway (see GET /data/airports/{icao}/runways — rejected with 400 if not a real runway at the flight's departure airport, using the new departure if you're also changing it in the same request), cruisingFL, clearedFL, squawk, wtc, status, remark, clearance (boolean), stand, gate, hidden (boolean), pdcRemarks, reqAt (ISO timestamp or null), reqPhase (one of C, P, T, G, or null). Unrecognized fields are silently ignored. This action is logged — see GET /flight-logs.",
     requestBodyExampleJson: JSON.stringify({
       status: 'ACTIVE',
       runway: '26L',
@@ -257,8 +255,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       regex: /^\/sessions\/[^/]+\/flights$/i,
       pathTemplate: '/sessions/{sessionId}/flights',
     },
-    responseSummary:
-      'JSON array of flights',
+    responseSummary: 'JSON array of flights',
     pathParams: [
       {
         name: 'sessionId',
@@ -360,7 +357,8 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       activeRunway: '26L',
       arrivalRunway: '26L',
       atisLetter: 'C',
-      atisText: 'LONDON GATWICK AIRPORT INFORMATION C...  0150Z...  WIND CALM...  CAVOK...  TEMPERATURE 11, DEWPOINT 8...  QNH 1022, ALTIMETER 3018...  LANDING AND DEPARTING RUNWAY 26L...  EXPECT SIMULTANEOUS ILS AND VISUAL APPROACH RUNWAY 26L...  ADVISE CONTROLLER ON INITIAL CONTACT THAT YOU HAVE INFORMATION C... ',
+      atisText:
+        'LONDON GATWICK AIRPORT INFORMATION C...  0150Z...  WIND CALM...  CAVOK...  TEMPERATURE 11, DEWPOINT 8...  QNH 1022, ALTIMETER 3018...  LANDING AND DEPARTING RUNWAY 26L...  EXPECT SIMULTANEOUS ILS AND VISUAL APPROACH RUNWAY 26L...  ADVISE CONTROLLER ON INITIAL CONTACT THAT YOU HAVE INFORMATION C... ',
     }),
   },
   {
@@ -375,7 +373,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'POST',
     pattern: { kind: 'exact', path: '/sessions' },
     responseSummary:
-      "Creates a session tied to your user and this API key (API-managed). Returns session id and metadata, plus accessId (the join code) — this is the only endpoint that returns it; GET /sessions and GET /sessions/{sessionId} omit it, so save it from this response if you want to open the session in the web UI yourself.",
+      'Creates a session tied to your user and this API key (API-managed). Returns session id and metadata, plus accessId (the join code) — this is the only endpoint that returns it; GET /sessions and GET /sessions/{sessionId} omit it, so save it from this response if you want to open the session in the web UI yourself.',
     requestBodySummary:
       'airportIcao (required — see GET /data/airports for valid ICAO codes; rejected with 400 if not an available airport), activeRunway (required — departure runway; see GET /data/airports/{icao}/runways for valid runways at this airport; rejected if not valid, also requires a departure runway to create a session), optional isPFATC, arrivalRunway (rejected if not valid; defaults to activeRunway when omitted).',
     requestBodyExampleJson: JSON.stringify({
@@ -468,7 +466,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/data/findRoute' },
     responseSummary:
-      'JSON object with path (waypoint ids), distance, success. success is false (not a 400) if from/to aren\'t airports the route graph recognizes.',
+      "JSON object with path (waypoint ids), distance, success. success is false (not a 400) if from/to aren't airports the route graph recognizes.",
     queryParams: [
       {
         name: 'from',

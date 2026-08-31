@@ -137,7 +137,7 @@ router.post('/generate', requireAuth, async (req, res) => {
       text: generatedAtis,
       timestamp: atisTimestamp,
     };
-    
+
     const newDepartureRunway = departing_runways[0] ?? landing_runways[0];
     const newArrivalRunway = landing_runways[0] ?? departing_runways[0];
 

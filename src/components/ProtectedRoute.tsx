@@ -67,7 +67,12 @@ export default function ProtectedRoute({
   }
 
   if (requireAuth && !user) {
-    return <Navigate to={`/login?callback=${window.location.pathname + window.location.search}`} replace />;
+    return (
+      <Navigate
+        to={`/login?callback=${window.location.pathname + window.location.search}`}
+        replace
+      />
+    );
   }
   if (user && user.isBanned) {
     return <AccessDenied errorType="banned" />;
@@ -116,7 +121,12 @@ export default function ProtectedRoute({
     !shouldBypassTesterGate() &&
     !user
   ) {
-    return <Navigate to={`/login?callback=${window.location.pathname + window.location.search}`} replace />;
+    return (
+      <Navigate
+        to={`/login?callback=${window.location.pathname + window.location.search}`}
+        replace
+      />
+    );
   }
 
   return <>{children}</>;

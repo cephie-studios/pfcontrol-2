@@ -85,8 +85,7 @@ function validateFlightAirportFields(
     typeof fields.arrival === 'string' ? fields.arrival : undefined;
   const alternate =
     typeof fields.alternate === 'string' ? fields.alternate : undefined;
-  const runway =
-    typeof fields.runway === 'string' ? fields.runway : undefined;
+  const runway = typeof fields.runway === 'string' ? fields.runway : undefined;
 
   if (departure && !isValidAirportIcao(departure)) {
     return {
@@ -392,7 +391,12 @@ router.put(
               before?.departure
             );
             if (airportError) {
-              return { sessionId, flightId, ok: false, error: airportError.error };
+              return {
+                sessionId,
+                flightId,
+                ok: false,
+                error: airportError.error,
+              };
             }
 
             const flight = await updateFlight(sessionId, flightId, fields);
@@ -412,9 +416,7 @@ router.put(
           } catch (e) {
             const msg = e instanceof Error ? e.message : 'Update failed';
             const error =
-              msg === 'Flight not found or update failed'
-                ? 'Not found'
-                : msg;
+              msg === 'Flight not found or update failed' ? 'Not found' : msg;
             return {
               sessionId: rawSessionId,
               flightId: rawFlightId,
@@ -847,11 +849,9 @@ router.post(
       if (airportError) return res.status(400).json(airportError);
 
       // API-created flights don't count toward the public leaderboard/profile stats.
-      const ownerView = await addFlight(
-        loaded.session.session_id,
-        flightData,
-        { countTowardStats: false }
-      );
+      const ownerView = await addFlight(loaded.session.session_id, flightData, {
+        countTowardStats: false,
+      });
       await recordNewFlight();
 
       const inserted = ownerView.id

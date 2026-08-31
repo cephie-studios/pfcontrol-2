@@ -1,1 +1,47 @@
-{"British Airways":["ka1atay-0.webp","ka1atay-1.webp"],"Qatar":["ka1atay-0.webp","ka1atay-1.webp"],"Emirates":["ka1atay-0.webp","itsaman_smh-0.webp"],"Singapore Airlines":["ka1atay-0.webp"],"Swiss Air":["ka1atay-0.webp"],"AirFrance":["ka1atay-0.webp"],"KLM Pride":["ian_cheesy-0.webp","ka1atay-0.webp","itsaman_smh-0.webp","ka1atay-1.webp"],"Turkish Airlines":["ka1atay-0.webp","ka1atay-1.webp","ka1atay-2.webp","ka1atay-3.webp"],"Air India":["ka1atay-0.webp"],"Kuwait":["ka1atay-0.webp"],"Evaair":["ka1atay-0.webp"],"PIA":["ka1atay-0.webp"],"Cargojet":["ka1atay-0.webp"],"ANA_StarWars":["ka1atay-0.webp"],"United":["ka1atay-0.webp"],"Cathay Pacific":["ka1atay-0.webp"],"Etihad":["ka1atay-0.webp","ka1atay-1.webp"],"KLM":["ka1atay-0.webp"],"Air New Zealand":["ka1atay-0.webp"],"ANA":["ka1atay-0.webp","ka1atay-1.webp"],"SaudiArabian_Basic":["ka1atay-0.webp","ka1atay-1.webp"],"IAI Big Twin":["ka1atay-0.webp"],"Aeroflot":["ka1atay-0.webp","iamtherealcodo-0.webp"],"Swiss":["captain_jk7173-0.webp"],"Korean Air":["ka1atay-0.webp","ka1atay-1.webp"],"JAL":["ka1atay-0.webp"],"Philippines":["ka1atay-0.webp","iamtherealcodo-0.webp"],"Air Austral":["ka1atay-0.webp"],"China Airlines":["ka1atay-0.webp"],"Air China":["ka1atay-0.webp"],"Air Canada Old":["ka1atay-0.webp","ka1atay-1.webp"],"Air Canada":["ka1atay-0.webp"],"American":["ka1atay-0.webp","itsaman_smh-0.webp"],"Boeing":["ka1atay-0.webp"],"BritishAirways":["ka1atay-0.webp"]}
+{
+  "British Airways": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "Qatar": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "Emirates": ["ka1atay-0.webp", "itsaman_smh-0.webp"],
+  "Singapore Airlines": ["ka1atay-0.webp"],
+  "Swiss Air": ["ka1atay-0.webp"],
+  "AirFrance": ["ka1atay-0.webp"],
+  "KLM Pride": [
+    "ian_cheesy-0.webp",
+    "ka1atay-0.webp",
+    "itsaman_smh-0.webp",
+    "ka1atay-1.webp"
+  ],
+  "Turkish Airlines": [
+    "ka1atay-0.webp",
+    "ka1atay-1.webp",
+    "ka1atay-2.webp",
+    "ka1atay-3.webp"
+  ],
+  "Air India": ["ka1atay-0.webp"],
+  "Kuwait": ["ka1atay-0.webp"],
+  "Evaair": ["ka1atay-0.webp"],
+  "PIA": ["ka1atay-0.webp"],
+  "Cargojet": ["ka1atay-0.webp"],
+  "ANA_StarWars": ["ka1atay-0.webp"],
+  "United": ["ka1atay-0.webp"],
+  "Cathay Pacific": ["ka1atay-0.webp"],
+  "Etihad": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "KLM": ["ka1atay-0.webp"],
+  "Air New Zealand": ["ka1atay-0.webp"],
+  "ANA": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "SaudiArabian_Basic": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "IAI Big Twin": ["ka1atay-0.webp"],
+  "Aeroflot": ["ka1atay-0.webp", "iamtherealcodo-0.webp"],
+  "Swiss": ["captain_jk7173-0.webp"],
+  "Korean Air": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "JAL": ["ka1atay-0.webp"],
+  "Philippines": ["ka1atay-0.webp", "iamtherealcodo-0.webp"],
+  "Air Austral": ["ka1atay-0.webp"],
+  "China Airlines": ["ka1atay-0.webp"],
+  "Air China": ["ka1atay-0.webp"],
+  "Air Canada Old": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "Air Canada": ["ka1atay-0.webp"],
+  "American": ["ka1atay-0.webp", "itsaman_smh-0.webp"],
+  "Boeing": ["ka1atay-0.webp"],
+  "BritishAirways": ["ka1atay-0.webp"]
+}

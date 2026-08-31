@@ -1,11 +1,10 @@
 import { memo } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-interface ButtonProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    'onClick' | 'type' | 'disabled' | 'className' | 'id'
-  > {
+interface ButtonProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'onClick' | 'type' | 'disabled' | 'className' | 'id'
+> {
   children: React.ReactNode;
   onClick?: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   variant?:

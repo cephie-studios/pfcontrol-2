@@ -129,8 +129,12 @@ export function containsHateSpeech(message: string): boolean {
   return containsProfanity(message);
 }
 
-
-const BIO_BLACKLISTED_LINK_DOMAINS = ['discord.com', 'discord.gg', 'discordapp.com', 'discord.app'];
+const BIO_BLACKLISTED_LINK_DOMAINS = [
+  'discord.com',
+  'discord.gg',
+  'discordapp.com',
+  'discord.app',
+];
 
 export function containsBlacklistedBioLink(message: string): boolean {
   if (!message || typeof message !== 'string') return false;

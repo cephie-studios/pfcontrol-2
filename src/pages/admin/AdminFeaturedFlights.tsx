@@ -190,8 +190,8 @@ export default function AdminFeaturedFlights() {
       ) : (
         <>
           <p className="text-xs text-zinc-500 mb-4">
-            {groups.length} user{groups.length === 1 ? '' : 's'} with a
-            featured flight · {flights.length} flight
+            {groups.length} user{groups.length === 1 ? '' : 's'} with a featured
+            flight · {flights.length} flight
             {flights.length === 1 ? '' : 's'} · {totalImages} image
             {totalImages === 1 ? '' : 's'} shown on public profiles right now.
           </p>

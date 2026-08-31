@@ -106,7 +106,6 @@ function scoreLabel(score: number): 'low' | 'medium' | 'high' | 'critical' {
   return 'low';
 }
 
-
 const FINGERPRINT_WEIGHT = 1.0;
 const IP_WEIGHT = 0.7;
 const VPN_IP_DISCOUNT = 0.25;
@@ -130,7 +129,12 @@ function clusterSignalContributions(
 ): SignalContribution[] {
   const perHash = new Map<
     string,
-    { memberIds: Set<string>; seenTotal: number; entryCount: number; vpnCount: number }
+    {
+      memberIds: Set<string>;
+      seenTotal: number;
+      entryCount: number;
+      vpnCount: number;
+    }
   >();
 
   for (const m of members) {
@@ -424,8 +428,11 @@ router.get('/', async (req, res) => {
 
         const ipHistoryRaw: Array<IpHistoryEntry & { ip?: unknown }> =
           Array.isArray(u.ip_history) ? u.ip_history : [];
-        const fingerprintHistoryRaw: FingerprintHistoryEntry[] =
-          Array.isArray(u.fingerprint_history) ? u.fingerprint_history : [];
+        const fingerprintHistoryRaw: FingerprintHistoryEntry[] = Array.isArray(
+          u.fingerprint_history
+        )
+          ? u.fingerprint_history
+          : [];
 
         members.push({
           id,

@@ -58,6 +58,8 @@ describe('POST /api/ratings', () => {
       controllerId: 'ctrl1',
       rating: 4,
       flightId: 'f1',
+      sessionId: 's1',
+      comment: 'good service',
     });
 
     expect(res.status).toBe(200);
@@ -66,7 +68,38 @@ describe('POST /api/ratings', () => {
       'ctrl1',
       'pilot1',
       4,
-      'f1'
+      'f1',
+      's1',
+      'good service'
     );
+  });
+
+  it('leaves optional session and comment undefined when omitted', async () => {
+    const res = await appRequest(app, 'POST', '/', {
+      controllerId: 'ctrl1',
+      rating: 4,
+      flightId: 'f1',
+    });
+
+    expect(res.status).toBe(200);
+    expect(addControllerRating).toHaveBeenCalledWith(
+      'ctrl1',
+      'pilot1',
+      4,
+      'f1',
+      undefined,
+      undefined
+    );
+  });
+
+  it('returns 400 when the comment is too long', async () => {
+    const res = await appRequest(app, 'POST', '/', {
+      controllerId: 'ctrl1',
+      rating: 4,
+      comment: 'x'.repeat(501),
+    });
+
+    expect(res.status).toBe(400);
+    expect(addControllerRating).not.toHaveBeenCalled();
   });
 });

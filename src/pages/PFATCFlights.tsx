@@ -523,16 +523,17 @@ export default function PFATCFlights() {
     }
 
     if (!sectorSocketRef.current) {
-      sectorSocketRef.current = createSectorControllerSocket({
-        userId: user.userId,
-        username: user.username || 'Unknown',
-        avatar: user.avatar || null,
-      }, {
-        onError: (error) =>
-          showError(
-            error?.message || 'Sector controller error'
-          ),
-      });
+      sectorSocketRef.current = createSectorControllerSocket(
+        {
+          userId: user.userId,
+          username: user.username || 'Unknown',
+          avatar: user.avatar || null,
+        },
+        {
+          onError: (error) =>
+            showError(error?.message || 'Sector controller error'),
+        }
+      );
     }
 
     return () => {

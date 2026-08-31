@@ -172,8 +172,7 @@ export default function Navbar({
       : 'bg-transparent border-none',
   ].join(' ');
 
-  const origin =
-    typeof window !== 'undefined' ? window.location.origin : '';
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const submitLink = `${origin}/submit/${sessionId}`;
   const viewLink = `${origin}/view/${sessionId}?accessId=${accessId}`;
 

@@ -381,7 +381,9 @@ export default function AdminDeveloperManagePanel({
                     <td className={`${ADMIN_TD} text-xs text-zinc-400`}>
                       {k.rateLimitPerMinute ?? '—'}
                     </td>
-                    <td className={`${ADMIN_TD} text-xs text-zinc-400 whitespace-nowrap`}>
+                    <td
+                      className={`${ADMIN_TD} text-xs text-zinc-400 whitespace-nowrap`}
+                    >
                       <div className="tabular-nums text-zinc-300">
                         {k.requestCount.toLocaleString()} req
                         {k.requestCount === 1 ? '' : 's'}

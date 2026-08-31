@@ -45,10 +45,7 @@ export async function getSitemapProfileUsernames(
           ? JSON.parse(row.settings)
           : row.settings;
       const settings = decrypt(raw) as Settings | null;
-      if (
-        settings?.bio?.trim() &&
-        settings.displayBioOnProfile !== false
-      ) {
+      if (settings?.bio?.trim() && settings.displayBioOnProfile !== false) {
         usernames.add(row.username);
       }
     } catch {
