@@ -730,13 +730,13 @@ export default function Flights() {
       await updateSession(sessionId, accessId ?? '', {
         feedbackEnabled: next,
       });
-      setSession((prev) =>
-        prev ? { ...prev, feedbackEnabled: next } : null
-      );
+      setSession((prev) => (prev ? { ...prev, feedbackEnabled: next } : null));
       if (flightsSocket?.socket?.connected) {
         flightsSocket.updateSession({ feedbackEnabled: next });
       } else {
-        console.warn('Socket not connected, feedback setting updated via API only');
+        console.warn(
+          'Socket not connected, feedback setting updated via API only'
+        );
       }
     } catch (error) {
       console.error('Failed to update feedback setting:', error);

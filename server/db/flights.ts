@@ -35,7 +35,8 @@ function createUTCDate(): Date {
 
 function normalizeClearance(value: unknown): 'true' | 'false' {
   if (typeof value === 'boolean') return value ? 'true' : 'false';
-  if (typeof value === 'string') return value.toLowerCase() === 'true' ? 'true' : 'false';
+  if (typeof value === 'string')
+    return value.toLowerCase() === 'true' ? 'true' : 'false';
   return 'false';
 }
 
@@ -699,7 +700,7 @@ export async function addFlight(
   ) {
     flightData.status = 'PENDING';
   }
-  
+
   if (
     typeof flightData.flight_type !== 'string' ||
     flightData.flight_type.trim() === ''
@@ -1222,8 +1223,7 @@ export async function getAllFeaturedFlightsForAdmin() {
     aircraft: f.aircraft,
     status: f.status,
     snapImages:
-      (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
-      [],
+      (f.snap_images as Array<{ cephie_id: string; url: string }> | null) ?? [],
     createdAt: f.created_at,
     updatedAt: f.updated_at,
   }));

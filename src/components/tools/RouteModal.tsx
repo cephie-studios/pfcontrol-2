@@ -194,7 +194,10 @@ export default function RouteModal({
       {/* Header — only this area is draggable */}
       <div
         className="flex justify-between items-center px-5 pt-4 pb-3 border-b border-zinc-700"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+        style={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+        }}
         onPointerDown={handleGripPointerDown}
       >
         <div className="flex items-center gap-3">

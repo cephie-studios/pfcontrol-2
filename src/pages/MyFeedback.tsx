@@ -179,7 +179,8 @@ export default function MyFeedback() {
       setReportReason('');
     } catch (err) {
       setToast({
-        message: err instanceof Error ? err.message : 'Failed to report comment',
+        message:
+          err instanceof Error ? err.message : 'Failed to report comment',
         type: 'error',
       });
     } finally {
@@ -205,9 +206,7 @@ export default function MyFeedback() {
       setPages(ratingsData.pagination.pages);
     } catch (err) {
       console.error('Error fetching feedback:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch feedback'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to fetch feedback');
     } finally {
       setLoading(false);
     }
@@ -458,9 +457,7 @@ export default function MyFeedback() {
               <div className="space-y-8">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-zinc-400 mb-1">
-                      Average Rating
-                    </p>
+                    <p className="text-sm text-zinc-400 mb-1">Average Rating</p>
                     <div className="flex items-center gap-2">
                       <span className="text-3xl font-bold text-white">
                         {stats.ratingCount > 0
@@ -473,9 +470,7 @@ export default function MyFeedback() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-zinc-400 mb-1">
-                      Total Ratings
-                    </p>
+                    <p className="text-sm text-zinc-400 mb-1">Total Ratings</p>
                     <span className="text-3xl font-bold text-white">
                       {stats.ratingCount}
                     </span>
@@ -585,8 +580,8 @@ export default function MyFeedback() {
                       No feedback yet
                     </h2>
                     <p className="text-zinc-400 mb-6">
-                      Enable "Feedback" in a network session's Settings menu
-                      to start collecting it from pilots.
+                      Enable "Feedback" in a network session's Settings menu to
+                      start collecting it from pilots.
                     </p>
                     <Link
                       to="/sessions"

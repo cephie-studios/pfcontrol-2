@@ -1,6 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
 
-
 export function toCamelCaseJson<T = unknown>(value: unknown): T {
   if (Array.isArray(value)) {
     return value.map((item) => toCamelCaseJson(item)) as T;
@@ -48,6 +47,7 @@ export function camelCaseJsonResponses(
   next: NextFunction
 ): void {
   const originalJson = res.json.bind(res);
-  res.json = ((body?: unknown) => originalJson(toCamelCaseJson(body))) as typeof res.json;
+  res.json = ((body?: unknown) =>
+    originalJson(toCamelCaseJson(body))) as typeof res.json;
   next();
 }

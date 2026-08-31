@@ -119,7 +119,7 @@ export default function Submit({
     flightNumber: '',
     robloxUsername: '',
   });
-  
+
   const [airlineFocused, setAirlineFocused] = useState(false);
   const [registrationFocused, setRegistrationFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -445,7 +445,7 @@ export default function Submit({
     const effectiveRobloxUsername = isExternal
       ? form.robloxUsername.trim() || user?.robloxUsername || undefined
       : undefined;
-      
+
     const {
       airlineIcao: _airlineIcao,
       registration: _registration,
@@ -831,9 +831,7 @@ export default function Submit({
                     <input
                       type="text"
                       value={form.registration}
-                      onChange={(e) =>
-                        handleRegistrationChange(e.target.value)
-                      }
+                      onChange={(e) => handleRegistrationChange(e.target.value)}
                       placeholder="e.g. N17AG"
                       maxLength={16}
                       onFocus={() => setRegistrationFocused(true)}

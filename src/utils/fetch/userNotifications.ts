@@ -16,10 +16,9 @@ export interface UserNotification {
 export async function fetchUnreadUserNotifications(): Promise<{
   notifications: UserNotification[];
 }> {
-  const res = await apiFetch(
-    `${API_BASE_URL}/api/user-notifications/unread`,
-    { credentials: 'include' }
-  );
+  const res = await apiFetch(`${API_BASE_URL}/api/user-notifications/unread`, {
+    credentials: 'include',
+  });
   if (!res.ok) await apiError(res, 'Failed to load notifications');
   return res.json();
 }

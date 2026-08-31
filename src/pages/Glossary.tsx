@@ -69,9 +69,9 @@ function useActiveSection(): string {
       { rootMargin: '-100px 0px -70% 0px', threshold: 0 }
     );
 
-    const elements = CATEGORIES.map((c) => document.getElementById(c.id)).filter(
-      (el): el is HTMLElement => el !== null
-    );
+    const elements = CATEGORIES.map((c) =>
+      document.getElementById(c.id)
+    ).filter((el): el is HTMLElement => el !== null);
     elements.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
@@ -82,8 +82,13 @@ function useActiveSection(): string {
 
 function TermEntry({ id, name, children }: Term) {
   return (
-    <div id={id} className="scroll-mt-8 py-4 border-b border-zinc-800/70 last:border-0">
-      <dt className="font-mono text-base font-bold text-white mb-1.5">{name}</dt>
+    <div
+      id={id}
+      className="scroll-mt-8 py-4 border-b border-zinc-800/70 last:border-0"
+    >
+      <dt className="font-mono text-base font-bold text-white mb-1.5">
+        {name}
+      </dt>
       <dd className="text-zinc-300 leading-relaxed">{children}</dd>
     </div>
   );
@@ -105,10 +110,13 @@ export default function Glossary() {
             ATC &amp; Flight Glossary
           </h1>
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed">
-            Definitions for the air traffic control and flight planning terms used
-            throughout PFControl — flight strips, clearances, ACARS, and the PFATC
-            network. For a walkthrough of the app itself, see the{' '}
-            <a href="/howtousepfcontrol" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
+            Definitions for the air traffic control and flight planning terms
+            used throughout PFControl — flight strips, clearances, ACARS, and
+            the PFATC network. For a walkthrough of the app itself, see the{' '}
+            <a
+              href="/howtousepfcontrol"
+              className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
+            >
               How to Use PFControl guide
             </a>
             .
@@ -132,62 +140,66 @@ export default function Glossary() {
               <h2>Flight Planning & Clearance</h2>
               <dl>
                 <TermEntry id="flight-plan" name="Flight Plan">
-                  The set of details a pilot submits for a flight — callsign, aircraft
-                  type, flight rules, destination, cruising level, and route — either
-                  through a session's{' '}
-                  <a href="/create">submit link</a> or the guest-accessible submission
-                  form. Submitting one creates a flight strip on the controller's board.
+                  The set of details a pilot submits for a flight — callsign,
+                  aircraft type, flight rules, destination, cruising level, and
+                  route — either through a session's{' '}
+                  <a href="/create">submit link</a> or the guest-accessible
+                  submission form. Submitting one creates a flight strip on the
+                  controller's board.
                 </TermEntry>
                 <TermEntry id="callsign" name="Callsign">
-                  The identifier a flight operates under, such as an airline code
-                  followed by a flight number. PFControl parses recognized airline
-                  prefixes and displays them alongside the raw callsign on the strip
-                  board.
+                  The identifier a flight operates under, such as an airline
+                  code followed by a flight number. PFControl parses recognized
+                  airline prefixes and displays them alongside the raw callsign
+                  on the strip board.
                 </TermEntry>
                 <TermEntry id="icao-code" name="ICAO Code">
-                  The four-letter code identifying an airport, used when creating a{' '}
-                  <a href="/create">session</a> and as the departure/arrival fields on a
-                  flight plan.
+                  The four-letter code identifying an airport, used when
+                  creating a <a href="/create">session</a> and as the
+                  departure/arrival fields on a flight plan.
                 </TermEntry>
                 <TermEntry id="route" name="Route">
-                  The planned path of airways and waypoints a flight follows between
-                  departure and arrival, entered as free text or built automatically
-                  with the Generate button, which picks a SID, STAR, and cruising
-                  altitude that respects altitude rules.
+                  The planned path of airways and waypoints a flight follows
+                  between departure and arrival, entered as free text or built
+                  automatically with the Generate button, which picks a SID,
+                  STAR, and cruising altitude that respects altitude rules.
                 </TermEntry>
                 <TermEntry id="sid" name="SID (Standard Instrument Departure)">
-                  A published departure procedure a flight follows out of an airport.
-                  PFControl infers the SID from the first token of a route string when
-                  it matches a procedure-like pattern, and displays it in its own
-                  column on the departures table.
+                  A published departure procedure a flight follows out of an
+                  airport. PFControl infers the SID from the first token of a
+                  route string when it matches a procedure-like pattern, and
+                  displays it in its own column on the departures table.
                 </TermEntry>
-                <TermEntry id="star" name="STAR (Standard Terminal Arrival Route)">
-                  A published arrival procedure a flight follows into an airport,
-                  inferred from the route the same way as a SID and shown on the
-                  arrivals table.
+                <TermEntry
+                  id="star"
+                  name="STAR (Standard Terminal Arrival Route)"
+                >
+                  A published arrival procedure a flight follows into an
+                  airport, inferred from the route the same way as a SID and
+                  shown on the arrivals table.
                 </TermEntry>
                 <TermEntry id="rfl" name="RFL (Requested Flight Level)">
-                  The cruising altitude a pilot requests when submitting a flight
-                  plan, shown alongside the CFL on the departures table.
+                  The cruising altitude a pilot requests when submitting a
+                  flight plan, shown alongside the CFL on the departures table.
                 </TermEntry>
                 <TermEntry id="cfl" name="CFL (Cleared Flight Level)">
-                  The cruising altitude a controller has actually cleared the flight
-                  to, which may differ from the pilot's requested level.
+                  The cruising altitude a controller has actually cleared the
+                  flight to, which may differ from the pilot's requested level.
                 </TermEntry>
                 <TermEntry id="alternate-airport" name="Alternate Airport">
-                  A backup destination a pilot may list on their flight plan in case
-                  the primary arrival airport can't be used.
+                  A backup destination a pilot may list on their flight plan in
+                  case the primary arrival airport can't be used.
                 </TermEntry>
                 <TermEntry id="pdc" name="PDC (Pre-Departure Clearance)">
                   The clearance a pilot requests and receives over{' '}
-                  <a href="/howtousepfcontrol#acars-and-pdc">ACARS</a> before pushing
-                  back, confirming their route and cruising level are approved by the
-                  controller working that airport.
+                  <a href="/howtousepfcontrol#acars-and-pdc">ACARS</a> before
+                  pushing back, confirming their route and cruising level are
+                  approved by the controller working that airport.
                 </TermEntry>
                 <TermEntry id="clearance" name="Clearance">
-                  Explicit permission from a controller for a pilot to take a specific
-                  action — push back, taxi, take off, or proceed on a route — tracked
-                  through a flight's status and PDC state.
+                  Explicit permission from a controller for a pilot to take a
+                  specific action — push back, taxi, take off, or proceed on a
+                  route — tracked through a flight's status and PDC state.
                 </TermEntry>
               </dl>
             </section>
@@ -196,37 +208,41 @@ export default function Glossary() {
               <h2>Flight Strips & ATC Operations</h2>
               <dl>
                 <TermEntry id="flight-strip" name="Flight Strip">
-                  The live, editable row representing a single flight on a session's
-                  board — the digital equivalent of a paper strip, updating in real
-                  time for every controller in the session.
+                  The live, editable row representing a single flight on a
+                  session's board — the digital equivalent of a paper strip,
+                  updating in real time for every controller in the session.
                 </TermEntry>
                 <TermEntry id="squawk" name="Squawk Code">
-                  A four-digit transponder code assigned to a flight so it can be
-                  distinguished on radar. PFControl includes a one-click button to
-                  generate a new random code for a strip.
+                  A four-digit transponder code assigned to a flight so it can
+                  be distinguished on radar. PFControl includes a one-click
+                  button to generate a new random code for a strip.
                 </TermEntry>
                 <TermEntry id="stand" name="Stand">
-                  The gate or parking position a departing flight is assigned before
-                  pushback, tracked as its own column on the departures table.
+                  The gate or parking position a departing flight is assigned
+                  before pushback, tracked as its own column on the departures
+                  table.
                 </TermEntry>
                 <TermEntry id="adep" name="ADEP (Aerodrome of Departure)">
-                  The origin airport of an arriving flight, shown on the arrivals
-                  table.
+                  The origin airport of an arriving flight, shown on the
+                  arrivals table.
                 </TermEntry>
                 <TermEntry id="ades" name="ADES (Aerodrome of Destination)">
                   The destination airport of a departing flight, shown on the
                   departures table.
                 </TermEntry>
-                <TermEntry id="wake-turbulence-category" name="Wake Turbulence Category">
-                  A classification of an aircraft type based on the turbulence it
-                  generates, used alongside aircraft type on the strip board to help
-                  controllers apply appropriate spacing.
+                <TermEntry
+                  id="wake-turbulence-category"
+                  name="Wake Turbulence Category"
+                >
+                  A classification of an aircraft type based on the turbulence
+                  it generates, used alongside aircraft type on the strip board
+                  to help controllers apply appropriate spacing.
                 </TermEntry>
                 <TermEntry id="status-flow" name="Status Flow">
                   The sequence a flight strip's status moves through as a flight
                   progresses. Departures run{' '}
-                  <strong>PENDING → STUP → PUSH → TAXI → RWY → DEPA</strong>; arrivals
-                  run <strong>APP → RWY → TAXI → GATE</strong>.
+                  <strong>PENDING → STUP → PUSH → TAXI → RWY → DEPA</strong>;
+                  arrivals run <strong>APP → RWY → TAXI → GATE</strong>.
                 </TermEntry>
               </dl>
             </section>
@@ -235,25 +251,26 @@ export default function Glossary() {
               <h2>Communications</h2>
               <dl>
                 <TermEntry id="acars" name="ACARS">
-                  PFControl's messaging terminal for a signed-in pilot's flight —
-                  a log of the submitted flight plan, PDC requests and clearances, and
-                  any messages a controller sends. Opening ACARS requires being signed
-                  in, since it's tied to your account. See{' '}
+                  PFControl's messaging terminal for a signed-in pilot's flight
+                  — a log of the submitted flight plan, PDC requests and
+                  clearances, and any messages a controller sends. Opening ACARS
+                  requires being signed in, since it's tied to your account. See{' '}
                   <a href="/howtousepfcontrol#acars-and-pdc">
                     ACARS &amp; Requesting PDC
                   </a>{' '}
                   in the guide.
                 </TermEntry>
                 <TermEntry id="atis" name="ATIS">
-                  Automated Terminal Information Service — a recorded broadcast of
-                  current airport conditions and active runway. PFControl can
-                  auto-generate an ATIS formatted for the PFATC ATIS channel when you
-                  create a PFATC session.
+                  Automated Terminal Information Service — a recorded broadcast
+                  of current airport conditions and active runway. PFControl can
+                  auto-generate an ATIS formatted for the PFATC ATIS channel
+                  when you create a PFATC session.
                 </TermEntry>
                 <TermEntry id="contact-me" name="Contact Me Message">
-                  A direct message a controller can send a pilot through ACARS — for
-                  example asking them to switch to a specific frequency — which
-                  appears in the pilot's terminal the same way a clearance does.
+                  A direct message a controller can send a pilot through ACARS —
+                  for example asking them to switch to a specific frequency —
+                  which appears in the pilot's terminal the same way a clearance
+                  does.
                 </TermEntry>
               </dl>
             </section>
@@ -263,26 +280,27 @@ export default function Glossary() {
               <dl>
                 <TermEntry id="session" name="Session">
                   A flight strip board for a single airport, created from{' '}
-                  <a href="/create">Create Session</a>. A Standard session is private
-                  to whoever has the link; a PFATC session publishes its traffic to
-                  the Network Overview.
+                  <a href="/create">Create Session</a>. A Standard session is
+                  private to whoever has the link; a PFATC session publishes its
+                  traffic to the Network Overview.
                 </TermEntry>
                 <TermEntry id="pfatc-network" name="PFATC Network">
-                  An organized, network-wide mode for controlling: PFATC sessions
-                  share departures and arrivals with each other and appear together on
-                  the <a href="/overview">Network Overview</a>, rather than staying
+                  An organized, network-wide mode for controlling: PFATC
+                  sessions share departures and arrivals with each other and
+                  appear together on the{' '}
+                  <a href="/overview">Network Overview</a>, rather than staying
                   isolated to a single session.
                 </TermEntry>
                 <TermEntry id="network-overview" name="Network Overview">
                   A live, network-wide dashboard at{' '}
-                  <a href="/overview">/overview</a> showing every open PFATC session's
-                  active departures and arrivals at once.
+                  <a href="/overview">/overview</a> showing every open PFATC
+                  session's active departures and arrivals at once.
                 </TermEntry>
                 <TermEntry id="sector" name="Sector">
-                  An area of airspace or set of airports a controller is assigned
-                  permissions for, determining which flights they can edit from the
-                  Network Overview and which airports' charts surface first in the
-                  Chart Drawer.
+                  An area of airspace or set of airports a controller is
+                  assigned permissions for, determining which flights they can
+                  edit from the Network Overview and which airports' charts
+                  surface first in the Chart Drawer.
                 </TermEntry>
               </dl>
             </section>
@@ -292,8 +310,8 @@ export default function Glossary() {
               <dl>
                 <TermEntry id="ifr" name="IFR (Instrument Flight Rules)">
                   A flight plan type indicating the flight will operate under
-                  instrument procedures, typically involving a full route, assigned
-                  altitudes, and ATC clearances at each stage.
+                  instrument procedures, typically involving a full route,
+                  assigned altitudes, and ATC clearances at each stage.
                 </TermEntry>
                 <TermEntry id="vfr" name="VFR (Visual Flight Rules)">
                   A flight plan type indicating the flight will operate visually
@@ -308,13 +326,15 @@ export default function Glossary() {
               <dl>
                 <TermEntry id="featured-flight" name="Featured Flight">
                   A flight a pilot has chosen to highlight on their{' '}
-                  <a href="/howtousepfcontrol#public-profiles">public profile</a>,
-                  capped at three per pilot.
+                  <a href="/howtousepfcontrol#public-profiles">
+                    public profile
+                  </a>
+                  , capped at three per pilot.
                 </TermEntry>
                 <TermEntry id="controller-rating" name="Controller Rating">
                   Feedback a pilot can leave for a controller after a session,
-                  contributing to that controller's average rating shown on their
-                  public profile.
+                  contributing to that controller's average rating shown on
+                  their public profile.
                 </TermEntry>
                 <TermEntry id="developer-api" name="Developer API">
                   PFControl's public REST API for reading session, flight, and

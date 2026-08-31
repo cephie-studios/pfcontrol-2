@@ -38,8 +38,7 @@ export function computeDepArrTiming(
   const arrival: TimingPoint | null = arrivalLabel
     ? {
         label: arrivalLabel,
-        time:
-          statusLogTime(logs, status as string) ?? flight.updated_at ?? '',
+        time: statusLogTime(logs, status as string) ?? flight.updated_at ?? '',
       }
     : null;
 

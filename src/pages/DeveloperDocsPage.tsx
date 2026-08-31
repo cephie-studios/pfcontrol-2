@@ -24,7 +24,8 @@ export default function DeveloperDocsPage({
           <div className="flex items-center gap-2 text-blue-400 mb-1">
             <Code2 className="w-5 h-5" />
             <span className="text-sm font-semibold uppercase tracking-wide">
-              Developers <span className="text-md text-red-400 italic">BETA</span>
+              Developers{' '}
+              <span className="text-md text-red-400 italic">BETA</span>
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50">

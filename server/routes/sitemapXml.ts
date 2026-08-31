@@ -21,7 +21,9 @@ function xmlEscape(value: string): string {
 }
 
 function buildUrlset(urls: string[]): string {
-  const body = urls.map((u) => `<url><loc>${xmlEscape(u)}</loc></url>`).join('');
+  const body = urls
+    .map((u) => `<url><loc>${xmlEscape(u)}</loc></url>`)
+    .join('');
   return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${body}</urlset>`;
 }
 

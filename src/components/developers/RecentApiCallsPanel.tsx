@@ -222,15 +222,12 @@ export default function RecentApiCallsPanel({
             const badge = statusBadge(r);
             const reqPretty = prettyBody(r.requestBody);
             const resPretty = prettyBody(r.responseBody);
-            const shortTime = new Date(r.createdAt).toLocaleString(
-              undefined,
-              {
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }
-            );
+            const shortTime = new Date(r.createdAt).toLocaleString(undefined, {
+              month: 'numeric',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
 
             return (
               <li key={r.id}>

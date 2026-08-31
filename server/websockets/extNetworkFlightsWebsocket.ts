@@ -53,7 +53,9 @@ export function setupExtNetworkFlightsWebsocket(httpServer: HTTPServer) {
   io.use(async (socket, next) => {
     try {
       if (socket.handshake.headers.origin) {
-        return next(new Error('Browser connections are not allowed on this socket'));
+        return next(
+          new Error('Browser connections are not allowed on this socket')
+        );
       }
 
       const token = extractToken(socket.handshake);
@@ -70,9 +72,7 @@ export function setupExtNetworkFlightsWebsocket(httpServer: HTTPServer) {
 
       const scopes = parseScopesFromKey(row.key.scopes);
       if (!scopes.includes(REQUIRED_SCOPE)) {
-        return next(
-          new Error(`Missing required scope: ${REQUIRED_SCOPE}`)
-        );
+        return next(new Error(`Missing required scope: ${REQUIRED_SCOPE}`));
       }
 
       const keyId = String(row.key.id);

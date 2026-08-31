@@ -1,5 +1,5 @@
 import { getUserByUsername } from '../db/users.js';
-import {getUserById} from '../db/users.js';
+import { getUserById } from '../db/users.js';
 import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
@@ -57,7 +57,10 @@ export interface PublicPilotProfile {
   featuredFlights: unknown[];
 }
 
-const KNOWN_SECTION_KEYS: ProfileSectionConfig['key'][] = ['stats', 'featuredFlights'];
+const KNOWN_SECTION_KEYS: ProfileSectionConfig['key'][] = [
+  'stats',
+  'featuredFlights',
+];
 
 function resolveSectionOrder(
   settings: Record<string, unknown> | undefined | null
@@ -72,7 +75,10 @@ function resolveSectionOrder(
     if (known.length > 0) return known;
   }
   return [
-    { key: 'stats', visible: (settings?.displayStatsOnProfile as boolean) ?? true },
+    {
+      key: 'stats',
+      visible: (settings?.displayStatsOnProfile as boolean) ?? true,
+    },
     { key: 'featuredFlights', visible: true },
   ];
 }
@@ -94,7 +100,6 @@ export async function getPublicPilotProfile(
   }
 
   const isOwner = !!viewerId && viewerId === userResult.id;
-
 
   const rolesResult = await mainDb
     .selectFrom('roles as r')
@@ -182,7 +187,7 @@ export async function getPublicPilotProfile(
       roles,
       role_name: roles[0]?.name || null,
       role_description: roles[0]?.description ?? null,
-      bio: shouldIncludeBio ? userResult.settings?.bio ?? '' : '',
+      bio: shouldIncludeBio ? (userResult.settings?.bio ?? '') : '',
       statistics: shouldIncludeStats ? userResult.statistics || {} : {},
       rating: ratingStats,
       background_image: shouldIncludeBackground

@@ -645,7 +645,9 @@ export default function AdminDevelopers() {
                               </span>
                             </div>
                           </td>
-                          <td className={`${ADMIN_TD} text-xs text-zinc-400 tabular-nums`}>
+                          <td
+                            className={`${ADMIN_TD} text-xs text-zinc-400 tabular-nums`}
+                          >
                             {d.requestsTotal.toLocaleString()}
                           </td>
                           <td className={ADMIN_TD}>

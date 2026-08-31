@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import RouteMapOrUnavailable from "../components/map/RouteMapOrUnavailable";
-import AircraftPhotoCard from "../components/flight/AircraftPhotoCard";
-import FlightTimingBlock from "../components/flight/FlightTimingBlock";
-import FlightTabs, { type FlightTab } from "../components/flight/FlightTabs";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
+import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
+import FlightTimingBlock from '../components/flight/FlightTimingBlock';
+import FlightTabs, { type FlightTab } from '../components/flight/FlightTabs';
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,16 +12,16 @@ import {
   Check,
   Share2,
   Pencil,
-} from "lucide-react";
-import Navbar from "../components/Navbar";
-import Loader from "../components/common/Loader";
-import { fetchPublicFlight, type FlightLogItem } from "../utils/fetch/flights";
-import { fetchBackgrounds } from "../utils/fetch/data";
-import { useSettings } from "../hooks/settings/useSettings";
-import { useData } from "../hooks/data/useData";
-import type { Flight } from "../types/flight";
-import { parseCallsign } from "../utils/callsignParser";
-import { useAuth } from "../hooks/auth/useAuth";
+} from 'lucide-react';
+import Navbar from '../components/Navbar';
+import Loader from '../components/common/Loader';
+import { fetchPublicFlight, type FlightLogItem } from '../utils/fetch/flights';
+import { fetchBackgrounds } from '../utils/fetch/data';
+import { useSettings } from '../hooks/settings/useSettings';
+import { useData } from '../hooks/data/useData';
+import type { Flight } from '../types/flight';
+import { parseCallsign } from '../utils/callsignParser';
+import { useAuth } from '../hooks/auth/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -51,12 +51,12 @@ export default function PublicFlightView({
   const { user } = useAuth();
   const [flight, setFlight] = useState<Flight | null>(initialFlight ?? null);
   const [loading, setLoading] = useState(!initialFlight);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [customLoaded, setCustomLoaded] = useState(false);
   const [isPFATC, setIsPFATC] = useState(false);
   const [isAdvancedATC, setIsAdvancedATC] = useState(false);
-  const [activeTab, setActiveTab] = useState<FlightTab>("overview");
+  const [activeTab, setActiveTab] = useState<FlightTab>('overview');
   const [logs, setLogs] = useState<FlightLogItem[]>([]);
   const [logsAvailable, setLogsAvailable] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -81,7 +81,7 @@ export default function PublicFlightView({
 
   useEffect(() => {
     if (!flightId) {
-      setError("Invalid link.");
+      setError('Invalid link.');
       setLoading(false);
       return;
     }
@@ -96,7 +96,7 @@ export default function PublicFlightView({
         .catch(() => {});
 
       fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
-        credentials: "include",
+        credentials: 'include',
       })
         .then((r) => (r.ok ? r.json() : null))
         .then((logsData) => {
@@ -114,7 +114,7 @@ export default function PublicFlightView({
                   user_id: userData.user.id,
                 });
               } else {
-                setError("User not found.");
+                setError('User not found.');
               }
             });
 
@@ -127,7 +127,7 @@ export default function PublicFlightView({
           }[] = [];
           for (const log of logsData.logs as FlightLogItem[]) {
             if (
-              log.action === "update" &&
+              log.action === 'update' &&
               log.user_id !== pilotUserId &&
               !seen.has(log.user_id)
             ) {
@@ -160,7 +160,7 @@ export default function PublicFlightView({
         setFlight(data);
         loadFollowUpData(data);
       })
-      .catch(() => setError("This flight is not available or does not exist."))
+      .catch(() => setError('This flight is not available or does not exist.'))
       .finally(() => setLoading(false));
   }, [flightId, initialFlight]);
 
@@ -169,19 +169,19 @@ export default function PublicFlightView({
       .map((log) => {
         const oldStatus = (log.old_data?.status as string | undefined) ?? null;
         const newStatus = (log.new_data?.status as string | undefined) ?? null;
-        if (log.action === "add" && newStatus) {
+        if (log.action === 'add' && newStatus) {
           return {
             id: log.id,
             label: `Created as ${newStatus}`,
             at: log.created_at,
           };
         }
-        if (log.action === "update" && oldStatus !== newStatus && newStatus) {
+        if (log.action === 'update' && oldStatus !== newStatus && newStatus) {
           return {
             id: log.id,
             label: (
               <span className="flex items-center gap-1.5">
-                <span>{oldStatus || "N/A"}</span>
+                <span>{oldStatus || 'N/A'}</span>
                 <ArrowRight className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                 <span className="text-blue-400">{newStatus}</span>
               </span>
@@ -201,7 +201,7 @@ export default function PublicFlightView({
 
   const handleShare = async () => {
     if (!publicFlightUrl) return;
-    await navigator.clipboard.writeText(publicFlightUrl || "");
+    await navigator.clipboard.writeText(publicFlightUrl || '');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -212,27 +212,27 @@ export default function PublicFlightView({
     const selectedImage = settings?.backgroundImage?.selectedImage;
     let bgImage = 'url("/assets/images/hero.webp")';
     const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === "random" || filename === "favorites")
+      if (!filename || filename === 'random' || filename === 'favorites')
         return filename;
-      if (filename.startsWith("https://api.cephie.app/")) return filename;
+      if (filename.startsWith('https://api.cephie.app/')) return filename;
       return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
     };
-    if (selectedImage === "random") {
+    if (selectedImage === 'random') {
       if (availableImages.length > 0) {
         const i = Math.floor(Math.random() * availableImages.length);
         bgImage = `url(${API_BASE_URL}${availableImages[i].path})`;
       }
-    } else if (selectedImage === "favorites") {
+    } else if (selectedImage === 'favorites') {
       const favorites = settings?.backgroundImage?.favorites || [];
       if (favorites.length > 0) {
         const fav = favorites[Math.floor(Math.random() * favorites.length)];
         const url = getImageUrl(fav);
-        if (url && url !== "random" && url !== "favorites")
+        if (url && url !== 'random' && url !== 'favorites')
           bgImage = `url(${url})`;
       }
     } else if (selectedImage) {
       const url = getImageUrl(selectedImage);
-      if (url && url !== "random" && url !== "favorites")
+      if (url && url !== 'random' && url !== 'favorites')
         bgImage = `url(${url})`;
     }
     return bgImage;
@@ -263,20 +263,19 @@ export default function PublicFlightView({
         {standalone && <Navbar />}
         <div className="max-w-4xl mx-auto px-4 pt-24">
           <div className="p-4 rounded-2xl bg-red-900/30 border border-red-700 text-red-200 text-sm">
-            {error || "Flight not found."}
+            {error || 'Flight not found.'}
           </div>
         </div>
       </div>
     );
   }
 
-
   const formattedCallsign =
     hasMounted && airlines.length > 0
-      ? parseCallsign(flight.callsign || "", airlines)
-      : flight.callsign || "";
+      ? parseCallsign(flight.callsign || '', airlines)
+      : flight.callsign || '';
   const hasSpokenName =
-    formattedCallsign !== (flight.callsign || "").toUpperCase();
+    formattedCallsign !== (flight.callsign || '').toUpperCase();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -314,11 +313,11 @@ export default function PublicFlightView({
             className="absolute inset-0"
             style={{
               backgroundImage,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               opacity: customLoaded || snaps.length > 0 ? 1 : 0,
-              transition: "opacity 0.5s ease-in-out",
+              transition: 'opacity 0.5s ease-in-out',
             }}
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/55 via-black/15 to-zinc-950" />
@@ -338,11 +337,11 @@ export default function PublicFlightView({
                 <button
                   onClick={handleShare}
                   aria-label="Copy public share link"
-                  title={copied ? "Copied" : "Share"}
+                  title={copied ? 'Copied' : 'Share'}
                   className={`h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center transition-colors ${
                     copied
-                      ? "text-emerald-400"
-                      : "text-zinc-200 hover:bg-black/60"
+                      ? 'text-emerald-400'
+                      : 'text-zinc-200 hover:bg-black/60'
                   }`}
                 >
                   {copied ? (
@@ -378,7 +377,7 @@ export default function PublicFlightView({
             </>
           ) : (
             <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
-              {flight.callsign || "Unknown Callsign"}
+              {flight.callsign || 'Unknown Callsign'}
             </h1>
           )}
         </div>
@@ -393,7 +392,7 @@ export default function PublicFlightView({
         </div>
 
         <div className="mt-4 pb-2">
-          {activeTab === "overview" && (
+          {activeTab === 'overview' && (
             <div>
               <AircraftPhotoCard flight={flight} />
 
@@ -401,7 +400,7 @@ export default function PublicFlightView({
                 <>
                   <div
                     className="rounded-2xl overflow-hidden mb-2"
-                    style={{ height: "300px" }}
+                    style={{ height: '300px' }}
                   >
                     {hasMounted && (
                       <RouteMapOrUnavailable
@@ -426,9 +425,9 @@ export default function PublicFlightView({
                     SID
                   </p>
                   <p
-                    className={`font-mono text-base font-bold ${flight.sid ? "text-zinc-100" : "text-zinc-600"}`}
+                    className={`font-mono text-base font-bold ${flight.sid ? 'text-zinc-100' : 'text-zinc-600'}`}
                   >
-                    {flight.sid || "N/A"}
+                    {flight.sid || 'N/A'}
                   </p>
                 </div>
                 <div className="text-center">
@@ -436,9 +435,9 @@ export default function PublicFlightView({
                     Cruising FL
                   </p>
                   <p
-                    className={`font-mono text-base font-bold ${flight.cruisingFL ? "text-zinc-100" : "text-zinc-600"}`}
+                    className={`font-mono text-base font-bold ${flight.cruisingFL ? 'text-zinc-100' : 'text-zinc-600'}`}
                   >
-                    {flight.cruisingFL || "N/A"}
+                    {flight.cruisingFL || 'N/A'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -446,9 +445,9 @@ export default function PublicFlightView({
                     STAR
                   </p>
                   <p
-                    className={`font-mono text-base font-bold ${flight.star ? "text-zinc-100" : "text-zinc-600"}`}
+                    className={`font-mono text-base font-bold ${flight.star ? 'text-zinc-100' : 'text-zinc-600'}`}
                   >
-                    {flight.star || "N/A"}
+                    {flight.star || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -464,7 +463,7 @@ export default function PublicFlightView({
             </div>
           )}
 
-          {activeTab === "photos" && (
+          {activeTab === 'photos' && (
             <div>
               {snaps.length === 0 ? (
                 <p className="text-zinc-500 text-sm">
@@ -490,7 +489,7 @@ export default function PublicFlightView({
             </div>
           )}
 
-          {activeTab === "notes" && (
+          {activeTab === 'notes' && (
             <div>
               {flight.notes ? (
                 <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed font-mono">
@@ -504,13 +503,13 @@ export default function PublicFlightView({
             </div>
           )}
 
-          {activeTab === "timeline" && (
+          {activeTab === 'timeline' && (
             <div>
               {statusTimeline.length === 0 ? (
                 <p className="text-zinc-500 text-sm">
                   {logsAvailable
-                    ? "No status-change logs available for this flight."
-                    : "Sign in to view this flight’s status history."}
+                    ? 'No status-change logs available for this flight.'
+                    : 'Sign in to view this flight’s status history.'}
                 </p>
               ) : (
                 <div className="overflow-x-auto pb-1">

@@ -30,17 +30,20 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const variantStyles = {
     primary: {
       border: 'border-blue-600',
-      confirmButton: 'bg-linear-to-b from-blue-500 to-blue-700 hover:bg-linear-to-b hover:from-blue-600 hover:to-blue-800',
+      confirmButton:
+        'bg-linear-to-b from-blue-500 to-blue-700 hover:bg-linear-to-b hover:from-blue-600 hover:to-blue-800',
       icon: 'text-blue-400',
     },
     danger: {
       border: 'border-red-600',
-      confirmButton: 'bg-linear-to-b from-red-500 to-red-700 hover:bg-linear-to-b hover:from-red-600 hover:to-red-800',
+      confirmButton:
+        'bg-linear-to-b from-red-500 to-red-700 hover:bg-linear-to-b hover:from-red-600 hover:to-red-800',
       icon: 'text-red-400',
     },
     success: {
       border: 'border-green-600',
-      confirmButton: 'bg-linear-to-b from-green-500 to-green-700 hover:bg-linear-to-b hover:from-green-600 hover:to-green-800',
+      confirmButton:
+        'bg-linear-to-b from-green-500 to-green-700 hover:bg-linear-to-b hover:from-green-600 hover:to-green-800',
       icon: 'text-green-400',
     },
   };

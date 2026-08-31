@@ -1,4 +1,3 @@
-
 const GENERIC_ERRORS = new Set([
   'internal server error',
   'something went wrong',

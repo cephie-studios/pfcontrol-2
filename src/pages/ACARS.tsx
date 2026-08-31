@@ -344,8 +344,7 @@ NOTES:
     const initialMessages = [warningMsg, detailsMsg, successMsg];
     if (
       flightId &&
-      localStorage.getItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`) ===
-        'true'
+      localStorage.getItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`) === 'true'
     ) {
       const pdcRequestMsg: AcarsMessage = {
         id: `${Date.now()}-pdc-request-restored`,

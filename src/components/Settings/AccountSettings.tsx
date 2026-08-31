@@ -127,7 +127,9 @@ export default function AccountSettings({
         window.location.href = '/';
       } else {
         const error = await res.json();
-        showError(`Failed to delete account: ${error.message || 'Unknown error'}`);
+        showError(
+          `Failed to delete account: ${error.message || 'Unknown error'}`
+        );
       }
     } catch (error) {
       console.error('Error deleting account:', error);

@@ -22,8 +22,8 @@ export default function PrivacySettings({
   return (
     <div className="space-y-3 sm:space-y-4">
       <p className="text-xs text-zinc-500">
-        Bio, statistics visibility, and profile customization are now managed from the Edit Profile panel on your
-        public profile page.
+        Bio, statistics visibility, and profile customization are now managed
+        from the Edit Profile panel on your public profile page.
       </p>
 
       {/* Hide from Leaderboard */}

@@ -679,9 +679,7 @@ export default function Toolbar({
                       >
                         <span className="flex items-center gap-2.5 min-w-0">
                           <Star className="w-4 h-4 shrink-0" />
-                          <span className="font-medium truncate">
-                            Feedback
-                          </span>
+                          <span className="font-medium truncate">Feedback</span>
                         </span>
                         <span
                           className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${feedbackEnabled ? 'bg-blue-600' : 'bg-zinc-700'}`}

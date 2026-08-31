@@ -35,7 +35,9 @@ export function isValidRunwayForAirport(
     return false;
   }
   const airportData = getAirportData() as AirportRunwayInfo[];
-  const airport = airportData.find((ap) => ap.icao === icao.trim().toUpperCase());
+  const airport = airportData.find(
+    (ap) => ap.icao === icao.trim().toUpperCase()
+  );
   if (!airport) return false;
   const runways = airport.runways ?? [];
   return runways.some((r) => r.toUpperCase() === runway.trim().toUpperCase());

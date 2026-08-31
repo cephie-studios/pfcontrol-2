@@ -3,7 +3,10 @@ import { decrypt } from '../utils/encryption.js';
 import type { ClientFlight } from '../db/flights.js';
 import { keys, TTL } from './keys.js';
 import { perfAsync } from './perf.js';
-import { getActiveNetworkSessionIds, getSessionMetas } from './activeSessions.js';
+import {
+  getActiveNetworkSessionIds,
+  getSessionMetas,
+} from './activeSessions.js';
 import {
   getFlightsForSessions,
   getRecentlyUpdatedFlightsForSessions,
@@ -261,9 +264,8 @@ export async function buildDeveloperNetworkSnapshot(
   sessionUsersIO?: SessionUsersReader
 ): Promise<OverviewData> {
   return perfAsync('buildDeveloperNetworkSnapshot', async () => {
-    const { getActivePfatcSessionIdsForDeveloperApi } = await import(
-      '../db/sessions.js'
-    );
+    const { getActivePfatcSessionIdsForDeveloperApi } =
+      await import('../db/sessions.js');
     const activeSessionIds =
       await getActivePfatcSessionIdsForDeveloperApi(sessionWindowHours);
     const metas = await getSessionMetas(activeSessionIds);
@@ -444,7 +446,9 @@ async function getCachedDeveloperNetworkSnapshot(): Promise<OverviewData | null>
   return null;
 }
 
-async function storeDeveloperNetworkSnapshot(data: OverviewData): Promise<void> {
+async function storeDeveloperNetworkSnapshot(
+  data: OverviewData
+): Promise<void> {
   if (!OVERVIEW_CACHE_ENABLED) return;
   try {
     await redisConnection.setex(

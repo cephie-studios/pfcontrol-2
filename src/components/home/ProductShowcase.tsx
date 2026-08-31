@@ -220,7 +220,6 @@ function MockNavbar({
   submitCopied: boolean;
   submitHighlight: boolean;
 }) {
-  
   const [utc, setUtc] = useState('');
   useEffect(() => {
     const tick = () => {
@@ -1227,7 +1226,9 @@ export default function ProductShowcase() {
                   variant="primary"
                   size="lg"
                   onClick={() => {
-                    const url = user ? '/?tutorial=true' : '/login?callback=/?tutorial=true';
+                    const url = user
+                      ? '/?tutorial=true'
+                      : '/login?callback=/?tutorial=true';
                     window.location.assign(url);
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-semibold text-sm transition-colors"

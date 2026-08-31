@@ -19,7 +19,9 @@ export default function AircraftPhotoCard({ flight }: AircraftPhotoCardProps) {
     .join(' · ');
 
   if (photo.loading) {
-    return <div className="h-44 rounded-2xl bg-zinc-800/60 animate-pulse mb-4" />;
+    return (
+      <div className="h-44 rounded-2xl bg-zinc-800/60 animate-pulse mb-4" />
+    );
   }
 
   if (photo.tier === 'none' || !photo.imageUrl) {
@@ -52,8 +54,7 @@ export default function AircraftPhotoCard({ flight }: AircraftPhotoCardProps) {
       </div>
       <div className="absolute right-3 bottom-2.5 text-right text-[9px] leading-relaxed text-zinc-300/70">
         Image by @{photo.author}
-        <br />
-        © 2024 PFPhotos. All Rights Reserved.
+        <br />© 2024 PFPhotos. All Rights Reserved.
       </div>
     </div>
   );

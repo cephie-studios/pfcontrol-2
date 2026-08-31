@@ -1,1 +1,19 @@
-{"TransCanada":["ian_cheesy-0.webp"],"Airbaltic":["sec_shells-0.webp","ka1atay-0.webp"],"AirBaltic Estonia":["sec_shells-0.webp"],"AirbusHouse":["ka1atay-0.webp","ka1atay-1.webp"],"AirBaltic Lithuania":["sec_shells-0.webp"],"AirBaltic Latvia":["sec_shells-0.webp"],"Breeze":["ka1atay-0.webp"],"Air France":["sec_shells-0.webp"],"Swiss":["sec_shells-0.webp"],"Air Manas":["ka1atay-0.webp"],"EgyptAir":["ka1atay-0.webp"],"AirAustral":["ka1atay-0.webp"],"Korean Air":["ka1atay-0.webp"],"Air Tanzania":["ka1atay-0.webp"],"jetBlue":["ka1atay-0.webp"],"Delta":["ka1atay-0.webp"],"AirCanada":["ka1atay-0.webp"]}
+{
+  "TransCanada": ["ian_cheesy-0.webp"],
+  "Airbaltic": ["sec_shells-0.webp", "ka1atay-0.webp"],
+  "AirBaltic Estonia": ["sec_shells-0.webp"],
+  "AirbusHouse": ["ka1atay-0.webp", "ka1atay-1.webp"],
+  "AirBaltic Lithuania": ["sec_shells-0.webp"],
+  "AirBaltic Latvia": ["sec_shells-0.webp"],
+  "Breeze": ["ka1atay-0.webp"],
+  "Air France": ["sec_shells-0.webp"],
+  "Swiss": ["sec_shells-0.webp"],
+  "Air Manas": ["ka1atay-0.webp"],
+  "EgyptAir": ["ka1atay-0.webp"],
+  "AirAustral": ["ka1atay-0.webp"],
+  "Korean Air": ["ka1atay-0.webp"],
+  "Air Tanzania": ["ka1atay-0.webp"],
+  "jetBlue": ["ka1atay-0.webp"],
+  "Delta": ["ka1atay-0.webp"],
+  "AirCanada": ["ka1atay-0.webp"]
+}

@@ -225,11 +225,21 @@ function ColorPopover({
   );
 }
 
-function CardColorPencil({ cardId, editor }: { cardId: string; editor: CardColorEditor }) {
+function CardColorPencil({
+  cardId,
+  editor,
+}: {
+  cardId: string;
+  editor: CardColorEditor;
+}) {
   if (!editor.isEditing) return null;
   return (
     <div className="absolute top-2 right-2 z-10">
-      <EditPencil onClick={() => editor.onOpen(cardId)} title="Card color" icon={Palette} />
+      <EditPencil
+        onClick={() => editor.onOpen(cardId)}
+        title="Card color"
+        icon={Palette}
+      />
       {editor.openCardId === cardId && (
         <ColorPopover
           label="Card Color"
@@ -294,7 +304,11 @@ function DraggableSection({
           }`}
           title={visible ? 'Visible to others' : 'Hidden from others'}
         >
-          {visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          {visible ? (
+            <Eye className="w-4 h-4" />
+          ) : (
+            <EyeOff className="w-4 h-4" />
+          )}
         </button>
       </div>
       <div className={visible ? '' : 'opacity-40'}>{children}</div>
@@ -367,8 +381,12 @@ export default function PilotProfile({
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<ProfileEditDraft>(EMPTY_DRAFT);
-  const [colorEditor, setColorEditor] = useState<ColorEditorTarget | null>(null);
-  const [draggedSectionKey, setDraggedSectionKey] = useState<string | null>(null);
+  const [colorEditor, setColorEditor] = useState<ColorEditorTarget | null>(
+    null
+  );
+  const [draggedSectionKey, setDraggedSectionKey] = useState<string | null>(
+    null
+  );
   const bioTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const initialProfileConsumedRef = useRef(false);
 
@@ -389,7 +407,8 @@ export default function PilotProfile({
     if (!el) return;
     const style = window.getComputedStyle(el);
     const lineHeight = parseFloat(style.lineHeight) || 20;
-    const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const paddingY =
+      parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const maxHeight = lineHeight * 2 + paddingY;
     el.style.height = 'auto';
     const nextHeight = Math.min(el.scrollHeight, maxHeight);
@@ -526,7 +545,8 @@ export default function PilotProfile({
         bio: draft.bio,
         displayBioOnProfile: draft.displayBioOnProfile,
         profileCustomization: draft.customization,
-        displayControllerRatingOnProfile: draft.displayControllerRatingOnProfile,
+        displayControllerRatingOnProfile:
+          draft.displayControllerRatingOnProfile,
         displayLinkedAccountsOnProfile: draft.displayLinkedAccountsOnProfile,
         displayBackgroundOnProfile: draft.displayBackgroundOnProfile,
       });
@@ -543,7 +563,10 @@ export default function PilotProfile({
   };
 
   const updateCustomization = (patch: Partial<ProfileCustomization>) => {
-    setDraft((d) => ({ ...d, customization: { ...d.customization, ...patch } }));
+    setDraft((d) => ({
+      ...d,
+      customization: { ...d.customization, ...patch },
+    }));
   };
 
   const toggleColorEditor = (target: ColorEditorTarget) => {
@@ -607,7 +630,8 @@ export default function PilotProfile({
   const getBackgroundImage = () => {
     const displayBackground = isOwnerEditing
       ? draft.displayBackgroundOnProfile
-      : isCurrentUser || (profile?.privacySettings.displayBackgroundOnProfile ?? true);
+      : isCurrentUser ||
+        (profile?.privacySettings.displayBackgroundOnProfile ?? true);
 
     if (!profile?.user.background_image || !displayBackground) {
       return null;
@@ -762,21 +786,29 @@ export default function PilotProfile({
 
   const hasCrown = isRankOne(ranks);
 
-  const baseCustomization = profile.profileCustomization ?? DEFAULT_CUSTOMIZATION;
-  const effectiveCustomization = isOwnerEditing ? draft.customization : baseCustomization;
+  const baseCustomization =
+    profile.profileCustomization ?? DEFAULT_CUSTOMIZATION;
+  const effectiveCustomization = isOwnerEditing
+    ? draft.customization
+    : baseCustomization;
   const effectiveSectionOrder =
-    effectiveCustomization.sectionOrder && effectiveCustomization.sectionOrder.length > 0
+    effectiveCustomization.sectionOrder &&
+    effectiveCustomization.sectionOrder.length > 0
       ? effectiveCustomization.sectionOrder
       : DEFAULT_SECTION_ORDER;
   const accentColor = effectiveCustomization.accentColor;
-  const cardBorderStyle = accentColor ? { borderColor: accentColor } : undefined;
+  const cardBorderStyle = accentColor
+    ? { borderColor: accentColor }
+    : undefined;
 
   const effectiveBio = isOwnerEditing ? draft.bio : profile.user.bio;
-  const bioVisible = isCurrentUser || profile.privacySettings.displayBioOnProfile;
+  const bioVisible =
+    isCurrentUser || profile.privacySettings.displayBioOnProfile;
 
   const ratingVisible =
     isCurrentUser || profile.privacySettings.displayControllerRatingOnProfile;
-  const ratingHiddenWhileEditing = isOwnerEditing && !draft.displayControllerRatingOnProfile;
+  const ratingHiddenWhileEditing =
+    isOwnerEditing && !draft.displayControllerRatingOnProfile;
 
   const linkedAccountsVisible =
     isCurrentUser || profile.privacySettings.displayLinkedAccountsOnProfile;
@@ -793,7 +825,8 @@ export default function PilotProfile({
   const cardColorEditor: CardColorEditor = {
     isEditing: isOwnerEditing,
     cardColor: draft.customization.cardColor,
-    openCardId: colorEditor?.kind === 'card' ? (colorEditor.anchorId ?? null) : null,
+    openCardId:
+      colorEditor?.kind === 'card' ? (colorEditor.anchorId ?? null) : null,
     onOpen: (cardId) => toggleColorEditor({ kind: 'card', anchorId: cardId }),
     onClose: closeColorEditor,
     onChange: (hex) => updateCustomization({ cardColor: hex }),
@@ -820,7 +853,10 @@ export default function PilotProfile({
         <div
           className="fixed inset-0 pointer-events-none z-0"
           style={{
-            backgroundColor: hexToRgba(effectiveCustomization.backgroundColor, 0.12),
+            backgroundColor: hexToRgba(
+              effectiveCustomization.backgroundColor,
+              0.12
+            ),
           }}
         />
       )}
@@ -837,7 +873,10 @@ export default function PilotProfile({
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    backgroundColor: hexToRgba(effectiveCustomization.backgroundColor, 0.45),
+                    backgroundColor: hexToRgba(
+                      effectiveCustomization.backgroundColor,
+                      0.45
+                    ),
                   }}
                 />
               )}
@@ -886,8 +925,12 @@ export default function PilotProfile({
                   <ColorPopover
                     label="Banner Tint"
                     value={draft.customization.bannerTintColor}
-                    onChange={(hex) => updateCustomization({ bannerTintColor: hex })}
-                    onClear={() => updateCustomization({ bannerTintColor: null })}
+                    onChange={(hex) =>
+                      updateCustomization({ bannerTintColor: hex })
+                    }
+                    onClear={() =>
+                      updateCustomization({ bannerTintColor: null })
+                    }
                     opacity={draft.customization.bannerTintOpacity}
                     onOpacityChange={(v) =>
                       updateCustomization({ bannerTintOpacity: v })
@@ -908,10 +951,15 @@ export default function PilotProfile({
                   <div className="relative self-center md:self-auto">
                     <div
                       className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-blue-600 overflow-hidden bg-gray-800 shadow-xl"
-                      style={accentColor ? { borderColor: accentColor } : undefined}
+                      style={
+                        accentColor ? { borderColor: accentColor } : undefined
+                      }
                     >
                       <img
-                        src={getDiscordAvatar(profile.user.id, profile.user.avatar)}
+                        src={getDiscordAvatar(
+                          profile.user.id,
+                          profile.user.avatar
+                        )}
                         alt={profile.user.username}
                         className="w-full h-full object-cover"
                       />
@@ -936,8 +984,12 @@ export default function PilotProfile({
                           <ColorPopover
                             label="Accent Color"
                             value={draft.customization.accentColor}
-                            onChange={(hex) => updateCustomization({ accentColor: hex })}
-                            onClear={() => updateCustomization({ accentColor: null })}
+                            onChange={(hex) =>
+                              updateCustomization({ accentColor: hex })
+                            }
+                            onClear={() =>
+                              updateCustomization({ accentColor: null })
+                            }
                             onClose={closeColorEditor}
                             defaultValue={DEFAULT_ACCENT_COLOR}
                           />
@@ -969,10 +1021,14 @@ export default function PilotProfile({
                             style={{
                               backgroundColor: 'rgba(59, 130, 246, 0.2)',
                               borderColor: 'rgba(59, 130, 246, 0.5)',
-                              boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
+                              boxShadow:
+                                '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
                             }}
                           >
-                            <Braces className="h-4 w-4" style={{ color: '#3B82F6' }} />
+                            <Braces
+                              className="h-4 w-4"
+                              style={{ color: '#3B82F6' }}
+                            />
                             <span
                               className="text-sm font-semibold"
                               style={{ color: '#3B82F6' }}
@@ -984,7 +1040,9 @@ export default function PilotProfile({
                         {displayedRoles.map((role) => {
                           const badge = getRoleBadge(role);
                           const BadgeIcon = badge.icon;
-                          const hidden = effectiveHiddenRoleIds.includes(role.id);
+                          const hidden = effectiveHiddenRoleIds.includes(
+                            role.id
+                          );
                           const content = (
                             <div
                               className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
@@ -994,7 +1052,10 @@ export default function PilotProfile({
                                 boxShadow: `0 4px 6px -1px rgba(${badge.rgb}, 0.2)`,
                               }}
                             >
-                              <BadgeIcon className="h-4 w-4" style={{ color: badge.color }} />
+                              <BadgeIcon
+                                className="h-4 w-4"
+                                style={{ color: badge.color }}
+                              />
                               <span
                                 className="text-sm font-semibold"
                                 style={{ color: badge.color }}
@@ -1028,14 +1089,13 @@ export default function PilotProfile({
                         <Calendar className="h-5 w-5" />
                         <span className="text-base md:text-lg">
                           Member since{' '}
-                          {new Date(profile.user.member_since).toLocaleDateString(
-                            'en-US',
-                            {
-                              month: 'long',
-                              year: 'numeric',
-                              timeZone: 'UTC',
-                            }
-                          )}
+                          {new Date(
+                            profile.user.member_since
+                          ).toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })}
                         </span>
                       </div>
 
@@ -1055,7 +1115,9 @@ export default function PilotProfile({
                                     key={star}
                                     className={`w-4 h-4 md:w-5 md:h-5 ${
                                       star <=
-                                      Math.round(profile.user.rating!.averageRating)
+                                      Math.round(
+                                        profile.user.rating!.averageRating
+                                      )
                                         ? 'fill-yellow-500 text-yellow-500'
                                         : 'text-zinc-700'
                                     }`}
@@ -1193,7 +1255,9 @@ export default function PilotProfile({
                     </div>
 
                     {(isOwnerEditing ||
-                      (bioVisible && effectiveBio && effectiveBio.trim() !== '')) && (
+                      (bioVisible &&
+                        effectiveBio &&
+                        effectiveBio.trim() !== '')) && (
                       <div className="mt-4 flex justify-center md:justify-start">
                         {isOwnerEditing ? (
                           <div className="flex-1 max-w-xl">
@@ -1238,7 +1302,10 @@ export default function PilotProfile({
                                 ) : (
                                   <EyeOff className="w-3.5 h-3.5" />
                                 )}
-                                Bio {draft.displayBioOnProfile ? 'visible' : 'hidden'}
+                                Bio{' '}
+                                {draft.displayBioOnProfile
+                                  ? 'visible'
+                                  : 'hidden'}
                               </button>
                               <span
                                 className={`text-xs ${
@@ -1267,7 +1334,11 @@ export default function PilotProfile({
                       onClick={handleShareProfile}
                       className={`flex items-center gap-2 ${accentColor && !shareClicked ? 'accent-hover-brighten' : ''}`}
                       variant={shareClicked ? 'success' : 'primary'}
-                      style={shareClicked ? undefined : accentButtonStyle(accentColor)}
+                      style={
+                        shareClicked
+                          ? undefined
+                          : accentButtonStyle(accentColor)
+                      }
                     >
                       <Share2 className="w-4 h-4" />
                       <span>{shareClicked ? 'Copied!' : 'Share'}</span>
@@ -1336,68 +1407,76 @@ export default function PilotProfile({
                   <ColorPopover
                     label="Page Background"
                     value={draft.customization.backgroundColor}
-                    onChange={(hex) => updateCustomization({ backgroundColor: hex })}
-                    onClear={() => updateCustomization({ backgroundColor: null })}
+                    onChange={(hex) =>
+                      updateCustomization({ backgroundColor: hex })
+                    }
+                    onClear={() =>
+                      updateCustomization({ backgroundColor: null })
+                    }
                     onClose={closeColorEditor}
                     defaultValue={DEFAULT_BACKGROUND_COLOR}
                     align="left"
                   />
                 )}
               </div>
-              <span className="text-xs text-zinc-500">Page background color</span>
+              <span className="text-xs text-zinc-500">
+                Page background color
+              </span>
             </div>
           )}
           <div className="space-y-8">
-          {effectiveSectionOrder.map((section) => {
-            if (!isCurrentUser && !section.visible) return null;
+            {effectiveSectionOrder.map((section) => {
+              if (!isCurrentUser && !section.visible) return null;
 
-            let sectionNode: React.ReactNode = null;
-            if (section.key === 'stats') {
-              sectionNode = (
-                <StatsSection
-                  userStats={userStats}
-                  ranks={ranks}
-                  isCurrentUser={isCurrentUser}
-                  cardColor={effectiveCustomization.cardColor}
-                  borderStyle={cardBorderStyle}
-                  cardColorEditor={cardColorEditor}
-                  hiddenStatIds={effectiveHiddenStatIds}
-                  isOwnerEditing={isOwnerEditing}
-                  onToggleStatHidden={toggleStatHidden}
-                />
-              );
-            } else if (section.key === 'featuredFlights') {
-              sectionNode = (
-                <FeaturedFlightsSection
-                  flights={profile.featuredFlights}
-                  cardColor={effectiveCustomization.cardColor}
-                  borderStyle={cardBorderStyle}
-                  cardColorEditor={cardColorEditor}
-                  isEditing={isOwnerEditing}
-                />
-              );
-            }
-            if (!sectionNode) return null;
+              let sectionNode: React.ReactNode = null;
+              if (section.key === 'stats') {
+                sectionNode = (
+                  <StatsSection
+                    userStats={userStats}
+                    ranks={ranks}
+                    isCurrentUser={isCurrentUser}
+                    cardColor={effectiveCustomization.cardColor}
+                    borderStyle={cardBorderStyle}
+                    cardColorEditor={cardColorEditor}
+                    hiddenStatIds={effectiveHiddenStatIds}
+                    isOwnerEditing={isOwnerEditing}
+                    onToggleStatHidden={toggleStatHidden}
+                  />
+                );
+              } else if (section.key === 'featuredFlights') {
+                sectionNode = (
+                  <FeaturedFlightsSection
+                    flights={profile.featuredFlights}
+                    cardColor={effectiveCustomization.cardColor}
+                    borderStyle={cardBorderStyle}
+                    cardColorEditor={cardColorEditor}
+                    isEditing={isOwnerEditing}
+                  />
+                );
+              }
+              if (!sectionNode) return null;
 
-            if (isOwnerEditing) {
-              return (
-                <DraggableSection
-                  key={section.key}
-                  sectionKey={section.key}
-                  visible={section.visible}
-                  isDragging={draggedSectionKey === section.key}
-                  accentColor={accentColor}
-                  onDragStart={() => handleSectionDragStart(section.key)}
-                  onDragOver={(e) => handleSectionDragOver(e, section.key)}
-                  onDrop={handleSectionDrop}
-                  onToggleVisible={() => handleToggleSectionVisible(section.key)}
-                >
-                  {sectionNode}
-                </DraggableSection>
-              );
-            }
-            return <div key={section.key}>{sectionNode}</div>;
-          })}
+              if (isOwnerEditing) {
+                return (
+                  <DraggableSection
+                    key={section.key}
+                    sectionKey={section.key}
+                    visible={section.visible}
+                    isDragging={draggedSectionKey === section.key}
+                    accentColor={accentColor}
+                    onDragStart={() => handleSectionDragStart(section.key)}
+                    onDragOver={(e) => handleSectionDragOver(e, section.key)}
+                    onDrop={handleSectionDrop}
+                    onToggleVisible={() =>
+                      handleToggleSectionVisible(section.key)
+                    }
+                  >
+                    {sectionNode}
+                  </DraggableSection>
+                );
+              }
+              return <div key={section.key}>{sectionNode}</div>;
+            })}
           </div>
         </div>
       </div>
@@ -1445,7 +1524,10 @@ function StatCard({
   children,
 }: {
   id: string;
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  icon: React.ComponentType<{
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
   defaultIconBgClass: string;
   defaultIconColorClass: string;
   gradient: string;
@@ -1480,7 +1562,11 @@ function StatCard({
         <div className="flex items-center gap-4">
           <div
             className={`p-2 rounded-lg ${iconColor ? '' : defaultIconBgClass}`}
-            style={iconColor ? { backgroundColor: hexToRgba(iconColor, 0.2) } : undefined}
+            style={
+              iconColor
+                ? { backgroundColor: hexToRgba(iconColor, 0.2) }
+                : undefined
+            }
           >
             <Icon
               className={`h-6 w-6 ${iconColor ? '' : defaultIconColorClass}`}
@@ -1501,9 +1587,17 @@ function StatCard({
               ? 'border-zinc-600 text-zinc-500 hover:text-white'
               : 'border-emerald-600/60 text-emerald-400 hover:bg-emerald-500/10'
           }`}
-          title={hidden ? 'Hidden from others — click to show' : 'Visible — click to hide'}
+          title={
+            hidden
+              ? 'Hidden from others — click to show'
+              : 'Visible — click to hide'
+          }
         >
-          {hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          {hidden ? (
+            <EyeOff className="w-3.5 h-3.5" />
+          ) : (
+            <Eye className="w-3.5 h-3.5" />
+          )}
         </button>
       )}
     </div>
@@ -1708,7 +1802,9 @@ function FeaturedFlightsSection({
 }) {
   if (!flights || flights.length === 0) {
     if (!isEditing) return null;
-    return <p className="text-zinc-400 text-center">No featured flights yet.</p>;
+    return (
+      <p className="text-zinc-400 text-center">No featured flights yet.</p>
+    );
   }
 
   return (
@@ -1793,10 +1889,16 @@ function FeaturedFlightCard({
         ) : (
           <div
             className="p-4 bg-zinc-900/80 flex items-center justify-between gap-3"
-            style={cardColor ? { backgroundColor: hexToRgba(cardColor, 0.3) } : undefined}
+            style={
+              cardColor
+                ? { backgroundColor: hexToRgba(cardColor, 0.3) }
+                : undefined
+            }
           >
             <div>
-              <p className="font-bold text-white font-mono truncate">{spoken}</p>
+              <p className="font-bold text-white font-mono truncate">
+                {spoken}
+              </p>
               {flight.departure && flight.arrival && (
                 <p className="text-zinc-500 font-mono text-sm mt-0.5">
                   {flight.departure} → {flight.arrival}

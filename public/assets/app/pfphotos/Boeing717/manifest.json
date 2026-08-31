@@ -1,1 +1,21 @@
-{"Volotea":["ka1atay-0.webp","iamtherealcodo-0.webp","iamtherealcodo-1.webp","benidfns-0.webp"],"Hawaiian":["iamtherealcodo-0.webp","iamtherealcodo-1.webp","iamtherealcodo-2.webp"],"Turkmenistan":["iamtherealcodo-0.webp"],"AirTran":["iamtherealcodo-0.webp"],"Twa Silver":["iamtherealcodo-0.webp"],"Delta":["iamtherealcodo-0.webp","iamtherealcodo-1.webp"],"Twa White":["iamtherealcodo-0.webp"],"Spanair":["iamtherealcodo-0.webp"],"Blue1":["iamtherealcodo-0.webp"],"MexicanaClick":["iamtherealcodo-0.webp"]}
+{
+  "Volotea": [
+    "ka1atay-0.webp",
+    "iamtherealcodo-0.webp",
+    "iamtherealcodo-1.webp",
+    "benidfns-0.webp"
+  ],
+  "Hawaiian": [
+    "iamtherealcodo-0.webp",
+    "iamtherealcodo-1.webp",
+    "iamtherealcodo-2.webp"
+  ],
+  "Turkmenistan": ["iamtherealcodo-0.webp"],
+  "AirTran": ["iamtherealcodo-0.webp"],
+  "Twa Silver": ["iamtherealcodo-0.webp"],
+  "Delta": ["iamtherealcodo-0.webp", "iamtherealcodo-1.webp"],
+  "Twa White": ["iamtherealcodo-0.webp"],
+  "Spanair": ["iamtherealcodo-0.webp"],
+  "Blue1": ["iamtherealcodo-0.webp"],
+  "MexicanaClick": ["iamtherealcodo-0.webp"]
+}

@@ -360,12 +360,12 @@ export default function MyFlightDetail() {
             <button
               onClick={handleToggleFeatured}
               disabled={featuredLoading}
-              aria-label={featured ? 'Remove from profile' : 'Feature this flight'}
+              aria-label={
+                featured ? 'Remove from profile' : 'Feature this flight'
+              }
               title={featured ? 'Featured' : 'Feature'}
               className={`h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center transition-colors ${
-                featured
-                  ? 'text-amber-400'
-                  : 'text-zinc-200 hover:bg-black/60'
+                featured ? 'text-amber-400' : 'text-zinc-200 hover:bg-black/60'
               }`}
             >
               <Star className={`h-4 w-4 ${featured ? 'fill-amber-400' : ''}`} />
@@ -377,7 +377,9 @@ export default function MyFlightDetail() {
                   aria-label="Copy public share link"
                   title={copied ? 'Copied' : 'Share'}
                   className={`h-9 w-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center transition-colors ${
-                    copied ? 'text-emerald-400' : 'text-zinc-200 hover:bg-black/60'
+                    copied
+                      ? 'text-emerald-400'
+                      : 'text-zinc-200 hover:bg-black/60'
                   }`}
                 >
                   {copied ? (

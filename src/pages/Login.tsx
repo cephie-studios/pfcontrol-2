@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { getDiscordLoginUrl } from "../utils/fetch/auth";
-import { fetchStatistics } from "../utils/fetch/data";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { TowerControl, Users } from "lucide-react";
-import { FaDiscord } from "react-icons/fa";
-import { useAuth } from "../hooks/auth/useAuth";
-import Checkbox from "../components/common/Checkbox";
-import Button from "../components/common/Button";
+import { useState, useEffect } from 'react';
+import { getDiscordLoginUrl } from '../utils/fetch/auth';
+import { fetchStatistics } from '../utils/fetch/data';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { TowerControl, Users } from 'lucide-react';
+import { FaDiscord } from 'react-icons/fa';
+import { useAuth } from '../hooks/auth/useAuth';
+import Checkbox from '../components/common/Checkbox';
+import Button from '../components/common/Button';
 
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
@@ -14,7 +14,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const user = useAuth();
-  const callback = searchParams.get("callback");
+  const callback = searchParams.get('callback');
 
   useEffect(() => {
     fetchStatistics().then((data) => {
@@ -36,13 +36,13 @@ export default function Login() {
   };
 
   if (user.user) {
-    navigate("/");
+    navigate('/');
     return null;
   }
 
   const buttonClass = agreed
-    ? "w-full py-4 flex items-center justify-center gap-3"
-    : "w-full py-4 flex items-center justify-center gap-3 pointer-events-none";
+    ? 'w-full py-4 flex items-center justify-center gap-3'
+    : 'w-full py-4 flex items-center justify-center gap-3 pointer-events-none';
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white relative">
@@ -52,15 +52,15 @@ export default function Login() {
             <TowerControl className="h-8 w-8 text-blue-400" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
               PFControl
-              {window.location.hostname === "canary.pfcontrol.com" && (
+              {window.location.hostname === 'canary.pfcontrol.com' && (
                 <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
-                  {" "}
+                  {' '}
                   Canary
                 </span>
               )}
-              {window.location.hostname === "localhost" && (
+              {window.location.hostname === 'localhost' && (
                 <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent italic text-md">
-                  {" "}
+                  {' '}
                   Developers
                 </span>
               )}
@@ -109,7 +109,7 @@ export default function Login() {
 
           <div
             className={`w-full flex items-center border-2 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
-                      ${agreed ? "bg-blue-600/30 border-blue-600" : "bg-blue-600/10 border-blue-800"}
+                      ${agreed ? 'bg-blue-600/30 border-blue-600' : 'bg-blue-600/10 border-blue-800'}
                       hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
           >
             <Checkbox
@@ -117,7 +117,7 @@ export default function Login() {
               onChange={setAgreed}
               label={
                 <span className="text-sm">
-                  I agree to the{" "}
+                  I agree to the{' '}
                   <Link
                     to="https://cephie.app/legal/terms"
                     target="_blank"
@@ -127,7 +127,7 @@ export default function Login() {
                   >
                     Terms of Use
                   </Link>
-                  ,{" "}
+                  ,{' '}
                   <Link
                     to="https://cephie.app/legal/privacy"
                     target="_blank"
@@ -137,7 +137,7 @@ export default function Login() {
                   >
                     Privacy Policy
                   </Link>
-                  , and{" "}
+                  , and{' '}
                   <Link
                     to="https://cephie.app/legal/cookies"
                     target="_blank"

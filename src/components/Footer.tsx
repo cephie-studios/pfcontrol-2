@@ -249,11 +249,17 @@ export default function Footer() {
               PFATC
             </a>
             {' · '}
-            <a href="/howToUsePFControl" className="text-gray-500 pl-2 hover:text-gray-400 underline">
+            <a
+              href="/howToUsePFControl"
+              className="text-gray-500 pl-2 hover:text-gray-400 underline"
+            >
               Guide
             </a>
             {' · '}
-            <a href="/glossary" className="text-gray-500 pl-2 hover:text-gray-400 underline">
+            <a
+              href="/glossary"
+              className="text-gray-500 pl-2 hover:text-gray-400 underline"
+            >
               Glossary
             </a>
           </div>

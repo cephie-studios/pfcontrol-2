@@ -153,10 +153,7 @@ export function developerExtScopeGuard(version: 1 | 2) {
         return res.status(404).json({ error: 'Not found' });
       }
       // /me doesnt need a scope
-      if (
-        scopeId !== SELF_INFO_SCOPE_ID &&
-        !ext.scopes.includes(scopeId)
-      ) {
+      if (scopeId !== SELF_INFO_SCOPE_ID && !ext.scopes.includes(scopeId)) {
         return res.status(403).json({
           error: 'This API key is not allowed to access this endpoint',
         });
