@@ -52,68 +52,112 @@ export async function isEventController(userId: string): Promise<boolean> {
   }
 }
 
-export async function requireFlightAccess(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const { sessionId } = req.params;
-    const userId = req.user?.userId;
+type FlightAccessOptions = {
+  allowFlightOwnerWithoutSession?: boolean;
+};
 
-    if (!sessionId || !userId) {
-      return res.status(400).json({
-        error: 'Session ID and authentication are required',
+function flightAccess(options: FlightAccessOptions = {}) {
+  return async function requireFlightAccessHandler(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user?.userId;
+
+      if (!sessionId || !userId) {
+        return res.status(400).json({
+          error: 'Session ID and authentication are required',
+        });
+      }
+
+      const session = await mainDb
+        .selectFrom('sessions')
+        .select([
+          'session_id',
+          'access_id',
+          'created_by',
+          'is_pfatc',
+          'is_advanced_atc',
+        ])
+        .where('session_id', '=', sessionId)
+        .executeTakeFirst();
+
+      if (!session) {
+        if (!options.allowFlightOwnerWithoutSession) {
+          return res.status(404).json({ error: 'Session not found' });
+        }
+        return await allowOwnOrphanedFlight(req, res, next, sessionId, userId);
+      }
+
+      const userRoles = await getUserRoles(userId);
+
+      // PFATC Sector Controller can edit flights in PFATC sessions
+      if (hasPermission(userRoles, 'pfatc_sector') && session.is_pfatc) {
+        return next();
+      }
+
+      // AATC disabled — AATC Sector Controller check removed
+      // if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc) {
+      //   return next();
+      // }
+
+      const accessId = req.query.accessId || req.body.accessId;
+      if (accessId && accessId === session.access_id) {
+        return next();
+      }
+
+      if (userId === session.created_by) {
+        return next();
+      }
+
+      return res.status(403).json({
+        error: 'Not authorized to modify flights in this session',
+      });
+    } catch (error) {
+      console.error('Flight access validation error:', error);
+      return res.status(500).json({
+        error: 'Failed to verify flight access permissions',
       });
     }
-
-    const session = await mainDb
-      .selectFrom('sessions')
-      .select([
-        'session_id',
-        'access_id',
-        'created_by',
-        'is_pfatc',
-        'is_advanced_atc',
-      ])
-      .where('session_id', '=', sessionId)
-      .executeTakeFirst();
-
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-
-    const userRoles = await getUserRoles(userId);
-
-    // PFATC Sector Controller can edit flights in PFATC sessions
-    if (hasPermission(userRoles, 'pfatc_sector') && session.is_pfatc) {
-      return next();
-    }
-
-    // AATC disabled — AATC Sector Controller check removed
-    // if (hasPermission(userRoles, 'aatc_sector') && session.is_advanced_atc) {
-    //   return next();
-    // }
-
-    const accessId = req.query.accessId || req.body.accessId;
-    if (accessId && accessId === session.access_id) {
-      return next();
-    }
-
-    if (userId === session.created_by) {
-      return next();
-    }
-
-    return res.status(403).json({
-      error: 'Not authorized to modify flights in this session',
-    });
-  } catch (error) {
-    console.error('Flight access validation error:', error);
-    return res.status(500).json({
-      error: 'Failed to verify flight access permissions',
-    });
-  }
+  };
 }
+
+async function allowOwnOrphanedFlight(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  sessionId: string,
+  userId: string
+) {
+  const flightId = req.params.flightId;
+
+  const flight = flightId
+    ? await mainDb
+        .selectFrom('flights')
+        .select(['user_id'])
+        .where('session_id', '=', sessionId)
+        .where('id', '=', flightId)
+        .executeTakeFirst()
+    : undefined;
+
+  if (!flight) {
+    return next();
+  }
+
+  if (flight.user_id && flight.user_id === userId) {
+    return next();
+  }
+
+  return res.status(404).json({ error: 'Session not found' });
+}
+
+export const requireFlightAccess = flightAccess();
+
+export const requireFlightDeleteAccess = flightAccess({
+  allowFlightOwnerWithoutSession: true,
+});
 
 export async function canModifySession(
   userId: string,

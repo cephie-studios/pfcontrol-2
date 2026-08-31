@@ -3,7 +3,10 @@ import multer from 'multer';
 import FormData from 'form-data';
 import axios from 'axios';
 import requireAuth, { optionalAuth } from '../middleware/auth.js';
-import { requireFlightAccess } from '../middleware/flightAccess.js';
+import {
+  requireFlightAccess,
+  requireFlightDeleteAccess,
+} from '../middleware/flightAccess.js';
 import {
   getFlightsByUser,
   getFlightByIdForUser,
@@ -380,11 +383,7 @@ router.get('/public/:flightId', generalApiLimiter, async (req, res) => {
 // POST: /api/flights/validate-route
 router.post('/validate-route', generalApiLimiter, (req, res) => {
   const { route, departure, arrival, flight_type } = req.body ?? {};
-  if (
-    typeof route !== 'string' ||
-    !route.trim() ||
-    flight_type === 'VFR'
-  ) {
+  if (typeof route !== 'string' || !route.trim() || flight_type === 'VFR') {
     return res.json({ error: null });
   }
   const error = validateRoute(
@@ -452,9 +451,9 @@ router.post(
         if (external) acarsRedirectUrl = external.url;
       }
 
-      res.status(201).json(
-        acarsRedirectUrl ? { ...flight, acarsRedirectUrl } : flight
-      );
+      res
+        .status(201)
+        .json(acarsRedirectUrl ? { ...flight, acarsRedirectUrl } : flight);
 
       if (session) {
         if (session.created_by) {
@@ -523,7 +522,7 @@ router.put(
 router.delete(
   '/:sessionId/:flightId',
   requireAuth,
-  requireFlightAccess,
+  requireFlightDeleteAccess,
   async (req, res) => {
     try {
       await deleteFlight(req.params.sessionId, req.params.flightId);
