@@ -381,9 +381,9 @@ export default function Submit({
   };
 
   const deriveCallsign = (): string | null => {
-    if (form.registration.trim()) return form.registration.trim().toUpperCase();
-    if (form.airlineIcao && form.flightNumber.trim()) {
-      return `${form.airlineIcao}${form.flightNumber.trim()}`.toUpperCase();
+    const base = form.registration.trim() || form.airlineIcao;
+    if (base && form.flightNumber.trim()) {
+      return `${base}${form.flightNumber.trim()}`.toUpperCase();
     }
     return null;
   };
@@ -426,7 +426,7 @@ export default function Submit({
     const effectiveCallsign = deriveCallsign();
     if (!effectiveCallsign) {
       setError(
-        'Select an airline with a flight number, or enter a registration.'
+        'Select an airline or enter a registration, and provide a flight number.'
       );
       setIsSubmitting(false);
       return;
