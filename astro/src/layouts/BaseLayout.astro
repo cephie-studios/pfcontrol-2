@@ -86,6 +86,13 @@ const twitterDescEffective = twitterDescription ?? ogDescEffective;
       href="/sitemap.xml"
     />
 
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="PFControl" />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="keywords" content={keywordsContent} />
@@ -137,5 +144,12 @@ const twitterDescEffective = twitterDescription ?? ogDescEffective;
   </head>
   <body class="bg-black text-white antialiased">
     <slot />
+    <script nonce={Astro.locals.cspNonce} is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
