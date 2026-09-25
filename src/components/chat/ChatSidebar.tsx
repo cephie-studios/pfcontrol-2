@@ -331,11 +331,11 @@ export default function ChatSidebar({
   }, [open]);
 
   useEffect(() => {
-    if (!sessionId || !open || messagesLoaded) return;
+    if (!sessionId || !accessId || !open || messagesLoaded) return;
 
     setLoading(true);
     setErrorMessage(null);
-    fetchChatMessages(sessionId)
+    fetchChatMessages(sessionId, accessId)
       .then((fetchedMessages) => {
         setMessages(fetchedMessages);
         setLoading(false);
@@ -348,7 +348,7 @@ export default function ChatSidebar({
         setLoading(false);
         setMessagesLoaded(true);
       });
-  }, [sessionId, open, messagesLoaded]);
+  }, [sessionId, accessId, open, messagesLoaded]);
 
   // PFATC global chat socket
   useEffect(() => {
@@ -890,6 +890,7 @@ export default function ChatSidebar({
       } else {
         await reportChatMessage(
           sessionId,
+          accessId,
           reportingMessageId,
           reportReason.trim()
         );

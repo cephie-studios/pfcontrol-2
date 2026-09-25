@@ -8,6 +8,7 @@ import {
 } from '../db/chats.js';
 import { chatMessageLimiter } from '../middleware/rateLimiting.js';
 import requireAuth from '../middleware/auth.js';
+import { requireSessionAccess } from '../middleware/sessionAccess.js';
 import { capture } from '../utils/posthog.js';
 import { mainDb } from '../db/connection.js';
 import { decrypt } from '../utils/encryption.js';
@@ -130,21 +131,27 @@ router.get('/global/messages', requireAuth, async (req, res) => {
   }
 });
 
-// GET: /api/chats/:sessionId
-router.get('/:sessionId', requireAuth, async (req, res) => {
-  try {
-    const messages = await getChatMessages(req.params.sessionId);
-    res.json(messages);
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch chat messages' });
+// GET: /api/chats/:sessionId?accessId=...
+router.get(
+  '/:sessionId',
+  requireAuth,
+  requireSessionAccess,
+  async (req, res) => {
+    try {
+      const messages = await getChatMessages(req.params.sessionId);
+      res.json(messages);
+    } catch {
+      res.status(500).json({ error: 'Failed to fetch chat messages' });
+    }
   }
-});
+);
 
-// POST: /api/chats/:sessionId
+// POST: /api/chats/:sessionId?accessId=...
 router.post(
   '/:sessionId',
   chatMessageLimiter,
   requireAuth,
+  requireSessionAccess,
   async (req, res) => {
     try {
       const { message } = req.body;
@@ -199,42 +206,47 @@ router.delete('/:sessionId/:messageId', requireAuth, async (req, res) => {
   }
 });
 
-// POST: /api/chats/:sessionId/:messageId/report
-router.post('/:sessionId/:messageId/report', requireAuth, async (req, res) => {
-  try {
-    const { reason } = req.body;
-    if (typeof reason !== 'string' || reason.length > 500) {
-      return res.status(400).json({ error: 'Invalid or too long reason' });
+// POST: /api/chats/:sessionId/:messageId/report?accessId=...
+router.post(
+  '/:sessionId/:messageId/report',
+  requireAuth,
+  requireSessionAccess,
+  async (req, res) => {
+    try {
+      const { reason } = req.body;
+      if (typeof reason !== 'string' || reason.length > 500) {
+        return res.status(400).json({ error: 'Invalid or too long reason' });
+      }
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const messageId = Number(req.params.messageId);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ error: 'Invalid message ID' });
+      }
+      await reportChatMessage(
+        req.params.sessionId,
+        messageId,
+        user.userId,
+        reason
+      );
+      capture(req, {
+        distinctId: user.userId,
+        event: 'chat_message_reported',
+        properties: {
+          session_id: req.params.sessionId,
+          message_id: messageId,
+          type: 'session',
+        },
+      });
+      res.status(201).json({ success: true });
+    } catch (error) {
+      console.error('Report error:', error);
+      res.status(500).json({ error: 'Failed to report message' });
     }
-    const user = req.user;
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    const messageId = Number(req.params.messageId);
-    if (isNaN(messageId)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
-    }
-    await reportChatMessage(
-      req.params.sessionId,
-      messageId,
-      user.userId,
-      reason
-    );
-    capture(req, {
-      distinctId: user.userId,
-      event: 'chat_message_reported',
-      properties: {
-        session_id: req.params.sessionId,
-        message_id: messageId,
-        type: 'session',
-      },
-    });
-    res.status(201).json({ success: true });
-  } catch (error) {
-    console.error('Report error:', error);
-    res.status(500).json({ error: 'Failed to report message' });
   }
-});
+);
 
 // AATC disabled — GET /api/chats/aatc/messages route commented out
 // router.get('/aatc/messages', requireAuth, async (req, res) => {

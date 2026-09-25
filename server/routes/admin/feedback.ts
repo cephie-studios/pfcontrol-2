@@ -1,5 +1,6 @@
 import express from 'express';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
+import { requirePermission } from '../../middleware/rolePermissions.js';
 import { logAdminAction } from '../../db/audit.js';
 import {
   getAllFeedback,
@@ -9,6 +10,8 @@ import {
 import { getClientIp } from '../../utils/getIpAddress.js';
 
 const router = express.Router();
+
+router.use(requirePermission('feedback'));
 
 // GET: /api/admin/feedback - Get all feedback
 router.get(

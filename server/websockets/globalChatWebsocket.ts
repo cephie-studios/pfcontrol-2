@@ -10,6 +10,7 @@ import { encrypt, decrypt } from '../utils/encryption.js';
 import { sql } from 'kysely';
 import type { Server } from 'http';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { getSocketUser } from './socketAuth.js';
 
 const activeGlobalChatUsers = new Map<string, Set<string>>([
   ['pfatc', new Set()],
@@ -140,10 +141,6 @@ export function setupGlobalChatWebsocket(
   );
 
   io.on('connection', async (socket) => {
-    const userId = Array.isArray(socket.handshake.query.userId)
-      ? socket.handshake.query.userId[0]
-      : socket.handshake.query.userId;
-
     const station = Array.isArray(socket.handshake.query.station)
       ? socket.handshake.query.station[0]
       : socket.handshake.query.station;
@@ -163,24 +160,18 @@ export function setupGlobalChatWebsocket(
     }
     const roomName = 'global-chat'; // was: networkKind === 'aatc' ? 'aatc-chat' : 'global-chat'
 
-    if (!userId) {
+    // Identity comes only from the verified auth cookie. Any userId/username/
+    // avatar sent by the client (query or payload) is ignored.
+    const socketUser = await getSocketUser(socket);
+    if (!socketUser) {
       socket.disconnect(true);
       return;
     }
-
-    try {
-      const user = await mainDb
-        .selectFrom('users')
-        .select(['username'])
-        .where('id', '=', userId)
-        .executeTakeFirst();
-      socket.data.username = user?.username || 'Unknown';
-    } catch (error) {
-      console.error('[Global Chat] Error fetching username:', error);
-      socket.data.username = 'Unknown';
-    }
+    const userId = socketUser.userId;
 
     socket.data.userId = userId;
+    socket.data.username = socketUser.username;
+    socket.data.avatar = socketUser.avatar;
     socket.data.station = station;
     socket.data.position = position;
     socket.data.networkKind = networkKind;
@@ -190,82 +181,41 @@ export function setupGlobalChatWebsocket(
     socket.join(`user-${userId}`);
 
     if (station && !connectedGlobalChatUsers.get(networkKind)!.has(userId)) {
-      try {
-        const user = await mainDb
-          .selectFrom('users')
-          .select(['username', 'avatar'])
-          .where('id', '=', userId)
-          .executeTakeFirst();
+      const networkMap = connectedGlobalChatUsers.get(networkKind)!;
+      networkMap.set(userId, {
+        id: userId,
+        username: socketUser.username,
+        avatar: socketUser.avatar,
+        station: station,
+        position: position || null,
+        lastSeen: Date.now(),
+      });
 
-        let avatarUrl = null;
-        if (user?.avatar) {
-          avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${user.avatar}.png`;
-        }
-
-        const networkMap = connectedGlobalChatUsers.get(networkKind)!;
-        networkMap.set(userId, {
-          id: userId,
-          username: socket.data.username,
-          avatar: avatarUrl,
-          station: station,
-          position: position || null,
-          lastSeen: Date.now(),
-        });
-
-        io.to(roomName).emit(
-          'connectedGlobalChatUsers',
-          Array.from(networkMap.values())
-        );
-      } catch (error) {
-        console.error('[Global Chat] Error fetching user data:', error);
-        const networkMap = connectedGlobalChatUsers.get(networkKind)!;
-        networkMap.set(userId, {
-          id: userId,
-          username: 'Unknown',
-          avatar: null,
-          station: station,
-          position: position || null,
-          lastSeen: Date.now(),
-        });
-        io.to(roomName).emit(
-          'connectedGlobalChatUsers',
-          Array.from(networkMap.values())
-        );
-      }
+      io.to(roomName).emit(
+        'connectedGlobalChatUsers',
+        Array.from(networkMap.values())
+      );
     }
 
-    socket.on('globalTyping', ({ username }: { username: string }) => {
+    socket.on('globalTyping', () => {
       socket.broadcast
         .to(roomName)
-        .emit('globalUserTyping', { userId, username: socket.data.username });
+        .emit('globalUserTyping', { userId, username: socketUser.username });
     });
 
-    socket.on('globalChatMessage', async ({ user, message }) => {
-      if (
-        !message ||
-        message.length > 500 ||
-        user.userId !== socket.data.userId
-      )
+    socket.on('globalChatMessage', async ({ message }) => {
+      if (typeof message !== 'string' || !message || message.length > 500)
         return;
 
       const sanitizedMessage = sanitizeMessage(message, 500);
       if (!sanitizedMessage) return;
 
       if (socket.data.station) {
-        const existingUser = connectedGlobalChatUsers
-          .get(networkKind)!
-          .get(user.userId);
-
-        let avatarUrl = user.avatar;
-        if (user.avatar && !user.avatar.startsWith('http')) {
-          avatarUrl = `https://cdn.discordapp.com/avatars/${user.userId}/${user.avatar}.png`;
-        }
-
         const networkMap = connectedGlobalChatUsers.get(networkKind)!;
-        networkMap.set(user.userId, {
-          id: user.userId,
-          username: socket.data.username,
-          avatar: avatarUrl || existingUser?.avatar || null,
+        networkMap.set(userId, {
+          id: userId,
+          username: socketUser.username,
+          avatar: socketUser.avatar,
           station: socket.data.station,
           position: socket.data.position || null,
           lastSeen: Date.now(),
@@ -296,9 +246,9 @@ export function setupGlobalChatWebsocket(
           .insertInto('global_chat')
           .values({
             id: sql`DEFAULT`,
-            user_id: user.userId,
-            username: user.username ?? undefined,
-            avatar: user.avatar ?? undefined,
+            user_id: userId,
+            username: socketUser.username,
+            avatar: socketUser.avatar ?? undefined,
             station: socket.data.station ?? undefined,
             position: socket.data.position ?? undefined,
             message: JSON.stringify(encryptedMsg),
@@ -445,7 +395,7 @@ export function setupGlobalChatWebsocket(
                 .emit('globalChatMention', {
                   messageId: String(chatMsg.id),
                   mentionedUserId: mentionedUser.id,
-                  mentionerUsername: user.username || 'Unknown',
+                  mentionerUsername: socketUser.username,
                   message: chatMsg.message,
                   timestamp: chatMsg.sent_at.toISOString(),
                 });
@@ -460,7 +410,7 @@ export function setupGlobalChatWebsocket(
             io.to(roomName).emit('airportMention', {
               airport: airport.toUpperCase(),
               messageId: String(chatMsg.id),
-              mentionerUsername: user.username || 'Unknown',
+              mentionerUsername: socketUser.username,
               message: chatMsg.message,
               timestamp: chatMsg.sent_at.toISOString(),
             });
@@ -472,12 +422,18 @@ export function setupGlobalChatWebsocket(
       }
     });
 
-    socket.on('deleteGlobalMessage', async ({ messageId, userId }) => {
+    socket.on('deleteGlobalMessage', async ({ messageId }) => {
+      const id = Number(messageId);
+      if (!Number.isInteger(id)) {
+        socket.emit('deleteError', { messageId, error: 'Invalid message ID' });
+        return;
+      }
       try {
+        // Only the verified author may delete; the payload userId is ignored.
         const result = await mainDb
           .updateTable('global_chat')
           .set({ deleted_at: sql`NOW()` })
-          .where('id', '=', messageId)
+          .where('id', '=', id)
           .where('user_id', '=', userId)
           .where('deleted_at', 'is', null)
           .executeTakeFirst();
