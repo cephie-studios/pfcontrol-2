@@ -1,61 +1,335 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
-  MdGppMaybe,
-  MdFilterList,
-  MdCalendarToday,
-  MdPerson,
-  MdVisibility,
-  MdVisibilityOff,
-  MdAccessTime,
-  MdBlock,
-  MdClose,
-  MdDelete,
-  MdOpenInNew,
-  MdStorage,
-  MdAdd,
-  MdSettings,
-  MdShield,
-  MdAdminPanelSettings,
-  MdEdit,
-  MdCheckCircle,
-  MdGroups,
-  MdSpeakerNotesOff,
-  MdChat,
-  MdChatBubbleOutline,
-  MdEvent,
-  MdCode,
-  MdVpnKey,
-} from 'react-icons/md';
+  Activity,
+  Ban,
+  Bell,
+  BellRing,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  Code,
+  Database,
+  Eraser,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  FileText,
+  Flag,
+  Image,
+  ImageOff,
+  KeyRound,
+  Loader2,
+  Megaphone,
+  MessageCircle,
+  MessageSquare,
+  MessageSquareOff,
+  MessageSquareWarning,
+  Pencil,
+  Plane,
+  Plus,
+  RefreshCw,
+  Settings,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
+  Star,
+  StarOff,
+  Trash2,
+  Unlock,
+  User,
+  UserCog,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminIconInput from '../../components/admin/AdminIconInput';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminTextInput from '../../components/admin/AdminTextInput';
 import AdminTable from '../../components/admin/AdminTable';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_INPUT_ICON_CLASS,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_PAIR,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-  ADMIN_TOOLBAR_MOBILE_STACK_ITEM,
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import {
+  ADMIN_TONE_TEXT,
+  type AdminTone,
 } from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Dropdown from '../../components/common/Dropdown';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import {
   fetchAuditLogs,
   revealAuditLogIP,
   type AuditLogsResponse,
   type AuditLog,
 } from '../../utils/fetch/admin';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
+
+const ACTION_LABELS: Record<string, string> = {
+  ADMIN_DASHBOARD_ACCESSED: 'Dashboard Access',
+  ADMIN_USERS_ACCESSED: 'Users Page Access',
+  ADMIN_SESSIONS_ACCESSED: 'Sessions Access',
+  ADMIN_SYSTEM_INFO_ACCESSED: 'System Info Access',
+  ADMIN_AUDIT_LOGS_ACCESSED: 'Audit Logs Access',
+  ADMIN_TESTERS_ACCESSED: 'Testers Page Access',
+  IP_ADDRESS_VIEWED: 'IP Address Revealed',
+  AUDIT_LOG_IP_VIEWED: 'Audit Log IP Address Revealed',
+  USER_BANNED: 'User Banned',
+  USER_UNBANNED: 'User Unbanned',
+  ADMIN_BANS_ACCESSED: 'Bans Page Access',
+  SESSION_DELETED: 'Session Deleted',
+  SESSION_JOINED: 'Session Joined',
+  TESTER_ADDED: 'Tester Added',
+  TESTER_REMOVED: 'Tester Removed',
+  TESTER_SETTINGS_UPDATED: 'Tester Settings Updated',
+  ROLE_ASSIGNED: 'Role Assigned',
+  ROLE_REMOVED: 'Role Removed',
+  ROLE_UPDATED: 'Role Updated',
+  IP_REVEALED: 'IP Revealed',
+  NOTIFICATION_ADDED: 'Notification Added',
+  NOTIFICATION_UPDATED: 'Notification Updated',
+  NOTIFICATION_DELETED: 'Notification Deleted',
+  ADMIN_VERSION_UPDATED: 'Version Updated',
+  CHAT_REPORT_DELETED: 'Chat Report Deleted',
+  CHAT_REPORT_STATUS_UPDATED: 'Chat Report Status Updated',
+  CHAT_REPORT_RESOLVED: 'Chat Report Resolved',
+  ROLE_PRIORITIES_UPDATED: 'Role Priorities Updated',
+  UPDATE_MODAL_PUBLISHED: 'Update Modal Published',
+  UPDATE_MODAL_UNPUBLISHED: 'Update Modal Unpublished',
+  UPDATE_MODAL_CREATED: 'Update Modal Created',
+  UPDATE_MODAL_DELETED: 'Update Modal Deleted',
+  UPDATE_MODAL_UPDATED: 'Update Modal Updated',
+  FLIGHT_LOG_IP_REVEALED: 'Flight Log IP Revealed',
+  FEEDBACK_DELETED: 'Feedback Deleted',
+  CONTROLLER_RATING_DELETED: 'Controller Rating Deleted',
+  CONTROLLER_RATING_REPORT_DISMISSED: 'Controller Rating Report Dismissed',
+  CONTROLLER_RATING_AUTOMOD_DISMISSED:
+    'Controller Rating Automod Flag Dismissed',
+  EVENT_MODE_UPDATED: 'Event Mode Updated',
+  ADMIN_DEVELOPER_SCOPE_CATALOG: 'Developer Scope Catalog Access',
+  ADMIN_DEVELOPER_APPLICATIONS_LIST: 'Developer Applications Access',
+  ADMIN_DEVELOPER_APPLICATION_APPROVED: 'Developer Application Approved',
+  ADMIN_DEVELOPER_APPLICATION_REJECTED: 'Developer Application Rejected',
+  ADMIN_DEVELOPERS_LIST: 'Developers Page Access',
+  ADMIN_DEVELOPER_DELETED: 'Developer Deleted',
+  ADMIN_DEVELOPER_PROFILE_SCOPES_UPDATED: 'Developer Scopes Updated',
+  ADMIN_DEVELOPER_KEYS_LIST: 'Developer Keys Access',
+  ADMIN_DEVELOPER_KEY_APPROVED: 'Developer Key Approved',
+  ADMIN_DEVELOPER_KEY_REJECTED: 'Developer Key Rejected',
+  ADMIN_DEVELOPER_KEY_UPDATED: 'Developer Key Updated',
+  ADMIN_DEVELOPER_KEY_REVOKED: 'Developer Key Revoked',
+  ADMIN_DEVELOPER_PROFILE_SUSPENDED: 'Developer Profile Suspended',
+  ADMIN_DEVELOPER_PROFILE_REACTIVATED: 'Developer Profile Reactivated',
+};
+
+const FILTERABLE_ACTIONS = [
+  'ADMIN_DASHBOARD_ACCESSED',
+  'ADMIN_USERS_ACCESSED',
+  'ADMIN_SESSIONS_ACCESSED',
+  'ADMIN_SYSTEM_INFO_ACCESSED',
+  'ADMIN_AUDIT_LOGS_ACCESSED',
+  'ADMIN_TESTERS_ACCESSED',
+  'IP_ADDRESS_VIEWED',
+  'AUDIT_LOG_IP_VIEWED',
+  'USER_BANNED',
+  'USER_UNBANNED',
+  'ADMIN_BANS_ACCESSED',
+  'SESSION_DELETED',
+  'SESSION_JOINED',
+  'TESTER_ADDED',
+  'TESTER_REMOVED',
+  'TESTER_SETTINGS_UPDATED',
+  'ROLE_ASSIGNED',
+  'ROLE_REMOVED',
+  'ROLE_UPDATED',
+  'IP_REVEALED',
+  'NOTIFICATION_ADDED',
+  'NOTIFICATION_UPDATED',
+  'NOTIFICATION_DELETED',
+  'ADMIN_VERSION_UPDATED',
+  'CHAT_REPORT_DELETED',
+  'CHAT_REPORT_STATUS_UPDATED',
+  'CHAT_REPORT_RESOLVED',
+  'ROLE_PRIORITIES_UPDATED',
+  'UPDATE_MODAL_PUBLISHED',
+  'UPDATE_MODAL_UNPUBLISHED',
+  'UPDATE_MODAL_CREATED',
+  'UPDATE_MODAL_DELETED',
+  'UPDATE_MODAL_UPDATED',
+  'FLIGHT_LOG_IP_REVEALED',
+  'FEEDBACK_DELETED',
+  'CONTROLLER_RATING_DELETED',
+  'CONTROLLER_RATING_REPORT_DISMISSED',
+  'CONTROLLER_RATING_AUTOMOD_DISMISSED',
+];
+
+const ACTION_TYPE_OPTIONS = [
+  { value: '', label: 'All Actions' },
+  ...FILTERABLE_ACTIONS.map((value) => ({
+    value,
+    label: ACTION_LABELS[value],
+  })),
+];
+
+type ActionVisual = { icon: LucideIcon; tone: AdminTone };
+
+const ACTION_VISUALS: Record<string, ActionVisual> = {
+  IP_ADDRESS_VIEWED: { icon: Eye, tone: 'warning' },
+  AUDIT_LOG_IP_VIEWED: { icon: Eye, tone: 'warning' },
+  IP_REVEALED: { icon: Eye, tone: 'warning' },
+  ADMIN_DASHBOARD_ACCESSED: { icon: ShieldAlert, tone: 'info' },
+  ADMIN_USERS_ACCESSED: { icon: User, tone: 'success' },
+  ADMIN_SESSIONS_ACCESSED: { icon: Database, tone: 'warning' },
+  ADMIN_SYSTEM_INFO_ACCESSED: { icon: Settings, tone: 'info' },
+  ADMIN_TESTERS_ACCESSED: { icon: Shield, tone: 'purple' },
+  ADMIN_AUDIT_LOGS_ACCESSED: { icon: ShieldAlert, tone: 'warning' },
+  USER_BANNED: { icon: Ban, tone: 'danger' },
+  ADMIN_BANS_ACCESSED: { icon: Ban, tone: 'danger' },
+  USER_UNBANNED: { icon: X, tone: 'success' },
+  SESSION_DELETED: { icon: Trash2, tone: 'danger' },
+  SESSION_JOINED: { icon: ExternalLink, tone: 'info' },
+  TESTER_ADDED: { icon: Plus, tone: 'success' },
+  TESTER_REMOVED: { icon: Trash2, tone: 'danger' },
+  TESTER_SETTINGS_UPDATED: { icon: Settings, tone: 'info' },
+  ROLE_ASSIGNED: { icon: ShieldCheck, tone: 'success' },
+  ROLE_REMOVED: { icon: ShieldCheck, tone: 'danger' },
+  ROLE_UPDATED: { icon: ShieldCheck, tone: 'info' },
+  NOTIFICATION_ADDED: { icon: Plus, tone: 'success' },
+  NOTIFICATION_UPDATED: { icon: Pencil, tone: 'info' },
+  NOTIFICATION_DELETED: { icon: Trash2, tone: 'danger' },
+  ADMIN_VERSION_UPDATED: { icon: Settings, tone: 'info' },
+  CHAT_REPORT_DELETED: { icon: MessageSquareOff, tone: 'danger' },
+  CHAT_REPORT_STATUS_UPDATED: { icon: MessageSquare, tone: 'info' },
+  CHAT_REPORT_RESOLVED: { icon: MessageCircle, tone: 'success' },
+  ROLE_PRIORITIES_UPDATED: { icon: Users, tone: 'purple' },
+  UPDATE_MODAL_PUBLISHED: { icon: CircleCheck, tone: 'success' },
+  UPDATE_MODAL_UNPUBLISHED: { icon: EyeOff, tone: 'danger' },
+  UPDATE_MODAL_CREATED: { icon: Plus, tone: 'success' },
+  UPDATE_MODAL_DELETED: { icon: Trash2, tone: 'danger' },
+  UPDATE_MODAL_UPDATED: { icon: Pencil, tone: 'info' },
+  FLIGHT_LOG_IP_REVEALED: { icon: Eye, tone: 'warning' },
+  FEEDBACK_DELETED: { icon: Trash2, tone: 'danger' },
+  CONTROLLER_RATING_DELETED: { icon: Trash2, tone: 'danger' },
+  CONTROLLER_RATING_REPORT_DISMISSED: { icon: CircleCheck, tone: 'success' },
+  CONTROLLER_RATING_AUTOMOD_DISMISSED: { icon: CircleCheck, tone: 'success' },
+  EVENT_MODE_UPDATED: { icon: CalendarDays, tone: 'warning' },
+  ADMIN_DEVELOPER_SCOPE_CATALOG: { icon: Code, tone: 'purple' },
+  ADMIN_DEVELOPER_APPLICATIONS_LIST: { icon: Code, tone: 'purple' },
+  ADMIN_DEVELOPERS_LIST: { icon: Code, tone: 'purple' },
+  ADMIN_DEVELOPER_KEYS_LIST: { icon: Code, tone: 'purple' },
+  ADMIN_DEVELOPER_APPLICATION_APPROVED: { icon: CircleCheck, tone: 'success' },
+  ADMIN_DEVELOPER_PROFILE_REACTIVATED: { icon: CircleCheck, tone: 'success' },
+  ADMIN_DEVELOPER_APPLICATION_REJECTED: { icon: X, tone: 'danger' },
+  ADMIN_DEVELOPER_DELETED: { icon: Trash2, tone: 'danger' },
+  ADMIN_DEVELOPER_KEY_REVOKED: { icon: Trash2, tone: 'danger' },
+  ADMIN_DEVELOPER_PROFILE_SCOPES_UPDATED: { icon: Shield, tone: 'purple' },
+  ADMIN_DEVELOPER_KEY_APPROVED: { icon: KeyRound, tone: 'success' },
+  ADMIN_DEVELOPER_KEY_REJECTED: { icon: KeyRound, tone: 'danger' },
+  ADMIN_DEVELOPER_KEY_UPDATED: { icon: Pencil, tone: 'info' },
+  ADMIN_DEVELOPER_PROFILE_SUSPENDED: { icon: Ban, tone: 'warning' },
+  ADMIN_DEVELOPER_USAGE_VIEWED: { icon: Code, tone: 'purple' },
+  ADMIN_API_LOGS_ACCESSED: { icon: Activity, tone: 'info' },
+  ADMIN_API_LOGS_STATS_ACCESSED: { icon: Activity, tone: 'info' },
+  ADMIN_API_LOGS_STATS_24H_ACCESSED: { icon: Activity, tone: 'info' },
+  ADMIN_API_LOG_VIEWED: { icon: Activity, tone: 'info' },
+  ADMIN_FEATURED_FLIGHTS_VIEWED: { icon: Image, tone: 'info' },
+  ADMIN_FEEDBACK_ACCESSED: { icon: Star, tone: 'info' },
+  ADMIN_FLIGHT_LOGS_ACCESSED: { icon: Plane, tone: 'info' },
+  ADMIN_FLIGHT_LOG_VIEWED: { icon: Plane, tone: 'info' },
+  ADMIN_NOTIFICATIONS_ACCESSED: { icon: Bell, tone: 'info' },
+  ADMIN_PROFILE_CONTENT_VIEWED: { icon: FileText, tone: 'info' },
+  ADMIN_ROLES_ACCESSED: { icon: UserCog, tone: 'purple' },
+  ADMIN_ROLE_USERS_ACCESSED: { icon: Users, tone: 'purple' },
+  ADMIN_UPDATE_MODALS_ACCESSED: { icon: Megaphone, tone: 'info' },
+  CHAT_REPORTS_ACCESSED: { icon: MessageSquareWarning, tone: 'warning' },
+  ROLE_CREATED: { icon: Plus, tone: 'success' },
+  ROLE_DELETED: { icon: Trash2, tone: 'danger' },
+  SESSION_UPDATED: { icon: Pencil, tone: 'info' },
+  SESSION_CLAIM_RELEASED: { icon: Unlock, tone: 'warning' },
+  ADMIN_SYNC_SESSION_COUNTS: { icon: RefreshCw, tone: 'info' },
+  IP_HISTORY_REVEALED: { icon: Eye, tone: 'warning' },
+  VPN_FLAG_SET: { icon: Flag, tone: 'warning' },
+  VPN_GATE_ENABLED: { icon: Shield, tone: 'success' },
+  VPN_GATE_DISABLED: { icon: ShieldOff, tone: 'danger' },
+  VPN_EXCEPTION_ADDED: { icon: Plus, tone: 'success' },
+  VPN_EXCEPTION_REMOVED: { icon: Trash2, tone: 'danger' },
+  FEATURED_FLIGHT_UNFEATURED: { icon: StarOff, tone: 'danger' },
+  FEATURED_FLIGHT_IMAGE_DELETED: { icon: ImageOff, tone: 'danger' },
+  PROFILE_BIO_CLEARED: { icon: Eraser, tone: 'warning' },
+  USER_ALERT_SENT: { icon: BellRing, tone: 'orange' },
+};
+
+function getActionVisual(actionType: string): ActionVisual {
+  const known = ACTION_VISUALS[actionType];
+  if (known) return known;
+  if (actionType.startsWith('ADMIN_DEVELOPER')) {
+    return { icon: Code, tone: 'purple' };
+  }
+  if (actionType.startsWith('EVENT_')) {
+    return { icon: CalendarDays, tone: 'warning' };
+  }
+  return { icon: ShieldAlert, tone: 'neutral' };
+}
+
+function formatActionType(actionType: string) {
+  return ACTION_LABELS[actionType] ?? actionType;
+}
+
+function ActionIcon({ actionType }: { actionType: string }) {
+  const { icon: Icon, tone } = getActionVisual(actionType);
+  return (
+    <Icon
+      className={cn('size-4 shrink-0', ADMIN_TONE_TEXT[tone])}
+      aria-hidden
+    />
+  );
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function DetailField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid min-w-0 gap-1', className)}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm">{children}</dd>
+    </div>
+  );
+}
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -76,60 +350,6 @@ export default function AdminAudit() {
   const [revealingIP, setRevealingIP] = useState<number | null>(null);
   const [clientPage, setClientPage] = useState(1);
   const clientLimit = 50;
-
-  const actionTypeOptions = [
-    { value: '', label: 'All Actions' },
-    { value: 'ADMIN_DASHBOARD_ACCESSED', label: 'Dashboard Access' },
-    { value: 'ADMIN_USERS_ACCESSED', label: 'Users Page Access' },
-    { value: 'ADMIN_SESSIONS_ACCESSED', label: 'Sessions Access' },
-    { value: 'ADMIN_SYSTEM_INFO_ACCESSED', label: 'System Info Access' },
-    { value: 'ADMIN_AUDIT_LOGS_ACCESSED', label: 'Audit Logs Access' },
-    { value: 'ADMIN_TESTERS_ACCESSED', label: 'Testers Page Access' },
-    { value: 'IP_ADDRESS_VIEWED', label: 'IP Address Revealed' },
-    {
-      value: 'AUDIT_LOG_IP_VIEWED',
-      label: 'Audit Log IP Address Revealed',
-    },
-    { value: 'USER_BANNED', label: 'User Banned' },
-    { value: 'USER_UNBANNED', label: 'User Unbanned' },
-    { value: 'ADMIN_BANS_ACCESSED', label: 'Bans Page Access' },
-    { value: 'SESSION_DELETED', label: 'Session Deleted' },
-    { value: 'SESSION_JOINED', label: 'Session Joined' },
-    { value: 'TESTER_ADDED', label: 'Tester Added' },
-    { value: 'TESTER_REMOVED', label: 'Tester Removed' },
-    { value: 'TESTER_SETTINGS_UPDATED', label: 'Tester Settings Updated' },
-    { value: 'ROLE_ASSIGNED', label: 'Role Assigned' },
-    { value: 'ROLE_REMOVED', label: 'Role Removed' },
-    { value: 'ROLE_UPDATED', label: 'Role Updated' },
-    { value: 'IP_REVEALED', label: 'IP Revealed' },
-    { value: 'NOTIFICATION_ADDED', label: 'Notification Added' },
-    { value: 'NOTIFICATION_UPDATED', label: 'Notification Updated' },
-    { value: 'NOTIFICATION_DELETED', label: 'Notification Deleted' },
-    { value: 'ADMIN_VERSION_UPDATED', label: 'Version Updated' },
-    { value: 'CHAT_REPORT_DELETED', label: 'Chat Report Deleted' },
-    {
-      value: 'CHAT_REPORT_STATUS_UPDATED',
-      label: 'Chat Report Status Updated',
-    },
-    { value: 'CHAT_REPORT_RESOLVED', label: 'Chat Report Resolved' },
-    { value: 'ROLE_PRIORITIES_UPDATED', label: 'Role Priorities Updated' },
-    { value: 'UPDATE_MODAL_PUBLISHED', label: 'Update Modal Published' },
-    { value: 'UPDATE_MODAL_UNPUBLISHED', label: 'Update Modal Unpublished' },
-    { value: 'UPDATE_MODAL_CREATED', label: 'Update Modal Created' },
-    { value: 'UPDATE_MODAL_DELETED', label: 'Update Modal Deleted' },
-    { value: 'UPDATE_MODAL_UPDATED', label: 'Update Modal Updated' },
-    { value: 'FLIGHT_LOG_IP_REVEALED', label: 'Flight Log IP Revealed' },
-    { value: 'FEEDBACK_DELETED', label: 'Feedback Deleted' },
-    { value: 'CONTROLLER_RATING_DELETED', label: 'Controller Rating Deleted' },
-    {
-      value: 'CONTROLLER_RATING_REPORT_DISMISSED',
-      label: 'Controller Rating Report Dismissed',
-    },
-    {
-      value: 'CONTROLLER_RATING_AUTOMOD_DISMISSED',
-      label: 'Controller Rating Automod Flag Dismissed',
-    },
-  ];
 
   useEffect(() => {
     setClientPage(1);
@@ -221,241 +441,6 @@ export default function AdminAudit() {
     setDateToFilter('');
   };
 
-  const formatActionType = (actionType: string) => {
-    switch (actionType) {
-      case 'ADMIN_DASHBOARD_ACCESSED':
-        return 'Dashboard Access';
-      case 'ADMIN_USERS_ACCESSED':
-        return 'Users Page Access';
-      case 'ADMIN_SESSIONS_ACCESSED':
-        return 'Sessions Access';
-      case 'ADMIN_SYSTEM_INFO_ACCESSED':
-        return 'System Info Access';
-      case 'ADMIN_AUDIT_LOGS_ACCESSED':
-        return 'Audit Logs Access';
-      case 'ADMIN_TESTERS_ACCESSED':
-        return 'Testers Page Access';
-      case 'IP_ADDRESS_VIEWED':
-        return 'IP Address Revealed';
-      case 'AUDIT_LOG_IP_VIEWED':
-        return 'Audit Log IP Address Revealed';
-      case 'USER_BANNED':
-        return 'User Banned';
-      case 'USER_UNBANNED':
-        return 'User Unbanned';
-      case 'ADMIN_BANS_ACCESSED':
-        return 'Bans Page Access';
-      case 'SESSION_DELETED':
-        return 'Session Deleted';
-      case 'SESSION_JOINED':
-        return 'Session Joined';
-      case 'TESTER_ADDED':
-        return 'Tester Added';
-      case 'TESTER_REMOVED':
-        return 'Tester Removed';
-      case 'TESTER_SETTINGS_UPDATED':
-        return 'Tester Settings Updated';
-      case 'ROLE_ASSIGNED':
-        return 'Role Assigned';
-      case 'ROLE_REMOVED':
-        return 'Role Removed';
-      case 'ROLE_UPDATED':
-        return 'Role Updated';
-      case 'IP_REVEALED':
-        return 'IP Revealed';
-      case 'NOTIFICATION_ADDED':
-        return 'Notification Added';
-      case 'NOTIFICATION_UPDATED':
-        return 'Notification Updated';
-      case 'NOTIFICATION_DELETED':
-        return 'Notification Deleted';
-      case 'ADMIN_VERSION_UPDATED':
-        return 'Version Updated';
-      case 'CHAT_REPORT_DELETED':
-        return 'Chat Report Deleted';
-      case 'CHAT_REPORT_STATUS_UPDATED':
-        return 'Chat Report Status Updated';
-      case 'CHAT_REPORT_RESOLVED':
-        return 'Chat Report Resolved';
-      case 'ROLE_PRIORITIES_UPDATED':
-        return 'Role Priorities Updated';
-      case 'UPDATE_MODAL_PUBLISHED':
-        return 'Update Modal Published';
-      case 'UPDATE_MODAL_UNPUBLISHED':
-        return 'Update Modal Unpublished';
-      case 'UPDATE_MODAL_CREATED':
-        return 'Update Modal Created';
-      case 'UPDATE_MODAL_DELETED':
-        return 'Update Modal Deleted';
-      case 'UPDATE_MODAL_UPDATED':
-        return 'Update Modal Updated';
-      case 'FLIGHT_LOG_IP_REVEALED':
-        return 'Flight Log IP Revealed';
-      case 'FEEDBACK_DELETED':
-        return 'Feedback Deleted';
-      case 'CONTROLLER_RATING_DELETED':
-        return 'Controller Rating Deleted';
-      case 'CONTROLLER_RATING_REPORT_DISMISSED':
-        return 'Controller Rating Report Dismissed';
-      case 'CONTROLLER_RATING_AUTOMOD_DISMISSED':
-        return 'Controller Rating Automod Flag Dismissed';
-      case 'EVENT_MODE_UPDATED':
-        return 'Event Mode Updated';
-      case 'ADMIN_DEVELOPER_SCOPE_CATALOG':
-        return 'Developer Scope Catalog Access';
-      case 'ADMIN_DEVELOPER_APPLICATIONS_LIST':
-        return 'Developer Applications Access';
-      case 'ADMIN_DEVELOPER_APPLICATION_APPROVED':
-        return 'Developer Application Approved';
-      case 'ADMIN_DEVELOPER_APPLICATION_REJECTED':
-        return 'Developer Application Rejected';
-      case 'ADMIN_DEVELOPERS_LIST':
-        return 'Developers Page Access';
-      case 'ADMIN_DEVELOPER_DELETED':
-        return 'Developer Deleted';
-      case 'ADMIN_DEVELOPER_PROFILE_SCOPES_UPDATED':
-        return 'Developer Scopes Updated';
-      case 'ADMIN_DEVELOPER_KEYS_LIST':
-        return 'Developer Keys Access';
-      case 'ADMIN_DEVELOPER_KEY_APPROVED':
-        return 'Developer Key Approved';
-      case 'ADMIN_DEVELOPER_KEY_REJECTED':
-        return 'Developer Key Rejected';
-      case 'ADMIN_DEVELOPER_KEY_UPDATED':
-        return 'Developer Key Updated';
-      case 'ADMIN_DEVELOPER_KEY_REVOKED':
-        return 'Developer Key Revoked';
-      case 'ADMIN_DEVELOPER_PROFILE_SUSPENDED':
-        return 'Developer Profile Suspended';
-      case 'ADMIN_DEVELOPER_PROFILE_REACTIVATED':
-        return 'Developer Profile Reactivated';
-      default:
-        return actionType;
-    }
-  };
-
-  const getActionIcon = (actionType: string) => {
-    switch (actionType) {
-      case 'IP_ADDRESS_VIEWED':
-      case 'AUDIT_LOG_IP_VIEWED':
-      case 'IP_REVEALED':
-        return <MdVisibility size={16} className="text-orange-400" />;
-      case 'ADMIN_DASHBOARD_ACCESSED':
-        return <MdGppMaybe size={16} className="text-blue-400" />;
-      case 'ADMIN_USERS_ACCESSED':
-        return <MdPerson size={16} className="text-green-400" />;
-      case 'ADMIN_SESSIONS_ACCESSED':
-        return <MdStorage size={16} className="text-yellow-400" />;
-      case 'ADMIN_SYSTEM_INFO_ACCESSED':
-        return <MdSettings size={16} className="text-cyan-400" />;
-      case 'ADMIN_TESTERS_ACCESSED':
-        return <MdShield size={16} className="text-purple-400" />;
-      case 'ADMIN_AUDIT_LOGS_ACCESSED':
-        return <MdGppMaybe size={16} className="text-orange-400" />;
-      case 'USER_BANNED':
-      case 'ADMIN_BANS_ACCESSED':
-        return <MdBlock size={16} className="text-red-400" />;
-      case 'USER_UNBANNED':
-        return <MdClose size={16} className="text-green-400" />;
-      case 'SESSION_DELETED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'SESSION_JOINED':
-        return <MdOpenInNew size={16} className="text-blue-400" />;
-      case 'TESTER_ADDED':
-        return <MdAdd size={16} className="text-green-400" />;
-      case 'TESTER_REMOVED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'TESTER_SETTINGS_UPDATED':
-        return <MdSettings size={16} className="text-blue-400" />;
-      case 'ROLE_ASSIGNED':
-        return <MdAdminPanelSettings size={16} className="text-green-400" />;
-      case 'ROLE_REMOVED':
-        return <MdAdminPanelSettings size={16} className="text-red-400" />;
-      case 'ROLE_UPDATED':
-        return <MdAdminPanelSettings size={16} className="text-blue-400" />;
-      case 'NOTIFICATION_ADDED':
-        return <MdAdd size={16} className="text-green-400" />;
-      case 'NOTIFICATION_UPDATED':
-        return <MdEdit size={16} className="text-cyan-400" />;
-      case 'NOTIFICATION_DELETED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'ADMIN_VERSION_UPDATED':
-        return <MdSettings size={16} className="text-teal-500" />;
-      case 'CHAT_REPORT_DELETED':
-        return <MdSpeakerNotesOff size={16} className="text-red-400" />;
-      case 'CHAT_REPORT_STATUS_UPDATED':
-        return <MdChat size={16} className="text-blue-400" />;
-      case 'CHAT_REPORT_RESOLVED':
-        return <MdChatBubbleOutline size={16} className="text-green-400" />;
-      case 'ROLE_PRIORITIES_UPDATED':
-        return <MdGroups size={16} className="text-purple-400" />;
-      case 'UPDATE_MODAL_PUBLISHED':
-        return <MdCheckCircle size={16} className="text-green-400" />;
-      case 'UPDATE_MODAL_UNPUBLISHED':
-        return <MdVisibilityOff size={16} className="text-red-400" />;
-      case 'UPDATE_MODAL_CREATED':
-        return <MdAdd size={16} className="text-green-400" />;
-      case 'UPDATE_MODAL_DELETED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'UPDATE_MODAL_UPDATED':
-        return <MdEdit size={16} className="text-blue-400" />;
-      case 'FLIGHT_LOG_IP_REVEALED':
-        return <MdVisibility size={16} className="text-orange-400" />;
-      case 'FEEDBACK_DELETED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'CONTROLLER_RATING_DELETED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'CONTROLLER_RATING_REPORT_DISMISSED':
-        return <MdCheckCircle size={16} className="text-green-400" />;
-      case 'CONTROLLER_RATING_AUTOMOD_DISMISSED':
-        return <MdCheckCircle size={16} className="text-green-400" />;
-      case 'EVENT_MODE_UPDATED':
-        return <MdEvent size={16} className="text-amber-400" />;
-      case 'ADMIN_DEVELOPER_SCOPE_CATALOG':
-      case 'ADMIN_DEVELOPER_APPLICATIONS_LIST':
-      case 'ADMIN_DEVELOPERS_LIST':
-      case 'ADMIN_DEVELOPER_KEYS_LIST':
-        return <MdCode size={16} className="text-violet-400" />;
-      case 'ADMIN_DEVELOPER_APPLICATION_APPROVED':
-      case 'ADMIN_DEVELOPER_PROFILE_REACTIVATED':
-        return <MdCheckCircle size={16} className="text-green-400" />;
-      case 'ADMIN_DEVELOPER_APPLICATION_REJECTED':
-        return <MdClose size={16} className="text-red-400" />;
-      case 'ADMIN_DEVELOPER_DELETED':
-      case 'ADMIN_DEVELOPER_KEY_REVOKED':
-        return <MdDelete size={16} className="text-red-400" />;
-      case 'ADMIN_DEVELOPER_PROFILE_SCOPES_UPDATED':
-        return <MdShield size={16} className="text-purple-400" />;
-      case 'ADMIN_DEVELOPER_KEY_APPROVED':
-        return <MdVpnKey size={16} className="text-green-400" />;
-      case 'ADMIN_DEVELOPER_KEY_REJECTED':
-        return <MdVpnKey size={16} className="text-red-400" />;
-      case 'ADMIN_DEVELOPER_KEY_UPDATED':
-        return <MdEdit size={16} className="text-cyan-400" />;
-      case 'ADMIN_DEVELOPER_PROFILE_SUSPENDED':
-        return <MdBlock size={16} className="text-orange-400" />;
-      default:
-        if (actionType.startsWith('ADMIN_DEVELOPER')) {
-          return <MdCode size={16} className="text-violet-400" />;
-        }
-        if (actionType.startsWith('EVENT_')) {
-          return <MdEvent size={16} className="text-amber-400" />;
-        }
-        return <MdGppMaybe size={16} className="text-zinc-400" />;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
-
   const handleRevealIP = async (logId: number) => {
     if (revealedIPs.has(logId)) {
       setRevealedIPs((prev) => {
@@ -518,397 +503,301 @@ export default function AdminAudit() {
     clientPage * clientLimit
   );
 
+  const renderIP = (log: AuditLog) => {
+    const revealed = revealedIPs.has(log.id);
+    const revealing = revealingIP === log.id;
+    return (
+      <div className="flex items-center gap-1">
+        <span
+          className={cn(
+            'font-mono text-xs transition-[filter]',
+            !revealed && 'blur-sm select-none'
+          )}
+        >
+          {formatIPAddress(log.ip_address, log.id)}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => handleRevealIP(log.id)}
+              disabled={revealing}
+              aria-label={revealed ? 'Hide IP address' : 'Reveal IP address'}
+            >
+              {revealing ? (
+                <Loader2 className="animate-spin" />
+              ) : revealed ? (
+                <EyeOff />
+              ) : (
+                <Eye />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{revealed ? 'Hide IP' : 'Reveal IP'}</TooltipContent>
+        </Tooltip>
+      </div>
+    );
+  };
+
+  const detailsJson = selectedLog
+    ? (JSON.stringify(selectedLog.details, null, 2) ?? '')
+    : '';
+
+  const showingFrom =
+    filteredLogs.length === 0 ? 0 : (clientPage - 1) * clientLimit + 1;
+  const showingTo = Math.min(clientPage * clientLimit, filteredLogs.length);
+
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader title="Audit Log" icon={MdGppMaybe} accent="orange" />
-
-      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-        <AdminIconInput
-          icon={<MdPerson size={18} />}
-          value={adminFilter}
-          onChange={setAdminFilter}
-          placeholder="Filter by admin..."
-          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
-        />
-        <AdminSearchInput
-          value={targetUserFilter}
-          onChange={setTargetUserFilter}
-          placeholder="Filter by target user..."
-          grow={false}
-          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
-        />
-        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
-          <AdminIconInput
-            icon={<MdCalendarToday size={18} />}
-            type="datetime-local"
-            value={dateFromFilter}
-            onChange={setDateFromFilter}
-            className={`w-44 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-            aria-label="From date"
+      <AdminPage
+        title="Audit Log"
+        icon={ShieldAlert}
+        actions={
+          <AdminRefreshButton
+            onClick={() => void fetchLogs()}
+            loading={loading}
           />
-          <AdminIconInput
-            icon={<MdCalendarToday size={18} />}
-            type="datetime-local"
-            value={dateToFilter}
-            onChange={setDateToFilter}
-            className={`w-44 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-            aria-label="To date"
+        }
+      >
+        <AdminToolbar>
+          <AdminTextInput
+            value={adminFilter}
+            onChange={setAdminFilter}
+            placeholder="Filter by admin…"
+            aria-label="Filter by admin"
+            className="w-full sm:w-48"
           />
-        </div>
-        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
-          <div className="relative w-44 sm:w-52">
-            <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
-              <MdFilterList size={18} />
-            </span>
-            <Dropdown
-              size="sm"
-              options={actionTypeOptions}
-              value={actionTypeFilter}
-              onChange={handleActionTypeChange}
-              placeholder="Filter by action..."
-              className="!pl-11"
+          <AdminSearchInput
+            value={targetUserFilter}
+            onChange={setTargetUserFilter}
+            placeholder="Filter by target user…"
+            grow={false}
+          />
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <AdminTextInput
+              type="datetime-local"
+              value={dateFromFilter}
+              onChange={setDateFromFilter}
+              className="min-w-0 sm:w-52"
+              aria-label="From date"
+            />
+            <AdminTextInput
+              type="datetime-local"
+              value={dateToFilter}
+              onChange={setDateToFilter}
+              className="min-w-0 sm:w-52"
+              aria-label="To date"
             />
           </div>
-          <Button
-            onClick={clearFilters}
-            variant="outline"
-            size={adminDownsizeButtonSize('md')}
-            className="shrink-0"
-          >
-            Clear Filters
+          <AdminSelect
+            options={ACTION_TYPE_OPTIONS}
+            value={actionTypeFilter}
+            onChange={handleActionTypeChange}
+            placeholder="Filter by action…"
+            searchPlaceholder="Search actions…"
+            aria-label="Filter by action"
+            searchable
+          />
+          <Button variant="outline" onClick={clearFilters}>
+            <X />
+            Clear filters
           </Button>
-        </div>
-      </AdminToolbar>
+        </AdminToolbar>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading audit logs"
-          message={error}
-          onRetry={fetchLogs}
-        />
-      ) : (
-        <>
-          <AdminTable className="hidden lg:block" minWidth="1000px">
-            <thead className={ADMIN_TABLE_HEAD}>
-              <tr>
-                <th className={ADMIN_TH}>Action</th>
-                <th className={ADMIN_TH}>Admin</th>
-                <th className={ADMIN_TH}>Target User</th>
-                <th className={ADMIN_TH}>Timestamp</th>
-                <th className={ADMIN_TH}>IP Address</th>
-                <th className={ADMIN_TH}>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="border-t border-zinc-700/50 hover:bg-zinc-800/50"
-                >
-                  <td className={ADMIN_TD}>
-                    <div className="flex items-center space-x-3">
-                      {getActionIcon(log.action_type)}
-                      <div className="flex flex-col">
-                        <span className="text-white font-medium">
+        {loading ? (
+          <AdminLoading label="Loading audit logs…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading audit logs"
+            message={error}
+            onRetry={fetchLogs}
+          />
+        ) : filteredLogs.length === 0 ? (
+          <AdminEmptyState
+            icon={ShieldAlert}
+            title={
+              logs.length > 0
+                ? 'No action logs found'
+                : 'No audit logs found with the current filters'
+            }
+          />
+        ) : (
+          <div className="grid gap-3">
+            <AdminTable minWidth="960px">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead>Target user</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>IP address</TableHead>
+                  <TableHead className="text-right">Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <ActionIcon actionType={log.action_type} />
+                        <span className="font-medium">
                           {formatActionType(log.action_type)}
                         </span>
                       </div>
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} text-zinc-300`}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{log.admin_username}</span>
-                      <span className="text-xs text-zinc-500">
-                        {log.admin_id}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} text-zinc-300`}>
-                    {log.target_username ? (
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium">
-                          {log.target_username}
+                          {log.admin_username}
                         </span>
-                        <span className="text-xs text-zinc-500">
-                          {log.target_user_id}
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {log.admin_id}
                         </span>
                       </div>
-                    ) : (
-                      <span className="text-zinc-500">-</span>
-                    )}
-                  </td>
-                  <td className={`${ADMIN_TD} text-zinc-300`}>
-                    <div className="flex items-center space-x-2">
-                      <MdAccessTime size={16} className="text-zinc-500" />
-                      <span className="text-sm">
+                    </TableCell>
+                    <TableCell>
+                      {log.target_username ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {log.target_username}
+                          </span>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {log.target_user_id}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="tabular-nums">
                         {formatDate(log.created_at)}
                       </span>
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} text-zinc-300`}>
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`font-mono text-sm ${
-                          revealedIPs.has(log.id) ? '' : 'filter blur-sm'
-                        }`}
-                      >
-                        {formatIPAddress(log.ip_address, log.id)}
-                      </span>
-                      <Button
-                        size={adminDownsizeButtonSize('sm')}
-                        variant="ghost"
-                        onClick={() => handleRevealIP(log.id)}
-                        disabled={revealingIP === log.id}
-                        className="p-1"
-                      >
-                        {revealingIP === log.id ? (
-                          <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                        ) : revealedIPs.has(log.id) ? (
-                          <MdVisibilityOff size={16} />
-                        ) : (
-                          <MdVisibility size={16} />
-                        )}
-                      </Button>
-                    </div>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="ghost"
-                      onClick={() => handleViewDetails(log)}
-                      className="flex items-center space-x-2"
-                    >
-                      <MdVisibility size={16} />
-                      <span>View</span>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </AdminTable>
+                    </TableCell>
+                    <TableCell>{renderIP(log)}</TableCell>
+                    <TableCell className="text-right">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleViewDetails(log)}
+                            aria-label="View details"
+                          >
+                            <Eye />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View details</TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </AdminTable>
 
-          <div className="lg:hidden space-y-4">
-            {paginatedLogs.map((log) => (
-              <div
-                key={log.id}
-                className="py-4 border-b border-zinc-800/80 last:border-b-0"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    {getActionIcon(log.action_type)}
-                    <div>
-                      <p className="text-white font-medium">
-                        {formatActionType(log.action_type)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-zinc-300">
-                      <strong>Admin:</strong> {log.admin_username}
-                    </p>
-                    <p className="text-zinc-400 text-xs">{log.admin_id}</p>
-                  </div>
-
-                  {log.target_username ? (
-                    <div>
-                      <p className="text-zinc-300">
-                        <strong>Target User:</strong> {log.target_username}
-                      </p>
-                      <p className="text-zinc-400 text-xs">
-                        {log.target_user_id}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-zinc-500">
-                      <strong>Target User:</strong> -
-                    </p>
-                  )}
-
-                  <p className="text-zinc-300">
-                    <strong>Timestamp:</strong> {formatDate(log.created_at)}
-                  </p>
-
-                  <div className="flex items-center space-x-2">
-                    <p className="text-zinc-300">
-                      <strong>IP:</strong>{' '}
-                      <span
-                        className={`font-mono text-sm ${
-                          revealedIPs.has(log.id) ? '' : 'filter blur-sm'
-                        }`}
-                      >
-                        {formatIPAddress(log.ip_address, log.id)}
-                      </span>
-                    </p>
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="ghost"
-                      onClick={() => handleRevealIP(log.id)}
-                      disabled={revealingIP === log.id}
-                      className="p-1"
-                    >
-                      {revealingIP === log.id ? (
-                        <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                      ) : revealedIPs.has(log.id) ? (
-                        <MdVisibilityOff size={16} />
-                      ) : (
-                        <MdVisibility size={16} />
-                      )}
-                    </Button>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="ghost"
-                      onClick={() => handleViewDetails(log)}
-                      className="flex items-center space-x-2"
-                    >
-                      <MdVisibility size={16} />
-                      <span className="hidden lg:inline">View</span>
-                    </Button>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
+              <p className="text-sm text-muted-foreground tabular-nums">
+                Page {clientPage} of {filteredTotalPages} ·{' '}
+                {filteredLogs.length.toLocaleString()} total
+                <span className="hidden sm:inline">
+                  {' '}
+                  · showing {showingFrom}–{showingTo}
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClientPage(Math.max(1, clientPage - 1))}
+                  disabled={clientPage === 1}
+                >
+                  <ChevronLeft />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setClientPage(Math.min(filteredTotalPages, clientPage + 1))
+                  }
+                  disabled={clientPage === filteredTotalPages}
+                >
+                  Next
+                  <ChevronRight />
+                </Button>
               </div>
-            ))}
-          </div>
-
-          {filteredLogs.length === 0 && (
-            <div className="text-center py-12 text-zinc-400">
-              {logs.length > 0
-                ? 'No action logs found. All logs are page navigation events.'
-                : 'No audit logs found with the current filters.'}
             </div>
-          )}
-
-          <div className="flex justify-center mt-8 space-x-2">
-            <Button
-              onClick={() => setClientPage(Math.max(1, clientPage - 1))}
-              disabled={clientPage === 1 || filteredLogs.length === 0}
-              variant="outline"
-              size={adminDownsizeButtonSize('sm')}
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-400 py-2">
-              Page {filteredLogs.length === 0 ? 0 : clientPage} of{' '}
-              {filteredLogs.length === 0 ? 0 : filteredTotalPages}
-            </span>
-            <Button
-              onClick={() =>
-                setClientPage(Math.min(filteredTotalPages, clientPage + 1))
-              }
-              disabled={
-                clientPage === filteredTotalPages || filteredLogs.length === 0
-              }
-              variant="outline"
-              size={adminDownsizeButtonSize('sm')}
-            >
-              Next
-            </Button>
           </div>
-        </>
-      )}
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showDetails && !!selectedLog}
         onClose={closeDetailsModal}
-        title="Audit Log Details"
+        title="Audit log details"
         size="xl"
+        footer={
+          <Button variant="outline" onClick={closeDetailsModal}>
+            Close
+          </Button>
+        }
       >
         {selectedLog && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Action
-                </h3>
-                <p className="text-white">
+          <>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <DetailField label="Action">
+                <span className="block font-medium">
                   {formatActionType(selectedLog.action_type)}
-                </p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Timestamp
-                </h3>
-                <p className="text-white">
+                </span>
+                <span className="block truncate font-mono text-xs text-muted-foreground">
+                  {selectedLog.action_type}
+                </span>
+              </DetailField>
+              <DetailField label="Timestamp">
+                <span className="tabular-nums">
                   {formatDate(selectedLog.created_at)}
-                </p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Admin
-                </h3>
-                <p className="text-white">{selectedLog.admin_username}</p>
-                <p className="text-xs text-zinc-500">{selectedLog.admin_id}</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  IP Address
-                </h3>
-                <div className="flex items-center space-x-2">
-                  <p
-                    className={`text-white font-mono ${
-                      revealedIPs.has(selectedLog.id) ? '' : 'filter blur-sm'
-                    }`}
-                  >
-                    {formatIPAddress(selectedLog.ip_address, selectedLog.id)}
-                  </p>
-                  <Button
-                    size={adminDownsizeButtonSize('sm')}
-                    variant="ghost"
-                    onClick={() => handleRevealIP(selectedLog.id)}
-                    disabled={revealingIP === selectedLog.id}
-                    className="p-1"
-                  >
-                    {revealingIP === selectedLog.id ? (
-                      <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                    ) : revealedIPs.has(selectedLog.id) ? (
-                      <MdVisibilityOff size={16} />
-                    ) : (
-                      <MdVisibility size={16} />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+                </span>
+              </DetailField>
+              <DetailField label="Admin">
+                <span className="block font-medium">
+                  {selectedLog.admin_username}
+                </span>
+                <span className="block font-mono text-xs text-muted-foreground">
+                  {selectedLog.admin_id}
+                </span>
+              </DetailField>
+              <DetailField label="IP address">
+                {renderIP(selectedLog)}
+              </DetailField>
+              {selectedLog.target_username && (
+                <DetailField label="Target user">
+                  <span className="block font-medium">
+                    {selectedLog.target_username}
+                  </span>
+                  <span className="block font-mono text-xs text-muted-foreground">
+                    {selectedLog.target_user_id}
+                  </span>
+                </DetailField>
+              )}
+              {selectedLog.user_agent && (
+                <DetailField label="User agent" className="sm:col-span-2">
+                  <span className="font-mono text-xs break-all text-muted-foreground">
+                    {selectedLog.user_agent}
+                  </span>
+                </DetailField>
+              )}
+            </dl>
 
-            {selectedLog.target_username && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Target User
-                </h3>
-                <p className="text-white">{selectedLog.target_username}</p>
-                <p className="text-xs text-zinc-500">
-                  {selectedLog.target_user_id}
-                </p>
-              </div>
-            )}
-
-            {selectedLog.user_agent && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  User Agent
-                </h3>
-                <p className="text-white text-sm break-all">
-                  {selectedLog.user_agent}
-                </p>
-              </div>
-            )}
-
-            <div className="bg-zinc-800 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                Additional Details
-              </h3>
-              <pre className="text-sm text-zinc-300 whitespace-pre-wrap">
-                {JSON.stringify(selectedLog.details, null, 2)}
+            <div className="grid gap-3">
+              <h3 className="text-sm font-medium">Additional details</h3>
+              <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs break-all whitespace-pre-wrap">
+                {detailsJson}
               </pre>
             </div>
-          </div>
+          </>
         )}
       </AdminModal>
     </AdminLayout>

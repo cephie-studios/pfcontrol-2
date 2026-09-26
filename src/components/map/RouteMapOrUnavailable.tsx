@@ -1,4 +1,4 @@
-import RouteMap from './RouteMap';
+import RouteMap from './LazyRouteMap';
 import { isPastCutover } from '../../utils/cutover';
 
 interface RouteMapOrUnavailableProps {

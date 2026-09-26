@@ -26,6 +26,11 @@ import requireAuth, {
   requirePlatformIdentity,
 } from '../middleware/auth.js';
 import posthog, { capture } from '../utils/posthog.js';
+import {
+  VATSIM_RATINGS,
+  refreshVatsimRatingIfStale,
+  refreshVatsimRatingManually,
+} from '../services/vatsimRating.js';
 
 const router = express.Router();
 
@@ -465,25 +470,9 @@ router.get('/vatsim/callback', authLimiter, async (req, res) => {
         if (numeric != null || ratingShort || ratingLong) break;
       }
     }
-    const fallbackMap: Record<number, string> = {
-      0: 'OBS',
-      1: 'S1',
-      2: 'S2',
-      3: 'S3',
-      4: 'C1',
-      5: 'C2',
-      6: 'C3',
-      7: 'I1',
-      8: 'I2',
-      9: 'I3',
-      10: 'SUP',
-      11: 'ADM',
-    };
     const fallbackShort =
       ratingShort ||
-      (numeric != null && Number.isFinite(numeric)
-        ? fallbackMap[numeric as number] || null
-        : null);
+      (numeric != null ? VATSIM_RATINGS[numeric]?.short || null : null);
 
     const { updateVatsimAccount } = await import('../db/users.js');
     await updateVatsimAccount(userId, {
@@ -615,26 +604,9 @@ router.post('/vatsim/exchange', authLimiter, requireAuth, async (req, res) => {
         if (numeric2 != null || ratingShort2 || ratingLong2) break;
       }
     }
-    // parsed for VATSIM exchange handled
-    const fallbackMap2: Record<number, string> = {
-      0: 'OBS',
-      1: 'S1',
-      2: 'S2',
-      3: 'S3',
-      4: 'C1',
-      5: 'C2',
-      6: 'C3',
-      7: 'I1',
-      8: 'I2',
-      9: 'I3',
-      10: 'SUP',
-      11: 'ADM',
-    };
     const fallbackShort =
       ratingShort2 ||
-      (numeric2 != null && Number.isFinite(numeric2)
-        ? fallbackMap2[numeric2 as number] || null
-        : null);
+      (numeric2 != null ? VATSIM_RATINGS[numeric2]?.short || null : null);
 
     const { updateVatsimAccount } = await import('../db/users.js');
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -706,6 +678,34 @@ router.post('/vatsim/unlink', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error unlinking VATSIM:', error);
     res.status(500).json({ error: 'Failed to unlink VATSIM account' });
+  }
+});
+
+// POST: /api/auth/vatsim/refresh - re-sync rating from VATSIM's public API
+router.post('/vatsim/refresh', requireAuth, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const result = await refreshVatsimRatingManually(req.user.userId);
+    if (!result.ok) {
+      const status =
+        result.reason === 'not_linked'
+          ? 400
+          : result.reason === 'cooldown'
+            ? 429
+            : 502;
+      return res.status(status).json({ error: result.reason });
+    }
+    res.json({
+      success: true,
+      changed: result.changed,
+      vatsimCid: result.cid,
+      ratingId: result.ratingId,
+      ratingShort: result.ratingShort,
+      ratingLong: result.ratingLong,
+    });
+  } catch (error) {
+    console.error('Error refreshing VATSIM rating:', error);
+    res.status(500).json({ error: 'Failed to refresh VATSIM rating' });
   }
 });
 
@@ -846,6 +846,10 @@ router.get('/me', requireAuthSoft, async (req, res) => {
         statistics: user.statistics || {},
         ranks: {},
       });
+    }
+
+    if (user.vatsim_cid) {
+      void refreshVatsimRatingIfStale(req.user.userId);
     }
 
     const ranks: Record<string, number | null> = {};

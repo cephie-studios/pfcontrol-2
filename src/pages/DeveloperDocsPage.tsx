@@ -5,6 +5,7 @@ import DeveloperDocs from './developers/Docs';
 import DeveloperSubnav from './developers/DeveloperSubnav';
 import { API_EXT_BASE } from './developers/constants';
 import { useAuth } from '../hooks/auth/useAuth';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import type { DeveloperApiPublicSpec } from '../types/developerApiSpec';
 
 interface DeveloperDocsPageProps {
@@ -17,31 +18,32 @@ export default function DeveloperDocsPage({
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Navbar />
-      <main className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-blue-400 mb-1">
-            <Code2 className="w-5 h-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">
-              Developers{' '}
-              <span className="text-md text-red-400 italic">BETA</span>
-            </span>
+    <TooltipProvider>
+      <div className="shadcn-scope min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="mx-auto max-w-7xl px-4 pt-24 pb-16 sm:px-6">
+          <div className="mb-6">
+            <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
+              <Code2 className="size-4 text-blue-400" />
+              <span>
+                Developers <span className="text-red-400">Beta</span>
+              </span>
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Developer API Reference
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Base URL:{' '}
+              <code className="font-mono text-xs break-all text-foreground sm:text-sm">
+                {API_EXT_BASE}
+              </code>
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50">
-            Developer API Reference
-          </h1>
-          <p className="text-zinc-400 mt-2 text-sm sm:text-base max-w-6xl">
-            Base URL:{' '}
-            <code className="text-blue-300 text-xs sm:text-sm break-all">
-              {API_EXT_BASE}
-            </code>
-          </p>
-        </div>
-        {user && <DeveloperSubnav />}
-        <DeveloperDocs initialSpec={initialSpec} />
-      </main>
-      <Footer />
-    </div>
+          {user ? <DeveloperSubnav /> : null}
+          <DeveloperDocs initialSpec={initialSpec} />
+        </main>
+        <Footer />
+      </div>
+    </TooltipProvider>
   );
 }

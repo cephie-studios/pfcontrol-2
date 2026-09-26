@@ -1,13 +1,12 @@
-import { ADMIN_SECTION_TITLE } from './adminConstants';
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function AdminSectionTitle({
   children,
-  className = '',
+  className,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
-  return (
-    <h2 className={`${ADMIN_SECTION_TITLE} ${className}`.trim()}>{children}</h2>
-  );
+  return <h2 className={cn('text-sm font-medium', className)}>{children}</h2>;
 }

@@ -1,32 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import {
-  MdPeople,
-  MdDelete,
-  MdVerifiedUser,
-  MdPerson,
-  MdCheck,
-  MdGppBad,
-  MdNotes,
-} from 'react-icons/md';
+  ChevronLeft,
+  ChevronRight,
+  FlaskConical,
+  Loader2,
+  Lock,
+  LockOpen,
+  NotebookPen,
+  Plus,
+  ShieldCheck,
+  ShieldOff,
+  Trash2,
+  User,
+  UserRound,
+  Users,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminSection from '../../components/admin/AdminSection';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminIconInput from '../../components/admin/AdminIconInput';
+import AdminTextInput from '../../components/admin/AdminTextInput';
 import AdminTable from '../../components/admin/AdminTable';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
-import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_TOOLBAR_HEIGHT,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
 import {
   fetchTesters,
   addTester,
@@ -37,11 +38,42 @@ import {
   type TesterGateChannel,
   type TesterSettingsByChannel,
 } from '../../utils/fetch/testers';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const TESTER_GATE_CHANNELS: { channel: TesterGateChannel; label: string }[] = [
   { channel: 'production', label: 'Production' },
   { channel: 'canary', label: 'Canary' },
 ];
+
+function TesterAvatar({ tester }: { tester: Tester }) {
+  return (
+    <Avatar>
+      {tester.avatar ? (
+        <AvatarImage
+          src={`https://cdn.discordapp.com/avatars/${tester.user_id}/${tester.avatar}.png`}
+          alt={tester.username}
+        />
+      ) : null}
+      <AvatarFallback>
+        <UserRound className="size-4" />
+      </AvatarFallback>
+    </Avatar>
+  );
+}
 
 export default function AdminTesters() {
   const [testers, setTesters] = useState<Tester[]>([]);
@@ -163,300 +195,254 @@ export default function AdminTesters() {
     }
   };
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!addingTester) handleAddTester();
+  };
+
+  const renderRemoveButton = (tester: Tester) => {
+    const removing = removingTester === tester.user_id;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => handleRemoveTester(tester.user_id)}
+            disabled={removing}
+            className="text-muted-foreground hover:text-destructive"
+            aria-label={`Remove ${tester.username} as tester`}
+          >
+            {removing ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Remove tester</TooltipContent>
+      </Tooltip>
+    );
+  };
+
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
-        title="Tester Management"
-        icon={MdVerifiedUser}
-        accent="purple"
-      />
-
-      <AdminStatStrip
-        items={[{ label: 'Total testers', value: totalTesters }]}
-        columns={2}
-      />
-
-      <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-        <AdminSectionTitle>Tester gate</AdminSectionTitle>
-        <div className="flex flex-col gap-4">
-          {TESTER_GATE_CHANNELS.map(({ channel, label }) => {
-            const gateEnabled = gateSettings[channel].tester_gate_enabled;
-            const updatingGate = updatingChannel === channel;
-            return (
-              <div
-                key={channel}
-                className="flex flex-wrap items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`p-2.5 rounded-lg shrink-0 ${
-                      gateEnabled ? 'bg-emerald-950/40' : 'bg-red-950/40'
-                    }`}
-                  >
-                    {gateEnabled ? (
-                      <MdVerifiedUser size={20} className="text-emerald-400" />
-                    ) : (
-                      <MdGppBad size={20} className="text-red-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">
-                      {label} — {gateEnabled ? 'Gate enabled' : 'Gate disabled'}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
-                      {gateEnabled
-                        ? 'Only approved testers can access the application'
-                        : 'All users can access the application'}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => handleToggleGate(channel)}
-                  disabled={updatingChannel !== null}
-                  variant={gateEnabled ? 'danger' : 'primary'}
-                  size={adminDownsizeButtonSize('sm')}
+      <AdminPage
+        title="Testers"
+        icon={FlaskConical}
+        actions={
+          <AdminRefreshButton onClick={fetchTestersData} loading={loading} />
+        }
+      >
+        <AdminSection title="Tester gate">
+          <div className="divide-y rounded-2xl border">
+            {TESTER_GATE_CHANNELS.map(({ channel, label }) => {
+              const gateEnabled = gateSettings[channel].tester_gate_enabled;
+              const updatingGate = updatingChannel === channel;
+              return (
+                <div
+                  key={channel}
+                  className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
                 >
-                  {updatingGate ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : gateEnabled ? (
-                    'Disable gate'
-                  ) : (
-                    'Enable gate'
-                  )}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className={adminSectionClass()}>
-        <AdminSectionTitle>Add new tester</AdminSectionTitle>
-        <div className="flex flex-wrap items-end gap-3">
-          <AdminIconInput
-            label="User ID"
-            icon={<MdPerson size={18} />}
-            value={newTesterUserId}
-            onChange={setNewTesterUserId}
-            placeholder="Discord user ID"
-            className="flex-1 min-w-[12rem] max-w-xs max-md:w-full max-md:max-w-none max-md:basis-full"
-            required
-          />
-          <AdminIconInput
-            label="Notes (optional)"
-            icon={<MdNotes size={18} />}
-            value={newTesterNotes}
-            onChange={setNewTesterNotes}
-            placeholder="Any notes about this tester"
-            className="flex-1 min-w-[12rem] max-w-md"
-          />
-          <Button
-            onClick={handleAddTester}
-            disabled={addingTester}
-            size="sm"
-            className={`shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0 flex items-center`}
-          >
-            {addingTester ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-            ) : (
-              <MdCheck size={16} className="mr-1.5" />
-            )}
-            Add tester
-          </Button>
-        </div>
-      </div>
-
-      <div className={adminSectionClass()}>
-        <AdminSectionTitle>Testers</AdminSectionTitle>
-
-        <AdminToolbar>
-          <AdminSearchInput
-            value={searchTerm}
-            onChange={(v) => {
-              setSearchTerm(v);
-              setCurrentPage(1);
-            }}
-            placeholder="Search by username or ID…"
-            loading={loading}
-            className="max-md:!w-full max-md:!max-w-none max-md:flex-none max-md:basis-full"
-          />
-        </AdminToolbar>
-
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader />
-          </div>
-        ) : error ? (
-          <ErrorScreen
-            title="Error loading testers"
-            message={error}
-            onRetry={fetchTestersData}
-          />
-        ) : (
-          <>
-            <div className="hidden lg:block">
-              <AdminTable minWidth="800px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={ADMIN_TH}>Tester</th>
-                    <th className={ADMIN_TH}>Added by</th>
-                    <th className={ADMIN_TH}>Date added</th>
-                    <th className={ADMIN_TH}>Notes</th>
-                    <th className={ADMIN_TH}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {testers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-12 text-center text-zinc-500"
-                      >
-                        <MdPeople
-                          size={40}
-                          className="mx-auto mb-3 opacity-50"
-                        />
-                        <p className="text-sm">No testers found</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    testers.map((tester) => (
-                      <tr key={tester.id} className="hover:bg-zinc-800/30">
-                        <td className={ADMIN_TD}>
-                          <div className="flex items-center">
-                            {tester.avatar ? (
-                              <img
-                                src={`https://cdn.discordapp.com/avatars/${tester.user_id}/${tester.avatar}.png`}
-                                alt={tester.username}
-                                className="w-9 h-9 rounded-full mr-3"
-                              />
-                            ) : (
-                              <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center mr-3">
-                                <MdPerson size={18} className="text-zinc-400" />
-                              </div>
-                            )}
-                            <div>
-                              <span className="text-white font-medium">
-                                {tester.username}
-                              </span>
-                              <p className="text-xs text-zinc-500 font-mono">
-                                {tester.user_id}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className={ADMIN_TD}>{tester.added_by_username}</td>
-                        <td className={ADMIN_TD}>
-                          {new Date(tester.created_at).toLocaleDateString()}
-                        </td>
-                        <td className={ADMIN_TD}>{tester.notes || '—'}</td>
-                        <td className={ADMIN_TD}>
-                          <Button
-                            onClick={() => handleRemoveTester(tester.user_id)}
-                            disabled={removingTester === tester.user_id}
-                            variant="danger"
-                            size={adminDownsizeButtonSize('sm')}
-                          >
-                            {removingTester === tester.user_id ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <MdDelete size={16} />
-                            )}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </AdminTable>
-            </div>
-
-            <div className="lg:hidden space-y-3">
-              {testers.length === 0 ? (
-                <div className="text-center py-12 text-zinc-500">
-                  <MdPeople size={40} className="mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">No testers found</p>
-                </div>
-              ) : (
-                testers.map((tester) => (
-                  <div
-                    key={tester.id}
-                    className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    {label}
+                    <AdminStatusBadge
+                      tone={gateEnabled ? 'success' : 'danger'}
+                      icon={gateEnabled ? Lock : LockOpen}
+                      showLabel
+                    >
+                      {gateEnabled ? 'Testers only' : 'Open to all users'}
+                    </AdminStatusBadge>
+                  </p>
+                  <Button
+                    onClick={() => handleToggleGate(channel)}
+                    disabled={updatingChannel !== null}
+                    variant={gateEnabled ? 'destructive' : 'default'}
+                    size="sm"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      {tester.avatar ? (
-                        <img
-                          src={`https://cdn.discordapp.com/avatars/${tester.user_id}/${tester.avatar}.png`}
-                          alt={tester.username}
-                          className="w-9 h-9 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center">
-                          <MdPerson size={18} className="text-zinc-400" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-white font-medium">
-                          {tester.username}
-                        </p>
-                        <p className="text-xs text-zinc-500 font-mono">
-                          {tester.user_id}
-                        </p>
-                      </div>
-                    </div>
-                    <dl className="space-y-1 text-sm text-zinc-400 mb-3">
-                      <div>
-                        <span className="text-zinc-500">Added by:</span>{' '}
-                        {tester.added_by_username}
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">Date:</span>{' '}
-                        {new Date(tester.created_at).toLocaleDateString()}
-                      </div>
-                      <div>
-                        <span className="text-zinc-500">Notes:</span>{' '}
-                        {tester.notes || '—'}
-                      </div>
-                    </dl>
-                    <Button
-                      onClick={() => handleRemoveTester(tester.user_id)}
-                      disabled={removingTester === tester.user_id}
-                      variant="danger"
-                      size={adminDownsizeButtonSize('sm')}
-                    >
-                      {removingTester === tester.user_id ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <MdDelete size={16} />
-                      )}
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
+                    {updatingGate ? (
+                      <Loader2 className="animate-spin" />
+                    ) : gateEnabled ? (
+                      <ShieldOff />
+                    ) : (
+                      <ShieldCheck />
+                    )}
+                    {gateEnabled ? 'Disable gate' : 'Enable gate'}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </AdminSection>
 
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-6 gap-1.5">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+        <AdminSection title="Add tester">
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <AdminTextInput
+              label="User ID"
+              icon={<User />}
+              value={newTesterUserId}
+              onChange={setNewTesterUserId}
+              placeholder="Discord user ID"
+              inputClassName="font-mono"
+              required
+            />
+            <AdminTextInput
+              label="Notes (optional)"
+              icon={<NotebookPen />}
+              value={newTesterNotes}
+              onChange={setNewTesterNotes}
+              placeholder="Any notes about this tester"
+            />
+            <Button type="submit" disabled={addingTester}>
+              {addingTester ? <Loader2 className="animate-spin" /> : <Plus />}
+              Add tester
+            </Button>
+          </form>
+        </AdminSection>
+
+        <AdminSection
+          title="Testers"
+          description={`${totalTesters.toLocaleString()} users with tester access`}
+          actions={
+            <AdminSearchInput
+              value={searchTerm}
+              onChange={(v) => {
+                setSearchTerm(v);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by username or ID…"
+              loading={loading}
+              grow={false}
+            />
+          }
+        >
+          {loading ? (
+            <AdminLoading label="Loading testers…" />
+          ) : error ? (
+            <AdminErrorState
+              title="Error loading testers"
+              message={error}
+              onRetry={fetchTestersData}
+            />
+          ) : testers.length === 0 ? (
+            <AdminEmptyState icon={Users} title="No testers found" />
+          ) : (
+            <>
+              <AdminTable className="hidden md:block" minWidth="720px">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-4">Tester</TableHead>
+                    <TableHead>Added by</TableHead>
+                    <TableHead>Date added</TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead className="w-12 pr-4">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {testers.map((tester) => (
+                    <TableRow key={tester.id}>
+                      <TableCell className="pl-4">
+                        <div className="flex items-center gap-3">
+                          <TesterAvatar tester={tester} />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">
+                              {tester.username}
+                            </p>
+                            <p className="truncate font-mono text-xs text-muted-foreground">
+                              {tester.user_id}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{tester.added_by_username}</TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">
+                        {new Date(tester.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-muted-foreground">
+                        {tester.notes || 'N/A'}
+                      </TableCell>
+                      <TableCell className="pr-4 text-right">
+                        {renderRemoveButton(tester)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </AdminTable>
+
+              <div className="divide-y rounded-2xl border md:hidden">
+                {testers.map((tester) => (
+                  <div key={tester.id} className="grid gap-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <TesterAvatar tester={tester} />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {tester.username}
+                          </p>
+                          <p className="truncate font-mono text-xs text-muted-foreground">
+                            {tester.user_id}
+                          </p>
+                        </div>
+                      </div>
+                      {renderRemoveButton(tester)}
+                    </div>
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                      <dt className="text-muted-foreground">Added by</dt>
+                      <dd>{tester.added_by_username}</dd>
+                      <dt className="text-muted-foreground">Date</dt>
+                      <dd className="tabular-nums">
+                        {new Date(tester.created_at).toLocaleDateString()}
+                      </dd>
+                      <dt className="text-muted-foreground">Notes</dt>
+                      <dd
+                        className={cn(
+                          'break-words',
+                          !tester.notes && 'text-muted-foreground'
+                        )}
+                      >
+                        {tester.notes || 'N/A'}
+                      </dd>
+                    </dl>
+                  </div>
+                ))}
               </div>
-            )}
-          </>
+            </>
+          )}
+        </AdminSection>
+
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex flex-col items-center justify-end gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Page {currentPage} of {totalPages} ·{' '}
+              {totalTesters.toLocaleString()} total
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
+          </div>
         )}
-      </div>
+      </AdminPage>
     </AdminLayout>
   );
 }

@@ -36,4 +36,8 @@ export const keys = {
     prefixKey(`chat:global:${networkKind}`),
   activeUsers: (sessionId: string) => `activeUsers:${sessionId}`,
   activeUsersIndex: () => prefixKey('activeUsers:index'),
+  externalAcarsClaim: (sessionId: string) =>
+    prefixKey(`external-acars:claim:${sessionId}`),
+  externalAcarsClaimsByKey: (keyId: string) =>
+    prefixKey(`external-acars:claims-by-key:${keyId}`),
 } as const;

@@ -41,10 +41,42 @@ export async function submitFeedback(
   return res.json();
 }
 
-export async function fetchFeedback(): Promise<Feedback[]> {
-  const res = await apiFetch(`${API_BASE_URL}/api/admin/feedback`, {
-    credentials: 'include',
+export interface FeedbackPage {
+  feedback: Feedback[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export async function fetchFeedback({
+  page = 1,
+  limit = 25,
+  search = '',
+  rating,
+  withText = false,
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  rating?: number;
+  withText?: boolean;
+} = {}): Promise<FeedbackPage> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...(search && { search }),
+    ...(rating !== undefined && { rating: rating.toString() }),
+    ...(withText && { withText: 'true' }),
   });
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/admin/feedback?${params.toString()}`,
+    {
+      credentials: 'include',
+    }
+  );
 
   if (!res.ok) {
     await apiError(res, 'Failed to fetch feedback');

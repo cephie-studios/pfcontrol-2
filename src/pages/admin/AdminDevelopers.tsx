@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  MdVpnKey,
-  MdSchedule,
-  MdEdit,
-  MdDelete,
-  MdCode,
-  MdBarChart,
-} from 'react-icons/md';
+  Ban,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  Code,
+  FileText,
+  Loader2,
+  Pencil,
+  ScanSearch,
+  Trash2,
+  Users,
+  X,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react';
 
 const REFRESH_ICON_MIN_SPIN_MS = 500;
 const APPLICATIONS_FETCH_LIMIT = 100;
@@ -14,30 +22,40 @@ const APPLICATIONS_FETCH_LIMIT = 100;
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatCards from '../../components/admin/AdminStatCards';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminTable from '../../components/admin/AdminTable';
+import {
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import AdminDeveloperEditModal from '../../components/admin/AdminDeveloperEditModal';
 import AdminDeveloperUsageModal from '../../components/admin/AdminDeveloperUsageModal';
 import AdminDeveloperApplicationReviewModal from '../../components/admin/AdminDeveloperApplicationReviewModal';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
+import { ADMIN_TONE_TEXT } from '../../components/admin/adminConstants';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-  statusBadgeClass,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_PAIR,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import Dropdown from '../../components/common/Dropdown';
-import ErrorScreen from '../../components/common/ErrorScreen';
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   fetchAdminDeveloperApplications,
   fetchAdminDevelopers,
@@ -52,13 +70,7 @@ import {
 
 type Section = 'applications' | 'developers';
 
-const APP_FILTERS = ['pending', 'approved', 'rejected', 'all'] as const;
-type AppFilter = (typeof APP_FILTERS)[number];
-
-const sectionOptions = [
-  { value: 'applications', label: 'Applications' },
-  { value: 'developers', label: 'Developers' },
-];
+type AppFilter = 'pending' | 'approved' | 'rejected' | 'all';
 
 const appFilterOptions = [
   { value: 'pending', label: 'Pending' },
@@ -66,6 +78,90 @@ const appFilterOptions = [
   { value: 'rejected', label: 'Rejected' },
   { value: 'all', label: 'All statuses' },
 ];
+
+const STATUS_ICON: Record<string, LucideIcon> = {
+  pending: Clock,
+  approved: CheckCircle2,
+  rejected: XCircle,
+  active: CheckCircle2,
+  suspended: Ban,
+};
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const SCOPE_LIST_MAX = 3;
+
+function ScopeList({ scopes }: { scopes: string[] }) {
+  if (scopes.length === 0) {
+    return <span className="text-xs text-muted-foreground">N/A</span>;
+  }
+  const shown = scopes.slice(0, SCOPE_LIST_MAX);
+  const rest = scopes.length - shown.length;
+  const list = (
+    <ul className="grid gap-0.5 font-mono text-xs text-muted-foreground">
+      {shown.map((s) => (
+        <li key={s} className="truncate">
+          {s}
+        </li>
+      ))}
+      {rest > 0 ? <li className="font-sans">+{rest} more</li> : null}
+    </ul>
+  );
+  if (rest <= 0) return list;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div tabIndex={0} className="w-fit max-w-full cursor-default">
+          {list}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <ul className="grid gap-0.5 font-mono">
+          {scopes.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function RowIconAction({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  destructive,
+  busy,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+  busy?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          className={
+            destructive ? 'text-destructive hover:text-destructive' : undefined
+          }
+        >
+          {busy ? <Loader2 className="animate-spin" /> : <Icon />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export default function AdminDevelopers() {
   const [section, setSection] = useState<Section>('applications');
@@ -95,6 +191,7 @@ export default function AdminDevelopers() {
   const refreshIconClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const { confirm, confirmDialog } = useAdminConfirm();
 
   const load = useCallback(
     async (opts?: { headerRefresh?: boolean; initial?: boolean }) => {
@@ -166,12 +263,12 @@ export default function AdminDevelopers() {
     []
   );
 
-  const appCounts = useMemo(() => {
-    const pending = applications.filter((a) => a.status === 'pending').length;
-    const approved = applications.filter((a) => a.status === 'approved').length;
-    const rejected = applications.filter((a) => a.status === 'rejected').length;
-    return { pending, approved, rejected, total: applications.length };
-  }, [applications]);
+  const appCounts = useMemo(
+    () => ({
+      pending: applications.filter((a) => a.status === 'pending').length,
+    }),
+    [applications]
+  );
 
   const filteredApplications = useMemo(() => {
     const q = appSearch.trim().toLowerCase();
@@ -206,8 +303,6 @@ export default function AdminDevelopers() {
     () => developers.find((d) => d.userId === usageUserId) ?? null,
     [developers, usageUserId]
   );
-
-  const btnSize = adminDownsizeButtonSize('sm');
 
   const handleApproveFromReview = async (
     appId: number,
@@ -250,7 +345,14 @@ export default function AdminDevelopers() {
   };
 
   const handleSuspend = async (userId: string) => {
-    if (!confirm('Suspend this developer? Their API keys will stop working.'))
+    if (
+      !(await confirm({
+        title: 'Suspend this developer?',
+        description: 'Their API keys will stop working.',
+        confirmText: 'Suspend',
+        destructive: true,
+      }))
+    )
       return;
     setBusyId(userId);
     try {
@@ -285,9 +387,13 @@ export default function AdminDevelopers() {
 
   const handleDeleteDeveloper = async (userId: string) => {
     if (
-      !confirm(
-        'Permanently delete this developer? This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted.'
-      )
+      !(await confirm({
+        title: 'Permanently delete this developer?',
+        description:
+          'This removes their developer profile, all API keys, application history, and developer API usage logs. The user account itself is not deleted.',
+        confirmText: 'Delete developer',
+        destructive: true,
+      }))
     )
       return;
     setBusyId(userId);
@@ -306,6 +412,11 @@ export default function AdminDevelopers() {
     }
   };
 
+  const closeReject = () => {
+    setRejectId(null);
+    setRejectNote('');
+  };
+
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(undefined, {
       month: 'short',
@@ -317,295 +428,187 @@ export default function AdminDevelopers() {
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Developers"
-        icon={MdCode}
-        accent="blue"
+        icon={Code}
         actions={
           <AdminRefreshButton
             onClick={() => void load({ headerRefresh: true })}
             loading={refreshIconBusy}
           />
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading developers"
-          message={error}
-          onRetry={() => void load({ initial: true })}
-        />
-      ) : (
-        <>
-          <AdminStatStrip
-            columns={6}
-            items={[
-              { label: 'Pending', value: appCounts.pending },
-              { label: 'Approved', value: appCounts.approved },
-              { label: 'Rejected', value: appCounts.rejected },
-              {
-                label: 'Active developers',
-                value: developers.filter((d) => d.status === 'active').length,
-                sub: `${developers.length} total profiles`,
-              },
-              {
-                label: 'Active keys',
-                value: developers.reduce((sum, d) => sum + d.keysActive, 0),
-                sub: `${developers.reduce((sum, d) => sum + d.keysTotal, 0)} total keys`,
-              },
-              {
-                label: 'API requests',
-                value: developers.reduce((sum, d) => sum + d.requestsTotal, 0),
-                sub: 'all-time, all developers',
-              },
-            ]}
+      >
+        {loading ? (
+          <AdminLoading label="Loading developers…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading developers"
+            message={error}
+            onRetry={() => void load({ initial: true })}
           />
+        ) : (
+          <>
+            <AdminStatCards
+              columns={3}
+              items={[
+                {
+                  label: 'Active developers',
+                  value: developers.filter((d) => d.status === 'active').length,
+                },
+                {
+                  label: 'Active keys',
+                  value: developers.reduce((sum, d) => sum + d.keysActive, 0),
+                },
+                {
+                  label: 'API requests',
+                  value: developers.reduce(
+                    (sum, d) => sum + d.requestsTotal,
+                    0
+                  ),
+                },
+              ]}
+            />
 
-          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-            {section === 'applications' ? (
-              <>
-                <AdminSearchInput
-                  value={appSearch}
-                  onChange={setAppSearch}
-                  placeholder="Search applications…"
-                  grow
-                  className={`max-md:order-1 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
-                />
-                <div className={`${ADMIN_TOOLBAR_MOBILE_PAIR} max-md:order-2`}>
-                  <Dropdown
-                    options={sectionOptions}
-                    value={section}
-                    onChange={(v) => setSection(v as Section)}
-                    size="sm"
-                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+            <Tabs
+              value={section}
+              onValueChange={(v) => setSection(v as Section)}
+              className="gap-4"
+            >
+              <TabsList>
+                <TabsTrigger value="applications">
+                  Applications
+                  {appCounts.pending > 0 ? (
+                    <span className="text-muted-foreground tabular-nums">
+                      {appCounts.pending}
+                    </span>
+                  ) : null}
+                </TabsTrigger>
+                <TabsTrigger value="developers">
+                  Developers
+                  <span className="text-muted-foreground tabular-nums">
+                    {developers.length}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="applications" className="flex flex-col gap-4">
+                <AdminToolbar>
+                  <AdminSearchInput
+                    value={appSearch}
+                    onChange={setAppSearch}
+                    placeholder="Search applications…"
+                    grow
                   />
-                  <Dropdown
+                  <AdminSelect
                     options={appFilterOptions}
                     value={appFilter}
                     onChange={(v) => setAppFilter(v as AppFilter)}
-                    size="sm"
-                    className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+                    aria-label="Filter applications by status"
+                    className="sm:w-40"
                   />
-                </div>
-              </>
-            ) : (
-              <>
-                <AdminSearchInput
-                  value={devSearch}
-                  onChange={setDevSearch}
-                  placeholder="Search developers…"
-                  grow
-                  className={ADMIN_TOOLBAR_MOBILE_SEARCH}
-                />
-                <Dropdown
-                  options={sectionOptions}
-                  value={section}
-                  onChange={(v) => setSection(v as Section)}
-                  size="sm"
-                  className="max-md:w-full"
-                />
-              </>
-            )}
-          </AdminToolbar>
+                </AdminToolbar>
 
-          {section === 'applications' ? (
-            <>
-              <div className="hidden lg:block">
-                <AdminTable minWidth="960px">
-                  <thead className={ADMIN_TABLE_HEAD}>
-                    <tr>
-                      <th className={ADMIN_TH}>Applicant</th>
-                      <th className={ADMIN_TH}>Status</th>
-                      <th className={ADMIN_TH}>Who / why</th>
-                      <th className={ADMIN_TH}>Requested scopes</th>
-                      <th className={ADMIN_TH}>Submitted</th>
-                      <th className={`${ADMIN_TH} text-right`}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/80">
-                    {filteredApplications.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
-                        >
-                          No applications match this filter.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredApplications.map((a) => (
-                        <tr
-                          key={a.id}
-                          className="hover:bg-zinc-800/30 align-top"
-                        >
-                          <td className={ADMIN_TD}>
-                            <p className="font-medium text-zinc-100 truncate">
-                              {a.username}
-                            </p>
-                            <p className="text-[11px] text-zinc-500 font-mono truncate mt-0.5">
+                {filteredApplications.length === 0 ? (
+                  <AdminEmptyState icon={FileText} title="No applications" />
+                ) : (
+                  <AdminTable minWidth="960px">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Applicant</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Who / why</TableHead>
+                        <TableHead>Requested scopes</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications.map((a) => (
+                        <TableRow key={a.id} className="align-top">
+                          <TableCell>
+                            <p className="truncate font-medium">{a.username}</p>
+                            <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                               {a.userId}
                             </p>
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <span
-                              className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${statusBadgeClass(a.status)}`}
+                          </TableCell>
+                          <TableCell>
+                            <AdminStatusBadge
+                              status={a.status}
+                              icon={STATUS_ICON[a.status]}
                             >
-                              {a.status}
-                            </span>
-                          </td>
-                          <td className={`${ADMIN_TD} max-w-xs`}>
-                            <p className="text-sm text-zinc-300 line-clamp-2">
-                              {a.whoText}
-                            </p>
+                              {capitalize(a.status)}
+                            </AdminStatusBadge>
+                          </TableCell>
+                          <TableCell className="max-w-xs whitespace-normal">
+                            <p className="line-clamp-2 text-sm">{a.whoText}</p>
                             {a.whyText?.trim() && (
-                              <p className="text-xs text-zinc-500 line-clamp-1 mt-1">
+                              <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                                 {a.whyText}
                               </p>
                             )}
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <div className="flex flex-wrap gap-1 max-w-[220px]">
-                              {a.requestedScopes.map((s) => (
-                                <span
-                                  key={s}
-                                  className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-950/80 text-zinc-400 border border-zinc-800"
-                                >
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td
-                            className={`${ADMIN_TD} text-zinc-400 text-sm whitespace-nowrap`}
-                          >
+                          </TableCell>
+                          <TableCell className="max-w-[240px] whitespace-normal">
+                            <ScopeList scopes={a.requestedScopes} />
+                          </TableCell>
+                          <TableCell className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">
                             {formatDate(a.createdAt)}
-                          </td>
-                          <td className={`${ADMIN_TD} text-right`}>
+                          </TableCell>
+                          <TableCell className="text-right">
                             {a.status === 'pending' ? (
-                              <div className="flex flex-wrap justify-end gap-1.5">
-                                <Button
-                                  type="button"
-                                  variant="success"
-                                  size={btnSize}
+                              <div className="flex justify-end gap-1">
+                                <RowIconAction
+                                  label="Review application"
+                                  icon={ScanSearch}
                                   disabled={busyId === a.id}
                                   onClick={() => setReviewApp(a)}
-                                >
-                                  Review
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size={btnSize}
+                                />
+                                <RowIconAction
+                                  label="Reject application"
+                                  icon={X}
+                                  destructive
                                   disabled={busyId === a.id}
                                   onClick={() => setRejectId(a.id)}
-                                >
-                                  Reject
-                                </Button>
+                                />
                               </div>
-                            ) : (
-                              <span className="text-xs text-zinc-600">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </AdminTable>
-              </div>
-
-              <ul className="lg:hidden space-y-3">
-                {filteredApplications.length === 0 ? (
-                  <li className="text-center py-10 text-zinc-500 text-sm">
-                    No applications match this filter.
-                  </li>
-                ) : (
-                  filteredApplications.map((a) => (
-                    <li
-                      key={a.id}
-                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0">
-                          <p className="font-medium text-zinc-100 truncate">
-                            {a.username}
-                          </p>
-                          <p className="text-[11px] text-zinc-500 font-mono truncate">
-                            {a.userId}
-                          </p>
-                        </div>
-                        <span
-                          className={`shrink-0 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${statusBadgeClass(a.status)}`}
-                        >
-                          {a.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-zinc-400 line-clamp-2">
-                        {a.whoText}
-                      </p>
-                      <p className="text-xs text-zinc-600 mt-2">
-                        {formatDate(a.createdAt)}
-                      </p>
-                      {a.status === 'pending' && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800/80">
-                          <Button
-                            type="button"
-                            variant="success"
-                            size={btnSize}
-                            disabled={busyId === a.id}
-                            onClick={() => setReviewApp(a)}
-                            className="flex-1"
-                          >
-                            Review
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={btnSize}
-                            disabled={busyId === a.id}
-                            onClick={() => setRejectId(a.id)}
-                            className="flex-1"
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                    </li>
-                  ))
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </AdminTable>
                 )}
-              </ul>
-            </>
-          ) : (
-            <>
-              <div className="hidden md:block">
-                <AdminTable minWidth="700px">
-                  <thead className={ADMIN_TABLE_HEAD}>
-                    <tr>
-                      <th className={ADMIN_TH}>Developer</th>
-                      <th className={ADMIN_TH}>Status</th>
-                      <th className={ADMIN_TH}>Keys</th>
-                      <th className={ADMIN_TH}>Requests</th>
-                      <th className={ADMIN_TH}>Last activity</th>
-                      <th className={`${ADMIN_TH} text-right`}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/80">
-                    {filteredDevelopers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
-                        >
-                          No developer profiles found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredDevelopers.map((d) => (
-                        <tr key={d.userId} className="hover:bg-zinc-800/30">
-                          <td className={ADMIN_TD}>
+              </TabsContent>
+
+              <TabsContent value="developers" className="flex flex-col gap-4">
+                <AdminToolbar>
+                  <AdminSearchInput
+                    value={devSearch}
+                    onChange={setDevSearch}
+                    placeholder="Search developers…"
+                    grow
+                  />
+                </AdminToolbar>
+
+                {filteredDevelopers.length === 0 ? (
+                  <AdminEmptyState icon={Users} title="No developers" />
+                ) : (
+                  <AdminTable minWidth="760px">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Developer</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Keys</TableHead>
+                        <TableHead>Requests</TableHead>
+                        <TableHead>Last activity</TableHead>
+                        <TableHead className="text-right">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDevelopers.map((d) => (
+                        <TableRow key={d.userId}>
+                          <TableCell>
                             <div className="flex items-center gap-3">
                               <DeveloperDiscordAvatar
                                 userId={d.userId}
@@ -613,190 +616,86 @@ export default function AdminDevelopers() {
                                 avatar={d.avatar}
                               />
                               <div className="min-w-0">
-                                <p className="font-medium text-zinc-100 truncate">
+                                <p className="truncate font-medium">
                                   {d.username}
                                 </p>
-                                <p className="text-[11px] text-zinc-500 font-mono truncate">
+                                <p className="truncate font-mono text-xs text-muted-foreground">
                                   {d.userId}
                                 </p>
                               </div>
                             </div>
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <span
-                              className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${statusBadgeClass(d.status)}`}
+                          </TableCell>
+                          <TableCell>
+                            <AdminStatusBadge
+                              status={d.status}
+                              icon={STATUS_ICON[d.status]}
                             >
-                              {d.status}
-                            </span>
-                          </td>
-                          <td className={ADMIN_TD}>
+                              {capitalize(d.status)}
+                            </AdminStatusBadge>
+                          </TableCell>
+                          <TableCell>
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="flex items-center gap-1 text-emerald-400/90">
-                                <MdVpnKey className="w-3 h-3" />
+                              <span className="font-medium tabular-nums">
                                 {d.keysActive}
                               </span>
                               {d.keysPending > 0 && (
-                                <span className="text-amber-400/90">
+                                <span
+                                  className={`tabular-nums ${ADMIN_TONE_TEXT.warning}`}
+                                >
                                   {d.keysPending} pending
                                 </span>
                               )}
-                              <span className="text-zinc-600">
+                              <span className="text-muted-foreground tabular-nums">
                                 ({d.keysTotal} total)
                               </span>
                             </div>
-                          </td>
-                          <td
-                            className={`${ADMIN_TD} text-xs text-zinc-400 tabular-nums`}
-                          >
+                          </TableCell>
+                          <TableCell className="text-sm tabular-nums">
                             {d.requestsTotal.toLocaleString()}
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <span className="flex items-center gap-1 text-xs text-zinc-500">
-                              <MdSchedule className="w-3 h-3" />
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-muted-foreground tabular-nums">
                               {d.lastApiActivity
                                 ? new Date(
                                     d.lastApiActivity
                                   ).toLocaleDateString()
-                                : '—'}
+                                : 'N/A'}
                             </span>
-                          </td>
-                          <td className={`${ADMIN_TD} text-right`}>
-                            <div className="flex flex-wrap justify-end gap-1.5">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size={btnSize}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <RowIconAction
+                                label="Edit scopes & keys"
+                                icon={Pencil}
                                 onClick={() => setEditUserId(d.userId)}
-                              >
-                                <MdEdit className="w-3.5 h-3.5 inline mr-1" />
-                                Edit
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size={btnSize}
+                              />
+                              <RowIconAction
+                                label="View usage"
+                                icon={BarChart3}
                                 onClick={() => setUsageUserId(d.userId)}
-                              >
-                                <MdBarChart className="w-3.5 h-3.5 inline mr-1" />
-                                Usage
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="danger"
-                                size={btnSize}
+                              />
+                              <RowIconAction
+                                label="Delete developer"
+                                icon={Trash2}
+                                destructive
+                                busy={busyId === d.userId}
                                 disabled={busyId === d.userId}
                                 onClick={() =>
                                   void handleDeleteDeveloper(d.userId)
                                 }
-                              >
-                                <MdDelete className="w-3.5 h-3.5 inline mr-1" />
-                                Delete
-                              </Button>
+                              />
                             </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </AdminTable>
-              </div>
-
-              <ul className="md:hidden space-y-3">
-                {filteredDevelopers.length === 0 ? (
-                  <li className="text-center py-10 text-zinc-500 text-sm">
-                    No developer profiles found.
-                  </li>
-                ) : (
-                  filteredDevelopers.map((d) => (
-                    <li
-                      key={d.userId}
-                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <DeveloperDiscordAvatar
-                          userId={d.userId}
-                          username={d.username}
-                          avatar={d.avatar}
-                          className="h-9 w-9"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-zinc-100 truncate">
-                            {d.username}
-                          </p>
-                          <p className="text-[11px] text-zinc-500 font-mono truncate">
-                            {d.userId}
-                          </p>
-                        </div>
-                        <span
-                          className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${statusBadgeClass(d.status)}`}
-                        >
-                          {d.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500 mb-2">
-                        <span className="flex items-center gap-1 text-emerald-400/90">
-                          <MdVpnKey className="w-3 h-3" />
-                          {d.keysActive} active
-                        </span>
-                        {d.keysPending > 0 && (
-                          <span className="text-amber-400/90">
-                            {d.keysPending} pending
-                          </span>
-                        )}
-                        <span className="text-zinc-600">
-                          ({d.keysTotal} total)
-                        </span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="tabular-nums">
-                          {d.requestsTotal.toLocaleString()} reqs
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-xs text-zinc-500">
-                          <MdSchedule className="w-3 h-3" />
-                          {d.lastApiActivity
-                            ? new Date(d.lastApiActivity).toLocaleDateString()
-                            : 'No activity'}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={btnSize}
-                            onClick={() => setEditUserId(d.userId)}
-                            aria-label="Edit developer"
-                          >
-                            <MdEdit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={btnSize}
-                            onClick={() => setUsageUserId(d.userId)}
-                            aria-label="View developer usage"
-                          >
-                            <MdBarChart className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size={btnSize}
-                            disabled={busyId === d.userId}
-                            onClick={() => void handleDeleteDeveloper(d.userId)}
-                            aria-label="Delete developer"
-                          >
-                            <MdDelete className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </li>
-                  ))
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </AdminTable>
                 )}
-              </ul>
-            </>
-          )}
-        </>
-      )}
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </AdminPage>
 
       {reviewApp && (
         <AdminDeveloperApplicationReviewModal
@@ -814,46 +713,40 @@ export default function AdminDevelopers() {
 
       <AdminModal
         open={rejectId != null}
-        onClose={() => {
-          setRejectId(null);
-          setRejectNote('');
-        }}
+        onClose={closeReject}
         title="Reject application"
         size="sm"
+        variant="danger"
         footer={
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              size={btnSize}
-              onClick={() => {
-                setRejectId(null);
-                setRejectNote('');
-              }}
-            >
+            <Button type="button" variant="outline" onClick={closeReject}>
               Cancel
             </Button>
             <Button
               type="button"
-              variant="danger"
-              size={btnSize}
+              variant="destructive"
+              disabled={rejectId != null && busyId === rejectId}
               onClick={() => void handleReject()}
             >
+              {rejectId != null && busyId === rejectId ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
               Reject
             </Button>
           </>
         }
       >
-        <p className="text-xs text-zinc-500 mb-4">
-          Optional note is stored for the applicant and audit trail.
-        </p>
-        <textarea
-          value={rejectNote}
-          onChange={(e) => setRejectNote(e.target.value)}
-          placeholder="Optional note to the applicant"
-          rows={3}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/40 resize-none"
-        />
+        <div className="grid gap-2">
+          <Label htmlFor="admin-dev-reject-note">Note</Label>
+          <Textarea
+            id="admin-dev-reject-note"
+            value={rejectNote}
+            onChange={(e) => setRejectNote(e.target.value)}
+            placeholder="Optional note to the applicant"
+            rows={3}
+            className="resize-none"
+          />
+        </div>
       </AdminModal>
 
       {editUserId && editDeveloper && (
@@ -879,6 +772,8 @@ export default function AdminDevelopers() {
           onClose={() => setUsageUserId(null)}
         />
       )}
+
+      {confirmDialog}
     </AdminLayout>
   );
 }

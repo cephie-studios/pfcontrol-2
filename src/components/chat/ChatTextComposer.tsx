@@ -223,7 +223,7 @@ export function ChatTextComposer({
 
           <textarea
             ref={textareaRef}
-            className="w-full bg-zinc-800 text-white px-4 py-2 pr-12 rounded-3xl border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="block w-full bg-zinc-800 text-white px-4 py-2 pr-14 rounded-3xl border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={onKeyDown}
@@ -235,10 +235,11 @@ export function ChatTextComposer({
 
           <Button
             variant="outline"
-            size="sm"
-            className="absolute right-2 bottom-3.5 rounded-full px-3 py-1"
+            size="icon"
+            className="absolute right-2 bottom-2 h-9 w-9"
             onClick={onSend}
             disabled={sendDisabled}
+            aria-label="Send message"
           >
             <Send className="h-4 w-4" />
           </Button>

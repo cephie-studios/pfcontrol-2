@@ -329,8 +329,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
 
   const handleRevoke = useCallback(
     async (id: string) => {
-      if (!confirm('Revoke this API key? Clients using it will stop working.'))
-        return;
       setKeyBusy(true);
       setError(null);
       try {
@@ -347,10 +345,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
 
   const handleDeleteKey = useCallback(
     async (id: string) => {
-      if (
-        !confirm('Permanently delete this revoked key? This cannot be undone.')
-      )
-        return;
       setKeyBusy(true);
       setError(null);
       try {
@@ -367,12 +361,6 @@ export function DeveloperPortalProvider({ children }: { children: ReactNode }) {
 
   const handleRotateKey = useCallback(
     async (id: string) => {
-      if (
-        !confirm(
-          'Rotate this key? The old secret stops working immediately. Copy the new secret when it appears.'
-        )
-      )
-        return;
       setKeyBusy(true);
       setError(null);
       try {

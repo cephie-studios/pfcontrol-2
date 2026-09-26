@@ -1,7 +1,19 @@
-import { Suspense, useEffect, useState } from 'react';
-import { Outlet, useLocation, useSearchParams } from 'react-router';
-import { Code2, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Outlet, useSearchParams } from 'react-router';
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Code2,
+  Loader2,
+  RefreshCw,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import Navbar from '../../components/Navbar';
+import { Button } from '@/components/ui/button';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import DeveloperSubnav from './DeveloperSubnav';
 import { API_EXT_BASE } from './constants';
 import {
@@ -9,16 +21,46 @@ import {
   useDeveloperPortal,
 } from './developerPortalContext';
 
-const notifyRemovedBannerClass =
-  'mb-6 flex items-start gap-2 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-100 text-sm ring-1 ring-emerald-900/30';
-const notifyWarnBannerClass =
-  'mb-6 flex items-start gap-2 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-100 text-sm ring-1 ring-amber-900/25';
+function DeveloperBanner({
+  icon: Icon,
+  iconClassName,
+  onDismiss,
+  role,
+  children,
+}: {
+  icon: LucideIcon;
+  iconClassName: string;
+  onDismiss: () => void;
+  role?: 'alert' | 'status';
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="mb-6 flex items-start gap-3 rounded-2xl border bg-card px-4 py-3 text-sm"
+      role={role}
+    >
+      <Icon
+        className={cn('mt-0.5 size-4 shrink-0', iconClassName)}
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1 leading-relaxed">{children}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        className="-my-0.5 text-muted-foreground"
+        onClick={onDismiss}
+        aria-label="Dismiss"
+      >
+        <X />
+      </Button>
+    </div>
+  );
+}
 
 function DeveloperShell() {
-  const { error, loading, dashLoading, refresh, loadApplication } =
+  const { error, setError, loading, dashLoading, refresh, loadApplication } =
     useDeveloperPortal();
-  const location = useLocation();
-  const isDocsPage = location.pathname.endsWith('/docs');
   const [refreshSpinOnce, setRefreshSpinOnce] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [notifyEmailBanner, setNotifyEmailBanner] = useState<
@@ -47,115 +89,110 @@ function DeveloperShell() {
   };
 
   return (
-    <div className="h-dvh bg-zinc-950 text-zinc-100 flex flex-col">
-      <Navbar />
-      <div
-        data-scroll-root="true"
-        className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden [scrollbar-gutter:stable]"
-      >
+    <TooltipProvider>
+      <div className="shadcn-scope flex h-dvh flex-col bg-background text-foreground">
+        <Navbar />
         <div
-          className={`${isDocsPage ? 'max-w-[90rem]' : 'max-w-7xl'} mx-auto px-4 sm:px-6 py-10 pt-24 pb-16`}
+          data-scroll-root="true"
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-scroll [scrollbar-gutter:stable]"
         >
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-2 text-blue-400 mb-1">
-                <Code2 className="w-5 h-5" />
-                <span className="text-sm font-semibold uppercase tracking-wide">
-                  Developers{' '}
-                  <span className="text-md text-red-400 italic">BETA</span>
-                </span>
+          <div className="mx-auto max-w-7xl px-4 py-10 pt-24 pb-16 sm:px-6">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Code2 className="size-4 text-blue-400" />
+                  <span>
+                    Developers <span className="text-red-400">Beta</span>
+                  </span>
+                </div>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Developer API
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Base URL:{' '}
+                  <code className="font-mono text-xs break-all text-foreground sm:text-sm">
+                    {API_EXT_BASE}
+                  </code>
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-50">
-                Developer API
-              </h1>
-              <p className="text-zinc-400 mt-2 text-sm sm:text-base max-w-6xl">
-                Base URL:{' '}
-                <code className="text-blue-300 text-xs sm:text-sm break-all">
-                  {API_EXT_BASE}
-                </code>
-              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRefresh}
+                className="shrink-0"
+              >
+                <RefreshCw
+                  className={cn(
+                    refreshSpinOnce && 'dev-refresh-spin-once',
+                    (dashLoading || loading) &&
+                      !refreshSpinOnce &&
+                      'animate-spin'
+                  )}
+                  onAnimationEnd={() => setRefreshSpinOnce(false)}
+                />
+                Refresh
+              </Button>
             </div>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 text-sm transition-colors"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${
-                  refreshSpinOnce ? 'dev-refresh-spin-once' : ''
-                } ${(dashLoading || loading) && !refreshSpinOnce ? 'animate-spin' : ''}`}
-                onAnimationEnd={() => setRefreshSpinOnce(false)}
-              />
-              Refresh
-            </button>
-          </div>
 
-          <DeveloperSubnav />
+            <DeveloperSubnav />
 
-          {notifyEmailBanner === 'removed' && (
-            <div className={notifyRemovedBannerClass}>
-              <span className="flex-1 min-w-0 leading-relaxed">
+            {notifyEmailBanner === 'removed' && (
+              <DeveloperBanner
+                icon={CheckCircle2}
+                iconClassName="text-emerald-400"
+                role="status"
+                onDismiss={() => setNotifyEmailBanner(null)}
+              >
                 Your notification email was removed. You won&apos;t receive
                 developer update emails anymore.
-              </span>
-              <button
-                type="button"
-                onClick={() => setNotifyEmailBanner(null)}
-                className="ml-auto shrink-0 text-xs font-semibold text-emerald-200/90 hover:text-emerald-50 underline underline-offset-2"
+              </DeveloperBanner>
+            )}
+            {notifyEmailBanner === 'stale' && (
+              <DeveloperBanner
+                icon={AlertTriangle}
+                iconClassName="text-amber-400"
+                role="status"
+                onDismiss={() => setNotifyEmailBanner(null)}
               >
-                Dismiss
-              </button>
-            </div>
-          )}
-          {notifyEmailBanner === 'stale' && (
-            <div className={notifyWarnBannerClass}>
-              <span className="flex-1 min-w-0 leading-relaxed">
                 That unsubscribe link is no longer valid, or your notification
                 address was already cleared.
-              </span>
-              <button
-                type="button"
-                onClick={() => setNotifyEmailBanner(null)}
-                className="ml-auto shrink-0 text-xs font-semibold text-amber-200/90 hover:text-amber-50 underline underline-offset-2"
+              </DeveloperBanner>
+            )}
+            {notifyEmailBanner === 'invalid' && (
+              <DeveloperBanner
+                icon={AlertTriangle}
+                iconClassName="text-amber-400"
+                role="status"
+                onDismiss={() => setNotifyEmailBanner(null)}
               >
-                Dismiss
-              </button>
-            </div>
-          )}
-          {notifyEmailBanner === 'invalid' && (
-            <div className={notifyWarnBannerClass}>
-              <span className="flex-1 min-w-0 leading-relaxed">
                 This unsubscribe link is invalid or has expired.
-              </span>
-              <button
-                type="button"
-                onClick={() => setNotifyEmailBanner(null)}
-                className="ml-auto shrink-0 text-xs font-semibold text-amber-200/90 hover:text-amber-50 underline underline-offset-2"
+              </DeveloperBanner>
+            )}
+
+            {error && (
+              <DeveloperBanner
+                icon={AlertCircle}
+                iconClassName="text-destructive"
+                role="alert"
+                onDismiss={() => setError(null)}
               >
-                Dismiss
-              </button>
-            </div>
-          )}
+                {error}
+              </DeveloperBanner>
+            )}
 
-          {error && (
-            <div className="mb-6 flex items-start gap-2 rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-red-200 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <Suspense
-            fallback={
-              <div className="flex justify-center py-24">
-                <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-              </div>
-            }
-          >
-            <Outlet />
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-24">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

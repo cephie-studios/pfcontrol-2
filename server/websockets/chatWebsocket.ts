@@ -9,6 +9,7 @@ import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import { sanitizeMessage } from '../utils/sanitization.js';
 import type { Server } from 'http';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { getSocketUser } from './socketAuth.js';
 
 const activeChatUsers = new Map<string, Set<string>>();
 let sessionUsersIO: SessionUsersWebsocketIO | null = null;
@@ -85,35 +86,43 @@ export function setupChatWebsocket(
           ? socket.handshake.query.accessId[0]
           : socket.handshake.query.accessId
       );
-      const userId = Array.isArray(socket.handshake.query.userId)
-        ? socket.handshake.query.userId[0]
-        : socket.handshake.query.userId;
-
       const valid = await validateSessionAccess(sessionId, accessId);
       if (!valid) {
         socket.disconnect(true);
         return;
       }
 
+      // Identity comes only from the verified auth cookie. Any userId/username/
+      // avatar sent by the client (query or payload) is ignored.
+      const socketUser = await getSocketUser(socket);
+      if (!socketUser) {
+        socket.disconnect(true);
+        return;
+      }
+      const userId = socketUser.userId;
+
       socket.data.sessionId = sessionId;
       socket.data.userId = userId;
+      socket.data.username = socketUser.username;
+      socket.data.avatar = socketUser.avatar;
 
       socket.join(sessionId);
 
-      socket.on('typing', ({ username }: { username: string }) => {
-        if (
-          typeof username !== 'string' ||
-          username.length === 0 ||
-          username.length > 50
-        ) {
-          return;
-        }
-        socket.to(sessionId).emit('userTyping', { userId, username });
+      socket.on('typing', () => {
+        socket
+          .to(sessionId)
+          .emit('userTyping', { userId, username: socketUser.username });
       });
 
-      socket.on('chatMessage', async ({ user, message }) => {
+      socket.on('chatMessage', async ({ message }) => {
         const sessionId = socket.data.sessionId;
-        if (!sessionId || !message || message.length > 500) return;
+        if (
+          !sessionId ||
+          typeof message !== 'string' ||
+          !message ||
+          message.length > 500
+        )
+          return;
 
         const sanitizedMessage = sanitizeMessage(message, 500);
         if (!sanitizedMessage) return;
@@ -138,9 +147,9 @@ export function setupChatWebsocket(
 
         try {
           const chatMsg = await addChatMessage(sessionId, {
-            userId: user.userId,
-            username: user.username,
-            avatar: user.avatar,
+            userId,
+            username: socketUser.username,
+            avatar: socketUser.avatar ?? '',
             message: sanitizedMessage,
             mentions: mentionedUserIds,
           });
@@ -197,11 +206,11 @@ export function setupChatWebsocket(
               const timestampStr = chatMsg.sent_at
                 ? chatMsg.sent_at.toISOString()
                 : new Date().toISOString();
-              for (const userId of mentionedUserIds) {
-                sessionUsersIO.sendMentionToUser(userId, {
+              for (const mentionedUserId of mentionedUserIds) {
+                sessionUsersIO.sendMentionToUser(mentionedUserId, {
                   messageId: messageIdStr,
-                  mentionedUserId: userId,
-                  mentionerUsername: user.username,
+                  mentionedUserId,
+                  mentionerUsername: socketUser.username,
                   message: sanitizedMessage,
                   sessionId,
                   timestamp: timestampStr,
@@ -217,9 +226,20 @@ export function setupChatWebsocket(
         }
       });
 
-      socket.on('deleteMessage', async ({ messageId, userId }) => {
+      socket.on('deleteMessage', async ({ messageId }) => {
         const sessionId = socket.data.sessionId;
-        const success = await deleteChatMessage(sessionId, messageId, userId);
+        const id = Number(messageId);
+        if (!Number.isInteger(id)) {
+          socket.emit('deleteError', {
+            messageId,
+            error: 'Invalid message ID',
+          });
+          return;
+        }
+        // Only the verified author may delete; the payload userId is ignored.
+        const success = await deleteChatMessage(sessionId, id, userId).catch(
+          () => false
+        );
         if (success) {
           io.to(sessionId).emit('messageDeleted', { messageId });
         } else {

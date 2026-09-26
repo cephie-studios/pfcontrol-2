@@ -1,29 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import {
-  MdCampaign,
-  MdAdd,
-  MdEdit,
-  MdDelete,
-  MdSend,
-  MdVisibilityOff,
-  MdUpload,
-} from 'react-icons/md';
-import AdminModal from './AdminModal';
-import AdminTable from './AdminTable';
-import AdminSectionTitle from './AdminSectionTitle';
-import AdminToolbar from './AdminToolbar';
-import {
-  adminDownsizeButtonSize,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-  statusBadgeClass,
-} from './adminConstants';
-import Button from '../common/Button';
-import Toast from '../common/Toast';
-import Loader from '../common/Loader';
-import TextInput from '../common/TextInput';
+  CircleDashed,
+  EyeOff,
+  ImageUp,
+  Loader2,
+  Pencil,
+  Plus,
+  Radio,
+  Send,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
+import AdminModal from './AdminModal';
+import AdminSection from './AdminSection';
+import AdminStatusBadge from './AdminStatusBadge';
+import AdminTable from './AdminTable';
+import { AdminLoading } from './AdminStates';
+import { useAdminConfirm } from './useAdminConfirm';
+import Toast from '../common/Toast';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import {
   fetchAllUpdateModals,
   createUpdateModal,
@@ -34,16 +45,68 @@ import {
   type UpdateModal,
 } from '../../utils/fetch/admin/updateModals';
 
-export default function UpdateModalsSection() {
+type SectionToast = {
+  message: string;
+  type: 'success' | 'error' | 'info';
+};
+
+type UpdateModalsSectionProps = {
+  onToast?: (toast: SectionToast) => void;
+  className?: string;
+};
+
+function RowAction({
+  label,
+  icon: Icon,
+  onClick,
+  destructive,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          onClick={onClick}
+          className={
+            destructive ? 'text-destructive hover:text-destructive' : undefined
+          }
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+export default function UpdateModalsSection({
+  onToast,
+  className,
+}: UpdateModalsSectionProps = {}) {
   const [modals, setModals] = useState<UpdateModal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingModal, setEditingModal] = useState<UpdateModal | null>(null);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: 'success' | 'error' | 'info';
-  } | null>(null);
+  const [toast, setToast] = useState<SectionToast | null>(null);
   const [uploading, setUploading] = useState(false);
+  const { confirm, confirmDialog } = useAdminConfirm();
+  const titleId = useId();
+  const bannerId = useId();
+
+  useEffect(() => {
+    if (toast && onToast) {
+      onToast(toast);
+      setToast(null);
+    }
+  }, [toast, onToast]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -121,7 +184,16 @@ export default function UpdateModalsSection() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this update modal?')) return;
+    if (
+      !(await confirm({
+        title: 'Delete this update modal?',
+        description:
+          'The update modal will be permanently removed. This action cannot be undone.',
+        confirmText: 'Delete',
+        destructive: true,
+      }))
+    )
+      return;
 
     try {
       await deleteUpdateModal(id);
@@ -141,9 +213,12 @@ export default function UpdateModalsSection() {
 
   const handlePublish = async (id: number) => {
     if (
-      !confirm(
-        "Publishing this modal will show it to users who haven't seen it yet (tracked via localStorage). Continue?"
-      )
+      !(await confirm({
+        title: 'Publish this update modal?',
+        description:
+          "Publishing this modal will show it to users who haven't seen it yet (tracked via localStorage).",
+        confirmText: 'Publish',
+      }))
     )
       return;
 
@@ -240,140 +315,120 @@ export default function UpdateModalsSection() {
     resetForm();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader />
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <AdminToolbar className="!mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <MdCampaign className="w-5 h-5 text-cyan-400 shrink-0" />
-          <div className="min-w-0">
-            <AdminSectionTitle className="!mb-0">
-              Update overview modals
-            </AdminSectionTitle>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Manage update announcements shown to users
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size={adminDownsizeButtonSize('sm')}
-          onClick={() => setShowAddModal(true)}
-          className="shrink-0"
-        >
-          <MdAdd className="w-4 h-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Create modal</span>
-        </Button>
-      </AdminToolbar>
-
-      <AdminTable minWidth="600px">
-        <thead className={ADMIN_TABLE_HEAD}>
-          <tr>
-            <th className={ADMIN_TH}>Title</th>
-            <th className={`${ADMIN_TH} text-center`}>Status</th>
-            <th className={`${ADMIN_TH} text-center`}>Published</th>
-            <th className={`${ADMIN_TH} text-center`}>Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-800/80">
-          {modals.length === 0 ? (
-            <tr>
-              <td
-                colSpan={4}
-                className={`${ADMIN_TD} p-8 text-center text-zinc-500`}
-              >
-                No update modals created yet
-              </td>
-            </tr>
-          ) : (
-            modals.map((modal) => (
-              <tr key={modal.id} className="hover:bg-zinc-800/30">
-                <td className={`${ADMIN_TD} w-1/2`}>
-                  <div className="flex flex-col gap-1">
-                    <h3
-                      className="font-medium text-white truncate"
-                      title={modal.title}
-                    >
-                      {modal.title.length > 40
-                        ? `${modal.title.substring(0, 40)}...`
-                        : modal.title}
-                    </h3>
-                    <p
-                      className="text-sm text-zinc-400 truncate"
-                      title={modal.content}
-                    >
-                      {modal.content.length > 60
-                        ? `${modal.content.substring(0, 60)}...`
-                        : modal.content}
-                    </p>
-                  </div>
-                </td>
-                <td className={`${ADMIN_TD} text-center w-24`}>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${statusBadgeClass(modal.is_active ? 'active' : 'draft')}`}
+    <>
+      <AdminSection
+        title="Update overview modals"
+        className={className}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus />
+            Create modal
+          </Button>
+        }
+      >
+        {loading ? (
+          <AdminLoading label="Loading update modals…" />
+        ) : (
+          <AdminTable minWidth="600px">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead className="w-20">Status</TableHead>
+                <TableHead className="w-32">Published</TableHead>
+                <TableHead className="w-32 text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {modals.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="h-24 text-center text-muted-foreground"
                   >
-                    {modal.is_active ? (
-                      <>
-                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                        Active
-                      </>
-                    ) : (
-                      'Draft'
-                    )}
-                  </span>
-                </td>
-                <td className={`${ADMIN_TD} text-center w-28`}>
-                  {modal.published_at
-                    ? new Date(modal.published_at).toLocaleDateString()
-                    : 'Not published'}
-                </td>
-                <td className={`${ADMIN_TD} text-center w-32`}>
-                  <div className="flex items-center justify-center gap-1.5">
-                    {modal.is_active ? (
-                      <Button
-                        variant="outline"
-                        size={adminDownsizeButtonSize('sm')}
-                        onClick={() => handleUnpublish(modal.id)}
-                      >
-                        <MdVisibilityOff className="w-4 h-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size={adminDownsizeButtonSize('sm')}
-                        onClick={() => handlePublish(modal.id)}
-                      >
-                        <MdSend className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size={adminDownsizeButtonSize('sm')}
-                      onClick={() => openEditModal(modal)}
-                    >
-                      <MdEdit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size={adminDownsizeButtonSize('sm')}
-                      onClick={() => handleDelete(modal.id)}
-                    >
-                      <MdDelete className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </AdminTable>
+                    No update modals created yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                modals.map((modal) => (
+                  <TableRow key={modal.id}>
+                    <TableCell className="max-w-0 whitespace-normal">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span
+                          className="truncate font-medium"
+                          title={modal.title}
+                        >
+                          {modal.title.length > 40
+                            ? `${modal.title.substring(0, 40)}...`
+                            : modal.title}
+                        </span>
+                        <span
+                          className="truncate text-xs text-muted-foreground"
+                          title={modal.content}
+                        >
+                          {modal.content.length > 60
+                            ? `${modal.content.substring(0, 60)}...`
+                            : modal.content}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {modal.is_active ? (
+                        <AdminStatusBadge tone="success" icon={Radio}>
+                          Active
+                        </AdminStatusBadge>
+                      ) : (
+                        <AdminStatusBadge tone="neutral" icon={CircleDashed}>
+                          Draft
+                        </AdminStatusBadge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {modal.published_at
+                        ? new Date(modal.published_at).toLocaleDateString()
+                        : 'Not published'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {modal.is_active ? (
+                          <RowAction
+                            label="Unpublish"
+                            icon={EyeOff}
+                            onClick={() => handleUnpublish(modal.id)}
+                          />
+                        ) : (
+                          <RowAction
+                            label="Publish"
+                            icon={Send}
+                            onClick={() => handlePublish(modal.id)}
+                          />
+                        )}
+                        <RowAction
+                          label="Edit"
+                          icon={Pencil}
+                          onClick={() => openEditModal(modal)}
+                        />
+                        <RowAction
+                          label="Delete"
+                          icon={Trash2}
+                          destructive
+                          onClick={() => handleDelete(modal.id)}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </AdminTable>
+        )}
+      </AdminSection>
 
       <AdminModal
         open={showAddModal || !!editingModal}
@@ -382,16 +437,10 @@ export default function UpdateModalsSection() {
         size="xl"
         footer={
           <>
-            <Button
-              variant="secondary"
-              size={adminDownsizeButtonSize('sm')}
-              onClick={closeModals}
-            >
+            <Button variant="outline" onClick={closeModals}>
               Cancel
             </Button>
             <Button
-              variant="primary"
-              size={adminDownsizeButtonSize('sm')}
               onClick={editingModal ? handleUpdate : handleCreate}
               disabled={!formData.title || !formData.content}
             >
@@ -400,69 +449,66 @@ export default function UpdateModalsSection() {
           </>
         }
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Title
-            </label>
-            <TextInput
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <Label htmlFor={titleId}>Title</Label>
+            <Input
+              id={titleId}
               value={formData.title}
-              onChange={(value) => setFormData({ ...formData, title: value })}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
               placeholder="e.g., New Features & Improvements"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Banner Image (Optional)
-            </label>
+          <div className="grid gap-2">
+            <Label htmlFor={bannerId}>Banner image (optional)</Label>
             <div className="flex items-center gap-4">
-              <label className="flex-1">
+              <label
+                className={cn(
+                  buttonVariants({ variant: 'outline' }),
+                  'flex-1 cursor-pointer justify-start',
+                  uploading && 'pointer-events-none opacity-50'
+                )}
+                aria-disabled={uploading}
+              >
                 <input
+                  id={bannerId}
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="hidden"
+                  className="sr-only"
                   disabled={uploading}
                 />
-                <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg cursor-pointer transition-colors border border-zinc-700">
-                  {uploading ? (
-                    <>
-                      <Loader />
-                      <span className="text-sm text-zinc-300">
-                        Uploading...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <MdUpload className="w-4 h-4 text-zinc-400" />
-                      <span className="text-sm text-zinc-300">
-                        Upload via Cephie Snap
-                      </span>
-                    </>
-                  )}
-                </div>
+                {uploading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <ImageUp />
+                    Upload via Cephie Snap
+                  </>
+                )}
               </label>
               {formData.banner_url && (
                 <img
                   src={formData.banner_url}
                   alt="Banner preview"
-                  className="w-20 h-20 rounded-lg object-cover border-2 border-cyan-500/50"
+                  className="size-20 shrink-0 rounded-md border object-cover"
                 />
               )}
             </div>
-            {formData.banner_url && (
-              <p className="text-xs text-zinc-500 mt-1">
-                Image uploaded successfully
-              </p>
-            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Content (Markdown)
-            </label>
-            <div data-color-mode="dark">
+          <div className="grid gap-2">
+            <Label>Content (Markdown)</Label>
+            <div
+              data-color-mode="dark"
+              className="overflow-hidden rounded-md border [&_.w-md-editor]:rounded-none [&_.w-md-editor]:border-0 [&_.w-md-editor]:bg-transparent [&_.w-md-editor]:shadow-none"
+            >
               <MDEditor
                 value={formData.content}
                 onChange={(val) =>
@@ -472,21 +518,19 @@ export default function UpdateModalsSection() {
                 height={400}
               />
             </div>
-            <p className="text-xs text-zinc-500 mt-1">
-              Supports markdown formatting: **bold**, *italic*, [links](url),
-              lists, etc.
-            </p>
           </div>
         </div>
       </AdminModal>
 
-      {toast && (
+      {confirmDialog}
+
+      {!onToast && toast && (
         <Toast
           message={toast.message}
           type={toast.type}
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+    </>
   );
 }

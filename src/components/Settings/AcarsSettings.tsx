@@ -1,14 +1,52 @@
-import {
-  Terminal,
-  StickyNote,
-  LayoutDashboard,
-  Eye,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { Terminal, StickyNote, PanelLeft, type LucideIcon } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
+import SettingsSection from './SettingsSection';
+import SettingsGroup from './SettingsGroup';
+import SettingsRow from './SettingsRow';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+
+function PreviewPanel({
+  icon: Icon,
+  title,
+  width,
+  className,
+}: {
+  icon: LucideIcon;
+  title: string;
+  width: number;
+  className?: string;
+}) {
+  return (
+    <div
+      style={{ width: `${width}%` }}
+      className={cn('flex min-w-0 flex-col overflow-hidden', className)}
+    >
+      <div className="flex items-center gap-1.5 border-b px-2.5 py-2">
+        <Icon className="size-3.5 shrink-0 text-blue-400" />
+        <span className="truncate text-xs text-muted-foreground">{title}</span>
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <div className="h-1.5 w-3/4 rounded-full bg-muted" />
+        <div className="h-1.5 w-full rounded-full bg-muted" />
+        <div className="h-1.5 w-1/2 rounded-full bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+function PreviewDivider({ onMouseDown }: { onMouseDown: () => void }) {
+  return (
+    <div
+      aria-hidden="true"
+      onMouseDown={onMouseDown}
+      className="relative w-1 shrink-0 cursor-col-resize bg-primary transition-colors hover:bg-blue-400"
+    >
+      <div className="absolute inset-y-0 -right-1.5 -left-1.5" />
+    </div>
+  );
+}
 
 interface AcarsSettingsProps {
   settings: Settings | null;
@@ -19,7 +57,6 @@ export default function AcarsSettings({
   settings,
   onChange,
 }: AcarsSettingsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState<
     'sidebar' | 'terminal' | 'notes' | null
   >(null);
@@ -90,7 +127,7 @@ export default function AcarsSettings({
       ...settings,
       acars: {
         ...settings.acars,
-        autoRedirectToAcars: !settings.acars.autoRedirectToAcars,
+        autoRedirectToAcars: !(settings.acars.autoRedirectToAcars ?? true),
       },
     };
     onChange(updatedSettings);
@@ -259,249 +296,77 @@ export default function AcarsSettings({
 
   if (!settings) return null;
 
+  const notesEnabled = settings.acars.notesEnabled;
+
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden z-1">
-      {/* Header */}
-      <div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
-        <div className="flex items-center justify-between gap-3">
-          <div
-            className="flex items-center flex-1 min-w-0 cursor-pointer"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <div className="p-2 bg-cyan-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
-              <Terminal className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
+    <SettingsSection title="ACARS" icon={Terminal}>
+      <SettingsGroup>
+        <SettingsRow
+          label="Notes panel"
+          description="Show the flight notes panel in the ACARS terminal."
+          htmlFor="acars-notes-enabled"
+        >
+          <Switch
+            id="acars-notes-enabled"
+            checked={notesEnabled}
+            onCheckedChange={handleNotesToggle}
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Open ACARS after filing"
+          description="Open ACARS after submitting a flight plan. Network sessions only."
+          htmlFor="acars-auto-redirect"
+        >
+          <Switch
+            id="acars-auto-redirect"
+            checked={settings.acars.autoRedirectToAcars ?? true}
+            onCheckedChange={handleAutoRedirectToggle}
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Default panel widths"
+          description="Drag the dividers to resize. Applies on desktop the next time you open ACARS."
+          stacked
+        >
+          <div className="flex w-full min-w-0 flex-col gap-2">
+            <div
+              ref={containerRef}
+              className="flex h-44 w-full overflow-hidden rounded-xl border bg-background"
+            >
+              <PreviewPanel
+                icon={PanelLeft}
+                title="Sidebar"
+                width={previewWidths.sidebar}
+                className="bg-card"
+              />
+              <PreviewDivider onMouseDown={() => handleMouseDown('sidebar')} />
+              <PreviewPanel
+                icon={Terminal}
+                title="Terminal"
+                width={previewWidths.terminal}
+              />
+              {notesEnabled ? (
+                <>
+                  <PreviewDivider
+                    onMouseDown={() => handleMouseDown('terminal')}
+                  />
+                  <PreviewPanel
+                    icon={StickyNote}
+                    title="Notes"
+                    width={previewWidths.notes}
+                    className="bg-card"
+                  />
+                </>
+              ) : null}
             </div>
-            <div className="text-left min-w-0">
-              <h3 className="text-lg sm:text-xl font-semibold text-white">
-                ACARS Settings
-              </h3>
-              <p className="text-zinc-400 text-xs sm:text-sm mt-1 hidden sm:block">
-                Configure ACARS terminal panels and default layout
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Sidebar {previewWidths.sidebar}%, Terminal{' '}
+              {previewWidths.terminal}%
+              {notesEnabled ? `, Notes ${previewWidths.notes}%` : null}
+            </p>
           </div>
-          <Button
-            onClick={() => setIsExpanded(!isExpanded)}
-            variant="outline"
-            size="sm"
-            className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
-        }`}
-      >
-        <div className="p-4 sm:p-6">
-          <div className="space-y-6">
-            {/* Panel Toggles */}
-            <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-5">
-              <div className="flex items-start mb-4">
-                <div className="p-2 bg-blue-500/20 rounded-lg mr-4 mt-0.5">
-                  <Eye className="h-5 w-5 text-blue-400" />
-                </div>
-                <div>
-                  <h4 className="text-white font-medium mb-1">
-                    Panel Visibility
-                  </h4>
-                  <p className="text-zinc-400 text-sm">
-                    Choose which panels are enabled in the ACARS terminal
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {/* Notes Toggle */}
-                <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
-                  <div className="flex items-center">
-                    <StickyNote className="h-5 w-5 text-blue-400 mr-3" />
-                    <div>
-                      <p className="text-white font-medium text-sm">
-                        Notes Panel
-                      </p>
-                      <p className="text-zinc-500 text-xs">
-                        Flight notes and planning
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleNotesToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.acars.notesEnabled
-                        ? 'bg-blue-600'
-                        : 'bg-zinc-700'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        settings.acars.notesEnabled
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Auto Redirect to ACARS Toggle */}
-                <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
-                  <div className="flex items-center">
-                    <Terminal className="h-5 w-5 text-green-400 mr-3" />
-                    <div>
-                      <p className="text-white font-medium text-sm">
-                        Auto Redirect to ACARS
-                      </p>
-                      <p className="text-zinc-500 text-xs">
-                        Automatically open ACARS after submitting flight plan
-                        (Network sessions only)
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleAutoRedirectToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      (settings.acars.autoRedirectToAcars ?? true)
-                        ? 'bg-green-600'
-                        : 'bg-zinc-700'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        (settings.acars.autoRedirectToAcars ?? true)
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Interactive Visual Preview */}
-            <div className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-5">
-              <div className="flex items-start mb-4">
-                <div className="p-2 bg-cyan-500/20 rounded-lg mr-4 mt-0.5">
-                  <LayoutDashboard className="h-5 w-5 text-cyan-400" />
-                </div>
-                <div>
-                  <h4 className="text-white font-medium mb-1">Preview</h4>
-                  <p className="text-zinc-400 text-sm">
-                    Drag the divider to adjust default panel widths
-                  </p>
-                </div>
-              </div>
-
-              <div
-                ref={containerRef}
-                className="relative bg-zinc-950 border border-zinc-700 rounded-lg overflow-hidden"
-                style={{ height: '200px' }}
-              >
-                <div className="flex h-full">
-                  {/* Sidebar */}
-                  <div
-                    style={{ width: `${previewWidths.sidebar}%` }}
-                    className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-r border-gray-700 flex flex-col"
-                  >
-                    <div className="bg-zinc-900/50 px-3 py-2 border-b border-gray-700 flex items-center gap-2">
-                      <Eye className="w-3 h-3 text-blue-400" />
-                      <span className="text-[10px] text-gray-300 font-mono">
-                        Sidebar
-                      </span>
-                    </div>
-                    <div className="flex-1 p-2 space-y-1">
-                      <div className="h-1 bg-blue-500/20 rounded w-3/4"></div>
-                      <div className="h-1 bg-cyan-500/20 rounded w-full"></div>
-                    </div>
-                  </div>
-                  <div
-                    className="w-1 bg-blue-500 hover:bg-blue-400 cursor-col-resize flex-shrink-0 relative group"
-                    onMouseDown={() => handleMouseDown('sidebar')}
-                  >
-                    <div className="absolute inset-y-0 -left-1 -right-1" />
-                  </div>
-                  {/* Terminal */}
-                  <div
-                    style={{ width: `${previewWidths.terminal}%` }}
-                    className="bg-gradient-to-br from-gray-800 to-gray-900 border-r border-gray-700 flex flex-col"
-                  >
-                    <div className="bg-gray-800/50 px-3 py-2 border-b border-gray-700 flex items-center gap-2">
-                      <Terminal className="w-3 h-3 text-green-400" />
-                      <span className="text-[10px] text-gray-300 font-mono">
-                        Terminal
-                      </span>
-                    </div>
-                    <div className="flex-1 p-2 space-y-1">
-                      <div className="h-1 bg-green-500/20 rounded w-3/4"></div>
-                      <div className="h-1 bg-cyan-500/20 rounded w-full"></div>
-                    </div>
-                  </div>
-                  {/* Terminal Divider */}
-                  {settings.acars.notesEnabled && (
-                    <div
-                      className="w-1 bg-blue-500 hover:bg-blue-400 cursor-col-resize flex-shrink-0 relative group"
-                      onMouseDown={() => handleMouseDown('terminal')}
-                    >
-                      <div className="absolute inset-y-0 -left-1 -right-1" />
-                    </div>
-                  )}
-                  {/* Notes */}
-                  {settings.acars.notesEnabled && (
-                    <div
-                      style={{ width: `${previewWidths.notes}%` }}
-                      className="bg-gradient-to-br from-blue-900 to-blue-950 flex flex-col"
-                    >
-                      <div className="bg-blue-900/50 px-3 py-2 border-b border-gray-700 flex items-center gap-2">
-                        <StickyNote className="w-3 h-3 text-blue-400" />
-                        <span className="text-[10px] text-gray-300 font-mono">
-                          Notes
-                        </span>
-                      </div>
-                      <div className="flex-1 p-2 space-y-1">
-                        <div className="h-1 bg-blue-500/30 rounded w-full"></div>
-                        <div className="h-1 bg-blue-500/30 rounded w-5/6"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-zinc-500 mt-2 text-center">
-                Sidebar: {previewWidths.sidebar}% • Terminal:{' '}
-                {previewWidths.terminal}%
-                {settings.acars.notesEnabled ? (
-                  <> • Notes: {previewWidths.notes}%</>
-                ) : null}
-              </p>
-            </div>
-          </div>
-
-          {/* Info Section */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/20 rounded-lg">
-            <div className="flex items-start">
-              <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-              <div>
-                <h4 className="text-cyan-300 font-medium text-sm mb-1">
-                  ACARS Information
-                </h4>
-                <p className="text-cyan-200/80 text-xs sm:text-sm leading-relaxed">
-                  Panel visibility and width settings apply to the ACARS
-                  terminal interface on desktop. The Terminal panel cannot be
-                  disabled. Changes take effect the next time you open an ACARS
-                  terminal.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        </SettingsRow>
+      </SettingsGroup>
+    </SettingsSection>
   );
 }

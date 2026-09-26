@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 type AdminToolbarProps = {
   children: ReactNode;
@@ -7,11 +8,14 @@ type AdminToolbarProps = {
 
 export default function AdminToolbar({
   children,
-  className = '',
+  className,
 }: AdminToolbarProps) {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 mb-4 ${className}`.trim()}
+      className={cn(
+        'flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center',
+        className
+      )}
       role="toolbar"
     >
       {children}

@@ -1,8 +1,9 @@
 import express from 'express';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
+import { requirePermission } from '../../middleware/rolePermissions.js';
 import { logAdminAction } from '../../db/audit.js';
 import {
-  getAllFeedback,
+  getFeedbackPaginated,
   deleteFeedback,
   getFeedbackStats,
 } from '../../db/feedback.js';
@@ -10,14 +11,39 @@ import { getClientIp } from '../../utils/getIpAddress.js';
 
 const router = express.Router();
 
-// GET: /api/admin/feedback - Get all feedback
+router.use(requirePermission('feedback'));
+
+// GET: /api/admin/feedback - Get paginated feedback
 router.get(
   '/',
   createAuditLogger('ADMIN_FEEDBACK_ACCESSED'),
   async (req, res) => {
     try {
-      const feedback = await getAllFeedback();
-      res.json(feedback);
+      const page = Math.max(
+        1,
+        parseInt(String(req.query.page ?? '1'), 10) || 1
+      );
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(String(req.query.limit ?? '25'), 10) || 25)
+      );
+      const search =
+        typeof req.query.search === 'string' ? req.query.search : '';
+      const ratingParam = req.query.rating;
+      const rating =
+        typeof ratingParam === 'string' && ratingParam !== ''
+          ? parseInt(ratingParam, 10)
+          : undefined;
+      const withText = req.query.withText === 'true';
+
+      const result = await getFeedbackPaginated({
+        page,
+        limit,
+        search,
+        rating,
+        withText,
+      });
+      res.json(result);
     } catch (error) {
       console.error('Error fetching feedback:', error);
       res.status(500).json({ error: 'Failed to fetch feedback' });

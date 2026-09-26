@@ -2,13 +2,13 @@ import {
   useState,
   useEffect,
   useRef,
-  useLayoutEffect,
   useCallback,
+  useId,
   memo,
   useMemo,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
+import { Popover as PopoverPrimitive } from 'radix-ui';
 import type { ReactNode } from 'react';
 import type { DropdownOption } from '../../types/dropdown';
 
@@ -50,6 +50,46 @@ const chevronRightClasses = {
   lg: 'right-4',
 };
 
+const OPTION_SELECTOR = '[data-dropdown-option]';
+
+const isFocusLost = () =>
+  !document.activeElement || document.activeElement === document.body;
+
+function revealInList(el: HTMLElement) {
+  const list = el.closest<HTMLElement>('[data-dropdown-scroll]');
+  if (!list) return;
+  const listRect = list.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  if (rect.top < listRect.top) list.scrollTop -= listRect.top - rect.top;
+  else if (rect.bottom > listRect.bottom)
+    list.scrollTop += rect.bottom - listRect.bottom;
+}
+
+function handlePanelKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+  const items = Array.from(
+    e.currentTarget.querySelectorAll<HTMLElement>(OPTION_SELECTOR)
+  );
+  if (items.length === 0) return;
+  e.preventDefault();
+  const idx = items.indexOf(document.activeElement as HTMLElement);
+  const last = items.length - 1;
+  const next =
+    e.key === 'Home'
+      ? 0
+      : e.key === 'End'
+        ? last
+        : e.key === 'ArrowDown'
+          ? idx < 0
+            ? 0
+            : Math.min(idx + 1, last)
+          : idx < 0
+            ? last
+            : Math.max(idx - 1, 0);
+  items[next].focus({ preventScroll: true });
+  revealInList(items[next]);
+}
+
 function Dropdown({
   options,
   placeholder = 'Select option',
@@ -67,21 +107,14 @@ function Dropdown({
   portal = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMeasured, setIsMeasured] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
   const [panelAbove, setPanelAbove] = useState(false);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerWrapperRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
-
-  const usePortal = !searchable || portal;
+  const listId = useId();
 
   const selectedOption = options.find((o) => o.value === value);
   const resolvedDisplayLabel = useCallback(
@@ -112,88 +145,51 @@ function Dropdown({
     );
   }, [options, searchable, isOpen, inputValue]);
 
-  const getTriggerEl = useCallback(
-    () => (searchable ? triggerWrapperRef.current : buttonRef.current),
-    [searchable]
-  );
-
-  const gap = searchable ? 0 : 4;
-
-  const computePos = useCallback(
-    (el: HTMLElement, dd: HTMLElement | null) => {
-      const rect = el.getBoundingClientRect();
-      const vpHeight = window.visualViewport?.height ?? window.innerHeight;
-      const spaceBelow = vpHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const ddHeight = dd ? dd.getBoundingClientRect().height : 0;
-      const above = dd
-        ? ddHeight > spaceBelow && spaceAbove > spaceBelow
-        : false;
-      const top = above ? rect.top - ddHeight - gap : rect.bottom + gap;
-      return {
-        top: Math.round(top),
-        left: Math.floor(rect.left),
-        width: Math.ceil(rect.width),
-        above,
+  const trackSide = searchable && portal;
+  const setPanelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      dropdownRef.current = node;
+      if (!node || !trackSide) return;
+      const sync = () =>
+        setPanelAbove(node.getAttribute('data-side') === 'top');
+      sync();
+      const observer = new MutationObserver(sync);
+      observer.observe(node, {
+        attributes: true,
+        attributeFilter: ['data-side'],
+      });
+      return () => {
+        observer.disconnect();
+        dropdownRef.current = null;
+        setPanelAbove(false);
       };
     },
-    [gap]
+    [trackSide]
   );
 
-  const updatePosition = useCallback(() => {
-    const el = getTriggerEl();
-    if (!el) return;
-    const pos = computePos(el, dropdownRef.current);
-    setPanelAbove(pos.above);
-    setDropdownPosition((prev) =>
-      prev.left === pos.left && prev.width === pos.width && prev.top === pos.top
-        ? prev
-        : pos
-    );
-  }, [getTriggerEl, computePos]);
-
-  const toggleOpen = () => {
-    if (disabled) return;
-    const next = !isOpen;
-    setIsOpen(next);
-    if (next) {
-      setIsMeasured(false);
-      if (usePortal) updatePosition();
-    } else {
-      setIsMeasured(false);
-    }
-  };
-
-  const handleInputFocus = () => {
+  const openFromInput = () => {
     if (disabled) return;
     setInputValue('');
     setIsOpen(true);
-    setIsMeasured(false);
-    if (usePortal) updatePosition();
+  };
+
+  const handleInputFocus = () => {
+    openFromInput();
+  };
+
+  const handleInputClick = () => {
+    if (!isOpen) openFromInput();
   };
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     if (dropdownRef.current?.contains(e.relatedTarget as Node)) return;
     setInputValue(value ? resolvedDisplayLabel(value) : '');
     setIsOpen(false);
-    setIsMeasured(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    if (!isOpen) {
-      setIsOpen(true);
-      setIsMeasured(false);
-      if (usePortal) updatePosition();
-    }
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    if (visibleOptions.length > 0) {
-      handleOptionClick(visibleOptions[0].value);
-    }
+    if (!isOpen) setIsOpen(true);
   };
 
   const handleOptionClick = (optionValue: string) => {
@@ -203,52 +199,28 @@ function Dropdown({
       inputRef.current?.blur();
     }
     setIsOpen(false);
-    setIsMeasured(false);
   };
 
-  useLayoutEffect(() => {
-    if (!usePortal || !isOpen || isMeasured) return;
-    const el = getTriggerEl();
-    const dd = dropdownRef.current;
-
-    const measure = (el2: HTMLElement, dd2: HTMLElement) => {
-      const pos = computePos(el2, dd2);
-      setDropdownPosition(pos);
-      setPanelAbove(pos.above);
-      setIsMeasured(true);
-    };
-
-    if (!el || !dd) {
-      requestAnimationFrame(() => {
-        const el2 = getTriggerEl();
-        const dd2 = dropdownRef.current;
-        if (el2 && dd2) measure(el2, dd2);
-      });
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' && !isOpen) {
+      e.preventDefault();
+      openFromInput();
       return;
     }
-    measure(el, dd);
-  }, [
-    usePortal,
-    isOpen,
-    isMeasured,
-    options.length,
-    maxHeight,
-    getTriggerEl,
-    computePos,
-  ]);
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (visibleOptions.length > 0) {
+      handleOptionClick(visibleOptions[0].value);
+    }
+  };
 
-  // Close on any scroll outside the panel — applies to portal AND absolute dropdowns.
-  // A 150 ms timeout lets the browser finish its automatic scroll-to-focused-input
-  // before the listener is armed (a single rAF is not reliable across all browsers).
   useEffect(() => {
     if (!isOpen) return;
 
     const closeOnScroll = (e: Event) => {
-      // Scrolls inside the panel list itself must not close it.
       if (dropdownRef.current?.contains(e.target as Node)) return;
       if (searchable) inputRef.current?.blur();
       setIsOpen(false);
-      setIsMeasured(false);
     };
 
     const timeoutId = setTimeout(() => {
@@ -261,95 +233,30 @@ function Dropdown({
     };
   }, [isOpen, searchable]);
 
-  // Portal-only: reposition on window/viewport resize.
-  useEffect(() => {
-    if (!usePortal || !isOpen) return;
-    window.addEventListener('resize', updatePosition);
-    window.visualViewport?.addEventListener('resize', updatePosition);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.visualViewport?.removeEventListener('resize', updatePosition);
-    };
-  }, [usePortal, isOpen, updatePosition]);
-
-  useEffect(() => {
-    if (!usePortal || !isOpen || !isMeasured) return;
-    const raf = requestAnimationFrame(() => {
-      const el = getTriggerEl();
-      const dd = dropdownRef.current;
-      if (!el || !dd) return;
-      const pos = computePos(el, dd);
-      setDropdownPosition(pos);
-      setPanelAbove(pos.above);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [
-    usePortal,
-    isOpen,
-    isMeasured,
-    options.length,
-    maxHeight,
-    getTriggerEl,
-    computePos,
-  ]);
-
-  // Scroll selected item into view in the portal panel
-  useLayoutEffect(() => {
-    if (!usePortal || !isOpen || !isMeasured) return;
-    const panel = dropdownRef.current;
-    if (!panel || panel.scrollHeight <= panel.clientHeight + 1) return;
-    const selectedEl = panel.querySelector<HTMLElement>(
-      '[data-dropdown-selected="true"]'
-    );
-    if (!selectedEl) return;
-    const panelRect = panel.getBoundingClientRect();
-    const itemRect = selectedEl.getBoundingClientRect();
-    const delta =
-      itemRect.top +
-      itemRect.height / 2 -
-      (panelRect.top + panel.clientHeight / 2);
-    panel.scrollTop = Math.round(
-      Math.max(
-        0,
-        Math.min(
-          panel.scrollTop + delta,
-          panel.scrollHeight - panel.clientHeight
-        )
-      )
-    );
-  }, [usePortal, isOpen, isMeasured, value, options.length, maxHeight]);
-
-  // Non-searchable: close on outside click
-  useEffect(() => {
-    if (searchable) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-        setIsMeasured(false);
-      }
-    };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, searchable]);
-
-  // ── Render ──────────────────────────────────────────────────────────────────
   if (searchable) {
-    // Shared option list used by both portal and absolute panels.
-    const optionsList = (
+    const handleOpenChange = (open: boolean) => {
+      if (open) return;
+      setInputValue(value ? resolvedDisplayLabel(value) : '');
+      setIsOpen(false);
+    };
+
+    const isInTrigger = (target: EventTarget | null) =>
+      !!triggerWrapperRef.current?.contains(target as Node);
+
+    const optionsList = isOpen && (
       <div
-        className={`no-scrollbar ${maxHeight} overflow-y-auto overscroll-contain py-2`}
+        data-dropdown-scroll
+        className={`no-scrollbar ${maxHeight} overflow-y-auto overscroll-contain py-1`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {allowClear && (
           <button
             type="button"
+            role="option"
+            aria-selected={false}
+            data-dropdown-option
             className="w-full text-left px-4 py-2 hover:bg-blue-600 transition-colors rounded-2xl text-gray-400 text-sm"
-            style={{ width: 'calc(100% - 1rem)', marginLeft: '0.5rem' }}
+            style={{ width: 'calc(100% - 0.5rem)', marginLeft: '0.25rem' }}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleOptionClick('')}
           >
@@ -366,13 +273,16 @@ function Dropdown({
             return (
               <button
                 type="button"
+                role="option"
+                aria-selected={isSelected}
                 key={option.value}
+                data-dropdown-option
                 data-dropdown-selected={isSelected ? true : undefined}
                 onMouseDown={(e) => e.preventDefault()}
                 className={`w-full text-left px-4 py-2 hover:bg-blue-600 hover:text-white transition-colors rounded-2xl text-sm ${
                   isSelected ? 'text-white font-medium' : 'text-gray-300'
                 }`}
-                style={{ width: 'calc(100% - 1rem)', marginLeft: '0.5rem' }}
+                style={{ width: 'calc(100% - 0.5rem)', marginLeft: '0.25rem' }}
                 onClick={() => handleOptionClick(option.value)}
               >
                 {renderOption ? renderOption(option) : option.label}
@@ -385,25 +295,37 @@ function Dropdown({
 
     const divider = <div className="border-t border-blue-600/50 mx-4" />;
 
-    // Portal panel — flush with the trigger edge, matching the absolute-panel connected style.
-    // border-t-0 / border-b-0 removes the joining edge so there's no double-border at the junction.
-    const portalPanel = isOpen && (
-      <div
-        ref={dropdownRef}
-        className={`fixed bg-gray-800 border-2 border-blue-600 shadow-2xl ${
-          panelAbove
-            ? 'rounded-t-3xl rounded-b-none border-b-0'
-            : 'rounded-b-3xl rounded-t-none border-t-0'
-        }`}
+    const panel = isOpen && (
+      <PopoverPrimitive.Content
+        ref={setPanelRef}
+        id={listId}
+        role="listbox"
+        side="bottom"
+        align="start"
+        sideOffset={0}
+        avoidCollisions={portal}
+        updatePositionStrategy={portal ? 'always' : 'optimized'}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (isInTrigger(e.target)) e.preventDefault();
+        }}
+        onKeyDown={handlePanelKeyDown}
+        className={
+          portal
+            ? `bg-gray-800 border-2 border-blue-600 shadow-2xl outline-none ${
+                panelAbove
+                  ? 'rounded-t-[22px] rounded-b-none border-b-0'
+                  : 'rounded-b-[22px] rounded-t-none border-t-0'
+              }`
+            : 'z-50 bg-gray-800 border-2 border-blue-600 border-t-0 rounded-b-[22px] shadow-2xl outline-none'
+        }
         style={{
-          top: `${dropdownPosition.top}px`,
-          left: `${dropdownPosition.left}px`,
-          width: `${dropdownPosition.width}px`,
-          zIndex: 10000,
-          visibility: isMeasured ? 'visible' : 'hidden',
+          width: 'var(--radix-popover-trigger-width)',
+          ...(portal ? { zIndex: 10000 } : null),
         }}
       >
-        {panelAbove ? (
+        {portal && panelAbove ? (
           <>
             {optionsList}
             {divider}
@@ -414,85 +336,128 @@ function Dropdown({
             {optionsList}
           </>
         )}
-      </div>
+      </PopoverPrimitive.Content>
     );
 
-    // Absolute panel — original in-flow connected style (always below).
-    // border-t-0 removes the top border so there's no gap; no negative margin needed
-    // because the absolute panel doesn't rely on getBoundingClientRect() measurements.
-    const absolutePanel = isOpen && (
-      <div
-        ref={dropdownRef}
-        className="absolute z-50 w-full bg-gray-800 border-2 border-blue-600 border-t-0 rounded-b-3xl shadow-2xl"
-      >
-        {divider}
-        {optionsList}
-      </div>
-    );
-
-    // Trigger open state: square off the joining edge and use border-transparent (not border-0)
-    // to keep the element height stable for getBoundingClientRect measurement.
-    // Non-portal: border-b-0 is fine (no measurement needed — panel is in-flow).
     const triggerOpenClass = !portal
-      ? 'rounded-t-3xl rounded-b-none border-b-0'
+      ? 'rounded-t-[22px] rounded-b-none border-b-0'
       : panelAbove
-        ? 'rounded-b-3xl rounded-t-none border-t-transparent'
-        : 'rounded-t-3xl rounded-b-none border-b-transparent';
+        ? 'rounded-b-[22px] rounded-t-none border-t-transparent'
+        : 'rounded-t-[22px] rounded-b-none border-b-transparent';
+
+    const trigger = (
+      <div
+        ref={triggerWrapperRef}
+        className={`relative bg-gray-800 border-2 border-blue-600 ${
+          isOpen ? triggerOpenClass : 'rounded-full'
+        } ${disabled ? 'opacity-60' : ''} ${className}`}
+      >
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listId : undefined}
+          aria-autocomplete="list"
+          value={inputValue}
+          placeholder={placeholder}
+          disabled={disabled}
+          autoComplete="off"
+          onFocus={handleInputFocus}
+          onClick={handleInputClick}
+          onBlur={handleInputBlur}
+          onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
+          className={`w-full bg-transparent text-white font-semibold focus:outline-none placeholder:text-gray-400 ${inputPaddingClasses[size]} ${sizeClasses[size]} ${
+            disabled ? 'cursor-not-allowed' : 'cursor-text'
+          }`}
+        />
+        <ChevronDown
+          className={`pointer-events-none absolute ${chevronRightClasses[size]} top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 transition-transform duration-300 ${
+            isOpen && !panelAbove ? 'rotate-180' : ''
+          }`}
+        />
+      </div>
+    );
 
     return (
-      <div className="relative">
-        <div
-          ref={triggerWrapperRef}
-          className={`relative bg-gray-800 border-2 border-blue-600 ${
-            isOpen ? triggerOpenClass : 'rounded-full'
-          } ${disabled ? 'opacity-60' : ''} ${className}`}
-        >
-          <input
-            ref={inputRef}
-            id={id}
-            type="text"
-            value={inputValue}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            onChange={handleInputChange}
-            onKeyDown={handleInputKeyDown}
-            className={`w-full bg-transparent text-white font-semibold focus:outline-none placeholder:text-gray-400 ${inputPaddingClasses[size]} ${sizeClasses[size]} ${
-              disabled ? 'cursor-not-allowed' : 'cursor-text'
-            }`}
-          />
-          <ChevronDown
-            className={`pointer-events-none absolute ${chevronRightClasses[size]} top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 transition-transform duration-300 ${
-              isOpen && !panelAbove ? 'rotate-180' : ''
-            }`}
-          />
-        </div>
-        {portal ? createPortal(portalPanel, document.body) : absolutePanel}
-      </div>
+      <PopoverPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
+        {portal ? (
+          <div className="relative">
+            <PopoverPrimitive.Anchor asChild>{trigger}</PopoverPrimitive.Anchor>
+            {panel && (
+              <PopoverPrimitive.Portal>{panel}</PopoverPrimitive.Portal>
+            )}
+          </div>
+        ) : (
+          <PopoverPrimitive.Anchor asChild>
+            <div className="relative">
+              {trigger}
+              {panel}
+            </div>
+          </PopoverPrimitive.Anchor>
+        )}
+      </PopoverPrimitive.Root>
     );
   }
 
-  // ── Non-searchable (always portal) ─────────────────────────────────────────
   const dropdownContent = isOpen && (
-    <div
-      ref={dropdownRef}
-      className={`no-scrollbar fixed bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-auto overscroll-contain px-1`}
+    <PopoverPrimitive.Content
+      ref={setPanelRef}
+      role="listbox"
+      side="bottom"
+      align="start"
+      sideOffset={4}
+      data-dropdown-scroll
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        const panel = dropdownRef.current;
+        if (!panel) return;
+        const selectedEl = panel.querySelector<HTMLElement>(
+          '[data-dropdown-selected="true"]'
+        );
+        if (selectedEl && panel.scrollHeight > panel.clientHeight + 1) {
+          const panelRect = panel.getBoundingClientRect();
+          const itemRect = selectedEl.getBoundingClientRect();
+          const delta =
+            itemRect.top +
+            itemRect.height / 2 -
+            (panelRect.top + panel.clientHeight / 2);
+          panel.scrollTop = Math.round(
+            Math.max(
+              0,
+              Math.min(
+                panel.scrollTop + delta,
+                panel.scrollHeight - panel.clientHeight
+              )
+            )
+          );
+        }
+        (
+          selectedEl ?? panel.querySelector<HTMLElement>(OPTION_SELECTOR)
+        )?.focus({ preventScroll: true });
+      }}
+      onCloseAutoFocus={(e) => {
+        e.preventDefault();
+        if (isFocusLost()) buttonRef.current?.focus({ preventScroll: true });
+      }}
+      onKeyDown={handlePanelKeyDown}
+      className={`no-scrollbar bg-gray-800 border-2 border-blue-600 rounded-[22px] shadow-lg p-1 ${maxHeight} overflow-y-auto overscroll-contain outline-none`}
       style={{
-        top: `${dropdownPosition.top}px`,
-        left: `${dropdownPosition.left}px`,
-        width: `${dropdownPosition.width}px`,
+        width: 'var(--radix-popover-trigger-width)',
         zIndex: 10000,
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
-        visibility: isMeasured ? 'visible' : 'hidden',
       }}
     >
       {allowClear && (
         <button
           type="button"
-          className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 text-gray-400"
+          role="option"
+          aria-selected={false}
+          data-dropdown-option
+          className="block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-700 focus-visible:bg-gray-700 focus-visible:outline-none text-gray-400"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleOptionClick('')}
         >
@@ -509,10 +474,13 @@ function Dropdown({
           return (
             <button
               type="button"
+              role="option"
+              aria-selected={isSelected}
               key={option.value}
+              data-dropdown-option
               data-dropdown-selected={isSelected ? true : undefined}
               onMouseDown={(e) => e.preventDefault()}
-              className={`block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-blue-600 hover:text-white ${
+              className={`block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-blue-600 hover:text-white focus-visible:bg-blue-600 focus-visible:text-white focus-visible:outline-none ${
                 isSelected ? 'text-white font-medium' : 'text-gray-300'
               }`}
               onClick={() => handleOptionClick(option.value)}
@@ -522,36 +490,53 @@ function Dropdown({
           );
         })
       )}
-    </div>
+    </PopoverPrimitive.Content>
   );
 
   return (
-    <>
+    <PopoverPrimitive.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open && disabled) return;
+        setIsOpen(open);
+      }}
+    >
       <div className="relative">
-        <button
-          ref={buttonRef}
-          id={id}
-          type="button"
-          onClick={toggleOpen}
-          disabled={disabled}
-          className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
-            ${disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-650'} ${sizeClasses[size]} ${className}`}
-        >
-          <span className="truncate ml-2 font-semibold">{displayValue}</span>
-          <span
-            className="transition-transform duration-200 ml-2 shrink-0"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+        <PopoverPrimitive.Trigger asChild>
+          <button
+            ref={buttonRef}
+            id={id}
+            type="button"
+            aria-haspopup="listbox"
+            onKeyDown={(e) => {
+              if (isOpen || disabled) return;
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                setIsOpen(true);
+              }
             }}
+            disabled={disabled}
+            className={`flex items-center justify-between w-full bg-gray-800 border-2 border-blue-600 rounded-full text-left
+            ${disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-650'} ${sizeClasses[size]} ${className}`}
           >
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </span>
-        </button>
+            <span className="truncate ml-2 font-semibold">{displayValue}</span>
+            <span
+              className="transition-transform duration-200 ml-2 shrink-0"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            >
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            </span>
+          </button>
+        </PopoverPrimitive.Trigger>
       </div>
-      {isOpen && createPortal(dropdownContent, document.body)}
-    </>
+      {dropdownContent && (
+        <PopoverPrimitive.Portal>{dropdownContent}</PopoverPrimitive.Portal>
+      )}
+    </PopoverPrimitive.Root>
   );
 }
 

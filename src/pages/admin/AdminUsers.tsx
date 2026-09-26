@@ -1,36 +1,39 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import {
-  MdPeople,
-  MdFilterList,
-  MdSettings,
-  MdVisibility,
-  MdVisibilityOff,
-  MdBlock,
-  MdRefresh,
-  MdStorage,
-  MdAdminPanelSettings,
-  MdCode,
-  MdOpenInNew,
-  MdPerson,
-  MdCheck,
-  MdClose,
-} from 'react-icons/md';
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+  Code,
+  Database,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Loader2,
+  Settings,
+  ShieldAlert,
+  ShieldCheck,
+  UserCog,
+  UserRound,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import AdminTable from '../../components/admin/AdminTable';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_INPUT_ICON_CLASS,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Dropdown from '../../components/common/Dropdown';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
 import {
   fetchAdminUsers,
   revealUserIP,
@@ -39,35 +42,445 @@ import {
   type AdminUser,
   type Role,
 } from '../../utils/fetch/admin';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { removeRoleFromUser } from '../../utils/fetch/admin';
 import { getIconComponent } from '../../utils/roles';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
-function SettingsPanel({
-  title,
-  children,
-  className = '',
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
+
+type BackgroundImageSettings = {
+  selectedImage?: string;
+  useCustomBackground?: boolean;
+  favorites?: string[];
+};
+
+type SoundSetting = {
+  enabled: boolean;
+  volume: number;
+};
+
+type SoundSettings = {
+  startupSound?: SoundSetting;
+  chatNotificationSound?: SoundSetting;
+  newStripSound?: SoundSetting;
+};
+
+type LayoutSettings = {
+  showCombinedView?: boolean;
+  flightRowOpacity?: number;
+};
+
+type AcarsSettings = {
+  notesEnabled?: boolean;
+  chartsEnabled?: boolean;
+  terminalWidth?: number;
+  notesWidth?: number;
+};
+
+function avatarUrl(userId: string, avatar: string) {
+  return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`;
+}
+
+function UserAvatar({
+  userId,
+  avatar,
+  username,
+  size = 'default',
 }: {
-  title: string;
-  children: ReactNode;
-  className?: string;
+  userId: string;
+  avatar?: string | null;
+  username: string;
+  size?: 'default' | 'sm' | 'lg';
 }) {
   return (
-    <section
-      className={`rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 ${className}`}
+    <Avatar size={size}>
+      {avatar ? (
+        <AvatarImage src={avatarUrl(userId, avatar)} alt={username} />
+      ) : null}
+      <AvatarFallback>
+        <UserRound className="size-4" />
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function RoleName({ role, onRemove }: { role: Role; onRemove?: () => void }) {
+  const RoleIcon = getIconComponent(role.icon);
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm">
+      <RoleIcon
+        className="size-4 shrink-0"
+        style={{ color: role.color }}
+        aria-hidden
+      />
+      {role.name}
+      {onRemove ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onRemove}
+              className="size-6 text-muted-foreground"
+              aria-label={`Remove role ${role.name}`}
+            >
+              <X />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Remove role</TooltipContent>
+        </Tooltip>
+      ) : null}
+    </span>
+  );
+}
+
+function RoleIconTip({ role }: { role: Role }) {
+  const RoleIcon = getIconComponent(role.icon);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className="inline-flex cursor-default items-center"
+          role="img"
+          aria-label={role.name}
+          tabIndex={0}
+        >
+          <RoleIcon className="size-4" style={{ color: role.color }} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{role.name}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function UserRoles({ user }: { user: AdminUser }) {
+  if (user.is_admin) {
+    return (
+      <AdminStatusBadge tone="info" icon={Code}>
+        Developer
+      </AdminStatusBadge>
+    );
+  }
+  if (!user.roles || user.roles.length === 0) {
+    return <span className="text-muted-foreground">N/A</span>;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {user.roles.map((role) => (
+        <RoleIconTip key={role.id} role={role} />
+      ))}
+    </div>
+  );
+}
+
+function VpnStatus({ isVpn }: { isVpn?: boolean }) {
+  return (
+    <AdminStatusBadge
+      tone={isVpn ? 'danger' : 'success'}
+      icon={isVpn ? ShieldAlert : ShieldCheck}
     >
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
-        {title}
-      </h3>
+      {isVpn ? 'VPN detected' : 'No VPN'}
+    </AdminStatusBadge>
+  );
+}
+
+function RowAction({
+  label,
+  icon: Icon,
+  onClick,
+  destructive,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClick}
+          aria-label={label}
+          className={cn(
+            destructive && 'text-destructive hover:text-destructive'
+          )}
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CacheIcon({ cached }: { cached?: boolean }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <img
+          src={`${API_BASE_URL}/assets/app/icons/redis${cached ? '-green' : ''}.svg`}
+          alt="Redis cache status"
+          className="size-5"
+        />
+      </TooltipTrigger>
+      <TooltipContent>
+        {cached ? 'Cached in Redis' : 'Not cached'}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function EnabledValue({
+  enabled,
+  children,
+}: {
+  enabled?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <span className={cn(!enabled && 'text-muted-foreground')}>
+      {children ?? (enabled ? 'Enabled' : 'Disabled')}
+    </span>
+  );
+}
+
+function SettingsGroup({
+  title,
+  className,
+  children,
+}: {
+  title: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={cn('grid min-w-0 content-start gap-3', className)}>
+      <h3 className="text-sm font-medium">{title}</h3>
       {children}
     </section>
   );
 }
 
+function SettingsList({ children }: { children: ReactNode }) {
+  return (
+    <dl className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] items-center gap-x-6 gap-y-2.5 text-sm">
+      {children}
+    </dl>
+  );
+}
+
+function SettingRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words">{children}</dd>
+    </>
+  );
+}
+
+function BackgroundImagePanel({
+  settings,
+  onOpenImage,
+}: {
+  settings: BackgroundImageSettings;
+  onOpenImage: (url: string) => void;
+}) {
+  const { selectedImage, useCustomBackground, favorites } = settings || {};
+  const imageUrl = selectedImage
+    ? selectedImage.startsWith('https://')
+      ? selectedImage
+      : `${API_BASE_URL}/assets/app/backgrounds/${selectedImage}`
+    : null;
+
+  return (
+    <SettingsGroup title="Background image">
+      <SettingsList>
+        <SettingRow label="Custom background">
+          <EnabledValue enabled={useCustomBackground} />
+        </SettingRow>
+        <SettingRow label="Favorites">
+          <span className="tabular-nums">{favorites?.length || 0} items</span>
+        </SettingRow>
+        <SettingRow label="Selected image">
+          {imageUrl ? (
+            <button
+              type="button"
+              className="block h-20 w-32 overflow-hidden rounded-md border transition-opacity hover:opacity-80"
+              onClick={() => onOpenImage(imageUrl)}
+              aria-label="Open background preview"
+            >
+              <img
+                src={imageUrl}
+                alt="Selected background"
+                className="size-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                }}
+              />
+            </button>
+          ) : (
+            <span className="text-muted-foreground">None</span>
+          )}
+        </SettingRow>
+      </SettingsList>
+    </SettingsGroup>
+  );
+}
+
+function SoundPanel({ settings }: { settings: SoundSettings }) {
+  const { startupSound, chatNotificationSound, newStripSound } = settings || {};
+  const rows: [string, SoundSetting | undefined][] = [
+    ['Startup sound', startupSound],
+    ['Chat notification', chatNotificationSound],
+    ['New strip sound', newStripSound],
+  ];
+  return (
+    <SettingsGroup title="Sounds">
+      <SettingsList>
+        {rows.map(([label, sound]) =>
+          sound ? (
+            <SettingRow key={label} label={label}>
+              <EnabledValue enabled={sound.enabled}>
+                {sound.enabled ? `Enabled (${sound.volume}%)` : 'Disabled'}
+              </EnabledValue>
+            </SettingRow>
+          ) : null
+        )}
+      </SettingsList>
+    </SettingsGroup>
+  );
+}
+
+function LayoutPanel({ settings }: { settings: LayoutSettings }) {
+  const { showCombinedView, flightRowOpacity } = settings || {};
+  return (
+    <SettingsGroup title="Layout">
+      <SettingsList>
+        <SettingRow label="Combined view">
+          <EnabledValue enabled={showCombinedView} />
+        </SettingRow>
+        <SettingRow label="Flight row opacity">
+          <span className="tabular-nums">{flightRowOpacity}%</span>
+        </SettingRow>
+      </SettingsList>
+    </SettingsGroup>
+  );
+}
+
+function TableColumnsSummary({
+  columns,
+  type,
+}: {
+  columns: Record<string, boolean> | undefined;
+  type: string;
+}) {
+  if (!columns) return null;
+  const enabledColumns = Object.entries(columns)
+    .filter(([, enabled]) => enabled)
+    .map(([key]) => key);
+  return (
+    <SettingRow label={`${type} table`}>
+      {enabledColumns.join(', ') || 'None'}
+    </SettingRow>
+  );
+}
+
+function AcarsPanel({ settings }: { settings: AcarsSettings }) {
+  const { notesEnabled, chartsEnabled, terminalWidth, notesWidth } =
+    settings || {};
+  const chartsWidth = 100 - (terminalWidth || 50) - (notesWidth || 20);
+  const widths = [
+    {
+      label: 'Terminal',
+      value: terminalWidth || 50,
+      color: ADMIN_CHART_COLORS.green,
+      show: true,
+    },
+    {
+      label: 'Notes',
+      value: notesWidth || 20,
+      color: ADMIN_CHART_COLORS.blue,
+      show: !!notesEnabled,
+    },
+    {
+      label: 'Charts',
+      value: chartsWidth,
+      color: ADMIN_CHART_COLORS.purple,
+      show: !!chartsEnabled,
+    },
+  ];
+
+  return (
+    <SettingsGroup title="ACARS">
+      <SettingsList>
+        <SettingRow label="Notes panel">
+          <EnabledValue enabled={notesEnabled} />
+        </SettingRow>
+        <SettingRow label="Charts panel">
+          <EnabledValue enabled={chartsEnabled} />
+        </SettingRow>
+        <SettingRow label="Panel widths">
+          <div className="grid gap-2">
+            <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+              {widths
+                .filter((w) => w.show)
+                .map((w) => (
+                  <div
+                    key={w.label}
+                    style={{ width: `${w.value}%`, backgroundColor: w.color }}
+                    title={`${w.label}: ${w.value}%`}
+                  />
+                ))}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {widths.map((w) => (
+                <span key={w.label} className="flex items-center gap-1.5">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: w.color }}
+                    aria-hidden
+                  />
+                  <span className="text-muted-foreground">{w.label}</span>
+                  <span className="font-medium tabular-nums">{w.value}%</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </SettingRow>
+      </SettingsList>
+    </SettingsGroup>
+  );
+}
+
 export default function AdminUsers() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +488,7 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
   const [debouncedSearch, setDebouncedSearch] = useState(
@@ -99,10 +513,10 @@ export default function AdminUsers() {
   } | null>(null);
 
   const filterOptions = [
-    { value: 'all', label: 'All Users' },
-    { value: 'admin', label: 'Admins Only' },
-    { value: 'non-admin', label: 'Non-Admins' },
-    { value: 'cached', label: 'Cached Users Only' },
+    { value: 'all', label: 'All users' },
+    { value: 'admin', label: 'Admins only' },
+    { value: 'non-admin', label: 'Non-admins' },
+    { value: 'cached', label: 'Cached users only' },
   ];
 
   useEffect(() => {
@@ -132,6 +546,7 @@ export default function AdminUsers() {
       setUsers(sortedUsers);
       setRoles(rolesData);
       setTotalPages(usersData.pagination.pages);
+      setTotalUsers(usersData.pagination.total);
 
       return sortedUsers;
     } catch (err) {
@@ -149,7 +564,7 @@ export default function AdminUsers() {
   }, [page, limit, debouncedSearch, filterAdmin]);
 
   useEffect(() => {
-    fetchData();
+    fetchData().catch(() => {});
   }, [page, debouncedSearch, filterAdmin, fetchData]);
 
   const handleFilterChange = (value: string) => {
@@ -274,819 +689,376 @@ export default function AdminUsers() {
     return '***.***.***.**';
   };
 
-  const API_BASE_URL = import.meta.env.VITE_SERVER_URL || '';
-
-  type BackgroundImageSettings = {
-    selectedImage?: string;
-    useCustomBackground?: boolean;
-    favorites?: string[];
+  const openImage = (url: string) => {
+    setFullscreenImageUrl(url);
+    setShowFullscreenImage(true);
   };
 
-  const renderBackgroundImageSettings = (
-    bgSettings: BackgroundImageSettings
-  ) => {
-    const { selectedImage, useCustomBackground, favorites } = bgSettings || {};
-    const imageUrl = selectedImage
-      ? selectedImage.startsWith('https://')
-        ? selectedImage
-        : `${API_BASE_URL}/assets/app/backgrounds/${selectedImage}`
-      : null;
-
+  const renderIP = (tableUser: AdminUser) => {
+    const revealed = revealedIPs.has(tableUser.id);
+    const revealing = revealingIP === tableUser.id;
     return (
-      <SettingsPanel title="Background Image">
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-zinc-300 flex-1">
-            <p className="mb-2">
-              <strong>Custom Background:</strong>{' '}
-              <span
-                className={
-                  useCustomBackground ? 'text-green-400' : 'text-red-400'
-                }
-              >
-                {useCustomBackground ? 'Enabled' : 'Disabled'}
-              </span>
-            </p>
-            <p>
-              <strong>Favorites:</strong> {favorites?.length || 0} items
-            </p>
-          </div>
-          {imageUrl ? (
-            <div
-              className="w-32 h-20 border border-zinc-600 rounded-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-colors"
-              onClick={() => {
-                setFullscreenImageUrl(imageUrl);
-                setShowFullscreenImage(true);
-              }}
+      <div className="flex items-center gap-1">
+        <span className={cn('font-mono text-xs', !revealed && 'blur-sm')}>
+          {formatIPAddress(tableUser.ip_address, tableUser.id)}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => handleRevealIP(tableUser.id)}
+              disabled={revealing}
+              aria-label={revealed ? 'Hide IP address' : 'Reveal IP address'}
             >
-              <img
-                src={imageUrl}
-                alt="Selected background"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                }}
-              />
-            </div>
-          ) : (
-            <div className="w-32 h-20 bg-zinc-700 rounded-lg flex items-center justify-center text-zinc-400 text-xs">
-              No image selected
-            </div>
-          )}
-        </div>
-      </SettingsPanel>
-    );
-  };
-
-  type SoundSetting = {
-    enabled: boolean;
-    volume: number;
-  };
-
-  type SoundSettings = {
-    startupSound?: SoundSetting;
-    chatNotificationSound?: SoundSetting;
-    newStripSound?: SoundSetting;
-  };
-
-  const renderSoundSettings = (soundSettings: SoundSettings) => {
-    const { startupSound, chatNotificationSound, newStripSound } =
-      soundSettings || {};
-    return (
-      <SettingsPanel title="Sounds">
-        <div className="space-y-2">
-          {startupSound && (
-            <div className="flex justify-between items-center text-sm text-zinc-300 bg-zinc-800 p-3 rounded">
-              <span>Startup Sound:</span>
-              <span
-                className={
-                  startupSound.enabled ? 'text-green-400' : 'text-red-400'
-                }
-              >
-                {startupSound.enabled
-                  ? `Enabled (${startupSound.volume}%)`
-                  : 'Disabled'}
-              </span>
-            </div>
-          )}
-          {chatNotificationSound && (
-            <div className="flex justify-between items-center text-sm text-zinc-300 bg-zinc-800 p-3 rounded">
-              <span>Chat Notification:</span>
-              <span
-                className={
-                  chatNotificationSound.enabled
-                    ? 'text-green-400'
-                    : 'text-red-400'
-                }
-              >
-                {chatNotificationSound.enabled
-                  ? `Enabled (${chatNotificationSound.volume}%)`
-                  : 'Disabled'}
-              </span>
-            </div>
-          )}
-          {newStripSound && (
-            <div className="flex justify-between items-center text-sm text-zinc-300 bg-zinc-800 p-3 rounded">
-              <span>New Strip Sound:</span>
-              <span
-                className={
-                  newStripSound.enabled ? 'text-green-400' : 'text-red-400'
-                }
-              >
-                {newStripSound.enabled
-                  ? `Enabled (${newStripSound.volume}%)`
-                  : 'Disabled'}
-              </span>
-            </div>
-          )}
-        </div>
-      </SettingsPanel>
-    );
-  };
-
-  type LayoutSettings = {
-    showCombinedView?: boolean;
-    flightRowOpacity?: number;
-  };
-
-  const renderLayoutSettings = (layoutSettings: LayoutSettings) => {
-    const { showCombinedView, flightRowOpacity } = layoutSettings || {};
-    return (
-      <SettingsPanel title="Layout">
-        <div className="space-y-2 text-sm text-zinc-300">
-          <div className="bg-zinc-800 p-3 rounded">
-            <p>
-              <strong>Combined View:</strong>{' '}
-              <span
-                className={showCombinedView ? 'text-green-400' : 'text-red-400'}
-              >
-                {showCombinedView ? 'Enabled' : 'Disabled'}
-              </span>
-            </p>
-          </div>
-          <div className="bg-zinc-800 p-3 rounded">
-            <p>
-              <strong>Flight Row Opacity:</strong> {flightRowOpacity}%
-            </p>
-          </div>
-        </div>
-      </SettingsPanel>
-    );
-  };
-
-  const renderTableColumns = (
-    columns: Record<string, boolean> | undefined,
-    type: string
-  ) => {
-    if (!columns) return null;
-    const enabledColumns = Object.entries(columns)
-      .filter(([, enabled]) => enabled)
-      .map(([key]) => key);
-    return (
-      <div className="text-sm text-zinc-300 bg-zinc-900/80 rounded-lg p-3 border border-zinc-800">
-        <p className="text-xs font-medium text-zinc-400 mb-1">{type} table</p>
-        <p>Enabled: {enabledColumns.join(', ') || 'None'}</p>
+              {revealing ? (
+                <Loader2 className="animate-spin" />
+              ) : revealed ? (
+                <EyeOff />
+              ) : (
+                <Eye />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{revealed ? 'Hide IP' : 'Reveal IP'}</TooltipContent>
+        </Tooltip>
       </div>
     );
   };
 
-  type AcarsSettings = {
-    notesEnabled?: boolean;
-    chartsEnabled?: boolean;
-    terminalWidth?: number;
-    notesWidth?: number;
-  };
+  const renderActions = (tableUser: AdminUser) => (
+    <div className="flex shrink-0 items-center justify-end gap-1">
+      <RowAction
+        label="View settings"
+        icon={Settings}
+        onClick={() => handleViewSettings(tableUser)}
+      />
+      {!tableUser.is_admin && (
+        <RowAction
+          label="Manage roles"
+          icon={UserCog}
+          onClick={() => handleManageRole(tableUser)}
+        />
+      )}
+      {(tableUser.current_sessions_count || 0) >= 1 && (
+        <RowAction
+          label="View sessions"
+          icon={Database}
+          onClick={() => navigate(`/admin/sessions?userId=${tableUser.id}`)}
+        />
+      )}
+      {!tableUser.is_admin && (
+        <RowAction
+          label="Ban user"
+          icon={Ban}
+          destructive
+          onClick={() =>
+            navigate(
+              `/admin/bans?userId=${
+                tableUser.id
+              }&username=${encodeURIComponent(tableUser.username)}`
+            )
+          }
+        />
+      )}
+    </div>
+  );
 
-  const renderAcarsSettings = (acarsSettings: AcarsSettings) => {
-    const { notesEnabled, chartsEnabled, terminalWidth, notesWidth } =
-      acarsSettings || {};
-    const chartsWidth = 100 - (terminalWidth || 50) - (notesWidth || 20);
-
-    return (
-      <SettingsPanel title="ACARS">
-        <div className="space-y-3">
-          <div className="bg-zinc-800 p-3 rounded space-y-2">
-            <div className="flex justify-between items-center text-sm text-zinc-300">
-              <span>Notes Panel:</span>
-              <span
-                className={notesEnabled ? 'text-green-400' : 'text-red-400'}
-              >
-                {notesEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-sm text-zinc-300">
-              <span>Charts Panel:</span>
-              <span
-                className={chartsEnabled ? 'text-green-400' : 'text-red-400'}
-              >
-                {chartsEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-zinc-800 p-3 rounded">
-            <p className="text-xs text-zinc-400 mb-2">Panel Widths:</p>
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs text-zinc-300">
-                <span>Terminal:</span>
-                <span className="text-green-400 font-medium">
-                  {terminalWidth || 50}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-xs text-zinc-300">
-                <span>Notes:</span>
-                <span className="text-blue-400 font-medium">
-                  {notesWidth || 20}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-xs text-zinc-300">
-                <span>Charts:</span>
-                <span className="text-purple-400 font-medium">
-                  {chartsWidth}%
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-3">
-              <div className="h-2 flex rounded-full overflow-hidden">
-                <div
-                  style={{ width: `${terminalWidth || 50}%` }}
-                  className="bg-green-500"
-                  title={`Terminal: ${terminalWidth || 50}%`}
-                />
-                {notesEnabled && (
-                  <div
-                    style={{ width: `${notesWidth || 20}%` }}
-                    className="bg-blue-500"
-                    title={`Notes: ${notesWidth || 20}%`}
-                  />
-                )}
-                {chartsEnabled && (
-                  <div
-                    style={{ width: `${chartsWidth}%` }}
-                    className="bg-purple-500"
-                    title={`Charts: ${chartsWidth}%`}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </SettingsPanel>
-    );
-  };
+  const availableRoles = selectedUserForRole
+    ? roles.filter(
+        (role) => !selectedUserForRole.roles?.some((ur) => ur.id === role.id)
+      )
+    : [];
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader title="User Management" icon={MdPeople} accent="green" />
-
-      <AdminToolbar>
-        <AdminSearchInput
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder="Search by username, user ID or IP address..."
-          loading={loading && search !== debouncedSearch}
-        />
-        <div className="relative w-full sm:w-44">
-          <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
-            <MdFilterList size={18} />
-          </span>
-          <Dropdown
+      <AdminPage
+        title="Users"
+        icon={Users}
+        actions={
+          <AdminRefreshButton
+            onClick={() => {
+              fetchData().catch(() => {});
+            }}
+            loading={loading}
+          />
+        }
+      >
+        <AdminToolbar>
+          <AdminSearchInput
+            value={search}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            placeholder="Search by username, user ID or IP address…"
+            loading={loading && search !== debouncedSearch}
+          />
+          <AdminSelect
             options={filterOptions}
             value={filterAdmin}
             onChange={handleFilterChange}
-            placeholder="Filter users..."
-            className="!pl-11"
-            size="sm"
+            placeholder="Filter users…"
+            aria-label="Filter users"
           />
-        </div>
-      </AdminToolbar>
+        </AdminToolbar>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading users"
-          message={error}
-          onRetry={fetchData}
-        />
-      ) : (
-        <>
-          <AdminTable className="hidden md:block" minWidth="800px">
-            <thead className={ADMIN_TABLE_HEAD}>
-              <tr>
-                <th className={ADMIN_TH}>User</th>
-                <th className={`${ADMIN_TH} hidden sm:table-cell`}>
-                  Last Login
-                </th>
-                {user?.isAdmin && (
-                  <th className={`${ADMIN_TH} hidden md:table-cell`}>
-                    IP Address
-                  </th>
-                )}
-                <th className={`${ADMIN_TH} hidden lg:table-cell`}>VPN</th>
-                <th className={`${ADMIN_TH} hidden xl:table-cell`}>Sessions</th>
-                <th className={`${ADMIN_TH} hidden lg:table-cell`}>Role</th>
-                <th className={`${ADMIN_TH} hidden xl:table-cell`}>Cached</th>
-                <th className={ADMIN_TH}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((tableUser) => (
-                <tr
-                  key={tableUser.id}
-                  className="border-t border-zinc-700/50 hover:bg-zinc-800/50"
-                >
-                  <td className={ADMIN_TD}>
-                    <div className="flex items-center space-x-3">
-                      {tableUser.avatar ? (
-                        <img
-                          src={`https://cdn.discordapp.com/avatars/${tableUser.id}/${tableUser.avatar}.png`}
-                          alt={tableUser.username}
-                          className="w-8 h-8 rounded-full"
+        {loading ? (
+          <AdminLoading label="Loading users…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading users"
+            message={error}
+            onRetry={() => {
+              fetchData().catch(() => {});
+            }}
+          />
+        ) : users.length === 0 ? (
+          <AdminEmptyState icon={Users} title="No users found" />
+        ) : (
+          <>
+            <AdminTable className="hidden md:block" minWidth="960px">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Last login</TableHead>
+                  {user?.isAdmin && <TableHead>IP address</TableHead>}
+                  <TableHead>VPN</TableHead>
+                  <TableHead className="text-right">Sessions</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Cache</TableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((tableUser) => (
+                  <TableRow key={tableUser.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <UserAvatar
+                          userId={tableUser.id}
+                          avatar={tableUser.avatar}
+                          username={tableUser.username}
                         />
-                      ) : (
-                        <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-                          <MdPeople className="w-4 h-4 text-zinc-400" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {tableUser.username}
+                          </p>
+                          <p className="truncate font-mono text-xs text-muted-foreground">
+                            {tableUser.id}
+                          </p>
                         </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="text-white font-medium">
-                          {tableUser.username}
-                        </span>
-                        <span className="text-zinc-400 text-xs">
-                          {tableUser.id}
-                        </span>
-                        <span className="text-zinc-400 text-xs sm:hidden">
-                          Last:{' '}
-                          {new Date(tableUser.last_login).toLocaleDateString()}
-                        </span>
                       </div>
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} hidden sm:table-cell`}>
-                    {new Date(tableUser.last_login).toLocaleDateString()}
-                  </td>
-                  {user?.isAdmin && (
-                    <td className={`${ADMIN_TD} hidden md:table-cell`}>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={
-                            revealedIPs.has(tableUser.id)
-                              ? ''
-                              : 'filter blur-sm'
-                          }
-                        >
-                          {formatIPAddress(tableUser.ip_address, tableUser.id)}
-                        </span>
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="ghost"
-                          onClick={() => handleRevealIP(tableUser.id)}
-                          disabled={revealingIP === tableUser.id}
-                          className="p-1"
-                        >
-                          {revealingIP === tableUser.id ? (
-                            <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                          ) : revealedIPs.has(tableUser.id) ? (
-                            <MdVisibilityOff className="w-4 h-4" />
-                          ) : (
-                            <MdVisibility className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </td>
-                  )}
-                  <td className={`${ADMIN_TD} hidden lg:table-cell`}>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tableUser.is_vpn
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      }`}
-                    >
-                      {tableUser.is_vpn ? 'Yes' : 'No'}
-                    </span>
-                  </td>
-                  <td className={`${ADMIN_TD} hidden xl:table-cell`}>
-                    {tableUser.current_sessions_count ?? 0}
-                  </td>
-                  <td className={`${ADMIN_TD} hidden lg:table-cell`}>
-                    <div className="flex flex-wrap gap-2">
-                      {tableUser.is_admin && (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 w-fit">
-                          <MdCode className="w-3 h-3" />
-                          Developer
-                        </span>
-                      )}
-                      {!tableUser.is_admin &&
-                      tableUser.roles &&
-                      tableUser.roles.length > 0
-                        ? tableUser.roles.length === 1
-                          ? // Single role: Show icon and name
-                            (() => {
-                              const role = tableUser.roles[0];
-                              const RoleIcon = getIconComponent(role.icon);
-                              return (
-                                <span
-                                  key={role.id}
-                                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border w-fit"
-                                  style={{
-                                    backgroundColor: `${role.color}20`,
-                                    color: role.color,
-                                    borderColor: `${role.color}40`,
-                                  }}
-                                >
-                                  <RoleIcon className="w-3 h-3" />
-                                  {role.name}
-                                </span>
-                              );
-                            })()
-                          : // Multiple roles: Show only icons
-                            tableUser.roles.map((role) => {
-                              const RoleIcon = getIconComponent(role.icon);
-                              return (
-                                <span
-                                  key={role.id}
-                                  className="inline-flex items-center justify-center w-6 h-6 rounded-full border"
-                                  style={{
-                                    backgroundColor: `${role.color}20`,
-                                    borderColor: `${role.color}40`,
-                                  }}
-                                  title={role.name}
-                                >
-                                  <RoleIcon
-                                    className="w-3 h-3"
-                                    style={{ color: role.color }}
-                                  />
-                                </span>
-                              );
-                            })
-                        : !tableUser.is_admin && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-zinc-600/20 text-zinc-400 border border-zinc-600/30 w-fit">
-                              No Role
-                            </span>
-                          )}
-                    </div>
-                  </td>
-                  <td className={`${ADMIN_TD} hidden xl:table-cell`}>
-                    <img
-                      src={`${API_BASE_URL}/assets/app/icons/redis${tableUser.cached ? '-green' : ''}.svg`}
-                      alt="Redis cache status"
-                      className="w-6 h-6"
-                    />
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                      <Button
-                        size={adminDownsizeButtonSize('sm')}
-                        variant="outline"
-                        onClick={() => handleViewSettings(tableUser)}
-                        className="p-2 w-full sm:w-auto"
-                      >
-                        <MdSettings className="w-4 h-4" />
-                      </Button>
-                      {!tableUser.is_admin && (
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="secondary"
-                          onClick={() => handleManageRole(tableUser)}
-                          className="p-2 w-full sm:w-auto bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
-                        >
-                          <MdAdminPanelSettings className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {(tableUser.current_sessions_count || 0) >= 1 && (
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="secondary"
-                          onClick={() =>
-                            (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
-                          }
-                          className="p-2 w-full sm:w-auto bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
-                        >
-                          <MdStorage className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {!tableUser.is_admin && (
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="danger"
-                          onClick={() =>
-                            (window.location.href = `/admin/bans?userId=${
-                              tableUser.id
-                            }&username=${encodeURIComponent(
-                              tableUser.username
-                            )}`)
-                          }
-                          className="flex items-center space-x-2 w-full sm:w-auto"
-                        >
-                          <MdBlock className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </AdminTable>
-
-          <div className="block md:hidden divide-y divide-zinc-800/80 border-t border-zinc-800/80">
-            {users.map((tableUser) => (
-              <div key={tableUser.id} className="py-4 first:pt-0">
-                <div className="flex items-center space-x-3 mb-4">
-                  {tableUser.avatar ? (
-                    <img
-                      src={`https://cdn.discordapp.com/avatars/${tableUser.id}/${tableUser.avatar}.png`}
-                      alt={tableUser.username}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-zinc-600 rounded-full flex items-center justify-center">
-                      <MdPeople className="w-6 h-6 text-zinc-400" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="text-white font-medium text-lg">
-                      {tableUser.username}
-                    </div>
-                    <div className="text-zinc-400 text-sm">{tableUser.id}</div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-sm text-zinc-300">
-                  <div>
-                    Last Login:{' '}
-                    {new Date(tableUser.last_login).toLocaleDateString()}
-                  </div>
-                  {user?.isAdmin && (
-                    <div className="flex items-center space-x-2">
-                      <span>
-                        IP:{' '}
-                        {formatIPAddress(tableUser.ip_address, tableUser.id)}
-                      </span>
-                      <Button
-                        size={adminDownsizeButtonSize('sm')}
-                        variant="ghost"
-                        onClick={() => handleRevealIP(tableUser.id)}
-                        disabled={revealingIP === tableUser.id}
-                        className="p-1"
-                      >
-                        {revealingIP === tableUser.id ? (
-                          <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                        ) : revealedIPs.has(tableUser.id) ? (
-                          <MdVisibilityOff className="w-4 h-4" />
-                        ) : (
-                          <MdVisibility className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  <div>VPN: {tableUser.is_vpn ? 'Yes' : 'No'}</div>
-                  <div>Sessions: {tableUser.current_sessions_count ?? 0}</div>
-                  <div>
-                    Role:
-                    {tableUser.is_admin ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-2">
-                        <MdCode className="w-3 h-3" />
-                        Developer
-                      </span>
-                    ) : tableUser.roles && tableUser.roles.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {tableUser.roles.map((role) => {
-                          const RoleIcon = getIconComponent(role.icon);
-                          return (
-                            <span
-                              key={role.id}
-                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border"
-                              style={{
-                                backgroundColor: `${role.color}20`,
-                                color: role.color,
-                                borderColor: `${role.color}40`,
-                              }}
-                            >
-                              <RoleIcon className="w-3 h-3" />
-                              {role.name}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <span className="text-zinc-400 ml-2">No Role</span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {new Date(tableUser.last_login).toLocaleDateString()}
+                    </TableCell>
+                    {user?.isAdmin && (
+                      <TableCell>{renderIP(tableUser)}</TableCell>
                     )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span>Cached:</span>
-                    <img
-                      src={`${API_BASE_URL}/assets/app/icons/redis${
-                        tableUser.cached ? '-green' : ''
-                      }.svg`}
-                      alt="Redis cache status"
-                      className="w-6 h-6"
-                    />
-                  </div>
-                </div>
+                    <TableCell>
+                      <VpnStatus isVpn={tableUser.is_vpn} />
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {tableUser.current_sessions_count ?? 0}
+                    </TableCell>
+                    <TableCell>
+                      <UserRoles user={tableUser} />
+                    </TableCell>
+                    <TableCell>
+                      <CacheIcon cached={tableUser.cached} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {renderActions(tableUser)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </AdminTable>
 
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Button
-                    size={adminDownsizeButtonSize('sm')}
-                    variant="outline"
-                    onClick={() => handleViewSettings(tableUser)}
-                    className="flex-1"
-                  >
-                    <MdSettings className="w-4 h-4 mr-2" />
-                    Settings
-                  </Button>
-                  {!tableUser.is_admin && (
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="secondary"
-                      onClick={() => handleManageRole(tableUser)}
-                      className="flex-1 bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30"
-                    >
-                      <MdAdminPanelSettings className="w-4 h-4 mr-2" />
-                      Role
-                    </Button>
-                  )}
-                  {(tableUser.current_sessions_count || 0) >= 1 && (
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="secondary"
-                      onClick={() =>
-                        (window.location.href = `/admin/sessions?userId=${tableUser.id}`)
-                      }
-                      className="flex-1 bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
-                    >
-                      <MdStorage className="w-4 h-4 mr-2" />
-                      Sessions
-                    </Button>
-                  )}
-                  {!tableUser.is_admin && (
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="danger"
-                      onClick={() =>
-                        (window.location.href = `/admin/bans?userId=${
-                          tableUser.id
-                        }&username=${encodeURIComponent(tableUser.username)}`)
-                      }
-                      className="flex-1"
-                    >
-                      <MdBlock className="w-4 h-4 mr-2" />
-                      Ban
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+            <div className="divide-y rounded-2xl border md:hidden">
+              {users.map((tableUser) => (
+                <div key={tableUser.id} className="grid gap-4 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <UserAvatar
+                        userId={tableUser.id}
+                        avatar={tableUser.avatar}
+                        username={tableUser.username}
+                        size="lg"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">
+                          {tableUser.username}
+                        </p>
+                        <p className="truncate font-mono text-xs text-muted-foreground">
+                          {tableUser.id}
+                        </p>
+                      </div>
+                    </div>
+                    {renderActions(tableUser)}
+                  </div>
 
-          <div className="flex justify-center mt-8 space-x-2">
-            <Button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              variant="outline"
-              size="xs"
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-400 py-2">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              variant="outline"
-              size="xs"
-            >
-              Next
-            </Button>
+                  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
+                    <dt className="text-muted-foreground">Last login</dt>
+                    <dd className="tabular-nums">
+                      {new Date(tableUser.last_login).toLocaleDateString()}
+                    </dd>
+                    {user?.isAdmin && (
+                      <>
+                        <dt className="text-muted-foreground">IP</dt>
+                        <dd>{renderIP(tableUser)}</dd>
+                      </>
+                    )}
+                    <dt className="text-muted-foreground">VPN</dt>
+                    <dd>
+                      <VpnStatus isVpn={tableUser.is_vpn} />
+                    </dd>
+                    <dt className="text-muted-foreground">Sessions</dt>
+                    <dd className="tabular-nums">
+                      {tableUser.current_sessions_count ?? 0}
+                    </dd>
+                    <dt className="text-muted-foreground">Roles</dt>
+                    <dd>
+                      <UserRoles user={tableUser} />
+                    </dd>
+                    <dt className="text-muted-foreground">Cache</dt>
+                    <dd>
+                      <CacheIcon cached={tableUser.cached} />
+                    </dd>
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {!loading && !error && (
+          <div className="flex flex-col items-center justify-end gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Page {page} of {totalPages} · {totalUsers.toLocaleString()} total
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </AdminPage>
 
       {selectedUserForRole && (
         <AdminModal
           open={showRoleModal}
           onClose={() => setShowRoleModal(false)}
-          title="Manage Roles"
+          title="Manage roles"
           size="md"
-        >
-          <div className="space-y-4">
-            <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-2">
-                {selectedUserForRole.avatar ? (
-                  <img
-                    src={`https://cdn.discordapp.com/avatars/${selectedUserForRole.id}/${selectedUserForRole.avatar}.png`}
-                    alt={selectedUserForRole.username}
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-                    <MdPeople className="w-4 h-4 text-zinc-400" />
-                  </div>
-                )}
-                <div>
-                  <div className="text-white font-medium">
-                    {selectedUserForRole.username}
-                  </div>
-                  <div className="text-zinc-400 text-sm">
-                    {selectedUserForRole.id}
-                  </div>
-                </div>
-              </div>
-              <div className="text-sm text-zinc-300">
-                Current Roles:{' '}
-                {selectedUserForRole.roles &&
-                selectedUserForRole.roles.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedUserForRole.roles.map((role) => {
-                      const RoleIcon = getIconComponent(role.icon);
-                      return (
-                        <span
-                          key={role.id}
-                          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border"
-                          style={{
-                            backgroundColor: `${role.color}20`,
-                            color: role.color,
-                            borderColor: `${role.color}40`,
-                          }}
-                        >
-                          <RoleIcon className="w-3 h-3" />
-                          {role.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleRemoveRole(selectedUserForRole.id, role.id)
-                            }
-                            className="ml-1 text-zinc-400 hover:text-white"
-                            title="Remove role"
-                          >
-                            <MdClose className="w-3 h-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  'No Roles'
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-zinc-300 mb-2 text-sm font-medium">
-                Add Role
-              </label>
-              <Dropdown
-                options={[
-                  { value: '', label: '+ Add Role' },
-                  ...roles
-                    .filter(
-                      (role) =>
-                        !selectedUserForRole.roles?.some(
-                          (ur) => ur.id === role.id
-                        )
-                    )
-                    .map((role) => ({
-                      value: role.id.toString(),
-                      label: role.name,
-                    })),
-                ]}
-                value=""
-                onChange={(val) => {
-                  if (val !== '') handleAssignRole(parseInt(val));
+          footer={
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  selectedUserForRole.roles?.forEach((role) =>
+                    handleRemoveRole(selectedUserForRole.id, role.id)
+                  );
                 }}
-                size="sm"
-                className="w-full"
-              />
+                disabled={assigningRole || !selectedUserForRole.roles?.length}
+                className="sm:mr-auto"
+              >
+                <X />
+                Remove all roles
+              </Button>
+              <Button variant="outline" onClick={() => setShowRoleModal(false)}>
+                Close
+              </Button>
+            </>
+          }
+        >
+          <div className="flex items-center gap-3">
+            <UserAvatar
+              userId={selectedUserForRole.id}
+              avatar={selectedUserForRole.avatar}
+              username={selectedUserForRole.username}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">
+                {selectedUserForRole.username}
+              </p>
+              <p className="truncate font-mono text-xs text-muted-foreground">
+                {selectedUserForRole.id}
+              </p>
             </div>
+          </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                selectedUserForRole.roles?.forEach((role) =>
-                  handleRemoveRole(selectedUserForRole.id, role.id)
-                );
+          <div className="grid gap-3">
+            <h3 className="text-sm font-medium">Current roles</h3>
+            {selectedUserForRole.roles &&
+            selectedUserForRole.roles.length > 0 ? (
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {selectedUserForRole.roles.map((role) => (
+                  <RoleName
+                    key={role.id}
+                    role={role}
+                    onRemove={() =>
+                      handleRemoveRole(selectedUserForRole.id, role.id)
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No roles</p>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Add role</Label>
+            <AdminSelect
+              searchable
+              options={availableRoles.map((role) => {
+                const RoleIcon = getIconComponent(role.icon);
+                return {
+                  value: role.id.toString(),
+                  label: role.name,
+                  icon: (
+                    <RoleIcon
+                      className="size-4"
+                      style={{ color: role.color }}
+                    />
+                  ),
+                };
+              })}
+              value=""
+              onChange={(val) => {
+                if (val !== '') handleAssignRole(parseInt(val));
               }}
-              disabled={assigningRole || !selectedUserForRole.roles?.length}
-              className="w-full p-3 rounded-lg border bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors text-left"
-            >
-              <div className="font-medium">Remove All Roles</div>
-              <div className="text-sm text-zinc-400">
-                Remove all role permissions
-              </div>
-            </button>
-
+              placeholder="Select a role to add…"
+              searchPlaceholder="Search roles…"
+              disabled={assigningRole}
+              className="sm:w-full"
+              aria-label="Add role"
+            />
             {assigningRole && (
-              <div className="flex items-center justify-center gap-3 py-4 text-zinc-400">
-                <MdRefresh className="w-4 h-4 animate-spin" />
-                <span>Updating roles...</span>
-              </div>
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                Updating roles…
+              </p>
             )}
           </div>
         </AdminModal>
@@ -1096,124 +1068,108 @@ export default function AdminUsers() {
         <AdminModal
           open={showSettings}
           onClose={closeSettingsModal}
-          title={`${selectedUser.username}'s Settings`}
+          title={`${selectedUser.username}'s settings`}
           size="xl"
         >
-          <SettingsPanel title="Account" className="mb-4 md:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center justify-between gap-2 rounded-lg bg-zinc-900/80 border border-zinc-800 px-3 py-2.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <MdStorage className="w-4 h-4 text-zinc-400 shrink-0" />
-                  <span className="text-zinc-300 text-sm">Roblox Account</span>
-                </div>
-                {selectedUser.roblox_username ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <MdCheck className="w-4 h-4 text-green-400" />
-                    <span className="text-green-400 text-sm font-medium truncate max-w-[140px]">
-                      {selectedUser.roblox_username}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <MdClose className="w-4 h-4 text-red-400" />
-                    <span className="text-red-400 text-sm">Not Linked</span>
-                  </div>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">Roblox account</dt>
+              <dd className="truncate text-sm">
+                {selectedUser.roblox_username || (
+                  <span className="text-muted-foreground">Not linked</span>
                 )}
-              </div>
-              <div className="flex items-center justify-between gap-2 rounded-lg bg-zinc-900/80 border border-zinc-800 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <MdPerson className="w-4 h-4 text-zinc-400" />
-                  <span className="text-zinc-300 text-sm">Public Profile</span>
-                </div>
+              </dd>
+            </div>
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">Public profile</dt>
+              <dd className="text-sm">
                 <Link
                   to={`/user/${selectedUser.username}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-blue-400 hover:text-blue-300 text-sm font-medium transition-all shrink-0"
+                  className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
                 >
-                  View
-                  <MdOpenInNew className="w-3.5 h-3.5" />
+                  View profile
+                  <ExternalLink className="size-3.5 text-muted-foreground" />
                 </Link>
-              </div>
+              </dd>
             </div>
-          </SettingsPanel>
+          </dl>
 
           {selectedUser.settings ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {renderBackgroundImageSettings({
-                ...selectedUser.settings.backgroundImage,
-                selectedImage:
-                  selectedUser.settings.backgroundImage?.selectedImage ??
-                  undefined,
-              })}
-              {renderSoundSettings(selectedUser.settings.sounds)}
-              {renderLayoutSettings(selectedUser.settings.layout)}
-              <SettingsPanel title="Table Columns">
-                <div className="space-y-2">
-                  {renderTableColumns(
-                    selectedUser.settings
-                      .departureTableColumns as unknown as Record<
-                      string,
-                      boolean
-                    >,
-                    'Departure'
-                  )}
-                  {renderTableColumns(
-                    selectedUser.settings
-                      .arrivalsTableColumns as unknown as Record<
-                      string,
-                      boolean
-                    >,
-                    'Arrivals'
-                  )}
-                </div>
-              </SettingsPanel>
-              {selectedUser.settings.acars &&
-                renderAcarsSettings(
-                  selectedUser.settings.acars as AcarsSettings
+            <>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+                <BackgroundImagePanel
+                  settings={{
+                    ...selectedUser.settings.backgroundImage,
+                    selectedImage:
+                      selectedUser.settings.backgroundImage?.selectedImage ??
+                      undefined,
+                  }}
+                  onOpenImage={openImage}
+                />
+                <SoundPanel settings={selectedUser.settings.sounds} />
+                <LayoutPanel settings={selectedUser.settings.layout} />
+                <SettingsGroup title="Table columns">
+                  <SettingsList>
+                    <TableColumnsSummary
+                      columns={
+                        selectedUser.settings
+                          .departureTableColumns as unknown as Record<
+                          string,
+                          boolean
+                        >
+                      }
+                      type="Departure"
+                    />
+                    <TableColumnsSummary
+                      columns={
+                        selectedUser.settings
+                          .arrivalsTableColumns as unknown as Record<
+                          string,
+                          boolean
+                        >
+                      }
+                      type="Arrivals"
+                    />
+                  </SettingsList>
+                </SettingsGroup>
+                {selectedUser.settings.acars && (
+                  <AcarsPanel
+                    settings={selectedUser.settings.acars as AcarsSettings}
+                  />
                 )}
-              <SettingsPanel title="Other">
-                <div className="space-y-2 text-sm text-zinc-300">
-                  <p>
-                    <span className="text-zinc-500">Tutorial:</span>{' '}
-                    <span
-                      className={
-                        selectedUser.settings.tutorialCompleted
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }
-                    >
-                      {selectedUser.settings.tutorialCompleted ? 'Yes' : 'No'}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-zinc-500">
-                      Linked accounts on profile:
-                    </span>{' '}
-                    <span
-                      className={
-                        selectedUser.settings.displayLinkedAccountsOnProfile
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }
-                    >
-                      {selectedUser.settings.displayLinkedAccountsOnProfile
-                        ? 'Yes'
-                        : 'No'}
-                    </span>
-                  </p>
-                </div>
-              </SettingsPanel>
-              <SettingsPanel title="Raw JSON" className="md:col-span-2">
-                <pre className="bg-zinc-900 rounded-lg p-3 text-xs text-zinc-300 overflow-x-auto max-h-48 border border-zinc-800">
+                <SettingsGroup title="Other">
+                  <SettingsList>
+                    <SettingRow label="Tutorial completed">
+                      <EnabledValue
+                        enabled={selectedUser.settings.tutorialCompleted}
+                      >
+                        {selectedUser.settings.tutorialCompleted ? 'Yes' : 'No'}
+                      </EnabledValue>
+                    </SettingRow>
+                    <SettingRow label="Linked accounts on profile">
+                      <EnabledValue
+                        enabled={
+                          selectedUser.settings.displayLinkedAccountsOnProfile
+                        }
+                      >
+                        {selectedUser.settings.displayLinkedAccountsOnProfile
+                          ? 'Yes'
+                          : 'No'}
+                      </EnabledValue>
+                    </SettingRow>
+                  </SettingsList>
+                </SettingsGroup>
+              </div>
+              <SettingsGroup title="Raw JSON">
+                <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs">
                   {JSON.stringify(selectedUser.settings, null, 2)}
                 </pre>
-              </SettingsPanel>
-            </div>
+              </SettingsGroup>
+            </>
           ) : (
-            <p className="text-zinc-400 text-center py-6">
-              No settings available for this user.
-            </p>
+            <AdminEmptyState icon={Settings} title="No settings available" />
           )}
         </AdminModal>
       )}
@@ -1228,7 +1184,7 @@ export default function AdminUsers() {
           <img
             src={fullscreenImageUrl}
             alt="Fullscreen background"
-            className="object-contain rounded-xl max-w-full max-h-[70vh] mx-auto"
+            className="mx-auto max-h-[70vh] max-w-full rounded-lg object-contain"
           />
         )}
       </AdminModal>

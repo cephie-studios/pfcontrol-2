@@ -1,6 +1,7 @@
 import express from 'express';
 import { capture } from '../../utils/posthog.js';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
+import { requirePermission } from '../../middleware/rolePermissions.js';
 import { logAdminAction } from '../../db/audit.js';
 import {
   getAllTesters,
@@ -19,6 +20,8 @@ import {
 } from '../../db/roles.js';
 
 const router = express.Router();
+
+router.use(requirePermission('testers'));
 
 async function ensureTesterRole() {
   try {

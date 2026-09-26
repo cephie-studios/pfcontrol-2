@@ -1,38 +1,64 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  MdStar,
-  MdThumbUp,
-  MdDelete,
-  MdPeople,
-  MdFlag,
-  MdExpandMore,
-} from 'react-icons/md';
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router';
+import {
+  Bot,
+  BotOff,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  FlagOff,
+  Gavel,
+  MessageSquare,
+  Star,
+  ThumbsUp,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminSection from '../../components/admin/AdminSection';
+import AdminStatCards from '../../components/admin/AdminStatCards';
 import AdminTable from '../../components/admin/AdminTable';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_HEADER_ACTIONS_MOBILE,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-} from '../../components/admin/adminConstants';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
 import {
   AdminAreaChart,
   AdminMultiSeriesAreaChart,
 } from '../../components/admin/AdminChart';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import Dropdown from '../../components/common/Dropdown';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import {
   fetchControllerRatingStats,
   fetchControllerDailyRatingStats,
@@ -44,7 +70,6 @@ import {
   type DailyRatingStats,
   type AdminControllerRating,
 } from '../../utils/fetch/admin';
-import ErrorScreen from '../../components/common/ErrorScreen';
 
 const RATING_FILTER_OPTIONS = [
   { value: 'all', label: 'All Ratings' },
@@ -61,14 +86,23 @@ const FLAG_FILTER_OPTIONS = [
   { value: 'automod', label: 'Automod Flagged' },
 ];
 
-function renderStars(rating: number) {
+const TIME_RANGES = [7, 30, 90];
+
+function Stars({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center space-x-1">
+    <div
+      className="flex items-center gap-0.5"
+      aria-label={`${rating} out of 5 stars`}
+    >
       {[1, 2, 3, 4, 5].map((star) => (
-        <MdStar
+        <Star
           key={star}
-          size={16}
-          className={star <= rating ? 'text-yellow-400' : 'text-zinc-600'}
+          className={cn(
+            'size-4',
+            star <= rating
+              ? 'fill-amber-400 text-amber-400'
+              : 'text-muted-foreground/40'
+          )}
         />
       ))}
     </div>
@@ -80,8 +114,68 @@ const getAvatarUrl = (userId: string, avatar: string | null) => {
   return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=128`;
 };
 
+function UserAvatar({
+  userId,
+  avatar,
+  name,
+  size = 'default',
+  iconFallback = false,
+}: {
+  userId: string;
+  avatar: string | null;
+  name: string;
+  size?: 'default' | 'sm' | 'lg';
+  iconFallback?: boolean;
+}) {
+  const url = getAvatarUrl(userId, avatar);
+  return (
+    <Avatar size={size} className="border">
+      {url ? <AvatarImage src={url} alt={name} /> : null}
+      <AvatarFallback className="font-medium">
+        {iconFallback ? (
+          <User className="size-3.5" />
+        ) : (
+          name.charAt(0).toUpperCase()
+        )}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function RowAction({
+  label,
+  onClick,
+  destructive = false,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          onClick={onClick}
+          className={cn(
+            destructive && 'text-destructive hover:text-destructive'
+          )}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function AdminRatings() {
   const [view, setView] = useState<'overview' | 'individual'>('overview');
+  const { confirm, confirmDialog } = useAdminConfirm();
 
   const [stats, setStats] = useState<ControllerRatingStats | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyRatingStats[]>([]);
@@ -102,21 +196,7 @@ export default function AdminRatings() {
   const [ratingsHasCommentOnly, setRatingsHasCommentOnly] = useState(false);
   const [ratingsPage, setRatingsPage] = useState(1);
   const [ratingsPages, setRatingsPages] = useState(1);
-  const [expandedReportIds, setExpandedReportIds] = useState<Set<number>>(
-    new Set()
-  );
-
-  const toggleReportExpanded = (id: number) => {
-    setExpandedReportIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const [ratingsTotal, setRatingsTotal] = useState(0);
 
   const fetchRatingsList = useCallback(async () => {
     try {
@@ -138,6 +218,7 @@ export default function AdminRatings() {
       );
       setRatings(result.ratings);
       setRatingsPages(result.pagination.pages);
+      setRatingsTotal(result.pagination.total);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to fetch ratings';
@@ -165,7 +246,16 @@ export default function AdminRatings() {
   }, [ratingsSearch, ratingsFilter, ratingsFlagFilter, ratingsHasCommentOnly]);
 
   const handleDeleteRating = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this rating?')) return;
+    if (
+      !(await confirm({
+        title: 'Delete this rating?',
+        description:
+          'The rating and its comment will be permanently removed. This action cannot be undone.',
+        confirmText: 'Delete',
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await deleteAdminControllerRating(id);
       setToast({ message: 'Rating deleted successfully', type: 'success' });
@@ -216,6 +306,12 @@ export default function AdminRatings() {
     }
   };
 
+  const handleModeratePilot = (item: AdminControllerRating) => {
+    window.location.href = `/admin/bans?userId=${
+      item.pilot_id
+    }&username=${encodeURIComponent(item.pilot_username ?? '')}`;
+  };
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -261,563 +357,448 @@ export default function AdminRatings() {
     [dailyStats]
   );
 
+  const periodSummary = useMemo(() => {
+    let count = 0;
+    let weighted = 0;
+    for (const d of dailyStats) {
+      const c = Number(d.count) || 0;
+      count += c;
+      weighted += c * (Number(d.avg_rating) || 0);
+    }
+    return { count, avg: count > 0 ? weighted / count : null };
+  }, [dailyStats]);
+
+  const renderOverview = () => {
+    if (loading) return <AdminLoading label="Loading rating statistics…" />;
+    if (error) {
+      return (
+        <AdminErrorState
+          title="Error loading statistics"
+          message={error}
+          onRetry={fetchData}
+        />
+      );
+    }
+    if (!stats) {
+      return <AdminEmptyState icon={Star} title="No statistics available" />;
+    }
+
+    return (
+      <>
+        <AdminStatCards
+          columns={2}
+          items={[
+            {
+              label: `Ratings (last ${timeRange} days)`,
+              value: periodSummary.count,
+            },
+            {
+              label: `Average rating (last ${timeRange} days)`,
+              value:
+                periodSummary.avg !== null
+                  ? periodSummary.avg.toFixed(2)
+                  : 'N/A',
+            },
+          ]}
+        />
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <AdminSection title="Ratings count">
+            <AdminMultiSeriesAreaChart
+              data={multiSeriesData}
+              series={[
+                {
+                  key: 'count',
+                  label: 'Ratings count',
+                  color: ADMIN_CHART_COLORS.blue,
+                },
+              ]}
+              height={200}
+              showLegend
+            />
+          </AdminSection>
+
+          <AdminSection title="Average rating">
+            <AdminAreaChart
+              data={avgRatingData}
+              color={ADMIN_CHART_COLORS.amber}
+              valueLabel="Avg rating"
+              height={200}
+            />
+          </AdminSection>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <AdminSection title="Highest rated controllers">
+            <AdminTable minWidth="420px">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">#</TableHead>
+                  <TableHead>Controller</TableHead>
+                  <TableHead>Avg rating</TableHead>
+                  <TableHead className="text-right">Count</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.topRated.map((c, i) => (
+                  <TableRow key={c.controller_id}>
+                    <TableCell className="text-xs text-muted-foreground tabular-nums">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        to={`/user/${c.username}`}
+                        className="flex items-center gap-2.5 font-medium hover:underline"
+                      >
+                        <UserAvatar
+                          userId={c.controller_id}
+                          avatar={c.avatar}
+                          name={c.username}
+                        />
+                        {c.username}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-medium tabular-nums">
+                      {Number(c.avg_rating).toFixed(1)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {c.rating_count}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {stats.topRated.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No ratings found yet
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </AdminTable>
+          </AdminSection>
+
+          <AdminSection title="Most rated controllers">
+            <AdminTable minWidth="420px">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Controller</TableHead>
+                  <TableHead>Count</TableHead>
+                  <TableHead className="text-right">Avg rating</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.mostRated.map((c) => (
+                  <TableRow key={c.controller_id}>
+                    <TableCell>
+                      <Link
+                        to={`/user/${c.username}`}
+                        className="flex items-center gap-2.5 font-medium hover:underline"
+                      >
+                        <UserAvatar
+                          userId={c.controller_id}
+                          avatar={c.avatar}
+                          name={c.username}
+                        />
+                        {c.username}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {c.rating_count}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {Number(c.avg_rating).toFixed(1)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {stats.mostRated.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No ratings found yet
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </AdminTable>
+          </AdminSection>
+        </div>
+
+        <AdminSection title="Pilots who rated the most">
+          {stats.topPilots.length === 0 ? (
+            <AdminEmptyState
+              icon={Users}
+              title="No ratings submitted yet"
+              className="py-8"
+            />
+          ) : (
+            <ul className="divide-y rounded-2xl border">
+              {stats.topPilots.map((p) => (
+                <li key={p.pilot_id}>
+                  <Link
+                    to={`/user/${p.username}`}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-accent/50"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <UserAvatar
+                        userId={p.pilot_id}
+                        avatar={p.avatar}
+                        name={p.username}
+                      />
+                      <span className="truncate text-sm font-medium">
+                        {p.username}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+                      {p.rating_count} ratings
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminSection>
+      </>
+    );
+  };
+
+  const renderRatingRow = (item: AdminControllerRating) => (
+    <li key={item.id} className="flex flex-col gap-2 px-4 py-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+          <Link
+            to={`/user/${item.controller_username}`}
+            className="flex min-w-0 items-center gap-2.5"
+          >
+            <UserAvatar
+              userId={item.controller_id}
+              avatar={item.controller_avatar}
+              name={item.controller_username ?? 'Controller'}
+              size="sm"
+              iconFallback
+            />
+            <span className="truncate text-sm font-medium hover:underline">
+              {item.controller_username ?? 'Unknown'}
+            </span>
+          </Link>
+          <Stars rating={item.rating} />
+          {item.reported && (
+            <AdminStatusBadge tone="danger" icon={Flag}>
+              Reported
+            </AdminStatusBadge>
+          )}
+          {item.automod_flagged && (
+            <AdminStatusBadge tone="warning" icon={Bot}>
+              Flagged by automod
+            </AdminStatusBadge>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <span className="mr-1 text-xs text-muted-foreground tabular-nums">
+            {new Date(item.created_at).toLocaleDateString()}
+          </span>
+          {item.reported && (
+            <RowAction
+              label="Dismiss report"
+              onClick={() => handleDismissReport(item.id)}
+            >
+              <FlagOff />
+            </RowAction>
+          )}
+          {item.automod_flagged && (
+            <RowAction
+              label="Dismiss automod flag"
+              onClick={() => handleDismissAutomod(item.id)}
+            >
+              <BotOff />
+            </RowAction>
+          )}
+          <RowAction
+            label="Moderate pilot"
+            onClick={() => handleModeratePilot(item)}
+          >
+            <Gavel />
+          </RowAction>
+          <RowAction
+            label="Delete rating"
+            destructive
+            onClick={() => handleDeleteRating(item.id)}
+          >
+            <Trash2 />
+          </RowAction>
+        </div>
+      </div>
+
+      {item.comment && <p className="text-sm break-words">{item.comment}</p>}
+
+      {item.reported && (
+        <p className="text-xs break-words">
+          <span className="text-muted-foreground">Report reason:</span>{' '}
+          {item.report_reason || 'No reason provided'}
+        </p>
+      )}
+      {item.automod_flagged && (
+        <p className="text-xs break-words">
+          <span className="text-muted-foreground">Automod reason:</span>{' '}
+          {item.automod_reason || 'No reason provided'}
+        </p>
+      )}
+
+      <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        Rated by
+        <Link
+          to={`/user/${item.pilot_username}`}
+          className="flex min-w-0 items-center gap-1.5 text-foreground hover:underline"
+        >
+          <UserAvatar
+            userId={item.pilot_id}
+            avatar={item.pilot_avatar}
+            name={item.pilot_username ?? 'Pilot'}
+            size="sm"
+            iconFallback
+          />
+          <span className="truncate">{item.pilot_username ?? 'Unknown'}</span>
+        </Link>
+      </p>
+    </li>
+  );
+
+  const renderIndividual = () => (
+    <>
+      <AdminToolbar>
+        <AdminSearchInput
+          value={ratingsSearch}
+          onChange={setRatingsSearch}
+          placeholder="Search by controller or pilot username…"
+          loading={ratingsLoading}
+        />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <AdminSelect
+            options={RATING_FILTER_OPTIONS}
+            value={ratingsFilter}
+            onChange={setRatingsFilter}
+            aria-label="Filter by rating"
+            className="sm:w-40"
+          />
+          <AdminSelect
+            options={FLAG_FILTER_OPTIONS}
+            value={ratingsFlagFilter}
+            onChange={setRatingsFlagFilter}
+            aria-label="Filter by flag"
+            className="sm:w-44"
+          />
+          <Toggle
+            variant="outline"
+            pressed={ratingsHasCommentOnly}
+            onPressedChange={setRatingsHasCommentOnly}
+            aria-label="Only show ratings with a comment"
+            className="col-span-2 px-3 sm:col-span-1"
+          >
+            <MessageSquare />
+            Has comment
+          </Toggle>
+        </div>
+      </AdminToolbar>
+
+      {ratingsLoading ? (
+        <AdminLoading label="Loading ratings…" />
+      ) : ratingsError ? (
+        <AdminErrorState
+          title="Error loading ratings"
+          message={ratingsError}
+          onRetry={fetchRatingsList}
+        />
+      ) : ratings.length === 0 ? (
+        <AdminEmptyState icon={Star} title="No ratings found" />
+      ) : (
+        <>
+          <ul className="divide-y rounded-2xl border">
+            {ratings.map(renderRatingRow)}
+          </ul>
+
+          <div className="flex flex-col items-center justify-end gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Page {ratingsPage} of {Math.max(1, ratingsPages)} ·{' '}
+              {ratingsTotal.toLocaleString()} total
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRatingsPage(Math.max(1, ratingsPage - 1))}
+                disabled={ratingsPage === 1}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setRatingsPage(Math.min(ratingsPages, ratingsPage + 1))
+                }
+                disabled={ratingsPage >= ratingsPages}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Controller Ratings"
-        icon={MdThumbUp}
-        accent="blue"
-        actionsClassName={ADMIN_HEADER_ACTIONS_MOBILE}
+        icon={ThumbsUp}
         actions={
-          <div className="flex flex-wrap gap-2 max-md:w-full">
-            <Button
-              onClick={() => setView('overview')}
-              variant={view === 'overview' ? 'primary' : 'outline'}
-              size={adminDownsizeButtonSize('sm')}
-            >
-              Overview
-            </Button>
-            <Button
-              onClick={() => setView('individual')}
-              variant={view === 'individual' ? 'primary' : 'outline'}
-              size={adminDownsizeButtonSize('sm')}
-            >
-              Individual Feedback
-            </Button>
-          </div>
+          <Tabs
+            value={view}
+            onValueChange={(v) => setView(v as 'overview' | 'individual')}
+          >
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="individual">Individual feedback</TabsTrigger>
+            </TabsList>
+          </Tabs>
         }
-      />
+      >
+        {view === 'overview' && (
+          <>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={String(timeRange)}
+              onValueChange={(v) => {
+                if (v) setTimeRange(Number(v));
+              }}
+              aria-label="Time range"
+            >
+              {TIME_RANGES.map((days) => (
+                <ToggleGroupItem
+                  key={days}
+                  value={String(days)}
+                  className="px-3"
+                >
+                  {days} days
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {renderOverview()}
+          </>
+        )}
 
-      {view === 'overview' && (
-        <>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {[7, 30, 90].map((days) => (
-              <Button
-                key={days}
-                onClick={() => setTimeRange(days)}
-                variant={timeRange === days ? 'primary' : 'outline'}
-                size={adminDownsizeButtonSize('sm')}
-              >
-                {days} days
-              </Button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader />
-            </div>
-          ) : error ? (
-            <ErrorScreen
-              title="Error loading statistics"
-              message={error}
-              onRetry={fetchData}
-            />
-          ) : stats ? (
-            <>
-              <div
-                className={`space-y-8 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
-              >
-                <div>
-                  <AdminSectionTitle>Ratings count</AdminSectionTitle>
-                  <p className="text-xs text-zinc-500 mb-2">
-                    Hover for daily values
-                  </p>
-                  <AdminMultiSeriesAreaChart
-                    data={multiSeriesData}
-                    series={[
-                      {
-                        key: 'count',
-                        label: 'Ratings count',
-                        color: '#3B82F6',
-                      },
-                    ]}
-                    height={200}
-                    showLegend
-                  />
-                </div>
-
-                <div>
-                  <AdminSectionTitle>Average rating</AdminSectionTitle>
-                  <p className="text-xs text-zinc-500 mb-2">
-                    Hover for daily values
-                  </p>
-                  <AdminAreaChart
-                    data={avgRatingData}
-                    color="#F59E0B"
-                    valueLabel="Avg rating"
-                    height={200}
-                  />
-                </div>
-              </div>
-
-              <div
-                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${adminSectionClass()}`}
-              >
-                <div>
-                  <AdminSectionTitle>
-                    Highest Rated Controllers
-                  </AdminSectionTitle>
-                  <AdminTable minWidth="480px">
-                    <thead className={ADMIN_TABLE_HEAD}>
-                      <tr>
-                        <th className={ADMIN_TH}>Controller</th>
-                        <th className={ADMIN_TH}>Avg Rating</th>
-                        <th className={`${ADMIN_TH} text-right`}>Count</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/50">
-                      {stats.topRated.map((c, i) => (
-                        <tr
-                          key={c.controller_id}
-                          className="hover:bg-zinc-800/30 transition-colors group"
-                        >
-                          <td className={ADMIN_TD}>
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                              <span className="text-zinc-500 text-xs sm:text-sm w-4">
-                                {i + 1}
-                              </span>
-                              <Link
-                                to={`/user/${c.username}`}
-                                className="flex items-center space-x-2 sm:space-x-3 group/link"
-                              >
-                                {getAvatarUrl(c.controller_id, c.avatar) ? (
-                                  <img
-                                    src={
-                                      getAvatarUrl(c.controller_id, c.avatar)!
-                                    }
-                                    alt={c.username}
-                                    className="w-8 h-8 rounded-full border border-zinc-700 group-hover/link:border-blue-400 transition-colors"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 group-hover/link:border-blue-400 flex items-center justify-center text-zinc-400 font-bold text-sm transition-colors">
-                                    {c.username.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                <span className="font-medium group-hover/link:text-blue-400 transition-colors text-sm sm:text-base">
-                                  {c.username}
-                                </span>
-                              </Link>
-                            </div>
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <div className="flex items-center space-x-1">
-                              <span className="text-yellow-400 font-bold text-sm sm:text-base">
-                                {Number(c.avg_rating).toFixed(1)}
-                              </span>
-                              <MdStar size={12} className="text-yellow-400" />
-                            </div>
-                          </td>
-                          <td className={`${ADMIN_TD} text-right`}>
-                            {c.rating_count}
-                          </td>
-                        </tr>
-                      ))}
-                      {stats.topRated.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={3}
-                            className={`${ADMIN_TD} text-center text-zinc-500`}
-                          >
-                            No ratings found yet
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </AdminTable>
-                </div>
-
-                <div>
-                  <AdminSectionTitle>Most Rated Controllers</AdminSectionTitle>
-                  <AdminTable minWidth="480px">
-                    <thead className={ADMIN_TABLE_HEAD}>
-                      <tr>
-                        <th className={ADMIN_TH}>Controller</th>
-                        <th className={ADMIN_TH}>Count</th>
-                        <th className={`${ADMIN_TH} text-right`}>Avg Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/50">
-                      {stats.mostRated.map((c) => (
-                        <tr
-                          key={c.controller_id}
-                          className="hover:bg-zinc-800/30 transition-colors group"
-                        >
-                          <td className={ADMIN_TD}>
-                            <Link
-                              to={`/user/${c.username}`}
-                              className="flex items-center space-x-2 sm:space-x-3 group/link"
-                            >
-                              {getAvatarUrl(c.controller_id, c.avatar) ? (
-                                <img
-                                  src={getAvatarUrl(c.controller_id, c.avatar)!}
-                                  alt={c.username}
-                                  className="w-8 h-8 rounded-full border border-zinc-700 group-hover/link:border-blue-400 transition-colors"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 group-hover/link:border-blue-400 flex items-center justify-center text-zinc-400 font-bold text-sm transition-colors">
-                                  {c.username.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <span className="font-medium group-hover/link:text-blue-400 transition-colors text-sm sm:text-base">
-                                {c.username}
-                              </span>
-                            </Link>
-                          </td>
-                          <td className={ADMIN_TD}>
-                            <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs sm:text-sm font-bold border border-blue-500/20">
-                              {c.rating_count}
-                            </span>
-                          </td>
-                          <td className={`${ADMIN_TD} text-right`}>
-                            {Number(c.avg_rating).toFixed(1)}
-                          </td>
-                        </tr>
-                      ))}
-                      {stats.mostRated.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={3}
-                            className={`${ADMIN_TD} text-center text-zinc-500`}
-                          >
-                            No ratings found yet
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </AdminTable>
-                </div>
-              </div>
-
-              <div className={adminSectionClass()}>
-                <AdminSectionTitle>Pilots Who Rated the Most</AdminSectionTitle>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {stats.topPilots.map((p) => (
-                    <Link
-                      key={p.pilot_id}
-                      to={`/user/${p.username}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-zinc-800/60 bg-zinc-900/30 hover:border-zinc-700 transition-colors group"
-                    >
-                      <div className="flex items-center space-x-3">
-                        {getAvatarUrl(p.pilot_id, p.avatar) ? (
-                          <img
-                            src={getAvatarUrl(p.pilot_id, p.avatar)!}
-                            alt={p.username}
-                            className="w-9 h-9 rounded-full border border-zinc-700 group-hover:border-blue-400 transition-colors"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 group-hover:border-blue-400 flex items-center justify-center text-zinc-400 font-bold group-hover:bg-zinc-700 transition-colors">
-                            {p.username.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="font-medium group-hover:text-blue-400 transition-colors">
-                          {p.username}
-                        </div>
-                      </div>
-                      <div className="text-zinc-500 text-sm">
-                        <span className="font-bold text-white">
-                          {p.rating_count}
-                        </span>{' '}
-                        ratings
-                      </div>
-                    </Link>
-                  ))}
-                  {stats.topPilots.length === 0 && (
-                    <div className="col-span-full py-8 text-center text-zinc-500">
-                      No ratings submitted yet
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-12 text-zinc-400">
-              No statistics available
-            </div>
-          )}
-        </>
-      )}
-
-      {view === 'individual' && (
-        <>
-          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-            <AdminSearchInput
-              value={ratingsSearch}
-              onChange={setRatingsSearch}
-              placeholder="Search by controller or pilot username…"
-              loading={ratingsLoading}
-              className={ADMIN_TOOLBAR_MOBILE_SEARCH}
-            />
-            <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
-              <Dropdown
-                options={RATING_FILTER_OPTIONS}
-                value={ratingsFilter}
-                onChange={setRatingsFilter}
-                size="sm"
-                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
-              />
-              <Dropdown
-                options={FLAG_FILTER_OPTIONS}
-                value={ratingsFlagFilter}
-                onChange={setRatingsFlagFilter}
-                size="sm"
-                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
-              />
-              <Button
-                onClick={() => setRatingsHasCommentOnly((prev) => !prev)}
-                variant={ratingsHasCommentOnly ? 'primary' : 'outline'}
-                size={adminDownsizeButtonSize('sm')}
-                className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
-              >
-                Has comment
-              </Button>
-            </div>
-          </AdminToolbar>
-
-          {ratingsLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader />
-            </div>
-          ) : ratingsError ? (
-            <ErrorScreen
-              title="Error loading ratings"
-              message={ratingsError}
-              onRetry={fetchRatingsList}
-            />
-          ) : (
-            <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {ratings.length === 0 ? (
-                  <div className="col-span-full text-center py-8 text-zinc-400">
-                    No ratings found matching your criteria.
-                  </div>
-                ) : (
-                  ratings.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3"
-                    >
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Link
-                            to={`/user/${item.controller_username}`}
-                            className="flex items-center space-x-2 group/link"
-                          >
-                            {getAvatarUrl(
-                              item.controller_id,
-                              item.controller_avatar
-                            ) ? (
-                              <img
-                                src={
-                                  getAvatarUrl(
-                                    item.controller_id,
-                                    item.controller_avatar
-                                  )!
-                                }
-                                alt={item.controller_username ?? 'Controller'}
-                                className="w-8 h-8 rounded-full"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-                                <MdPeople size={16} className="text-zinc-400" />
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-medium text-white group-hover/link:text-blue-400 transition-colors">
-                                {item.controller_username ?? 'Unknown'}
-                              </div>
-                              <div className="text-xs text-zinc-500">
-                                Controller
-                              </div>
-                            </div>
-                          </Link>
-                          <div className="text-xs text-zinc-500">
-                            {new Date(item.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-
-                        <div className="flex justify-left">
-                          {renderStars(item.rating)}
-                        </div>
-
-                        {item.comment && (
-                          <p className="text-sm text-zinc-300 break-words">
-                            {item.comment}
-                          </p>
-                        )}
-
-                        {(item.reported || item.automod_flagged) && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {item.reported && (
-                              <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20"
-                                title={item.report_reason ?? undefined}
-                              >
-                                <MdFlag size={12} />
-                                Reported
-                              </span>
-                            )}
-                            {item.automod_flagged && (
-                              <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                                title={item.automod_reason ?? undefined}
-                              >
-                                <img
-                                  src="/assets/images/automod.webp"
-                                  alt=""
-                                  className="w-3 h-3 rounded-full"
-                                />
-                                Automod
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {expandedReportIds.has(item.id) && (
-                          <div className="p-2.5 rounded-lg bg-zinc-950/50 border border-zinc-800/60 space-y-2">
-                            {item.reported && (
-                              <>
-                                <p className="text-xs text-zinc-400">
-                                  <span className="text-zinc-500">
-                                    Report reason:
-                                  </span>{' '}
-                                  {item.report_reason || 'No reason provided'}
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => handleDismissReport(item.id)}
-                                  className="text-green-400 ring-green-700/50 hover:bg-none hover:bg-green-900/20"
-                                >
-                                  Dismiss report
-                                </Button>
-                              </>
-                            )}
-                            {item.automod_flagged && (
-                              <>
-                                <p className="text-xs text-zinc-400">
-                                  <span className="text-zinc-500">
-                                    Automod reason:
-                                  </span>{' '}
-                                  {item.automod_reason || 'No reason provided'}
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => handleDismissAutomod(item.id)}
-                                  className="text-green-400 ring-green-700/50 hover:bg-none hover:bg-green-900/20"
-                                >
-                                  Dismiss automod flag
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              onClick={() =>
-                                (window.location.href = `/admin/bans?userId=${
-                                  item.pilot_id
-                                }&username=${encodeURIComponent(
-                                  item.pilot_username ?? ''
-                                )}`)
-                              }
-                              className="text-zinc-300 ring-zinc-600 hover:bg-none hover:bg-zinc-800"
-                            >
-                              Moderate pilot
-                            </Button>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
-                          <Link
-                            to={`/user/${item.pilot_username}`}
-                            className="flex items-center space-x-2 group/link"
-                          >
-                            {getAvatarUrl(item.pilot_id, item.pilot_avatar) ? (
-                              <img
-                                src={
-                                  getAvatarUrl(
-                                    item.pilot_id,
-                                    item.pilot_avatar
-                                  )!
-                                }
-                                alt={item.pilot_username ?? 'Pilot'}
-                                className="w-6 h-6 rounded-full"
-                              />
-                            ) : (
-                              <div className="w-6 h-6 bg-zinc-600 rounded-full flex items-center justify-center">
-                                <MdPeople size={12} className="text-zinc-400" />
-                              </div>
-                            )}
-                            <span className="text-xs text-zinc-400 group-hover/link:text-blue-400 transition-colors">
-                              {item.pilot_username ?? 'Unknown'} (pilot)
-                            </span>
-                          </Link>
-                          <div className="flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size={adminDownsizeButtonSize('sm')}
-                              onClick={() => toggleReportExpanded(item.id)}
-                              className="p-1 text-zinc-400 hover:text-white"
-                              aria-label="More options"
-                              aria-expanded={expandedReportIds.has(item.id)}
-                              title="More options"
-                            >
-                              <MdExpandMore
-                                size={16}
-                                className={`transition-transform ${
-                                  expandedReportIds.has(item.id)
-                                    ? 'rotate-180'
-                                    : ''
-                                }`}
-                              />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size={adminDownsizeButtonSize('sm')}
-                              onClick={() => handleDeleteRating(item.id)}
-                              className="p-1 text-red-400 hover:text-red-300"
-                              aria-label="Delete rating"
-                            >
-                              <MdDelete size={16} />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {ratingsPages > 1 && (
-                <div className="flex justify-center mt-8 space-x-2">
-                  <Button
-                    onClick={() => setRatingsPage(Math.max(1, ratingsPage - 1))}
-                    disabled={ratingsPage === 1}
-                    variant="outline"
-                    size="xs"
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-zinc-400 py-2">
-                    Page {ratingsPage} of {ratingsPages}
-                  </span>
-                  <Button
-                    onClick={() =>
-                      setRatingsPage(Math.min(ratingsPages, ratingsPage + 1))
-                    }
-                    disabled={ratingsPage === ratingsPages}
-                    variant="outline"
-                    size="xs"
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+        {view === 'individual' && renderIndividual()}
+      </AdminPage>
+      {confirmDialog}
     </AdminLayout>
   );
 }

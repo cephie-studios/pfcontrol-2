@@ -1,35 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
-  MdMonitorHeart,
-  MdVisibility,
-  MdClose,
-  MdPerson,
-  MdLink,
-  MdCalendarToday,
-} from 'react-icons/md';
+  Activity,
+  AlertTriangle,
+  ArrowDownToLine,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleDashed,
+  CornerUpRight,
+  Eye,
+  Pencil,
+  PencilLine,
+  Plus,
+  Trash2,
+  X,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminIconInput from '../../components/admin/AdminIconInput';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminTextInput from '../../components/admin/AdminTextInput';
+import AdminStatCards from '../../components/admin/AdminStatCards';
 import AdminTable from '../../components/admin/AdminTable';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_TOOLBAR_HEIGHT,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_PAIR,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-  ADMIN_TOOLBAR_MOBILE_STACK_ITEM,
+  AdminEmptyState,
+  AdminErrorState,
+} from '../../components/admin/AdminStates';
+import {
+  httpStatusTone,
+  type AdminTone,
 } from '../../components/admin/adminConstants';
-import Dropdown from '../../components/common/Dropdown';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
 import {
   fetchApiLogs,
   fetchApiLogStats,
@@ -38,6 +43,20 @@ import {
   type ApiLog,
   type ApiLogStats,
 } from '../../utils/fetch/admin';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const methodOptions = [
   { value: '', label: 'All Methods' },
@@ -59,6 +78,80 @@ const statusCodeOptions = [
   { value: '500', label: '500 - Internal Server Error' },
 ];
 
+const METHOD_META: Record<string, { tone: AdminTone; icon: LucideIcon }> = {
+  GET: { tone: 'info', icon: ArrowDownToLine },
+  POST: { tone: 'success', icon: Plus },
+  PUT: { tone: 'warning', icon: Pencil },
+  DELETE: { tone: 'danger', icon: Trash2 },
+  PATCH: { tone: 'purple', icon: PencilLine },
+};
+
+const HTTP_TONE_ICON: Record<AdminTone, LucideIcon> = {
+  success: CheckCircle2,
+  info: CornerUpRight,
+  warning: AlertTriangle,
+  danger: XCircle,
+  purple: CircleDashed,
+  orange: AlertTriangle,
+  neutral: CircleDashed,
+};
+
+function MethodBadge({ method }: { method: string }) {
+  const meta = METHOD_META[method];
+  return (
+    <AdminStatusBadge
+      tone={meta?.tone ?? 'neutral'}
+      icon={meta?.icon ?? CircleDashed}
+      showLabel
+      className="font-mono text-xs"
+    >
+      {method}
+    </AdminStatusBadge>
+  );
+}
+
+function StatusCodeBadge({ code }: { code: number }) {
+  const tone = httpStatusTone(code);
+  return (
+    <AdminStatusBadge
+      tone={tone}
+      icon={HTTP_TONE_ICON[tone]}
+      showLabel
+      className="tabular-nums"
+    >
+      {code}
+    </AdminStatusBadge>
+  );
+}
+
+function DetailField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid min-w-0 gap-1', className)}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm">{children}</dd>
+    </div>
+  );
+}
+
+function formatBody(body: unknown) {
+  if (typeof body === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(body), null, 2);
+    } catch {
+      return body;
+    }
+  }
+  return JSON.stringify(body, null, 2);
+}
+
 export default function AdminApiLogs() {
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [stats, setStats] = useState<ApiLogStats | null>(null);
@@ -78,6 +171,7 @@ export default function AdminApiLogs() {
   } | null>(null);
   const [clientPage, setClientPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
   const clientLimit = 50;
 
   useEffect(() => {
@@ -131,6 +225,7 @@ export default function AdminApiLogs() {
 
       setLogs(data.logs);
       setTotalPages(data.pagination.pages);
+      setTotalLogs(data.pagination.total);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch API logs';
@@ -207,418 +302,332 @@ export default function AdminApiLogs() {
     });
   };
 
-  const getStatusColor = (statusCode: number) => {
-    if (statusCode >= 200 && statusCode < 300) return 'text-green-400';
-    if (statusCode >= 300 && statusCode < 400) return 'text-yellow-400';
-    if (statusCode >= 400 && statusCode < 500) return 'text-orange-400';
-    if (statusCode >= 500) return 'text-red-400';
-    return 'text-gray-400';
-  };
-
-  const getMethodColor = (method: string) => {
-    switch (method) {
-      case 'GET':
-        return 'text-blue-400 bg-blue-400/10 border border-blue-400/30';
-      case 'POST':
-        return 'text-green-400 bg-green-400/10 border border-green-400/30';
-      case 'PUT':
-        return 'text-yellow-400 bg-yellow-400/10 border border-yellow-400/30';
-      case 'DELETE':
-        return 'text-red-400 bg-red-400/10 border border-red-400/30';
-      case 'PATCH':
-        return 'text-purple-400 bg-purple-400/10 border border-purple-400/30';
-      default:
-        return 'text-gray-400 bg-gray-400/10 border border-gray-400/30';
-    }
-  };
-
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader title="API Logs" icon={MdMonitorHeart} accent="blue" />
-
-      {stats && (
-        <AdminStatStrip
-          items={[
-            { label: 'Total Requests', value: stats.totalRequests },
-            {
-              label: 'Avg Response Time',
-              value: `${stats.averageResponseTime}ms`,
-            },
-            { label: 'Error Rate', value: `${stats.errorRate.toFixed(1)}%` },
-            {
-              label: 'Top Endpoint',
-              value: stats.topEndpoints[0]?.path.split('?')[0] || 'N/A',
-            },
-          ]}
-        />
-      )}
-
-      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-        <AdminSearchInput
-          value={searchFilter}
-          onChange={setSearchFilter}
-          placeholder="Search logs..."
-          grow={false}
-          className={`w-40 sm:w-48 ${ADMIN_TOOLBAR_MOBILE_SEARCH}`}
-        />
-        <AdminIconInput
-          icon={<MdPerson size={18} />}
-          value={userFilter}
-          onChange={setUserFilter}
-          placeholder="Filter by user..."
-          className={`w-36 sm:w-40 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
-        />
-        <AdminIconInput
-          icon={<MdLink size={18} />}
-          value={pathFilter}
-          onChange={setPathFilter}
-          placeholder="Filter by path..."
-          className={`w-36 sm:w-44 ${ADMIN_TOOLBAR_MOBILE_STACK_ITEM}`}
-        />
-        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
-          <Dropdown
-            options={methodOptions}
-            value={methodFilter}
-            onChange={setMethodFilter}
-            placeholder="Method"
-            size="sm"
-            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+      <AdminPage title="API Logs" icon={Activity}>
+        {stats && (
+          <AdminStatCards
+            items={[
+              { label: 'Requests (7d)', value: stats.totalRequests },
+              {
+                label: 'Avg response time',
+                value: `${stats.averageResponseTime}ms`,
+              },
+              { label: 'Error rate', value: `${stats.errorRate.toFixed(1)}%` },
+              {
+                label: 'Top endpoint',
+                value: (
+                  <span className="font-mono text-base">
+                    {stats.topEndpoints[0]?.path.split('?')[0] || 'N/A'}
+                  </span>
+                ),
+              },
+            ]}
           />
-          <Dropdown
-            options={statusCodeOptions}
-            value={statusCodeFilter}
-            onChange={setStatusCodeFilter}
-            placeholder="Status"
-            size="sm"
-            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
-          />
-        </div>
-        <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
-          <AdminIconInput
-            icon={<MdCalendarToday size={18} />}
-            type="date"
-            value={dateFromFilter}
-            onChange={setDateFromFilter}
-            className={`w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-            aria-label="From date"
-          />
-          <AdminIconInput
-            icon={<MdCalendarToday size={18} />}
-            type="date"
-            value={dateToFilter}
-            onChange={setDateToFilter}
-            className={`w-48 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-            aria-label="To date"
-          />
-        </div>
-        <Button
-          onClick={clearFilters}
-          variant="outline"
-          size="sm"
-          className={`shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0 max-md:w-full max-md:basis-full`}
-        >
-          <MdClose size={16} className="mr-1" />
-          Clear
-        </Button>
-      </AdminToolbar>
+        )}
 
-      {error ? (
-        <ErrorScreen
-          title="Error loading API logs"
-          message={error}
-          onRetry={fetchLogs}
-        />
-      ) : (
-        <>
-          <AdminTable className="hidden lg:block" minWidth="1000px">
-            <thead className={ADMIN_TABLE_HEAD}>
-              <tr>
-                <th className={ADMIN_TH}>Timestamp</th>
-                <th className={ADMIN_TH}>Method</th>
-                <th className={ADMIN_TH}>Path</th>
-                <th className={ADMIN_TH}>Status</th>
-                <th className={ADMIN_TH}>Response Time</th>
-                <th className={ADMIN_TH}>User</th>
-                <th className={ADMIN_TH}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="border-t border-zinc-700/50 hover:bg-zinc-800/50"
-                >
-                  <td className={ADMIN_TD}>
-                    <div className="text-sm text-white">
-                      {formatTimeAgo(log.created_at)}
-                    </div>
-                    <div className="text-xs text-zinc-500">
-                      {formatDateTime(log.created_at)}
-                    </div>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMethodColor(log.method)}`}
-                    >
-                      {log.method}
-                    </span>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <div className="text-sm text-white truncate max-w-xs">
-                      {log.path}
-                    </div>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <span
-                      className={`text-sm font-medium ${getStatusColor(log.status_code)}`}
-                    >
-                      {log.status_code}
-                    </span>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <span className="text-sm text-white">
-                      {log.response_time}ms
-                    </span>
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <div className="text-sm text-white">
-                      {log.username || 'Unknown'}
-                    </div>
-                    {log.user_id && (
-                      <div className="text-xs text-zinc-500">{log.user_id}</div>
-                    )}
-                  </td>
-                  <td className={ADMIN_TD}>
-                    <Button
-                      onClick={() => handleLogClick(log)}
-                      variant="ghost"
-                      size={adminDownsizeButtonSize('sm')}
-                      className="flex items-center space-x-2"
-                    >
-                      <MdVisibility size={16} />
-                      <span>View</span>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </AdminTable>
+        <AdminToolbar>
+          <AdminSearchInput
+            value={searchFilter}
+            onChange={setSearchFilter}
+            placeholder="Search logs..."
+            grow={false}
+            className="sm:w-48"
+          />
+          <AdminTextInput
+            value={userFilter}
+            onChange={setUserFilter}
+            placeholder="Filter by user..."
+            aria-label="Filter by user"
+            className="w-full sm:w-44"
+          />
+          <AdminTextInput
+            value={pathFilter}
+            onChange={setPathFilter}
+            placeholder="Filter by path..."
+            aria-label="Filter by path"
+            className="w-full sm:w-44"
+          />
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <AdminSelect
+              options={methodOptions}
+              value={methodFilter}
+              onChange={setMethodFilter}
+              placeholder="Method"
+              aria-label="Method"
+              className="sm:w-36"
+            />
+            <AdminSelect
+              options={statusCodeOptions}
+              value={statusCodeFilter}
+              onChange={setStatusCodeFilter}
+              placeholder="Status"
+              aria-label="Status code"
+              className="sm:w-48"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <AdminTextInput
+              type="date"
+              value={dateFromFilter}
+              onChange={setDateFromFilter}
+              className="sm:w-44"
+              aria-label="From date"
+            />
+            <AdminTextInput
+              type="date"
+              value={dateToFilter}
+              onChange={setDateToFilter}
+              className="sm:w-44"
+              aria-label="To date"
+            />
+          </div>
+          <Button onClick={clearFilters} variant="outline">
+            <X />
+            Clear
+          </Button>
+        </AdminToolbar>
 
-          <div className="lg:hidden divide-y divide-zinc-800/80 border-t border-zinc-800/80">
-            {logs.map((log) => (
-              <div key={log.id} className="py-4 first:pt-0">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMethodColor(log.method)}`}
-                    >
-                      {log.method}
-                    </span>
-                    <span
-                      className={`text-sm font-medium ${getStatusColor(log.status_code)}`}
-                    >
-                      {log.status_code}
-                    </span>
-                  </div>
-                  <div className="text-zinc-300">
-                    <p className="break-all text-sm">
-                      <strong>Path:</strong> {log.path}
-                    </p>
-                  </div>
-                  <div className="text-zinc-300 text-sm">
-                    <p>
-                      <strong>User:</strong> {log.username || 'Unknown'}
-                    </p>
-                    <p>
-                      <strong>Response Time:</strong> {log.response_time}ms
-                    </p>
-                    <p>
-                      <strong>Time:</strong> {formatTimeAgo(log.created_at)}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => handleLogClick(log)}
-                    variant="ghost"
-                    size={adminDownsizeButtonSize('sm')}
-                    className="w-full flex items-center justify-center space-x-2"
-                  >
-                    <MdVisibility size={16} />
-                    <span>View Details</span>
-                  </Button>
+        {error ? (
+          <AdminErrorState
+            title="Error loading API logs"
+            message={error}
+            onRetry={fetchLogs}
+          />
+        ) : (
+          <>
+            {logs.length === 0 ? (
+              <AdminEmptyState icon={Activity} title="No API logs found" />
+            ) : (
+              <>
+                <AdminTable className="hidden lg:block" minWidth="1000px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Path</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Response Time</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead className="text-right">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {logs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <div className="text-sm">
+                            {formatTimeAgo(log.created_at)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDateTime(log.created_at)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <MethodBadge method={log.method} />
+                        </TableCell>
+                        <TableCell>
+                          <div
+                            className="max-w-xs truncate font-mono text-xs"
+                            title={log.path}
+                          >
+                            {log.path}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StatusCodeBadge code={log.status_code} />
+                        </TableCell>
+                        <TableCell className="tabular-nums">
+                          {log.response_time}ms
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {log.username || 'Unknown'}
+                          </div>
+                          {log.user_id && (
+                            <div className="font-mono text-xs text-muted-foreground">
+                              {log.user_id}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={() => handleLogClick(log)}
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="View details"
+                              >
+                                <Eye />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>View details</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
+
+                <div className="divide-y overflow-hidden rounded-2xl border lg:hidden">
+                  {logs.map((log) => (
+                    <div key={log.id} className="grid gap-3 p-4 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <MethodBadge method={log.method} />
+                        <StatusCodeBadge code={log.status_code} />
+                      </div>
+                      <p className="font-mono text-xs break-all">{log.path}</p>
+                      <div className="grid gap-1">
+                        <p>
+                          <span className="text-muted-foreground">User:</span>{' '}
+                          {log.username || 'Unknown'}
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">
+                            Response Time:
+                          </span>{' '}
+                          <span className="tabular-nums">
+                            {log.response_time}ms
+                          </span>
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">Time:</span>{' '}
+                          {formatTimeAgo(log.created_at)}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => handleLogClick(log)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Eye />
+                        View Details
+                      </Button>
+                    </div>
+                  ))}
                 </div>
+              </>
+            )}
+
+            <div className="flex flex-col items-center justify-end gap-2 sm:flex-row">
+              <span className="text-sm text-muted-foreground tabular-nums sm:mr-2">
+                Page {clientPage} of {totalPages} · {totalLogs.toLocaleString()}{' '}
+                total
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setClientPage(Math.max(1, clientPage - 1))}
+                  disabled={clientPage === 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChevronLeft />
+                  Previous
+                </Button>
+                <Button
+                  onClick={() =>
+                    setClientPage(Math.min(totalPages, clientPage + 1))
+                  }
+                  disabled={clientPage === totalPages}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                  <ChevronRight />
+                </Button>
               </div>
-            ))}
-          </div>
-
-          {logs.length === 0 && (
-            <div className="text-center py-12 text-zinc-400">
-              No API logs found with the current filters.
             </div>
-          )}
-
-          <div className="flex justify-center mt-8 space-x-2">
-            <Button
-              onClick={() => setClientPage(Math.max(1, clientPage - 1))}
-              disabled={clientPage === 1}
-              variant="outline"
-              size="xs"
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-400 py-2">
-              Page {clientPage} of {totalPages}
-            </span>
-            <Button
-              onClick={() =>
-                setClientPage(Math.min(totalPages, clientPage + 1))
-              }
-              disabled={clientPage === totalPages}
-              variant="outline"
-              size="xs"
-            >
-              Next
-            </Button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showDetails && !!selectedLog}
         onClose={() => setShowDetails(false)}
         title="API Log Details"
         size="xl"
+        footer={
+          <Button variant="outline" onClick={() => setShowDetails(false)}>
+            Close
+          </Button>
+        }
       >
         {selectedLog && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Timestamp
-                </h3>
-                <p className="text-white">
-                  {formatDateTime(selectedLog.created_at)}
+          <>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <DetailField label="Timestamp">
+                {formatDateTime(selectedLog.created_at)}
+              </DetailField>
+              <DetailField label="Method">
+                <MethodBadge method={selectedLog.method} />
+              </DetailField>
+              <DetailField label="Path">
+                <p className="font-mono text-xs break-all">
+                  {selectedLog.path}
                 </p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Method
-                </h3>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMethodColor(selectedLog.method)}`}
-                >
-                  {selectedLog.method}
+              </DetailField>
+              <DetailField label="Status Code">
+                <StatusCodeBadge code={selectedLog.status_code} />
+              </DetailField>
+              <DetailField label="Response Time">
+                <span className="tabular-nums">
+                  {selectedLog.response_time}ms
                 </span>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">Path</h3>
-                <p className="text-white break-all">{selectedLog.path}</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Status Code
-                </h3>
-                <span
-                  className={`text-sm font-medium ${getStatusColor(selectedLog.status_code)}`}
-                >
-                  {selectedLog.status_code}
-                </span>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Response Time
-                </h3>
-                <p className="text-white">{selectedLog.response_time}ms</p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">User</h3>
-                <p className="text-white">
+              </DetailField>
+              <DetailField label="User">
+                <p className="font-medium">
                   {selectedLog.username || 'Unknown'}
                 </p>
                 {selectedLog.user_id && (
-                  <p className="text-xs text-zinc-500">{selectedLog.user_id}</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {selectedLog.user_id}
+                  </p>
                 )}
-              </div>
-            </div>
-
-            {selectedLog.ip_address && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  IP Address
-                </h3>
-                <p className="text-white font-mono">{selectedLog.ip_address}</p>
-              </div>
-            )}
-
-            {selectedLog.user_agent && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  User Agent
-                </h3>
-                <p className="text-white break-all">{selectedLog.user_agent}</p>
-              </div>
-            )}
+              </DetailField>
+              {selectedLog.ip_address && (
+                <DetailField label="IP Address">
+                  <span className="font-mono text-xs">
+                    {selectedLog.ip_address}
+                  </span>
+                </DetailField>
+              )}
+              {selectedLog.user_agent && (
+                <DetailField label="User Agent" className="sm:col-span-2">
+                  <p className="font-mono text-xs break-all">
+                    {selectedLog.user_agent}
+                  </p>
+                </DetailField>
+              )}
+              {selectedLog.error_message && (
+                <DetailField label="Error Message" className="sm:col-span-2">
+                  <p className="break-words text-destructive">
+                    {selectedLog.error_message}
+                  </p>
+                </DetailField>
+              )}
+            </dl>
 
             {selectedLog.request_body && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Request Body
-                </h3>
-                <pre className="bg-zinc-900 p-4 rounded-lg text-sm overflow-x-auto">
-                  <code className="text-white">
-                    {typeof selectedLog.request_body === 'string'
-                      ? (() => {
-                          try {
-                            return JSON.stringify(
-                              JSON.parse(selectedLog.request_body),
-                              null,
-                              2
-                            );
-                          } catch {
-                            return selectedLog.request_body;
-                          }
-                        })()
-                      : JSON.stringify(selectedLog.request_body, null, 2)}
-                  </code>
+              <div className="grid gap-3">
+                <h3 className="text-sm font-medium">Request Body</h3>
+                <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs">
+                  <code>{formatBody(selectedLog.request_body)}</code>
                 </pre>
               </div>
             )}
 
             {selectedLog.response_body && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Response Body
-                </h3>
-                <pre className="bg-zinc-900 p-4 rounded-lg text-sm overflow-x-auto max-h-60">
-                  <code className="text-white">
-                    {typeof selectedLog.response_body === 'string'
-                      ? (() => {
-                          try {
-                            return JSON.stringify(
-                              JSON.parse(selectedLog.response_body),
-                              null,
-                              2
-                            );
-                          } catch {
-                            return selectedLog.response_body;
-                          }
-                        })()
-                      : JSON.stringify(selectedLog.response_body, null, 2)}
-                  </code>
+              <div className="grid gap-3">
+                <h3 className="text-sm font-medium">Response Body</h3>
+                <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs">
+                  <code>{formatBody(selectedLog.response_body)}</code>
                 </pre>
               </div>
             )}
-
-            {selectedLog.error_message && (
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Error Message
-                </h3>
-                <p className="text-red-400 p-4 bg-red-900/20 rounded-lg border-2 border-red-500/20">
-                  {selectedLog.error_message}
-                </p>
-              </div>
-            )}
-          </div>
+          </>
         )}
       </AdminModal>
     </AdminLayout>

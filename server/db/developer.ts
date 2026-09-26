@@ -482,6 +482,30 @@ export async function findActiveDeveloperKeyBySecretHash(
   };
 }
 
+export async function isDeveloperKeyActiveWithScope(
+  keyId: string,
+  scopeId: string
+): Promise<boolean> {
+  const key = await mainDb
+    .selectFrom('developer_api_keys')
+    .selectAll()
+    .where('id', '=', keyId)
+    .where('status', '=', 'active')
+    .where('revoked_at', 'is', null)
+    .executeTakeFirst();
+  if (!key) return false;
+  const profile = await mainDb
+    .selectFrom('developer_profiles')
+    .selectAll()
+    .where('user_id', '=', key.user_id)
+    .executeTakeFirst();
+  if (!profile || profile.status !== 'active') return false;
+  return (
+    parseStringArray(key.scopes).includes(scopeId) &&
+    parseStringArray(profile.approved_scopes).includes(scopeId)
+  );
+}
+
 export async function insertDeveloperApiUsage(input: {
   keyId: string;
   userId: string;

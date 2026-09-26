@@ -1,6 +1,6 @@
-import { MdRefresh } from 'react-icons/md';
-import Button from '../common/Button';
-import { ADMIN_TOOLBAR_HEIGHT } from './adminConstants';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type AdminRefreshButtonProps = {
   onClick: () => void;
@@ -17,26 +17,19 @@ export default function AdminRefreshButton({
   loading = false,
   label = 'Refresh',
   iconOnly = false,
-  className = '',
+  className,
 }: AdminRefreshButtonProps) {
   return (
     <Button
       variant="outline"
-      size="sm"
+      size={iconOnly ? 'icon' : 'default'}
       onClick={onClick}
       disabled={disabled || loading}
-      className={
-        iconOnly
-          ? `${ADMIN_TOOLBAR_HEIGHT} w-10 shrink-0 px-0 ${className}`.trim()
-          : className
-      }
+      className={className}
       aria-label={iconOnly ? label : undefined}
     >
-      <MdRefresh
-        size={16}
-        className={`shrink-0 ${iconOnly ? '' : 'inline mr-1'} ${loading ? 'animate-spin' : ''}`}
-      />
-      {!iconOnly ? label : null}
+      <RefreshCw className={cn(loading && 'animate-spin')} />
+      {iconOnly ? null : label}
     </Button>
   );
 }

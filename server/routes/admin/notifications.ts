@@ -1,5 +1,6 @@
 import express from 'express';
 import { createAuditLogger } from '../../middleware/auditLogger.js';
+import { requirePermission } from '../../middleware/rolePermissions.js';
 import { logAdminAction } from '../../db/audit.js';
 import {
   getAllNotifications,
@@ -11,6 +12,8 @@ import { getClientIp } from '../../utils/getIpAddress.js';
 import { broadcastNotificationsUpdate } from '../../websockets/notificationsWebsocket.js';
 
 const router = express.Router();
+
+router.use(requirePermission('notifications'));
 
 // GET: /api/admin/notifications - Get all notifications
 router.get(

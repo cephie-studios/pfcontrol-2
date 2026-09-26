@@ -43,6 +43,14 @@ export function utcDateOnly(d: Date): Date {
   );
 }
 
+export function pgDateKey(value: Date | string): string {
+  if (typeof value === 'string') return value.slice(0, 10);
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, '0');
+  const d = String(value.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function addUtcDays(d: Date, days: number): Date {
   const next = new Date(d);
   next.setUTCDate(next.getUTCDate() + days);
@@ -269,11 +277,9 @@ export async function backfillRecentActivity(days = 7): Promise<void> {
     .executeTakeFirst();
   if (Number(count?.cnt ?? 0) > 0) return;
 
-  for (let i = days; i >= 1; i--) {
+  for (let i = days; i >= 2; i--) {
     const date = addUtcDays(utcDateOnly(new Date()), -i);
-    if (!(await hasDailyTotals(date))) {
-      await captureDailyMetrics(date, true);
-    }
+    await captureDailyMetrics(date, false);
   }
 }
 
@@ -318,10 +324,10 @@ export async function getActivitySummary(): Promise<{
 
   const byDateTable = new Map<string, TableDayActivity>();
   for (const row of rows) {
-    const key = `${row.activity_date.toISOString().slice(0, 10)}:${row.table_name}`;
+    const key = `${pgDateKey(row.activity_date)}:${row.table_name}`;
     byDateTable.set(key, {
-      inserted: row.rows_inserted,
-      deleted: row.rows_deleted,
+      inserted: Number(row.rows_inserted),
+      deleted: Number(row.rows_deleted),
       bytes: Number(row.table_bytes),
       rowCount: Number(row.row_count),
     });
@@ -355,7 +361,7 @@ export async function getDailyTotalsHistory(
     .execute();
 
   return rows.map((r) => ({
-    date: r.activity_date.toISOString().slice(0, 10),
+    date: pgDateKey(r.activity_date),
     totalBytes: Number(r.total_bytes),
   }));
 }
@@ -367,6 +373,7 @@ export async function getTableActivityHistory(days: number): Promise<
     inserted: number;
     deleted: number;
     bytes: number;
+    rowCount: number;
   }>
 > {
   const since = addUtcDays(utcDateOnly(new Date()), -days);
@@ -378,17 +385,19 @@ export async function getTableActivityHistory(days: number): Promise<
       'rows_inserted',
       'rows_deleted',
       'table_bytes',
+      'row_count',
     ])
     .where('activity_date', '>=', since)
     .orderBy('activity_date', 'asc')
     .execute();
 
   return rows.map((r) => ({
-    date: r.activity_date.toISOString().slice(0, 10),
+    date: pgDateKey(r.activity_date),
     table: r.table_name,
-    inserted: r.rows_inserted,
-    deleted: r.rows_deleted,
+    inserted: Number(r.rows_inserted),
+    deleted: Number(r.rows_deleted),
     bytes: Number(r.table_bytes),
+    rowCount: Number(r.row_count),
   }));
 }
 

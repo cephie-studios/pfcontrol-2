@@ -9,7 +9,7 @@ import StarDropdown from '../dropdowns/StarDropdown';
 import AltitudeDropdown from '../dropdowns/AltitudeDropdown';
 import StatusDropdown from '../dropdowns/StatusDropdown';
 import Checkbox from '../common/Checkbox';
-import RouteMap from '../map/RouteMap';
+import RouteMap from '../map/LazyRouteMap';
 
 interface FlightDetailsModalProps {
   isOpen: boolean;

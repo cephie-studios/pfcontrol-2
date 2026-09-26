@@ -1,32 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import {
-  MdNotifications,
-  MdAdd,
-  MdEdit,
-  MdDelete,
-  MdCheck,
-  MdClose,
-  MdVisibility,
-} from 'react-icons/md';
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  Info,
+  Pencil,
+  Plus,
+  Trash2,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminSection from '../../components/admin/AdminSection';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminTable from '../../components/admin/AdminTable';
-import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
+import AdminToggleSwitch from '../../components/admin/AdminToggleSwitch';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Dropdown from '../../components/common/Dropdown';
-import TextInput from '../../components/common/TextInput';
-import Checkbox from '../../components/common/Checkbox';
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import type { AdminTone } from '../../components/admin/adminConstants';
 import UpdateModalsSection from '../../components/admin/UpdateModalsSection';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   fetchNotifications,
   addNotification,
@@ -34,6 +49,20 @@ import {
   deleteNotification,
   type Notification,
 } from '../../utils/fetch/admin';
+
+const TYPE_TONE: Record<string, AdminTone> = {
+  info: 'info',
+  warning: 'warning',
+  success: 'success',
+  error: 'danger',
+};
+
+const TYPE_ICON: Record<string, LucideIcon> = {
+  info: Info,
+  warning: AlertTriangle,
+  success: CheckCircle2,
+  error: XCircle,
+};
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -46,6 +75,10 @@ export default function AdminNotifications() {
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+  const { confirm, confirmDialog } = useAdminConfirm();
+  const textId = useId();
+  const colorId = useId();
+  const showId = useId();
 
   const [newNotification, setNewNotification] = useState({
     type: 'info' as 'info' | 'warning' | 'success' | 'error',
@@ -129,6 +162,16 @@ export default function AdminNotifications() {
   };
 
   const handleDeleteNotification = async (id: number) => {
+    if (
+      !(await confirm({
+        title: 'Delete this notification?',
+        description:
+          'The notification will be removed from the site. This action cannot be undone.',
+        confirmText: 'Delete',
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await deleteNotification(id);
       setToast({
@@ -144,190 +187,155 @@ export default function AdminNotifications() {
     }
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'info':
-        return <MdVisibility size={18} className="text-blue-400" />;
-      case 'warning':
-        return <MdVisibility size={18} className="text-yellow-400" />;
-      case 'success':
-        return <MdVisibility size={18} className="text-green-400" />;
-      case 'error':
-        return <MdVisibility size={18} className="text-red-400" />;
-      default:
-        return <MdNotifications size={18} className="text-zinc-400" />;
-    }
-  };
-
   const closeModal = () => {
     setShowAddModal(false);
     setEditingNotification(null);
   };
 
+  const formText = editingNotification?.text || newNotification.text;
+  const formColor = editingNotification
+    ? editingNotification.custom_color || ''
+    : newNotification.customColor;
+
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Notifications"
-        icon={MdNotifications}
-        accent="cyan"
+        icon={Bell}
         actions={
-          <Button
-            onClick={() => setShowAddModal(true)}
-            variant="outline"
-            size={adminDownsizeButtonSize('sm')}
-          >
-            <MdAdd size={16} className="mr-1.5" />
-            Add
+          <Button size="sm" onClick={() => setShowAddModal(true)}>
+            <Plus />
+            Add notification
           </Button>
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error"
-          message={error}
-          onRetry={fetchAllNotifications}
-        />
-      ) : (
-        <>
-          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-            <AdminSectionTitle>Site notifications</AdminSectionTitle>
-
-            <div className="hidden md:block">
+      >
+        {loading ? (
+          <AdminLoading label="Loading notifications…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error"
+            message={error}
+            onRetry={fetchAllNotifications}
+          />
+        ) : (
+          <>
+            <AdminSection title="Site notifications">
               <AdminTable minWidth="600px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={ADMIN_TH}>Type</th>
-                    <th className={ADMIN_TH}>Text</th>
-                    <th className={ADMIN_TH}>Visible</th>
-                    <th className={ADMIN_TH}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {notifications.map((notif) => (
-                    <tr key={notif.id} className="hover:bg-zinc-800/30">
-                      <td className={ADMIN_TD}>
-                        <div className="flex items-center space-x-2">
-                          {getNotificationIcon(notif.type)}
-                          <span className="capitalize">{notif.type}</span>
-                        </div>
-                      </td>
-                      <td className={ADMIN_TD}>{notif.text}</td>
-                      <td className={ADMIN_TD}>
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="ghost"
-                          onClick={() =>
-                            handleUpdateNotification(notif.id, {
-                              show: !notif.show,
-                            })
-                          }
-                        >
-                          {notif.show ? (
-                            <MdCheck size={16} className="text-green-600" />
-                          ) : (
-                            <MdClose size={16} className="text-red-600" />
-                          )}
-                        </Button>
-                      </td>
-                      <td className={ADMIN_TD}>
-                        <div className="flex space-x-2">
-                          <Button
-                            size={adminDownsizeButtonSize('sm')}
-                            variant="outline"
-                            onClick={() => setEditingNotification(notif)}
-                          >
-                            <MdEdit size={16} />
-                          </Button>
-                          <Button
-                            size={adminDownsizeButtonSize('sm')}
-                            variant="danger"
-                            onClick={() => handleDeleteNotification(notif.id)}
-                          >
-                            <MdDelete size={16} />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </AdminTable>
-            </div>
-
-            <div className="block md:hidden space-y-3">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="shrink-0">
-                      {getNotificationIcon(notif.type)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-white font-medium capitalize truncate">
-                        {notif.type}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-zinc-300 mb-3">
-                    <div className="break-words">
-                      <span className="font-medium">Text:</span> {notif.text}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Visible:</span>
-                      <button
-                        onClick={() =>
-                          handleUpdateNotification(notif.id, {
-                            show: !notif.show,
-                          })
-                        }
-                        className="shrink-0"
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Type</TableHead>
+                    <TableHead>Text</TableHead>
+                    <TableHead className="w-24">Visible</TableHead>
+                    <TableHead className="w-24 text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notifications.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="h-24 text-center text-muted-foreground"
                       >
-                        {notif.show ? (
-                          <MdCheck size={18} className="text-green-600" />
-                        ) : (
-                          <MdClose size={18} className="text-red-600" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                        No notifications yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    notifications.map((notif) => (
+                      <TableRow key={notif.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <AdminStatusBadge
+                              tone={TYPE_TONE[notif.type] ?? 'neutral'}
+                              icon={TYPE_ICON[notif.type]}
+                              showLabel
+                              className="capitalize"
+                            >
+                              {notif.type}
+                            </AdminStatusBadge>
+                            {notif.custom_color ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className="size-3 shrink-0 rounded-full border"
+                                    style={{
+                                      backgroundColor: notif.custom_color,
+                                    }}
+                                    aria-label={`Custom color ${notif.custom_color}`}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <span className="font-mono">
+                                    {notif.custom_color}
+                                  </span>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-normal break-words">
+                          {notif.text}
+                        </TableCell>
+                        <TableCell>
+                          <AdminToggleSwitch
+                            checked={notif.show}
+                            onChange={() =>
+                              handleUpdateNotification(notif.id, {
+                                show: !notif.show,
+                              })
+                            }
+                            aria-label={
+                              notif.show
+                                ? 'Hide notification'
+                                : 'Show notification'
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => setEditingNotification(notif)}
+                                  aria-label="Edit notification"
+                                >
+                                  <Pencil />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() =>
+                                    handleDeleteNotification(notif.id)
+                                  }
+                                  aria-label="Delete notification"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </AdminTable>
+            </AdminSection>
 
-                  <div className="space-y-2">
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="outline"
-                      onClick={() => setEditingNotification(notif)}
-                      className="w-full justify-center"
-                    >
-                      <MdEdit size={16} className="mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      size={adminDownsizeButtonSize('sm')}
-                      variant="danger"
-                      onClick={() => handleDeleteNotification(notif.id)}
-                      className="w-full justify-center"
-                    >
-                      <MdDelete size={16} className="mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={adminSectionClass()}>
-            <UpdateModalsSection />
-          </div>
-        </>
-      )}
+            <UpdateModalsSection onToast={setToast} />
+          </>
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showAddModal || !!editingNotification}
@@ -336,15 +344,10 @@ export default function AdminNotifications() {
         size="md"
         footer={
           <>
-            <Button
-              size={adminDownsizeButtonSize('sm')}
-              variant="outline"
-              onClick={closeModal}
-            >
+            <Button variant="outline" onClick={closeModal}>
               Cancel
             </Button>
             <Button
-              size={adminDownsizeButtonSize('sm')}
               onClick={
                 editingNotification
                   ? () =>
@@ -360,26 +363,71 @@ export default function AdminNotifications() {
           </>
         }
       >
-        <div className="space-y-4">
-          <Dropdown
-            options={typeOptions}
-            value={editingNotification?.type || newNotification.type}
-            onChange={(value) =>
-              editingNotification
-                ? setEditingNotification({
-                    ...editingNotification,
-                    type: value as 'info' | 'warning' | 'success' | 'error',
-                  })
-                : setNewNotification({
-                    ...newNotification,
-                    type: value as 'info' | 'warning' | 'success' | 'error',
-                  })
-            }
-            placeholder="Select type"
-          />
-          <div>
-            <textarea
-              value={editingNotification?.text || newNotification.text}
+        <div className="grid gap-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label>Type</Label>
+              <AdminSelect
+                options={typeOptions}
+                value={editingNotification?.type || newNotification.type}
+                onChange={(value) =>
+                  editingNotification
+                    ? setEditingNotification({
+                        ...editingNotification,
+                        type: value as 'info' | 'warning' | 'success' | 'error',
+                      })
+                    : setNewNotification({
+                        ...newNotification,
+                        type: value as 'info' | 'warning' | 'success' | 'error',
+                      })
+                }
+                placeholder="Select type"
+                aria-label="Notification type"
+                className="sm:w-full"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor={colorId}>Custom color (optional)</Label>
+              <div className="relative">
+                <span
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 rounded-full border bg-muted"
+                  style={formColor ? { backgroundColor: formColor } : undefined}
+                  aria-hidden
+                />
+                <Input
+                  id={colorId}
+                  value={formColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (editingNotification) {
+                      setEditingNotification({
+                        ...editingNotification,
+                        custom_color: value,
+                      });
+                    } else {
+                      setNewNotification({
+                        ...newNotification,
+                        customColor: value,
+                      });
+                    }
+                  }}
+                  placeholder="e.g. #FFFFFF"
+                  className="pl-8 font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor={textId}>Text</Label>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formText.length}/200
+              </span>
+            </div>
+            <Textarea
+              id={textId}
+              value={formText}
               onChange={(e) => {
                 const value = e.target.value.slice(0, 200);
                 if (editingNotification) {
@@ -397,49 +445,37 @@ export default function AdminNotifications() {
               placeholder="Notification text"
               maxLength={200}
               rows={3}
-              className="w-full px-4 py-2 bg-gray-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-600 focus:outline-none resize-none"
+              className="min-h-20 resize-none"
             />
-            <div className="text-xs text-zinc-500 mt-1 text-right">
-              {(editingNotification?.text || newNotification.text).length}
-              /200
-            </div>
           </div>
-          <TextInput
-            value={
-              editingNotification
-                ? editingNotification.custom_color || ''
-                : newNotification.customColor
-            }
-            onChange={(value) =>
-              editingNotification
-                ? setEditingNotification({
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={showId}
+              checked={editingNotification?.show || newNotification.show}
+              onCheckedChange={(checked) => {
+                const value = checked === true;
+                if (editingNotification) {
+                  setEditingNotification({
                     ...editingNotification,
-                    custom_color: value,
-                  })
-                : setNewNotification({
+                    show: value,
+                  });
+                } else {
+                  setNewNotification({
                     ...newNotification,
-                    customColor: value,
-                  })
-            }
-            placeholder="Custom color (e.g., #FFFFFF)"
-          />
-          <Checkbox
-            checked={editingNotification?.show || newNotification.show}
-            onChange={(checked) =>
-              editingNotification
-                ? setEditingNotification({
-                    ...editingNotification,
-                    show: checked,
-                  })
-                : setNewNotification({
-                    ...newNotification,
-                    show: checked,
-                  })
-            }
-            label="Show notification"
-          />
+                    show: value,
+                  });
+                }
+              }}
+            />
+            <Label htmlFor={showId} className="font-normal">
+              Show notification
+            </Label>
+          </div>
         </div>
       </AdminModal>
+
+      {confirmDialog}
     </AdminLayout>
   );
 }

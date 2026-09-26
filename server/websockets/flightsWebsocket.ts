@@ -1,4 +1,3 @@
-import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import {
   addFlight,
@@ -8,7 +7,7 @@ import {
   type ClientFlight,
 } from '../db/flights.js';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
-import { updateSession } from '../db/sessions.js';
+import { getSessionById, updateSession } from '../db/sessions.js';
 import { mainDb } from '../db/connection.js';
 import {
   validateSessionId,
@@ -30,7 +29,9 @@ import { isEventController } from '../middleware/flightAccess.js';
 import { setFlightsIO as registerFlightsIO } from '../realtime/socketRegistry.js';
 import { broadcastArrivalChange } from '../realtime/arrivals.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import { getSocketUser } from './socketAuth.js';
 import { getNetworkKind } from '../utils/advancedNetworkSession.js';
+import { resolveExternalAcarsRedirectUrl } from '../utils/externalAcarsPanel.js';
 
 interface FlightUpdateData {
   flightId: string | number;
@@ -113,24 +114,11 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     const isEventControllerFlag =
       socket.handshake.query.isEventController === 'true';
 
-    let userId = socket.handshake.query.userId as string;
-    let verifiedUserId: string | undefined;
-    try {
-      const cookieHeader = socket.handshake.headers.cookie ?? '';
-      const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]+)/);
-      if (match) {
-        const JWT_SECRET = process.env.JWT_SECRET;
-        const decoded = jwt.verify(match[1], JWT_SECRET as string) as {
-          userId: string;
-        };
-        if (decoded.userId) {
-          userId = decoded.userId;
-          verifiedUserId = decoded.userId;
-        }
-      }
-    } catch {
-      // Cookie absent or invalid — fall back to query param
-    }
+    // Identity comes only from the verified auth cookie. handshake.query.userId
+    // is client-controlled and is ignored; anonymous pilots have no userId.
+    const socketUser = await getSocketUser(socket);
+    const userId = socketUser?.userId;
+    const username = socketUser?.username;
 
     try {
       const validSessionId = validateSessionId(sessionId);
@@ -138,8 +126,10 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
 
       let role: 'pilot' | 'controller' = 'pilot';
 
-      if (isEventControllerFlag && userId) {
-        const hasEventControllerRole = await isEventController(userId);
+      if (isEventControllerFlag) {
+        const hasEventControllerRole = userId
+          ? await isEventController(userId)
+          : false;
         if (hasEventControllerRole) {
           const session = await mainDb
             .selectFrom('sessions')
@@ -147,7 +137,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             .where('session_id', '=', validSessionId)
             .executeTakeFirst();
 
-          if (session?.is_pfatc || session?.is_advanced_atc) {
+          if (session?.is_pfatc) {
             role = 'controller';
             socket.data.isEventController = true;
             socket.data.networkKind = getNetworkKind(session);
@@ -209,25 +199,31 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         const flight = await addFlight(
           sessionId,
           enhancedFlightData as AddFlightData,
-          { submitterUserId: verifiedUserId }
+          { submitterUserId: userId }
         );
-
-        socket.emit('flightAdded', flight);
 
         const { acars_token: _acars, ...sanitizedFlight } = flight;
         socket.to(sessionId).emit('flightAdded', sanitizedFlight);
 
+        const acarsRedirectUrl = await resolveExternalAcarsRedirectUrl(
+          await getSessionById(sessionId),
+          flight
+        );
+        socket.emit(
+          'flightAdded',
+          acarsRedirectUrl ? { ...flight, acarsRedirectUrl } : flight
+        );
+
         await logFlightAction({
           userId: userId || 'unknown',
-          username: (socket.handshake.query.username as string) || 'unknown',
+          username: username || 'unknown',
           sessionId,
           action: 'add',
           flightId: flight.id,
           newData: {
             ...sanitizedFlight,
             flight_owner_user_id: userId || null,
-            flight_owner_username:
-              (socket.handshake.query.username as string) || null,
+            flight_owner_username: username || null,
           },
           ipAddress: getSocketClientIp(socket),
         });
@@ -338,8 +334,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
             }
             await logFlightAction({
               userId: userId || 'unknown',
-              username:
-                (socket.handshake.query.username as string) || 'unknown',
+              username: username || 'unknown',
               sessionId,
               action: 'update',
               flightId: flightId as string,
@@ -406,7 +401,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         // the emit above and the log getting written.
         await logFlightAction({
           userId: userId || 'unknown',
-          username: (socket.handshake.query.username as string) || 'unknown',
+          username: username || 'unknown',
           sessionId,
           action: 'delete',
           flightId: flightId as string,

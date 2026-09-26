@@ -1,11 +1,18 @@
-import { useEffect, useState, useRef, useContext, useMemo } from 'react';
+import {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import {
   UNSAFE_NavigationContext,
   useLocation,
   useSearchParams,
   useNavigate,
 } from 'react-router';
-import { Save, AlertTriangle, Check, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Loader2, RotateCcw, Save } from 'lucide-react';
 import type {
   Settings,
   DepartureTableColumnSettings,
@@ -28,11 +35,18 @@ import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
 import Navbar from '../components/Navbar';
-import Button from '../components/common/Button';
-import Loader from '../components/common/Loader';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
-import Modal from '../components/common/Modal';
 import { fetchBackgrounds } from '../utils/fetch/data';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -40,6 +54,29 @@ interface AvailableImage {
   filename: string;
   path: string;
   extension: string;
+}
+
+type SectionId =
+  | 'account-settings'
+  | 'table-column-settings'
+  | 'layout-settings'
+  | 'acars-settings'
+  | 'sound-settings'
+  | 'background-image-settings';
+
+/** Wraps a section with its anchor id; the ids are tutorial targets. */
+function SectionAnchor({
+  id,
+  children,
+}: {
+  id: SectionId;
+  children: ReactNode;
+}) {
+  return (
+    <div id={id} className="scroll-mt-24">
+      {children}
+    </div>
+  );
 }
 
 function useCustomBlocker(shouldBlock: boolean, onBlock: () => void) {
@@ -317,258 +354,217 @@ export default function Settings() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="shadcn-scope flex min-h-screen items-center justify-center bg-background text-foreground">
         <Navbar />
-        <Loader />
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white relative">
+    <div className="shadcn-scope min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <div className="relative w-full h-80 md:h-96 overflow-hidden">
+      <div className="relative h-80 w-full overflow-hidden md:h-96">
         <div className="absolute inset-0">
           <img
             src="/assets/images/hero.webp"
-            alt="Banner"
-            className="object-cover w-full h-full scale-110"
+            alt=""
+            className="h-full w-full scale-110 object-cover"
           />
           <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              opacity: customLoaded ? 1 : 0,
-              transition: 'opacity 0.5s ease-in-out',
-            }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500"
+            style={{ backgroundImage, opacity: customLoaded ? 1 : 0 }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/70 to-zinc-950"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-background/40 via-background/70 to-background" />
         </div>
-
-        <div className="relative h-full flex flex-col items-center justify-center px-4 sm:px-6 md:px-10 gap-4">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center">
+        <div className="relative flex h-full flex-col items-center justify-center gap-4 px-4 sm:px-6 md:px-10">
+          <h1 className="text-center text-3xl font-black tracking-tight sm:text-5xl md:text-6xl">
             YOUR SETTINGS
           </h1>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="w-full max-w-5xl mx-auto px-3 sm:px-5 md:px-6 pb-8 -mt-6 md:-mt-8 relative z-10 min-w-0">
-        <div className="overflow-hidden min-w-0">
-          <div className="py-4 sm:py-6 space-y-6 sm:space-y-8">
-            <div id="account-settings">
-              <AccountSettings
-                settings={localSettings}
-                onChange={handleLocalSettingsChange}
-              />
-            </div>
+      <div className="relative z-10 mx-auto -mt-6 w-full max-w-4xl min-w-0 px-4 pb-32 sm:px-6 md:-mt-8">
+        <main className="flex min-w-0 flex-col gap-12">
+          <SectionAnchor id="account-settings">
+            <AccountSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </SectionAnchor>
 
-            <div id="table-column-settings">
-              <TableColumnSettings
-                departureColumns={{
+          <SectionAnchor id="table-column-settings">
+            <TableColumnSettings
+              departureColumns={{
+                time: true,
+                callsign: true,
+                req: true,
+                stand: true,
+                aircraft: true,
+                wakeTurbulence: true,
+                flightType: true,
+                arrival: true,
+                runway: true,
+                sid: true,
+                rfl: true,
+                cfl: true,
+                squawk: true,
+                clearance: true,
+                status: true,
+                remark: true,
+                pdc: true,
+                hide: true,
+                delete: true,
+                ...localSettings?.departureTableColumns,
+              }}
+              arrivalsColumns={
+                localSettings?.arrivalsTableColumns || {
                   time: true,
                   callsign: true,
-                  req: true,
-                  stand: true,
+                  gate: true,
                   aircraft: true,
                   wakeTurbulence: true,
                   flightType: true,
-                  arrival: true,
+                  departure: true,
                   runway: true,
-                  sid: true,
+                  star: true,
                   rfl: true,
                   cfl: true,
                   squawk: true,
-                  clearance: true,
                   status: true,
                   remark: true,
-                  pdc: true,
                   hide: true,
-                  delete: true,
-                  ...localSettings?.departureTableColumns,
-                }}
-                arrivalsColumns={
-                  localSettings?.arrivalsTableColumns || {
-                    time: true,
-                    callsign: true,
-                    gate: true,
-                    aircraft: true,
-                    wakeTurbulence: true,
-                    flightType: true,
-                    departure: true,
-                    runway: true,
-                    star: true,
-                    rfl: true,
-                    cfl: true,
-                    squawk: true,
-                    status: true,
-                    remark: true,
-                    hide: true,
-                  }
                 }
-                onDepartureColumnsChange={handleDepartureColumnsChange}
-                onArrivalsColumnsChange={handleArrivalsColumnsChange}
-                onReset={handleResetTableColumns}
-              />
-            </div>
+              }
+              onDepartureColumnsChange={handleDepartureColumnsChange}
+              onArrivalsColumnsChange={handleArrivalsColumnsChange}
+              onReset={handleResetTableColumns}
+            />
+          </SectionAnchor>
 
-            <div id="layout-settings">
-              <LayoutSettings
-                settings={localSettings}
-                onChange={handleLocalSettingsChange}
-              />
-            </div>
+          <SectionAnchor id="layout-settings">
+            <LayoutSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </SectionAnchor>
 
-            <div id="acars-settings">
-              <AcarsSettings
-                settings={localSettings}
-                onChange={handleLocalSettingsChange}
-              />
-            </div>
+          <SectionAnchor id="acars-settings">
+            <AcarsSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </SectionAnchor>
 
-            <div id="sound-settings">
-              <SoundSettings
-                settings={localSettings}
-                onChange={handleLocalSettingsChange}
-              />
-            </div>
+          <SectionAnchor id="sound-settings">
+            <SoundSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </SectionAnchor>
 
-            <div id="background-image-settings">
-              <BackgroundImageSettings
-                settings={localSettings}
-                onChange={handleLocalSettingsChange}
-              />
-            </div>
-          </div>
-        </div>
+          <SectionAnchor id="background-image-settings">
+            <BackgroundImageSettings
+              settings={localSettings}
+              onChange={handleLocalSettingsChange}
+            />
+          </SectionAnchor>
+        </main>
       </div>
 
-      {/* Save/Discard Bar */}
-      {hasChanges && !showDiscardToast && (
-        <div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-50">
-          <div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-700/50 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 sm:min-w-[320px]">
-            <div className="flex-1">
-              <p className="text-white font-medium text-sm">Unsaved changes</p>
-              <p className="text-zinc-400 text-xs">
-                Don't forget to save your settings
-              </p>
-            </div>
-            <div className="flex gap-2 sm:gap-3">
-              <Button
-                onClick={handleDiscard}
-                variant="outline"
-                size="sm"
-                disabled={saving}
-                className="flex-1 sm:flex-none text-xs ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
-              >
-                Discard
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                size="sm"
-                className="flex-1 sm:flex-none text-xs flex items-center justify-center space-x-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3 h-3" />
-                    <span>Save</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Discard Warning Toast */}
-      {showDiscardToast && (
-        <div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-50">
-          <div className="bg-red-900/95 backdrop-blur-md border border-red-600/50 rounded-2xl p-4 shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 sm:min-w-[380px]">
-            <div className="flex items-start gap-3 sm:gap-4 flex-1">
-              <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm">
-                  Unsaved changes will be lost
-                </p>
-                <p className="text-red-300 text-xs">
-                  Are you sure you want to leave?
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 sm:gap-3">
-              <Button
-                onClick={() => setShowDiscardToast(false)}
-                variant="outline"
-                size="sm"
-                className="flex-1 sm:flex-none text-xs ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleForceLeave}
-                variant="danger"
-                size="sm"
-                className="flex-1 sm:flex-none text-xs whitespace-nowrap"
-              >
-                Leave anyway
-              </Button>
+      {/* Unsaved changes / leave warning. z above the app feedback banner
+          (z-9999), which sits in the same bottom-centre spot. */}
+      {hasChanges || showDiscardToast ? (
+        <div className="fixed inset-x-4 bottom-4 z-[10000] flex justify-center sm:bottom-6">
+          <div
+            role={showDiscardToast ? 'alertdialog' : 'status'}
+            aria-live="polite"
+            className={cn(
+              'flex w-full max-w-xl flex-col gap-3 rounded-2xl border bg-popover/95 p-3 pl-5 shadow-2xl backdrop-blur-md sm:flex-row sm:items-center',
+              showDiscardToast && 'border-destructive/50'
+            )}
+          >
+            <p className="flex flex-1 items-center gap-2 text-sm font-medium">
+              {showDiscardToast ? (
+                <>
+                  <AlertTriangle className="size-4 shrink-0 text-destructive" />
+                  Leave without saving your changes?
+                </>
+              ) : (
+                'You have unsaved changes'
+              )}
+            </p>
+            <div className="flex gap-2">
+              {showDiscardToast ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => setShowDiscardToast(false)}
+                  >
+                    Stay
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleForceLeave}
+                  >
+                    Leave anyway
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={handleDiscard}
+                    disabled={saving}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    className="flex-1 sm:flex-none"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Tutorial Completion Modal */}
-      <Modal
-        isOpen={showTutorialCompleteModal}
-        onClose={() => setShowTutorialCompleteModal(false)}
-        title="Tutorial Completed!"
-        variant="success"
-        footer={
-          <div className="flex gap-2">
-            {' '}
+      <Dialog
+        open={showTutorialCompleteModal}
+        onOpenChange={setShowTutorialCompleteModal}
+      >
+        <DialogContent variant="success" className="shadcn-scope sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tutorial completed</DialogTitle>
+            <DialogDescription>
+              You finished the PFControl tutorial. Enjoy PFControl!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
             <Button
+              variant="outline"
               onClick={() => {
                 setShowTutorialCompleteModal(false);
                 handleRestartTutorial();
               }}
-              variant="outline"
-              size="sm"
-              className="ring-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Restart Tutorial
+              <RotateCcw />
+              Restart tutorial
             </Button>
-            <Button
-              onClick={() => setShowTutorialCompleteModal(false)}
-              variant="success"
-              size="sm"
-            >
-              Got it!
+            <Button onClick={() => setShowTutorialCompleteModal(false)}>
+              Got it
             </Button>
-          </div>
-        }
-      >
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 bg-green-500/20 rounded-xl">
-            <Check className="h-8 w-8 text-green-400" />
-          </div>
-          <div>
-            <p className="text-zinc-300">
-              You've successfully completed the tutorial for PFControl. Explore
-              your new settings and enjoy using PFControl!
-            </p>
-          </div>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Joyride
         steps={steps}

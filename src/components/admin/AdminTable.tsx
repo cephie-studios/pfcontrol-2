@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { adminTableShellClass } from './adminConstants';
+import { Table } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { ADMIN_TABLE_FRAME } from './adminConstants';
 
 type AdminTableProps = {
   children: ReactNode;
@@ -9,16 +11,12 @@ type AdminTableProps = {
 
 export default function AdminTable({
   children,
-  className = '',
+  className,
   minWidth = '640px',
 }: AdminTableProps) {
   return (
-    <div className={adminTableShellClass(className)}>
-      <div className="overflow-x-auto">
-        <table className="w-full" style={{ minWidth }}>
-          {children}
-        </table>
-      </div>
+    <div className={cn(ADMIN_TABLE_FRAME, className)}>
+      <Table style={{ minWidth }}>{children}</Table>
     </div>
   );
 }

@@ -1,38 +1,53 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import {
-  MdAdd,
-  MdEdit,
-  MdDelete,
-  MdPeople,
-  MdCheck,
-  MdClose,
-  MdAdminPanelSettings,
-  MdDragIndicator,
-  MdFilterList,
-} from 'react-icons/md';
+  Check,
+  Code,
+  GripVertical,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  User,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminSection from '../../components/admin/AdminSection';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatCards from '../../components/admin/AdminStatCards';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminTable from '../../components/admin/AdminTable';
-import AdminTextInput from '../../components/admin/AdminTextInput';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_INPUT_ICON_CLASS,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TOOLBAR_HEIGHT,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Dropdown from '../../components/common/Dropdown';
-import ColorPicker from '../../components/common/ColorPicker';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import {
   fetchRoles,
   createRole,
@@ -52,24 +67,49 @@ import {
   PRESET_COLORS,
 } from '../../utils/roles';
 
-function RoleBadge({ role, compact }: { role: Role; compact?: boolean }) {
+type Permission = (typeof AVAILABLE_PERMISSIONS)[number];
+
+const PERMISSION_GROUPS: { title: string; keys: string[] }[] = [
+  {
+    title: 'Dashboard & users',
+    keys: ['admin', 'users', 'sessions', 'bans', 'testers'],
+  },
+  {
+    title: 'Logs & moderation',
+    keys: ['audit', 'api_logs', 'flight_logs', 'chat_reports', 'feedback'],
+  },
+  {
+    title: 'Content & access',
+    keys: ['notifications', 'update_modals', 'roles'],
+  },
+  { title: 'Network events', keys: ['pfatc_sector'] },
+];
+
+function groupPermissions() {
+  const known = new Set(PERMISSION_GROUPS.flatMap((g) => g.keys));
+  const groups = PERMISSION_GROUPS.map((g) => ({
+    title: g.title,
+    items: g.keys
+      .map((k) => AVAILABLE_PERMISSIONS.find((p) => p.key === k))
+      .filter((p): p is Permission => Boolean(p)),
+  }));
+  const other = AVAILABLE_PERMISSIONS.filter((p) => !known.has(p.key));
+  if (other.length) groups.push({ title: 'Other', items: other });
+  return groups.filter((g) => g.items.length > 0);
+}
+
+const GROUPED_PERMISSIONS = groupPermissions();
+
+function RoleName({ role, className }: { role: Role; className?: string }) {
   const RoleIcon = getIconComponent(role.icon);
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md border font-medium ${
-        compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs'
-      }`}
-      style={{
-        backgroundColor: `${role.color}18`,
-        borderColor: `${role.color}50`,
-        color: role.color,
-      }}
-    >
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
       <RoleIcon
-        className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'}
+        className="size-4 shrink-0"
         style={{ color: role.color }}
+        aria-hidden
       />
-      {role.name}
+      <span className="truncate">{role.name}</span>
     </span>
   );
 }
@@ -81,21 +121,91 @@ function PermissionSummary({
 }) {
   const enabled = AVAILABLE_PERMISSIONS.filter((p) => permissions[p.key]);
   if (enabled.length === 0) {
-    return <span className="text-xs text-zinc-600">None</span>;
+    return <span className="text-muted-foreground">None</span>;
+  }
+  const shown = enabled
+    .slice(0, 4)
+    .map((p) => p.label)
+    .join(', ');
+  if (enabled.length <= 4) {
+    return <span className="text-muted-foreground">{shown}</span>;
   }
   return (
-    <div className="flex flex-wrap gap-1 max-w-md">
-      {enabled.slice(0, 4).map((p) => (
-        <span
-          key={p.key}
-          className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/60"
-        >
-          {p.label}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-default text-muted-foreground" tabIndex={0}>
+          {shown}{' '}
+          <span className="text-foreground tabular-nums">
+            +{enabled.length - 4} more
+          </span>
         </span>
-      ))}
-      {enabled.length > 4 && (
-        <span className="text-[10px] text-zinc-500">+{enabled.length - 4}</span>
-      )}
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        {enabled.map((p) => p.label).join(', ')}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function UserAvatar({ user }: { user: UserWithRole }) {
+  return (
+    <Avatar className="size-8">
+      {user.avatar ? (
+        <AvatarImage
+          src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
+          alt=""
+        />
+      ) : null}
+      <AvatarFallback>
+        <User className="size-4" />
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function RoleColorField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (hex: string) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>Color</Label>
+      <div className="grid grid-cols-5 gap-2">
+        {PRESET_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onChange(color)}
+            title={color}
+            aria-label={`Use color ${color}`}
+            aria-pressed={value === color}
+            className="flex h-8 items-center justify-center rounded-md border text-white outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+            style={{ backgroundColor: color }}
+          >
+            {value === color ? <Check className="size-4" /> : null}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label="Custom color"
+          className="h-9 w-12 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+        />
+        <Input
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="font-mono"
+          spellCheck={false}
+        />
+      </div>
     </div>
   );
 }
@@ -128,6 +238,8 @@ export default function AdminRoles() {
   const [selectedUserForRole, setSelectedUserForRole] = useState<string | null>(
     null
   );
+  const { confirm, confirmDialog } = useAdminConfirm();
+  const formId = useId();
 
   const validRoles = useMemo(
     () => roles.filter((role) => role.id && !isNaN(role.id)),
@@ -161,9 +273,6 @@ export default function AdminRoles() {
   }, [users, userSearch, roleFilter]);
 
   const hasUserFilters = userSearch.trim() !== '' || roleFilter !== 'all';
-
-  const btnSize = adminDownsizeButtonSize('sm');
-  const toolbarBtnClass = `shrink-0 ${ADMIN_TOOLBAR_HEIGHT} py-0`;
 
   useEffect(() => {
     void fetchData();
@@ -266,13 +375,13 @@ export default function AdminRoles() {
       setToast({ message: 'Invalid role ID', type: 'error' });
       return;
     }
-    if (
-      !confirm(
-        `Delete "${role.name}"? This removes the role from all assigned users.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Delete "${role.name}"?`,
+      description: 'This removes the role from all assigned users.',
+      confirmText: 'Delete role',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deleteRole(role.id);
       setToast({ message: 'Role deleted successfully', type: 'success' });
@@ -380,113 +489,160 @@ export default function AdminRoles() {
     setRoleFilter('all');
   };
 
+  const togglePermission = (key: string) =>
+    setFormPermissions((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+
+  const previewRole = {
+    id: 0,
+    name: formName.trim() || 'Role preview',
+    description: '',
+    permissions: {},
+    color: formColor,
+    icon: formIcon,
+    priority: formPriority,
+    created_at: '',
+    updated_at: '',
+  } satisfies Role;
+
   const roleFormFields = (
-    <div className="space-y-4">
-      <AdminTextInput
-        label="Role name"
-        value={formName}
-        onChange={setFormName}
-        placeholder="e.g. Moderator"
-        required
-      />
-      <AdminTextInput
-        label="Description"
-        value={formDescription}
-        onChange={setFormDescription}
-        placeholder="What this role is for…"
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <span className="block text-xs text-zinc-500 mb-1.5">Icon</span>
-          <div className="grid grid-cols-4 gap-2">
-            {AVAILABLE_ICONS.map((iconOption) => {
-              const IconComponent = iconOption.icon;
-              return (
-                <button
-                  key={iconOption.value}
-                  type="button"
-                  onClick={() => setFormIcon(iconOption.value)}
-                  className={`p-2.5 rounded-xl border transition-colors ${
-                    formIcon === iconOption.value
-                      ? 'border-blue-600 bg-blue-600/15'
-                      : 'border-zinc-700/80 bg-zinc-900/40 hover:border-zinc-600'
-                  }`}
-                  title={iconOption.label}
-                >
-                  <IconComponent className="w-5 h-5 text-zinc-200 mx-auto" />
-                </button>
-              );
-            })}
+    <>
+      <div className="grid gap-5">
+        <div className="grid gap-5 sm:grid-cols-[1fr_8rem]">
+          <div className="grid gap-2">
+            <Label htmlFor={`${formId}-name`}>
+              Role name
+              <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id={`${formId}-name`}
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="e.g. Moderator"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={`${formId}-priority`}>Priority</Label>
+            <Input
+              id={`${formId}-priority`}
+              type="number"
+              inputMode="numeric"
+              value={String(formPriority)}
+              onChange={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                setFormPriority(Number.isNaN(parsed) ? 0 : parsed);
+              }}
+              placeholder="0"
+              className="tabular-nums"
+            />
           </div>
         </div>
-        <ColorPicker
-          label="Color"
-          value={formColor}
-          onChange={setFormColor}
-          presets={PRESET_COLORS}
-        />
-      </div>
-      <AdminTextInput
-        label="Priority (higher = more important)"
-        value={String(formPriority)}
-        onChange={(v) => {
-          const parsed = parseInt(v, 10);
-          setFormPriority(Number.isNaN(parsed) ? 0 : parsed);
-        }}
-        placeholder="0"
-      />
-      <div>
-        <span className="block text-xs text-zinc-500 mb-1.5">Permissions</span>
-        <div className="space-y-2 rounded-xl border border-zinc-800/60 divide-y divide-zinc-800/80 overflow-hidden">
-          {AVAILABLE_PERMISSIONS.map((permission) => (
+        <div className="grid gap-2">
+          <Label htmlFor={`${formId}-description`}>Description</Label>
+          <Textarea
+            id={`${formId}-description`}
+            value={formDescription}
+            onChange={(e) => setFormDescription(e.target.value)}
+            placeholder="What this role is for…"
+            rows={2}
+          />
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid content-start gap-2">
+            <Label>Icon</Label>
             <div
-              key={permission.key}
-              className="flex items-center justify-between gap-3 px-3 py-2.5 bg-zinc-900/30"
+              className="grid grid-cols-7 gap-1.5 sm:grid-cols-5"
+              role="radiogroup"
+              aria-label="Role icon"
             >
-              <div className="min-w-0">
-                <p className="text-sm text-zinc-200 font-medium">
-                  {permission.label}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {permission.description}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setFormPermissions((prev) => ({
-                    ...prev,
-                    [permission.key]: !prev[permission.key],
-                  }))
-                }
-                className={`shrink-0 w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-colors ${
-                  formPermissions[permission.key]
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'border-zinc-600 hover:border-zinc-500'
-                }`}
-                aria-pressed={!!formPermissions[permission.key]}
-              >
-                {formPermissions[permission.key] && (
-                  <MdCheck className="w-4 h-4 text-white" />
-                )}
-              </button>
+              {AVAILABLE_ICONS.map((iconOption) => {
+                const IconComponent = iconOption.icon;
+                const active = formIcon === iconOption.value;
+                return (
+                  <Tooltip key={iconOption.value}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={active ? 'default' : 'outline'}
+                        size="icon"
+                        role="radio"
+                        aria-checked={active}
+                        aria-label={iconOption.label}
+                        onClick={() => setFormIcon(iconOption.value)}
+                        className="w-full"
+                      >
+                        <IconComponent />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{iconOption.label}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </div>
-          ))}
+          </div>
+          <RoleColorField value={formColor} onChange={setFormColor} />
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Preview</Label>
+          <RoleName role={previewRole} className="text-sm font-medium" />
         </div>
       </div>
-    </div>
+
+      <div className="grid gap-4">
+        <h3 className="text-sm font-medium">Permissions</h3>
+        {GROUPED_PERMISSIONS.map((group) => (
+          <div key={group.title} className="grid gap-2.5">
+            <h4 className="text-xs text-muted-foreground">{group.title}</h4>
+            <div className="grid gap-x-4 gap-y-2.5 sm:grid-cols-2">
+              {group.items.map((permission) => {
+                const checkboxId = `${formId}-perm-${permission.key}`;
+                return (
+                  <Label
+                    key={permission.key}
+                    htmlFor={checkboxId}
+                    title={permission.description}
+                    className="flex cursor-pointer items-center gap-2.5 font-normal"
+                  >
+                    <Checkbox
+                      id={checkboxId}
+                      checked={!!formPermissions[permission.key]}
+                      onCheckedChange={() => togglePermission(permission.key)}
+                    />
+                    {permission.label}
+                  </Label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 
   const roleFilterOptions = useMemo(
     () => [
       { value: 'all', label: 'All users' },
       { value: 'no-role', label: 'No role' },
-      ...validRoles.map((role) => ({
-        value: role.id.toString(),
-        label: role.name,
-      })),
+      ...validRoles.map((role) => {
+        const RoleIcon = getIconComponent(role.icon);
+        return {
+          value: role.id.toString(),
+          label: role.name,
+          icon: <RoleIcon className="size-4" style={{ color: role.color }} />,
+        };
+      }),
     ],
     [validRoles]
+  );
+
+  const selectedUser = useMemo(
+    () => users.find((u) => u.id === selectedUserForRole) ?? null,
+    [users, selectedUserForRole]
   );
 
   const assignableRolesForUser = useMemo(() => {
@@ -499,430 +655,287 @@ export default function AdminRoles() {
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Roles"
-        icon={MdAdminPanelSettings}
-        accent="rose"
+        icon={ShieldCheck}
         actions={
           <>
             <AdminRefreshButton onClick={fetchData} loading={loading} />
-            <Button
-              onClick={openCreateModal}
-              variant="primary"
-              size="sm"
-              className={`${toolbarBtnClass} flex items-center gap-1.5`}
-            >
-              <MdAdd size={18} />
+            <Button onClick={openCreateModal}>
+              <Plus />
               Create role
             </Button>
           </>
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading roles"
-          message={error}
-          onRetry={fetchData}
-        />
-      ) : (
-        <>
-          <AdminStatStrip
-            columns={4}
-            items={[
-              { label: 'Roles', value: stats.roleCount },
-              { label: 'Users with roles', value: stats.usersWithRoles },
-              { label: 'Without role', value: stats.usersWithoutRoles },
-              { label: 'Assignments', value: stats.totalAssignments },
-            ]}
+      >
+        {loading ? (
+          <AdminLoading label="Loading roles…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading roles"
+            message={error}
+            onRetry={fetchData}
           />
+        ) : (
+          <>
+            <AdminStatCards
+              columns={4}
+              items={[
+                { label: 'Roles', value: stats.roleCount },
+                { label: 'Users with roles', value: stats.usersWithRoles },
+                { label: 'Without role', value: stats.usersWithoutRoles },
+                { label: 'Assignments', value: stats.totalAssignments },
+              ]}
+            />
 
-          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-            <p className="text-xs text-zinc-500 mb-3">
-              Drag rows to set display priority (top = highest). Changes save on
-              drop.
-            </p>
-
-            <div className="hidden lg:block">
-              <AdminTable minWidth="900px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={`${ADMIN_TH} w-10`} aria-label="Reorder" />
-                    <th className={ADMIN_TH}>Role</th>
-                    <th className={ADMIN_TH}>Members</th>
-                    <th className={ADMIN_TH}>Priority</th>
-                    <th className={ADMIN_TH}>Permissions</th>
-                    <th className={`${ADMIN_TH} text-right`}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {validRoles.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
-                      >
-                        No roles yet. Create one to get started.
-                      </td>
-                    </tr>
-                  ) : (
-                    validRoles.map((role, index) => (
-                      <tr
+            <AdminSection title="Roles">
+              {validRoles.length === 0 ? (
+                <AdminEmptyState
+                  icon={ShieldCheck}
+                  title="No roles yet"
+                  action={
+                    <Button size="sm" onClick={openCreateModal}>
+                      <Plus />
+                      Create role
+                    </Button>
+                  }
+                />
+              ) : (
+                <AdminTable minWidth="760px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <span className="sr-only">Reorder</span>
+                      </TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Members</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Permissions</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {validRoles.map((role, index) => (
+                      <TableRow
                         key={role.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, role.id)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={handleDrop}
-                        className={`hover:bg-zinc-800/30 ${
-                          draggedId === role.id ? 'opacity-60' : ''
-                        }`}
+                        className={cn(draggedId === role.id && 'opacity-60')}
                       >
-                        <td className={ADMIN_TD}>
-                          <MdDragIndicator
-                            className="w-5 h-5 text-zinc-600 cursor-grab active:cursor-grabbing"
+                        <TableCell title="Drag to reorder">
+                          <GripVertical
+                            className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing"
                             aria-hidden
                           />
-                        </td>
-                        <td className={ADMIN_TD}>
-                          <div className="min-w-0">
-                            <RoleBadge role={role} />
+                        </TableCell>
+                        <TableCell className="whitespace-normal">
+                          <div className="grid min-w-0 justify-items-start gap-1">
+                            <RoleName role={role} className="font-medium" />
                             {role.description && (
-                              <p className="text-xs text-zinc-500 mt-1 line-clamp-1">
+                              <p className="line-clamp-1 text-xs text-muted-foreground">
                                 {role.description}
                               </p>
                             )}
                           </div>
-                        </td>
-                        <td
-                          className={`${ADMIN_TD} text-zinc-300 tabular-nums`}
-                        >
+                        </TableCell>
+                        <TableCell className="tabular-nums">
                           {role.user_count ?? 0}
-                        </td>
-                        <td
-                          className={`${ADMIN_TD} text-zinc-400 text-sm tabular-nums`}
-                        >
+                        </TableCell>
+                        <TableCell className="text-muted-foreground tabular-nums">
                           {role.priority}
-                        </td>
-                        <td className={ADMIN_TD}>
+                        </TableCell>
+                        <TableCell className="whitespace-normal">
                           <PermissionSummary permissions={role.permissions} />
-                        </td>
-                        <td className={`${ADMIN_TD} text-right`}>
-                          <div className="flex justify-end gap-1.5">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size={btnSize}
-                              onClick={() => openEditModal(role)}
-                            >
-                              <MdEdit className="w-3.5 h-3.5 inline mr-1" />
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size={btnSize}
-                              onClick={() => void handleDeleteRole(role)}
-                            >
-                              <MdDelete className="w-3.5 h-3.5 inline mr-1" />
-                              Delete
-                            </Button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Edit ${role.name}`}
+                                  onClick={() => openEditModal(role)}
+                                >
+                                  <Pencil />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit role</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Delete ${role.name}`}
+                                  onClick={() => void handleDeleteRole(role)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete role</TooltipContent>
+                            </Tooltip>
                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </AdminTable>
-            </div>
-
-            <ul className="lg:hidden space-y-3">
-              {validRoles.length === 0 ? (
-                <li className="text-center py-10 text-zinc-500 text-sm">
-                  No roles yet. Create one to get started.
-                </li>
-              ) : (
-                validRoles.map((role, index) => (
-                  <li
-                    key={role.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, role.id)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDrop={handleDrop}
-                    className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
-                  >
-                    <div className="flex items-start gap-2">
-                      <MdDragIndicator className="w-5 h-5 text-zinc-600 shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <RoleBadge role={role} />
-                        {role.description && (
-                          <p className="text-xs text-zinc-500 mt-2">
-                            {role.description}
-                          </p>
-                        )}
-                        <p className="text-xs text-zinc-500 mt-2">
-                          {role.user_count ?? 0} members · priority{' '}
-                          {role.priority}
-                        </p>
-                        <div className="mt-2">
-                          <PermissionSummary permissions={role.permissions} />
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={btnSize}
-                            onClick={() => openEditModal(role)}
-                            className="flex-1"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size={btnSize}
-                            onClick={() => void handleDeleteRole(role)}
-                            className="flex-1"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
               )}
-            </ul>
-          </div>
+            </AdminSection>
 
-          <div className={adminSectionClass()}>
-            <AdminToolbar>
-              <AdminSearchInput
-                value={userSearch}
-                onChange={setUserSearch}
-                placeholder="Search users…"
-              />
-              <div className="relative w-full sm:w-52 shrink-0">
-                <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
-                  <MdFilterList size={18} />
-                </span>
-                <Dropdown
+            <AdminSection
+              title="User assignments"
+              contentClassName="flex flex-col gap-3"
+            >
+              <AdminToolbar>
+                <AdminSearchInput
+                  value={userSearch}
+                  onChange={setUserSearch}
+                  placeholder="Search users…"
+                />
+                <AdminSelect
                   value={roleFilter}
                   onChange={setRoleFilter}
                   options={roleFilterOptions}
                   placeholder="Filter by role…"
-                  className="!pl-11"
-                  size="sm"
+                  searchPlaceholder="Search roles…"
+                  aria-label="Filter by role"
+                  searchable
                 />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!hasUserFilters}
-                onClick={clearUserFilters}
-                className={toolbarBtnClass}
-              >
-                <MdClose size={16} className="mr-1" />
-                Clear
-              </Button>
-            </AdminToolbar>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!hasUserFilters}
+                  onClick={clearUserFilters}
+                >
+                  <X />
+                  Clear
+                </Button>
+              </AdminToolbar>
 
-            <div className="hidden md:block">
-              <AdminTable minWidth="800px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={ADMIN_TH}>User</th>
-                    <th className={ADMIN_TH}>Roles</th>
-                    <th className={`${ADMIN_TH} text-right`}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
+              {filteredUsers.length === 0 ? (
+                <AdminEmptyState
+                  icon={Users}
+                  title="No users match these filters"
+                  action={
+                    hasUserFilters ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearUserFilters}
                       >
-                        No users match these filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-zinc-800/30">
-                        <td className={ADMIN_TD}>
+                        Clear filters
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <AdminTable minWidth="640px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Roles</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
                           <div className="flex items-center gap-3">
-                            {user.avatar ? (
-                              <img
-                                src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
-                                alt=""
-                                className="w-9 h-9 rounded-full shrink-0"
-                              />
-                            ) : (
-                              <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center shrink-0">
-                                <MdPeople className="w-4 h-4 text-zinc-400" />
-                              </div>
-                            )}
+                            <UserAvatar user={user} />
                             <div className="min-w-0">
-                              <p className="font-medium text-zinc-100 truncate">
+                              <p className="flex items-center gap-2 truncate font-medium">
                                 {user.username}
                                 {user.is_admin && (
-                                  <span className="ml-2 text-[10px] uppercase tracking-wide text-blue-400/90 font-semibold">
-                                    Dev
-                                  </span>
+                                  <AdminStatusBadge tone="info" icon={Code}>
+                                    Developer
+                                  </AdminStatusBadge>
                                 )}
                               </p>
-                              <p className="text-[11px] text-zinc-500 font-mono truncate">
+                              <p className="truncate font-mono text-xs text-muted-foreground">
                                 {user.id}
                               </p>
                             </div>
                           </div>
-                        </td>
-                        <td className={ADMIN_TD}>
+                        </TableCell>
+                        <TableCell className="whitespace-normal">
                           {user.roles && user.roles.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
                               {user.roles.map((role) => (
                                 <span
                                   key={role.id}
-                                  className="inline-flex items-center group"
+                                  className="group inline-flex items-center"
                                 >
-                                  <RoleBadge role={role} compact />
+                                  <RoleName role={role} />
                                   <button
                                     type="button"
                                     onClick={() =>
                                       void handleRemoveRole(user.id, role.id)
                                     }
-                                    className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-white transition-opacity"
+                                    className="ml-0.5 rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring [@media(hover:none)]:opacity-100"
                                     title="Remove role"
+                                    aria-label={`Remove ${role.name} from ${user.username}`}
                                   >
-                                    <MdClose size={14} />
+                                    <X className="size-3.5" />
                                   </button>
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="text-xs text-zinc-600">
+                            <span className="text-muted-foreground">
                               No roles
                             </span>
                           )}
-                        </td>
-                        <td className={`${ADMIN_TD} text-right`}>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={btnSize}
-                            onClick={() => {
-                              setSelectedUserForRole(user.id);
-                              setShowAddRoleModal(true);
-                            }}
-                          >
-                            <MdAdd className="w-3.5 h-3.5 inline mr-1" />
-                            Add role
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </AdminTable>
-            </div>
-
-            <ul className="md:hidden space-y-3">
-              {filteredUsers.length === 0 ? (
-                <li className="text-center py-10 text-zinc-500 text-sm">
-                  No users match these filters.
-                </li>
-              ) : (
-                filteredUsers.map((user) => (
-                  <li
-                    key={user.id}
-                    className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      {user.avatar ? (
-                        <img
-                          src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`}
-                          alt=""
-                          className="w-9 h-9 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 bg-zinc-700 rounded-full flex items-center justify-center">
-                          <MdPeople className="w-4 h-4 text-zinc-400" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-zinc-100 truncate">
-                          {user.username}
-                        </p>
-                        <p className="text-[11px] text-zinc-500 font-mono truncate">
-                          {user.id}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size={btnSize}
-                        onClick={() => {
-                          setSelectedUserForRole(user.id);
-                          setShowAddRoleModal(true);
-                        }}
-                      >
-                        <MdAdd size={18} />
-                      </Button>
-                    </div>
-                    {user.roles && user.roles.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {user.roles.map((role) => (
-                          <span
-                            key={role.id}
-                            className="inline-flex items-center"
-                          >
-                            <RoleBadge role={role} compact />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleRemoveRole(user.id, role.id)
-                              }
-                              className="ml-1 text-zinc-500 hover:text-white"
-                            >
-                              <MdClose size={14} />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-zinc-600">No roles assigned</p>
-                    )}
-                  </li>
-                ))
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Assign role to ${user.username}`}
+                                onClick={() => {
+                                  setSelectedUserForRole(user.id);
+                                  setShowAddRoleModal(true);
+                                }}
+                              >
+                                <UserPlus />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Assign role</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
               )}
-            </ul>
-          </div>
-        </>
-      )}
+            </AdminSection>
+          </>
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Create role"
-        size="xl"
+        size="lg"
         footer={
           <>
-            <Button
-              onClick={() => setShowCreateModal(false)}
-              variant="outline"
-              size={btnSize}
-            >
+            <Button variant="outline" onClick={() => setShowCreateModal(false)}>
               Cancel
             </Button>
             <Button
               onClick={() => void handleCreateRole()}
               disabled={submitting}
-              variant="primary"
-              size={btnSize}
             >
               {submitting ? 'Creating…' : 'Create role'}
             </Button>
@@ -936,22 +949,13 @@ export default function AdminRoles() {
         open={showEditModal && !!selectedRole}
         onClose={() => setShowEditModal(false)}
         title={selectedRole ? `Edit ${selectedRole.name}` : 'Edit role'}
-        size="xl"
+        size="lg"
         footer={
           <>
-            <Button
-              onClick={() => setShowEditModal(false)}
-              variant="outline"
-              size={btnSize}
-            >
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={() => void handleEditRole()}
-              disabled={submitting}
-              variant="primary"
-              size={btnSize}
-            >
+            <Button onClick={() => void handleEditRole()} disabled={submitting}>
               {submitting ? 'Saving…' : 'Save changes'}
             </Button>
           </>
@@ -966,15 +970,17 @@ export default function AdminRoles() {
           setShowAddRoleModal(false);
           setSelectedUserForRole(null);
         }}
-        title="Assign role"
+        title={
+          selectedUser
+            ? `Assign role to ${selectedUser.username}`
+            : 'Assign role'
+        }
         size="sm"
       >
         {assignableRolesForUser.length === 0 ? (
-          <p className="text-sm text-zinc-500 py-2">
-            This user already has every role, or no roles exist.
-          </p>
+          <AdminEmptyState icon={ShieldCheck} title="Nothing to assign" />
         ) : (
-          <div className="space-y-2">
+          <div className="-mx-3 grid gap-0.5">
             {assignableRolesForUser.map((role) => {
               const RoleIcon = getIconComponent(role.icon);
               return (
@@ -984,21 +990,24 @@ export default function AdminRoles() {
                   onClick={() =>
                     void handleAssignRole(selectedUserForRole!, role.id)
                   }
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-zinc-800/60 bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors text-left"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors outline-none hover:bg-accent focus-visible:bg-accent"
                 >
                   <RoleIcon
-                    className="w-5 h-5 shrink-0"
+                    className="size-4 shrink-0"
                     style={{ color: role.color }}
                   />
-                  <span className="text-sm text-zinc-100 font-medium">
+                  <span className="min-w-0 flex-1 truncate font-medium">
                     {role.name}
                   </span>
+                  <Plus className="size-4 shrink-0 text-muted-foreground" />
                 </button>
               );
             })}
           </div>
         )}
       </AdminModal>
+
+      {confirmDialog}
     </AdminLayout>
   );
 }

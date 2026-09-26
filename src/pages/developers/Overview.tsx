@@ -1,25 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import {
   Loader2,
   LayoutDashboard,
   KeyRound,
   BookOpen,
-  ArrowRight,
+  ChevronRight,
   Bell,
+  CheckCircle2,
   X,
   Clock,
+  Compass,
+  FileText,
   Mail,
+  PauseCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import DeveloperAccessRequestForm from '../../components/developers/DeveloperAccessRequestForm';
-import { cardClass, statusBadgeClass } from './constants';
+import SettingsSection from '../../components/Settings/SettingsSection';
+import SettingsGroup from '../../components/Settings/SettingsGroup';
+import SettingsRow from '../../components/Settings/SettingsRow';
+import { ADMIN_TONE_TEXT } from '@/components/admin/adminConstants';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useDeveloperPortal } from './developerPortalContext';
-
-const devNoticeSuccessClass =
-  'flex items-start gap-3 rounded-2xl border border-emerald-800/45 bg-emerald-950/40 px-4 py-3 text-emerald-50 ring-1 ring-emerald-900/30';
-
-const devNoticeClass =
-  'flex items-start gap-3 rounded-2xl border border-amber-800/40 bg-amber-950/35 px-4 py-3 text-amber-50 ring-1 ring-amber-900/25';
 
 const ADMIN_NOTICE_SUCCESS_PREFIX = '[[success]]';
 
@@ -38,8 +42,30 @@ function parseAdminNoticeDetail(raw: string | null | undefined): {
   return { variant: 'default', body: text };
 }
 
-const devPendingCardClass =
-  'rounded-3xl border border-zinc-700/80 bg-linear-to-br from-zinc-900/95 via-zinc-900/90 to-sky-950/20 p-6 sm:p-8 shadow-xl ring-1 ring-zinc-700/45 text-zinc-200';
+function OverviewLinkRow({
+  to,
+  icon,
+  label,
+  description,
+}: {
+  to: string;
+  icon: ReactNode;
+  label: string;
+  description: string;
+}) {
+  return (
+    <Link to={to} className="group block transition-colors hover:bg-muted/40">
+      <SettingsRow
+        icon={icon}
+        label={label}
+        description={description}
+        className="flex-row items-center justify-between gap-6"
+      >
+        <ChevronRight className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+      </SettingsRow>
+    </Link>
+  );
+}
 
 export default function DeveloperOverview() {
   const {
@@ -75,7 +101,7 @@ export default function DeveloperOverview() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -86,264 +112,191 @@ export default function DeveloperOverview() {
     : [];
 
   if (profileActive) {
+    const noticeSuccess = adminNoticeParsed.variant === 'success';
+    const NoticeIcon = noticeSuccess ? CheckCircle2 : Bell;
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-10">
         {showAdminNotice && (
-          <div
-            className={
-              adminNoticeParsed.variant === 'success'
-                ? devNoticeSuccessClass
-                : devNoticeClass
-            }
-          >
-            <Bell
-              className={`w-5 h-5 shrink-0 mt-0.5 ${
-                adminNoticeParsed.variant === 'success'
-                  ? 'text-emerald-400'
-                  : 'text-amber-400'
-              }`}
-            />
-            <div className="flex-1 min-w-0">
-              <p
-                className={`text-sm font-semibold ${
-                  adminNoticeParsed.variant === 'success'
-                    ? 'text-emerald-100'
-                    : 'text-amber-100'
-                }`}
-              >
-                {adminNoticeParsed.variant === 'success'
-                  ? 'Application approved'
-                  : 'Something changed on your account'}
-              </p>
-              <div
-                className={`mt-2 space-y-2 text-sm leading-relaxed ${
-                  adminNoticeParsed.variant === 'success'
-                    ? 'text-emerald-100/90'
-                    : 'text-amber-200/90'
-                }`}
-              >
-                {adminNoticeParagraphs.length > 0 ? (
-                  adminNoticeParagraphs.map((para, i) => (
-                    <p key={i}>{para.trim()}</p>
-                  ))
-                ) : (
-                  <p>
-                    {adminNoticeDetail?.trim() ||
-                      'An admin updated your scopes, a key, or rate limits. Peek at Keys or the API reference when you have a minute.'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void dismissAdminNotice()}
-              className={`shrink-0 p-1.5 rounded-lg transition-colors ${
-                adminNoticeParsed.variant === 'success'
-                  ? 'text-emerald-200/85 hover:bg-emerald-900/45 hover:text-emerald-50'
-                  : 'text-amber-200/80 hover:bg-amber-900/40 hover:text-amber-50'
-              }`}
-              aria-label="Dismiss notification"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-        <p className="text-zinc-400 text-sm sm:text-base max-w-2xl">
-          You&apos;re all set. Jump into usage, keys, or the live API reference
-          whenever you like.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link
-            to="/developers/console"
-            className={`${cardClass()} group block hover:border-zinc-600/90 transition-colors`}
-          >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
-                <LayoutDashboard className="w-5 h-5" />
-              </div>
-              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-            </div>
-            <h2 className="text-base font-semibold text-zinc-100">Usage</h2>
-            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Request volume, scope mix, and recent calls.
-            </p>
-          </Link>
-          <Link
-            to="/developers/keys"
-            className={`${cardClass()} group block hover:border-zinc-600/90 transition-colors`}
-          >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-                <KeyRound className="w-5 h-5" />
-              </div>
-              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-            </div>
-            <h2 className="text-base font-semibold text-zinc-100">API keys</h2>
-            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Create, rotate, and revoke scoped keys.
-            </p>
-          </Link>
-          <Link
-            to="/developers/docs"
-            className={`${cardClass()} group block hover:border-zinc-600/90 transition-colors`}
-          >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-            </div>
-            <h2 className="text-base font-semibold text-zinc-100">
-              API reference
-            </h2>
-            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Routes, parameters, and curl examples.
-            </p>
-          </Link>
-        </div>
-
-        <div className={`${cardClass()} w-full`}>
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 shrink-0">
-              <Mail className="w-5 h-5" />
-            </div>
-            <div className="min-w-0 flex-1 space-y-3">
-              <div>
-                <h2 className="text-lg font-semibold text-zinc-100">
-                  Email alerts
-                </h2>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  (Optional) We&apos;ll email you when an administrator updates
-                  your scopes, API keys, rate limits, or account status (same
-                  summary as the in-portal notice).
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-                <label className="flex-1 min-w-0">
-                  <span className="sr-only">Notification email</span>
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    value={emailDraft}
-                    onChange={(e) => setEmailDraft(e.target.value)}
-                    placeholder="you@example.com"
-                    disabled={notificationEmailSaving}
-                    className="w-full rounded-xl border border-zinc-700/90 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-violet-500/70 focus:ring-1 focus:ring-violet-500/35 disabled:opacity-50"
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={
-                    notificationEmailSaving ||
-                    (emailDraft.trim() === '' && notificationEmail === null) ||
-                    (emailDraft.trim() !== '' &&
-                      emailDraft.trim() === (notificationEmail ?? ''))
+          <SettingsGroup>
+            <SettingsRow
+              icon={
+                <NoticeIcon
+                  className={
+                    noticeSuccess
+                      ? ADMIN_TONE_TEXT.success
+                      : ADMIN_TONE_TEXT.warning
                   }
-                  onClick={() => {
-                    setError(null);
-                    void saveNotificationEmail(emailDraft.trim() || null);
-                  }}
-                  className="inline-flex justify-center items-center gap-2 shrink-0 px-6 py-2.5 rounded-xl border border-violet-600/50 bg-violet-950/40 text-violet-100 text-sm font-semibold hover:bg-violet-900/45 hover:border-violet-500/55 transition-colors disabled:opacity-40 disabled:pointer-events-none ring-1 ring-violet-900/25"
-                >
-                  {notificationEmailSaving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                />
+              }
+              label={
+                noticeSuccess
+                  ? 'Application approved'
+                  : 'Something changed on your account'
+              }
+              description={
+                <span className="flex flex-col gap-2 leading-relaxed">
+                  {adminNoticeParagraphs.length > 0 ? (
+                    adminNoticeParagraphs.map((para, i) => (
+                      <span key={i}>{para.trim()}</span>
+                    ))
                   ) : (
-                    'Save'
+                    <span>
+                      {adminNoticeDetail?.trim() ||
+                        'An admin updated your scopes, a key, or rate limits. Peek at Keys or the API reference when you have a minute.'}
+                    </span>
                   )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </span>
+              }
+              className="flex-row items-start justify-between gap-4 sm:items-start"
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground"
+                onClick={() => void dismissAdminNotice()}
+                aria-label="Dismiss notification"
+              >
+                <X />
+              </Button>
+            </SettingsRow>
+          </SettingsGroup>
+        )}
+
+        <SettingsSection title="Quick links" icon={Compass}>
+          <SettingsGroup>
+            <OverviewLinkRow
+              to="/developers/console"
+              icon={<LayoutDashboard className="text-sky-400" />}
+              label="Usage"
+              description="Request volume, scope mix, and recent calls."
+            />
+            <OverviewLinkRow
+              to="/developers/keys"
+              icon={<KeyRound className="text-blue-400" />}
+              label="API keys"
+              description="Create, rotate, and revoke scoped keys."
+            />
+            <OverviewLinkRow
+              to="/developers/docs"
+              icon={<BookOpen className="text-emerald-400" />}
+              label="API reference"
+              description="Routes, parameters, and curl examples."
+            />
+          </SettingsGroup>
+        </SettingsSection>
+
+        <SettingsSection title="Notifications" icon={Bell}>
+          <SettingsGroup>
+            <SettingsRow
+              icon={<Mail className="text-blue-400" />}
+              label="Email alerts"
+              description="Optional. We'll email you when an admin changes your scopes, keys, rate limits, or account status."
+              htmlFor="dev-notify-email"
+            >
+              <Input
+                id="dev-notify-email"
+                type="email"
+                autoComplete="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
+                placeholder="you@example.com"
+                disabled={notificationEmailSaving}
+                className="w-full sm:w-64"
+              />
+              <Button
+                type="button"
+                disabled={
+                  notificationEmailSaving ||
+                  (emailDraft.trim() === '' && notificationEmail === null) ||
+                  (emailDraft.trim() !== '' &&
+                    emailDraft.trim() === (notificationEmail ?? ''))
+                }
+                onClick={() => {
+                  setError(null);
+                  void saveNotificationEmail(emailDraft.trim() || null);
+                }}
+                className="shrink-0 sm:w-20"
+              >
+                {notificationEmailSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  'Save'
+                )}
+              </Button>
+            </SettingsRow>
+          </SettingsGroup>
+        </SettingsSection>
       </div>
     );
   }
 
   if (profileSuspended) {
     return (
-      <div className="rounded-3xl border border-rose-900/45 bg-linear-to-br from-zinc-900/95 via-rose-950/20 to-zinc-900/95 p-6 sm:p-8 shadow-xl ring-1 ring-rose-900/20 text-zinc-200">
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass('suspended')}`}
-          >
-            Suspended
-          </span>
-        </div>
-        <h2 className="text-lg font-semibold text-zinc-50 mb-2">
-          Your developer access is on pause
-        </h2>
-        <p className="text-sm text-zinc-400 leading-relaxed">
-          API keys won&apos;t work until an administrator turns access back on.
-          If this looks wrong, reach out{' '}
-          <a
-            href="https://cephie.app/discord"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sky-400 font-medium hover:text-sky-300 underline decoration-sky-600 underline-offset-2"
-          >
-            on Discord
-          </a>
-          .
-        </p>
-      </div>
+      <SettingsSection title="Developer access" icon={ShieldAlert}>
+        <SettingsGroup>
+          <SettingsRow
+            icon={<PauseCircle className={ADMIN_TONE_TEXT.danger} />}
+            label="Your developer access is on pause"
+            description={
+              <>
+                API keys won&apos;t work until an administrator turns access
+                back on. If this looks wrong, reach out{' '}
+                <a
+                  href="https://cephie.app/discord"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-blue-400 underline underline-offset-2 hover:text-blue-300"
+                >
+                  on Discord
+                </a>
+                .
+              </>
+            }
+          />
+        </SettingsGroup>
+      </SettingsSection>
     );
   }
 
   if (pending) {
+    const application = appState?.latestApplication;
     return (
-      <div className={devPendingCardClass}>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-          <h2 className="text-lg font-semibold text-zinc-50">
-            Application in the queue
-          </h2>
-          <span
-            className={`text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg ${statusBadgeClass('pending')}`}
-          >
-            Pending
-          </span>
-        </div>
-        <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-          Thanks for applying! A human will read it soon. When you&apos;re
-          approved you&apos;ll be able to create keys from the Keys tab.
-        </p>
-        {appState?.latestApplication && (
-          <div className="space-y-5 text-sm border-t border-zinc-700/80 pt-5">
-            <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">
-                About you
-              </p>
-              <p className="text-zinc-200 whitespace-pre-wrap leading-relaxed">
-                {appState.latestApplication.whoText}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-1.5">
-                What you&apos;re building
-              </p>
-              <p className="text-zinc-200 whitespace-pre-wrap leading-relaxed">
-                {appState.latestApplication.whyText}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-400/90 mb-2.5">
-                Scopes you asked for
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {appState.latestApplication.requestedScopes.map((id) => (
-                  <span
-                    key={id}
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border border-sky-700/50 bg-sky-950/40 text-sky-200"
-                  >
-                    {scopeLabelMap.get(id) ?? id}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+      <SettingsSection title="Your application" icon={FileText}>
+        <SettingsGroup>
+          <SettingsRow
+            icon={<Clock className={ADMIN_TONE_TEXT.warning} />}
+            label="Application in the queue"
+            description="Thanks for applying! A human will read it soon. Once approved you can create keys from the Keys tab."
+          />
+        </SettingsGroup>
+        {application && (
+          <SettingsGroup title="What you sent">
+            <SettingsRow
+              label="About you"
+              description={
+                <span className="whitespace-pre-wrap">
+                  {application.whoText}
+                </span>
+              }
+            />
+            <SettingsRow
+              label="What you're building"
+              description={
+                <span className="whitespace-pre-wrap">
+                  {application.whyText}
+                </span>
+              }
+            />
+            <SettingsRow
+              label="Scopes you asked for"
+              description={application.requestedScopes
+                .map((id) => scopeLabelMap.get(id) ?? id)
+                .join(', ')}
+            />
+          </SettingsGroup>
         )}
-      </div>
+      </SettingsSection>
     );
   }
 

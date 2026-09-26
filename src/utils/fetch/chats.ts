@@ -2,21 +2,31 @@ import { apiFetch } from '../apiFetch.js';
 import { apiError } from './error.js';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
-export async function fetchChatMessages(sessionId: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
-    credentials: 'include',
-  });
+export async function fetchChatMessages(sessionId: string, accessId: string) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}?accessId=${encodeURIComponent(accessId)}`,
+    {
+      credentials: 'include',
+    }
+  );
   if (!res.ok) await apiError(res, 'Failed to fetch chat messages');
   return res.json();
 }
 
-export async function sendChatMessage(sessionId: string, message: string) {
-  const res = await apiFetch(`${API_BASE_URL}/api/chats/${sessionId}`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
-  });
+export async function sendChatMessage(
+  sessionId: string,
+  accessId: string,
+  message: string
+) {
+  const res = await apiFetch(
+    `${API_BASE_URL}/api/chats/${sessionId}?accessId=${encodeURIComponent(accessId)}`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    }
+  );
   if (!res.ok) await apiError(res, 'Failed to send message');
   return res.json();
 }
@@ -35,11 +45,12 @@ export async function deleteChatMessage(sessionId: string, messageId: number) {
 
 export async function reportChatMessage(
   sessionId: string,
+  accessId: string,
   messageId: number,
   reason: string
 ) {
   const res = await apiFetch(
-    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report`,
+    `${API_BASE_URL}/api/chats/${sessionId}/${messageId}/report?accessId=${encodeURIComponent(accessId)}`,
     {
       method: 'POST',
       credentials: 'include',

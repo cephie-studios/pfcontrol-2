@@ -27,6 +27,7 @@ export interface DeveloperExtRouteDefinition {
   requestBodySummary?: string;
   requestBodyExampleJson?: string;
   minVersion?: 1 | 2;
+  hidden?: boolean;
 }
 
 export const SELF_INFO_SCOPE_ID = 'self.read';
@@ -175,6 +176,44 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       ],
     }),
     minVersion: 2,
+  },
+  {
+    scopeId: 'sessions.network_claim',
+    method: 'GET',
+    pattern: { kind: 'exact', path: '/sessions/network/claims' },
+    responseSummary:
+      'Active session claims held by this API key: [{ sessionId, claimedAt, expiresAt }].',
+    minVersion: 2,
+    hidden: true,
+  },
+  {
+    scopeId: 'sessions.network_claim',
+    method: 'POST',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/network\/claims\/[^/]+$/i,
+      pathTemplate: '/sessions/network/claims/{sessionId}',
+    },
+    responseSummary:
+      'Claims (or renews) a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC.',
+    requestBodySummary:
+      'Optional JSON object: { "ttlMinutes": 5-360 } (default 180). Renew before expiresAt to keep the claim.',
+    requestBodyExampleJson: JSON.stringify({ ttlMinutes: 180 }),
+    minVersion: 2,
+    hidden: true,
+  },
+  {
+    scopeId: 'sessions.network_claim',
+    method: 'DELETE',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/network\/claims\/[^/]+$/i,
+      pathTemplate: '/sessions/network/claims/{sessionId}',
+    },
+    responseSummary:
+      'Releases a claim held by this API key. 204 on success, 404 if this key holds no claim on the session.',
+    minVersion: 2,
+    hidden: true,
   },
   // AATC disabled — sessions.network_aatc routes commented out
   // {

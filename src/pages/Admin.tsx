@@ -1,34 +1,37 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { MdDashboard, MdSettings } from 'react-icons/md';
+import { BarChart3, TrendingUp } from 'lucide-react';
 import AdminRefreshButton from '../components/admin/AdminRefreshButton';
 import AdminLayout from '../components/admin/AdminLayout';
-import AdminPageHeader from '../components/admin/AdminPageHeader';
+import AdminPage from '../components/admin/AdminPage';
+import AdminSection from '../components/admin/AdminSection';
 import AdminStatCards from '../components/admin/AdminStatCards';
-import AdminSectionTitle from '../components/admin/AdminSectionTitle';
+import {
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../components/admin/AdminStates';
 import {
   AdminAreaChart,
   AdminMultiSeriesAreaChart,
+  type AdminChartSeries,
 } from '../components/admin/AdminChart';
-import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_HEADER_ACTIONS_MOBILE,
-  ADMIN_SEGMENT_ACTIVE,
-  ADMIN_SEGMENT_INACTIVE,
-} from '../components/admin/adminConstants';
-import Loader from '../components/common/Loader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '../hooks/auth/useAuth';
 import {
   fetchAdminStatistics,
+  fetchAdminStatisticsForecast,
+  type AdminDatabaseGrowthDriver,
   fetchAppVersion,
   fetchApiLogStats24h,
   type AdminStats,
   type AppVersion,
 } from '../utils/fetch/admin';
-import Button from '../components/common/Button';
-import ErrorScreen from '../components/common/ErrorScreen';
 
 type ActivityChartView = 'flights' | 'sessions' | 'accounts';
+
+const TIME_RANGES = [7, 30, 90, 180, 365];
 
 const ACTIVITY_CHART_VIEWS: {
   id: ActivityChartView;
@@ -84,6 +87,128 @@ const API_SERIES = [
   { key: 'other', label: 'Other', color: '#94a3b8', strokeDasharray: '8 4' },
 ] as const;
 
+const FORECAST_BAND_COLOR = '#94a3b8';
+
+const FORECAST_DRIVER_BY_KEY: Record<string, AdminDatabaseGrowthDriver['key']> =
+  {
+    flights: 'flights',
+    sessions: 'sessions',
+    logins: 'logins',
+    users: 'users',
+  };
+
+type ChartRow = Record<string, string | number>;
+
+function appendForecast(
+  rows: ChartRow[],
+  keys: string[],
+  drivers: AdminDatabaseGrowthDriver[],
+  withBand: boolean
+): ChartRow[] {
+  const out = rows.map((r) => ({ ...r }));
+  const byDate = new Map(out.map((r) => [String(r.label).slice(0, 10), r]));
+
+  for (const key of keys) {
+    const driver = drivers.find((d) => d.key === FORECAST_DRIVER_BY_KEY[key]);
+    const first = driver?.forecast[0];
+    if (!driver || !first) continue;
+
+    const anchor = driver.history[driver.history.length - 1];
+    const anchorRow = anchor ? byDate.get(anchor.date) : undefined;
+    if (anchorRow && anchorRow[key] !== undefined) {
+      anchorRow[`${key}Forecast`] = anchorRow[key];
+      if (withBand) {
+        anchorRow[`${key}Low`] = anchorRow[key];
+        anchorRow[`${key}High`] = anchorRow[key];
+      }
+    }
+
+    for (const point of driver.forecast) {
+      let row = byDate.get(point.date);
+      if (!row) {
+        row = { label: point.date };
+        byDate.set(point.date, row);
+        out.push(row);
+      }
+      row[`${key}Forecast`] = point.value;
+      if (withBand) {
+        row[`${key}Low`] = point.low;
+        row[`${key}High`] = point.high;
+      }
+    }
+  }
+
+  return out.sort((a, b) =>
+    String(a.label).slice(0, 10).localeCompare(String(b.label).slice(0, 10))
+  );
+}
+
+function forecastSeries(
+  key: string,
+  label: string,
+  color: string,
+  withBand: boolean
+): AdminChartSeries[] {
+  const series: AdminChartSeries[] = [
+    {
+      key: `${key}Forecast`,
+      label: `${label} forecast`,
+      color,
+      strokeDasharray: withBand ? '6 4' : '1 4',
+    },
+  ];
+  if (withBand) {
+    series.push(
+      {
+        key: `${key}High`,
+        label: 'High',
+        color: FORECAST_BAND_COLOR,
+        strokeDasharray: '2 4',
+      },
+      {
+        key: `${key}Low`,
+        label: 'Low',
+        color: FORECAST_BAND_COLOR,
+        strokeDasharray: '2 4',
+      }
+    );
+  }
+  return series;
+}
+
+function formatPct(pct: number | null): string {
+  return pct === null ? '—' : `${pct >= 0 ? '+' : ''}${pct}%`;
+}
+
+function ForecastSummary({ driver }: { driver: AdminDatabaseGrowthDriver }) {
+  return (
+    <p className="text-xs text-muted-foreground">
+      <span className="font-medium text-foreground">{driver.label}:</span> next
+      7 days{' '}
+      <span className="tabular-nums">~{driver.next7.toLocaleString()}</span> ·
+      next 30 days{' '}
+      <span className="tabular-nums">
+        ~{driver.next30.toLocaleString()} ({driver.next30Low.toLocaleString()}–
+        {driver.next30High.toLocaleString()})
+      </span>{' '}
+      · trend {formatPct(driver.weeklyGrowthPct)}/wk
+      {driver.peakWeekday ? ` · peaks ${driver.peakWeekday}` : ''}
+    </p>
+  );
+}
+
+function isActivityChartView(value: string): value is ActivityChartView {
+  return ACTIVITY_CHART_VIEWS.some((v) => v.id === value);
+}
+
+function PeriodValue({ color, value }: { color: string; value: number }) {
+  return (
+    <span className="font-medium tabular-nums" style={{ color }}>
+      {value.toLocaleString()}
+    </span>
+  );
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -107,6 +232,11 @@ export default function Admin() {
   >([]);
   const [activityChartView, setActivityChartView] =
     useState<ActivityChartView>('flights');
+  const [showForecast, setShowForecast] = useState(false);
+  const [forecastDrivers, setForecastDrivers] = useState<
+    AdminDatabaseGrowthDriver[] | null
+  >(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
 
   const hasPermission = (permission: string) =>
     Boolean(user?.isAdmin || user?.rolePermissions?.[permission]);
@@ -179,6 +309,22 @@ export default function Admin() {
     void fetchApiLogStats24hData();
   }, [fetchApiLogStats24hData]);
 
+  useEffect(() => {
+    if (!showForecast || forecastDrivers || forecastLoading) return;
+    setForecastLoading(true);
+    fetchAdminStatisticsForecast()
+      .then((res) => setForecastDrivers(res.drivers))
+      .catch((err) => {
+        setShowForecast(false);
+        setToast({
+          message:
+            err instanceof Error ? err.message : 'Failed to load forecast',
+          type: 'error',
+        });
+      })
+      .finally(() => setForecastLoading(false));
+  }, [showForecast, forecastDrivers, forecastLoading]);
+
   const activityChartData = useMemo(
     () =>
       (stats?.daily ?? []).map((item) => ({
@@ -215,209 +361,278 @@ export default function Admin() {
     [apiLogStats24h]
   );
 
-  const btnSize = adminDownsizeButtonSize('sm');
+  const forecastActive = showForecast && forecastDrivers !== null;
+
+  const forecastChart = useMemo(() => {
+    if (!forecastActive) return null;
+    if (activityChartView === 'accounts') {
+      return {
+        data: appendForecast(
+          activityChartData,
+          ACCOUNTS_SERIES.map((s) => s.key),
+          forecastDrivers,
+          false
+        ),
+        series: [
+          ...ACCOUNTS_SERIES,
+          ...ACCOUNTS_SERIES.flatMap((s) =>
+            forecastSeries(s.key, s.label, s.color, false)
+          ),
+        ],
+      };
+    }
+    const view = activeActivityView;
+    return {
+      data: appendForecast(
+        singleSeriesChartData.map((r) => ({
+          label: r.label,
+          [view.id]: r.value,
+        })),
+        [view.id],
+        forecastDrivers,
+        true
+      ),
+      series: [
+        { key: view.id, label: view.label, color: view.color },
+        ...forecastSeries(view.id, view.label, view.color, true),
+      ],
+    };
+  }, [
+    forecastActive,
+    forecastDrivers,
+    activityChartView,
+    activityChartData,
+    singleSeriesChartData,
+    activeActivityView,
+  ]);
+
+  const forecastSummaryDrivers = useMemo(() => {
+    if (!forecastActive) return [];
+    const keys =
+      activityChartView === 'accounts'
+        ? ['logins', 'users']
+        : [activityChartView];
+    return keys
+      .map((k) =>
+        forecastDrivers.find((d) => d.key === FORECAST_DRIVER_BY_KEY[k])
+      )
+      .filter((d): d is AdminDatabaseGrowthDriver => d !== undefined);
+  }, [forecastActive, forecastDrivers, activityChartView]);
+
   const period = stats?.periodTotals;
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Admin Overview"
-        icon={MdDashboard}
-        accent="blue"
-        actionsClassName={ADMIN_HEADER_ACTIONS_MOBILE}
+        icon={BarChart3}
         actions={
-          <div className="flex flex-wrap gap-1.5 max-md:w-full">
-            {[7, 30, 90, 180, 365].map((days) => (
-              <Button
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={String(timeRange)}
+            onValueChange={(value) => {
+              if (value) setTimeRange(Number(value));
+            }}
+            aria-label="Time range"
+          >
+            {TIME_RANGES.map((days) => (
+              <ToggleGroupItem
                 key={days}
-                onClick={() => setTimeRange(days)}
-                variant={timeRange === days ? 'primary' : 'outline'}
-                size={btnSize}
+                value={String(days)}
+                aria-label={`Last ${days} days`}
+                className="tabular-nums"
               >
                 {days}d
-              </Button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading statistics"
-          message={error}
-          onRetry={fetchStats}
-        />
-      ) : stats ? (
-        <>
-          <AdminStatCards
-            items={[
-              { label: 'Total users', value: stats.totals?.total_users ?? 0 },
-              {
-                label: 'Total sessions',
-                value: stats.totals?.total_sessions ?? 0,
-              },
-              {
-                label: 'Total flights',
-                value: stats.totals?.total_flights ?? 0,
-              },
-              { label: 'Total logins', value: stats.totals?.total_logins ?? 0 },
-            ]}
+      >
+        {loading ? (
+          <AdminLoading label="Loading statistics…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading statistics"
+            message={error}
+            onRetry={fetchStats}
           />
+        ) : stats ? (
+          <>
+            <AdminStatCards
+              items={[
+                {
+                  label: 'Total users',
+                  value: stats.totals?.total_users ?? 0,
+                },
+                {
+                  label: 'Total sessions',
+                  value: stats.totals?.total_sessions ?? 0,
+                },
+                {
+                  label: 'Total flights',
+                  value: stats.totals?.total_flights ?? 0,
+                },
+                {
+                  label: 'Total logins',
+                  value: stats.totals?.total_logins ?? 0,
+                },
+              ]}
+            />
 
-          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-              <div className="min-w-0 flex-1">
-                <AdminSectionTitle className="!mb-1">
-                  Platform activity
-                </AdminSectionTitle>
-                <p className="text-xs text-zinc-500 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span>Last {timeRange} days · hover for daily values</span>
-                  {period ? (
-                    <>
-                      <span
-                        className="hidden md:inline text-zinc-600"
-                        aria-hidden
-                      >
-                        ·
-                      </span>
-                      <span className="hidden md:inline">
-                        {activityChartView === 'accounts' ? (
-                          <>
-                            <span style={{ color: ACCOUNTS_SERIES[0].color }}>
-                              {period.total_logins.toLocaleString()}
-                            </span>{' '}
-                            logins ·{' '}
-                            <span style={{ color: ACCOUNTS_SERIES[1].color }}>
-                              {period.total_users.toLocaleString()}
-                            </span>{' '}
-                            new users in period
-                          </>
-                        ) : activeActivityView.periodKey ? (
-                          <>
-                            <span style={{ color: activeActivityView.color }}>
-                              {period[
-                                activeActivityView.periodKey
-                              ].toLocaleString()}
-                            </span>{' '}
-                            {activeActivityView.label.toLowerCase()} in period
-                          </>
-                        ) : null}
-                      </span>
-                    </>
-                  ) : null}
-                </p>
-              </div>
-              <div
-                className="inline-flex h-9 shrink-0 rounded-full border-2 border-blue-600 overflow-hidden"
-                role="group"
-                aria-label="Platform activity chart"
+            <Tabs
+              value={activityChartView}
+              onValueChange={(value) => {
+                if (isActivityChartView(value)) setActivityChartView(value);
+              }}
+              className="gap-0"
+            >
+              <AdminSection
+                title="Platform activity"
+                description={
+                  period ? (
+                    activityChartView === 'accounts' ? (
+                      <>
+                        <PeriodValue
+                          color={ACCOUNTS_SERIES[0].color}
+                          value={period.total_logins}
+                        />{' '}
+                        logins ·{' '}
+                        <PeriodValue
+                          color={ACCOUNTS_SERIES[1].color}
+                          value={period.total_users}
+                        />{' '}
+                        new users in the last {timeRange} days
+                      </>
+                    ) : activeActivityView.periodKey ? (
+                      <>
+                        <PeriodValue
+                          color={activeActivityView.color}
+                          value={period[activeActivityView.periodKey]}
+                        />{' '}
+                        {activeActivityView.label.toLowerCase()} in the last{' '}
+                        {timeRange} days
+                      </>
+                    ) : null
+                  ) : null
+                }
+                actions={
+                  <div className="flex items-center gap-2">
+                    <Toggle
+                      variant="outline"
+                      className="gap-1.5 px-3"
+                      pressed={showForecast}
+                      onPressedChange={setShowForecast}
+                      disabled={forecastLoading}
+                      aria-label="Show 30-day forecast"
+                    >
+                      <TrendingUp />
+                      Forecast
+                    </Toggle>
+                    <TabsList aria-label="Platform activity chart">
+                      {ACTIVITY_CHART_VIEWS.map((view) => (
+                        <TabsTrigger key={view.id} value={view.id}>
+                          {view.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
+                }
               >
                 {ACTIVITY_CHART_VIEWS.map((view) => (
-                  <button
-                    key={view.id}
-                    type="button"
-                    aria-pressed={activityChartView === view.id}
-                    onClick={() => setActivityChartView(view.id)}
-                    className={`px-3 sm:px-4 h-full text-xs sm:text-sm font-medium transition-colors ${
-                      activityChartView === view.id
-                        ? ADMIN_SEGMENT_ACTIVE
-                        : ADMIN_SEGMENT_INACTIVE
-                    }`}
-                  >
-                    {view.label}
-                  </button>
+                  <TabsContent key={view.id} value={view.id}>
+                    {forecastChart && view.id === activityChartView ? (
+                      <div className="grid gap-3">
+                        <AdminMultiSeriesAreaChart
+                          data={forecastChart.data}
+                          series={forecastChart.series}
+                          height={200}
+                          filled={false}
+                          showLegend
+                        />
+                        {forecastSummaryDrivers.map((d) => (
+                          <ForecastSummary key={d.key} driver={d} />
+                        ))}
+                      </div>
+                    ) : view.id === 'accounts' ? (
+                      <AdminMultiSeriesAreaChart
+                        data={activityChartData}
+                        series={[...ACCOUNTS_SERIES]}
+                        height={200}
+                        showLegend
+                      />
+                    ) : (
+                      <AdminAreaChart
+                        data={singleSeriesChartData}
+                        color={view.color}
+                        valueLabel={view.label}
+                        height={200}
+                      />
+                    )}
+                  </TabsContent>
                 ))}
-              </div>
-            </div>
+              </AdminSection>
+            </Tabs>
 
-            {activityChartView === 'accounts' ? (
-              <AdminMultiSeriesAreaChart
-                data={activityChartData}
-                series={[...ACCOUNTS_SERIES]}
-                height={200}
-                hideAxes
-                showLegend
-              />
-            ) : (
-              <AdminAreaChart
-                data={singleSeriesChartData}
-                color={activeActivityView.color}
-                valueLabel={activeActivityView.label}
-                height={200}
-                hideAxes
-              />
-            )}
-          </div>
-
-          {hasPermission('audit') ? (
-            <div className={adminSectionClass()}>
-              <div className="mb-4">
-                <AdminSectionTitle className="!mb-1">
-                  API traffic
-                </AdminSectionTitle>
-                <p className="text-xs text-zinc-500">
-                  Last 24 hours · hover for hourly values
-                </p>
-              </div>
-              <AdminMultiSeriesAreaChart
-                data={apiChartData}
-                series={[...API_SERIES]}
-                height={160}
-                hideAxes
-                showLegend
-                filled={false}
-              />
-            </div>
-          ) : null}
-
-          {user?.isAdmin && (
-            <div className={adminSectionClass()}>
-              <div className="flex flex-wrap items-center gap-3">
-                <MdSettings size={18} className="text-blue-400 shrink-0" />
-                <AdminSectionTitle className="!mb-0 flex-1">
-                  Application version
-                </AdminSectionTitle>
-                <AdminRefreshButton
-                  onClick={fetchVersion}
-                  loading={versionLoading}
-                  iconOnly
-                  label="Refresh version"
+            {hasPermission('audit') ? (
+              <AdminSection title="API traffic (24h)">
+                <AdminMultiSeriesAreaChart
+                  data={apiChartData}
+                  series={[...API_SERIES]}
+                  height={160}
+                  showLegend
+                  filled={false}
                 />
-              </div>
-              {versionLoading ? (
-                <Loader />
-              ) : appVersion ? (
-                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mt-3">
-                  <div>
-                    <dt className="text-zinc-500 text-xs">Version</dt>
-                    <dd className="text-white font-medium">
-                      {appVersion.version}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500 text-xs">Updated</dt>
-                    <dd className="text-zinc-300">
-                      {new Date(appVersion.updated_at).toLocaleString()}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500 text-xs">By</dt>
-                    <dd className="text-zinc-300">{appVersion.updated_by}</dd>
-                  </div>
-                </dl>
-              ) : null}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center py-12 text-zinc-400">
-          No statistics available
-        </div>
-      )}
+              </AdminSection>
+            ) : null}
+
+            {user?.isAdmin && (
+              <AdminSection
+                title="Application version"
+                actions={
+                  <AdminRefreshButton
+                    onClick={fetchVersion}
+                    loading={versionLoading}
+                    iconOnly
+                    label="Refresh version"
+                    className="size-8"
+                  />
+                }
+              >
+                {versionLoading ? (
+                  <AdminLoading className="py-4" />
+                ) : appVersion ? (
+                  <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                    <div className="flex gap-2">
+                      <dt className="text-muted-foreground">Version</dt>
+                      <dd className="font-mono font-medium">
+                        {appVersion.version}
+                      </dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-muted-foreground">Updated</dt>
+                      <dd className="tabular-nums">
+                        {new Date(appVersion.updated_at).toLocaleString()}
+                      </dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-muted-foreground">By</dt>
+                      <dd>{appVersion.updated_by}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No version information.
+                  </p>
+                )}
+              </AdminSection>
+            )}
+          </>
+        ) : (
+          <AdminEmptyState icon={BarChart3} title="No statistics available" />
+        )}
+      </AdminPage>
     </AdminLayout>
   );
 }

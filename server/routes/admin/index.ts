@@ -3,6 +3,7 @@ import requireAuth from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rolePermissions.js';
 import { getDailyStatistics, getTotalStatistics } from '../../db/admin.js';
 import { getAppVersion } from '../../db/version.js';
+import { getGrowthForecast } from '../../db/databaseProjection.js';
 
 import usersRouter from './users.js';
 import sessionsRouter from './sessions.js';
@@ -49,6 +50,20 @@ router.use('/database', databaseRouter);
 router.use('/featured-flights', featuredFlightsRouter);
 router.use('/user-alerts', userAlertsRouter);
 router.use('/profile-content', profileContentRouter);
+
+// GET: /api/admin/statistics/forecast - 30-day activity forecast
+router.get(
+  '/statistics/forecast',
+  requirePermission('admin'),
+  async (_req, res) => {
+    try {
+      res.json({ drivers: await getGrowthForecast() });
+    } catch (error) {
+      console.error('Error building statistics forecast:', error);
+      res.status(500).json({ error: 'Failed to build forecast' });
+    }
+  }
+);
 
 // GET: /api/admin/statistics - Get dashboard statistics
 router.get('/statistics', requirePermission('admin'), async (req, res) => {

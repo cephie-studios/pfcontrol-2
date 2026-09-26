@@ -1,18 +1,14 @@
-import { useState } from 'react';
-import {
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
-  Table,
-  PlaneLanding,
-  PlaneTakeoff,
-} from 'lucide-react';
+import { useId } from 'react';
+import { Columns3, RotateCcw } from 'lucide-react';
 import type {
   DepartureTableColumnSettings,
   ArrivalsTableColumnSettings,
 } from '../../types/settings';
-import Button from '../common/Button';
-import Checkbox from '../common/Checkbox';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import SettingsSection from './SettingsSection';
+import SettingsGroup from './SettingsGroup';
 
 interface TableColumnSettingsProps {
   departureColumns: DepartureTableColumnSettings;
@@ -22,7 +18,10 @@ interface TableColumnSettingsProps {
   onReset: () => void;
 }
 
-const departureColumnLabels = {
+const departureColumnLabels: Record<
+  Exclude<keyof DepartureTableColumnSettings, 'time'>,
+  string
+> = {
   callsign: 'Callsign',
   req: 'On Request (REQ)',
   stand: 'Stand',
@@ -44,7 +43,10 @@ const departureColumnLabels = {
   delete: 'Delete Button',
 };
 
-const arrivalsColumnLabels = {
+const arrivalsColumnLabels: Record<
+  Exclude<keyof ArrivalsTableColumnSettings, 'time'>,
+  string
+> = {
   callsign: 'Callsign',
   gate: 'Gate',
   aircraft: 'Aircraft Type',
@@ -62,6 +64,44 @@ const arrivalsColumnLabels = {
   hide: 'Hide Button',
 };
 
+type ColumnOption = {
+  key: string;
+  label: string;
+  checked: boolean;
+  locked?: boolean;
+};
+
+function ColumnGrid({
+  idPrefix,
+  options,
+  onToggle,
+}: {
+  idPrefix: string;
+  options: ColumnOption[];
+  onToggle: (key: string, checked: boolean) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 px-5 py-4 min-[420px]:grid-cols-2 md:grid-cols-3">
+      {options.map(({ key, label, checked, locked }) => {
+        const id = `${idPrefix}-${key}`;
+        return (
+          <div key={key} className="flex min-w-0 items-center gap-2.5">
+            <Checkbox
+              id={id}
+              checked={checked}
+              disabled={locked}
+              onCheckedChange={(value) => onToggle(key, value === true)}
+            />
+            <Label htmlFor={id} className="leading-snug font-normal">
+              {label}
+            </Label>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function TableColumnSettings({
   departureColumns,
   arrivalsColumns,
@@ -69,7 +109,7 @@ export default function TableColumnSettings({
   onArrivalsColumnsChange,
   onReset,
 }: TableColumnSettingsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const idPrefix = useId();
 
   const handleDepartureColumnChange = (
     column: keyof DepartureTableColumnSettings,
@@ -93,166 +133,62 @@ export default function TableColumnSettings({
     });
   };
 
+  const departureOptions: ColumnOption[] = [
+    { key: 'time', label: 'Time', checked: true, locked: true },
+    ...Object.entries(departureColumnLabels).map(([key, label]) => ({
+      key,
+      label,
+      checked:
+        departureColumns[key as keyof DepartureTableColumnSettings] !== false,
+    })),
+  ];
+
+  const arrivalsOptions: ColumnOption[] = [
+    { key: 'time', label: 'Time', checked: true, locked: true },
+    ...Object.entries(arrivalsColumnLabels).map(([key, label]) => ({
+      key,
+      label,
+      checked:
+        arrivalsColumns[key as keyof ArrivalsTableColumnSettings] !== false,
+    })),
+  ];
+
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="w-full p-4 sm:p-6 border-b border-zinc-700/50">
-        <div className="flex items-center justify-between gap-3">
-          <div
-            className="flex items-center flex-1 min-w-0 cursor-pointer"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <div className="p-2 bg-purple-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
-              <Table className="h-5 w-5 sm:h-6 sm:w-6 text-purple-400" />
-            </div>
-            <div className="text-left min-w-0">
-              <h3 className="text-lg sm:text-xl font-semibold text-white">
-                Table Columns
-              </h3>
-              <p className="text-zinc-400 text-xs sm:text-sm mt-1 hidden sm:block">
-                Configure which columns are visible in your flight tables
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <Button
-              onClick={onReset}
-              variant="outline"
-              size="sm"
-              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 hidden sm:flex"
-            >
-              <RotateCcw className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Reset</span>
-            </Button>
-            <Button
-              onClick={onReset}
-              variant="outline"
-              size="sm"
-              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 sm:hidden p-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => setIsExpanded(!isExpanded)}
-              variant="outline"
-              size="sm"
-              className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2"
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
+    <SettingsSection
+      title="Table Columns"
+      icon={Columns3}
+      actions={
+        <Button variant="outline" size="sm" onClick={onReset}>
+          <RotateCcw />
+          Reset
+        </Button>
+      }
+    >
+      <SettingsGroup title="Departures">
+        <ColumnGrid
+          idPrefix={`${idPrefix}-dep`}
+          options={departureOptions}
+          onToggle={(key, checked) =>
+            handleDepartureColumnChange(
+              key as keyof DepartureTableColumnSettings,
+              checked
+            )
+          }
+        />
+      </SettingsGroup>
 
-      {/* Content */}
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded
-            ? 'max-h-[2000px] opacity-100'
-            : 'max-h-0 opacity-0 overflow-hidden'
-        }`}
-      >
-        <div className="p-4 sm:p-6">
-          <div className="space-y-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="p-1.5 bg-blue-500/20 rounded-lg mr-3">
-                  <PlaneTakeoff className="h-5 w-5 text-blue-400" />
-                </div>
-                <h4 className="text-lg font-medium text-white">
-                  Departure Table
-                </h4>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Time column - always visible */}
-                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-300 font-medium">
-                      Time
-                    </span>
-                    <span className="text-xs text-zinc-500 bg-zinc-700/50 px-2 py-1 rounded">
-                      Required
-                    </span>
-                  </div>
-                </div>
-                {Object.entries(departureColumnLabels).map(([key, label]) => (
-                  <div
-                    key={key}
-                    className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-3 hover:bg-zinc-800/50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={
-                        departureColumns[
-                          key as keyof DepartureTableColumnSettings
-                        ] as boolean
-                      }
-                      onChange={(checked) =>
-                        handleDepartureColumnChange(
-                          key as keyof DepartureTableColumnSettings,
-                          checked
-                        )
-                      }
-                      label={label}
-                      className="text-sm text-zinc-300"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Arrivals Table Columns */}
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="p-1.5 bg-green-500/20 rounded-lg mr-3">
-                  <PlaneLanding className="h-5 w-5 text-green-400" />
-                </div>
-                <h4 className="text-lg font-medium text-white">
-                  Arrivals Table
-                </h4>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Time column - always visible */}
-                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-300 font-medium">
-                      Time
-                    </span>
-                    <span className="text-xs text-zinc-500 bg-zinc-700/50 px-2 py-1 rounded">
-                      Required
-                    </span>
-                  </div>
-                </div>
-                {Object.entries(arrivalsColumnLabels).map(([key, label]) => (
-                  <div
-                    key={key}
-                    className="bg-zinc-800/30 border border-zinc-700/50 rounded-lg p-3 hover:bg-zinc-800/50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={
-                        arrivalsColumns[
-                          key as keyof ArrivalsTableColumnSettings
-                        ] as boolean
-                      }
-                      onChange={(checked) =>
-                        handleArrivalsColumnChange(
-                          key as keyof ArrivalsTableColumnSettings,
-                          checked
-                        )
-                      }
-                      label={label}
-                      className="text-sm text-zinc-300"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <SettingsGroup title="Arrivals">
+        <ColumnGrid
+          idPrefix={`${idPrefix}-arr`}
+          options={arrivalsOptions}
+          onToggle={(key, checked) =>
+            handleArrivalsColumnChange(
+              key as keyof ArrivalsTableColumnSettings,
+              checked
+            )
+          }
+        />
+      </SettingsGroup>
+    </SettingsSection>
   );
 }

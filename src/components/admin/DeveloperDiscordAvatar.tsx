@@ -1,4 +1,6 @@
-import { MdPeople } from 'react-icons/md';
+import { User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 type Props = {
   userId: string;
@@ -11,23 +13,20 @@ export default function DeveloperDiscordAvatar({
   userId,
   username,
   avatar,
-  className = 'h-8 w-8',
+  className = 'size-8',
 }: Props) {
-  if (avatar) {
-    return (
-      <img
-        src={`https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`}
-        alt={username}
-        className={`${className} shrink-0 rounded-full object-cover`}
-      />
-    );
-  }
   return (
-    <div
-      className={`${className} shrink-0 rounded-full bg-zinc-600 flex items-center justify-center`}
-      aria-hidden
-    >
-      <MdPeople className="w-4 h-4 text-zinc-400" />
-    </div>
+    <Avatar className={cn('border', className)}>
+      {avatar ? (
+        <AvatarImage
+          src={`https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`}
+          alt={username}
+          className="object-cover"
+        />
+      ) : null}
+      <AvatarFallback aria-hidden>
+        <User className="size-4" />
+      </AvatarFallback>
+    </Avatar>
   );
 }
