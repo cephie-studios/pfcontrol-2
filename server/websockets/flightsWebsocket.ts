@@ -7,7 +7,7 @@ import {
   type ClientFlight,
 } from '../db/flights.js';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
-import { updateSession } from '../db/sessions.js';
+import { getSessionById, updateSession } from '../db/sessions.js';
 import { mainDb } from '../db/connection.js';
 import {
   validateSessionId,
@@ -31,6 +31,7 @@ import { broadcastArrivalChange } from '../realtime/arrivals.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 import { getSocketUser } from './socketAuth.js';
 import { getNetworkKind } from '../utils/advancedNetworkSession.js';
+import { resolveExternalAcarsRedirectUrl } from '../utils/externalAcarsPanel.js';
 
 interface FlightUpdateData {
   flightId: string | number;
@@ -201,10 +202,17 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           { submitterUserId: userId }
         );
 
-        socket.emit('flightAdded', flight);
-
         const { acars_token: _acars, ...sanitizedFlight } = flight;
         socket.to(sessionId).emit('flightAdded', sanitizedFlight);
+
+        const acarsRedirectUrl = await resolveExternalAcarsRedirectUrl(
+          await getSessionById(sessionId),
+          flight
+        );
+        socket.emit(
+          'flightAdded',
+          acarsRedirectUrl ? { ...flight, acarsRedirectUrl } : flight
+        );
 
         await logFlightAction({
           userId: userId || 'unknown',

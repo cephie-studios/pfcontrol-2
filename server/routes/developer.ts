@@ -7,8 +7,10 @@ import {
 } from '../developer/apiKeySecret.js';
 import { buildDeveloperApiPublicSpec } from '../developer/apiDocumentation.js';
 import {
-  DEVELOPER_SCOPE_CATALOG,
+  PUBLIC_DEVELOPER_SCOPE_CATALOG,
+  isHiddenScope,
   isScopeSubset,
+  isValidPublicScopeList,
   isValidScopeList,
 } from '../developer/scopeRegistry.js';
 import {
@@ -98,7 +100,7 @@ function isValidNotificationEmail(s: string): boolean {
 }
 
 router.get('/catalog', (_req, res) => {
-  res.json({ scopes: DEVELOPER_SCOPE_CATALOG });
+  res.json({ scopes: PUBLIC_DEVELOPER_SCOPE_CATALOG });
 });
 
 router.patch('/profile/notification-email', async (req, res) => {
@@ -236,7 +238,7 @@ router.post('/application', async (req, res) => {
     ) {
       return res.status(400).json({ error: 'who / why length out of range' });
     }
-    if (!isValidScopeList(requestedScopes)) {
+    if (!isValidPublicScopeList(requestedScopes)) {
       return res.status(400).json({
         error: 'requestedScopes must be a non-empty array of valid scope ids',
       });
@@ -311,7 +313,7 @@ router.post('/application/scope-expansion', async (req, res) => {
         .status(400)
         .json({ error: 'additionalScopes must be an array' });
     }
-    if (!isValidScopeList(additionalScopes)) {
+    if (!isValidPublicScopeList(additionalScopes)) {
       return res.status(400).json({
         error: 'additionalScopes must be a non-empty array of valid scope ids',
       });
@@ -429,6 +431,11 @@ router.post('/keys', async (req, res) => {
       return res.status(400).json({ error: 'invalid name length' });
     }
     if (!isValidScopeList(scopes)) {
+      return res
+        .status(400)
+        .json({ error: 'scopes must be a non-empty array of valid scope ids' });
+    }
+    if (scopes.some((s) => isHiddenScope(s) && !approved.includes(s))) {
       return res
         .status(400)
         .json({ error: 'scopes must be a non-empty array of valid scope ids' });

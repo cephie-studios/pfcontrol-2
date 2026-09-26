@@ -13,6 +13,7 @@ export interface DeveloperScopeCatalogEntry {
   id: string;
   label: string;
   description: string;
+  hidden?: boolean;
 }
 
 export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
@@ -166,6 +167,13 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
       'GET /notifications/active — public announcement banners (no admin CRUD).',
   },
   {
+    id: 'sessions.network_claim',
+    label: 'Claim PFATC sessions (external ACARS)',
+    description:
+      'POST/DELETE /sessions/network/claims/{sessionId}, GET /sessions/network/claims — claim a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. Claims expire (renewable) and stop working as soon as this key is revoked or loses the scope. Admin-granted only.',
+    hidden: true,
+  },
+  {
     id: 'flight_logs.read',
     label: 'Own session flight logs (metadata)',
     description:
@@ -182,6 +190,21 @@ export function isValidScopeList(scopes: unknown): scopes is string[] {
   if (scopes.length === 0) return false;
   const set = new Set(ALL_DEVELOPER_SCOPE_IDS);
   return scopes.every((s) => typeof s === 'string' && set.has(s));
+}
+
+export const PUBLIC_DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] =
+  DEVELOPER_SCOPE_CATALOG.filter((s) => !s.hidden);
+
+const HIDDEN_SCOPE_IDS = new Set(
+  DEVELOPER_SCOPE_CATALOG.filter((s) => s.hidden).map((s) => s.id)
+);
+
+export function isHiddenScope(scopeId: string): boolean {
+  return HIDDEN_SCOPE_IDS.has(scopeId);
+}
+
+export function isValidPublicScopeList(scopes: unknown): scopes is string[] {
+  return isValidScopeList(scopes) && !scopes.some(isHiddenScope);
 }
 
 export function isScopeSubset(scopes: string[], allowed: string[]): boolean {

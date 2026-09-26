@@ -40,6 +40,14 @@ import {
 } from '../../utils/validation.js';
 import { broadcastFlightEvent } from '../../websockets/flightsWebsocket.js';
 import { sendServerError } from '../../utils/apiError.js';
+import {
+  CLAIM_TTL_DEFAULT_MINUTES,
+  CLAIM_TTL_MAX_MINUTES,
+  CLAIM_TTL_MIN_MINUTES,
+  listExternalAcarsClaimsForKey,
+  releaseExternalAcarsClaim,
+  setExternalAcarsClaim,
+} from '../../utils/externalAcarsClaims.js';
 import { fromCamelCaseFlightBody } from '../../utils/caseConversion.js';
 import {
   isValidAirportIcao,
@@ -431,6 +439,104 @@ router.put(
     } catch (e) {
       console.error('[ext/sessions] network flights batch update:', e);
       sendServerError(res, 'Failed to update network flights', e);
+    }
+  }
+);
+
+router.get('/network/claims', async (req: Request, res: Response) => {
+  try {
+    const ext = extCtx(req);
+    const claims = await listExternalAcarsClaimsForKey(ext.keyId);
+    res.json(
+      claims.map((c) => ({
+        sessionId: c.sessionId,
+        claimedAt: c.claimedAt,
+        expiresAt: c.expiresAt,
+      }))
+    );
+  } catch (e) {
+    console.error('[ext/sessions] list claims:', e);
+    sendServerError(res, 'Failed to list claims', e);
+  }
+});
+
+router.post(
+  '/network/claims/:sessionId',
+  async (req: Request, res: Response) => {
+    try {
+      const ext = extCtx(req);
+      let sessionId: string;
+      try {
+        sessionId = validateSessionId(routeParamString(req.params.sessionId));
+      } catch {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      const rawTtl = (req.body ?? {}).ttlMinutes;
+      let ttlMinutes = CLAIM_TTL_DEFAULT_MINUTES;
+      if (rawTtl !== undefined) {
+        const n = Number(rawTtl);
+        if (
+          !Number.isInteger(n) ||
+          n < CLAIM_TTL_MIN_MINUTES ||
+          n > CLAIM_TTL_MAX_MINUTES
+        ) {
+          return res.status(400).json({
+            error: `ttlMinutes must be an integer between ${CLAIM_TTL_MIN_MINUTES} and ${CLAIM_TTL_MAX_MINUTES}.`,
+          });
+        }
+        ttlMinutes = n;
+      }
+
+      const session = await getSessionById(sessionId);
+      if (!session) return res.status(404).json({ error: 'Not found' });
+      if (!session.is_pfatc) {
+        return res
+          .status(400)
+          .json({ error: 'Only PFATC sessions can be claimed.' });
+      }
+
+      const result = await setExternalAcarsClaim({
+        sessionId,
+        keyId: ext.keyId,
+        userId: ext.userId,
+        ttlMinutes,
+      });
+      if (!result.ok) {
+        return res
+          .status(409)
+          .json({ error: 'Session is already claimed by another API key.' });
+      }
+
+      res.status(result.renewed ? 200 : 201).json({
+        sessionId: result.claim.sessionId,
+        claimedAt: result.claim.claimedAt,
+        expiresAt: result.claim.expiresAt,
+      });
+    } catch (e) {
+      console.error('[ext/sessions] claim:', e);
+      sendServerError(res, 'Failed to claim session', e);
+    }
+  }
+);
+
+router.delete(
+  '/network/claims/:sessionId',
+  async (req: Request, res: Response) => {
+    try {
+      const ext = extCtx(req);
+      let sessionId: string;
+      try {
+        sessionId = validateSessionId(routeParamString(req.params.sessionId));
+      } catch {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      const released = await releaseExternalAcarsClaim(sessionId, ext.keyId);
+      if (!released) return res.status(404).json({ error: 'Not found' });
+      res.status(204).end();
+    } catch (e) {
+      console.error('[ext/sessions] release claim:', e);
+      sendServerError(res, 'Failed to release claim', e);
     }
   }
 );

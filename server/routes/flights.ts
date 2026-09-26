@@ -31,7 +31,7 @@ import {
 import { getSessionById } from '../db/sessions.js';
 import { getNetworkKind } from '../utils/advancedNetworkSession.js';
 import { recordNewFlight } from '../db/statistics.js';
-import { fetchExternalAcarsPanelUrl } from '../utils/externalAcarsPanel.js';
+import { resolveExternalAcarsRedirectUrl } from '../utils/externalAcarsPanel.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { mainDb, redisConnection } from '../db/connection.js';
 import { keys } from '../realtime/keys.js';
@@ -438,18 +438,10 @@ router.post(
 
       const session = await getSessionById(req.params.sessionId);
 
-      let acarsRedirectUrl: string | undefined;
-      if (
-        session?.external_session === true &&
-        flight?.acars_token &&
-        flight?.callsign
-      ) {
-        const external = await fetchExternalAcarsPanelUrl(
-          flight.callsign,
-          flight.acars_token
-        );
-        if (external) acarsRedirectUrl = external.url;
-      }
+      const acarsRedirectUrl = await resolveExternalAcarsRedirectUrl(
+        session,
+        flight
+      );
 
       res
         .status(201)

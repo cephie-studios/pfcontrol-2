@@ -217,7 +217,9 @@ export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
       defaultPerMinute: perMin,
       envVar: 'DEVELOPER_API_RATE_LIMIT_PER_MINUTE',
     },
-    endpoints: [...DEVELOPER_EXT_ROUTES].map(endpointFromRoute),
+    endpoints: DEVELOPER_EXT_ROUTES.filter((r) => !r.hidden).map(
+      endpointFromRoute
+    ),
     websockets: [
       {
         title: 'Network Flights (live push)',
