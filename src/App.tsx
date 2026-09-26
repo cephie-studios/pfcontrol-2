@@ -3,19 +3,6 @@ import { lazy, Suspense } from 'react';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
-import Create from './pages/Create';
-import Sessions from './pages/Sessions';
-import Submit from './pages/Submit';
-import Flights from './pages/Flights';
-import MyFlights from './pages/MyFlights';
-import MyFeedback from './pages/MyFeedback';
-import MyFlightDetail from './pages/MyFlightDetail';
-import Settings from './pages/Settings';
-import PFATCFlights from './pages/PFATCFlights';
-import ACARS from './pages/ACARS';
-import PilotProfile from './pages/PilotProfile';
-import PublicFlightView from './pages/PublicFlightView';
-
 import Login from './pages/Login';
 import VatsimCallback from './pages/VatsimCallback';
 import NotFound from './pages/NotFound';
@@ -25,6 +12,19 @@ import AccessDenied from './components/AccessDenied';
 import Loader from './components/common/Loader';
 import AppOverlays from './components/AppOverlays';
 import PostHogPageView from './components/PostHogPageView';
+
+const Create = lazy(() => import('./pages/Create'));
+const Sessions = lazy(() => import('./pages/Sessions'));
+const Submit = lazy(() => import('./pages/Submit'));
+const Flights = lazy(() => import('./pages/Flights'));
+const MyFlights = lazy(() => import('./pages/MyFlights'));
+const MyFeedback = lazy(() => import('./pages/MyFeedback'));
+const MyFlightDetail = lazy(() => import('./pages/MyFlightDetail'));
+const Settings = lazy(() => import('./pages/Settings'));
+const PFATCFlights = lazy(() => import('./pages/PFATCFlights'));
+const ACARS = lazy(() => import('./pages/ACARS'));
+const PilotProfile = lazy(() => import('./pages/PilotProfile'));
+const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
 const Glossary = lazy(() => import('./pages/Glossary'));
@@ -76,147 +76,103 @@ export default function App() {
       ) : user && user.isVpnBlocked ? (
         <AccessDenied errorType="vpn-blocked" />
       ) : (
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/pfatc" element={<Navigate to="/overview" replace />} />
-          <Route path="/overview" element={<PFATCFlights />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
-          <Route path="/submit/:sessionId" element={<Submit />} />
-          <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
-          <Route path="flight/:flightId" element={<PublicFlightView />} />
-          <Route path="/user/:username" element={<PilotProfile />} />
-          <Route
-            path="/howtousepfcontrol"
-            element={
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                    <Loader />
-                  </div>
-                }
-              >
-                <HowToUsePFControl />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/glossary"
-            element={
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                    <Loader />
-                  </div>
-                }
-              >
-                <Glossary />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/developers/docs"
-            element={
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                    <Loader />
-                  </div>
-                }
-              >
-                <DeveloperDocsPage />
-              </Suspense>
-            }
-          />
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+              <Loader />
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/pfatc"
+              element={<Navigate to="/overview" replace />}
+            />
+            <Route path="/overview" element={<PFATCFlights />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
+            <Route path="/submit/:sessionId" element={<Submit />} />
+            <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
+            <Route path="flight/:flightId" element={<PublicFlightView />} />
+            <Route path="/user/:username" element={<PilotProfile />} />
+            <Route path="/howtousepfcontrol" element={<HowToUsePFControl />} />
+            <Route path="/glossary" element={<Glossary />} />
+            <Route path="/developers/docs" element={<DeveloperDocsPage />} />
 
-          <Route
-            path="/create"
-            element={
-              <ProtectedRoute>
-                <Create />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sessions"
-            element={
-              <ProtectedRoute>
-                <Sessions />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/view/:sessionId"
-            element={
-              <ProtectedRoute>
-                <Flights />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/developers"
-            element={
-              <ProtectedRoute requireTester={false}>
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                      <Loader />
-                    </div>
-                  }
-                >
+            <Route
+              path="/create"
+              element={
+                <ProtectedRoute>
+                  <Create />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sessions"
+              element={
+                <ProtectedRoute>
+                  <Sessions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/view/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <Flights />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/developers"
+              element={
+                <ProtectedRoute requireTester={false}>
                   <DeveloperLayout />
-                </Suspense>
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<DeveloperOverview />} />
-            <Route path="console" element={<DeveloperConsole />} />
-            <Route path="keys" element={<DeveloperKeys />} />
-          </Route>
-          <Route
-            path="/my-flights"
-            element={
-              <ProtectedRoute>
-                <MyFlights />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-feedback"
-            element={
-              <ProtectedRoute>
-                <MyFeedback />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-flights/:id"
-            element={
-              <ProtectedRoute>
-                <MyFlightDetail />
-              </ProtectedRoute>
-            }
-          />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DeveloperOverview />} />
+              <Route path="console" element={<DeveloperConsole />} />
+              <Route path="keys" element={<DeveloperKeys />} />
+            </Route>
+            <Route
+              path="/my-flights"
+              element={
+                <ProtectedRoute>
+                  <MyFlights />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-feedback"
+              element={
+                <ProtectedRoute>
+                  <MyFeedback />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-flights/:id"
+              element={
+                <ProtectedRoute>
+                  <MyFlightDetail />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute requireTester={false} requirePermission="admin">
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                      <Loader />
-                    </div>
-                  }
-                >
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute requireTester={false} requirePermission="admin">
                   <Routes>
                     <Route
                       index
@@ -380,13 +336,13 @@ export default function App() {
                     />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </Suspense>
-              </ProtectedRoute>
-            }
-          />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       )}
     </Router>
   );

@@ -31,6 +31,7 @@ import { io } from 'socket.io-client';
 import { createSessionUsersSocket } from '../../sockets/sessionUsersSocket';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { playSoundWithSettings } from '../../utils/playSound';
+import { fetchSession } from '../../utils/fetch/sessions';
 import type {
   Position,
   SessionUser,
@@ -187,7 +188,6 @@ export default function Toolbar({
     const loadInitialAtisData = async () => {
       if (!sessionId || !accessId) return;
       try {
-        const { fetchSession } = await import('../../utils/fetch/sessions');
         const session = await fetchSession(sessionId, accessId);
         if (session.atis) {
           let atisObj = session.atis;

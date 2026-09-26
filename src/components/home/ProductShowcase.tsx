@@ -31,7 +31,7 @@ import StatusDropdown from '../dropdowns/StatusDropdown';
 import Button from '../common/Button';
 import WindDisplay from '../tools/WindDisplay';
 import FrequencyDisplay from '../tools/FrequencyDisplay';
-import RouteMap from '../map/RouteMap';
+import RouteMap from '../map/LazyRouteMap';
 //To those trying to maintain this component: Only god and claude knows what's going on in here, good luck and godspeed
 const ALL_FLIGHTS = [
   {
