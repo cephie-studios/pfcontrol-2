@@ -1,13 +1,22 @@
 import { useEffect, useState, useMemo } from 'react';
-import { X, Loader, Info, RefreshCw, Copy } from 'lucide-react';
+import { Loader, Info, RefreshCw, Copy } from 'lucide-react';
 import { useData } from '../../hooks/data/useData';
 import { fetchMetar } from '../../utils/fetch/metar';
 import { generateATIS } from '../../utils/fetch/atis';
 import { fetchSession } from '../../utils/fetch/sessions';
 import type { Socket } from 'socket.io-client';
 import Checkbox from '../common/Checkbox';
-import TextInput from '../common/TextInput';
 import Button from '../common/Button';
+import {
+  PanelBody,
+  PanelFooter,
+  PanelHeader,
+  PanelSection,
+  SidePanel,
+  panelCardClass,
+  panelInputClass,
+  panelTextareaClass,
+} from '../common/SidePanel';
 
 interface ATISData {
   letter: string;
@@ -401,25 +410,16 @@ export default function ATIS({
   };
 
   return (
-    <div
-      className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
-        open ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
-      } rounded-l-3xl border-l-2 border-blue-800 flex flex-col`}
-      style={{ zIndex: 10000 }}
-    >
-      <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
-        <span className="font-extrabold text-xl text-blue-300">
-          ATIS Generator - {icao}
-        </span>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-full hover:bg-gray-700 transition-colors"
-        >
-          <X className="h-5 w-5 text-gray-400" />
-        </button>
-      </div>
+    <SidePanel open={open}>
+      <PanelHeader icon={Info} title="ATIS Generator" onClose={onClose}>
+        {icao && (
+          <span className="rounded-full bg-zinc-800 px-2.5 py-1 font-mono text-xs text-zinc-300">
+            {icao}
+          </span>
+        )}
+      </PanelHeader>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-6">
+      <PanelBody>
         {(isLoading || isLoadingPreviousATIS) && (
           <div className="flex items-center justify-center gap-2 p-4">
             <Loader
@@ -427,7 +427,7 @@ export default function ATIS({
               aria-hidden
             />
             {isLoadingPreviousATIS && (
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-zinc-400">
                 Loading previous ATIS data...
               </span>
             )}
@@ -435,106 +435,77 @@ export default function ATIS({
         )}
 
         {error && !isLoading && !isLoadingPreviousATIS && (
-          <div className="text-red-400 text-sm p-3 bg-red-900/20 rounded-lg border border-red-700">
+          <div className="rounded-2xl border border-red-700 bg-red-900/20 p-3 text-sm text-red-400">
             {error}
           </div>
         )}
 
         {atisText && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">
-                Generated ATIS
-              </h3>
+          <PanelSection
+            title="Generated ATIS"
+            actions={
               <Button
                 onClick={copyToClipboard}
-                size="sm"
-                variant="outline"
-                className={`flex items-center gap-1 relative overflow-hidden transition-all duration-300 ${
-                  copied
-                    ? 'bg-emerald-600 hover:bg-none hover:bg-emerald-600 border-emerald-600 text-white'
-                    : ''
-                }`}
+                size="xs"
+                variant={copied ? 'success' : 'outline'}
+                className="h-8 gap-1.5"
               >
-                <div
-                  className={`flex items-center space-x-2 transition-transform duration-300 ${
-                    copied ? 'scale-105' : ''
-                  }`}
-                >
-                  <Copy
-                    className={`h-4 w-4 transition-transform duration-300 ${
-                      copied ? 'rotate-12' : ''
-                    }`}
-                  />
-                  <span className="font-medium">
-                    {copied ? 'Copied!' : 'Copy'}
-                  </span>
-                </div>
-                {copied && (
-                  <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-lg"></div>
-                )}
+                <Copy className="h-3.5 w-3.5" />
+                {copied ? 'Copied!' : 'Copy'}
               </Button>
-            </div>
-            <div className="bg-black p-4 rounded-lg border border-zinc-700 font-mono text-sm text-green-400 whitespace-pre-wrap">
+            }
+          >
+            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 font-mono text-sm text-green-400">
               {atisText}
             </div>
-          </div>
+          </PanelSection>
         )}
 
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">
-            ATIS Identifier
-          </h3>
+        <PanelSection title="ATIS Identifier">
           <div className="grid grid-cols-6 gap-2">
             {identOptions.map((letter) => (
               <button
                 key={letter}
                 type="button"
                 onClick={() => setIdent(letter)}
-                className={`p-2 rounded-xl text-center text-sm font-medium transition-colors ${
+                className={`h-9 rounded-full text-center text-sm font-medium transition-colors ${
                   letter === ident
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                 }`}
               >
                 {letter}
               </button>
             ))}
           </div>
-        </div>
+        </PanelSection>
 
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">
-            Approach Types
-          </h3>
+        <PanelSection title="Approach Types">
           <div className="flex flex-wrap gap-2">
             {approachOptions.map((approach) => (
               <button
                 key={approach}
                 type="button"
                 onClick={() => toggleApproachType(approach)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                className={`h-9 rounded-full px-4 text-sm font-medium transition-colors ${
                   selectedApproaches.includes(approach)
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                 }`}
               >
                 {approach}
               </button>
             ))}
           </div>
-        </div>
+        </PanelSection>
 
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">
-            Active Runways
-          </h3>
+        <PanelSection title="Active Runways">
           {availableRunways.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {availableRunways.map((runway) => (
                 <div
                   key={runway}
-                  className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg border border-zinc-700"
+                  className={`flex items-center justify-between px-4 py-3 ${panelCardClass}`}
                 >
                   <span className="font-mono text-lg font-semibold">
                     {runway}
@@ -557,73 +528,70 @@ export default function ATIS({
               ))}
             </div>
           ) : (
-            <div className="text-amber-400 text-sm flex items-center p-3 bg-amber-900/20 rounded-lg border border-amber-700">
-              <Info className="h-4 w-4 mr-2" />
+            <div className="flex items-center rounded-2xl border border-amber-700 bg-amber-900/20 p-3 text-sm text-amber-400">
+              <Info className="mr-2 h-4 w-4" />
               No runways available for this airport
             </div>
           )}
-        </div>
+        </PanelSection>
 
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-blue-300">METAR</h3>
+        <PanelSection
+          title="METAR"
+          actions={
             <Button
               onClick={refreshWeather}
-              size="sm"
+              size="xs"
               variant="outline"
               disabled={isRefreshing}
-              className="flex items-center gap-1"
+              className="h-8 gap-1.5"
             >
               <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`}
               />
               Refresh
             </Button>
-          </div>
+          }
+        >
           <textarea
             value={metar}
             onChange={(e) => setMetar(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+            className={`${panelTextareaClass} font-mono`}
             rows={3}
             placeholder="METAR will be loaded automatically"
           />
-        </div>
+        </PanelSection>
 
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-blue-300">
-            Additional Remarks
-          </h3>
-          <TextInput
+        <PanelSection title="Additional Remarks">
+          <input
+            type="text"
             value={remarks}
-            onChange={setRemarks}
+            onChange={(e) => setRemarks(e.target.value)}
             placeholder="Enter any additional remarks for the ATIS..."
             maxLength={200}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3"
+            className={panelInputClass}
           />
-        </div>
-      </div>
+        </PanelSection>
+      </PanelBody>
 
-      <div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-bl-3xl">
-        <div className="flex justify-start gap-3">
-          <Button
-            onClick={handleGenerateATIS}
-            disabled={
-              isLoading ||
-              !sessionId ||
-              !icao ||
-              (landingRunways.length === 0 && departingRunways.length === 0)
-            }
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            {isLoading && <Loader className="animate-spin h-4 w-4" />}
-            Generate ATIS
-          </Button>
-          <Button onClick={onClose} variant="outline" size="sm">
-            Close
-          </Button>
-        </div>
-      </div>
-    </div>
+      <PanelFooter>
+        <Button onClick={onClose} variant="outline" size="sm">
+          Close
+        </Button>
+        <Button
+          onClick={handleGenerateATIS}
+          disabled={
+            isLoading ||
+            !sessionId ||
+            !icao ||
+            (landingRunways.length === 0 && departingRunways.length === 0)
+          }
+          size="sm"
+          className="gap-2"
+        >
+          {isLoading && <Loader className="h-4 w-4 animate-spin" />}
+          Generate ATIS
+        </Button>
+      </PanelFooter>
+    </SidePanel>
   );
 }

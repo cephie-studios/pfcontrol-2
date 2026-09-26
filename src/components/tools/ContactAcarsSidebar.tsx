@@ -1,10 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Radio, Plane, MapPin, Search } from 'lucide-react';
+import { Radio, Plane, MapPin, Search, Check } from 'lucide-react';
 import { fetchFrequencies } from '../../utils/fetch/data';
 import type { AirportFrequency } from '../../types/airports';
 import type { Flight } from '../../types/flight';
 import Button from '../common/Button';
 import Dropdown from '../common/Dropdown';
+import {
+  PanelBody,
+  PanelFooter,
+  PanelHeader,
+  PanelSection,
+  SidePanel,
+  panelCardClass,
+  panelInputClass,
+} from '../common/SidePanel';
+import { cn } from '@/lib/utils';
 import {
   containsHateSpeech,
   containsProfanity,
@@ -139,120 +149,89 @@ export default function ContactAcarsSidebar({
     }
   };
 
-  return (
-    <div
-      className={`fixed top-0 right-0 h-full w-100 bg-zinc-900 text-white transition-transform duration-300 ${
-        open ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
-      } rounded-l-3xl border-l-2 border-blue-800 flex flex-col ${
-        open ? '' : 'pointer-events-none'
-      }`}
-      style={{ zIndex: 10000 }}
+  const defaultMessagePreview = (
+    <p
+      className={`px-4 py-3 font-mono text-xs text-zinc-500 ${panelCardClass}`}
     >
-      {/* Header */}
-      <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-tl-3xl">
-        <div className="flex items-center gap-3">
-          <span className="font-extrabold text-xl text-blue-300">
-            Contact ACARS
-          </span>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-full hover:bg-gray-700"
-        >
-          <X className="h-5 w-5 text-gray-400" />
-        </button>
-      </div>
+      Default: <span className="text-blue-400">"{getDefaultMessage()}"</span>
+    </p>
+  );
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+  return (
+    <SidePanel open={open}>
+      <PanelHeader icon={Radio} title="Contact ACARS" onClose={onClose} />
+
+      <PanelBody>
         {flightsWithAcars.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <div className="bg-gray-900 rounded-xl p-8 border border-gray-800">
-              <Radio className="h-12 w-12 mx-auto mb-4 opacity-40 text-blue-400" />
-              <p className="text-gray-300 font-medium">
-                No active ACARS terminals
-              </p>
-              <p className="text-sm mt-2 text-gray-500">
-                Flights must open their ACARS terminal first
-              </p>
-            </div>
+          <div
+            className={`flex flex-col items-center px-6 py-10 text-center ${panelCardClass}`}
+          >
+            <Radio className="mb-4 h-10 w-10 text-blue-400 opacity-40" />
+            <p className="font-medium text-zinc-300">
+              No active ACARS terminals
+            </p>
+            <p className="mt-2 text-sm text-zinc-500">
+              Flights must open their ACARS terminal first
+            </p>
           </div>
         ) : (
           <>
-            {/* Search Bar */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
-                Search Flights
-              </label>
+            <PanelSection title="Search Flights">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                 <input
                   type="text"
                   placeholder="Search by callsign, pilot, aircraft, or route..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-950 border border-gray-800 rounded-full text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={cn(panelInputClass, 'pl-10')}
                 />
               </div>
-            </div>
+            </PanelSection>
 
-            {/* Flight Selection */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
-                Select Flight
-              </label>
-              <div className="space-y-2 max-h-1/2 overflow-y-auto pr-2">
-                {filteredFlights.map((flight) => (
-                  <button
-                    key={flight.id}
-                    onClick={() => setSelectedFlight(flight)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all ${
-                      selectedFlight?.id === flight.id
-                        ? 'border-blue-500 bg-blue-950 shadow-lg shadow-blue-500/20'
-                        : 'border-gray-800 hover:border-gray-700 bg-gray-950 hover:bg-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Discord Avatar */}
+            <PanelSection title="Select Flight">
+              <div className="space-y-2">
+                {filteredFlights.map((flight) => {
+                  const isSelected = selectedFlight?.id === flight.id;
+                  return (
+                    <button
+                      key={flight.id}
+                      type="button"
+                      onClick={() => setSelectedFlight(flight)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors',
+                        isSelected
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-800'
+                      )}
+                    >
                       {flight.user?.discord_avatar_url ? (
                         <img
                           src={flight.user.discord_avatar_url}
                           alt={flight.user.discord_username || 'User'}
-                          className="w-12 h-12 rounded-full border-2 border-gray-700"
+                          className="h-10 w-10 shrink-0 rounded-full"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
-                          <Plane className="h-5 w-5 text-gray-400" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800">
+                          <Plane className="h-4 w-4 text-zinc-400" />
                         </div>
                       )}
 
-                      {/* Flight Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-semibold text-white font-mono text-sm">
-                              {flight.callsign}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-0.5">
-                              {flight.user?.discord_username || 'Unknown Pilot'}
-                            </div>
-                          </div>
-                          {selectedFlight?.id === flight.id && (
-                            <div className="h-5 w-5 rounded-full bg-blue-500 flex items-center justify-center">
-                              <div className="h-2 w-2 rounded-full bg-white"></div>
-                            </div>
-                          )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-sm font-semibold text-white">
+                          {flight.callsign}
                         </div>
-                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            <span>
-                              {flight.departure} → {flight.arrival}
-                            </span>
-                          </div>
+                        <div className="truncate text-xs text-zinc-400">
+                          {flight.user?.discord_username || 'Unknown Pilot'}
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">
+                            {flight.departure} → {flight.arrival}
+                          </span>
                           {flight.aircraft && (
                             <>
-                              <span className="text-gray-700">•</span>
+                              <span className="text-zinc-700">•</span>
                               <span className="font-mono">
                                 {flight.aircraft}
                               </span>
@@ -260,23 +239,25 @@ export default function ContactAcarsSidebar({
                           )}
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+
+                      {isSelected && (
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500">
+                          <Check className="h-3 w-3 text-white" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
                 {filteredFlights.length === 0 && searchTerm.trim() && (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>No flights match your search.</p>
-                  </div>
+                  <p className="py-8 text-center text-sm text-zinc-400">
+                    No flights match your search.
+                  </p>
                 )}
               </div>
-            </div>
+            </PanelSection>
 
-            {/* Position Selector */}
             {selectedFlight && frequencies.length > 0 && !isCenterStation && (
-              <div className="mb-6">
-                <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
-                  Contact Position
-                </label>
+              <PanelSection title="Contact Position">
                 <Dropdown
                   options={frequencies.map((freq) => ({
                     value: freq.type,
@@ -286,37 +267,14 @@ export default function ContactAcarsSidebar({
                   onChange={setSelectedPosition}
                   size="sm"
                 />
-                <div className="mt-3 bg-gray-950 border border-gray-800 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 font-mono">
-                    Default:{' '}
-                    <span className="text-blue-400">
-                      "{getDefaultMessage()}"
-                    </span>
-                  </p>
-                </div>
-              </div>
+                {defaultMessagePreview}
+              </PanelSection>
             )}
 
-            {/* Default Message Display for Center Stations */}
-            {selectedFlight && isCenterStation && (
-              <div className="mb-6">
-                <div className="bg-gray-950 border border-gray-800 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 font-mono">
-                    Default:{' '}
-                    <span className="text-blue-400">
-                      "{getDefaultMessage()}"
-                    </span>
-                  </p>
-                </div>
-              </div>
-            )}
+            {selectedFlight && isCenterStation && defaultMessagePreview}
 
-            {/* Custom Message */}
             {selectedFlight && (
-              <div className="mb-4">
-                <label className="block text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">
-                  Custom Message (Optional)
-                </label>
+              <PanelSection title="Custom Message (Optional)">
                 <input
                   type="text"
                   value={customMessage}
@@ -327,47 +285,42 @@ export default function ContactAcarsSidebar({
                     }
                   }}
                   placeholder={getDefaultMessage()}
-                  className={`w-full px-4 py-3 bg-gray-950 border rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent font-mono text-sm ${
-                    hasContentViolation
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-800 focus:ring-blue-500'
-                  }`}
+                  className={cn(
+                    panelInputClass,
+                    'font-mono',
+                    hasContentViolation && 'border-red-500 focus:border-red-500'
+                  )}
                   maxLength={100}
                 />
                 {hasContentViolation ? (
-                  <p className="text-xs text-red-500 mt-2">
+                  <p className="text-xs text-red-500">
                     This message violates our guidelines and cannot be sent via
                     ACARS
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-zinc-500">
                     Leave blank to use default message
                   </p>
                 )}
-              </div>
+              </PanelSection>
             )}
           </>
         )}
-      </div>
+      </PanelBody>
 
-      {/* Footer */}
-      <div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-bl-3xl flex justify-end gap-3">
+      <PanelFooter>
         <Button
           variant="outline"
+          size="sm"
           onClick={onClose}
           disabled={sending}
-          className="border-gray-700 hover:bg-none hover:bg-gray-800 text-gray-300"
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleSend}
-          disabled={!canSendMessage()}
-          className="disabled:bg-none disabled:bg-gray-600"
-        >
+        <Button size="sm" onClick={handleSend} disabled={!canSendMessage()}>
           {sending ? 'Sending...' : 'Send ACARS Message'}
         </Button>
-      </div>
-    </div>
+      </PanelFooter>
+    </SidePanel>
   );
 }

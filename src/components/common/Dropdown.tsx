@@ -246,7 +246,7 @@ function Dropdown({
     const optionsList = isOpen && (
       <div
         data-dropdown-scroll
-        className={`no-scrollbar ${maxHeight} overflow-y-auto overscroll-contain py-2`}
+        className={`no-scrollbar ${maxHeight} overflow-y-auto overscroll-contain py-1`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {allowClear && (
@@ -256,7 +256,7 @@ function Dropdown({
             aria-selected={false}
             data-dropdown-option
             className="w-full text-left px-4 py-2 hover:bg-blue-600 transition-colors rounded-2xl text-gray-400 text-sm"
-            style={{ width: 'calc(100% - 1rem)', marginLeft: '0.5rem' }}
+            style={{ width: 'calc(100% - 0.5rem)', marginLeft: '0.25rem' }}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleOptionClick('')}
           >
@@ -282,7 +282,7 @@ function Dropdown({
                 className={`w-full text-left px-4 py-2 hover:bg-blue-600 hover:text-white transition-colors rounded-2xl text-sm ${
                   isSelected ? 'text-white font-medium' : 'text-gray-300'
                 }`}
-                style={{ width: 'calc(100% - 1rem)', marginLeft: '0.5rem' }}
+                style={{ width: 'calc(100% - 0.5rem)', marginLeft: '0.25rem' }}
                 onClick={() => handleOptionClick(option.value)}
               >
                 {renderOption ? renderOption(option) : option.label}
@@ -315,10 +315,10 @@ function Dropdown({
           portal
             ? `bg-gray-800 border-2 border-blue-600 shadow-2xl outline-none ${
                 panelAbove
-                  ? 'rounded-t-3xl rounded-b-none border-b-0'
-                  : 'rounded-b-3xl rounded-t-none border-t-0'
+                  ? 'rounded-t-[22px] rounded-b-none border-b-0'
+                  : 'rounded-b-[22px] rounded-t-none border-t-0'
               }`
-            : 'z-50 bg-gray-800 border-2 border-blue-600 border-t-0 rounded-b-3xl shadow-2xl outline-none'
+            : 'z-50 bg-gray-800 border-2 border-blue-600 border-t-0 rounded-b-[22px] shadow-2xl outline-none'
         }
         style={{
           width: 'var(--radix-popover-trigger-width)',
@@ -340,10 +340,10 @@ function Dropdown({
     );
 
     const triggerOpenClass = !portal
-      ? 'rounded-t-3xl rounded-b-none border-b-0'
+      ? 'rounded-t-[22px] rounded-b-none border-b-0'
       : panelAbove
-        ? 'rounded-b-3xl rounded-t-none border-t-transparent'
-        : 'rounded-t-3xl rounded-b-none border-b-transparent';
+        ? 'rounded-b-[22px] rounded-t-none border-t-transparent'
+        : 'rounded-t-[22px] rounded-b-none border-b-transparent';
 
     const trigger = (
       <div
@@ -443,7 +443,7 @@ function Dropdown({
         if (isFocusLost()) buttonRef.current?.focus({ preventScroll: true });
       }}
       onKeyDown={handlePanelKeyDown}
-      className={`no-scrollbar bg-gray-800 border-2 border-blue-600 rounded-2xl shadow-lg py-1 ${maxHeight} overflow-y-auto overscroll-contain px-1 outline-none`}
+      className={`no-scrollbar bg-gray-800 border-2 border-blue-600 rounded-[22px] shadow-lg p-1 ${maxHeight} overflow-y-auto overscroll-contain outline-none`}
       style={{
         width: 'var(--radix-popover-trigger-width)',
         zIndex: 10000,
@@ -457,7 +457,7 @@ function Dropdown({
           role="option"
           aria-selected={false}
           data-dropdown-option
-          className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-700 focus-visible:bg-gray-700 focus-visible:outline-none text-gray-400"
+          className="block w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-gray-700 focus-visible:bg-gray-700 focus-visible:outline-none text-gray-400"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleOptionClick('')}
         >
