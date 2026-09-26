@@ -1,22 +1,86 @@
 import { Link } from 'react-router';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import {
-  Loader2,
-  Copy,
-  Trash2,
+  Ban,
   Check,
-  KeyRound,
-  RefreshCw,
-  Plus,
-  X,
   ChevronDown,
-  ChevronRight,
-  Terminal,
+  Copy,
   Gauge,
+  Info,
+  KeyRound,
+  Loader2,
+  Lock,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Tag,
+  Trash2,
+  X,
 } from 'lucide-react';
 import ScopeTagSelector from '../../components/developers/ScopeTagSelector';
-import { API_EXT_BASE, cardClass, statusBadgeClass } from './constants';
+import SettingsSection from '../../components/Settings/SettingsSection';
+import SettingsGroup from '../../components/Settings/SettingsGroup';
+import SettingsRow from '../../components/Settings/SettingsRow';
+import AdminModal from '@/components/admin/AdminModal';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import { AdminLoading } from '@/components/admin/AdminStates';
+import { useAdminConfirm } from '@/components/admin/useAdminConfirm';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { API_EXT_BASE } from './constants';
 import { useDeveloperPortal } from './developerPortalContext';
+
+function IconAction({
+  label,
+  onClick,
+  disabled,
+  destructive,
+  expanded,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+  expanded?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          aria-expanded={expanded}
+          disabled={disabled}
+          onClick={onClick}
+          className={
+            destructive ? 'text-destructive hover:text-destructive' : undefined
+          }
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  active: 'Active',
+  pending: 'Pending approval',
+  revoked: 'Revoked',
+};
 
 export default function DeveloperKeys() {
   const {
@@ -45,6 +109,7 @@ export default function DeveloperKeys() {
     setInfoMessage,
   } = useDeveloperPortal();
 
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [showRevoked, setShowRevoked] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedKeyIds, setExpandedKeyIds] = useState<Set<string>>(new Set());
@@ -61,411 +126,427 @@ export default function DeveloperKeys() {
   const activeKeys = useMemo(() => keys.filter((k) => !k.revokedAt), [keys]);
   const revokedKeys = useMemo(() => keys.filter((k) => k.revokedAt), [keys]);
   const visibleKeys = showRevoked ? keys : activeKeys;
+  const showKeyList = visibleKeys.length > 0 || revokedKeys.length > 0;
+
+  const confirmRotate = async (id: string, name: string) => {
+    const ok = await confirm({
+      title: 'Rotate API key?',
+      description: `The current secret for "${name}" stops working immediately. Copy the new secret when it appears.`,
+      confirmText: 'Rotate',
+      destructive: true,
+    });
+    if (ok) void handleRotateKey(id);
+  };
+
+  const confirmRevoke = async (id: string, name: string) => {
+    const ok = await confirm({
+      title: 'Revoke API key?',
+      description: `Clients using "${name}" will stop working immediately.`,
+      confirmText: 'Revoke',
+      destructive: true,
+    });
+    if (ok) void handleRevoke(id);
+  };
+
+  const confirmDelete = async (id: string, name: string) => {
+    const ok = await confirm({
+      title: 'Delete revoked key?',
+      description: `"${name}" will be permanently deleted. This cannot be undone.`,
+      confirmText: 'Delete',
+      destructive: true,
+    });
+    if (ok) void handleDeleteKey(id);
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+      <div className="shadcn-scope">
+        <AdminLoading className="py-24" />
       </div>
     );
   }
 
   if (!profileActive) {
     return (
-      <div className={cardClass()}>
-        <h2 className="text-lg font-semibold text-zinc-100 mb-2">API keys</h2>
-        <p className="text-sm text-zinc-400 mb-4">
-          Scoped keys are available after your developer application is
-          approved.
-        </p>
-        <Link
-          to="/developers"
-          className="inline-flex text-sm font-medium text-blue-400 hover:text-blue-300"
-        >
-          Back to overview
-        </Link>
+      <div className="shadcn-scope text-foreground">
+        <SettingsSection title="API keys" icon={KeyRound}>
+          <SettingsGroup>
+            <SettingsRow
+              icon={<Lock className="text-muted-foreground" />}
+              label="Not available yet"
+              description="Scoped keys are available after your developer application is approved."
+            >
+              <Button asChild variant="outline">
+                <Link to="/developers">Back to overview</Link>
+              </Button>
+            </SettingsRow>
+          </SettingsGroup>
+        </SettingsSection>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {infoMessage && (
-        <div
-          className={`${cardClass()} border-sky-800/50 bg-sky-950/25 flex items-start justify-between gap-3`}
-        >
-          <p className="text-sm text-sky-100/95 leading-relaxed">
-            {infoMessage}
-          </p>
-          <button
-            type="button"
-            onClick={() => setInfoMessage(null)}
-            className="shrink-0 p-1 rounded-lg text-sky-400 hover:text-white hover:bg-sky-900/50"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {createdSecret && (
-        <div className={`${cardClass()} border-blue-900/40 bg-blue-950/20`}>
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-sm font-semibold text-blue-200">
-              Copy your API key now
-            </p>
-            <button
-              type="button"
-              onClick={() => setCreatedSecret(null)}
-              className="p-1 rounded-lg text-blue-400/70 hover:text-white hover:bg-blue-900/50"
+    <TooltipProvider>
+      <div className="shadcn-scope flex flex-col gap-8 text-foreground">
+        {infoMessage && (
+          <SettingsGroup>
+            <SettingsRow
+              icon={<Info className="text-blue-400" />}
+              label="Key request submitted"
+              description={infoMessage}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <p className="text-xs text-zinc-400 mb-3 leading-relaxed">
-            After you close this message, you cannot open this page again to
-            copy the same secret. Copy it now and store it in a password manager
-            or other safe place.
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-            <code className="flex min-h-10 w-full items-center overflow-x-auto text-xs sm:text-sm break-all rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-zinc-200 ring-1 ring-zinc-700/40 sm:flex-1 sm:min-w-0 sm:whitespace-nowrap sm:break-normal sm:py-0">
-              {createdSecret}
-            </code>
-            <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-stretch">
-              <button
-                type="button"
+              <IconAction label="Dismiss" onClick={() => setInfoMessage(null)}>
+                <X />
+              </IconAction>
+            </SettingsRow>
+          </SettingsGroup>
+        )}
+
+        <AdminModal
+          open={!!createdSecret}
+          onClose={() => setCreatedSecret(null)}
+          title="Copy your API key"
+          description="You can't view this secret again after closing this dialog. Store it in a password manager or another safe place."
+          variant="success"
+          size="lg"
+          className="shadcn-scope"
+          footer={
+            <Button type="button" onClick={() => setCreatedSecret(null)}>
+              Done
+            </Button>
+          }
+        >
+          <div className="grid gap-2">
+            <Label htmlFor="developer-created-secret">API key</Label>
+            <div className="flex gap-2">
+              <Input
+                id="developer-created-secret"
+                readOnly
+                value={createdSecret ?? ''}
+                onFocus={(e) => e.currentTarget.select()}
+                className="font-mono text-xs md:text-xs"
+              />
+              <IconAction
+                label={secretCopied ? 'Copied' : 'Copy key'}
                 onClick={() => void copySecret()}
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:h-auto sm:flex-none sm:min-w-22"
               >
                 {secretCopied ? (
-                  <Check className="w-4 h-4 shrink-0" />
+                  <Check className="text-emerald-400" />
                 ) : (
-                  <Copy className="w-4 h-4 shrink-0" />
+                  <Copy />
                 )}
-                Copy key
-              </button>
-              <button
-                type="button"
-                disabled={!curlSample}
-                onClick={() => void copyCurlExample()}
-                title={curlSample?.command}
-                className="inline-flex min-h-10 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border border-zinc-700 px-2 py-1.5 text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:flex-none sm:min-w-22 sm:px-3"
-              >
-                <span className="flex items-center gap-1.5 text-sm font-medium">
-                  {curlCopied ? (
-                    <Check className="h-4 w-4 shrink-0 text-emerald-400" />
-                  ) : (
-                    <Terminal className="h-4 w-4 shrink-0" />
-                  )}
-                  {curlCopied ? 'Copied' : 'Sample curl'}
-                </span>
-                {curlSample ? (
-                  <span className="max-w-full truncate text-center text-[10px] leading-tight text-zinc-500">
+              </IconAction>
+            </div>
+          </div>
+          {curlSample ? (
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="min-w-0 truncate text-sm font-medium">
+                  Sample request{' '}
+                  <span className="font-mono text-xs font-normal text-muted-foreground">
                     {curlSample.label}
                   </span>
-                ) : null}
-              </button>
+                </h3>
+                <IconAction
+                  label={curlCopied ? 'Copied' : 'Copy curl command'}
+                  onClick={() => void copyCurlExample()}
+                >
+                  {curlCopied ? (
+                    <Check className="text-emerald-400" />
+                  ) : (
+                    <Copy />
+                  )}
+                </IconAction>
+              </div>
+              <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs break-all whitespace-pre-wrap">
+                {curlSample.command}
+              </pre>
             </div>
-          </div>
-        </div>
-      )}
+          ) : null}
+        </AdminModal>
 
-      <div className={cardClass()}>
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <h2 className="text-base font-semibold text-zinc-100 flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-zinc-400" />
-            API keys
-            <span className="text-xs font-normal text-zinc-500 tabular-nums">
-              ({activeKeys.length} active)
-            </span>
-          </h2>
-          <button
-            type="button"
-            onClick={() => setCreateOpen((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold transition-colors"
-          >
-            {createOpen ? (
-              <X className="w-3.5 h-3.5" />
-            ) : (
-              <Plus className="w-3.5 h-3.5" />
-            )}
-            {createOpen ? 'Cancel' : 'New key'}
-          </button>
-        </div>
-        <p className="text-[11px] text-zinc-400 mb-5 flex items-center gap-1.5">
-          <Gauge className="w-3.5 h-3.5 shrink-0 text-zinc-500" aria-hidden />
-          Each key lists its max requests per minute (sliding window; 429 when
-          exceeded).
-        </p>
-
-        {createOpen && (
-          <div className="mb-6 rounded-xl border border-zinc-700 bg-zinc-950/60 p-4 space-y-4 ring-1 ring-zinc-800/50">
-            <p className="text-sm font-medium text-zinc-300">
-              Create a new API key
-            </p>
-            <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">
-                Key label
-              </label>
-              <input
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="e.g. Production bot"
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-800/50 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ring-1 ring-zinc-700/40"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-zinc-500 mb-2.5">
-                Scopes
-                {newKeyScopes.size > 0 && (
-                  <span className="ml-2 text-blue-400">
-                    {newKeyScopes.size} selected
-                  </span>
-                )}
-              </label>
-              <ScopeTagSelector
-                catalog={catalog}
-                selected={newKeyScopes}
-                onChange={setNewKeyScopes}
-              />
-            </div>
-            <p className="text-[11px] text-zinc-600">
-              Keys using only your approved scopes are issued immediately. Extra
-              scopes require admin approval.
-            </p>
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="button"
-                disabled={
-                  keyBusy || !newKeyName.trim() || newKeyScopes.size === 0
-                }
-                onClick={() =>
-                  void handleCreateKey().then(() => setCreateOpen(false))
-                }
-                className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-50 text-sm font-semibold transition-colors"
+        <SettingsSection
+          title="API keys"
+          icon={KeyRound}
+          actions={
+            <Button
+              type="button"
+              variant={createOpen ? 'outline' : 'default'}
+              onClick={() => setCreateOpen((v) => !v)}
+            >
+              {createOpen ? <X /> : <Plus />}
+              {createOpen ? 'Cancel' : 'New key'}
+            </Button>
+          }
+        >
+          {createOpen && (
+            <SettingsGroup title="New key">
+              <SettingsRow
+                icon={<Tag className="text-blue-400" />}
+                label="Key label"
+                htmlFor="developer-new-key-name"
               >
-                {keyBusy ? 'Creating…' : 'Generate key'}
-              </button>
-              <p className="text-[11px] text-zinc-600">
-                Base URL: <code className="text-zinc-400">{API_EXT_BASE}</code>
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {visibleKeys.length === 0 && !createOpen && (
-            <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/20 px-4 py-10 text-center">
-              <KeyRound className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-              <p className="text-sm text-zinc-500">No keys yet.</p>
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+                <Input
+                  id="developer-new-key-name"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="e.g. Production bot"
+                  className="sm:w-72"
+                />
+              </SettingsRow>
+              <SettingsRow
+                stacked
+                icon={<ShieldCheck className="text-blue-400" />}
+                label={
+                  <>
+                    Scopes
+                    {newKeyScopes.size > 0 && (
+                      <span className="ml-2 font-normal text-muted-foreground tabular-nums">
+                        {newKeyScopes.size} selected
+                      </span>
+                    )}
+                  </>
+                }
+                description="Scopes beyond your approved ones need admin approval."
               >
-                <Plus className="w-3.5 h-3.5" />
-                Create your first key
-              </button>
-            </div>
+                <ScopeTagSelector
+                  catalog={catalog}
+                  selected={newKeyScopes}
+                  onChange={setNewKeyScopes}
+                  className="w-full"
+                />
+              </SettingsRow>
+              <SettingsRow
+                icon={<Gauge className="text-blue-400" />}
+                label={`${keyDefaultRateLimitPerMinute.toLocaleString()} requests per minute`}
+                description="Per key, sliding window. Requests over the limit get a 429."
+              />
+              <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="min-w-0 truncate text-sm text-muted-foreground">
+                  Base URL{' '}
+                  <code className="font-mono text-foreground">
+                    {API_EXT_BASE}
+                  </code>
+                </p>
+                <Button
+                  type="button"
+                  className="sm:shrink-0"
+                  disabled={
+                    keyBusy || !newKeyName.trim() || newKeyScopes.size === 0
+                  }
+                  onClick={() =>
+                    void handleCreateKey().then(() => setCreateOpen(false))
+                  }
+                >
+                  {keyBusy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <KeyRound />
+                  )}
+                  {keyBusy ? 'Creating…' : 'Generate key'}
+                </Button>
+              </div>
+            </SettingsGroup>
           )}
 
-          {visibleKeys.map((k) => {
-            const st = k.revokedAt ? 'revoked' : (k.status ?? 'active');
-            const isRevoked = !!k.revokedAt;
-            const expanded = expandedKeyIds.has(k.id);
-            const scopeIdsForKey =
-              st === 'pending' && k.requestedScopes?.length
-                ? k.requestedScopes
-                : (k.scopes ?? []);
-            const keyScopeCatalog = catalog.filter((c) =>
-              scopeIdsForKey.includes(c.id)
-            );
-            const rpmEffective =
-              k.rateLimitPerMinute != null &&
-              Number.isFinite(k.rateLimitPerMinute) &&
-              k.rateLimitPerMinute > 0
-                ? Math.floor(k.rateLimitPerMinute)
-                : keyDefaultRateLimitPerMinute;
-            const rpmIsCustom =
-              k.rateLimitPerMinute != null &&
-              Number.isFinite(k.rateLimitPerMinute) &&
-              k.rateLimitPerMinute > 0;
+          {keys.length === 0 && !createOpen && (
+            <p className="text-sm text-muted-foreground">
+              You don&apos;t have any API keys yet.
+            </p>
+          )}
 
-            return (
-              <div
-                key={k.id}
-                className={`overflow-hidden rounded-xl border transition-colors ${
-                  isRevoked
-                    ? 'border-zinc-800/60 bg-zinc-900/20 opacity-60'
-                    : 'border-zinc-800 bg-zinc-800/30'
-                }`}
-              >
-                <div className="flex min-h-13 items-stretch">
-                  <button
-                    type="button"
-                    aria-expanded={expanded}
-                    aria-label={
-                      expanded ? 'Collapse key details' : 'Expand key details'
-                    }
-                    onClick={() => toggleKeyExpand(k.id)}
-                    title={expanded ? 'Collapse' : 'Show scopes'}
-                    className={`flex min-w-0 flex-1 items-center gap-2 py-2.5 pl-2 pr-2 text-left transition-colors sm:gap-3 sm:pl-3 sm:pr-2 ${
-                      isRevoked
-                        ? 'text-zinc-600 hover:bg-zinc-900/40'
-                        : 'text-zinc-100 hover:bg-zinc-800/40'
-                    }`}
-                  >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                        isRevoked ? 'text-zinc-600' : 'text-zinc-400'
-                      }`}
-                      aria-hidden
-                    >
-                      {expanded ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-1.5 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between min-[520px]:gap-4">
-                        <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <p className="min-w-0 max-w-full truncate text-sm font-medium text-zinc-100">
-                            {k.name}
-                          </p>
-                          <span
-                            className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${statusBadgeClass(st)}`}
-                          >
-                            {st}
+          {showKeyList && (
+            <SettingsGroup
+              title={`${activeKeys.length} active key${activeKeys.length !== 1 ? 's' : ''}`}
+            >
+              {visibleKeys.map((k) => {
+                const st = k.revokedAt ? 'revoked' : (k.status ?? 'active');
+                const isRevoked = !!k.revokedAt;
+                const expanded = expandedKeyIds.has(k.id);
+                const scopeIdsForKey =
+                  st === 'pending' && k.requestedScopes?.length
+                    ? k.requestedScopes
+                    : (k.scopes ?? []);
+                const keyScopeCatalog = catalog.filter((c) =>
+                  scopeIdsForKey.includes(c.id)
+                );
+                const rpmIsCustom =
+                  k.rateLimitPerMinute != null &&
+                  Number.isFinite(k.rateLimitPerMinute) &&
+                  k.rateLimitPerMinute > 0;
+                const rpmEffective = rpmIsCustom
+                  ? Math.floor(k.rateLimitPerMinute as number)
+                  : keyDefaultRateLimitPerMinute;
+                const statusLabel = STATUS_LABEL[st] ?? st;
+
+                return (
+                  <Fragment key={k.id}>
+                    <SettingsRow
+                      className={cn(isRevoked && 'opacity-60')}
+                      icon={
+                        <AdminStatusBadge
+                          status={st}
+                          icon={
+                            st === 'revoked'
+                              ? Ban
+                              : st === 'active'
+                                ? KeyRound
+                                : undefined
+                          }
+                        >
+                          {statusLabel}
+                        </AdminStatusBadge>
+                      }
+                      label={
+                        <span className="block truncate">
+                          {k.name}
+                          <span className="sr-only">, {statusLabel}</span>
+                        </span>
+                      }
+                      description={
+                        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                          <span className="font-mono text-xs">{k.prefix}…</span>
+                          <span className="tabular-nums">
+                            {rpmEffective.toLocaleString()}/min
+                            {rpmIsCustom ? ' custom' : null}
                           </span>
-                        </div>
-                        <div className="flex min-w-0 items-baseline justify-between gap-3 min-[520px]:contents">
-                          <p className="min-w-0 flex-1 truncate text-xs font-mono text-zinc-500 min-[520px]:max-w-[min(100%,14rem)] min-[520px]:flex-none">
-                            {k.prefix}…
+                          {isRevoked && k.revokedAt && (
+                            <span>
+                              Revoked{' '}
+                              {new Date(k.revokedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </span>
+                      }
+                    >
+                      {!isRevoked && st === 'active' && (
+                        <IconAction
+                          label="Rotate key"
+                          disabled={keyBusy}
+                          onClick={() => void confirmRotate(k.id, k.name)}
+                        >
+                          <RefreshCw />
+                        </IconAction>
+                      )}
+                      {!isRevoked && (
+                        <IconAction
+                          label="Revoke key"
+                          destructive
+                          disabled={keyBusy}
+                          onClick={() => void confirmRevoke(k.id, k.name)}
+                        >
+                          <Ban />
+                        </IconAction>
+                      )}
+                      {isRevoked && (
+                        <IconAction
+                          label="Delete permanently"
+                          destructive
+                          disabled={keyBusy}
+                          onClick={() => void confirmDelete(k.id, k.name)}
+                        >
+                          <Trash2 />
+                        </IconAction>
+                      )}
+                      <IconAction
+                        label={expanded ? 'Hide details' : 'Show details'}
+                        expanded={expanded}
+                        onClick={() => toggleKeyExpand(k.id)}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'transition-transform',
+                            expanded && 'rotate-180'
+                          )}
+                        />
+                      </IconAction>
+                    </SettingsRow>
+
+                    {expanded && (
+                      <div
+                        className={cn(
+                          'grid gap-4 bg-muted/20 px-5 py-4 sm:pl-[4.125rem]',
+                          isRevoked && 'opacity-60'
+                        )}
+                      >
+                        <div className="grid gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {st === 'pending'
+                              ? 'Requested scopes'
+                              : 'Scopes this key can use'}
                           </p>
-                          <div className="shrink-0 text-right text-[11px] tabular-nums min-[520px]:flex min-[520px]:min-w-30 min-[520px]:flex-col min-[520px]:items-end min-[520px]:gap-0.5 mr-2">
-                            <p className="text-blue-400/95">
-                              <span className="text-zinc-500">Rate limit</span>{' '}
-                              <span className="text-zinc-300">
-                                {rpmEffective.toLocaleString()}/min
-                              </span>
-                              {rpmIsCustom ? (
-                                <span className="text-zinc-600"> · custom</span>
-                              ) : null}
+                          {keyScopeCatalog.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              {st === 'pending'
+                                ? 'No scope list yet.'
+                                : 'No scopes assigned (key may still be provisioning).'}
                             </p>
-                            {isRevoked && k.revokedAt && (
-                              <p className="mt-0.5 text-zinc-600 min-[520px]:mt-0">
-                                Revoked{' '}
-                                {new Date(k.revokedAt).toLocaleDateString()}
-                              </p>
-                            )}
-                          </div>
+                          ) : (
+                            <ScopeTagSelector
+                              catalog={keyScopeCatalog}
+                              selected={new Set(scopeIdsForKey)}
+                              onChange={() => {}}
+                              readOnly
+                            />
+                          )}
                         </div>
+                        <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
+                          <div className="grid gap-1">
+                            <dt className="text-sm text-muted-foreground">
+                              Requests
+                            </dt>
+                            <dd className="text-sm tabular-nums">
+                              {k.requestCount.toLocaleString()}
+                            </dd>
+                          </div>
+                          <div className="grid gap-1">
+                            <dt className="text-sm text-muted-foreground">
+                              Last used
+                            </dt>
+                            <dd className="text-sm">
+                              {k.lastUsedAt
+                                ? new Date(k.lastUsedAt).toLocaleString()
+                                : 'Never'}
+                            </dd>
+                          </div>
+                          <div className="grid gap-1">
+                            <dt className="text-sm text-muted-foreground">
+                              Created
+                            </dt>
+                            <dd className="text-sm">
+                              {new Date(k.createdAt).toLocaleDateString()}
+                            </dd>
+                          </div>
+                        </dl>
                       </div>
-                    </div>
-                  </button>
+                    )}
+                  </Fragment>
+                );
+              })}
 
-                  <div className="flex shrink-0 items-center gap-0.5 self-stretch border-l border-zinc-800/80 bg-zinc-900/20 py-1 pr-1.5 pl-1 sm:pr-2">
-                    {!isRevoked && st === 'active' && (
-                      <button
-                        type="button"
-                        disabled={keyBusy}
-                        onClick={() => void handleRotateKey(k.id)}
-                        className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-300 transition-colors"
-                        title="Rotate key — old secret stops working immediately"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </button>
+              {revokedKeys.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowRevoked((v) => !v)}
+                  className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                >
+                  <ChevronDown
+                    className={cn(
+                      'size-4 transition-transform',
+                      showRevoked && 'rotate-180'
                     )}
-                    {!isRevoked && (
-                      <button
-                        type="button"
-                        disabled={keyBusy}
-                        onClick={() => void handleRevoke(k.id)}
-                        className="p-2 rounded-lg text-zinc-500 hover:bg-red-950/40 hover:text-red-400 transition-colors"
-                        title="Revoke key"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    {isRevoked && (
-                      <button
-                        type="button"
-                        disabled={keyBusy}
-                        onClick={() => void handleDeleteKey(k.id)}
-                        className="p-2 rounded-lg text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
-                        title="Permanently delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {expanded && (
-                  <div className="border-t border-zinc-800/90 bg-zinc-950/40 px-3 pb-3 pt-2 pl-13 sm:pl-15">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">
-                      {st === 'pending'
-                        ? 'Requested scopes'
-                        : 'Scopes this key can use'}
-                    </p>
-                    {keyScopeCatalog.length === 0 ? (
-                      <p className="text-xs text-zinc-600">
-                        {st === 'pending'
-                          ? 'No scope list yet.'
-                          : 'No scopes assigned (key may still be provisioning).'}
-                      </p>
-                    ) : (
-                      <ScopeTagSelector
-                        catalog={keyScopeCatalog}
-                        selected={new Set(scopeIdsForKey)}
-                        onChange={() => {}}
-                        readOnly
-                      />
-                    )}
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-                      <span>
-                        <span className="font-medium tabular-nums text-zinc-300">
-                          {k.requestCount.toLocaleString()}
-                        </span>{' '}
-                        request{k.requestCount === 1 ? '' : 's'}
-                      </span>
-                      <span>
-                        Last used:{' '}
-                        <span className="text-zinc-300">
-                          {k.lastUsedAt
-                            ? new Date(k.lastUsedAt).toLocaleString()
-                            : 'Never'}
-                        </span>
-                      </span>
-                      <span>
-                        Created:{' '}
-                        <span className="text-zinc-300">
-                          {new Date(k.createdAt).toLocaleDateString()}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {revokedKeys.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowRevoked((v) => !v)}
-            className="mt-3 flex items-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-          >
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform ${showRevoked ? 'rotate-180' : ''}`}
-            />
-            {showRevoked
-              ? 'Hide revoked keys'
-              : `Show ${revokedKeys.length} revoked key${revokedKeys.length !== 1 ? 's' : ''}`}
-          </button>
-        )}
+                  />
+                  {showRevoked
+                    ? 'Hide revoked keys'
+                    : `Show ${revokedKeys.length} revoked key${revokedKeys.length !== 1 ? 's' : ''}`}
+                </button>
+              )}
+            </SettingsGroup>
+          )}
+        </SettingsSection>
+        {confirmDialog}
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

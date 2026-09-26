@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import { LayoutDashboard, KeyRound, BookOpen, Home } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const TAB_COUNT = 4;
 
@@ -14,54 +15,63 @@ export default function DeveloperSubnav() {
     return 0;
   }, [pathname]);
 
-  const linkClass = (isActive: boolean) =>
-    `relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
-      isActive ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
-    }`;
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      'relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium transition-colors sm:gap-2 sm:px-3',
+      isActive
+        ? 'text-foreground'
+        : 'text-muted-foreground hover:text-foreground'
+    );
+
+  const iconClass = ({ isActive }: { isActive: boolean }) =>
+    cn('size-4 shrink-0', isActive && 'text-blue-400');
 
   return (
     <nav
-      className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60 mb-8"
+      className="relative mb-8 flex rounded-xl bg-muted p-1"
       aria-label="Developer sections"
     >
       <div
-        className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
+        className="pointer-events-none absolute top-1 bottom-1 rounded-lg bg-background shadow-sm transition-[left,width] duration-300 ease-out"
         style={{
           width: `calc((100% - 0.5rem) / ${TAB_COUNT})`,
           left: `calc(0.25rem + ${activeIndex} * ((100% - 0.5rem) / ${TAB_COUNT}))`,
         }}
         aria-hidden
       />
-      <NavLink
-        to="/developers"
-        end
-        className={({ isActive }) => linkClass(isActive)}
-      >
-        <Home className="w-4 h-4 shrink-0 opacity-90" />
-        Overview
+      <NavLink to="/developers" end className={linkClass}>
+        {({ isActive }) => (
+          <>
+            <Home className={iconClass({ isActive })} />
+            Overview
+          </>
+        )}
       </NavLink>
-      <NavLink
-        to="/developers/console"
-        className={({ isActive }) => linkClass(isActive)}
-      >
-        <LayoutDashboard className="w-4 h-4 shrink-0 opacity-90" />
-        Usage
+      <NavLink to="/developers/console" className={linkClass}>
+        {({ isActive }) => (
+          <>
+            <LayoutDashboard className={iconClass({ isActive })} />
+            Usage
+          </>
+        )}
       </NavLink>
-      <NavLink
-        to="/developers/keys"
-        className={({ isActive }) => linkClass(isActive)}
-      >
-        <KeyRound className="w-4 h-4 shrink-0 opacity-90" />
-        <span className="hidden sm:inline">API keys</span>
-        <span className="sm:hidden">Keys</span>
+      <NavLink to="/developers/keys" className={linkClass}>
+        {({ isActive }) => (
+          <>
+            <KeyRound className={iconClass({ isActive })} />
+            <span className="hidden sm:inline">API keys</span>
+            <span className="sm:hidden">Keys</span>
+          </>
+        )}
       </NavLink>
-      <NavLink
-        to="/developers/docs"
-        className={({ isActive }) => linkClass(isActive)}
-      >
-        <BookOpen className="w-4 h-4 shrink-0 opacity-90" />
-        <span className="hidden sm:inline">API reference</span>
-        <span className="sm:hidden">Docs</span>
+      <NavLink to="/developers/docs" className={linkClass}>
+        {({ isActive }) => (
+          <>
+            <BookOpen className={iconClass({ isActive })} />
+            <span className="hidden sm:inline">API reference</span>
+            <span className="sm:hidden">Docs</span>
+          </>
+        )}
       </NavLink>
     </nav>
   );

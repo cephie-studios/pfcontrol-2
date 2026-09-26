@@ -1,14 +1,49 @@
-import { useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleDashed,
+  CornerUpRight,
   Eye,
   EyeOff,
-  ChevronRight,
-  ChevronDown,
-  Search,
-  Loader2,
+  History,
+  Inbox,
+  Plug,
+  SearchX,
+  Unplug,
+  XCircle,
+  type LucideIcon,
 } from 'lucide-react';
-import DeveloperPillSegmentedControl from '../../pages/developers/DeveloperPillSegmentedControl';
-import { cardClass } from '../../pages/developers/constants';
+import SettingsSection from '../Settings/SettingsSection';
+import SettingsGroup from '../Settings/SettingsGroup';
+import SettingsRow from '../Settings/SettingsRow';
+import AdminSearchInput from '../admin/AdminSearchInput';
+import AdminStatusBadge from '../admin/AdminStatusBadge';
+import AdminTable from '../admin/AdminTable';
+import { AdminLoading } from '../admin/AdminStates';
+import {
+  ADMIN_TONE_TEXT,
+  httpStatusTone,
+  type AdminTone,
+} from '../admin/adminConstants';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 export interface RecentApiCall {
   id: string;
@@ -25,6 +60,16 @@ export interface RecentApiCall {
 }
 
 type CallsTab = 'all' | 'errors';
+
+const HTTP_TONE_ICON: Record<AdminTone, LucideIcon> = {
+  success: CheckCircle2,
+  info: CornerUpRight,
+  warning: AlertTriangle,
+  danger: XCircle,
+  purple: CircleDashed,
+  orange: AlertTriangle,
+  neutral: CircleDashed,
+};
 
 function formatMaskedIp(ip: string): string {
   if (ip.includes('.') && !ip.includes(':')) {
@@ -49,39 +94,48 @@ function prettyBody(raw: string | null | undefined): string | null {
   }
 }
 
-function isErrorRow(r: RecentApiCall): boolean {
-  return r.statusCode >= 400;
-}
-
-function statusBadge(r: RecentApiCall): { label: string; cls: string } {
-  if (r.method === 'WS') {
-    if (r.statusCode === 101) {
-      return { label: 'OPEN', cls: 'bg-violet-950/55 text-violet-300' };
-    }
-    if (r.statusCode === 0) {
-      return { label: 'CLOSE', cls: 'bg-zinc-800 text-zinc-400' };
-    }
+function CallStatus({ call }: { call: RecentApiCall }) {
+  if (call.method === 'WS' && call.statusCode === 101) {
+    return (
+      <AdminStatusBadge tone="purple" icon={Plug} showLabel>
+        Open
+      </AdminStatusBadge>
+    );
   }
-  const ok = r.statusCode >= 200 && r.statusCode < 300;
-  const err = isErrorRow(r);
-  return {
-    label: String(r.statusCode),
-    cls: ok
-      ? 'bg-emerald-950/55 text-emerald-300'
-      : err
-        ? 'bg-red-950/50 text-red-300'
-        : 'bg-zinc-800 text-zinc-300',
-  };
+  if (call.method === 'WS' && call.statusCode === 0) {
+    return (
+      <AdminStatusBadge tone="neutral" icon={Unplug} showLabel>
+        Close
+      </AdminStatusBadge>
+    );
+  }
+  const tone = httpStatusTone(call.statusCode);
+  return (
+    <AdminStatusBadge
+      tone={tone}
+      icon={HTTP_TONE_ICON[tone]}
+      showLabel
+      className="tabular-nums"
+    >
+      {call.statusCode}
+    </AdminStatusBadge>
+  );
 }
 
-function methodBadgeClass(method: string): string {
-  return method === 'WS' ? 'text-violet-400' : 'text-zinc-500';
+function BodyBlock({ title, body }: { title: string; body: string | null }) {
+  return (
+    <div className="grid content-start gap-2">
+      <h3 className="text-sm font-medium">{title}</h3>
+      {body ? (
+        <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs break-all whitespace-pre-wrap">
+          {body}
+        </pre>
+      ) : (
+        <p className="text-sm text-muted-foreground">No body</p>
+      )}
+    </div>
+  );
 }
-
-const TABS: { id: CallsTab; label: string }[] = [
-  { id: 'all', label: 'Latest calls' },
-  { id: 'errors', label: 'Latest errors' },
-];
 
 export default function RecentApiCallsPanel({
   recent,
@@ -96,305 +150,319 @@ export default function RecentApiCallsPanel({
   scopeLabelMap: Map<string, string>;
   keyLabelMap: Map<string, string>;
 }) {
-  const [revealedCallIds, setRevealedCallIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [expandedCallIds, setExpandedCallIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [callsSearch, setCallsSearch] = useState('');
   const [tab, setTab] = useState<CallsTab>('all');
+  const [search, setSearch] = useState('');
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const toggleIpReveal = useCallback((id: string) => {
-    setRevealedCallIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleCallExpand = useCallback((id: string) => {
-    setExpandedCallIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const toggleIn = useCallback(
+    (setter: typeof setRevealed, id: string) =>
+      setter((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    []
+  );
 
   const activeList = tab === 'errors' ? recentErrors : recent;
-
-  const callsQuery = callsSearch.trim().toLowerCase();
-  const filteredRecent = useMemo(() => {
-    if (!callsQuery) return activeList;
+  const query = search.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    if (!query) return activeList;
     return activeList.filter((r) => {
-      const scopeLabel = scopeLabelMap.get(r.scopeId) ?? r.scopeId;
-      const keyLabel = keyLabelMap.get(r.keyId) ?? r.keyId;
       const hay = [
         r.method,
         r.path,
         r.scopeId,
-        scopeLabel,
-        keyLabel,
+        scopeLabelMap.get(r.scopeId) ?? r.scopeId,
+        keyLabelMap.get(r.keyId) ?? r.keyId,
         String(r.statusCode),
         String(r.durationMs),
         r.clientIp ?? '',
       ]
         .join(' ')
         .toLowerCase();
-      return hay.includes(callsQuery);
+      return hay.includes(query);
     });
-  }, [activeList, callsQuery, scopeLabelMap, keyLabelMap]);
+  }, [activeList, query, scopeLabelMap, keyLabelMap]);
 
   const errorCount = recentErrors.length;
 
   return (
-    <div className={cardClass()}>
-      <div className="mb-4 space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100">
-              Latest API calls
-            </h2>
-            <p className="text-xs text-zinc-500 mt-1">
-              Click a row to expand scope, timing, IP, and the full
-              request/response bodies. WebSocket connects/disconnects show up
-              here as well.
-            </p>
-          </div>
-          <DeveloperPillSegmentedControl
-            aria-label="Call list filter"
-            className="w-full max-w-xs sm:w-auto sm:min-w-[16rem]"
-            tabs={TABS.map((t) =>
-              t.id === 'errors' && errorCount > 0
-                ? { ...t, label: `${t.label} (${errorCount})` }
-                : t
-            )}
-            value={tab}
-            onChange={setTab}
-          />
-        </div>
-        <div className="relative group w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none group-focus-within:text-blue-400/90 transition-colors" />
-          <input
-            type="search"
-            value={callsSearch}
-            onChange={(e) => setCallsSearch(e.target.value)}
-            placeholder="Filter by path, method, scope, key, status, IP…"
-            aria-label="Filter latest API calls"
-            className="w-full rounded-full border border-zinc-700 bg-zinc-800/50 pl-10 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 ring-1 ring-zinc-700/40 hover:border-zinc-600"
-          />
-        </div>
-      </div>
+    <TooltipProvider>
+      <SettingsSection
+        title="Latest API calls"
+        icon={History}
+        actions={
+          <>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={tab}
+              onValueChange={(v) => {
+                if (v) setTab(v as CallsTab);
+              }}
+              aria-label="Call list filter"
+            >
+              <ToggleGroupItem value="all" className="px-3">
+                Latest calls
+              </ToggleGroupItem>
+              <ToggleGroupItem value="errors" className="gap-1.5 px-3">
+                Latest errors
+                {errorCount > 0 ? (
+                  <span className="text-muted-foreground tabular-nums">
+                    {errorCount}
+                  </span>
+                ) : null}
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <AdminSearchInput
+              value={search}
+              onChange={setSearch}
+              grow={false}
+              placeholder="Filter calls…"
+              aria-label="Filter latest API calls by path, method, scope, key, status or IP"
+            />
+          </>
+        }
+      >
+        {loading && activeList.length === 0 ? (
+          <SettingsGroup>
+            <AdminLoading label="Loading calls…" />
+          </SettingsGroup>
+        ) : activeList.length === 0 ? (
+          <SettingsGroup>
+            <SettingsRow
+              icon={<Inbox className="text-muted-foreground" />}
+              label={
+                tab === 'errors' ? 'No errors on record' : 'No calls logged'
+              }
+            />
+          </SettingsGroup>
+        ) : filtered.length === 0 ? (
+          <SettingsGroup>
+            <SettingsRow
+              icon={<SearchX className="text-muted-foreground" />}
+              label="No calls match your search"
+            >
+              <Button variant="outline" size="sm" onClick={() => setSearch('')}>
+                Clear filter
+              </Button>
+            </SettingsRow>
+          </SettingsGroup>
+        ) : (
+          <AdminTable minWidth="760px">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <span className="sr-only">Expand</span>
+                </TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Request</TableHead>
+                <TableHead>Key</TableHead>
+                <TableHead className="text-right">Duration</TableHead>
+                <TableHead className="text-right">Client IP</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((r) => {
+                const isOpen = expanded.has(r.id);
+                const isRevealed = revealed.has(r.id);
+                const ip = r.clientIp ?? null;
+                const keyLabel = keyLabelMap.get(r.keyId) ?? 'Deleted key';
+                const scopeLabel = scopeLabelMap.get(r.scopeId) ?? r.scopeId;
+                const toggleExpand = () => toggleIn(setExpanded, r.id);
+                const toggleIp = () => toggleIn(setRevealed, r.id);
+                const ipText = ip ? (isRevealed ? ip : formatMaskedIp(ip)) : '';
 
-      {loading && activeList.length === 0 ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
-        </div>
-      ) : activeList.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
-          <p className="text-sm text-zinc-500">
-            {tab === 'errors'
-              ? 'No errors on record — nice.'
-              : 'No calls logged yet.'}
-          </p>
-        </div>
-      ) : filteredRecent.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
-          <p className="text-sm text-zinc-500">No calls match your search.</p>
-          <button
-            type="button"
-            onClick={() => setCallsSearch('')}
-            className="mt-2 text-xs font-medium text-blue-400 hover:text-blue-300"
-          >
-            Clear filter
-          </button>
-        </div>
-      ) : (
-        <ul className="overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/25 ring-1 ring-zinc-800/40 divide-y divide-zinc-800/80">
-          {filteredRecent.map((r) => {
-            const scopeLabel = scopeLabelMap.get(r.scopeId) ?? r.scopeId;
-            const keyLabel = keyLabelMap.get(r.keyId) ?? 'Deleted key';
-            const revealed = revealedCallIds.has(r.id);
-            const expanded = expandedCallIds.has(r.id);
-            const ip = r.clientIp ?? null;
-            const badge = statusBadge(r);
-            const reqPretty = prettyBody(r.requestBody);
-            const resPretty = prettyBody(r.responseBody);
-            const shortTime = new Date(r.createdAt).toLocaleString(undefined, {
-              month: 'numeric',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-
-            return (
-              <li key={r.id}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={expanded}
-                  onClick={() => toggleCallExpand(r.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleCallExpand(r.id);
-                    }
-                  }}
-                  className="flex w-full cursor-pointer items-center gap-2 px-2 py-2 text-left min-h-10 hover:bg-zinc-900/50 sm:gap-3 sm:px-3"
-                >
-                  <span className="shrink-0 text-zinc-500" aria-hidden>
-                    {expanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </span>
-                  <time
-                    className="shrink-0 w-26 text-[11px] tabular-nums text-zinc-500 sm:w-29 sm:text-xs"
-                    dateTime={r.createdAt}
-                  >
-                    {shortTime}
-                  </time>
-                  <span
-                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums sm:text-[11px] ${badge.cls}`}
-                  >
-                    {badge.label}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-zinc-300 sm:text-xs">
-                    <span className={methodBadgeClass(r.method)}>
-                      {r.method}
-                    </span>{' '}
-                    {r.path}
-                  </span>
-                  <span className="shrink-0 text-[11px] tabular-nums text-zinc-500 sm:text-xs">
-                    {r.durationMs}ms
-                  </span>
-                  <div
-                    className="flex shrink-0 max-w-22 items-center gap-0.5 sm:max-w-28"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {!ip ? (
-                      <span className="truncate text-[10px] text-zinc-600 sm:text-xs">
-                        —
-                      </span>
-                    ) : (
-                      <>
-                        <span
-                          className={`min-w-0 flex-1 truncate text-right font-mono text-[10px] text-zinc-400 sm:text-xs ${revealed ? '' : 'filter blur-sm select-none'}`}
-                          title={revealed ? ip : undefined}
-                        >
-                          {revealed ? ip : formatMaskedIp(ip)}
-                        </span>
-                        <button
+                return (
+                  <Fragment key={r.id}>
+                    <TableRow
+                      className="cursor-pointer"
+                      data-state={isOpen ? 'selected' : undefined}
+                      onClick={toggleExpand}
+                    >
+                      <TableCell>
+                        <Button
                           type="button"
-                          onClick={() => toggleIpReveal(r.id)}
-                          className="shrink-0 rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-                          aria-label={
-                            revealed ? 'Hide IP address' : 'Show IP address'
-                          }
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? 'Collapse call' : 'Expand call'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand();
+                          }}
                         >
-                          {revealed ? (
-                            <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          ) : (
-                            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {expanded && (
-                  <div
-                    className="border-t border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5 pl-9 text-xs text-zinc-400 sm:pl-11"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <dl className="grid gap-1.5 sm:grid-cols-[auto_1fr] sm:gap-x-3 sm:gap-y-1 mb-3">
-                      <dt className="text-zinc-600">Key</dt>
-                      <dd className="text-zinc-200">{keyLabel}</dd>
-                      <dt className="text-zinc-600">Scope</dt>
-                      <dd className="text-zinc-200">{scopeLabel}</dd>
-                      <dt className="text-zinc-600">Path</dt>
-                      <dd className="break-all font-mono text-zinc-300">
-                        {r.method} {r.path}
-                      </dd>
-                      <dt className="text-zinc-600">Time</dt>
-                      <dd className="tabular-nums text-zinc-300">
-                        {new Date(r.createdAt).toLocaleString()}
-                      </dd>
-                      <dt className="text-zinc-600">Duration</dt>
-                      <dd className="tabular-nums text-zinc-300">
-                        {r.durationMs} ms
-                        {r.method === 'WS' && r.statusCode === 0
-                          ? ' (connection lifetime)'
-                          : ''}
-                      </dd>
-                      <dt className="text-zinc-600">Client IP</dt>
-                      <dd className="font-mono text-zinc-300">
+                          {isOpen ? <ChevronDown /> : <ChevronRight />}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">
+                        <time dateTime={r.createdAt}>
+                          {new Date(r.createdAt).toLocaleString(undefined, {
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </time>
+                      </TableCell>
+                      <TableCell>
+                        <CallStatus call={r} />
+                      </TableCell>
+                      <TableCell className="max-w-[320px]">
+                        <p className="truncate font-mono text-xs">
+                          <span
+                            className={
+                              r.method === 'WS'
+                                ? ADMIN_TONE_TEXT.purple
+                                : 'text-muted-foreground'
+                            }
+                          >
+                            {r.method}
+                          </span>{' '}
+                          {r.path}
+                        </p>
+                      </TableCell>
+                      <TableCell className="max-w-[160px] truncate text-sm">
+                        {keyLabel}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground tabular-nums">
+                        {r.durationMs}ms
+                      </TableCell>
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {!ip ? (
-                          <span className="text-zinc-600">Not captured</span>
-                        ) : (
-                          <span className="inline-flex flex-wrap items-center gap-2">
-                            <span
-                              className={`break-all ${revealed ? '' : 'filter blur-sm select-none'}`}
-                            >
-                              {revealed ? ip : formatMaskedIp(ip)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => toggleIpReveal(r.id)}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
-                            >
-                              {revealed ? (
-                                <>
-                                  <EyeOff className="h-3 w-3" /> Hide
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="h-3 w-3" /> Reveal
-                                </>
-                              )}
-                            </button>
+                          <span className="text-xs text-muted-foreground">
+                            N/A
                           </span>
-                        )}
-                      </dd>
-                    </dl>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 mb-1">
-                          Request body
-                        </p>
-                        {reqPretty ? (
-                          <pre className="max-h-64 overflow-auto rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 text-[11px] leading-snug text-zinc-300 whitespace-pre-wrap break-all">
-                            {reqPretty}
-                          </pre>
                         ) : (
-                          <p className="text-zinc-600 italic">No body</p>
+                          <div className="flex items-center justify-end gap-1">
+                            <span
+                              className={cn(
+                                'max-w-28 truncate font-mono text-xs text-muted-foreground',
+                                !isRevealed && 'blur-sm select-none'
+                              )}
+                              title={isRevealed ? ip : undefined}
+                            >
+                              {ipText}
+                            </span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={
+                                    isRevealed
+                                      ? 'Hide IP address'
+                                      : 'Show IP address'
+                                  }
+                                  onClick={toggleIp}
+                                >
+                                  {isRevealed ? <EyeOff /> : <Eye />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {isRevealed ? 'Hide IP' : 'Show IP'}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         )}
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 mb-1">
-                          Response body
-                        </p>
-                        {resPretty ? (
-                          <pre className="max-h-64 overflow-auto rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 text-[11px] leading-snug text-zinc-300 whitespace-pre-wrap break-all">
-                            {resPretty}
-                          </pre>
-                        ) : (
-                          <p className="text-zinc-600 italic">No body</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+                      </TableCell>
+                    </TableRow>
+                    {isOpen ? (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={7} className="whitespace-normal">
+                          <div className="flex flex-col gap-5 py-2">
+                            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
+                              <div className="grid gap-1">
+                                <dt className="text-xs text-muted-foreground">
+                                  Key
+                                </dt>
+                                <dd className="text-sm">{keyLabel}</dd>
+                              </div>
+                              <div className="grid gap-1">
+                                <dt className="text-xs text-muted-foreground">
+                                  Scope
+                                </dt>
+                                <dd className="text-sm">{scopeLabel}</dd>
+                              </div>
+                              <div className="grid gap-1">
+                                <dt className="text-xs text-muted-foreground">
+                                  Time
+                                </dt>
+                                <dd className="text-sm tabular-nums">
+                                  {new Date(r.createdAt).toLocaleString()}
+                                </dd>
+                              </div>
+                              <div className="grid gap-1 sm:col-span-2">
+                                <dt className="text-xs text-muted-foreground">
+                                  Path
+                                </dt>
+                                <dd className="font-mono text-xs break-all">
+                                  {r.method} {r.path}
+                                </dd>
+                              </div>
+                              <div className="grid gap-1">
+                                <dt className="text-xs text-muted-foreground">
+                                  Duration
+                                </dt>
+                                <dd className="text-sm tabular-nums">
+                                  {r.durationMs} ms
+                                  {r.method === 'WS' && r.statusCode === 0
+                                    ? ' (connection lifetime)'
+                                    : ''}
+                                </dd>
+                              </div>
+                              <div className="grid gap-1">
+                                <dt className="text-xs text-muted-foreground">
+                                  Client IP
+                                </dt>
+                                <dd className="font-mono text-xs">
+                                  {!ip ? (
+                                    <span className="font-sans text-sm text-muted-foreground">
+                                      Not captured
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        'break-all',
+                                        !isRevealed && 'blur-sm select-none'
+                                      )}
+                                    >
+                                      {ipText}
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                            </dl>
+                            <div className="grid gap-5 lg:grid-cols-2">
+                              <BodyBlock
+                                title="Request body"
+                                body={prettyBody(r.requestBody)}
+                              />
+                              <BodyBlock
+                                title="Response body"
+                                body={prettyBody(r.responseBody)}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </TableBody>
+          </AdminTable>
+        )}
+      </SettingsSection>
+    </TooltipProvider>
   );
 }

@@ -23,7 +23,7 @@ export default function SettingsSection({
       aria-labelledby={titleId}
       className={cn('flex flex-col gap-4', className)}
     >
-      <div className="flex min-h-9 items-center justify-between gap-3">
+      <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
         <h2
           id={titleId}
           className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
@@ -32,7 +32,9 @@ export default function SettingsSection({
           {title}
         </h2>
         {actions ? (
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {actions}
+          </div>
         ) : null}
       </div>
       <div className="flex flex-col gap-4">{children}</div>

@@ -14,8 +14,8 @@
     "@astrojs/sitemap": "^3.7.3",
     "@tailwindcss/vite": "^4.0.0",
     "astro": "^7.2.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "file:../node_modules/react",
+    "react-dom": "file:../node_modules/react-dom",
     "tailwindcss": "^4.0.0"
   },
   "devDependencies": {
