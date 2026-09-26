@@ -627,17 +627,12 @@ export default function PilotProfile({
     });
   };
 
-  const getBackgroundImage = () => {
-    const displayBackground = isOwnerEditing
-      ? draft.displayBackgroundOnProfile
-      : isCurrentUser ||
-        (profile?.privacySettings.displayBackgroundOnProfile ?? true);
+  const backgroundSettings = profile?.user.background_image;
 
-    if (!profile?.user.background_image || !displayBackground) {
-      return null;
-    }
+  const resolvedBackgroundImage = useMemo(() => {
+    if (!backgroundSettings) return null;
 
-    const selectedImage = profile.user.background_image.selectedImage;
+    const selectedImage = backgroundSettings.selectedImage;
 
     const getImageUrl = (filename: string | null): string | null => {
       if (!filename || filename === 'random' || filename === 'favorites') {
@@ -653,7 +648,7 @@ export default function PilotProfile({
       const randomIndex = Math.floor(Math.random() * availableImages.length);
       return `${API_BASE_URL}${availableImages[randomIndex].path}`;
     } else if (selectedImage === 'favorites') {
-      const favorites = profile.user.background_image.favorites || [];
+      const favorites = backgroundSettings.favorites || [];
       if (favorites.length > 0) {
         const randomFav =
           favorites[Math.floor(Math.random() * favorites.length)];
@@ -674,9 +669,13 @@ export default function PilotProfile({
     }
 
     return null;
-  };
+  }, [backgroundSettings, availableImages, API_BASE_URL]);
 
-  const backgroundImage = getBackgroundImage();
+  const displayBackground = isOwnerEditing
+    ? draft.displayBackgroundOnProfile
+    : isCurrentUser ||
+      (profile?.privacySettings.displayBackgroundOnProfile ?? true);
+  const backgroundImage = displayBackground ? resolvedBackgroundImage : null;
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
@@ -714,29 +713,11 @@ export default function PilotProfile({
     return icons[iconName] || Star;
   };
 
-  const getRoleBadge = (role: Role) => {
-    const IconComponent = getIconComponent(role.icon);
-
-    const hexToRgb = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result
-        ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-          }
-        : { r: 99, g: 102, b: 241 };
-    };
-
-    const rgb = hexToRgb(role.color);
-
-    return {
-      icon: IconComponent,
-      text: role.name,
-      color: role.color,
-      rgb: `${rgb.r}, ${rgb.g}, ${rgb.b}`,
-    };
-  };
+  const getRoleBadge = (role: Role) => ({
+    icon: getIconComponent(role.icon),
+    text: role.name,
+    color: role.color,
+  });
 
   if (loading) {
     return (
@@ -946,7 +927,7 @@ export default function PilotProfile({
           <div className="py-8 md:py-12 relative z-10">
             <div className="pt-24 pb-4">
               <div className="max-w-7xl mx-auto px-4">
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex flex-col md:flex-row md:items-start gap-6">
                   {/* Avatar */}
                   <div className="relative self-center md:self-auto">
                     <div
@@ -1000,90 +981,11 @@ export default function PilotProfile({
 
                   {/* User Info */}
                   <div className="flex-1 text-center md:text-left">
-                    <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-4 justify-center md:justify-start">
-                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-4">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 justify-center md:justify-start">
+                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white">
                         {profile.user.username}
                       </h1>
                     </div>
-                    {(profile.user.is_admin ||
-                      displayedRoles.length > 0 ||
-                      isVatsimLinked) && (
-                      <div
-                        className={`flex flex-wrap items-center gap-2 mb-3 justify-center md:justify-start ${
-                          isOwnerEditing && profile.user.roles.length > 0
-                            ? 'p-2 -m-2 rounded-2xl border-2 border-dashed border-zinc-700'
-                            : ''
-                        }`}
-                      >
-                        {profile.user.is_admin && (
-                          <div
-                            className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
-                            style={{
-                              backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                              borderColor: 'rgba(59, 130, 246, 0.5)',
-                              boxShadow:
-                                '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
-                            }}
-                          >
-                            <Braces
-                              className="h-4 w-4"
-                              style={{ color: '#3B82F6' }}
-                            />
-                            <span
-                              className="text-sm font-semibold"
-                              style={{ color: '#3B82F6' }}
-                            >
-                              Developer
-                            </span>
-                          </div>
-                        )}
-                        {displayedRoles.map((role) => {
-                          const badge = getRoleBadge(role);
-                          const BadgeIcon = badge.icon;
-                          const hidden = effectiveHiddenRoleIds.includes(
-                            role.id
-                          );
-                          const content = (
-                            <div
-                              className="inline-flex items-center gap-2 px-4 py-1 rounded-full border-2 cursor-default"
-                              style={{
-                                backgroundColor: `rgba(${badge.rgb}, 0.2)`,
-                                borderColor: `rgba(${badge.rgb}, 0.5)`,
-                                boxShadow: `0 4px 6px -1px rgba(${badge.rgb}, 0.2)`,
-                              }}
-                            >
-                              <BadgeIcon
-                                className="h-4 w-4"
-                                style={{ color: badge.color }}
-                              />
-                              <span
-                                className="text-sm font-semibold"
-                                style={{ color: badge.color }}
-                              >
-                                {badge.text}
-                              </span>
-                            </div>
-                          );
-                          return isOwnerEditing ? (
-                            <button
-                              key={role.id}
-                              type="button"
-                              onClick={() => toggleRoleHidden(role.id)}
-                              className={`transition-opacity ${hidden ? 'opacity-40' : ''}`}
-                              title={
-                                hidden
-                                  ? 'Hidden from others — click to show'
-                                  : 'Visible to others — click to hide'
-                              }
-                            >
-                              {content}
-                            </button>
-                          ) : (
-                            <div key={role.id}>{content}</div>
-                          );
-                        })}
-                      </div>
-                    )}
                     <div className="flex flex-col md:flex-row flex-wrap items-center md:items-start gap-2 md:gap-4 justify-center md:justify-start mt-2">
                       <div className="flex items-center gap-2 text-gray-400 justify-center md:justify-start">
                         <Calendar className="h-5 w-5" />
@@ -1252,6 +1154,55 @@ export default function PilotProfile({
                           )}
                         </div>
                       )}
+                      {(profile.user.is_admin || displayedRoles.length > 0) && (
+                        <div
+                          className={
+                            isOwnerEditing && profile.user.roles.length > 0
+                              ? 'flex flex-wrap items-center gap-x-4 gap-y-1 justify-center md:justify-start px-2 py-1 rounded-xl border-2 border-dashed border-zinc-700'
+                              : 'flex flex-wrap items-center gap-x-4 gap-y-1 justify-center md:contents'
+                          }
+                        >
+                          {profile.user.is_admin && (
+                            <span className="inline-flex items-center gap-2 text-base md:text-lg font-semibold text-blue-500 cursor-default">
+                              <Braces className="h-5 w-5" />
+                              Developer
+                            </span>
+                          )}
+                          {displayedRoles.map((role) => {
+                            const badge = getRoleBadge(role);
+                            const BadgeIcon = badge.icon;
+                            const hidden = effectiveHiddenRoleIds.includes(
+                              role.id
+                            );
+                            const content = (
+                              <span
+                                className="inline-flex items-center gap-2 text-base md:text-lg font-semibold cursor-default"
+                                style={{ color: badge.color }}
+                              >
+                                <BadgeIcon className="h-5 w-5" />
+                                {badge.text}
+                              </span>
+                            );
+                            return isOwnerEditing ? (
+                              <button
+                                key={role.id}
+                                type="button"
+                                onClick={() => toggleRoleHidden(role.id)}
+                                className={`transition-opacity ${hidden ? 'opacity-40' : ''}`}
+                                title={
+                                  hidden
+                                    ? 'Hidden from others — click to show'
+                                    : 'Visible to others — click to hide'
+                                }
+                              >
+                                {content}
+                              </button>
+                            ) : (
+                              <span key={role.id}>{content}</span>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {(isOwnerEditing ||
@@ -1346,23 +1297,27 @@ export default function PilotProfile({
                     {isCurrentUser && !isEditing && (
                       <Button
                         onClick={() => (window.location.href = '/my-flights')}
-                        className={`flex items-center gap-2 ${accentColor ? 'accent-hover-brighten' : ''}`}
+                        className={`flex items-center justify-center w-12 h-12 ${accentColor ? 'accent-hover-brighten' : ''}`}
                         variant="primary"
+                        size="icon"
                         style={accentButtonStyle(accentColor)}
+                        aria-label="My Flights"
+                        title="My Flights"
                       >
-                        <Plane className="w-4 h-4" />
-                        <span>My Flights</span>
+                        <Plane className="w-5 h-5" />
                       </Button>
                     )}
                     {isCurrentUser && !isEditing && (
                       <Button
                         onClick={handleStartEditing}
-                        className={`flex items-center gap-2 ${accentColor ? 'accent-hover-brighten' : ''}`}
+                        className={`flex items-center justify-center w-12 h-12 ${accentColor ? 'accent-hover-brighten' : ''}`}
                         variant="primary"
+                        size="icon"
                         style={accentButtonStyle(accentColor)}
+                        aria-label="Edit Profile"
+                        title="Edit Profile"
                       >
-                        <Edit className="w-4 h-4" />
-                        <span>Edit Profile</span>
+                        <Edit className="w-5 h-5" />
                       </Button>
                     )}
                     {isCurrentUser && isEditing && (
