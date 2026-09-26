@@ -306,7 +306,6 @@ export default function Home({ standalone = true }: HomeProps) {
         </div>
       </section>
 
-      {/* Desktop: interactive scroll showcase */}
       <ProductShowcase />
 
       <section className="relative py-36 px-4 sm:px-6 bg-black">
@@ -330,12 +329,11 @@ export default function Home({ standalone = true }: HomeProps) {
                         .replace('submitted total', 'Flights Submitted')
                         .trim()}
                   </h3>
-                  {/* Podium — order: 2nd | 1st | 3rd */}
                   <div className="flex items-end justify-center gap-2 sm:gap-3">
                     {[1, 0, 2].map((rank) => {
                       const u = users[rank];
                       if (!u) return null;
-                      const podiumHeights = [128, 88, 60]; // 1st, 2nd, 3rd step heights (px)
+                      const podiumHeights = [128, 88, 60];
                       const podiumColors = ['#fbbf24', '#c0c0c0', '#ad6823'];
                       const avatarSizes = [
                         'w-24 h-24',
@@ -571,6 +569,7 @@ export default function Home({ standalone = true }: HomeProps) {
           <Modal
             isOpen={showTutorialPrompt}
             onClose={() => handleTutorialChoice(false)}
+            dismissible={false}
             title="Welcome to PFControl!"
             variant="primary"
             footer={

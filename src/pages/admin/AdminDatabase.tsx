@@ -1,38 +1,127 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MdStorage } from 'react-icons/md';
-import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
-import {
-  Bar,
-  BarChart,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Activity, Database } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminSection from '../../components/admin/AdminSection';
 import AdminStatStrip from '../../components/admin/AdminStatStrip';
-import AdminSectionTitle from '../../components/admin/AdminSectionTitle';
 import AdminTable from '../../components/admin/AdminTable';
 import {
-  adminSectionClass,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import ErrorScreen from '../../components/common/ErrorScreen';
+  AdminBarChart,
+  AdminMultiSeriesAreaChart,
+  type AdminChartSeries,
+} from '../../components/admin/AdminChart';
+import {
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   fetchAdminDatabaseStats,
+  type AdminDatabaseGrowthDriver,
   type AdminDatabaseStatsResponse,
 } from '../../utils/fetch/admin';
+
+const CHART_HEIGHT = 224;
+const formatMb = (v: number) => `${v.toLocaleString()} MB`;
+const toMb = (bytes: number) => Math.round((bytes / 1024 ** 2) * 10) / 10;
+
+function formatBytes(bytes: number): string {
+  const abs = Math.abs(bytes);
+  const sign = bytes < 0 ? '-' : '';
+  if (abs < 1024) return `${sign}${Math.round(abs)} B`;
+  if (abs < 1024 ** 2) return `${sign}${(abs / 1024).toFixed(1)} KB`;
+  if (abs < 1024 ** 3) return `${sign}${(abs / 1024 ** 2).toFixed(1)} MB`;
+  return `${sign}${(abs / 1024 ** 3).toFixed(2)} GB`;
+}
+
+const formatDelta = (bytes: number) =>
+  `${bytes >= 0 ? '+' : ''}${formatBytes(bytes)}`;
+
+const formatPct = (pct: number | null) =>
+  pct === null ? '—' : `${pct >= 0 ? '+' : ''}${pct}%`;
+
+const PROJECTION_SERIES: AdminChartSeries[] = [
+  { key: 'forecast', label: 'Forecast', color: ADMIN_CHART_COLORS.green },
+  {
+    key: 'high',
+    label: 'High',
+    color: ADMIN_CHART_COLORS.slate,
+    strokeDasharray: '4 4',
+  },
+  {
+    key: 'low',
+    label: 'Low',
+    color: ADMIN_CHART_COLORS.slate,
+    strokeDasharray: '4 4',
+  },
+  {
+    key: 'linear',
+    label: 'Measured trend',
+    color: ADMIN_CHART_COLORS.amber,
+    strokeDasharray: '2 4',
+  },
+];
+
+const DRIVER_SERIES: AdminChartSeries[] = [
+  { key: 'actual', label: 'Actual', color: ADMIN_CHART_COLORS.blue },
+  {
+    key: 'forecast',
+    label: 'Forecast',
+    color: ADMIN_CHART_COLORS.green,
+    strokeDasharray: '6 4',
+  },
+  {
+    key: 'high',
+    label: 'High',
+    color: ADMIN_CHART_COLORS.slate,
+    strokeDasharray: '2 4',
+  },
+  {
+    key: 'low',
+    label: 'Low',
+    color: ADMIN_CHART_COLORS.slate,
+    strokeDasharray: '2 4',
+  },
+];
+
+function driverChartData(driver: AdminDatabaseGrowthDriver) {
+  const rows: Array<Record<string, string | number>> = driver.history.map(
+    (h) => ({
+      label: h.date,
+      actual: h.value,
+    })
+  );
+  // Start the forecast lines at the last actual value so they connect.
+  const lastActual = driver.history[driver.history.length - 1];
+  if (rows.length > 0 && lastActual) {
+    Object.assign(rows[rows.length - 1], {
+      forecast: lastActual.value,
+      low: lastActual.value,
+      high: lastActual.value,
+    });
+  }
+  for (const f of driver.forecast) {
+    rows.push({ label: f.date, forecast: f.value, low: f.low, high: f.high });
+  }
+  return rows;
+}
 
 export default function AdminDatabase() {
   const [data, setData] = useState<AdminDatabaseStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [driverKey, setDriverKey] =
+    useState<AdminDatabaseGrowthDriver['key']>('flights');
 
   const load = useCallback(async () => {
     try {
@@ -54,8 +143,8 @@ export default function AdminDatabase() {
   const topTables = useMemo(
     () =>
       (data?.tables ?? []).slice(0, 12).map((t) => ({
-        name: t.name,
-        mb: Math.round((t.bytes / 1024 ** 2) * 10) / 10,
+        label: t.name,
+        value: Math.round((t.bytes / 1024 ** 2) * 10) / 10,
       })),
     [data]
   );
@@ -86,235 +175,360 @@ export default function AdminDatabase() {
 
   const projectionChart = useMemo(
     () =>
-      (data?.projection ?? []).map((p) => ({
-        date: p.date.slice(5),
-        gb: Math.max(0, Math.round((p.projectedBytes / 1024 ** 3) * 100) / 100),
-      })),
+      (data?.projection ?? []).map((p) => {
+        const row: Record<string, string | number> = {
+          label: p.date,
+          forecast: toMb(p.projectedBytes),
+          low: toMb(p.lowBytes),
+          high: toMb(p.highBytes),
+        };
+        if (p.linearBytes !== null) row.linear = toMb(p.linearBytes);
+        return row;
+      }),
     [data]
   );
 
-  const growthPercent = Math.max(0, data?.growthPercent30d ?? 0);
-  const dailyNetGrowthLabel = data?.dailyNetGrowthFormatted ?? '—';
+  const projectionSeries = useMemo(
+    () =>
+      data?.projection.some((p) => p.linearBytes !== null)
+        ? PROJECTION_SERIES
+        : PROJECTION_SERIES.filter((s) => s.key !== 'linear'),
+    [data]
+  );
+
+  const drivers = data?.growthDrivers ?? [];
+  const activeDriver = drivers.find((d) => d.key === driverKey) ?? drivers[0];
+  const activeDriverChart = useMemo(
+    () => (activeDriver ? driverChartData(activeDriver) : []),
+    [activeDriver]
+  );
+
+  const growingTables = useMemo(
+    () =>
+      (data?.tableForecasts ?? [])
+        .filter((t) => t.deltaBytes !== 0 || t.insertsPerDay > 0)
+        .slice(0, 10),
+    [data]
+  );
+
+  const growthPercent = data?.growthPercent30d ?? 0;
+  const week = data?.projection[7];
 
   const todayLabel = data?.activitySummary?.today ?? 'Today';
   const yesterdayLabel = data?.activitySummary?.yesterday ?? 'Yesterday';
 
   return (
     <AdminLayout>
-      <AdminPageHeader
+      <AdminPage
         title="Database Monitor"
-        icon={MdStorage}
-        accent="blue"
+        icon={Database}
         actions={
           <AdminRefreshButton onClick={() => void load()} loading={loading} />
         }
-      />
-
-      {loading && !data ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Failed to load"
-          message={error}
-          onRetry={() => void load()}
-        />
-      ) : data ? (
-        <>
-          <AdminStatStrip
-            items={[
-              { label: 'Total size', value: data.totalFormatted },
-              {
-                label: 'Est. daily net growth',
-                value: dailyNetGrowthLabel,
-                sub: data.projectionMethodology,
-              },
-              {
-                label: '30-day projection',
-                value: data.projected30dFormatted,
-                sub: `+${growthPercent}% vs today`,
-              },
-            ]}
-            columns={3}
+      >
+        {loading && !data ? (
+          <AdminLoading label="Loading database stats…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Failed to load"
+            message={error}
+            onRetry={() => void load()}
           />
+        ) : data ? (
+          <>
+            <AdminStatStrip
+              items={[
+                { label: 'Total size', value: data.totalFormatted },
+                {
+                  label: 'In 7 days',
+                  value: week ? formatBytes(week.projectedBytes) : '—',
+                  sub: week
+                    ? `${formatDelta(week.projectedBytes - data.totalBytes)} this week`
+                    : undefined,
+                },
+                {
+                  label: 'In 30 days',
+                  value: data.projected30dFormatted,
+                  sub: `${formatPct(growthPercent)} · range ${formatBytes(
+                    data.projected30dLowBytes
+                  )}–${formatBytes(data.projected30dHighBytes)}`,
+                },
+                {
+                  label: 'Avg. growth / day',
+                  value: formatDelta(data.dailyNetGrowthBytes),
+                  sub:
+                    data.measuredDailyNetBytes !== null
+                      ? `measured: ${formatDelta(data.measuredDailyNetBytes)}/day`
+                      : undefined,
+                },
+              ]}
+              columns={4}
+            />
 
-          <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
-          >
-            <div>
-              <AdminSectionTitle>Table sizes (top 12)</AdminSectionTitle>
-              <p className="text-xs text-zinc-500 mb-2">Hover for size in MB</p>
-              <div className="h-56 [&_.recharts-surface]:outline-none">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={topTables}
-                    layout="vertical"
-                    margin={{ left: 8, right: 8, top: 4, bottom: 4 }}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <AdminSection title="Table sizes (top 12)">
+                <AdminBarChart
+                  data={topTables}
+                  color={ADMIN_CHART_COLORS.blue}
+                  height={CHART_HEIGHT}
+                  valueLabel="Size"
+                  formatValue={formatMb}
+                />
+              </AdminSection>
+
+              <AdminSection title="Projected size (30 days)">
+                <AdminMultiSeriesAreaChart
+                  data={projectionChart}
+                  series={projectionSeries}
+                  height={CHART_HEIGHT}
+                  formatValue={formatMb}
+                  beginAtZero={false}
+                  filled={false}
+                  showLegend
+                />
+                {data.projectionMethodology && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {data.projectionMethodology}
+                  </p>
+                )}
+              </AdminSection>
+            </div>
+
+            {activeDriver ? (
+              <AdminSection
+                title="Growth drivers"
+                description="Last 30 days vs the 30 before, and what the trend and weekday pattern point to next."
+                actions={
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    size="sm"
+                    value={activeDriver.key}
+                    onValueChange={(v) => {
+                      if (v)
+                        setDriverKey(v as AdminDatabaseGrowthDriver['key']);
+                    }}
+                    aria-label="Growth driver"
                   >
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={120}
-                      tick={{ fill: '#a1a1aa', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      formatter={(v: number) => [`${v} MB`, 'Size']}
-                      labelFormatter={(name) => String(name)}
-                      contentStyle={{
-                        background: '#09090b',
-                        border: '1px solid #3f3f46',
-                        borderRadius: 8,
-                      }}
-                    />
-                    <Bar dataKey="mb" fill="#60a5fa" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                    {drivers.map((d) => (
+                      <ToggleGroupItem key={d.key} value={d.key}>
+                        {d.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                }
+              >
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+                  <AdminMultiSeriesAreaChart
+                    data={activeDriverChart}
+                    series={DRIVER_SERIES}
+                    height={CHART_HEIGHT}
+                    filled={false}
+                    showLegend
+                  />
+                  <AdminStatStrip
+                    columns={2}
+                    items={[
+                      {
+                        label: 'Last 30 days',
+                        value: activeDriver.last30.toLocaleString(),
+                        sub: `${formatPct(activeDriver.change30Pct)} vs prior 30d`,
+                      },
+                      {
+                        label: 'Trend',
+                        value: `${formatPct(activeDriver.weeklyGrowthPct)}/wk`,
+                        sub: activeDriver.peakWeekday
+                          ? `peaks ${activeDriver.peakWeekday} (${activeDriver.peakFactor}×)`
+                          : 'no weekday pattern',
+                      },
+                      {
+                        label: 'Next 7 days',
+                        value: `~${activeDriver.next7.toLocaleString()}`,
+                        sub: `last 7: ${activeDriver.last7.toLocaleString()}`,
+                      },
+                      {
+                        label: 'Next 30 days',
+                        value: `~${activeDriver.next30.toLocaleString()}`,
+                        sub:
+                          activeDriver.total !== null
+                            ? `→ ~${(
+                                activeDriver.total + activeDriver.next30
+                              ).toLocaleString()} total users`
+                            : `${activeDriver.next30Low.toLocaleString()}–${activeDriver.next30High.toLocaleString()}`,
+                      },
+                    ]}
+                  />
+                </div>
+              </AdminSection>
+            ) : null}
 
-            <div>
-              <AdminSectionTitle>Projected size (30 days)</AdminSectionTitle>
-              <p className="text-xs text-zinc-500 mb-2">
-                Hover for projected size
-              </p>
-              <div className="h-56 [&_.recharts-surface]:outline-none">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={projectionChart}
-                    margin={{ top: 8, right: 4, left: 4, bottom: 0 }}
-                  >
-                    <XAxis dataKey="date" hide />
-                    <YAxis hide />
-                    <Tooltip
-                      formatter={(v: number) => [`${v} GB`, 'Projected']}
-                      labelFormatter={(label) => String(label)}
-                      contentStyle={{
-                        background: '#09090b',
-                        border: '1px solid #3f3f46',
-                        borderRadius: 8,
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="gb"
-                      stroke="#34d399"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+            {growingTables.length > 0 ? (
+              <AdminSection
+                title="Forecast by table (30 days)"
+                description="Tables with retention stay flat once deletes keep up with inserts; the rest grow with activity."
+              >
+                <AdminTable minWidth="720px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-4">Table</TableHead>
+                      <TableHead className="text-right">Now</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
+                      <TableHead className="text-right">Inserts/day</TableHead>
+                      <TableHead className="text-right">Deletes/day</TableHead>
+                      <TableHead className="text-right">Trend</TableHead>
+                      <TableHead className="px-4 text-right">
+                        Retention
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {growingTables.map((t) => (
+                      <TableRow key={t.table}>
+                        <TableCell className="px-4 font-mono text-xs">
+                          {t.table}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatBytes(t.currentBytes)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatDelta(t.deltaBytes)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {t.insertsPerDay.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {t.deletesPerDay.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatPct(t.weeklyGrowthPct)}/wk
+                        </TableCell>
+                        <TableCell className="px-4 text-right tabular-nums text-muted-foreground">
+                          {t.retentionDays ? `${t.retentionDays}d` : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
+              </AdminSection>
+            ) : null}
 
-          <div className={adminSectionClass()}>
-            <AdminSectionTitle>
-              Table activity ({yesterdayLabel} vs {todayLabel})
-            </AdminSectionTitle>
-            {activityRows.length === 0 ? (
-              <p className="text-sm text-zinc-500">
-                Activity metrics are collecting — check back after the first
-                daily capture.
-              </p>
-            ) : (
-              <AdminTable minWidth="640px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={ADMIN_TH}>Table</th>
-                    <th className={ADMIN_TH}>Inserted ({yesterdayLabel})</th>
-                    <th className={ADMIN_TH}>Deleted ({yesterdayLabel})</th>
-                    <th className={ADMIN_TH}>Inserted ({todayLabel})</th>
-                    <th className={ADMIN_TH}>Deleted ({todayLabel})</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {activityRows.map((row) => (
-                    <tr key={row.table} className="hover:bg-zinc-800/30">
-                      <td className={`${ADMIN_TD} font-mono`}>{row.table}</td>
-                      <td className={ADMIN_TD}>
-                        {row.yesterday.inserted.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.yesterday.deleted.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.today.inserted.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.today.deleted.toLocaleString()}
-                      </td>
-                    </tr>
+            <AdminSection
+              title={`Table activity (${yesterdayLabel} vs ${todayLabel})`}
+            >
+              {activityRows.length === 0 ? (
+                <AdminEmptyState icon={Activity} title="No activity yet" />
+              ) : (
+                <AdminTable minWidth="640px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-4">Table</TableHead>
+                      <TableHead className="text-right">
+                        Inserted ({yesterdayLabel})
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Deleted ({yesterdayLabel})
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Inserted ({todayLabel})
+                      </TableHead>
+                      <TableHead className="px-4 text-right">
+                        Deleted ({todayLabel})
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activityRows.map((row) => (
+                      <TableRow key={row.table}>
+                        <TableCell className="px-4 font-mono text-xs">
+                          {row.table}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.yesterday.inserted.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.yesterday.deleted.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.today.inserted.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="px-4 text-right tabular-nums">
+                          {row.today.deleted.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
+              )}
+            </AdminSection>
+
+            {recentStats.length > 0 ? (
+              <AdminSection title="Platform activity (last 7 days)">
+                <AdminTable minWidth="560px">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-4">Date</TableHead>
+                      <TableHead className="text-right">Logins</TableHead>
+                      <TableHead className="text-right">New users</TableHead>
+                      <TableHead className="text-right">New sessions</TableHead>
+                      <TableHead className="px-4 text-right">
+                        New flights
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentStats.map((row) => (
+                      <TableRow key={row.date}>
+                        <TableCell className="px-4 tabular-nums">
+                          {row.date}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.logins.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.newUsers.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.newSessions.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="px-4 text-right tabular-nums">
+                          {row.newFlights.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </AdminTable>
+              </AdminSection>
+            ) : null}
+
+            <AdminSection title="Retention policies">
+              <AdminTable minWidth="480px">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-4">Table</TableHead>
+                    <TableHead>Retention</TableHead>
+                    <TableHead className="px-4">Label</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.retentionPolicies.map((p) => (
+                    <TableRow key={p.table}>
+                      <TableCell className="px-4 font-mono text-xs">
+                        {p.table}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {p.retentionDays} days
+                      </TableCell>
+                      <TableCell className="px-4 text-muted-foreground">
+                        {p.label}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </AdminTable>
-            )}
-          </div>
-
-          {recentStats.length > 0 ? (
-            <div className={adminSectionClass()}>
-              <AdminSectionTitle>
-                Platform activity (last 7 days)
-              </AdminSectionTitle>
-              <AdminTable minWidth="560px">
-                <thead className={ADMIN_TABLE_HEAD}>
-                  <tr>
-                    <th className={ADMIN_TH}>Date</th>
-                    <th className={ADMIN_TH}>Logins</th>
-                    <th className={ADMIN_TH}>New users</th>
-                    <th className={ADMIN_TH}>New sessions</th>
-                    <th className={ADMIN_TH}>New flights</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/80">
-                  {recentStats.map((row) => (
-                    <tr key={row.date} className="hover:bg-zinc-800/30">
-                      <td className={ADMIN_TD}>{row.date}</td>
-                      <td className={ADMIN_TD}>
-                        {row.logins.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.newUsers.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.newSessions.toLocaleString()}
-                      </td>
-                      <td className={ADMIN_TD}>
-                        {row.newFlights.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </AdminTable>
-            </div>
-          ) : null}
-
-          <div className={adminSectionClass()}>
-            <AdminSectionTitle>Retention policies</AdminSectionTitle>
-            <AdminTable minWidth="480px">
-              <thead className={ADMIN_TABLE_HEAD}>
-                <tr>
-                  <th className={ADMIN_TH}>Table</th>
-                  <th className={ADMIN_TH}>Retention</th>
-                  <th className={ADMIN_TH}>Label</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/80">
-                {data.retentionPolicies.map((p) => (
-                  <tr key={p.table} className="hover:bg-zinc-800/30">
-                    <td className={`${ADMIN_TD} font-mono`}>{p.table}</td>
-                    <td className={ADMIN_TD}>{p.retentionDays} days</td>
-                    <td className={ADMIN_TD}>{p.label}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </AdminTable>
-          </div>
-        </>
-      ) : null}
+            </AdminSection>
+          </>
+        ) : null}
+      </AdminPage>
     </AdminLayout>
   );
 }

@@ -4,6 +4,7 @@ import { getDailyStatistics } from '../../db/admin.js';
 import {
   fetchPgTableSizes,
   getActivitySummary,
+  pgDateKey,
   refreshTodayMetrics,
 } from '../../db/databaseMetrics.js';
 import {
@@ -14,6 +15,7 @@ import {
 const router = express.Router();
 
 function formatBytes(bytes: number): string {
+  if (bytes < 0) return `-${formatBytes(-bytes)}`;
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
@@ -68,6 +70,11 @@ router.get('/', requirePermission('admin'), async (_req, res) => {
       projection: projectionResult.projection,
       projected30dBytes: projectionResult.projected30dBytes,
       projected30dFormatted: formatBytes(projectionResult.projected30dBytes),
+      projected30dLowBytes: projectionResult.projected30dLowBytes,
+      projected30dHighBytes: projectionResult.projected30dHighBytes,
+      measuredDailyNetBytes: projectionResult.measuredDailyNetBytes,
+      tableForecasts: projectionResult.tableForecasts,
+      growthDrivers: projectionResult.growthDrivers,
       growthPercent30d: projectionResult.growthPercent30d,
       dailyNetGrowthBytes: projectionResult.dailyNetGrowthBytes,
       dailyNetGrowthFormatted: formatBytes(
@@ -83,10 +90,7 @@ router.get('/', requirePermission('admin'), async (_req, res) => {
           new_flights_count: number;
           new_users_count: number;
         }) => ({
-          date:
-            row.date instanceof Date
-              ? row.date.toISOString().slice(0, 10)
-              : String(row.date).slice(0, 10),
+          date: pgDateKey(row.date),
           logins: row.logins_count,
           newSessions: row.new_sessions_count,
           newFlights: row.new_flights_count,

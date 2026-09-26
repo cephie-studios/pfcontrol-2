@@ -1,17 +1,41 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MdVpnKey, MdSave, MdShield } from 'react-icons/md';
-import AdminModal from './AdminModal';
-import AdminTable from './AdminTable';
-import AdminSectionTitle from './AdminSectionTitle';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-  statusBadgeClass,
-} from './adminConstants';
-import Button from '../common/Button';
+  Ban,
+  Check,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Lock,
+  Pencil,
+  RotateCcw,
+  Save,
+  X,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react';
+import AdminModal from './AdminModal';
+import AdminSection from './AdminSection';
+import AdminStatusBadge from './AdminStatusBadge';
+import AdminTable from './AdminTable';
+import { AdminLoading } from './AdminStates';
+import { useAdminConfirm } from './useAdminConfirm';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '../../hooks/useToast';
 import {
   approveAdminDeveloperKey,
@@ -34,6 +58,80 @@ type Props = {
   profileActionBusy?: boolean;
 };
 
+function isAdminOnlyScope(entry: AdminScopeCatalogEntry): boolean {
+  return Boolean(
+    (entry as AdminScopeCatalogEntry & { hidden?: boolean }).hidden
+  );
+}
+
+const STATUS_ICON: Record<string, LucideIcon> = {
+  active: CheckCircle2,
+  pending: Clock,
+  rejected: XCircle,
+  revoked: Ban,
+};
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const SCOPE_PREVIEW_MAX = 4;
+
+function KeyRowAction({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  destructive,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          className={
+            destructive ? 'text-destructive hover:text-destructive' : undefined
+          }
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ScopeCheckbox({
+  id,
+  label,
+  checked,
+  onToggle,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const inputId = `admin-dev-scope-${id}`;
+  return (
+    <div className="flex items-center gap-2">
+      <Checkbox id={inputId} checked={checked} onCheckedChange={onToggle} />
+      <Label htmlFor={inputId} className="font-normal">
+        {label}
+      </Label>
+    </div>
+  );
+}
+
 export default function AdminDeveloperManagePanel({
   developer,
   onReload,
@@ -42,6 +140,7 @@ export default function AdminDeveloperManagePanel({
   profileActionBusy,
 }: Props) {
   const { showError } = useToast();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [catalog, setCatalog] = useState<AdminScopeCatalogEntry[]>([]);
   const [keys, setKeys] = useState<AdminDeveloperKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(true);
@@ -169,7 +268,15 @@ export default function AdminDeveloperManagePanel({
   };
 
   const submitRejectKey = async (k: AdminDeveloperKeyRow) => {
-    if (!confirm('Reject this key request?')) return;
+    if (
+      !(await confirm({
+        title: 'Reject this key request?',
+        description: `The request for "${k.name}" will be rejected.`,
+        confirmText: 'Reject',
+        destructive: true,
+      }))
+    )
+      return;
     setRowBusy(k.id);
     try {
       await rejectAdminDeveloperKey(developer.userId, k.id);
@@ -213,7 +320,16 @@ export default function AdminDeveloperManagePanel({
   };
 
   const doRevoke = async (k: AdminDeveloperKeyRow) => {
-    if (!confirm(`Revoke key “${k.name}”?`)) return;
+    if (
+      !(await confirm({
+        title: `Revoke key “${k.name}”?`,
+        description:
+          'Requests using this key will fail immediately. This cannot be undone.',
+        confirmText: 'Revoke',
+        destructive: true,
+      }))
+    )
+      return;
     setRowBusy(k.id);
     try {
       await revokeAdminDeveloperKey(developer.userId, k.id);
@@ -227,33 +343,33 @@ export default function AdminDeveloperManagePanel({
     }
   };
 
+  const toggleIn =
+    (setter: (fn: (prev: Set<string>) => Set<string>) => void, id: string) =>
+    () =>
+      setter((prev) => {
+        const n = new Set(prev);
+        if (n.has(id)) n.delete(id);
+        else n.add(id);
+        return n;
+      });
+
   return (
-    <div className="space-y-0">
-      <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-2 text-zinc-200 min-w-0">
-            <MdShield className="w-5 h-5 text-cyan-400 shrink-0" />
-            <div>
-              <AdminSectionTitle className="!mb-0">
-                Scope ceiling & keys
-              </AdminSectionTitle>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                {developer.username} · {developer.keysActive} usable ·{' '}
-                {developer.keysPending} pending · {developer.keysTotal} total
-              </p>
-            </div>
-          </div>
-          {(onProfileSuspend || onProfileReactivate) && (
-            <div className="flex shrink-0 gap-2">
+    <div className="flex flex-col gap-4">
+      <AdminSection
+        title="Scope ceiling & keys"
+        description={`${developer.username} · ${developer.keysActive} usable · ${developer.keysPending} pending · ${developer.keysTotal} total`}
+        actions={
+          onProfileSuspend || onProfileReactivate ? (
+            <>
               {developer.status === 'active' && onProfileSuspend && (
                 <Button
                   type="button"
                   variant="outline"
-                  size={adminDownsizeButtonSize('xs')}
+                  size="sm"
                   disabled={profileActionBusy}
                   onClick={() => onProfileSuspend()}
-                  className="!border-amber-800/60 !text-amber-200"
                 >
+                  <Ban />
                   Suspend
                 </Button>
               )}
@@ -261,217 +377,225 @@ export default function AdminDeveloperManagePanel({
                 <Button
                   type="button"
                   variant="outline"
-                  size={adminDownsizeButtonSize('xs')}
+                  size="sm"
                   disabled={profileActionBusy}
                   onClick={() => onProfileReactivate()}
-                  className="!border-emerald-800/50 !text-emerald-200"
                 >
+                  <RotateCcw />
                   Reactivate
                 </Button>
               )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className={adminSectionClass()}>
-        <AdminSectionTitle>
-          Allowed scopes (max per developer)
-        </AdminSectionTitle>
-        <div className="max-h-56 overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-950/50 p-3 space-y-3 shadow-inner ring-1 ring-zinc-800/40">
-          {scopeGroups.map(([group, entries]) => (
-            <div key={group}>
-              <p className="text-[11px] font-semibold text-zinc-500 mb-1.5 capitalize">
-                {group}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {entries.map((s) => (
-                  <label
-                    key={s.id}
-                    className="flex items-start gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-2 py-1.5 cursor-pointer hover:border-zinc-600"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={ceiling.has(s.id)}
-                      onChange={() => toggleCeiling(s.id)}
-                      className="mt-0.5 accent-blue-600 rounded border-zinc-600"
-                    />
-                    <span>
-                      <span className="text-xs font-medium text-zinc-200 block">
-                        {s.label}
-                      </span>
-                      <span className="text-[10px] text-zinc-500 leading-snug line-clamp-2">
-                        {s.description}
-                      </span>
-                    </span>
-                  </label>
-                ))}
+            </>
+          ) : undefined
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium">Allowed scopes</p>
+          <div className="flex max-h-56 flex-col gap-3 overflow-y-auto rounded-2xl border p-3">
+            {scopeGroups.map(([group, entries]) => (
+              <div key={group} className="grid gap-1.5">
+                <p className="text-xs font-medium text-muted-foreground capitalize">
+                  {group}
+                </p>
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                  {entries.map((s) => {
+                    const inputId = `admin-dev-ceiling-${s.id}`;
+                    return (
+                      <div key={s.id} className="flex items-start gap-2">
+                        <Checkbox
+                          id={inputId}
+                          checked={ceiling.has(s.id)}
+                          onCheckedChange={() => toggleCeiling(s.id)}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor={inputId}
+                          className="flex min-w-0 cursor-pointer flex-col items-start gap-0.5"
+                        >
+                          <span className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
+                            {s.label}
+                            {isAdminOnlyScope(s) ? (
+                              <AdminStatusBadge tone="neutral" icon={Lock}>
+                                Admin only
+                              </AdminStatusBadge>
+                            ) : null}
+                          </span>
+                          <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
+                            {s.description}
+                          </span>
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={ceilingBusy || ceiling.size === 0}
+              onClick={() => void saveCeiling()}
+            >
+              {ceilingBusy ? <Loader2 className="animate-spin" /> : <Save />}
+              Save ceiling
+            </Button>
+          </div>
         </div>
-        <Button
-          type="button"
-          size={adminDownsizeButtonSize('sm')}
-          disabled={ceilingBusy || ceiling.size === 0}
-          onClick={() => void saveCeiling()}
-          className="mt-3 inline-flex items-center gap-2"
-        >
-          <MdSave className="w-4 h-4" />
-          Save ceiling
-        </Button>
-      </div>
+      </AdminSection>
 
-      <div className={adminSectionClass()}>
-        <div className="flex items-center gap-2 mb-3">
-          <MdVpnKey className="w-4 h-4 text-zinc-400" />
-          <AdminSectionTitle className="!mb-0">API keys</AdminSectionTitle>
-        </div>
+      <AdminSection title="API keys">
         {keysLoading ? (
-          <p className="text-sm text-zinc-500 py-6">Loading keys…</p>
+          <AdminLoading label="Loading keys…" className="py-6" />
         ) : (
           <AdminTable minWidth="640px">
-            <thead className={ADMIN_TABLE_HEAD}>
-              <tr>
-                <th className={ADMIN_TH}>Name</th>
-                <th className={ADMIN_TH}>Status</th>
-                <th className={ADMIN_TH}>Scopes</th>
-                <th className={ADMIN_TH}>RPM</th>
-                <th className={ADMIN_TH}>Usage</th>
-                <th className={ADMIN_TH}>Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/80">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Scopes</TableHead>
+                <TableHead>RPM</TableHead>
+                <TableHead>Usage</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {keys.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={6}
-                    className={`${ADMIN_TD} py-6 text-center text-zinc-500`}
+                    className="py-6 text-center text-muted-foreground"
                   >
                     No keys.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
-                keys.map((k) => (
-                  <tr key={k.id} className="hover:bg-zinc-800/20">
-                    <td className={ADMIN_TD}>
-                      <div className="font-medium">{k.name}</div>
-                      <code className="text-[10px] text-zinc-500">
-                        {k.prefix}
-                      </code>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-md ${statusBadgeClass(k.status ?? 'active')}`}
-                      >
-                        {k.status}
-                      </span>
-                    </td>
-                    <td
-                      className={`${ADMIN_TD} text-xs text-zinc-400 max-w-[200px]`}
-                    >
-                      {(k.status === 'pending' ? k.requestedScopes : k.scopes)
-                        .slice(0, 4)
-                        .join(', ')}
-                      {(k.status === 'pending' ? k.requestedScopes : k.scopes)
-                        .length > 4
-                        ? '…'
-                        : ''}
-                    </td>
-                    <td className={`${ADMIN_TD} text-xs text-zinc-400`}>
-                      {k.rateLimitPerMinute ?? '—'}
-                    </td>
-                    <td
-                      className={`${ADMIN_TD} text-xs text-zinc-400 whitespace-nowrap`}
-                    >
-                      <div className="tabular-nums text-zinc-300">
-                        {k.requestCount.toLocaleString()} req
-                        {k.requestCount === 1 ? '' : 's'}
-                      </div>
-                      <div className="text-zinc-500">
-                        {k.lastUsedAt
-                          ? new Date(k.lastUsedAt).toLocaleDateString()
-                          : 'Never used'}
-                      </div>
-                    </td>
-                    <td className={`${ADMIN_TD} whitespace-nowrap`}>
-                      {k.revokedAt ? (
-                        <span className="text-xs text-zinc-600">Revoked</span>
-                      ) : k.status === 'pending' ? (
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size={adminDownsizeButtonSize('xs')}
-                            disabled={rowBusy === k.id}
-                            onClick={() => openApprove(k)}
-                            className="bg-none bg-emerald-800/80 hover:bg-none hover:bg-emerald-700"
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={adminDownsizeButtonSize('xs')}
-                            disabled={rowBusy === k.id}
-                            onClick={() => void submitRejectKey(k)}
-                          >
-                            Reject
-                          </Button>
+                keys.map((k) => {
+                  const scopeList =
+                    k.status === 'pending' ? k.requestedScopes : k.scopes;
+                  return (
+                    <TableRow key={k.id}>
+                      <TableCell>
+                        <div className="font-medium">{k.name}</div>
+                        <code className="font-mono text-xs text-muted-foreground">
+                          {k.prefix}
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        <AdminStatusBadge
+                          status={k.status ?? 'active'}
+                          icon={STATUS_ICON[k.status ?? 'active']}
+                        >
+                          {capitalize(k.status ?? 'active')}
+                        </AdminStatusBadge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] font-mono text-xs whitespace-normal text-muted-foreground">
+                        {scopeList.length > SCOPE_PREVIEW_MAX ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="cursor-default">
+                                {scopeList
+                                  .slice(0, SCOPE_PREVIEW_MAX)
+                                  .join(', ')}
+                                …
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <ul className="grid gap-0.5 font-mono">
+                                {scopeList.map((s) => (
+                                  <li key={s}>{s}</li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          scopeList.join(', ')
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs tabular-nums">
+                        {k.rateLimitPerMinute ?? (
+                          <span className="text-muted-foreground">Default</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        <div className="tabular-nums">
+                          {k.requestCount.toLocaleString()} req
+                          {k.requestCount === 1 ? '' : 's'}
                         </div>
-                      ) : k.status === 'active' ? (
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={adminDownsizeButtonSize('xs')}
-                            disabled={rowBusy === k.id}
-                            onClick={() => openEdit(k)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size={adminDownsizeButtonSize('xs')}
-                            disabled={rowBusy === k.id}
-                            onClick={() => void doRevoke(k)}
-                          >
-                            Revoke
-                          </Button>
+                        <div className="text-muted-foreground">
+                          {k.lastUsedAt
+                            ? new Date(k.lastUsedAt).toLocaleDateString()
+                            : 'Never used'}
                         </div>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {k.revokedAt ? (
+                          <span className="text-xs text-muted-foreground">
+                            Revoked
+                          </span>
+                        ) : k.status === 'pending' ? (
+                          <div className="flex justify-end gap-1">
+                            <KeyRowAction
+                              label="Approve key request"
+                              icon={Check}
+                              disabled={rowBusy === k.id}
+                              onClick={() => openApprove(k)}
+                            />
+                            <KeyRowAction
+                              label="Reject key request"
+                              icon={X}
+                              destructive
+                              disabled={rowBusy === k.id}
+                              onClick={() => void submitRejectKey(k)}
+                            />
+                          </div>
+                        ) : k.status === 'active' ? (
+                          <div className="flex justify-end gap-1">
+                            <KeyRowAction
+                              label="Edit key"
+                              icon={Pencil}
+                              disabled={rowBusy === k.id}
+                              onClick={() => openEdit(k)}
+                            />
+                            <KeyRowAction
+                              label="Revoke key"
+                              icon={Ban}
+                              destructive
+                              disabled={rowBusy === k.id}
+                              onClick={() => void doRevoke(k)}
+                            />
+                          </div>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
-            </tbody>
+            </TableBody>
           </AdminTable>
         )}
-      </div>
+      </AdminSection>
 
       <AdminModal
         open={!!approveKey}
         onClose={() => setApproveKey(null)}
         title="Approve key request"
+        description={approveKey?.name}
         size="md"
         footer={
           <>
             <Button
               type="button"
-              variant="ghost"
-              size={adminDownsizeButtonSize('sm')}
+              variant="outline"
               onClick={() => setApproveKey(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="primary"
-              size={adminDownsizeButtonSize('sm')}
               disabled={approveScopes.size === 0 || rowBusy != null}
               onClick={() => void submitApprove()}
-              className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-500"
             >
               Approve & issue secret
             </Button>
@@ -479,53 +603,45 @@ export default function AdminDeveloperManagePanel({
         }
       >
         {approveKey && (
-          <>
-            <p className="text-xs text-zinc-500 mb-4">{approveKey.name}</p>
-            <p className="text-xs text-zinc-400 mb-2">
-              Select allowed scopes (subset of requested)
-            </p>
-            <div className="space-y-1 max-h-48 overflow-y-auto mb-4">
-              {approveKey.requestedScopes.map((id) => {
-                const label = catalog.find((c) => c.id === id)?.label ?? id;
-                return (
-                  <label
+          <div className="grid gap-5">
+            <div className="grid gap-2">
+              <Label>Allowed scopes</Label>
+              <div className="grid max-h-48 gap-2.5 overflow-y-auto">
+                {approveKey.requestedScopes.map((id) => (
+                  <ScopeCheckbox
                     key={id}
-                    className="flex items-center gap-2 text-sm text-zinc-200"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={approveScopes.has(id)}
-                      onChange={() =>
-                        setApproveScopes((prev) => {
-                          const n = new Set(prev);
-                          if (n.has(id)) n.delete(id);
-                          else n.add(id);
-                          return n;
-                        })
-                      }
-                    />
-                    {label}
-                  </label>
-                );
-              })}
+                    id={`approve-${id}`}
+                    label={catalog.find((c) => c.id === id)?.label ?? id}
+                    checked={approveScopes.has(id)}
+                    onToggle={toggleIn(setApproveScopes, id)}
+                  />
+                ))}
+              </div>
             </div>
-            <label className="block text-xs text-zinc-500 mb-1">
-              Rate limit / min (empty = default)
-            </label>
-            <input
-              value={approveRpm}
-              onChange={(e) => setApproveRpm(e.target.value)}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 mb-3"
-              placeholder="e.g. 120"
-            />
-            <textarea
-              value={approveNote}
-              onChange={(e) => setApproveNote(e.target.value)}
-              placeholder="Optional note"
-              rows={2}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 mb-4"
-            />
-          </>
+            <div className="grid gap-2">
+              <Label htmlFor="admin-dev-panel-approve-rpm">
+                Rate limit / min (empty = default)
+              </Label>
+              <Input
+                id="admin-dev-panel-approve-rpm"
+                inputMode="numeric"
+                value={approveRpm}
+                onChange={(e) => setApproveRpm(e.target.value)}
+                placeholder="e.g. 120"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="admin-dev-panel-approve-note">Note</Label>
+              <Textarea
+                id="admin-dev-panel-approve-note"
+                value={approveNote}
+                onChange={(e) => setApproveNote(e.target.value)}
+                placeholder="Optional note"
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+          </div>
         )}
       </AdminModal>
 
@@ -533,20 +649,20 @@ export default function AdminDeveloperManagePanel({
         open={!!revealedSecret}
         onClose={() => setRevealedSecret(null)}
         title="Key secret (copy now)"
+        description="This is shown only once."
         size="md"
         footer={
           <Button
             type="button"
             variant="outline"
-            size={adminDownsizeButtonSize('sm')}
             onClick={() => setRevealedSecret(null)}
-            className="w-full"
+            className="w-full sm:w-auto"
           >
             Done
           </Button>
         }
       >
-        <pre className="text-xs text-emerald-200 break-all bg-black/40 rounded-xl p-3">
+        <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
           {revealedSecret}
         </pre>
       </AdminModal>
@@ -560,16 +676,13 @@ export default function AdminDeveloperManagePanel({
           <>
             <Button
               type="button"
-              variant="ghost"
-              size={adminDownsizeButtonSize('sm')}
+              variant="outline"
               onClick={() => setEditKey(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="primary"
-              size={adminDownsizeButtonSize('sm')}
               disabled={editScopes.size === 0 || rowBusy != null}
               onClick={() => void saveEdit()}
             >
@@ -579,45 +692,39 @@ export default function AdminDeveloperManagePanel({
         }
       >
         {editKey && (
-          <>
-            <p className="text-xs text-zinc-500 mb-3">
-              Scopes must stay within the profile ceiling.
-            </p>
-            <div className="space-y-1 max-h-52 overflow-y-auto mb-4">
-              {catalogSorted
-                .filter((c) => ceiling.has(c.id))
-                .map((c) => (
-                  <label
-                    key={c.id}
-                    className="flex items-center gap-2 text-sm text-zinc-200"
-                  >
-                    <input
-                      type="checkbox"
+          <div className="grid gap-5">
+            <div className="grid gap-2">
+              <Label>Scopes</Label>
+              <div className="grid max-h-52 gap-2.5 overflow-y-auto">
+                {catalogSorted
+                  .filter((c) => ceiling.has(c.id))
+                  .map((c) => (
+                    <ScopeCheckbox
+                      key={c.id}
+                      id={`edit-${c.id}`}
+                      label={c.label}
                       checked={editScopes.has(c.id)}
-                      onChange={() =>
-                        setEditScopes((prev) => {
-                          const n = new Set(prev);
-                          if (n.has(c.id)) n.delete(c.id);
-                          else n.add(c.id);
-                          return n;
-                        })
-                      }
+                      onToggle={toggleIn(setEditScopes, c.id)}
                     />
-                    {c.label}
-                  </label>
-                ))}
+                  ))}
+              </div>
             </div>
-            <label className="text-xs text-zinc-500">
-              RPM override (empty = default)
-            </label>
-            <input
-              value={editRpm}
-              onChange={(e) => setEditRpm(e.target.value)}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 mb-4"
-            />
-          </>
+            <div className="grid gap-2">
+              <Label htmlFor="admin-dev-panel-edit-rpm">
+                RPM override (empty = default)
+              </Label>
+              <Input
+                id="admin-dev-panel-edit-rpm"
+                inputMode="numeric"
+                value={editRpm}
+                onChange={(e) => setEditRpm(e.target.value)}
+              />
+            </div>
+          </div>
         )}
       </AdminModal>
+
+      {confirmDialog}
     </div>
   );
 }

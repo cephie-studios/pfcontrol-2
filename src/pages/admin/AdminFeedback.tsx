@@ -1,31 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  MdStar,
-  MdMessage,
-  MdDelete,
-  MdPeople,
-  MdOutlineChatBubbleOutline,
-} from 'react-icons/md';
+  ChevronLeft,
+  ChevronRight,
+  MessageSquareText,
+  MessagesSquare,
+  Star,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatCards from '../../components/admin/AdminStatCards';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import {
-  adminDownsizeButtonSize,
-  adminSectionClass,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-  ADMIN_SEGMENT_ACTIVE,
-  ADMIN_SEGMENT_INACTIVE,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Dropdown from '../../components/common/Dropdown';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import {
   fetchFeedback,
   fetchFeedbackStats,
@@ -33,6 +29,43 @@ import {
   type Feedback,
   type FeedbackStats,
 } from '../../utils/fetch/feedback';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <div
+      className="flex items-center gap-0.5"
+      aria-label={`${rating} out of 5 stars`}
+    >
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={cn(
+            'size-3.5',
+            star <= rating
+              ? 'fill-amber-400 text-amber-400'
+              : 'text-muted-foreground/40'
+          )}
+          aria-hidden
+        />
+      ))}
+    </div>
+  );
+}
+
+function CommentText({ children }: { children: string }) {
+  return <p className="text-sm break-words whitespace-pre-wrap">{children}</p>;
+}
+
+const PAGE_SIZE = 25;
 
 export default function AdminFeedback() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -42,36 +75,62 @@ export default function AdminFeedback() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterRating, setFilterRating] = useState<string>('all');
   const [onlyWithText, setOnlyWithText] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+  const { confirm, confirmDialog } = useAdminConfirm();
 
   const filterOptions = [
-    { value: 'all', label: 'All Ratings' },
-    { value: '5', label: '5 Stars' },
-    { value: '4', label: '4 Stars' },
-    { value: '3', label: '3 Stars' },
-    { value: '2', label: '2 Stars' },
-    { value: '1', label: '1 Star' },
+    { value: 'all', label: 'All ratings' },
+    { value: '5', label: '5 stars' },
+    { value: '4', label: '4 stars' },
+    { value: '3', label: '3 stars' },
+    { value: '2', label: '2 stars' },
+    { value: '1', label: '1 star' },
   ];
 
   useEffect(() => {
-    fetchData();
+    if (search === debouncedSearch) return;
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, debouncedSearch]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      setFeedbackStats(await fetchFeedbackStats());
+    } catch (err) {
+      setToast({
+        message:
+          err instanceof Error ? err.message : 'Failed to fetch feedback stats',
+        type: 'error',
+      });
+    }
   }, []);
 
-  const fetchData = async () => {
+  const fetchList = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [stats, feedbackData] = await Promise.all([
-        fetchFeedbackStats(),
-        fetchFeedback(),
-      ]);
-      setFeedbackStats(stats);
-      setFeedback(feedbackData);
+      const result = await fetchFeedback({
+        page,
+        limit: PAGE_SIZE,
+        search: debouncedSearch,
+        rating: filterRating === 'all' ? undefined : Number(filterRating),
+        withText: onlyWithText,
+      });
+      setFeedback(result.feedback);
+      setPages(result.pagination.pages);
+      setTotal(result.pagination.total);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch feedback';
@@ -83,6 +142,19 @@ export default function AdminFeedback() {
     } finally {
       setLoading(false);
     }
+  }, [page, debouncedSearch, filterRating, onlyWithText]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
+
+  const fetchData = () => {
+    fetchStats();
+    fetchList();
   };
 
   const parseCategoryRatings = (comment: string | null | undefined) => {
@@ -105,25 +177,17 @@ export default function AdminFeedback() {
     return null;
   };
 
-  const feedbackHasText = (item: Feedback) => {
-    const categoryData = parseCategoryRatings(item.comment);
-    if (categoryData) return Boolean(categoryData.additionalComment);
-    return Boolean(item.comment && item.comment.trim().length > 0);
-  };
-
-  const filteredFeedback = feedback.filter((item) => {
-    const matchesSearch =
-      item.username.toLowerCase().includes(search.toLowerCase()) ||
-      (item.comment &&
-        item.comment.toLowerCase().includes(search.toLowerCase()));
-    const matchesRating =
-      filterRating === 'all' || item.rating.toString() === filterRating;
-    const matchesText = !onlyWithText || feedbackHasText(item);
-    return matchesSearch && matchesRating && matchesText;
-  });
-
   const handleDeleteFeedback = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this feedback?')) return;
+    if (
+      !(await confirm({
+        title: 'Delete feedback?',
+        description:
+          'Are you sure you want to delete this feedback? This action cannot be undone.',
+        confirmText: 'Delete',
+        destructive: true,
+      }))
+    )
+      return;
 
     try {
       await deleteFeedback(id);
@@ -141,228 +205,249 @@ export default function AdminFeedback() {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <MdStar
-            key={star}
-            size={16}
-            className={star <= rating ? 'text-yellow-400' : 'text-zinc-600'}
-          />
-        ))}
-      </div>
-    );
-  };
+  const distribution = feedbackStats
+    ? [
+        { label: '5 stars', value: feedbackStats.five_star },
+        { label: '4 stars', value: feedbackStats.four_star },
+        { label: '3 stars', value: feedbackStats.three_star },
+        { label: '2 stars', value: feedbackStats.two_star },
+        { label: '1 star', value: feedbackStats.one_star },
+      ]
+    : [];
+  const maxBucket = Math.max(1, ...distribution.map((d) => Number(d.value)));
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
-        title="Feedback Management"
-        icon={MdStar}
-        accent="yellow"
-        actions={
-          <AdminRefreshButton
-            onClick={fetchData}
-            loading={loading}
-            className="max-md:hidden"
+      <AdminPage
+        title="Feedback"
+        icon={MessagesSquare}
+        actions={<AdminRefreshButton onClick={fetchData} loading={loading} />}
+      >
+        <AdminToolbar>
+          <AdminSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by username or comment…"
+            loading={search !== debouncedSearch || loading}
           />
-        }
-      />
-
-      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-        <AdminSearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by username or comment…"
-          loading={loading}
-          className={ADMIN_TOOLBAR_MOBILE_SEARCH}
-        />
-        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
-          <Dropdown
+          <AdminSelect
             options={filterOptions}
             value={filterRating}
-            onChange={setFilterRating}
-            size="sm"
-            className={ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}
+            onChange={(value) => {
+              setFilterRating(value);
+              setPage(1);
+            }}
+            aria-label="Filter by rating"
+            className="sm:w-40"
           />
-          <button
-            type="button"
-            onClick={() => setOnlyWithText((v) => !v)}
-            aria-pressed={onlyWithText}
-            className={`flex items-center justify-center gap-1.5 h-full px-3 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM} ${
-              onlyWithText
-                ? ADMIN_SEGMENT_ACTIVE
-                : `border-2 border-blue-600 bg-gray-800 ${ADMIN_SEGMENT_INACTIVE}`
-            }`}
+          <Toggle
+            variant="outline"
+            pressed={onlyWithText}
+            onPressedChange={(pressed) => {
+              setOnlyWithText(pressed);
+              setPage(1);
+            }}
+            aria-label="Only show feedback with text"
           >
-            <MdOutlineChatBubbleOutline size={16} />
-            <span>With text</span>
-          </button>
-          <AdminRefreshButton
-            onClick={fetchData}
-            loading={loading}
-            className={`md:hidden shrink-0 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-          />
-        </div>
-      </AdminToolbar>
+            <MessageSquareText />
+            With text
+          </Toggle>
+        </AdminToolbar>
 
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading feedback"
-          message={error}
-          onRetry={fetchData}
-        />
-      ) : (
-        <>
-          {feedbackStats && (
-            <AdminStatStrip
-              columns={4}
+        {feedbackStats && (
+          <div className="grid items-center gap-4 lg:grid-cols-3">
+            <AdminStatCards
+              columns={2}
+              className="lg:col-span-2"
               items={[
                 {
-                  label: 'Average',
-                  value:
-                    Number(feedbackStats.average_rating)?.toFixed(1) || '0.0',
+                  label: 'Average rating',
+                  value: (
+                    <>
+                      {Number(feedbackStats.average_rating)?.toFixed(1) ||
+                        '0.0'}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {' '}
+                        / 5
+                      </span>
+                    </>
+                  ),
                 },
-                { label: 'Total', value: feedbackStats.total_feedback },
-                { label: '5 stars', value: feedbackStats.five_star },
-                { label: '4 stars', value: feedbackStats.four_star },
-                { label: '3 stars', value: feedbackStats.three_star },
-                { label: '2 stars', value: feedbackStats.two_star },
-                { label: '1 star', value: feedbackStats.one_star },
+                {
+                  label: 'Total feedback',
+                  value: feedbackStats.total_feedback,
+                },
               ]}
             />
-          )}
-
-          <div className={adminSectionClass('!mt-0 !pt-0 !border-t-0')}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredFeedback.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-zinc-400">
-                  No feedback found matching your criteria.
-                </div>
-              ) : (
-                filteredFeedback.map((item) => {
-                  const categoryData = parseCategoryRatings(item.comment);
-
-                  return (
+            <div className="grid gap-2" aria-label="Rating distribution">
+              {distribution.map((d) => (
+                <div
+                  key={d.label}
+                  className="grid grid-cols-[3.5rem_1fr_2.5rem] items-center gap-2 text-xs"
+                >
+                  <span className="text-muted-foreground">{d.label}</span>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
-                      key={item.id}
-                      className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3"
-                    >
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {item.avatar ? (
-                              <img
-                                src={`https://cdn.discordapp.com/avatars/${item.user_id}/${item.avatar}.png`}
-                                alt={item.username}
-                                className="w-8 h-8 rounded-full"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center">
-                                <MdPeople size={16} className="text-zinc-400" />
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-medium text-white">
-                                {item.username}
-                              </div>
-                              <div className="text-xs text-zinc-500">
-                                {item.user_id}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-xs text-zinc-500">
-                              {new Date(item.created_at).toLocaleDateString()}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size={adminDownsizeButtonSize('sm')}
-                              onClick={() => handleDeleteFeedback(item.id)}
-                              className="p-1 text-red-400 hover:text-red-300"
-                            >
-                              <MdDelete size={16} />
-                            </Button>
-                          </div>
-                        </div>
-
-                        {categoryData ? (
-                          <>
-                            <div className="bg-zinc-800/50 rounded-lg p-2 space-y-1">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-400">UI</span>
-                                {renderStars(categoryData.ui)}
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-400">
-                                  Performance
-                                </span>
-                                {renderStars(categoryData.performance)}
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-400">
-                                  Global Chat and ACARS
-                                </span>
-                                {renderStars(categoryData.features)}
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-zinc-400">
-                                  Ease of Use
-                                </span>
-                                {renderStars(categoryData.easeOfUse)}
-                              </div>
-                              <div className="flex items-center justify-between text-xs border-t border-zinc-700 pt-1 mt-1">
-                                <span className="text-zinc-300 font-semibold">
-                                  Overall
-                                </span>
-                                {renderStars(categoryData.overall)}
-                              </div>
-                            </div>
-
-                            {categoryData.additionalComment && (
-                              <div className="flex items-start space-x-2">
-                                <MdMessage
-                                  size={18}
-                                  className="text-zinc-400 mt-0.5 shrink-0"
-                                />
-                                <p className="text-sm text-zinc-300 break-words">
-                                  {categoryData.additionalComment}
-                                </p>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-left">
-                              {renderStars(item.rating)}
-                            </div>
-                            {item.comment && (
-                              <div className="flex items-start space-x-2">
-                                <MdMessage
-                                  size={18}
-                                  className="text-zinc-400 mt-0.5 shrink-0"
-                                />
-                                <p className="text-sm text-zinc-300 break-words">
-                                  {item.comment}
-                                </p>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(Number(d.value) / maxBucket) * 100}%`,
+                        backgroundColor: ADMIN_CHART_COLORS.amber,
+                      }}
+                    />
+                  </div>
+                  <span className="text-right font-medium tabular-nums">
+                    {Number(d.value).toLocaleString()}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-        </>
-      )}
+        )}
+
+        {loading ? (
+          <AdminLoading label="Loading feedback…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading feedback"
+            message={error}
+            onRetry={fetchList}
+          />
+        ) : feedback.length === 0 ? (
+          <AdminEmptyState icon={MessagesSquare} title="No feedback found" />
+        ) : (
+          <>
+            <div className="divide-y overflow-hidden rounded-2xl border">
+              {feedback.map((item) => {
+                const categoryData = parseCategoryRatings(item.comment);
+
+                return (
+                  <div key={item.id} className="flex flex-col gap-2 px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar>
+                          {item.avatar ? (
+                            <AvatarImage
+                              src={`https://cdn.discordapp.com/avatars/${item.user_id}/${item.avatar}.png`}
+                              alt={item.username}
+                            />
+                          ) : null}
+                          <AvatarFallback>
+                            <UserRound className="size-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {item.username}
+                          </p>
+                          <p className="truncate font-mono text-xs text-muted-foreground">
+                            {item.user_id}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => handleDeleteFeedback(item.id)}
+                              className="text-destructive hover:text-destructive"
+                              aria-label="Delete feedback"
+                            >
+                              <Trash2 />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete feedback</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+
+                    {categoryData ? (
+                      <>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Overall</span>
+                            <Stars rating={categoryData.overall} />
+                          </div>
+                          {[
+                            { label: 'UI', value: categoryData.ui },
+                            {
+                              label: 'Performance',
+                              value: categoryData.performance,
+                            },
+                            {
+                              label: 'Global Chat and ACARS',
+                              value: categoryData.features,
+                            },
+                            {
+                              label: 'Ease of Use',
+                              value: categoryData.easeOfUse,
+                            },
+                          ].map((row) => (
+                            <div
+                              key={row.label}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-muted-foreground">
+                                {row.label}
+                              </span>
+                              <Stars rating={row.value} />
+                            </div>
+                          ))}
+                        </div>
+
+                        {categoryData.additionalComment && (
+                          <CommentText>
+                            {categoryData.additionalComment}
+                          </CommentText>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Stars rating={item.rating} />
+                        {item.comment && (
+                          <CommentText>{item.comment}</CommentText>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col items-center justify-end gap-3 sm:flex-row">
+              <p className="text-sm text-muted-foreground tabular-nums">
+                Page {page} of {Math.max(1, pages)} · {total.toLocaleString()}{' '}
+                total
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.min(pages, page + 1))}
+                  disabled={page >= pages}
+                >
+                  Next
+                  <ChevronRight />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </AdminPage>
+      {confirmDialog}
     </AdminLayout>
   );
 }

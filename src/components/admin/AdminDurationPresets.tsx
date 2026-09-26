@@ -1,8 +1,6 @@
-import {
-  ADMIN_SEGMENT_ACTIVE,
-  ADMIN_SEGMENT_INACTIVE,
-  ADMIN_TOOLBAR_HEIGHT,
-} from './adminConstants';
+import { Label } from '@/components/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 import { ADMIN_DURATION_PRESETS } from './adminDurationPresetConfig';
 import type { AdminDurationPresetId } from './adminDurationPresetConfig';
 
@@ -22,46 +20,36 @@ export default function AdminDurationPresets({
   activePreset,
   onPreset,
   onPermanent,
-  className = '',
+  className,
 }: AdminDurationPresetsProps) {
   return (
-    <div className={className}>
-      {label ? (
-        <span className="block text-xs text-zinc-500 mb-1.5">{label}</span>
-      ) : null}
-      <div
-        className={`flex ${ADMIN_TOOLBAR_HEIGHT} w-full rounded-full border-2 border-blue-600 overflow-hidden`}
-        role="group"
+    <div className={cn('grid gap-2', className)}>
+      {label ? <Label>{label}</Label> : null}
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={activePreset ?? ''}
+        onValueChange={(id) => {
+          if (!id) return;
+          if (id === 'permanent') {
+            onPermanent();
+            return;
+          }
+          const preset = ADMIN_DURATION_PRESETS.find((p) => p.id === id);
+          if (preset) onPreset(preset.ms, preset.id);
+        }}
+        className="w-full"
         aria-label={label}
       >
         {ADMIN_DURATION_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            aria-pressed={activePreset === p.id}
-            onClick={() => onPreset(p.ms, p.id)}
-            className={`flex-1 h-full text-sm font-medium transition-colors ${
-              activePreset === p.id
-                ? ADMIN_SEGMENT_ACTIVE
-                : ADMIN_SEGMENT_INACTIVE
-            }`}
-          >
+          <ToggleGroupItem key={p.id} value={p.id} className="flex-1">
             {p.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-        <button
-          type="button"
-          aria-pressed={activePreset === 'permanent'}
-          onClick={onPermanent}
-          className={`flex-1 h-full text-sm font-medium transition-colors ${
-            activePreset === 'permanent'
-              ? ADMIN_SEGMENT_ACTIVE
-              : ADMIN_SEGMENT_INACTIVE
-          }`}
-        >
+        <ToggleGroupItem value="permanent" className="flex-1">
           Permanent
-        </button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
   );
 }

@@ -1,37 +1,94 @@
-import { useState, useEffect } from 'react';
-import {
-  MdFlight,
-  MdVisibility,
-  MdVisibilityOff,
-  MdAccessTime,
-  MdStorage,
-  MdClose,
-  MdEditNote,
-} from 'react-icons/md';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  Pencil,
+  PlaneTakeoff,
+  Plane,
+  Trash2,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
-import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminTextInput from '../../components/admin/AdminTextInput';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
-import AdminTable from '../../components/admin/AdminTable';
+import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminToolbar from '../../components/admin/AdminToolbar';
+import AdminNativeTable from '../../components/admin/AdminNativeTable';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import {
+  ADMIN_NATIVE_TBODY,
+  ADMIN_NATIVE_TD,
+  ADMIN_NATIVE_TH,
+  ADMIN_NATIVE_THEAD,
+  ADMIN_NATIVE_TR,
+  type AdminTone,
 } from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Dropdown from '../../components/common/Dropdown';
 import {
   fetchFlightLogs,
   revealFlightLogIP,
   type FlightLogsResponse,
   type FlightLog,
 } from '../../utils/fetch/admin';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+
+const ACTION_META: Record<
+  string,
+  { label: string; tone: AdminTone; icon: LucideIcon }
+> = {
+  add: { label: 'Add Flight', tone: 'success', icon: PlaneTakeoff },
+  update: { label: 'Update Flight', tone: 'info', icon: Pencil },
+  delete: { label: 'Delete Flight', tone: 'danger', icon: Trash2 },
+};
+
+function ActionBadge({ action }: { action: string }) {
+  const meta = ACTION_META[action];
+  return (
+    <AdminStatusBadge
+      tone={meta?.tone ?? 'neutral'}
+      icon={meta?.icon ?? Plane}
+      showLabel
+      className="whitespace-nowrap"
+    >
+      {meta?.label ?? action}
+    </AdminStatusBadge>
+  );
+}
+
+function DetailField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid min-w-0 gap-1', className)}>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm">{children}</dd>
+    </div>
+  );
+}
 
 export default function AdminFlightLogs() {
   const [logs, setLogs] = useState<FlightLog[]>([]);
@@ -52,6 +109,7 @@ export default function AdminFlightLogs() {
   } | null>(null);
   const [revealedIPs, setRevealedIPs] = useState<Set<number>>(new Set());
   const [revealingIP, setRevealingIP] = useState<number | null>(null);
+  const [clientPage, setClientPage] = useState(1);
 
   const actionTypeOptions = [
     { value: '', label: 'All Actions' },
@@ -148,19 +206,6 @@ export default function AdminFlightLogs() {
     setTextFilter('');
   };
 
-  const formatActionType = (action: string) => {
-    switch (action) {
-      case 'add':
-        return 'Add Flight';
-      case 'update':
-        return 'Update Flight';
-      case 'delete':
-        return 'Delete Flight';
-      default:
-        return action;
-    }
-  };
-
   const getFlightOwner = (
     log: FlightLog
   ): { userId: string | null; username: string | null } => {
@@ -172,19 +217,6 @@ export default function AdminFlightLogs() {
       userId: (data?.flight_owner_user_id as string) || null,
       username: (data?.flight_owner_username as string) || null,
     };
-  };
-
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'add':
-        return <MdFlight size={16} className="text-green-400" />;
-      case 'update':
-        return <MdStorage size={16} className="text-blue-400" />;
-      case 'delete':
-        return <MdVisibilityOff size={16} className="text-red-400" />;
-      default:
-        return <MdFlight size={16} className="text-zinc-400" />;
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -256,7 +288,6 @@ export default function AdminFlightLogs() {
   };
 
   const filteredLogs = logs.filter(() => true);
-  const [clientPage, setClientPage] = useState(1);
   const clientLimit = 50;
   const filteredTotalPages = Math.max(
     1,
@@ -267,7 +298,6 @@ export default function AdminFlightLogs() {
     clientPage * clientLimit
   );
 
-  const btnSize = adminDownsizeButtonSize('sm');
   const hasFilters =
     generalSearch ||
     userFilter ||
@@ -277,437 +307,400 @@ export default function AdminFlightLogs() {
     dateFilter ||
     textFilter;
 
+  const displayPage = filteredLogs.length === 0 ? 0 : clientPage;
+  const displayTotalPages = filteredLogs.length === 0 ? 0 : filteredTotalPages;
+
+  const renderIP = (log: FlightLog) => {
+    const revealed = revealedIPs.has(log.id);
+    const revealing = revealingIP === log.id;
+    return (
+      <div className="flex items-center gap-1">
+        <span
+          className={cn(
+            'font-mono text-xs',
+            !revealed && 'blur-sm select-none'
+          )}
+        >
+          {formatIPAddress(log.ip_address, log.id)}
+        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => handleRevealIP(log.id)}
+              disabled={revealing}
+              aria-label={revealed ? 'Hide IP address' : 'Reveal IP address'}
+            >
+              {revealing ? (
+                <Loader2 className="animate-spin" />
+              ) : revealed ? (
+                <EyeOff />
+              ) : (
+                <Eye />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{revealed ? 'Hide IP' : 'Reveal IP'}</TooltipContent>
+        </Tooltip>
+      </div>
+    );
+  };
+
+  const sessionLink = (sessionId: string) => (
+    <Link
+      to={`/admin/sessions?search=${sessionId}`}
+      className="font-mono text-xs underline underline-offset-4 hover:text-muted-foreground"
+    >
+      {sessionId}
+    </Link>
+  );
+
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
-        title="Flight Archive"
-        icon={MdEditNote}
-        accent="purple"
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <AdminTextInput
-          label="Search"
-          value={generalSearch}
-          onChange={setGeneralSearch}
-          placeholder="Users, sessions, flight IDs…"
-        />
-        <AdminTextInput
-          label="Username"
-          value={userFilter}
-          onChange={setUserFilter}
-          placeholder="Filter by user…"
-        />
-        <AdminTextInput
-          label="Session ID"
-          value={sessionFilter}
-          onChange={setSessionFilter}
-          placeholder="Session…"
-        />
-        <div className="flex items-end max-md:order-last">
-          <Button
-            onClick={clearFilters}
-            variant="outline"
-            size="sm"
-            disabled={!hasFilters}
-            className="w-full"
-          >
-            <MdClose size={16} className="mr-1" />
-            Clear filters
-          </Button>
-        </div>
-        <AdminTextInput
-          label="Flight ID"
-          value={flightIdFilter}
-          onChange={setFlightIdFilter}
-          placeholder="Flight…"
-        />
-        <AdminTextInput
-          label="Flight data"
-          value={textFilter}
-          onChange={setTextFilter}
-          placeholder="Callsign, route, etc…"
-        />
-        <AdminTextInput
-          label="Date"
-          type="date"
-          value={dateFilter}
-          onChange={setDateFilter}
-        />
-        <div>
-          <label className="block text-xs text-zinc-500 mb-1.5">Action</label>
-          <Dropdown
+      <AdminPage title="Flight Archive" icon={Archive}>
+        <AdminToolbar>
+          <AdminSearchInput
+            value={generalSearch}
+            onChange={setGeneralSearch}
+            placeholder="Search users, sessions, flight IDs…"
+            className="sm:max-w-xs"
+          />
+          <AdminTextInput
+            value={userFilter}
+            onChange={setUserFilter}
+            placeholder="Username"
+            aria-label="Username"
+            className="w-full sm:w-36"
+          />
+          <AdminTextInput
+            value={sessionFilter}
+            onChange={setSessionFilter}
+            placeholder="Session ID"
+            aria-label="Session ID"
+            className="w-full sm:w-36"
+          />
+          <AdminTextInput
+            value={flightIdFilter}
+            onChange={setFlightIdFilter}
+            placeholder="Flight ID"
+            aria-label="Flight ID"
+            className="w-full sm:w-36"
+          />
+          <AdminTextInput
+            value={textFilter}
+            onChange={setTextFilter}
+            placeholder="Callsign, route…"
+            aria-label="Flight data"
+            className="w-full sm:w-40"
+          />
+          <AdminTextInput
+            type="date"
+            value={dateFilter}
+            onChange={setDateFilter}
+            aria-label="Date"
+            className="w-full sm:w-40"
+          />
+          <AdminSelect
             options={actionTypeOptions}
             value={actionFilter}
             onChange={(value) => setActionFilter(value)}
             placeholder="All actions"
-            size="sm"
+            aria-label="Action"
+            className="sm:w-40"
           />
-        </div>
-      </div>
+          <Button
+            onClick={clearFilters}
+            variant="outline"
+            disabled={!hasFilters}
+          >
+            <X />
+            Clear
+          </Button>
+        </AdminToolbar>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading flight logs"
-          message={error}
-          onRetry={fetchLogs}
-        />
-      ) : (
-        <>
-          <AdminStatStrip
-            columns={3}
-            items={[
-              { label: 'Loaded logs', value: logs.length },
-              {
-                label: 'Showing',
-                value: paginatedLogs.length,
-                sub: `Page ${filteredLogs.length === 0 ? 0 : clientPage} of ${filteredLogs.length === 0 ? 0 : filteredTotalPages}`,
-              },
-              {
-                label: 'Action filter',
-                value: actionFilter ? formatActionType(actionFilter) : 'All',
-              },
-            ]}
+        {loading ? (
+          <AdminLoading label="Loading flight logs…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading flight logs"
+            message={error}
+            onRetry={fetchLogs}
           />
-
-          <div className="hidden lg:block">
-            <AdminTable minWidth="1000px">
-              <thead className={ADMIN_TABLE_HEAD}>
-                <tr>
-                  <th className={ADMIN_TH}>Action</th>
-                  <th className={ADMIN_TH}>User</th>
-                  <th className={ADMIN_TH}>Session</th>
-                  <th className={ADMIN_TH}>Flight ID</th>
-                  <th className={ADMIN_TH}>Timestamp</th>
-                  <th className={ADMIN_TH}>IP Address</th>
-                  <th className={ADMIN_TH}>Updated Field</th>
-                  <th className={ADMIN_TH}>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedLogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-t border-zinc-800/60 hover:bg-zinc-800/30"
-                  >
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-2">
-                        {getActionIcon(log.action)}
-                        <span className="text-white font-medium">
-                          {formatActionType(log.action)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {log.username || `Unknown (${log.user_id})`}
-                        </span>
-                        <span className="text-xs text-zinc-500">
-                          {log.user_id}
-                        </span>
-                      </div>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <Link
-                        to={`/admin/sessions?search=${log.session_id}`}
-                        className="text-purple-400 hover:text-purple-300 underline"
-                      >
-                        {log.session_id}
-                      </Link>
-                    </td>
-                    <td className={ADMIN_TD}>{log.flight_id}</td>
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-1.5">
-                        <MdAccessTime size={14} className="text-zinc-500" />
-                        <span className="text-sm">
-                          {formatDate(log.created_at)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`font-mono text-sm ${
-                            revealedIPs.has(log.id) ? '' : 'filter blur-sm'
-                          }`}
+        ) : (
+          <>
+            {filteredLogs.length === 0 ? (
+              <AdminEmptyState icon={Plane} title="No flight logs found" />
+            ) : (
+              <>
+                <AdminNativeTable minWidth="1000px" className="hidden lg:block">
+                  <thead className={ADMIN_NATIVE_THEAD}>
+                    <tr className={ADMIN_NATIVE_TR}>
+                      <th className={ADMIN_NATIVE_TH}>Action</th>
+                      <th className={ADMIN_NATIVE_TH}>User</th>
+                      <th className={ADMIN_NATIVE_TH}>Session</th>
+                      <th className={ADMIN_NATIVE_TH}>Flight ID</th>
+                      <th className={ADMIN_NATIVE_TH}>Timestamp</th>
+                      <th className={ADMIN_NATIVE_TH}>IP Address</th>
+                      <th className={ADMIN_NATIVE_TH}>Updated Field</th>
+                      <th className={cn(ADMIN_NATIVE_TH, 'text-right')}>
+                        <span className="sr-only">Details</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className={ADMIN_NATIVE_TBODY}>
+                    {paginatedLogs.map((log) => (
+                      <tr key={log.id} className={ADMIN_NATIVE_TR}>
+                        <td className={ADMIN_NATIVE_TD}>
+                          <ActionBadge action={log.action} />
+                        </td>
+                        <td className={ADMIN_NATIVE_TD}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {log.username || `Unknown (${log.user_id})`}
+                            </span>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {log.user_id}
+                            </span>
+                          </div>
+                        </td>
+                        <td className={ADMIN_NATIVE_TD}>
+                          {sessionLink(log.session_id)}
+                        </td>
+                        <td
+                          className={cn(ADMIN_NATIVE_TD, 'font-mono text-xs')}
                         >
-                          {formatIPAddress(log.ip_address, log.id)}
-                        </span>
-                        <Button
-                          size={btnSize}
-                          variant="ghost"
-                          onClick={() => handleRevealIP(log.id)}
-                          disabled={revealingIP === log.id}
-                          className="p-1"
-                        >
-                          {revealingIP === log.id ? (
-                            <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                          ) : revealedIPs.has(log.id) ? (
-                            <MdVisibilityOff size={16} />
-                          ) : (
-                            <MdVisibility size={16} />
+                          {log.flight_id}
+                        </td>
+                        <td className={ADMIN_NATIVE_TD}>
+                          <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                            {formatDate(log.created_at)}
+                          </span>
+                        </td>
+                        <td className={ADMIN_NATIVE_TD}>{renderIP(log)}</td>
+                        <td
+                          className={cn(
+                            ADMIN_NATIVE_TD,
+                            'max-w-xs truncate text-muted-foreground'
                           )}
+                          title={getUpdatedField(log)}
+                        >
+                          {getUpdatedField(log)}
+                        </td>
+                        <td className={cn(ADMIN_NATIVE_TD, 'text-right')}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleViewDetails(log)}
+                                aria-label="View details"
+                              >
+                                <Eye />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>View details</TooltipContent>
+                          </Tooltip>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </AdminNativeTable>
+
+                <div className="divide-y overflow-hidden rounded-2xl border lg:hidden">
+                  {paginatedLogs.map((log) => {
+                    const owner =
+                      log.action !== 'add' ? getFlightOwner(log) : null;
+                    return (
+                      <div key={log.id} className="grid gap-3 p-4 text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <ActionBadge action={log.action} />
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {formatDate(log.created_at)}
+                          </span>
+                        </div>
+
+                        <div className="grid gap-1">
+                          <p>
+                            <span className="text-muted-foreground">
+                              {log.action === 'add'
+                                ? 'Submitted by'
+                                : 'Changed by'}
+                              :
+                            </span>{' '}
+                            {log.username || `Unknown (${log.user_id})`}
+                          </p>
+                          <p className="font-mono text-xs text-muted-foreground">
+                            {log.user_id}
+                          </p>
+                          {owner && (owner.username || owner.userId) ? (
+                            <p>
+                              <span className="text-muted-foreground">
+                                Flight owner:
+                              </span>{' '}
+                              {owner.username || owner.userId}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="grid gap-1">
+                          <p>
+                            <span className="text-muted-foreground">
+                              Session:
+                            </span>{' '}
+                            {sessionLink(log.session_id)}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">
+                              Flight ID:
+                            </span>{' '}
+                            <span className="font-mono text-xs">
+                              {log.flight_id}
+                            </span>
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">IP:</span>
+                            {renderIP(log)}
+                          </div>
+                          <p className="break-words">
+                            <span className="text-muted-foreground">
+                              Updated:
+                            </span>{' '}
+                            {getUpdatedField(log)}
+                          </p>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(log)}
+                        >
+                          <Eye />
+                          View details
                         </Button>
                       </div>
-                    </td>
-                    <td className={ADMIN_TD}>{getUpdatedField(log)}</td>
-                    <td className={ADMIN_TD}>
-                      <Button
-                        size={btnSize}
-                        variant="ghost"
-                        onClick={() => handleViewDetails(log)}
-                      >
-                        <MdVisibility size={16} />
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </AdminTable>
-          </div>
-
-          <div className="lg:hidden">
-            {paginatedLogs.map((log) => (
-              <div
-                key={log.id}
-                className="py-3 border-b border-zinc-800/80 last:border-b-0 space-y-2"
-              >
-                <div className="flex items-center gap-2">
-                  {getActionIcon(log.action)}
-                  <p className="text-white font-medium text-sm">
-                    {formatActionType(log.action)}
-                  </p>
+                    );
+                  })}
                 </div>
+              </>
+            )}
 
-                <div>
-                  <p className="text-zinc-300 text-sm">
-                    <span className="text-zinc-500">
-                      {log.action === 'add' ? 'Submitted by' : 'Changed by'}:
-                    </span>{' '}
-                    {log.username || `Unknown (${log.user_id})`}
-                  </p>
-                  <p className="text-zinc-500 text-xs">{log.user_id}</p>
-                  {log.action !== 'add' &&
-                    (() => {
-                      const owner = getFlightOwner(log);
-                      if (!owner.username && !owner.userId) return null;
-                      return (
-                        <p className="text-zinc-300 text-sm mt-1">
-                          <span className="text-zinc-500">Flight owner:</span>{' '}
-                          {owner.username || owner.userId}
-                        </p>
-                      );
-                    })()}
-                </div>
-
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Session:</span>{' '}
-                  <Link
-                    to={`/admin/sessions?search=${log.session_id}`}
-                    className="text-purple-400 hover:text-purple-300 underline"
-                  >
-                    {log.session_id}
-                  </Link>
-                </p>
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Flight ID:</span>{' '}
-                  {log.flight_id}
-                </p>
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Timestamp:</span>{' '}
-                  {formatDate(log.created_at)}
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-zinc-500 text-sm">IP:</span>
-                  <span
-                    className={`font-mono text-sm ${
-                      revealedIPs.has(log.id) ? '' : 'filter blur-sm'
-                    }`}
-                  >
-                    {formatIPAddress(log.ip_address, log.id)}
-                  </span>
-                  <Button
-                    size={btnSize}
-                    variant="ghost"
-                    onClick={() => handleRevealIP(log.id)}
-                    disabled={revealingIP === log.id}
-                    className="p-1"
-                  >
-                    {revealingIP === log.id ? (
-                      <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                    ) : revealedIPs.has(log.id) ? (
-                      <MdVisibilityOff size={16} />
-                    ) : (
-                      <MdVisibility size={16} />
-                    )}
-                  </Button>
-                </div>
-
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Updated:</span>{' '}
-                  {getUpdatedField(log)}
-                </p>
-
+            <div className="flex flex-col items-center justify-end gap-2 sm:flex-row">
+              <span className="text-sm text-muted-foreground tabular-nums sm:mr-2">
+                Page {displayPage} of {displayTotalPages} ·{' '}
+                {filteredLogs.length.toLocaleString()} total
+              </span>
+              <div className="flex gap-2">
                 <Button
-                  size={btnSize}
-                  variant="ghost"
-                  onClick={() => handleViewDetails(log)}
+                  onClick={() => setClientPage(Math.max(1, clientPage - 1))}
+                  disabled={clientPage === 1 || filteredLogs.length === 0}
+                  variant="outline"
+                  size="sm"
                 >
-                  <MdVisibility size={16} className="mr-1" />
-                  View details
+                  <ChevronLeft />
+                  Previous
+                </Button>
+                <Button
+                  onClick={() =>
+                    setClientPage(Math.min(filteredTotalPages, clientPage + 1))
+                  }
+                  disabled={
+                    clientPage === filteredTotalPages ||
+                    filteredLogs.length === 0
+                  }
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                  <ChevronRight />
                 </Button>
               </div>
-            ))}
-          </div>
-
-          {filteredLogs.length === 0 && (
-            <div className="text-center py-12 text-zinc-500 text-sm">
-              {logs.length > 0
-                ? 'No flight logs found. All logs are filtered out.'
-                : 'No flight logs found with the current filters.'}
             </div>
-          )}
-
-          <AdminToolbar className="justify-center mt-4">
-            <Button
-              onClick={() => setClientPage(Math.max(1, clientPage - 1))}
-              disabled={clientPage === 1 || filteredLogs.length === 0}
-              variant="outline"
-              size={btnSize}
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-500 text-sm px-2">
-              Page {filteredLogs.length === 0 ? 0 : clientPage} of{' '}
-              {filteredLogs.length === 0 ? 0 : filteredTotalPages}
-            </span>
-            <Button
-              onClick={() =>
-                setClientPage(Math.min(filteredTotalPages, clientPage + 1))
-              }
-              disabled={
-                clientPage === filteredTotalPages || filteredLogs.length === 0
-              }
-              variant="outline"
-              size={btnSize}
-            >
-              Next
-            </Button>
-          </AdminToolbar>
-        </>
-      )}
+          </>
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showDetails && !!selectedLog}
         onClose={closeDetailsModal}
         title="Flight Log Details"
         size="xl"
+        footer={
+          <Button variant="outline" onClick={closeDetailsModal}>
+            Close
+          </Button>
+        }
       >
         {selectedLog && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Action
-                </h3>
-                <p className="text-white">
-                  {formatActionType(selectedLog.action)}
-                </p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  Timestamp
-                </h3>
-                <p className="text-white">
+          <>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <DetailField label="Action">
+                <ActionBadge action={selectedLog.action} />
+              </DetailField>
+              <DetailField label="Timestamp">
+                <span className="tabular-nums">
                   {formatDate(selectedLog.created_at)}
-                </p>
-              </div>
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  {selectedLog.action === 'add' ? 'Submitted By' : 'Changed By'}
-                </h3>
-                <p className="text-white">
+                </span>
+              </DetailField>
+              <DetailField label="Flight ID">
+                <span className="font-mono text-xs">
+                  {selectedLog.flight_id}
+                </span>
+              </DetailField>
+              <DetailField label="Session">
+                {sessionLink(selectedLog.session_id)}
+              </DetailField>
+              <DetailField
+                label={
+                  selectedLog.action === 'add' ? 'Submitted By' : 'Changed By'
+                }
+              >
+                <p className="font-medium">
                   {selectedLog.username || `Unknown (${selectedLog.user_id})`}
                 </p>
-                <p className="text-xs text-zinc-500">{selectedLog.user_id}</p>
-              </div>
+                <p className="font-mono text-xs text-muted-foreground">
+                  {selectedLog.user_id}
+                </p>
+              </DetailField>
               {selectedLog.action !== 'add' &&
                 (() => {
                   const owner = getFlightOwner(selectedLog);
                   return (
-                    <div className="bg-zinc-800 rounded-lg p-4">
-                      <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                        Flight Owner
-                      </h3>
-                      <p className="text-white">
+                    <DetailField label="Flight Owner">
+                      <p className="font-medium">
                         {owner.username ||
                           owner.userId ||
                           'Anonymous (public submit)'}
                       </p>
                       {owner.userId && (
-                        <p className="text-xs text-zinc-500">{owner.userId}</p>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {owner.userId}
+                        </p>
                       )}
-                    </div>
+                    </DetailField>
                   );
                 })()}
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                  IP Address
-                </h3>
-                <div className="flex items-center space-x-2">
-                  <p
-                    className={`text-white font-mono ${
-                      revealedIPs.has(selectedLog.id) ? '' : 'filter blur-sm'
-                    }`}
-                  >
-                    {formatIPAddress(selectedLog.ip_address, selectedLog.id)}
-                  </p>
-                  <Button
-                    size={btnSize}
-                    variant="ghost"
-                    onClick={() => handleRevealIP(selectedLog.id)}
-                    disabled={revealingIP === selectedLog.id}
-                    className="p-1"
-                  >
-                    {revealingIP === selectedLog.id ? (
-                      <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                    ) : revealedIPs.has(selectedLog.id) ? (
-                      <MdVisibilityOff size={16} />
-                    ) : (
-                      <MdVisibility size={16} />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div className="bg-zinc-800 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                Old Data
-              </h3>
-              <pre className="text-sm text-zinc-300 whitespace-pre-wrap">
+              <DetailField label="IP Address">
+                {renderIP(selectedLog)}
+              </DetailField>
+            </dl>
+            <div className="grid gap-3">
+              <h3 className="text-sm font-medium">Old Data</h3>
+              <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs whitespace-pre-wrap">
                 {selectedLog.old_data
                   ? JSON.stringify(selectedLog.old_data, null, 2)
                   : 'N/A'}
               </pre>
             </div>
-            <div className="bg-zinc-800 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">
-                New Data
-              </h3>
-              <pre className="text-sm text-zinc-300 whitespace-pre-wrap">
+            <div className="grid gap-3">
+              <h3 className="text-sm font-medium">New Data</h3>
+              <pre className="max-h-80 overflow-auto rounded-xl bg-muted/50 p-4 font-mono text-xs whitespace-pre-wrap">
                 {selectedLog.new_data
                   ? JSON.stringify(selectedLog.new_data, null, 2)
                   : 'N/A'}
               </pre>
             </div>
-          </div>
+          </>
         )}
       </AdminModal>
     </AdminLayout>

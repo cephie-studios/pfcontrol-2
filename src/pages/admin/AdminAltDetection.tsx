@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
-import type { IconType } from 'react-icons';
 import { Link } from 'react-router';
 import {
-  MdCallMerge,
-  MdFingerprint,
-  MdPublic,
-  MdBlock,
-  MdWarning,
-  MdShield,
-  MdOpenInNew,
-  MdVisibility,
-  MdVisibilityOff,
-  MdHistory,
-  MdRouter,
-  MdExpandMore,
-  MdChevronRight,
-  MdSearch,
-} from 'react-icons/md';
+  AlertTriangle,
+  Ban,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Fingerprint,
+  Gauge,
+  GitMerge,
+  Globe,
+  History,
+  Loader2,
+  Search,
+  Shield,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   fetchAltClusters,
   revealUserIPHistory,
@@ -29,27 +30,36 @@ import {
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
-import AdminStatStrip from '../../components/admin/AdminStatStrip';
+import AdminStatCards from '../../components/admin/AdminStatCards';
 import AdminTable from '../../components/admin/AdminTable';
+import AdminSelect, {
+  type AdminSelectOption,
+} from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
-  adminDownsizeButtonSize,
-  statusBadgeClass,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_PAIR,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Dropdown from '../../components/common/Dropdown';
-import Button from '../../components/common/Button';
-import type { DropdownOption } from '../../types/dropdown';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import type { AdminTone } from '../../components/admin/adminConstants';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const MEMBER_DISPLAY_CAP = 50;
 
@@ -59,6 +69,30 @@ function avatarUrlFor(member: Pick<ClusterMember, 'id' | 'avatar'>) {
     : `https://cdn.discordapp.com/embed/avatars/0.png`;
 }
 
+function MemberAvatar({
+  member,
+  className,
+}: {
+  member: ClusterMember;
+  className?: string;
+}) {
+  return (
+    <Avatar className={className}>
+      <AvatarImage src={avatarUrlFor(member)} alt={member.username} />
+      <AvatarFallback className="text-xs">
+        {member.username.slice(0, 2).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+const SCORE_TONE: Record<AltCluster['score_label'], AdminTone> = {
+  low: 'neutral',
+  medium: 'warning',
+  high: 'orange',
+  critical: 'danger',
+};
+
 function ScoreBadge({
   score,
   label,
@@ -66,64 +100,54 @@ function ScoreBadge({
   score: number;
   label: AltCluster['score_label'];
 }) {
-  const colors: Record<AltCluster['score_label'], string> = {
-    low: 'bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50',
-    medium: 'bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35',
-    high: 'bg-orange-950/50 text-orange-300 ring-1 ring-orange-800/40',
-    critical: 'bg-red-950/50 text-red-300 ring-1 ring-red-800/40',
-  };
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${colors[label]}`}
+    <AdminStatusBadge
+      tone={SCORE_TONE[label]}
+      icon={Gauge}
+      showLabel
+      className="font-semibold whitespace-nowrap tabular-nums"
     >
       {(score * 100).toFixed(0)}% · {label.toUpperCase()}
-    </span>
+    </AdminStatusBadge>
   );
 }
 
-function SignalPills({ signals }: { signals: AltCluster['signals'] }) {
-  const pills = [
+function SignalIcons({ signals }: { signals: AltCluster['signals'] }) {
+  const items = [
     signals.shared_fingerprint && {
       label: 'Fingerprint',
-      icon: MdFingerprint,
-      color: 'bg-purple-950/50 text-purple-300 ring-1 ring-purple-800/40',
+      icon: Fingerprint,
+      tone: 'purple',
     },
     signals.shared_ip && {
       label: 'IP Match',
-      icon: MdPublic,
-      color: 'bg-blue-950/50 text-blue-300 ring-1 ring-blue-800/40',
+      icon: Globe,
+      tone: 'info',
     },
     signals.has_banned_member && {
       label: 'Banned Member',
-      icon: MdBlock,
-      color: 'bg-red-950/40 text-red-300 ring-1 ring-red-900/40',
+      icon: Ban,
+      tone: 'danger',
     },
     signals.young_account_joined_after_ban && {
       label: 'New Acct Post-Ban',
-      icon: MdWarning,
-      color: 'bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35',
+      icon: AlertTriangle,
+      tone: 'warning',
     },
     signals.vpn_overlap && {
       label: 'All VPN',
-      icon: MdShield,
-      color: 'bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50',
+      icon: Shield,
+      tone: 'neutral',
     },
-  ].filter(Boolean) as { label: string; icon: IconType; color: string }[];
+  ].filter(Boolean) as { label: string; icon: LucideIcon; tone: AdminTone }[];
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {pills.map((p) => {
-        const Icon = p.icon;
-        return (
-          <span
-            key={p.label}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${p.color}`}
-          >
-            <Icon size={12} />
-            {p.label}
-          </span>
-        );
-      })}
+    <div className="flex flex-wrap items-center gap-2">
+      {items.map((p) => (
+        <AdminStatusBadge key={p.label} tone={p.tone} icon={p.icon}>
+          {p.label}
+        </AdminStatusBadge>
+      ))}
     </div>
   );
 }
@@ -133,33 +157,32 @@ function AvatarStack({ members }: { members: ClusterMember[] }) {
   const overflow = members.length - shown.length;
   return (
     <div className="flex items-center">
-      <div className="flex -space-x-2">
+      <div className="flex gap-1">
         {shown.map((m) => (
-          <img
-            key={m.id}
-            src={avatarUrlFor(m)}
-            alt={m.username}
-            title={m.username}
-            className="w-7 h-7 rounded-full ring-2 ring-zinc-900"
-          />
+          <Tooltip key={m.id}>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <MemberAvatar member={m} className="size-7" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{m.username}</TooltipContent>
+          </Tooltip>
         ))}
         {overflow > 0 && (
-          <span className="w-7 h-7 rounded-full ring-2 ring-zinc-900 bg-zinc-800 text-zinc-400 text-[10px] font-semibold flex items-center justify-center">
+          <span className="flex h-7 items-center pl-0.5 text-xs text-muted-foreground tabular-nums">
             +{overflow}
           </span>
         )}
       </div>
-      <span className="ml-2.5 text-sm text-zinc-400 whitespace-nowrap">
+      <span className="ml-2.5 text-sm whitespace-nowrap text-muted-foreground">
         {members.length} account{members.length === 1 ? '' : 's'}
       </span>
     </div>
   );
 }
 
-// ─── Member history detail (shown inside the cluster review modal) ────────
-
 function formatDate(iso: string | null | undefined) {
-  return iso ? new Date(iso).toLocaleDateString() : '—';
+  return iso ? new Date(iso).toLocaleDateString() : 'N/A';
 }
 
 function HistoryMeta({
@@ -172,7 +195,7 @@ function HistoryMeta({
   seenCount: number;
 }) {
   return (
-    <span className="text-zinc-600 ml-auto shrink-0 whitespace-nowrap">
+    <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground tabular-nums">
       {formatDate(firstSeen)} – {formatDate(lastSeen)}
       {seenCount > 1 ? ` · ${seenCount}×` : ''}
     </span>
@@ -189,16 +212,21 @@ function IpHistoryRow({
   const isRevealed = revealedIp != null;
   return (
     <div className="flex items-center gap-2 py-1 text-xs">
-      <MdPublic size={12} className="text-zinc-600 shrink-0" />
+      <Globe className="size-3 shrink-0 text-muted-foreground" />
       <span
-        className={`font-mono ${isRevealed ? 'text-cyan-400' : 'text-zinc-400 filter blur-sm select-none'}`}
+        className={cn(
+          'font-mono',
+          isRevealed
+            ? 'text-foreground'
+            : 'text-muted-foreground blur-sm select-none'
+        )}
       >
         {revealedIp ?? '***.***.***.**'}
       </span>
       {entry.is_vpn && (
-        <span className="px-1.5 py-0.5 text-[10px] font-medium bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50 rounded-full shrink-0">
+        <AdminStatusBadge tone="neutral" icon={Shield}>
           VPN
-        </span>
+        </AdminStatusBadge>
       )}
       <HistoryMeta
         firstSeen={entry.first_seen}
@@ -212,8 +240,11 @@ function IpHistoryRow({
 function FingerprintHistoryRow({ entry }: { entry: FingerprintHistoryEntry }) {
   return (
     <div className="flex items-center gap-2 py-1 text-xs">
-      <MdFingerprint size={12} className="text-zinc-600 shrink-0" />
-      <span className="font-mono text-zinc-500" title={entry.fingerprint_id}>
+      <Fingerprint className="size-3 shrink-0 text-muted-foreground" />
+      <span
+        className="font-mono text-muted-foreground"
+        title={entry.fingerprint_id}
+      >
         {entry.fingerprint_id.slice(0, 16)}…
       </span>
       <HistoryMeta
@@ -241,9 +272,8 @@ function CommonSignalNote({ member }: { member: ClusterMember }) {
     );
   }
   return (
-    <p className="mt-1.5 flex items-start gap-1.5 text-xs text-zinc-500 italic">
-      <MdRouter size={13} className="shrink-0 mt-0.5 not-italic" />
-      Also seen on {parts.join(' and ')} — too common to use for clustering.
+    <p className="text-xs text-muted-foreground">
+      Also seen on {parts.join(' and ')}, too common to use for clustering.
     </p>
   );
 }
@@ -265,46 +295,40 @@ function MemberRow({
 }) {
   const platformJoined = member.created_at
     ? new Date(member.created_at).toLocaleDateString()
-    : '—';
+    : 'N/A';
   const lastSeen = member.last_login
     ? new Date(member.last_login).toLocaleDateString()
-    : '—';
+    : 'N/A';
 
-  const btnSize = adminDownsizeButtonSize('sm');
   const ipCount = member.ip_history.length;
   const fpCount = member.fingerprint_history.length;
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-zinc-800/60 last:border-b-0">
-      <img
-        src={avatarUrlFor(member)}
-        alt={member.username}
-        className="w-9 h-9 rounded-full shrink-0"
-      />
-      <div className="flex-1 min-w-0">
+    <div className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+      <MemberAvatar member={member} className="size-9" />
+      <div className="grid min-w-0 flex-1 gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-white text-sm">
+          <span className="text-sm font-medium">
             {member.username}
             {member.discriminator && member.discriminator !== '0' && (
-              <span className="text-zinc-500">#{member.discriminator}</span>
+              <span className="text-muted-foreground">
+                #{member.discriminator}
+              </span>
             )}
           </span>
           {member.ban && (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeClass('banned')}`}
-            >
-              <MdBlock size={12} />
-              BANNED
-            </span>
+            <AdminStatusBadge tone="danger" icon={Ban}>
+              Banned
+            </AdminStatusBadge>
           )}
           {member.is_vpn && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700/50 rounded-full">
+            <AdminStatusBadge tone="neutral" icon={Shield}>
               VPN
-            </span>
+            </AdminStatusBadge>
           )}
         </div>
 
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-zinc-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span>Discord age at join: {member.discord_account_age_days}d</span>
           <span>Joined: {platformJoined}</span>
           <span>Last seen: {lastSeen}</span>
@@ -312,43 +336,38 @@ function MemberRow({
 
         <CommonSignalNote member={member} />
 
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => onToggleHistory(member.id)}
-          className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+          aria-expanded={historyExpanded}
+          className="-ml-1.5 justify-self-start text-muted-foreground hover:text-foreground"
         >
-          <MdHistory size={13} className="shrink-0" />
+          <History />
           {ipCount} IP{ipCount === 1 ? '' : 's'} · {fpCount} fingerprint
           {fpCount === 1 ? '' : 's'}
-          {historyExpanded ? (
-            <MdExpandMore size={15} />
-          ) : (
-            <MdChevronRight size={15} />
-          )}
-        </button>
+          {historyExpanded ? <ChevronDown /> : <ChevronRight />}
+        </Button>
 
         {historyExpanded && (
-          <div className="mt-1 ml-0.5 pl-2 border-l border-zinc-800">
+          <div className="grid">
             {ipCount > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  size={btnSize}
-                  variant="ghost"
-                  onClick={() => onRevealHistory(member.id)}
-                  disabled={isRevealingHistory}
-                  className="p-1 -ml-1"
-                >
-                  {isRevealingHistory ? (
-                    <div className="w-3.5 h-3.5 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                  ) : revealedIps ? (
-                    <MdVisibilityOff size={14} />
-                  ) : (
-                    <MdVisibility size={14} />
-                  )}
-                </Button>
-                <span className="text-xs text-zinc-500">
-                  {revealedIps ? 'Hide' : 'Reveal'} IP history
-                </span>
-              </div>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => onRevealHistory(member.id)}
+                disabled={isRevealingHistory}
+                className="-ml-1.5 justify-self-start text-muted-foreground hover:text-foreground"
+              >
+                {isRevealingHistory ? (
+                  <Loader2 className="animate-spin" />
+                ) : revealedIps ? (
+                  <EyeOff />
+                ) : (
+                  <Eye />
+                )}
+                {revealedIps ? 'Hide' : 'Reveal'} IP history
+              </Button>
             )}
             {member.ip_history.map((entry) => (
               <IpHistoryRow
@@ -364,23 +383,21 @@ function MemberRow({
         )}
 
         {member.ban?.reason && (
-          <p className="mt-1 text-xs text-red-400/80">
+          <p className="text-xs text-destructive">
             Ban reason: {member.ban.reason}
           </p>
         )}
       </div>
 
-      <Link
-        to={`/admin/users?search=${member.id}`}
-        className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-zinc-400 hover:text-white border border-zinc-700 rounded-lg transition-colors"
-      >
-        View <MdOpenInNew size={12} />
-      </Link>
+      <Button asChild variant="outline" size="xs" className="shrink-0">
+        <Link to={`/admin/users?search=${member.id}`}>
+          View
+          <ExternalLink />
+        </Link>
+      </Button>
     </div>
   );
 }
-
-// ─── Cluster review modal ──────────────────────────────────────────────────
 
 function ClusterReviewModal({
   cluster,
@@ -399,7 +416,6 @@ function ClusterReviewModal({
   revealingHistoryId: string | null;
   onRevealHistory: (userId: string) => void;
 }) {
-  const btnSize = adminDownsizeButtonSize('xs');
   const displayMembers = cluster?.members.slice(0, MEMBER_DISPLAY_CAP) ?? [];
   const overflow = (cluster?.members.length ?? 0) - displayMembers.length;
 
@@ -409,48 +425,66 @@ function ClusterReviewModal({
       onClose={onClose}
       title={
         cluster
-          ? `Alt cluster — ${cluster.member_count} account${cluster.member_count === 1 ? '' : 's'}`
+          ? `Alt cluster: ${cluster.member_count} account${cluster.member_count === 1 ? '' : 's'}`
           : 'Alt cluster'
       }
       size="lg"
       footer={
-        <Link to="/admin/bans">
-          <Button variant="danger" size={btnSize}>
-            <MdBlock size={14} className="mr-1.5" />
-            Go to Bans to action these accounts
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
-        </Link>
+          <Button asChild variant="destructive">
+            <Link to="/admin/bans">
+              <Ban />
+              Go to Bans
+            </Link>
+          </Button>
+        </>
       }
     >
       {cluster && (
         <>
-          <div className="flex flex-wrap items-center gap-2 pb-3 mb-1 border-b border-zinc-800/60">
-            <ScoreBadge score={cluster.score} label={cluster.score_label} />
-            <SignalPills signals={cluster.signals} />
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">Score</dt>
+              <dd className="text-sm">
+                <ScoreBadge score={cluster.score} label={cluster.score_label} />
+              </dd>
+            </div>
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">Signals</dt>
+              <dd className="text-sm">
+                <SignalIcons signals={cluster.signals} />
+              </dd>
+            </div>
+          </dl>
+          <div className="grid gap-3">
+            <h3 className="text-sm font-medium">Accounts</h3>
+            <div className="divide-y">
+              {displayMembers.map((m) => (
+                <MemberRow
+                  key={m.id}
+                  member={m}
+                  historyExpanded={expandedHistoryIds.has(m.id)}
+                  onToggleHistory={onToggleHistory}
+                  revealedIps={revealedHistories.get(m.id)}
+                  isRevealingHistory={revealingHistoryId === m.id}
+                  onRevealHistory={onRevealHistory}
+                />
+              ))}
+            </div>
+            {overflow > 0 && (
+              <p className="text-xs text-muted-foreground">
+                + {overflow} more account{overflow !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
-          {displayMembers.map((m) => (
-            <MemberRow
-              key={m.id}
-              member={m}
-              historyExpanded={expandedHistoryIds.has(m.id)}
-              onToggleHistory={onToggleHistory}
-              revealedIps={revealedHistories.get(m.id)}
-              isRevealingHistory={revealingHistoryId === m.id}
-              onRevealHistory={onRevealHistory}
-            />
-          ))}
-          {overflow > 0 && (
-            <p className="text-xs text-zinc-500 text-center pt-3">
-              + {overflow} more account{overflow !== 1 ? 's' : ''}
-            </p>
-          )}
         </>
       )}
     </AdminModal>
   );
 }
-
-// ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function AdminAltDetection() {
   const [clusters, setClusters] = useState<AltCluster[]>([]);
@@ -536,13 +570,13 @@ export default function AdminAltDetection() {
     loadClusters();
   }, []);
 
-  const scoreFilterOptions: DropdownOption[] = [
+  const scoreFilterOptions: AdminSelectOption[] = [
     { value: 'all', label: 'All scores' },
     { value: 'medium', label: 'Medium+ (40%+)' },
     { value: 'high', label: 'High+ (60%+)' },
     { value: 'critical', label: 'Critical only (80%+)' },
   ];
-  const sortOptions: DropdownOption[] = [
+  const sortOptions: AdminSelectOption[] = [
     { value: 'score', label: 'Sort: Score' },
     { value: 'size', label: 'Sort: Cluster size' },
   ];
@@ -583,10 +617,9 @@ export default function AdminAltDetection() {
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader
+      <AdminPage
         title="Alt Detection"
-        icon={MdCallMerge}
-        accent="amber"
+        icon={GitMerge}
         actions={
           <AdminRefreshButton
             onClick={loadClusters}
@@ -594,139 +627,147 @@ export default function AdminAltDetection() {
             label="Rescan"
           />
         }
-      />
-      <p className="text-zinc-500 text-sm -mt-3 mb-5">
-        Groups of accounts likely controlled by the same person, scored by
-        confidence
-      </p>
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Scan failed"
-          message={error}
-          onRetry={loadClusters}
-        />
-      ) : (
-        <>
-          {stats && (
-            <AdminStatStrip
-              columns={3}
-              items={[
-                { label: 'Clusters found', value: stats.total_clusters },
-                {
-                  label: 'Flagged accounts',
-                  value: stats.total_flagged_accounts,
-                },
-                { label: 'Scan time', value: `${stats.scan_duration_ms}ms` },
-              ]}
-            />
-          )}
-
-          <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-            <AdminSearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search username…"
-              className={ADMIN_TOOLBAR_MOBILE_SEARCH}
-            />
-            <div className={ADMIN_TOOLBAR_MOBILE_PAIR}>
-              <Dropdown
-                size="sm"
-                value={minScoreFilter}
-                onChange={(v) => setMinScoreFilter(v as typeof minScoreFilter)}
-                options={scoreFilterOptions}
-                className={`w-44 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
+      >
+        {loading ? (
+          <AdminLoading label="Scanning for alt accounts…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Scan failed"
+            message={error}
+            onRetry={loadClusters}
+          />
+        ) : (
+          <>
+            {stats && (
+              <AdminStatCards
+                columns={2}
+                items={[
+                  { label: 'Clusters found', value: stats.total_clusters },
+                  {
+                    label: 'Flagged accounts',
+                    value: stats.total_flagged_accounts,
+                  },
+                ]}
               />
-              <Dropdown
-                size="sm"
-                value={sortBy}
-                onChange={(v) => setSortBy(v as typeof sortBy)}
-                options={sortOptions}
-                className={`w-40 ${ADMIN_TOOLBAR_MOBILE_SPLIT_ITEM}`}
-              />
-            </div>
-            <Button
-              variant={showBannedOnly ? 'danger' : 'outline'}
-              size="sm"
-              onClick={() => setShowBannedOnly((v) => !v)}
-              className="shrink-0"
-            >
-              <MdShield size={18} className="mr-1.5 shrink-0" />
-              <span className="truncate">
-                {showBannedOnly ? 'With bans only' : 'All clusters'}
-              </span>
-            </Button>
-          </AdminToolbar>
+            )}
 
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-              <MdCallMerge size={40} className="mb-3 opacity-30" />
-              <p className="text-base font-medium">No clusters found</p>
-              <p className="text-sm mt-1 text-center max-w-md">
-                {clusters.length > 0
-                  ? 'Try adjusting the filters above'
-                  : 'No accounts share signals yet — run scripts/backfillIpHistory.ts and scripts/backfillFingerprintHistory.ts to seed history for existing users'}
-              </p>
-            </div>
-          ) : (
-            <AdminTable minWidth="820px">
-              <thead className={ADMIN_TABLE_HEAD}>
-                <tr>
-                  <th className={ADMIN_TH}>Score</th>
-                  <th className={ADMIN_TH}>Members</th>
-                  <th className={`${ADMIN_TH} hidden md:table-cell`}>
-                    Signals
-                  </th>
-                  <th className={`${ADMIN_TH} hidden sm:table-cell`}>
-                    Recent Activity
-                  </th>
-                  <th className={`${ADMIN_TH} text-right`}>Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/80">
-                {filtered.map((cluster) => {
-                  const recent = mostRecentActivity(cluster);
-                  return (
-                    <tr key={cluster.id} className="hover:bg-zinc-800/30">
-                      <td className={ADMIN_TD}>
-                        <ScoreBadge
-                          score={cluster.score}
-                          label={cluster.score_label}
-                        />
-                      </td>
-                      <td className={ADMIN_TD}>
-                        <AvatarStack members={cluster.members} />
-                      </td>
-                      <td className={`${ADMIN_TD} hidden md:table-cell`}>
-                        <SignalPills signals={cluster.signals} />
-                      </td>
-                      <td
-                        className={`${ADMIN_TD} hidden sm:table-cell whitespace-nowrap text-xs text-zinc-400`}
-                      >
-                        {recent ? recent.toLocaleDateString() : '—'}
-                      </td>
-                      <td className={`${ADMIN_TD} text-right`}>
-                        <Button
-                          size={adminDownsizeButtonSize('sm')}
-                          variant="outline"
-                          onClick={() => setSelectedClusterId(cluster.id)}
-                        >
-                          <MdSearch size={14} className="mr-1.5" />
-                          Review
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </AdminTable>
-          )}
-        </>
-      )}
+            <AdminToolbar>
+              <AdminSearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search username…"
+              />
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <AdminSelect
+                  value={minScoreFilter}
+                  onChange={(v) =>
+                    setMinScoreFilter(v as typeof minScoreFilter)
+                  }
+                  options={scoreFilterOptions}
+                  aria-label="Minimum score"
+                  className="sm:w-48"
+                />
+                <AdminSelect
+                  value={sortBy}
+                  onChange={(v) => setSortBy(v as typeof sortBy)}
+                  options={sortOptions}
+                  aria-label="Sort by"
+                  className="sm:w-44"
+                />
+              </div>
+              <Button
+                variant={showBannedOnly ? 'destructive' : 'outline'}
+                onClick={() => setShowBannedOnly((v) => !v)}
+                aria-pressed={showBannedOnly}
+              >
+                <Shield />
+                <span className="truncate">
+                  {showBannedOnly ? 'With bans only' : 'All clusters'}
+                </span>
+              </Button>
+            </AdminToolbar>
+
+            {filtered.length === 0 ? (
+              <AdminEmptyState
+                icon={GitMerge}
+                title="No clusters found"
+                description={
+                  clusters.length > 0 ? undefined : (
+                    <>
+                      No accounts share signals yet. Run{' '}
+                      <code className="font-mono text-xs">
+                        scripts/backfillIpHistory.ts
+                      </code>{' '}
+                      and{' '}
+                      <code className="font-mono text-xs">
+                        scripts/backfillFingerprintHistory.ts
+                      </code>{' '}
+                      to seed history for existing users
+                    </>
+                  )
+                }
+              />
+            ) : (
+              <AdminTable minWidth="820px">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Members</TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Signals
+                    </TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      Recent Activity
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((cluster) => {
+                    const recent = mostRecentActivity(cluster);
+                    return (
+                      <TableRow key={cluster.id}>
+                        <TableCell>
+                          <ScoreBadge
+                            score={cluster.score}
+                            label={cluster.score_label}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <AvatarStack members={cluster.members} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <SignalIcons signals={cluster.signals} />
+                        </TableCell>
+                        <TableCell className="hidden text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:table-cell">
+                          {recent ? recent.toLocaleDateString() : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                onClick={() => setSelectedClusterId(cluster.id)}
+                                aria-label="Review cluster"
+                              >
+                                <Search />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Review cluster</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </AdminTable>
+            )}
+          </>
+        )}
+      </AdminPage>
 
       <ClusterReviewModal
         cluster={selectedCluster}

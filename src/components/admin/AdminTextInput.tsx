@@ -1,11 +1,7 @@
-import type { ReactNode } from 'react';
-import {
-  ADMIN_DATETIME_INPUT,
-  ADMIN_DATETIME_INPUT_ICON,
-  ADMIN_FIELD_INPUT,
-  ADMIN_FIELD_INPUT_ICON,
-  ADMIN_INPUT_ICON_CLASS,
-} from './adminConstants';
+import { useId, type ReactNode } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 type AdminTextInputProps = {
   label?: string;
@@ -13,10 +9,12 @@ type AdminTextInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  type?: 'text' | 'datetime-local' | 'date';
+  type?: 'text' | 'datetime-local' | 'date' | 'search' | 'number' | 'url';
   disabled?: boolean;
   className?: string;
+  inputClassName?: string;
   required?: boolean;
+  'aria-label'?: string;
 };
 
 export default function AdminTextInput({
@@ -27,41 +25,43 @@ export default function AdminTextInput({
   placeholder,
   type = 'text',
   disabled = false,
-  className = '',
+  className,
+  inputClassName,
   required = false,
+  'aria-label': ariaLabel,
 }: AdminTextInputProps) {
+  const id = useId();
   const isDate = type === 'datetime-local' || type === 'date';
-  const inputClass = icon
-    ? isDate
-      ? ADMIN_DATETIME_INPUT_ICON
-      : ADMIN_FIELD_INPUT_ICON
-    : isDate
-      ? ADMIN_DATETIME_INPUT
-      : ADMIN_FIELD_INPUT;
 
   const input = (
-    <input
+    <Input
+      id={id}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={inputClass}
+      aria-label={ariaLabel ?? label}
+      className={cn(
+        icon && 'pl-8',
+        isDate && '[color-scheme:dark]',
+        inputClassName
+      )}
     />
   );
 
   return (
-    <div className={className}>
+    <div className={cn('grid gap-2', className)}>
       {label ? (
-        <label className="block text-xs text-zinc-500 mb-1.5">
+        <Label htmlFor={id}>
           {label}
-          {required ? <span className="text-red-400"> *</span> : null}
-        </label>
+          {required ? <span className="text-destructive">*</span> : null}
+        </Label>
       ) : null}
       {icon ? (
-        <div className="relative flex items-center w-full">
-          <span className={ADMIN_INPUT_ICON_CLASS} aria-hidden>
+        <div className="relative">
+          <span className="pointer-events-none absolute top-1/2 left-2.5 flex -translate-y-1/2 text-muted-foreground [&_svg]:size-4">
             {icon}
           </span>
           {input}

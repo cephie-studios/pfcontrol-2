@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { MdArticle, MdWarning } from 'react-icons/md';
+import { Eraser, FileText, TriangleAlert } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminStatCards from '../../components/admin/AdminStatCards';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
-import Loader from '../../components/common/Loader';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Button from '../../components/common/Button';
+import {
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useToast } from '../../hooks/useToast';
 import {
   fetchAdminProfileContent,
@@ -21,6 +28,7 @@ const REFRESH_ICON_MIN_SPIN_MS = 500;
 
 export default function AdminProfileContent() {
   const { showToast, showError } = useToast();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [users, setUsers] = useState<AdminProfileContentUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,11 +79,14 @@ export default function AdminProfileContent() {
   );
 
   const handleClearBio = useCallback(
-    (userId: string) => {
+    async (userId: string) => {
       if (
-        !confirm(
-          "Clear this user's bio? This removes it from their public profile immediately."
-        )
+        !(await confirm({
+          title: "Clear this user's bio?",
+          description: 'This removes it from their public profile immediately.',
+          confirmText: 'Clear bio',
+          destructive: true,
+        }))
       )
         return;
       void withBusy(`bio:${userId}`, async () => {
@@ -84,7 +95,7 @@ export default function AdminProfileContent() {
         showToast('Bio cleared', 'success');
       });
     },
-    [withBusy, showToast]
+    [confirm, withBusy, showToast]
   );
 
   useEffect(() => {
@@ -109,112 +120,125 @@ export default function AdminProfileContent() {
 
   return (
     <AdminLayout>
-      <AdminPageHeader
+      <AdminPage
         title="Profile Content"
-        icon={MdArticle}
-        accent="blue"
+        icon={FileText}
         actions={
           <AdminRefreshButton
             onClick={() => void load({ headerRefresh: true })}
             loading={refreshIconBusy}
           />
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading profile content"
-          message={error}
-          onRetry={() => void load()}
-        />
-      ) : (
-        <>
-          <p className="text-xs text-zinc-500 mb-4">
-            {users.length} user{users.length === 1 ? '' : 's'} with a bio ·{' '}
-            {flaggedCount} flagged by automod.
-          </p>
-
-          <AdminToolbar>
-            <AdminSearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Search by username or bio text…"
-              grow
+      >
+        {loading ? (
+          <AdminLoading label="Loading profile content…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading profile content"
+            message={error}
+            onRetry={() => void load()}
+          />
+        ) : (
+          <>
+            <AdminStatCards
+              columns={2}
+              items={[
+                {
+                  label: 'Users with a bio',
+                  value: users.length,
+                },
+                {
+                  label: 'Flagged by automod',
+                  value: flaggedCount,
+                },
+              ]}
             />
-          </AdminToolbar>
 
-          {filteredUsers.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
-              <p className="text-sm text-zinc-500">
-                {users.length === 0
-                  ? 'No users have a bio yet.'
-                  : 'No users match your search.'}
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {filteredUsers.map((u) => (
-                <li
-                  key={u.userId}
-                  className={`rounded-2xl border p-4 ${
-                    u.bioAutomodFlagged
-                      ? 'border-red-800/60 bg-red-950/10'
-                      : 'border-zinc-800 bg-zinc-900/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <Link
-                      to={`/user/${u.username}`}
-                      className="flex items-center gap-3 group/link w-fit"
-                    >
-                      <DeveloperDiscordAvatar
-                        userId={u.userId}
-                        username={u.username}
-                        avatar={u.avatar}
-                        className="h-9 w-9"
-                      />
-                      <div>
-                        <p className="font-medium text-zinc-100 group-hover/link:text-blue-400 transition-colors">
-                          {u.username}
-                        </p>
-                        <p className="text-[11px] text-zinc-500 font-mono">
-                          {u.userId}
-                        </p>
-                      </div>
-                    </Link>
-                    {u.bioAutomodFlagged && (
-                      <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-300">
-                        <MdWarning className="w-3.5 h-3.5" />
-                        Flagged
-                        {u.bioAutomodReason ? `: ${u.bioAutomodReason}` : ''}
-                      </span>
+            <AdminToolbar>
+              <AdminSearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search by username or bio text…"
+                grow
+              />
+            </AdminToolbar>
+
+            {filteredUsers.length === 0 ? (
+              <AdminEmptyState
+                icon={FileText}
+                title={
+                  users.length === 0
+                    ? 'No users have a bio yet.'
+                    : 'No users match your search.'
+                }
+              />
+            ) : (
+              <ul className="divide-y overflow-hidden rounded-2xl border">
+                {filteredUsers.map((u) => (
+                  <li
+                    key={u.userId}
+                    className={cn(
+                      'flex flex-col gap-2 px-4 py-3',
+                      u.bioAutomodFlagged && 'bg-destructive/5'
                     )}
-                  </div>
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <Link
+                        to={`/user/${u.username}`}
+                        className="flex w-fit min-w-0 items-center gap-3 hover:underline"
+                      >
+                        <DeveloperDiscordAvatar
+                          userId={u.userId}
+                          username={u.username}
+                          avatar={u.avatar}
+                          className="size-8"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {u.username}
+                          </span>
+                          <span className="block truncate font-mono text-xs text-muted-foreground">
+                            {u.userId}
+                          </span>
+                        </span>
+                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {u.bioAutomodFlagged && (
+                          <AdminStatusBadge
+                            tone="danger"
+                            icon={TriangleAlert}
+                            showLabel
+                            className="max-w-full whitespace-normal"
+                          >
+                            {u.bioAutomodReason
+                              ? `Flagged: ${u.bioAutomodReason}`
+                              : 'Flagged'}
+                          </AdminStatusBadge>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={busyKeys.has(`bio:${u.userId}`)}
+                          onClick={() => void handleClearBio(u.userId)}
+                        >
+                          <Eraser />
+                          Clear bio
+                        </Button>
+                      </div>
+                    </div>
 
-                  <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-3">
-                    <p className="text-sm text-zinc-300 whitespace-pre-wrap mb-2">
+                    <p className="text-sm break-words whitespace-pre-wrap text-muted-foreground">
                       {u.bio}
                     </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={busyKeys.has(`bio:${u.userId}`)}
-                      onClick={() => handleClearBio(u.userId)}
-                    >
-                      Clear bio
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </AdminPage>
+      {confirmDialog}
     </AdminLayout>
   );
 }

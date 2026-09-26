@@ -1,15 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { MdStar, MdImage, MdClose, MdVisibilityOff } from 'react-icons/md';
+import {
+  ArrowRight,
+  CircleDot,
+  EyeOff,
+  Image as ImageIcon,
+  Plane,
+  X,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
+import AdminSection from '../../components/admin/AdminSection';
+import AdminStatCards from '../../components/admin/AdminStatCards';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
-import Loader from '../../components/common/Loader';
-import ErrorScreen from '../../components/common/ErrorScreen';
-import Button from '../../components/common/Button';
+import {
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '../../hooks/useToast';
 import {
   fetchAdminFeaturedFlights,
@@ -30,6 +49,7 @@ type UserGroup = {
 
 export default function AdminFeaturedFlights() {
   const { showToast, showError } = useToast();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [flights, setFlights] = useState<AdminFeaturedFlight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +100,15 @@ export default function AdminFeaturedFlights() {
   );
 
   const handleUnfeature = useCallback(
-    (userId: string, flightId: string) => {
+    async (userId: string, flightId: string) => {
       if (
-        !confirm(
-          'Unfeature this flight? It will disappear from the user’s public profile immediately.'
-        )
+        !(await confirm({
+          title: 'Unfeature this flight?',
+          description:
+            'It will disappear from the user’s public profile immediately.',
+          confirmText: 'Unfeature',
+          destructive: true,
+        }))
       )
         return;
       void withBusy(`unfeature:${flightId}`, async () => {
@@ -93,12 +117,20 @@ export default function AdminFeaturedFlights() {
         showToast('Flight unfeatured', 'success');
       });
     },
-    [withBusy, showToast]
+    [confirm, withBusy, showToast]
   );
 
   const handleDeleteImage = useCallback(
-    (userId: string, flightId: string, cephieId: string) => {
-      if (!confirm('Delete this image? This cannot be undone.')) return;
+    async (userId: string, flightId: string, cephieId: string) => {
+      if (
+        !(await confirm({
+          title: 'Delete this image?',
+          description: 'This cannot be undone.',
+          confirmText: 'Delete',
+          destructive: true,
+        }))
+      )
+        return;
       void withBusy(`image:${cephieId}`, async () => {
         await adminDeleteFeaturedFlightImage(userId, flightId, cephieId);
         setFlights((prev) =>
@@ -116,7 +148,7 @@ export default function AdminFeaturedFlights() {
         showToast('Image deleted', 'success');
       });
     },
-    [withBusy, showToast]
+    [confirm, withBusy, showToast]
   );
 
   useEffect(() => {
@@ -165,164 +197,200 @@ export default function AdminFeaturedFlights() {
 
   return (
     <AdminLayout>
-      <AdminPageHeader
+      <AdminPage
         title="Featured Flights"
-        icon={MdStar}
-        accent="yellow"
+        icon={ImageIcon}
         actions={
           <AdminRefreshButton
             onClick={() => void load({ headerRefresh: true })}
             loading={refreshIconBusy}
           />
         }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading featured flights"
-          message={error}
-          onRetry={() => void load()}
-        />
-      ) : (
-        <>
-          <p className="text-xs text-zinc-500 mb-4">
-            {groups.length} user{groups.length === 1 ? '' : 's'} with a featured
-            flight · {flights.length} flight
-            {flights.length === 1 ? '' : 's'} · {totalImages} image
-            {totalImages === 1 ? '' : 's'} shown on public profiles right now.
-          </p>
-
-          <AdminToolbar>
-            <AdminSearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Search by username or callsign…"
-              grow
+      >
+        {loading ? (
+          <AdminLoading label="Loading featured flights…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading featured flights"
+            message={error}
+            onRetry={() => void load()}
+          />
+        ) : (
+          <>
+            <AdminStatCards
+              columns={3}
+              items={[
+                {
+                  label: 'Users with a featured flight',
+                  value: groups.length,
+                },
+                {
+                  label: 'Featured flights',
+                  value: flights.length,
+                },
+                {
+                  label: 'Public images',
+                  value: totalImages,
+                },
+              ]}
             />
-          </AdminToolbar>
 
-          {filteredGroups.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-12 text-center">
-              <p className="text-sm text-zinc-500">
-                {groups.length === 0
-                  ? 'No one has a featured flight right now.'
-                  : 'No users match your search.'}
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {filteredGroups.map((g) => (
-                <li
-                  key={g.userId}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4"
-                >
-                  <Link
-                    to={`/user/${g.username}`}
-                    className="flex items-center gap-3 mb-4 group/link w-fit"
-                  >
-                    <DeveloperDiscordAvatar
-                      userId={g.userId}
-                      username={g.username}
-                      avatar={g.avatar}
-                      className="h-9 w-9"
-                    />
-                    <div>
-                      <p className="font-medium text-zinc-100 group-hover/link:text-blue-400 transition-colors">
-                        {g.username}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 font-mono">
-                        {g.userId}
-                      </p>
-                    </div>
-                  </Link>
+            <AdminToolbar>
+              <AdminSearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search by username or callsign…"
+                grow
+              />
+            </AdminToolbar>
 
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {g.flights.map((f) => (
-                      <div
-                        key={f.id}
-                        className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-3"
+            {filteredGroups.length === 0 ? (
+              <AdminEmptyState
+                icon={Plane}
+                title={
+                  groups.length === 0
+                    ? 'No one has a featured flight right now.'
+                    : 'No users match your search.'
+                }
+              />
+            ) : (
+              <>
+                {filteredGroups.map((g) => (
+                  <AdminSection
+                    key={g.userId}
+                    title={
+                      <Link
+                        to={`/user/${g.username}`}
+                        className="flex min-w-0 items-center gap-3 hover:underline"
                       >
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <p className="font-mono text-sm text-zinc-200 truncate">
-                            {f.callsign ?? '—'}
-                          </p>
-                          <span className="shrink-0 text-[10px] uppercase tracking-wide text-zinc-500">
-                            {f.status ?? ''}
+                        <DeveloperDiscordAvatar
+                          userId={g.userId}
+                          username={g.username}
+                          avatar={g.avatar}
+                          className="size-8"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate">{g.username}</span>
+                          <span className="block truncate font-mono text-xs font-normal text-muted-foreground">
+                            {g.userId}
                           </span>
-                        </div>
-                        <p className="text-xs text-zinc-500 mb-3">
-                          {f.departure ?? '?'} → {f.arrival ?? '?'}
-                          {f.aircraft ? ` · ${f.aircraft}` : ''}
-                        </p>
-                        {f.snapImages.length === 0 ? (
-                          <p className="flex items-center gap-1.5 text-xs text-zinc-600 italic mb-3">
-                            <MdImage className="w-3.5 h-3.5" /> No images
-                          </p>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-1.5 mb-3">
-                            {f.snapImages.map((snap) => (
-                              <div
-                                key={snap.cephie_id}
-                                className="group/img relative aspect-video overflow-hidden rounded-lg bg-zinc-800/60"
-                              >
-                                <a
-                                  href={snap.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="block h-full w-full"
-                                >
-                                  <img
-                                    src={snap.url}
-                                    alt={`${f.callsign ?? 'Flight'} snap`}
-                                    className="h-full w-full object-cover hover:opacity-90 transition-opacity"
-                                    loading="lazy"
-                                  />
-                                </a>
-                                <button
-                                  type="button"
-                                  disabled={busyKeys.has(
-                                    `image:${snap.cephie_id}`
-                                  )}
-                                  onClick={() =>
-                                    handleDeleteImage(
-                                      g.userId,
-                                      f.id,
-                                      snap.cephie_id
-                                    )
-                                  }
-                                  aria-label="Delete image"
-                                  className="absolute top-1 right-1 rounded-full bg-zinc-950/80 p-1 text-zinc-300 opacity-0 transition-all hover:text-red-400 group-hover/img:opacity-100 disabled:opacity-50"
-                                >
-                                  <MdClose className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={busyKeys.has(`unfeature:${f.id}`)}
-                          onClick={() => handleUnfeature(g.userId, f.id)}
-                          className="w-full"
+                        </span>
+                      </Link>
+                    }
+                  >
+                    <div className="divide-y overflow-hidden rounded-2xl border">
+                      {g.flights.map((f) => (
+                        <div
+                          key={f.id}
+                          className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center"
                         >
-                          <MdVisibilityOff className="w-3.5 h-3.5 inline mr-1" />
-                          Unfeature
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+                          <div className="flex min-w-0 items-start justify-between gap-2 md:w-56 md:shrink-0">
+                            <div className="min-w-0">
+                              <p className="truncate font-mono text-sm font-medium">
+                                {f.callsign ?? 'N/A'}
+                              </p>
+                              <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                                <span className="font-mono">
+                                  {f.departure ?? '?'}
+                                </span>
+                                <ArrowRight className="size-3" aria-hidden />
+                                <span className="font-mono">
+                                  {f.arrival ?? '?'}
+                                </span>
+                                {f.aircraft ? (
+                                  <span>· {f.aircraft}</span>
+                                ) : null}
+                              </p>
+                            </div>
+                            {f.status ? (
+                              <AdminStatusBadge
+                                status={f.status}
+                                icon={CircleDot}
+                                showLabel
+                                className="shrink-0 text-xs capitalize"
+                              >
+                                {f.status}
+                              </AdminStatusBadge>
+                            ) : null}
+                          </div>
+
+                          {f.snapImages.length === 0 ? (
+                            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                              No images
+                            </p>
+                          ) : (
+                            <div className="grid min-w-0 flex-1 grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                              {f.snapImages.map((snap) => (
+                                <div
+                                  key={snap.cephie_id}
+                                  className="group/img relative aspect-video overflow-hidden rounded-md border bg-muted sm:w-32"
+                                >
+                                  <a
+                                    href={snap.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block h-full w-full"
+                                  >
+                                    <img
+                                      src={snap.url}
+                                      alt={`${f.callsign ?? 'Flight'} snap`}
+                                      className="h-full w-full object-cover transition-opacity hover:opacity-90"
+                                      loading="lazy"
+                                    />
+                                  </a>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="icon-xs"
+                                        disabled={busyKeys.has(
+                                          `image:${snap.cephie_id}`
+                                        )}
+                                        onClick={() =>
+                                          void handleDeleteImage(
+                                            g.userId,
+                                            f.id,
+                                            snap.cephie_id
+                                          )
+                                        }
+                                        aria-label="Delete image"
+                                        className="absolute top-1 right-1 opacity-0 shadow-sm group-hover/img:opacity-100 hover:text-destructive focus-visible:opacity-100 disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                                      >
+                                        <X />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Delete image
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={busyKeys.has(`unfeature:${f.id}`)}
+                            onClick={() => void handleUnfeature(g.userId, f.id)}
+                            className="w-full md:ml-auto md:w-auto md:shrink-0"
+                          >
+                            <EyeOff />
+                            Unfeature
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </AdminSection>
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </AdminPage>
+      {confirmDialog}
     </AdminLayout>
   );
 }

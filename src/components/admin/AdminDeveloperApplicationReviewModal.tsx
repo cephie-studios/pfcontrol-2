@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { MdRefresh } from 'react-icons/md';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import AdminModal from './AdminModal';
-import AdminSectionTitle from './AdminSectionTitle';
-import { adminDownsizeButtonSize, adminSectionClass } from './adminConstants';
-import Button from '../common/Button';
+import { AdminLoading } from './AdminStates';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import ScopeTagSelector from '../developers/ScopeTagSelector';
 import {
   fetchAdminDeveloperCatalog,
@@ -100,23 +103,17 @@ export default function AdminDeveloperApplicationReviewModal({
     <AdminModal
       open={open}
       onClose={onClose}
-      title={`Review — ${application.username}`}
+      title={`Review: ${application.username}`}
+      description={
+        <span className="font-mono text-xs">{application.userId}</span>
+      }
       size="xl"
       footer={
         <>
           <Button
             type="button"
-            variant="ghost"
-            size={adminDownsizeButtonSize('sm')}
-            disabled={busy}
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            size={adminDownsizeButtonSize('sm')}
+            variant="destructive"
+            className="sm:mr-auto"
             disabled={busy}
             onClick={onRequestReject}
           >
@@ -124,136 +121,124 @@ export default function AdminDeveloperApplicationReviewModal({
           </Button>
           <Button
             type="button"
-            variant="primary"
-            size={adminDownsizeButtonSize('sm')}
+            variant="outline"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
             disabled={busy || catalog.length === 0}
             onClick={() => void submitApprove()}
-            className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-500"
           >
-            {busy ? (
-              <MdRefresh className="w-4 h-4 animate-spin inline mr-1" />
-            ) : null}
+            {busy ? <Loader2 className="animate-spin" /> : null}
             Approve with these settings
           </Button>
         </>
       }
     >
-      <p className="text-[11px] text-zinc-500 font-mono mb-4">
-        {application.userId}
-      </p>
-
-      <div
-        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm ${adminSectionClass('!mt-0 !pt-0 !border-t-0')}`}
-      >
-        <div>
-          <AdminSectionTitle className="!text-[10px] !font-semibold !uppercase !tracking-wider !text-zinc-500 !mb-1">
-            Who
-          </AdminSectionTitle>
-          <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div className="grid content-start gap-1">
+          <dt className="text-xs text-muted-foreground">Who</dt>
+          <dd className="max-h-40 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
             {application.whoText}
-          </p>
+          </dd>
         </div>
-        <div>
-          <AdminSectionTitle className="!text-[10px] !font-semibold !uppercase !tracking-wider !text-zinc-500 !mb-1">
-            Why
-          </AdminSectionTitle>
-          <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
-            {application.whyText || '—'}
-          </p>
+        <div className="grid content-start gap-1">
+          <dt className="text-xs text-muted-foreground">Why</dt>
+          <dd className="max-h-40 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
+            {application.whyText || (
+              <span className="text-muted-foreground">N/A</span>
+            )}
+          </dd>
         </div>
-      </div>
+        <div className="grid content-start gap-1 sm:col-span-2">
+          <dt className="text-xs text-muted-foreground">Requested scopes</dt>
+          <dd className="text-sm">
+            {application.requestedScopes.length === 0 ? (
+              <span className="text-muted-foreground">N/A</span>
+            ) : (
+              <ul className="grid gap-0.5 font-mono text-xs text-muted-foreground">
+                {application.requestedScopes.map((s) => (
+                  <li key={s} className="truncate">
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+        </div>
+      </dl>
 
-      <div className={adminSectionClass()}>
-        <AdminSectionTitle className="!text-[10px] !font-semibold !uppercase !tracking-wider !text-zinc-500 !mb-2">
-          Requested scopes
-        </AdminSectionTitle>
-        <div className="flex flex-wrap gap-1.5">
-          {application.requestedScopes.map((s) => (
-            <span
-              key={s}
-              className="text-[10px] font-mono px-2 py-0.5 rounded-full border bg-zinc-800/80 text-zinc-300 border-zinc-600"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className={adminSectionClass()}>
-        <AdminSectionTitle>Approved scope ceiling</AdminSectionTitle>
-        <p className="text-xs text-zinc-500 mb-3 leading-relaxed">
-          Starts from what they asked for. You can remove scopes or add any
-          catalog scope. This becomes their maximum allowed scopes.
-        </p>
-        {catalog.length === 0 ? (
-          <p className="text-sm text-zinc-500">Loading catalog…</p>
-        ) : (
-          <div className="rounded-xl border border-zinc-700/80 bg-zinc-950/50 p-3">
+      <div className="grid gap-5">
+        <div className="grid gap-2">
+          <Label>Approved scope ceiling</Label>
+          {catalog.length === 0 ? (
+            <AdminLoading
+              label="Loading catalog…"
+              className="justify-start py-2"
+            />
+          ) : (
             <ScopeTagSelector
               catalog={catalog}
               selected={approvedScopes}
               onChange={setApprovedScopes}
             />
-          </div>
-        )}
-      </div>
-
-      <div
-        className={`${adminSectionClass()} rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-4 space-y-3`}
-      >
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={touchDefaultRpm}
-            onChange={(e) => setTouchDefaultRpm(e.target.checked)}
-            className="mt-1 accent-blue-600 rounded border-zinc-600"
-          />
-          <span>
-            <span className="text-sm font-medium text-zinc-200">
-              Set default rate limit for new keys
-            </span>
-            <span className="block text-xs text-zinc-500 mt-1 leading-relaxed">
-              When checked, new keys they create use this RPM unless you set
-              per-key limits later. Leave unchecked to keep their current
-              default unchanged. Empty field = site default.
-            </span>
-          </span>
-        </label>
-        {touchDefaultRpm && (
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">
-              Requests / minute
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={rpmText}
-              onChange={(e) => setRpmText(e.target.value)}
-              placeholder="e.g. 120 (empty = site default)"
-              className="w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className={adminSectionClass()}>
-        <label className="block text-xs font-medium text-zinc-400 mb-1">
-          Note to applicant (optional)
-        </label>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          placeholder="Shown in their portal with the approval notice"
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none"
-        />
-      </div>
-
-      {localError && (
-        <div className="mt-4 rounded-lg border border-red-900/50 bg-red-950/40 px-3 py-2 text-sm text-red-200">
-          {localError}
+          )}
         </div>
-      )}
+
+        <div className="grid gap-3">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="admin-dev-review-touch-rpm"
+              checked={touchDefaultRpm}
+              onCheckedChange={(v) => setTouchDefaultRpm(v === true)}
+            />
+            <Label htmlFor="admin-dev-review-touch-rpm">
+              Set default rate limit for new keys
+            </Label>
+          </div>
+          {touchDefaultRpm && (
+            <div className="grid gap-2 pl-6">
+              <Label htmlFor="admin-dev-review-rpm">Requests / minute</Label>
+              <Input
+                id="admin-dev-review-rpm"
+                type="text"
+                inputMode="numeric"
+                value={rpmText}
+                onChange={(e) => setRpmText(e.target.value)}
+                placeholder="e.g. 120 (empty = site default)"
+                className="max-w-xs"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="admin-dev-review-note">
+            Note to applicant (optional)
+          </Label>
+          <Textarea
+            id="admin-dev-review-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder="Shown in their portal with the approval notice"
+            className="resize-none"
+          />
+        </div>
+
+        {localError && (
+          <p
+            className="flex items-start gap-2 text-sm text-destructive"
+            role="alert"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            {localError}
+          </p>
+        )}
+      </div>
     </AdminModal>
   );
 }

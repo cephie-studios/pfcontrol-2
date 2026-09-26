@@ -101,6 +101,35 @@ export async function releaseExternalAcarsClaim(
   return true;
 }
 
+export async function getExternalAcarsClaims(
+  sessionIds: string[]
+): Promise<Map<string, ExternalAcarsClaim>> {
+  const map = new Map<string, ExternalAcarsClaim>();
+  if (sessionIds.length === 0) return map;
+  const raws = await redisConnection.mget(
+    ...sessionIds.map((id) => keys.externalAcarsClaim(id))
+  );
+  sessionIds.forEach((id, i) => {
+    const claim = parseClaim(raws[i] ?? null);
+    if (claim) map.set(id, claim);
+  });
+  return map;
+}
+
+export async function forceReleaseExternalAcarsClaim(
+  sessionId: string
+): Promise<boolean> {
+  const claimKey = keys.externalAcarsClaim(sessionId);
+  const existing = parseClaim(await redisConnection.get(claimKey));
+  if (!existing) return false;
+  await redisConnection.del(claimKey);
+  await redisConnection.srem(
+    keys.externalAcarsClaimsByKey(existing.keyId),
+    sessionId
+  );
+  return true;
+}
+
 export async function listExternalAcarsClaimsForKey(
   keyId: string
 ): Promise<ExternalAcarsClaim[]> {

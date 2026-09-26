@@ -1,21 +1,44 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { MdNotificationsActive, MdExpandMore } from 'react-icons/md';
+import {
+  BellRing,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Mail,
+  MailOpen,
+  Send,
+} from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
+import AdminSection from '../../components/admin/AdminSection';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminTable from '../../components/admin/AdminTable';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
 import {
-  ADMIN_TABLE_HEAD,
-  ADMIN_TH,
-  ADMIN_TD,
-  adminDownsizeButtonSize,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import ErrorScreen from '../../components/common/ErrorScreen';
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { useToast } from '../../hooks/useToast';
 import {
   fetchAdminUserAlerts,
@@ -34,10 +57,10 @@ export default function AdminUserAlerts() {
   const [refreshIconBusy, setRefreshIconBusy] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const btnSize = adminDownsizeButtonSize('sm');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -67,6 +90,7 @@ export default function AdminUserAlerts() {
         );
         setAlerts(data.alerts);
         setTotalPages(data.pagination.pages);
+        setTotal(data.pagination.total);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load');
       } finally {
@@ -125,211 +149,229 @@ export default function AdminUserAlerts() {
 
   return (
     <AdminLayout>
-      <AdminPageHeader
+      <AdminPage
         title="User Alerts"
-        icon={MdNotificationsActive}
-        accent="cyan"
+        icon={BellRing}
         actions={
           <AdminRefreshButton
             onClick={() => void load({ headerRefresh: true })}
             loading={refreshIconBusy}
           />
         }
-      />
+      >
+        <AdminSection title="Send a new alert">
+          <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="user-alert-recipient">Recipient</Label>
+                <Input
+                  id="user-alert-recipient"
+                  type="text"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  placeholder="Username or User ID"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="user-alert-title">Title</Label>
+                <Input
+                  id="user-alert-title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="user-alert-message">Message</Label>
+              <div className="relative">
+                <Textarea
+                  id="user-alert-message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={3}
+                  className="min-h-24 resize-none pb-12"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={sending}
+                  onClick={() => void handleSend()}
+                  className="absolute right-2 bottom-2"
+                >
+                  {sending ? <Loader2 className="animate-spin" /> : <Send />}
+                  {sending ? 'Sending…' : 'Send alert'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </AdminSection>
 
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 mb-6 space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-200">
-          Send a new alert
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="Username or User ID"
-            className="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/40"
-          />
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            className="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/40"
-          />
-        </div>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Message the user will see"
-          rows={3}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-600/40 resize-none"
-        />
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          disabled={sending}
-          onClick={() => void handleSend()}
+        <AdminSection
+          title="Sent alerts"
+          contentClassName="flex flex-col gap-4"
         >
-          Send alert
-        </Button>
-      </div>
+          <AdminToolbar>
+            <AdminSearchInput
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Search by user, title, or message…"
+              loading={loading && search !== debouncedSearch}
+            />
+          </AdminToolbar>
 
-      <AdminToolbar className="mb-4">
-        <AdminSearchInput
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder="Search by user, title, or message…"
-          loading={loading && search !== debouncedSearch}
-        />
-      </AdminToolbar>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading alerts"
-          message={error}
-          onRetry={() => void load()}
-        />
-      ) : (
-        <>
-          <AdminTable minWidth="700px">
-            <thead className={ADMIN_TABLE_HEAD}>
-              <tr>
-                <th className={ADMIN_TH}>User</th>
-                <th className={ADMIN_TH}>Alert</th>
-                <th className={ADMIN_TH}>Status</th>
-                <th className={ADMIN_TH}>Sent</th>
-                <th className={ADMIN_TH} />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/80">
-              {alerts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className={`${ADMIN_TD} text-center text-zinc-500 py-12`}
-                  >
-                    {debouncedSearch
-                      ? 'No alerts match your search.'
-                      : 'No alerts sent yet.'}
-                  </td>
-                </tr>
-              ) : (
-                alerts.map((a) => {
-                  const isExpanded = expandedIds.has(a.id);
-                  return (
-                    <Fragment key={a.id}>
-                      <tr className="hover:bg-zinc-800/30">
-                        <td className={ADMIN_TD}>
-                          <div className="flex items-center gap-2">
-                            <DeveloperDiscordAvatar
-                              userId={a.user_id}
-                              username={a.username}
-                              avatar={a.avatar}
-                              className="h-7 w-7"
-                            />
-                            <span className="text-sm text-zinc-200">
-                              {a.username}
-                            </span>
-                          </div>
-                        </td>
-                        <td className={`${ADMIN_TD} max-w-sm`}>
-                          <p className="text-sm text-zinc-200 truncate">
-                            {a.title}
-                          </p>
-                          <p className="text-xs text-zinc-500 line-clamp-1">
-                            {a.message}
-                          </p>
-                        </td>
-                        <td className={ADMIN_TD}>
-                          <span
-                            className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md ${
-                              a.read
-                                ? 'bg-zinc-800 text-zinc-400'
-                                : 'bg-amber-950/50 text-amber-200 ring-1 ring-amber-800/35'
-                            }`}
-                          >
-                            {a.read ? 'Read' : 'Unread'}
-                          </span>
-                        </td>
-                        <td
-                          className={`${ADMIN_TD} text-xs text-zinc-500 whitespace-nowrap`}
-                        >
-                          {new Date(a.created_at).toLocaleString()}
-                        </td>
-                        <td className={`${ADMIN_TD} text-right`}>
-                          <Button
-                            variant="ghost"
-                            size={btnSize}
-                            onClick={() => toggleExpanded(a.id)}
-                            className="p-1 text-zinc-400 hover:text-white"
-                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                            aria-expanded={isExpanded}
-                            title={isExpanded ? 'Collapse' : 'Expand'}
-                          >
-                            <MdExpandMore
-                              size={18}
-                              className={`transition-transform ${
-                                isExpanded ? 'rotate-180' : ''
-                              }`}
-                            />
-                          </Button>
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr className="bg-zinc-950/40">
-                          <td colSpan={5} className={ADMIN_TD}>
-                            <div className="space-y-2 py-1">
-                              <p className="text-xs text-zinc-500">
-                                <span className="text-zinc-600">
-                                  Issued by:
-                                </span>{' '}
-                                {a.issued_by_admin_username ?? 'System'}
-                              </p>
-                              <p className="text-sm text-zinc-200 whitespace-pre-wrap break-words">
+          {loading ? (
+            <AdminLoading label="Loading alerts…" />
+          ) : error ? (
+            <AdminErrorState
+              title="Error loading alerts"
+              message={error}
+              onRetry={() => void load()}
+            />
+          ) : (
+            <>
+              <AdminTable minWidth="700px">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-4">User</TableHead>
+                    <TableHead>Alert</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sent</TableHead>
+                    <TableHead className="w-12 px-4">
+                      <span className="sr-only">Details</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {alerts.length === 0 ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={5}
+                        className="py-12 text-center text-muted-foreground"
+                      >
+                        {debouncedSearch
+                          ? 'No alerts match your search.'
+                          : 'No alerts sent yet.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    alerts.map((a) => {
+                      const isExpanded = expandedIds.has(a.id);
+                      const toggleLabel = isExpanded ? 'Collapse' : 'Expand';
+                      return (
+                        <Fragment key={a.id}>
+                          <TableRow>
+                            <TableCell className="px-4">
+                              <div className="flex items-center gap-2">
+                                <DeveloperDiscordAvatar
+                                  userId={a.user_id}
+                                  username={a.username}
+                                  avatar={a.avatar}
+                                  className="size-7"
+                                />
+                                <span className="font-medium">
+                                  {a.username}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="max-w-sm whitespace-normal">
+                              <p className="truncate">{a.title}</p>
+                              <p className="line-clamp-1 text-xs text-muted-foreground">
                                 {a.message}
                               </p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </AdminTable>
+                            </TableCell>
+                            <TableCell>
+                              <AdminStatusBadge
+                                tone={a.read ? 'neutral' : 'warning'}
+                                icon={a.read ? MailOpen : Mail}
+                              >
+                                {a.read ? 'Read' : 'Unread'}
+                              </AdminStatusBadge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground tabular-nums">
+                              {new Date(a.created_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="px-4 text-right">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => toggleExpanded(a.id)}
+                                    aria-label={toggleLabel}
+                                    aria-expanded={isExpanded}
+                                  >
+                                    <ChevronDown
+                                      className={cn(
+                                        'transition-transform',
+                                        isExpanded && 'rotate-180'
+                                      )}
+                                    />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{toggleLabel}</TooltipContent>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && (
+                            <TableRow className="bg-muted/30 hover:bg-muted/30">
+                              <TableCell
+                                colSpan={5}
+                                className="px-4 py-3 whitespace-normal"
+                              >
+                                <div className="grid gap-2">
+                                  <p className="text-xs text-muted-foreground">
+                                    Issued by:{' '}
+                                    <span className="text-foreground">
+                                      {a.issued_by_admin_username ?? 'System'}
+                                    </span>
+                                  </p>
+                                  <p className="text-sm break-words whitespace-pre-wrap">
+                                    {a.message}
+                                  </p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </AdminTable>
 
-          <AdminToolbar className="justify-center mt-4">
-            <Button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              variant="outline"
-              size={btnSize}
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-500 text-sm px-2">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              variant="outline"
-              size={btnSize}
-            >
-              Next
-            </Button>
-          </AdminToolbar>
-        </>
-      )}
+              <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-end">
+                <p className="text-sm text-muted-foreground tabular-nums">
+                  Page {page} of {totalPages} · {total.toLocaleString()} total
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronLeft />
+                    Previous
+                  </Button>
+                  <Button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Next
+                    <ChevronRight />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </AdminSection>
+      </AdminPage>
     </AdminLayout>
   );
 }

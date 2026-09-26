@@ -530,7 +530,7 @@ export default function Navbar({
               <div>
                 {!user ? (
                   <a
-                    href={`/login?callback=${window.location.pathname + window.location.search}`}
+                    href={`/login?callback=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                     onClick={() => setIsMenuOpen(false)}
                     className="text-white hover:text-blue-400 transition-colors duration-300 p-2 rounded-lg hover:bg-white/10 font-medium"
                   >

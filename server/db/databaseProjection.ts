@@ -7,9 +7,21 @@ import {
 import {
   getDailyTotalsHistory,
   getTableActivityHistory,
-  type TrackedActivityTable,
+  pgDateKey,
   TRACKED_ACTIVITY_TABLES,
 } from './databaseMetrics.js';
+import {
+  addDaysToKey,
+  dateKey,
+  densify,
+  forecastDailySeries,
+  type ForecastPoint,
+} from '../utils/dailyForecast.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HORIZON_DAYS = 30;
+const HISTORY_DAYS = 56;
+const MIN_TABLE_HISTORY_DAYS = 14;
 
 type TableSizeInput = {
   name: string;
@@ -18,29 +30,80 @@ type TableSizeInput = {
   retentionDays?: number;
 };
 
-type DailyStatRow = {
-  date: Date | string;
-  logins_count: number | null | undefined;
-  new_sessions_count: number | null | undefined;
-  new_flights_count: number | null | undefined;
-  new_users_count: number | null | undefined;
+type Scenario = 'low' | 'value' | 'high';
+const SCENARIOS: Scenario[] = ['low', 'value', 'high'];
+
+export type DatabaseProjectionPoint = {
+  day: number;
+  date: string;
+  projectedBytes: number;
+  lowBytes: number;
+  highBytes: number;
+  linearBytes: number | null;
 };
 
-const STAT_TABLE_MAP: Array<{
-  stat: keyof Pick<
-    DailyStatRow,
-    'new_users_count' | 'new_sessions_count' | 'new_flights_count'
-  >;
-  table: TrackedActivityTable;
+export type TableForecast = {
+  table: string;
+  currentBytes: number;
+  projected30dBytes: number;
+  deltaBytes: number;
+  insertsPerDay: number;
+  deletesPerDay: number;
+  weeklyGrowthPct: number;
+  retentionDays: number | null;
+};
+
+export type GrowthDriver = {
+  key: 'flights' | 'sessions' | 'users' | 'logins';
+  label: string;
+  total: number | null;
+  last7: number;
+  prev7: number;
+  last30: number;
+  prev30: number | null;
+  change30Pct: number | null;
+  weeklyGrowthPct: number;
+  next7: number;
+  next30: number;
+  next30Low: number;
+  next30High: number;
+  peakWeekday: string | null;
+  peakFactor: number;
+  history: Array<{ date: string; value: number }>;
+  forecast: ForecastPoint[];
+};
+
+const DRIVERS: Array<{
+  key: GrowthDriver['key'];
+  label: string;
+  column:
+    | 'new_flights_count'
+    | 'new_sessions_count'
+    | 'new_users_count'
+    | 'logins_count';
 }> = [
-  { stat: 'new_users_count', table: 'users' },
-  { stat: 'new_sessions_count', table: 'sessions' },
-  { stat: 'new_flights_count', table: 'flights' },
+  { key: 'flights', label: 'Flights', column: 'new_flights_count' },
+  { key: 'sessions', label: 'Sessions', column: 'new_sessions_count' },
+  { key: 'users', label: 'New users', column: 'new_users_count' },
+  { key: 'logins', label: 'Logins', column: 'logins_count' },
 ];
 
-function avg(nums: number[]): number {
-  if (nums.length === 0) return 0;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
+function robustDailySlope(
+  points: Array<{ day: number; bytes: number }>
+): number {
+  const slopes: number[] = [];
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dx = points[j].day - points[i].day;
+      if (dx > 0) slopes.push((points[j].bytes - points[i].bytes) / dx);
+    }
+  }
+  if (slopes.length === 0) return 0;
+  slopes.sort((a, b) => a - b);
+  const mid = Math.floor(slopes.length / 2);
+  return slopes.length % 2 === 0
+    ? (slopes[mid - 1] + slopes[mid]) / 2
+    : slopes[mid];
 }
 
 function bytesPerRow(bytes: number, rows: number): number {
@@ -48,9 +111,16 @@ function bytesPerRow(bytes: number, rows: number): number {
   return Math.max(64, bytes / rows);
 }
 
-async function getRecentDailyStatistics(days: number): Promise<DailyStatRow[]> {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  return mainDb
+function sum(nums: Array<number | null>): number {
+  return nums.reduce<number>((s, v) => s + (v ?? 0), 0);
+}
+
+function mean(nums: number[]): number {
+  return nums.length === 0 ? 0 : nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+
+async function getDailyStatisticsSince(since: string) {
+  const rows = await mainDb
     .selectFrom('daily_statistics')
     .select([
       'date',
@@ -59,167 +129,300 @@ async function getRecentDailyStatistics(days: number): Promise<DailyStatRow[]> {
       mainDb.fn.coalesce('new_flights_count', sql`0`).as('new_flights_count'),
       mainDb.fn.coalesce('new_users_count', sql`0`).as('new_users_count'),
     ])
-    .where('date', '>=', since)
+    .where('date', '>=', new Date(`${since}T00:00:00Z`))
     .orderBy('date', 'asc')
     .execute();
+
+  return rows.map((r) => ({
+    date: pgDateKey(r.date),
+    logins_count: Number(r.logins_count),
+    new_sessions_count: Number(r.new_sessions_count),
+    new_flights_count: Number(r.new_flights_count),
+    new_users_count: Number(r.new_users_count),
+  }));
+}
+
+async function countUsers(): Promise<number> {
+  const result = await sql<{ cnt: string }>`
+    SELECT COUNT(*)::text AS cnt FROM users
+  `.execute(mainDb);
+  return Number(result.rows[0]?.cnt ?? 0);
+}
+
+async function buildGrowthDrivers(yesterday: string): Promise<GrowthDriver[]> {
+  const historyLength = 60;
+  const since = addDaysToKey(yesterday, -(historyLength - 1));
+  const [stats, totalUsers] = await Promise.all([
+    getDailyStatisticsSince(since),
+    countUsers(),
+  ]);
+
+  const firstTracked = stats[0]?.date ?? null;
+
+  return DRIVERS.map(({ key, label, column }) => {
+    const byDate = new Map(stats.map((s) => [s.date, s[column]]));
+    const series = densify(byDate, yesterday, historyLength, 0).map((v, i) =>
+      firstTracked && addDaysToKey(since, i) < firstTracked ? null : v
+    );
+
+    const forecast = forecastDailySeries(
+      series.slice(-HISTORY_DAYS),
+      yesterday,
+      HORIZON_DAYS
+    );
+
+    const last30Series = series.slice(-30);
+    const prev30Series = series.slice(-60, -30);
+    const last30 = sum(last30Series);
+    const prev30 = prev30Series.every((v) => v !== null)
+      ? sum(prev30Series)
+      : null;
+    const round1 = (v: number) => Math.round(v * 10) / 10;
+
+    return {
+      key,
+      label,
+      total: key === 'users' ? totalUsers : null,
+      last7: sum(series.slice(-7)),
+      prev7: sum(series.slice(-14, -7)),
+      last30,
+      prev30,
+      change30Pct:
+        prev30 && prev30 > 0
+          ? Math.round(((last30 - prev30) / prev30) * 1000) / 10
+          : null,
+      weeklyGrowthPct: forecast.weeklyGrowthPct,
+      next7: Math.round(sum(forecast.points.slice(0, 7).map((p) => p.value))),
+      next30: Math.round(sum(forecast.points.map((p) => p.value))),
+      next30Low: Math.round(sum(forecast.points.map((p) => p.low))),
+      next30High: Math.round(sum(forecast.points.map((p) => p.high))),
+      peakWeekday: forecast.peakWeekday,
+      peakFactor: forecast.peakFactor,
+      history: series.slice(-28).map((v, i) => ({
+        date: addDaysToKey(yesterday, i - 27),
+        value: v ?? 0,
+      })),
+      forecast: forecast.points.map((p) => ({
+        date: p.date,
+        value: round1(p.value),
+        low: round1(p.low),
+        high: round1(p.high),
+      })),
+    };
+  });
+}
+
+export async function getGrowthForecast(): Promise<GrowthDriver[]> {
+  return buildGrowthDrivers(addDaysToKey(dateKey(new Date()), -1));
+}
+
+function forecastTable(
+  meta: TableSizeInput,
+  inserts: Array<number | null>,
+  deletes: Array<number | null>,
+  currentRows: number,
+  peakRows: number,
+  yesterday: string
+): { perDay: Record<Scenario, number[]>; forecast: TableForecast } {
+  const retention = RETENTION_DAYS_BY_TABLE.get(meta.name) ?? null;
+  const capacityRows = Math.max(peakRows, currentRows);
+  const rowBytes = bytesPerRow(meta.bytes, capacityRows);
+  const insertForecast = forecastDailySeries(inserts, yesterday, HORIZON_DAYS);
+  const recentDeletes = mean(
+    deletes.slice(-28).filter((v): v is number => v !== null)
+  );
+
+  const perDay = {} as Record<Scenario, number[]>;
+  let insertsTotal = 0;
+  let deletesTotal = 0;
+
+  for (const scenario of SCENARIOS) {
+    const ins = insertForecast.points.map((p) => p[scenario]);
+    const bytes: number[] = [];
+    let rows = currentRows;
+    let peak = capacityRows;
+
+    for (let t = 0; t < HORIZON_DAYS; t++) {
+      let del = recentDeletes;
+      if (retention !== null) {
+        const src = t - retention;
+        if (src >= 0) {
+          del = ins[src];
+        } else {
+          const historical = inserts[inserts.length + src];
+          if (historical !== null && historical !== undefined) del = historical;
+        }
+      }
+
+      rows = Math.max(0, rows + ins[t] - del);
+      peak = Math.max(peak, rows);
+      bytes.push(meta.bytes + (peak - capacityRows) * rowBytes);
+
+      if (scenario === 'value') {
+        insertsTotal += ins[t];
+        deletesTotal += del;
+      }
+    }
+    perDay[scenario] = bytes;
+  }
+
+  const projected = perDay.value[HORIZON_DAYS - 1];
+  return {
+    perDay,
+    forecast: {
+      table: meta.name,
+      currentBytes: meta.bytes,
+      projected30dBytes: Math.round(projected),
+      deltaBytes: Math.round(projected - meta.bytes),
+      insertsPerDay: Math.round((insertsTotal / HORIZON_DAYS) * 10) / 10,
+      deletesPerDay: Math.round((deletesTotal / HORIZON_DAYS) * 10) / 10,
+      weeklyGrowthPct: insertForecast.weeklyGrowthPct,
+      retentionDays: retention,
+    },
+  };
 }
 
 export async function buildDatabaseProjection(
   totalBytes: number,
   tables: TableSizeInput[]
 ): Promise<{
-  projection: Array<{ day: number; date: string; projectedBytes: number }>;
+  projection: DatabaseProjectionPoint[];
   projected30dBytes: number;
+  projected30dLowBytes: number;
+  projected30dHighBytes: number;
   growthPercent30d: number;
   dailyNetGrowthBytes: number;
+  measuredDailyNetBytes: number | null;
+  tableForecasts: TableForecast[];
+  growthDrivers: GrowthDriver[];
   methodology: string;
 }> {
-  const historyDays = 30;
-  const totalsHistory = await getDailyTotalsHistory(historyDays);
-  const activityHistory = await getTableActivityHistory(historyDays);
-  const dailyStats = await getRecentDailyStatistics(historyDays);
+  const today = dateKey(new Date());
+  const yesterday = addDaysToKey(today, -1);
+
+  const [totalsHistory, activityHistory, growthDrivers] = await Promise.all([
+    getDailyTotalsHistory(HISTORY_DAYS),
+    getTableActivityHistory(HISTORY_DAYS),
+    buildGrowthDrivers(yesterday),
+  ]);
+
+  const todayMs = Date.parse(today);
+  const pastTotals = totalsHistory.filter((t) => t.date < today).slice(-30);
+  const measuredDailyNet =
+    pastTotals.length >= 3
+      ? robustDailySlope([
+          ...pastTotals.map((t) => ({
+            day: (Date.parse(t.date) - todayMs) / DAY_MS,
+            bytes: t.totalBytes,
+          })),
+          { day: 0, bytes: totalBytes },
+        ])
+      : null;
+
+  const insertsByTable = new Map<string, Map<string, number>>();
+  const deletesByTable = new Map<string, Map<string, number>>();
+  const rowCounts = new Map<string, { latest: number; peak: number }>();
+  for (const row of activityHistory) {
+    const counts = rowCounts.get(row.table) ?? { latest: 0, peak: 0 };
+    rowCounts.set(row.table, {
+      latest: row.rowCount,
+      peak: Math.max(counts.peak, row.rowCount),
+    });
+
+    if (row.date >= today) continue;
+    if (!insertsByTable.has(row.table)) {
+      insertsByTable.set(row.table, new Map());
+      deletesByTable.set(row.table, new Map());
+    }
+    insertsByTable.get(row.table)!.set(row.date, row.inserted);
+    deletesByTable.get(row.table)!.set(row.date, row.deleted);
+  }
 
   const tableByName = new Map(tables.map((t) => [t.name, t]));
+  const modelled: Array<ReturnType<typeof forecastTable>> = [];
+  for (const name of TRACKED_ACTIVITY_TABLES) {
+    const meta = tableByName.get(name);
+    const insertMap = insertsByTable.get(name);
+    if (!meta || !insertMap) continue;
 
-  const netFromTotals: number[] = [];
-  for (let i = 1; i < totalsHistory.length; i++) {
-    netFromTotals.push(
-      totalsHistory[i].totalBytes - totalsHistory[i - 1].totalBytes
+    const inserts = densify(insertMap, yesterday, HISTORY_DAYS);
+    const known = inserts.filter((v) => v !== null).length;
+    if (known < MIN_TABLE_HISTORY_DAYS) continue;
+
+    const deletes = densify(deletesByTable.get(name)!, yesterday, HISTORY_DAYS);
+    const counts = rowCounts.get(name);
+    const currentRows = counts?.latest || meta.rowEstimate;
+    const peakRows = Math.max(counts?.peak ?? 0, currentRows);
+    modelled.push(
+      forecastTable(meta, inserts, deletes, currentRows, peakRows, yesterday)
     );
   }
-  const measuredDailyNet = avg(netFromTotals);
 
-  const activityByTable = new Map<
-    string,
-    Array<{ inserted: number; deleted: number; bytes: number }>
-  >();
-  for (const row of activityHistory) {
-    const list = activityByTable.get(row.table) ?? [];
-    list.push({
-      inserted: row.inserted,
-      deleted: row.deleted,
-      bytes: row.bytes,
-    });
-    activityByTable.set(row.table, list);
-  }
-
-  let logsPerFlight = 8;
-  const flightLogActivity = activityByTable.get('flight_logs') ?? [];
-  const flightStatSum = dailyStats.reduce(
-    (s, d) => s + Number(d.new_flights_count ?? 0),
-    0
-  );
-  const flightLogInserts = flightLogActivity.reduce(
-    (s, d) => s + d.inserted,
-    0
-  );
-  if (flightStatSum > 0 && flightLogInserts > 0) {
-    logsPerFlight = flightLogInserts / flightStatSum;
-  }
-
-  const tableDailyNet = new Map<string, number>();
-
-  for (const tableName of TRACKED_ACTIVITY_TABLES) {
-    const meta = tableByName.get(tableName);
-    const retention = RETENTION_DAYS_BY_TABLE.get(tableName);
-    const history = activityByTable.get(tableName) ?? [];
-    const avgRowBytes = bytesPerRow(
-      meta?.bytes ?? history[history.length - 1]?.bytes ?? 0,
-      meta?.rowEstimate ?? 1
-    );
-
-    if (history.length >= 3) {
-      const nets = history.map((h) => (h.inserted - h.deleted) * avgRowBytes);
-      tableDailyNet.set(tableName, avg(nets));
-      continue;
-    }
-
-    const statLink = STAT_TABLE_MAP.find((m) => m.table === tableName);
-    if (statLink && dailyStats.length > 0) {
-      const statAvg = avg(dailyStats.map((d) => Number(d[statLink.stat] ?? 0)));
-      tableDailyNet.set(tableName, statAvg * avgRowBytes);
-      continue;
-    }
-
-    if (tableName === 'flight_logs' && dailyStats.length > 0) {
-      const flightsAvg = avg(
-        dailyStats.map((d) => Number(d.new_flights_count ?? 0))
-      );
-      tableDailyNet.set(tableName, flightsAvg * logsPerFlight * avgRowBytes);
-      continue;
-    }
-
-    if (retention && meta) {
-      const weeklyInserts = history.reduce((s, h) => s + h.inserted, 0);
-      const dailyInsert =
-        history.length > 0 ? weeklyInserts / Math.max(history.length, 1) : 0;
-      const dailyInsertBytes = dailyInsert * avgRowBytes;
-      const rowEst = meta.rowEstimate || 1;
-      const dailyDeleteBytes = (rowEst / retention) * avgRowBytes;
-      tableDailyNet.set(tableName, dailyInsertBytes - dailyDeleteBytes);
-    }
-  }
-
-  const activityNetSum = [...tableDailyNet.values()].reduce((s, v) => s + v, 0);
-
-  let dailyNetGrowthBytes: number;
+  const projection: DatabaseProjectionPoint[] = [];
   let methodology: string;
 
-  if (netFromTotals.length >= 7) {
-    dailyNetGrowthBytes = measuredDailyNet;
-    methodology =
-      '30-day forecast from measured daily database size changes (last 7+ days), blended with per-table insert/delete activity.';
-  } else if (activityNetSum !== 0 && activityHistory.length >= 14) {
-    dailyNetGrowthBytes = activityNetSum;
-    methodology =
-      '30-day forecast from per-table daily insert/delete history and row-size estimates.';
-  } else {
-    const statDriven = [...tableDailyNet.values()].reduce((s, v) => s + v, 0);
-    dailyNetGrowthBytes = statDriven !== 0 ? statDriven : totalBytes * 0.001;
-    methodology =
-      statDriven !== 0
-        ? '30-day forecast from admin daily statistics (users, sessions, flights) and table activity, with retention adjustments.'
-        : 'Limited history; using conservative 0.1% daily growth estimate until metrics accumulate.';
-  }
-
-  if (netFromTotals.length >= 3 && activityNetSum !== 0) {
-    dailyNetGrowthBytes = measuredDailyNet * 0.6 + activityNetSum * 0.4;
-    methodology =
-      'Blended forecast: 60% measured total DB delta, 40% per-table activity and statistics.';
-  }
-
-  dailyNetGrowthBytes = Math.max(0, dailyNetGrowthBytes);
-
-  const projection: Array<{
-    day: number;
-    date: string;
-    projectedBytes: number;
-  }> = [];
-  let projected = totalBytes;
-  const today = new Date();
-
-  for (let day = 0; day <= 30; day++) {
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() + day);
+  const pushPoint = (day: number, value: number, low: number, high: number) => {
     projection.push({
       day,
-      date: d.toISOString().slice(0, 10),
-      projectedBytes: Math.round(Math.max(totalBytes, projected)),
+      date: addDaysToKey(today, day),
+      projectedBytes: Math.round(Math.max(0, value)),
+      lowBytes: Math.round(Math.max(0, Math.min(low, value))),
+      highBytes: Math.round(Math.max(0, high, value)),
+      linearBytes:
+        measuredDailyNet === null
+          ? null
+          : Math.round(Math.max(0, totalBytes + measuredDailyNet * day)),
     });
-    projected = Math.max(totalBytes, projected + dailyNetGrowthBytes);
+  };
+
+  if (modelled.length > 0) {
+    const modelledBytes = modelled.reduce(
+      (s, m) => s + m.forecast.currentBytes,
+      0
+    );
+    const staticBytes = totalBytes - modelledBytes;
+    pushPoint(0, totalBytes, totalBytes, totalBytes);
+    for (let day = 1; day <= HORIZON_DAYS; day++) {
+      const at = (scenario: Scenario) =>
+        staticBytes +
+        modelled.reduce((s, m) => s + m.perDay[scenario][day - 1], 0);
+      pushPoint(day, at('value'), at('low'), at('high'));
+    }
+    methodology =
+      `Per-table forecast for ${modelled.length} tables: 8-week insert trend with weekday pattern, ` +
+      'deletes from retention policies, and Postgres space reuse (a table only grows past its previous peak). ' +
+      'Range reflects the spread of week-over-week trends.';
+  } else {
+    const slope = measuredDailyNet ?? 0;
+    for (let day = 0; day <= HORIZON_DAYS; day++) {
+      const v = totalBytes + slope * day;
+      pushPoint(day, v, v, v);
+    }
+    methodology =
+      measuredDailyNet === null
+        ? 'Not enough history yet; forecast becomes available after a few days of metrics.'
+        : `Not enough per-table history yet; linear trend of measured size over the last ${pastTotals.length} days.`;
   }
 
-  const projected30d = projection[30]?.projectedBytes ?? totalBytes;
-  const growthPct =
-    totalBytes > 0
-      ? Math.max(0, ((projected30d - totalBytes) / totalBytes) * 100)
-      : 0;
+  const last = projection[HORIZON_DAYS];
+  const projected30d = last?.projectedBytes ?? totalBytes;
 
   return {
     projection,
     projected30dBytes: projected30d,
-    growthPercent30d: Math.round(growthPct * 10) / 10,
-    dailyNetGrowthBytes: Math.round(dailyNetGrowthBytes),
+    projected30dLowBytes: last?.lowBytes ?? totalBytes,
+    projected30dHighBytes: last?.highBytes ?? totalBytes,
+    growthPercent30d:
+      totalBytes > 0
+        ? Math.round(((projected30d - totalBytes) / totalBytes) * 1000) / 10
+        : 0,
+    dailyNetGrowthBytes: Math.round((projected30d - totalBytes) / HORIZON_DAYS),
+    measuredDailyNetBytes:
+      measuredDailyNet === null ? null : Math.round(measuredDailyNet),
+    tableForecasts: modelled
+      .map((m) => m.forecast)
+      .sort((a, b) => b.deltaBytes - a.deltaBytes),
+    growthDrivers,
     methodology,
   };
 }

@@ -89,12 +89,38 @@ export interface AdminSession {
   created_by: string;
   is_pfatc: boolean;
   is_advanced_atc?: boolean;
+  arrival_runway?: string | null;
+  custom_name?: string | null;
+  feedback_enabled?: boolean | null;
+  external_session?: boolean | null;
+  developer_api_key_id?: string | null;
+  external_claim?: AdminSessionClaim | null;
   flight_count: number;
   username: string;
   discriminator: string;
   avatar: string | null;
   active_users?: SessionUser[];
   active_user_count?: number;
+}
+
+export interface AdminSessionClaim {
+  keyId: string;
+  keyName: string | null;
+  userId: string;
+  username: string | null;
+  claimedAt: string;
+  expiresAt: string;
+  active: boolean;
+}
+
+export interface AdminSessionUpdate {
+  type?: 'standard' | 'pfatc' | 'advanced_atc';
+  airportIcao?: string;
+  activeRunway?: string;
+  arrivalRunway?: string | null;
+  customName?: string;
+  feedbackEnabled?: boolean;
+  externalSession?: boolean | null;
 }
 
 export interface SystemInfo {
@@ -525,6 +551,24 @@ export async function deleteAdminSession(
   });
 }
 
+export async function updateAdminSession(
+  sessionId: string,
+  updates: AdminSessionUpdate
+): Promise<Partial<AdminSession>> {
+  return makeAdminRequest(`/sessions/${sessionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function releaseAdminSessionClaim(
+  sessionId: string
+): Promise<{ message: string; sessionId: string }> {
+  return makeAdminRequest(`/sessions/${sessionId}/claim`, {
+    method: 'DELETE',
+  });
+}
+
 export async function logSessionJoin(
   sessionId: string
 ): Promise<{ message: string; sessionId: string }> {
@@ -744,10 +788,6 @@ export async function revealFlightLogIP(
   }
 
   return response.json();
-}
-
-export async function fetchFeedback(): Promise<Feedback[]> {
-  return makeAdminRequest('/feedback');
 }
 
 export async function fetchFeedbackStats(): Promise<FeedbackStats> {
@@ -1124,6 +1164,37 @@ export interface AdminDatabaseDailyStat {
   newUsers: number;
 }
 
+export interface AdminDatabaseTableForecast {
+  table: string;
+  currentBytes: number;
+  projected30dBytes: number;
+  deltaBytes: number;
+  insertsPerDay: number;
+  deletesPerDay: number;
+  weeklyGrowthPct: number;
+  retentionDays: number | null;
+}
+
+export interface AdminDatabaseGrowthDriver {
+  key: 'flights' | 'sessions' | 'users' | 'logins';
+  label: string;
+  total: number | null;
+  last7: number;
+  prev7: number;
+  last30: number;
+  prev30: number | null;
+  change30Pct: number | null;
+  weeklyGrowthPct: number;
+  next7: number;
+  next30: number;
+  next30Low: number;
+  next30High: number;
+  peakWeekday: string | null;
+  peakFactor: number;
+  history: Array<{ date: string; value: number }>;
+  forecast: Array<{ date: string; value: number; low: number; high: number }>;
+}
+
 export interface AdminDatabaseStatsResponse {
   tables: AdminDatabaseTable[];
   totalBytes: number;
@@ -1134,8 +1205,20 @@ export interface AdminDatabaseStatsResponse {
     retentionDays: number;
     label: string;
   }>;
-  projection: Array<{ day: number; date: string; projectedBytes: number }>;
+  projection: Array<{
+    day: number;
+    date: string;
+    projectedBytes: number;
+    lowBytes: number;
+    highBytes: number;
+    linearBytes: number | null;
+  }>;
   projected30dBytes: number;
+  projected30dLowBytes: number;
+  projected30dHighBytes: number;
+  measuredDailyNetBytes: number | null;
+  tableForecasts: AdminDatabaseTableForecast[];
+  growthDrivers: AdminDatabaseGrowthDriver[];
   projected30dFormatted: string;
   growthPercent30d: number;
   dailyNetGrowthBytes: number;
@@ -1148,6 +1231,12 @@ export interface AdminDatabaseStatsResponse {
   };
   dailyStatistics: AdminDatabaseDailyStat[];
   polledAt: string;
+}
+
+export async function fetchAdminStatisticsForecast(): Promise<{
+  drivers: AdminDatabaseGrowthDriver[];
+}> {
+  return makeAdminRequest('/statistics/forecast');
 }
 
 export async function fetchAdminDatabaseStats(): Promise<AdminDatabaseStatsResponse> {

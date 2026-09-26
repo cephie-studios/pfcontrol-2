@@ -1,5 +1,5 @@
 import { sql } from 'kysely';
-import { mainDb } from './connection.js';
+import { mainDb, redisConnection } from './connection.js';
 import { addFlight } from './flights.js';
 import { validateSessionId } from '../utils/validation.js';
 import { encrypt } from '../utils/encryption.js';
@@ -169,7 +169,7 @@ export async function updateSession(
   sessionId: string,
   updates: Partial<{
     active_runway: string;
-    arrival_runway: string;
+    arrival_runway: string | null;
     airport_icao: string;
     flight_strips: unknown;
     atis: unknown;
@@ -178,6 +178,7 @@ export async function updateSession(
     is_pfatc: boolean;
     is_advanced_atc: boolean;
     feedback_enabled: boolean;
+    external_session: boolean | null;
   }>
 ) {
   const patch = { ...updates };
@@ -231,7 +232,11 @@ export async function updateSession(
     if (result) {
       const { setSessionMetaFromRow } =
         await import('../realtime/activeSessions.js');
-      await setSessionMetaFromRow(result);
+      const meta = await setSessionMetaFromRow(result);
+      if (!meta) {
+        const { keys } = await import('../realtime/keys.js');
+        await redisConnection.del(keys.sessionMeta(sessionId)).catch(() => {});
+      }
       if (patch.atis !== undefined) {
         const { onAtisChanged } = await import('../realtime/invalidate.js');
         void onAtisChanged(sessionId);

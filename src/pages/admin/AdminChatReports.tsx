@@ -1,38 +1,104 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
-  MdReport,
-  MdVisibility,
-  MdDelete,
-  MdBlock,
-  MdOpenInNew,
-  MdTaskAlt,
-} from 'react-icons/md';
+  Ban,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  ExternalLink,
+  Clock,
+  Flag,
+  Trash2,
+} from 'lucide-react';
 import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminModal from '../../components/admin/AdminModal';
-import AdminPageHeader from '../../components/admin/AdminPageHeader';
+import AdminPage from '../../components/admin/AdminPage';
+import AdminSelect from '../../components/admin/AdminSelect';
+import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import AdminToolbar from '../../components/admin/AdminToolbar';
 import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import AdminTable from '../../components/admin/AdminTable';
 import {
-  adminDownsizeButtonSize,
-  ADMIN_TH,
-  ADMIN_TD,
-  ADMIN_TABLE_HEAD,
-  ADMIN_TOOLBAR_MOBILE_COL,
-  ADMIN_TOOLBAR_MOBILE_SEARCH,
-  ADMIN_TOOLBAR_MOBILE_SPLIT_ROW,
-} from '../../components/admin/adminConstants';
-import Loader from '../../components/common/Loader';
-import Button from '../../components/common/Button';
-import Dropdown from '../../components/common/Dropdown';
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoading,
+} from '../../components/admin/AdminStates';
+import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   fetchChatReports,
   updateChatReportStatus,
   deleteChatReport,
   type ChatReport,
 } from '../../utils/fetch/admin';
-import ErrorScreen from '../../components/common/ErrorScreen';
+
+const DEFAULT_AVATAR = '/assets/app/default/avatar.webp';
+
+function reporterName(report: ChatReport) {
+  return report.reporter_user_id === 'automod'
+    ? 'Automod'
+    : report.reporter_username || 'Unknown';
+}
+
+function reporterAlt(report: ChatReport) {
+  return report.reporter_user_id === 'automod'
+    ? 'Automod'
+    : report.reporter_username || report.reporter_user_id;
+}
+
+function UserCell({
+  src,
+  alt,
+  name,
+  id,
+}: {
+  src: string;
+  alt: string;
+  name: string;
+  id?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <img src={src} alt={alt} className="size-7 shrink-0 rounded-full" />
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate font-medium">{name}</span>
+        {id ? (
+          <span className="truncate font-mono text-xs text-muted-foreground">
+            {id}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid min-w-0 gap-1">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm break-words">{children}</dd>
+    </div>
+  );
+}
 
 export default function AdminChatReports() {
   const [reports, setReports] = useState<ChatReport[]>([]);
@@ -41,6 +107,7 @@ export default function AdminChatReports() {
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [filterReporter, setFilterReporter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<ChatReport | null>(null);
@@ -49,6 +116,7 @@ export default function AdminChatReports() {
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+  const { confirm, confirmDialog } = useAdminConfirm();
 
   const filterOptions = [
     { value: 'all', label: 'All Reports' },
@@ -71,6 +139,9 @@ export default function AdminChatReports() {
       );
       setReports(data.reports);
       setTotalPages(data.pagination.pages);
+      setTotal(
+        typeof data.pagination.total === 'number' ? data.pagination.total : null
+      );
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch reports';
@@ -87,7 +158,16 @@ export default function AdminChatReports() {
   };
 
   const handleDismissReport = async (reportId: number) => {
-    if (!confirm('Are you sure you want to dismiss this report?')) return;
+    if (
+      !(await confirm({
+        title: 'Dismiss this report?',
+        description:
+          'Are you sure you want to dismiss this report? It will be permanently removed.',
+        confirmText: 'Dismiss report',
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await deleteChatReport(reportId);
       setToast({ message: 'Report dismissed', type: 'success' });
@@ -118,288 +198,249 @@ export default function AdminChatReports() {
       r.reported_user_id.includes(search)
   );
 
-  const btnSize = adminDownsizeButtonSize('sm');
+  const renderStatus = (report: ChatReport, showLabel = false) => {
+    const status = report.status || 'pending';
+    return (
+      <AdminStatusBadge
+        status={status}
+        icon={
+          status === 'resolved'
+            ? CheckCircle2
+            : status === 'pending'
+              ? Clock
+              : undefined
+        }
+        showLabel={showLabel}
+        className="capitalize"
+      >
+        {status}
+      </AdminStatusBadge>
+    );
+  };
+
+  const renderRowActions = (report: ChatReport) => (
+    <div className="flex items-center justify-end gap-0.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="View details"
+            onClick={() => handleViewReport(report)}
+          >
+            <Eye />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>View details</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Mark resolved"
+            onClick={() => handleMarkResolved(report.id)}
+          >
+            <CheckCircle2 />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Mark resolved</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Dismiss report"
+            className="text-destructive hover:text-destructive"
+            onClick={() => handleDismissReport(report.id)}
+          >
+            <Trash2 />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Dismiss report</TooltipContent>
+      </Tooltip>
+    </div>
+  );
 
   return (
     <AdminLayout toast={toast} onToastClose={() => setToast(null)}>
-      <AdminPageHeader title="Chat Reports" icon={MdReport} accent="red" />
-
-      <AdminToolbar className={ADMIN_TOOLBAR_MOBILE_COL}>
-        <AdminSearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by message or user…"
-          loading={loading}
-          className={ADMIN_TOOLBAR_MOBILE_SEARCH}
-        />
-        <div className={ADMIN_TOOLBAR_MOBILE_SPLIT_ROW}>
-          <Dropdown
+      <AdminPage
+        title="Chat Reports"
+        icon={Flag}
+        actions={
+          <AdminRefreshButton onClick={fetchReports} loading={loading} />
+        }
+      >
+        <AdminToolbar>
+          <AdminSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by message or user…"
+            loading={loading}
+          />
+          <AdminSelect
             options={filterOptions}
             value={filterReporter}
             onChange={setFilterReporter}
             placeholder="Filter by reporter…"
-            size="sm"
+            aria-label="Filter by reporter"
+            className="sm:ml-auto"
           />
-          <AdminRefreshButton
-            onClick={fetchReports}
-            loading={loading}
-            className="shrink-0"
+        </AdminToolbar>
+
+        {loading ? (
+          <AdminLoading label="Loading reports…" />
+        ) : error ? (
+          <AdminErrorState
+            title="Error loading reports"
+            message={error}
+            onRetry={fetchReports}
           />
-        </div>
-      </AdminToolbar>
+        ) : (
+          <>
+            {filteredReports.length === 0 ? (
+              <AdminEmptyState icon={Flag} title="No reports" />
+            ) : (
+              <>
+                <div className="hidden lg:block">
+                  <AdminTable minWidth="800px">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Reporter</TableHead>
+                        <TableHead>Reported User</TableHead>
+                        <TableHead>Message</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead className="w-28 text-right">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredReports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell>
+                            <UserCell
+                              src={report.avatar || DEFAULT_AVATAR}
+                              alt={reporterAlt(report)}
+                              name={reporterName(report)}
+                              id={
+                                report.reporter_user_id !== 'automod'
+                                  ? report.reporter_user_id
+                                  : undefined
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <UserCell
+                              src={report.reported_avatar || DEFAULT_AVATAR}
+                              alt={
+                                report.reported_username ||
+                                report.reported_user_id
+                              }
+                              name={report.reported_username || 'Unknown'}
+                              id={report.reported_user_id}
+                            />
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {report.message}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {report.reason}
+                          </TableCell>
+                          <TableCell>{renderStatus(report)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground tabular-nums">
+                            {formatTimestamp(report.created_at)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {renderRowActions(report)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </AdminTable>
+                </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader />
-        </div>
-      ) : error ? (
-        <ErrorScreen
-          title="Error loading reports"
-          message={error}
-          onRetry={fetchReports}
-        />
-      ) : (
-        <>
-          <div className="hidden lg:block">
-            <AdminTable minWidth="800px">
-              <thead className={ADMIN_TABLE_HEAD}>
-                <tr>
-                  <th className={ADMIN_TH}>Reporter</th>
-                  <th className={ADMIN_TH}>Reported User</th>
-                  <th className={ADMIN_TH}>Message</th>
-                  <th className={ADMIN_TH}>Reason</th>
-                  <th className={ADMIN_TH}>Status</th>
-                  <th className={ADMIN_TH}>Timestamp</th>
-                  <th className={ADMIN_TH}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReports.map((report) => (
-                  <tr
-                    key={report.id}
-                    className="border-t border-zinc-800/60 hover:bg-zinc-800/30"
-                  >
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={
-                            report.avatar || '/assets/app/default/avatar.webp'
-                          }
-                          alt={
-                            report.reporter_user_id === 'automod'
-                              ? 'Automod'
-                              : report.reporter_username ||
-                                report.reporter_user_id
-                          }
-                          className="w-7 h-7 rounded-full"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-white font-medium truncate">
-                            {report.reporter_user_id === 'automod'
-                              ? 'Automod'
-                              : report.reporter_username || 'Unknown'}
-                          </span>
-                          {report.reporter_user_id !== 'automod' && (
-                            <span className="text-zinc-500 text-xs truncate">
-                              {report.reporter_user_id}
-                            </span>
-                          )}
+                <div className="divide-y rounded-2xl border lg:hidden">
+                  {filteredReports.map((report) => (
+                    <div key={report.id} className="grid gap-3 p-4 text-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="grid min-w-0 gap-2">
+                          <UserCell
+                            src={report.avatar || DEFAULT_AVATAR}
+                            alt={reporterAlt(report)}
+                            name={reporterName(report)}
+                            id={
+                              report.reporter_user_id !== 'automod'
+                                ? report.reporter_user_id
+                                : undefined
+                            }
+                          />
+                          <UserCell
+                            src={report.reported_avatar || DEFAULT_AVATAR}
+                            alt={
+                              report.reported_username ||
+                              report.reported_user_id
+                            }
+                            name={report.reported_username || 'Unknown'}
+                            id={report.reported_user_id}
+                          />
                         </div>
+                        {renderRowActions(report)}
                       </div>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={
-                            report.reported_avatar ||
-                            '/assets/app/default/avatar.webp'
-                          }
-                          alt={
-                            report.reported_username || report.reported_user_id
-                          }
-                          className="w-7 h-7 rounded-full"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-white font-medium truncate">
-                            {report.reported_username || 'Unknown'}
-                          </span>
-                          <span className="text-zinc-500 text-xs truncate">
-                            {report.reported_user_id}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={`${ADMIN_TD} max-w-xs truncate`}>
-                      {report.message}
-                    </td>
-                    <td className={ADMIN_TD}>{report.reason}</td>
-                    <td className={ADMIN_TD}>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs ${
-                          report.status === 'resolved'
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}
-                      >
-                        {report.status || 'pending'}
-                      </span>
-                    </td>
-                    <td className={ADMIN_TD}>
-                      {formatTimestamp(report.created_at)}
-                    </td>
-                    <td className={ADMIN_TD}>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size={btnSize}
-                          variant="ghost"
-                          onClick={() => handleViewReport(report)}
-                        >
-                          <MdVisibility size={16} />
-                        </Button>
-                        <Button
-                          size={btnSize}
-                          variant="success"
-                          onClick={() => handleMarkResolved(report.id)}
-                        >
-                          <MdTaskAlt size={16} />
-                        </Button>
-                        <Button
-                          size={btnSize}
-                          variant="danger"
-                          onClick={() => handleDismissReport(report.id)}
-                        >
-                          <MdDelete size={16} />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </AdminTable>
-          </div>
 
-          <div className="lg:hidden">
-            {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="py-3 border-b border-zinc-800/80 last:border-b-0 space-y-2"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src={report.avatar || '/assets/app/default/avatar.webp'}
-                    alt={
-                      report.reporter_user_id === 'automod'
-                        ? 'Automod'
-                        : report.reporter_username || report.reporter_user_id
-                    }
-                    className="w-7 h-7 rounded-full"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium text-sm truncate">
-                      {report.reporter_user_id === 'automod'
-                        ? 'Automod'
-                        : report.reporter_username || 'Unknown'}
-                    </p>
-                    {report.reporter_user_id !== 'automod' && (
-                      <p className="text-zinc-500 text-xs truncate">
-                        {report.reporter_user_id}
+                      <p>
+                        <span className="text-muted-foreground">Message:</span>{' '}
+                        {report.message}
                       </p>
-                    )}
-                  </div>
-                </div>
+                      <p>
+                        <span className="text-muted-foreground">Reason:</span>{' '}
+                        {report.reason}
+                      </p>
 
-                <div className="flex items-center gap-2">
-                  <img
-                    src={
-                      report.reported_avatar ||
-                      '/assets/app/default/avatar.webp'
-                    }
-                    alt={report.reported_username || report.reported_user_id}
-                    className="w-7 h-7 rounded-full"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-white font-medium text-sm truncate">
-                      {report.reported_username || 'Unknown'}
-                    </p>
-                    <p className="text-zinc-500 text-xs truncate">
-                      {report.reported_user_id}
-                    </p>
-                  </div>
+                      <div className="flex items-center justify-between gap-2">
+                        {renderStatus(report)}
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {formatTimestamp(report.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </>
+            )}
 
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Message:</span>{' '}
-                  {report.message}
-                </p>
-                <p className="text-zinc-300 text-sm">
-                  <span className="text-zinc-500">Reason:</span> {report.reason}
-                </p>
-
-                <div className="flex justify-between items-center">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs ${
-                      report.status === 'resolved'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
-                    }`}
-                  >
-                    {report.status || 'pending'}
-                  </span>
-                  <p className="text-zinc-500 text-xs">
-                    {formatTimestamp(report.created_at)}
-                  </p>
-                </div>
-
-                <div className="flex gap-1">
-                  <Button
-                    size={btnSize}
-                    variant="ghost"
-                    onClick={() => handleViewReport(report)}
-                  >
-                    <MdVisibility size={16} />
-                  </Button>
-                  <Button
-                    size={btnSize}
-                    variant="success"
-                    onClick={() => handleMarkResolved(report.id)}
-                  >
-                    <MdTaskAlt size={16} />
-                  </Button>
-                  <Button
-                    size={btnSize}
-                    variant="danger"
-                    onClick={() => handleDismissReport(report.id)}
-                  >
-                    <MdDelete size={16} />
-                  </Button>
-                </div>
+            <div className="flex flex-col items-center justify-end gap-2 sm:flex-row sm:gap-4">
+              <p className="text-sm text-muted-foreground tabular-nums">
+                Page {page} of {totalPages}
+                {total !== null ? ` · ${total.toLocaleString()} total` : ''}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChevronLeft />
+                  Previous
+                </Button>
+                <Button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                  <ChevronRight />
+                </Button>
               </div>
-            ))}
-          </div>
-
-          <AdminToolbar className="justify-center mt-4">
-            <Button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              variant="outline"
-              size={btnSize}
-            >
-              Previous
-            </Button>
-            <span className="text-zinc-500 text-sm px-2">
-              Page {page} of {totalPages}
-            </span>
-            <Button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              variant="outline"
-              size={btnSize}
-            >
-              Next
-            </Button>
-          </AdminToolbar>
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </AdminPage>
 
       <AdminModal
         open={showModal && !!selectedReport}
@@ -414,16 +455,17 @@ export default function AdminChatReports() {
                   setShowModal(false);
                   window.location.href = `/admin/bans?userId=${selectedReport.reported_user_id}&username=${encodeURIComponent(selectedReport.reported_username || '')}&reason=${encodeURIComponent(selectedReport.reason)}`;
                 }}
-                variant="danger"
-                size={adminDownsizeButtonSize('md')}
+                variant="destructive"
+                className="sm:mr-auto"
               >
-                <MdBlock size={16} className="mr-2" /> Ban User
+                <Ban />
+                Ban User
               </Button>
-              <Button
-                onClick={() => handleMarkResolved(selectedReport.id)}
-                variant="primary"
-                size={adminDownsizeButtonSize('md')}
-              >
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Close
+              </Button>
+              <Button onClick={() => handleMarkResolved(selectedReport.id)}>
+                <CheckCircle2 />
                 Mark Resolved
               </Button>
             </>
@@ -431,66 +473,62 @@ export default function AdminChatReports() {
         }
       >
         {selectedReport && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <img
-                src={selectedReport.avatar || '/assets/app/default/avatar.webp'}
-                alt={
-                  selectedReport.reporter_user_id === 'automod'
-                    ? 'Automod'
-                    : selectedReport.reporter_username ||
-                      selectedReport.reporter_user_id
-                }
-                className="w-10 h-10 rounded-full"
-              />
-              <p>
-                <strong>Reporter:</strong>{' '}
-                {selectedReport.reporter_user_id === 'automod'
-                  ? 'Automod'
-                  : `${selectedReport.reporter_username || 'Unknown'} (${selectedReport.reporter_user_id})`}
+          <>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <DetailRow label="Reporter">
+                <UserCell
+                  src={selectedReport.avatar || DEFAULT_AVATAR}
+                  alt={reporterAlt(selectedReport)}
+                  name={reporterName(selectedReport)}
+                  id={
+                    selectedReport.reporter_user_id !== 'automod'
+                      ? selectedReport.reporter_user_id
+                      : undefined
+                  }
+                />
+              </DetailRow>
+              <DetailRow label="Reported user">
+                <UserCell
+                  src={selectedReport.reported_avatar || DEFAULT_AVATAR}
+                  alt={
+                    selectedReport.reported_username ||
+                    selectedReport.reported_user_id
+                  }
+                  name={selectedReport.reported_username || 'Unknown'}
+                  id={selectedReport.reported_user_id}
+                />
+              </DetailRow>
+              <DetailRow label="Reason">{selectedReport.reason}</DetailRow>
+              <DetailRow label="Status">
+                {renderStatus(selectedReport, true)}
+              </DetailRow>
+              <DetailRow label="Session">
+                <a
+                  href={`/admin/sessions?search=${selectedReport.session_id}`}
+                  className="inline-flex items-center gap-1 font-mono text-xs break-all underline-offset-4 hover:underline"
+                >
+                  {selectedReport.session_id}
+                  <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
+                </a>
+              </DetailRow>
+              <DetailRow label="Timestamp">
+                <span className="tabular-nums">
+                  {formatTimestamp(selectedReport.created_at)}
+                </span>
+              </DetailRow>
+            </dl>
+
+            <div className="grid gap-3">
+              <h3 className="text-sm font-medium">Message</h3>
+              <p className="text-sm break-words whitespace-pre-wrap">
+                {selectedReport.message}
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              <img
-                src={
-                  selectedReport.reported_avatar ||
-                  '/assets/app/default/avatar.webp'
-                }
-                alt={
-                  selectedReport.reported_username ||
-                  selectedReport.reported_user_id
-                }
-                className="w-10 h-10 rounded-full"
-              />
-              <p>
-                <strong>Reported User:</strong>{' '}
-                {selectedReport.reported_username || 'Unknown'} (
-                {selectedReport.reported_user_id})
-              </p>
-            </div>
-            <p>
-              <strong>Message:</strong> {selectedReport.message}
-            </p>
-            <p>
-              <strong>Reason:</strong> {selectedReport.reason}
-            </p>
-            <p>
-              <strong>Session:</strong>{' '}
-              <a
-                href={`/admin/sessions?search=${selectedReport.session_id}`}
-                className="text-blue-400"
-              >
-                {selectedReport.session_id}{' '}
-                <MdOpenInNew size={16} className="inline" />
-              </a>
-            </p>
-            <p>
-              <strong>Timestamp:</strong>{' '}
-              {formatTimestamp(selectedReport.created_at)}
-            </p>
-          </div>
+          </>
         )}
       </AdminModal>
+
+      {confirmDialog}
     </AdminLayout>
   );
 }
