@@ -122,7 +122,8 @@ body {
   [data-slot='checkbox'],
   [data-slot='radio-group-item'],
   [data-slot='sidebar-menu-button'],
-  [data-slot='sidebar-menu-sub-button'] {
+  [data-slot='sidebar-menu-sub-button'],
+  [data-slot='slider-thumb'] {
     cursor: pointer;
   }
 

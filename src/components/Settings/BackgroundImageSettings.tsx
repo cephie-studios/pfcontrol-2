@@ -1,21 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Upload,
-  Trash2,
-  Image as ImageIcon,
-  X,
-  Eye,
-  EyeOff,
-  Star,
-  Shuffle,
-  User,
-  Loader2,
-  Camera,
+  AlertCircle,
   ExternalLink,
+  Image as ImageIcon,
+  Loader2,
+  Star,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
 import { fetchBackgrounds } from '../../utils/fetch/data';
 import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
+import SettingsSection from './SettingsSection';
+import SettingsGroup from './SettingsGroup';
+import SettingsRow from './SettingsRow';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -36,37 +43,37 @@ interface BackgroundImageSettingsProps {
   onChange: (updatedSettings: Settings) => void;
 }
 
+type BackgroundMode = 'none' | 'image' | 'random' | 'favorites';
+
+const TILE_CLASS =
+  'relative block aspect-video w-full overflow-hidden rounded-xl bg-muted outline-none transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring';
+const SELECTED_TILE_CLASS =
+  'ring-2 ring-primary ring-offset-2 ring-offset-card focus-visible:ring-primary';
+
 interface BackgroundImageItemProps {
   image: AvailableImage;
   index: number;
-  settings: Settings | null;
-  selectedImage: string | null;
-  loadedImages: Record<string, boolean>;
+  isSelected: boolean;
+  isFavorite: boolean;
+  isImageLoaded: boolean;
+  photoCredit: string | null;
   onSelectImage: (filename: string) => void;
   onToggleFavorite: (filename: string) => void;
   onImageLoad: (path: string) => void;
-  getPhotoCredit: (filename: string) => string | null;
 }
 
 function BackgroundImageItem({
   image,
   index,
-  settings,
-  selectedImage,
-  loadedImages,
+  isSelected,
+  isFavorite,
+  isImageLoaded,
+  photoCredit,
   onSelectImage,
   onToggleFavorite,
   onImageLoad,
-  getPhotoCredit,
 }: BackgroundImageItemProps) {
-  const photoCredit = getPhotoCredit(image.filename);
-  const isImageLoaded = loadedImages[image.path];
   const fullImageUrl = `${API_BASE_URL}${image.path}`;
-  const isFavorite = (settings?.backgroundImage?.favorites || []).includes(
-    image.filename
-  );
-  const isSelected = selectedImage === image.filename;
-
   const containerRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
 
@@ -87,61 +94,70 @@ function BackgroundImageItem({
     return () => observer.disconnect();
   }, []);
 
+  const label = photoCredit
+    ? `Background ${index + 1}, photo by @${photoCredit}`
+    : `Background ${index + 1}`;
+
   return (
-    <div
-      ref={containerRef}
-      className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-        isSelected
-          ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-          : 'border-zinc-700 hover:border-zinc-600'
-      }`}
-    >
-      <div
-        className="aspect-video relative"
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
         onClick={() => onSelectImage(image.filename)}
+        aria-pressed={isSelected}
+        aria-label={label}
+        title={photoCredit ? `Photo by @${photoCredit}` : undefined}
+        className={cn(TILE_CLASS, isSelected && SELECTED_TILE_CLASS)}
       >
         {!isImageLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-900 animate-pulse"></div>
+          <span className="absolute inset-0 animate-pulse bg-muted" />
         )}
         {inView && (
           <img
             src={fullImageUrl}
-            alt={`Background option ${index + 1}`}
-            className={`w-full h-full object-cover transition-all duration-300 ${
+            alt=""
+            className={cn(
+              'size-full object-cover transition-opacity duration-300',
               isImageLoaded ? 'opacity-100' : 'opacity-0'
-            } group-hover:brightness-110`}
+            )}
             onLoad={() => onImageLoad(image.path)}
           />
         )}
-        {isSelected && (
-          <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-            <Eye className="h-3 w-3 text-white" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(image.filename);
-        }}
-        className={`absolute top-2 left-2 p-1 rounded-full transition-colors ${
-          isFavorite
-            ? 'bg-yellow-500 text-white'
-            : 'bg-black/50 text-gray-300 hover:text-yellow-400'
-        }`}
-      >
-        <Star className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} />
       </button>
-      {photoCredit && isImageLoaded && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-          <div className="flex items-center text-xs text-white">
-            <User className="h-3 w-3 mr-1" />
-            <span>@{photoCredit}</span>
-          </div>
-        </div>
-      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon-sm"
+            className="absolute top-2 right-2"
+            aria-label={
+              isFavorite ? 'Remove from favorites' : 'Add to favorites'
+            }
+            aria-pressed={isFavorite}
+            onClick={() => onToggleFavorite(image.filename)}
+          >
+            <Star
+              className={cn(
+                isFavorite
+                  ? 'fill-amber-400 text-amber-400'
+                  : 'text-muted-foreground'
+              )}
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        </TooltipContent>
+      </Tooltip>
     </div>
+  );
+}
+
+function StatusLine({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      {children}
+    </p>
   );
 }
 
@@ -160,6 +176,12 @@ export default function BackgroundImageSettings({
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  // "Image" mode picked, but no image clicked yet. Stores the selection it was
+  // picked from so it resets as soon as the selection changes.
+  const [pendingImageFrom, setPendingImageFrom] = useState<
+    string | null | undefined
+  >(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAvailableImages();
@@ -287,6 +309,7 @@ export default function BackgroundImageSettings({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
+    if (uploading) return;
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       handleFile(files[0]);
@@ -305,6 +328,8 @@ export default function BackgroundImageSettings({
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = '';
     if (file) {
       handleFile(file);
     }
@@ -369,370 +394,261 @@ export default function BackgroundImageSettings({
     return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
   };
 
-  const favoriteCount = (settings?.backgroundImage?.favorites || []).length;
-  const selectedImage = settings?.backgroundImage?.selectedImage;
+  const favorites = settings?.backgroundImage?.favorites || [];
+  const favoriteCount = favorites.length;
+  const selectedImage = settings?.backgroundImage?.selectedImage ?? null;
+  const useCustomBackground = !!settings?.backgroundImage?.useCustomBackground;
+
+  const savedMode: BackgroundMode =
+    selectedImage === null || selectedImage === ''
+      ? 'none'
+      : selectedImage === 'random'
+        ? 'random'
+        : selectedImage === 'favorites'
+          ? 'favorites'
+          : 'image';
+  const mode: BackgroundMode =
+    savedMode !== 'image' &&
+    pendingImageFrom !== undefined &&
+    pendingImageFrom === selectedImage
+      ? 'image'
+      : savedMode;
+
+  const handleModeChange = (value: string) => {
+    if (!value || value === mode) return;
+    if (value === 'image') {
+      setPendingImageFrom(selectedImage);
+      return;
+    }
+    setPendingImageFrom(undefined);
+    if (value === 'none') handleSelectImage('');
+    else if (value === 'random') handleSelectImage('random');
+    else if (value === 'favorites' && favoriteCount > 0)
+      handleSelectImage('favorites');
+  };
+
+  const modeDescription: Record<BackgroundMode, string> = {
+    none: 'Uses the default background.',
+    image:
+      savedMode === 'image'
+        ? 'Uses the image selected below.'
+        : 'Pick an image below.',
+    random: 'Shows a different image each session.',
+    favorites: `Picks from your ${favoriteCount} starred ${
+      favoriteCount === 1 ? 'image' : 'images'
+    } each session.`,
+  };
+
+  const showCurrent =
+    savedMode === 'image' &&
+    !!selectedImage &&
+    (!!getPhotoCredit(selectedImage) || useCustomBackground);
+  const currentCredit = selectedImage ? getPhotoCredit(selectedImage) : null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="p-4 sm:p-6 border-b border-zinc-700/50">
-        <div className="flex items-center">
-          <div className="p-2 bg-cyan-500/20 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
-            <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-lg sm:text-xl font-semibold text-white">
-              Background Images
-            </h3>
-            <p className="text-zinc-400 text-xs sm:text-sm mt-1">
-              Choose from available backgrounds or upload your own custom image
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-4 sm:p-6">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center">
-            <X className="h-5 w-5 text-red-400 mr-3 flex-shrink-0" />
-            <p className="text-red-300 text-sm flex-1">{error}</p>
-            <button
+    <TooltipProvider>
+      <SettingsSection title="Background image" icon={ImageIcon}>
+        {error ? (
+          <div
+            role="alert"
+            className="flex items-center gap-2 px-1 text-sm text-destructive"
+          >
+            <AlertCircle className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1">{error}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Dismiss error"
               onClick={() => setError('')}
-              className="text-red-400 hover:text-red-300 ml-3"
             >
-              <X className="h-4 w-4" />
-            </button>
+              <X />
+            </Button>
           </div>
-        )}
+        ) : null}
 
-        {/* Current Background Display - Only for user-uploaded images */}
-        {settings?.backgroundImage?.selectedImage &&
-          !['random', 'favorites'].includes(
-            settings.backgroundImage.selectedImage
-          ) &&
-          settings.backgroundImage.selectedImage !== null &&
-          (getPhotoCredit(settings.backgroundImage.selectedImage) ||
-            settings.backgroundImage.useCustomBackground) && (
-            <div className="mb-6">
-              <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-                <Camera className="h-4 w-4 mr-2 text-cyan-400" />
-                Current Background
-              </h4>
-              <div className="relative w-full max-w-2xl h-48 rounded-xl overflow-hidden border border-zinc-700/50 group">
+        <SettingsGroup>
+          <SettingsRow label="Mode" description={modeDescription[mode]}>
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={handleModeChange}
+              aria-label="Background mode"
+              className="w-full sm:w-auto"
+            >
+              <ToggleGroupItem value="none">None</ToggleGroupItem>
+              <ToggleGroupItem value="image">Image</ToggleGroupItem>
+              <ToggleGroupItem value="random">Random</ToggleGroupItem>
+              <ToggleGroupItem
+                value="favorites"
+                disabled={favoriteCount === 0 && mode !== 'favorites'}
+              >
+                Favorites
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </SettingsRow>
+
+          {showCurrent ? (
+            <SettingsRow
+              label="Current background"
+              description={
+                currentCredit ? `Photo by @${currentCredit}` : undefined
+              }
+              stacked
+            >
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end">
                 <img
-                  src={
-                    getImageUrl(settings.backgroundImage.selectedImage) ??
-                    undefined
-                  }
+                  src={getImageUrl(selectedImage) ?? undefined}
                   alt="Current background"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="aspect-video w-full rounded-xl border bg-muted object-cover sm:max-w-sm"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
-                  <Button
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    variant="danger"
-                    size="sm"
-                    className="bg-none bg-red-600/90 hover:bg-none hover:bg-red-700 backdrop-blur-sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {deleting ? 'Deleting...' : 'Delete'}
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="self-start sm:self-end"
+                >
+                  {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </Button>
               </div>
-            </div>
-          )}
+            </SettingsRow>
+          ) : null}
 
-        {/* Upload Section */}
-        {!settings?.backgroundImage?.useCustomBackground && (
-          <div className="mb-6">
-            <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-              <Upload className="h-4 w-4 mr-2 text-blue-400" />
-              Upload Custom Background
-            </h4>
+          {!useCustomBackground ? (
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              className={`
-                                relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
-                                ${
-                                  dragActive
-                                    ? 'border-blue-400 bg-blue-500/10 scale-[1.02]'
-                                    : 'border-zinc-600 bg-zinc-800/30 hover:border-zinc-500 hover:bg-zinc-800/50'
-                                }
-                            `}
+              className={cn(
+                'transition-colors',
+                dragActive && !uploading && 'bg-accent'
+              )}
             >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploading}
-              />
-              <div className="flex flex-col items-center space-y-4">
-                <div
-                  className={`p-4 rounded-xl transition-colors duration-300 ${
-                    dragActive
-                      ? 'bg-blue-500/20'
-                      : uploading
-                        ? 'bg-blue-500/20'
-                        : 'bg-zinc-700/50'
-                  }`}
+              <SettingsRow
+                label="Custom image"
+                description={
+                  uploading
+                    ? 'Uploading image…'
+                    : dragActive
+                      ? 'Drop the image to upload it.'
+                      : 'Click Upload or drop an image here. Uploads are public.'
+                }
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInput}
+                  disabled={uploading}
+                  className="hidden"
+                  tabIndex={-1}
+                  aria-hidden
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
                 >
                   {uploading ? (
-                    <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <Upload className="h-8 w-8 text-zinc-400" />
+                    <Upload />
                   )}
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-white mb-2">
-                    {dragActive
-                      ? 'Drop your image here'
-                      : uploading
-                        ? 'Uploading...'
-                        : 'Upload Background Image'}
-                  </p>
-                  <p className="text-zinc-400 text-sm">
-                    Drag and drop an image here, or click to browse
-                  </p>
-                  <p className="text-sm text-red-400 mt-2">
-                    Pictures you upload are public
-                  </p>
-                </div>
-              </div>
+                  {uploading ? 'Uploading…' : 'Upload'}
+                </Button>
+              </SettingsRow>
             </div>
-          </div>
-        )}
+          ) : null}
+        </SettingsGroup>
 
-        {/* Your Cephie Snap pictures */}
-        <div className="mb-6">
-          <h4 className="text-white font-medium text-sm mb-3 flex items-center">
-            <Camera className="h-4 w-4 mr-2 text-cyan-400" />
-            Your Cephie Snap pictures
-          </h4>
-          <p className="text-zinc-400 text-xs mb-3">
-            Images you uploaded at{' '}
-            <a
-              href="https://cephie.app/media"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1"
-            >
-              cephie.app/media
-              <ExternalLink className="h-3 w-3" />
-            </a>{' '}
-            - select one as your background.
-          </p>
-          {loadingCephieSnap ? (
-            <div className="flex items-center justify-center p-8 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-              <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
-              <span className="text-zinc-400 text-sm">
-                Loading your Snap pictures...
-              </span>
-            </div>
-          ) : cephieSnapImages.length === 0 ? (
-            <div className="p-6 bg-zinc-800/30 rounded-xl border border-zinc-700/50 text-center">
-              <ImageIcon className="h-10 w-10 text-zinc-500 mx-auto mb-2" />
-              <p className="text-zinc-400 text-sm">
-                No Cephie Snap pictures yet.
-              </p>
+        <SettingsGroup title="Cephie Snap pictures">
+          <div className="flex flex-col gap-3 px-5 py-4">
+            <p className="text-sm text-muted-foreground">
+              Images you uploaded at{' '}
               <a
                 href="https://cephie.app/media"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 text-sm inline-flex items-center gap-1 mt-2"
+                className="inline-flex items-center gap-1 text-blue-400 hover:underline"
               >
-                Upload at cephie.app/media
-                <ExternalLink className="h-3 w-3" />
+                cephie.app/media
+                <ExternalLink className="size-3" />
               </a>
-            </div>
-          ) : (
-            <div className="max-h-[20rem] overflow-y-auto rounded-xl border border-zinc-700/50 p-1">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {cephieSnapImages.map((img) => {
-                  const isSelected = selectedImage === img.url;
-                  return (
-                    <div
-                      key={img.id}
-                      className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                        isSelected
-                          ? 'border-cyan-500 shadow-lg shadow-cyan-500/25'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                      onClick={() => handleSelectImage(img.url)}
-                    >
-                      <div className="aspect-video relative bg-zinc-800">
+              .
+            </p>
+            {loadingCephieSnap ? (
+              <StatusLine>
+                <Loader2 className="size-4 animate-spin" />
+                Loading your Snap pictures…
+              </StatusLine>
+            ) : cephieSnapImages.length === 0 ? (
+              <StatusLine>No Cephie Snap pictures yet.</StatusLine>
+            ) : (
+              <div className="-m-1 max-h-80 overflow-y-auto p-1">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {cephieSnapImages.map((img) => {
+                    const isSelected = selectedImage === img.url;
+                    return (
+                      <button
+                        key={img.id}
+                        type="button"
+                        onClick={() => handleSelectImage(img.url)}
+                        aria-pressed={isSelected}
+                        aria-label="Cephie Snap picture"
+                        className={cn(
+                          TILE_CLASS,
+                          isSelected && SELECTED_TILE_CLASS
+                        )}
+                      >
                         <img
                           src={img.url}
-                          alt="Cephie Snap"
-                          className="w-full h-full object-cover group-hover:brightness-110 transition-all"
+                          alt=""
+                          loading="lazy"
+                          className="size-full object-cover"
                         />
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1">
-                            <Eye className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Available Backgrounds */}
-        <div>
-          <h4 className="text-white font-medium text-sm mb-4 flex items-center">
-            <ImageIcon className="h-4 w-4 mr-2 text-emerald-400" />
-            Available Backgrounds
-          </h4>
-
-          {loadingImages ? (
-            <div className="flex items-center justify-center p-12 bg-zinc-800/30 rounded-xl border border-zinc-700/50">
-              <Loader2 className="h-6 w-6 animate-spin text-cyan-400 mr-3" />
-              <span className="text-zinc-400">Loading backgrounds...</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-              {/* No Background */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === null || selectedImage === ''
-                    ? 'border-emerald-500 shadow-lg shadow-emerald-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() => handleSelectImage('')}
-              >
-                <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <EyeOff className="h-8 w-8 text-zinc-400 mx-auto mb-2 group-hover:text-zinc-300 transition-colors" />
-                    <span className="text-zinc-400 text-xs group-hover:text-zinc-300 transition-colors">
-                      No Background
-                    </span>
-                  </div>
+                      </button>
+                    );
+                  })}
                 </div>
-                {(selectedImage === null || selectedImage === '') && (
-                  <div className="absolute top-2 right-2 bg-emerald-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
               </div>
-
-              {/* Random */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'random'
-                    ? 'border-purple-500 shadow-lg shadow-purple-500/25'
-                    : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() => handleSelectImage('random')}
-              >
-                <div className="aspect-video bg-gradient-to-br from-purple-800 to-purple-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <Shuffle className="h-8 w-8 text-purple-400 mx-auto mb-2 group-hover:text-purple-300 transition-colors" />
-                    <span className="text-purple-400 text-xs group-hover:text-purple-300 transition-colors">
-                      Random
-                    </span>
-                  </div>
-                </div>
-                {selectedImage === 'random' && (
-                  <div className="absolute top-2 right-2 bg-purple-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Favorites */}
-              <div
-                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] border-2 group ${
-                  selectedImage === 'favorites'
-                    ? 'border-yellow-500 shadow-lg shadow-yellow-500/25'
-                    : favoriteCount === 0
-                      ? 'border-zinc-600 opacity-50 cursor-not-allowed'
-                      : 'border-zinc-700 hover:border-zinc-600'
-                }`}
-                onClick={() =>
-                  favoriteCount > 0 && handleSelectImage('favorites')
-                }
-              >
-                <div className="aspect-video bg-gradient-to-br from-yellow-800 to-yellow-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <Star className="h-8 w-8 text-yellow-400 mx-auto mb-2 group-hover:text-yellow-300 transition-colors" />
-                    <span className="text-yellow-400 text-xs group-hover:text-yellow-300 transition-colors">
-                      Favorites ({favoriteCount})
-                    </span>
-                  </div>
-                </div>
-                {selectedImage === 'favorites' && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 rounded-full p-1">
-                    <Eye className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Available Images */}
-              {availableImages.map((image, index) => (
-                <BackgroundImageItem
-                  key={index}
-                  image={image}
-                  index={index}
-                  settings={settings}
-                  selectedImage={selectedImage ?? null}
-                  loadedImages={loadedImages}
-                  onSelectImage={handleSelectImage}
-                  onToggleFavorite={handleToggleFavorite}
-                  onImageLoad={handleImageLoad}
-                  getPhotoCredit={getPhotoCredit}
-                />
-              ))}
-            </div>
-          )}
-          {availableImages.length === 0 && !loadingImages && (
-            <div className="text-center p-8 text-gray-400">
-              <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No background images available yet.</p>
-              <p className="text-xs mt-2">
-                Upload your own image or wait for images to be added.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-500/20 rounded-lg">
-          <div className="flex items-start">
-            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-            <div>
-              <h4 className="text-blue-300 font-medium text-sm mb-1">
-                How it works
-              </h4>
-              <p className="text-blue-200/80 text-xs sm:text-sm leading-relaxed">
-                Select "No Background" for the default transparent background,
-                "Random" for any available image each session, "Favorites" for
-                random selection from your starred images only, or choose a
-                specific image. Click the star to add/remove favorites. Remember
-                to save your changes!
-              </p>
-            </div>
+            )}
           </div>
-        </div>
-      </div>
+        </SettingsGroup>
 
-      <style>{`
-                @keyframes skeletonPulse {
-                    0% { background-position: -200% 0; }
-                    100% { background-position: 200% 0; }
-                }
-                .skeleton-loading {
-                    background: linear-gradient(110deg, rgba(55, 65, 81, 0.5) 8%, rgba(75, 85, 99, 0.8) 18%, rgba(55, 65, 81, 0.5) 33%);
-                    background-size: 200% 100%;
-                    animation: skeletonPulse 1.5s ease-in-out infinite;
-                }
-            `}</style>
-    </div>
+        <SettingsGroup title="Backgrounds">
+          <div className="px-5 py-4">
+            {loadingImages ? (
+              <StatusLine>
+                <Loader2 className="size-4 animate-spin" />
+                Loading backgrounds…
+              </StatusLine>
+            ) : availableImages.length === 0 ? (
+              <StatusLine>No background images available yet.</StatusLine>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {availableImages.map((image, index) => (
+                  <BackgroundImageItem
+                    key={image.filename}
+                    image={image}
+                    index={index}
+                    isSelected={selectedImage === image.filename}
+                    isFavorite={favorites.includes(image.filename)}
+                    isImageLoaded={!!loadedImages[image.path]}
+                    photoCredit={getPhotoCredit(image.filename)}
+                    onSelectImage={handleSelectImage}
+                    onToggleFavorite={handleToggleFavorite}
+                    onImageLoad={handleImageLoad}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </SettingsGroup>
+      </SettingsSection>
+    </TooltipProvider>
   );
 }

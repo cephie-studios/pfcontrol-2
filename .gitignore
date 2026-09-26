@@ -37,9 +37,6 @@ astro/node_modules
 *.njsproj
 *.sln
 *.sw?
-.env.development
-.env.production
-.env.canary
 
 public/developer-api-docs.json
 docs/developer-api.generated.md
@@ -47,3 +44,9 @@ docs/developer-api.generated.md
 *.toml
 .reasonix
 graphify-out
+
+*.md
+!README.md
+!CODE_OF_CONDUCT.md
+!CONTRIBUTING.md
+!SECURITY.md

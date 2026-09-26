@@ -41,7 +41,7 @@ export function useAdminConfirm() {
       open={options !== null}
       onOpenChange={(open) => !open && settle(false)}
     >
-      <AlertDialogContent>
+      <AlertDialogContent variant={options?.destructive ? 'danger' : 'primary'}>
         <AlertDialogHeader>
           <AlertDialogTitle>{options?.title}</AlertDialogTitle>
           <AlertDialogDescription>

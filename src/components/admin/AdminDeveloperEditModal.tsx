@@ -645,6 +645,7 @@ export default function AdminDeveloperEditModal({
         open={!!revealedSecret}
         onClose={() => setRevealedSecret(null)}
         title="Key approved: copy the secret now"
+        variant="success"
         description="This is shown only once."
         size="md"
         footer={

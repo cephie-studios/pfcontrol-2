@@ -1,28 +1,104 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import {
+  CircleCheck,
+  CircleDashed,
+  ExternalLink,
+  GraduationCap,
+  Link2,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  Unlink,
+  UserRound,
+} from 'lucide-react';
+import { SiDiscord, SiRoblox } from 'react-icons/si';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { useToast } from '../../hooks/useToast';
-import {
-  Link2,
-  ExternalLink,
-  UserX,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  Shield,
-  AlertTriangle,
-  MessageSquare,
-} from 'lucide-react';
-import { SiRoblox, SiDiscord } from 'react-icons/si';
 import { updateTutorialStatus } from '../../utils/fetch/auth';
-import Button from '../common/Button';
-import { useNavigate } from 'react-router';
 import type { Settings } from '../../types/settings';
 import PrivacySettings from './PrivacySettings';
-import ConfirmationDialog from '../common/ConfirmationDialog';
+import SettingsSection from './SettingsSection';
+import SettingsGroup from './SettingsGroup';
+import SettingsRow from './SettingsRow';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AccountSettingsProps {
   settings: Settings | null;
   onChange: (updatedSettings: Settings) => void;
+}
+
+const LINK_ERROR_MESSAGES: Record<string, string> = {
+  roblox_auth_failed: 'Failed to link Roblox account',
+  vatsim_auth_failed: 'Failed to link VATSIM account',
+  vatsim_token_failed: 'Failed to link VATSIM account',
+  vatsim_link_failed: 'Failed to link VATSIM account',
+  vatsim_missing_code: 'Failed to link VATSIM account',
+  vatsim_not_configured: 'VATSIM linking is currently unavailable',
+};
+
+function LinkStatus({ linked, text }: { linked: boolean; text: string }) {
+  const Icon = linked ? CircleCheck : CircleDashed;
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <Icon
+        aria-hidden
+        className={
+          linked
+            ? 'size-4 shrink-0 text-emerald-400'
+            : 'size-4 shrink-0 text-muted-foreground'
+        }
+      />
+      <span className="truncate">{text}</span>
+    </span>
+  );
+}
+
+type ConfirmDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmText: string;
+  onConfirm: () => void;
+};
+
+function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText,
+  onConfirm,
+}: ConfirmDialogProps) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent variant="danger" className="shadcn-scope">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={onConfirm}>
+            {confirmText}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
 export default function AccountSettings({
@@ -31,9 +107,11 @@ export default function AccountSettings({
 }: AccountSettingsProps) {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const { showError } = useToast();
-  const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
+  const { showError, showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledLinkParams = useRef(false);
   const [showVatsimConfirm, setShowVatsimConfirm] = useState(false);
+  const [vatsimRefreshing, setVatsimRefreshing] = useState(false);
   const [showRobloxConfirm, setShowRobloxConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
@@ -43,12 +121,70 @@ export default function AccountSettings({
     user?.vatsimRatingLong
   );
 
+  useEffect(() => {
+    if (handledLinkParams.current) return;
+    const linked = searchParams.get('vatsim_linked') === 'true';
+    const error = searchParams.get('error');
+    if (!linked && !error) return;
+    handledLinkParams.current = true;
+
+    if (linked) {
+      showToast('VATSIM account linked', 'success');
+      refreshUser();
+    }
+    if (error) {
+      showError(LINK_ERROR_MESSAGES[error] ?? 'Failed to link account');
+    }
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('vatsim_linked');
+        next.delete('error');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams, showToast, showError, refreshUser]);
+
   const handleLinkRoblox = () => {
     window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
   };
 
   const handleLinkVatsim = () => {
     window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim?force=1`;
+  };
+
+  const handleRefreshVatsim = async () => {
+    setVatsimRefreshing(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/api/auth/vatsim/refresh`,
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        await refreshUser();
+        showToast(
+          data.changed
+            ? `VATSIM rating updated to ${data.ratingShort ?? 'unknown'}`
+            : 'VATSIM rating is already up to date',
+          'success'
+        );
+      } else if (res.status === 429) {
+        showError('Please wait a moment before refreshing again');
+      } else {
+        showError('Failed to refresh VATSIM rating');
+      }
+    } catch (e) {
+      console.error('Refresh VATSIM error:', e);
+      showError('Failed to refresh VATSIM rating');
+    } finally {
+      setVatsimRefreshing(false);
+    }
   };
 
   const handleUnlinkVatsim = async () => {
@@ -143,357 +279,187 @@ export default function AccountSettings({
     window.open('https://cephie.app/discord', '_blank');
   };
 
+  const vatsimStatus = isVatsimLinked
+    ? [
+        user?.vatsimCid ? `Linked as ${user.vatsimCid}` : 'Linked',
+        user?.vatsimRatingShort ? `(${user.vatsimRatingShort})` : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : 'Not linked';
+
   return (
-    <div className="bg-zinc-900 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-zinc-700/50 p-4 sm:p-6 z-1">
-      <div className="flex items-center mb-4 sm:mb-6">
-        <div className="p-2 bg-blue-500/20 rounded-lg mr-3 flex-shrink-0">
-          <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white truncate">
-            Account Settings
-          </h3>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
-            Manage your account preferences and connections
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4 sm:space-y-6">
-        {/* Settings Section */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Settings
-            </h3>
-          </div>
-          {/* Restart Tutorial */}
-          <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                  <RotateCcw className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                    Restart Tutorial
-                  </h4>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                    Restart the guided tutorial to learn PFControl features
-                    again.
-                  </p>
-                </div>
+    <SettingsSection title="Account" icon={UserRound}>
+      {user ? (
+        <SettingsGroup>
+          <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar size="lg">
+                {user.avatar ? <AvatarImage src={user.avatar} alt="" /> : null}
+                <AvatarFallback>
+                  {user.username.slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 space-y-0.5">
+                <p className="truncate text-sm font-medium">{user.username}</p>
+                <p className="text-sm text-muted-foreground">
+                  Bio, stats visibility and customization are edited on your
+                  profile.
+                </p>
               </div>
-              <Button
-                onClick={handleRestartTutorial}
-                variant="outline"
-                size="sm"
-                className="ring-yellow-700/50 text-yellow-400 hover:bg-none hover:bg-yellow-900/20 text-xs whitespace-nowrap flex-shrink-0"
-              >
-                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Restart</span>
-              </Button>
             </div>
+            <Button variant="outline" asChild className="sm:shrink-0">
+              <Link to={`/user/${encodeURIComponent(user.username)}`}>
+                <UserRound />
+                View profile
+              </Link>
+            </Button>
           </div>
-        </div>
+        </SettingsGroup>
+      ) : null}
 
-        {/* Privacy Settings Section - Collapsible */}
-        <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl sm:rounded-2xl overflow-hidden">
-          <div className="w-full p-3 sm:p-4 md:p-6 border-b border-zinc-700/50">
-            <div className="flex items-center justify-between gap-3">
-              <div
-                className="flex items-center flex-1 min-w-0 cursor-pointer"
-                onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
-              >
-                <div className="p-2 bg-purple-500/20 rounded-lg mr-3 flex-shrink-0">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-purple-400" />
-                </div>
-                <div className="text-left min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white truncate">
-                    Privacy Settings
-                  </h3>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 md:mt-1 line-clamp-1 sm:line-clamp-none">
-                    Control what information is displayed on your profile
-                  </p>
-                </div>
-              </div>
+      <SettingsGroup title="Linked accounts">
+        <SettingsRow
+          icon={<SiRoblox />}
+          label="Roblox"
+          description={
+            <LinkStatus
+              linked={!!user?.robloxUsername}
+              text={
+                user?.robloxUsername
+                  ? `Linked as @${user.robloxUsername}`
+                  : 'Not linked'
+              }
+            />
+          }
+        >
+          {user?.robloxUsername ? (
+            <Button
+              variant="outline"
+              onClick={() => setShowRobloxConfirm(true)}
+            >
+              <Unlink />
+              Unlink
+            </Button>
+          ) : (
+            <Button onClick={handleLinkRoblox}>
+              <Link2 />
+              Link
+            </Button>
+          )}
+        </SettingsRow>
+        <SettingsRow
+          icon={
+            <img
+              src="/assets/images/vatsim.webp"
+              alt=""
+              className="size-full rounded-full object-cover"
+            />
+          }
+          label="VATSIM"
+          description={
+            <LinkStatus linked={isVatsimLinked} text={vatsimStatus} />
+          }
+        >
+          {isVatsimLinked ? (
+            <>
               <Button
-                onClick={() => setIsPrivacyExpanded(!isPrivacyExpanded)}
                 variant="outline"
-                size="sm"
-                className="ring-zinc-600 text-zinc-300 hover:bg-none hover:bg-zinc-800 p-2 flex-shrink-0"
+                onClick={handleRefreshVatsim}
+                disabled={vatsimRefreshing}
               >
-                {isPrivacyExpanded ? (
-                  <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                ) : (
-                  <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                )}
+                <RefreshCw className={vatsimRefreshing ? 'animate-spin' : ''} />
+                Refresh
               </Button>
-            </div>
-          </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowVatsimConfirm(true)}
+              >
+                <Unlink />
+                Unlink
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleLinkVatsim}>
+              <Link2 />
+              Link
+            </Button>
+          )}
+        </SettingsRow>
+      </SettingsGroup>
 
-          {/* Expandable Content */}
-          <div
-            className={`transition-all duration-300 ease-in-out ${
-              isPrivacyExpanded
-                ? 'max-h-[1000px] opacity-100'
-                : 'max-h-0 opacity-0 overflow-hidden'
-            }`}
+      <PrivacySettings settings={settings} onChange={onChange} />
+
+      <SettingsGroup title="Help">
+        <SettingsRow
+          icon={<GraduationCap className="text-blue-400" />}
+          label="Tutorial"
+          description="Walk through the PFControl features again."
+        >
+          <Button variant="outline" onClick={handleRestartTutorial}>
+            <RotateCcw />
+            Restart
+          </Button>
+        </SettingsRow>
+        <SettingsRow
+          icon={<SiDiscord className="text-[#5865F2]" />}
+          label="Discord"
+          description="Get support, report bugs or suggest features."
+        >
+          <Button variant="outline" onClick={handleJoinDiscord}>
+            <ExternalLink />
+            Join Discord
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
+
+      <SettingsGroup title="Danger zone">
+        <SettingsRow
+          icon={<Trash2 className="text-destructive" />}
+          label="Delete account"
+          description="Permanently deletes your sessions, settings and data."
+        >
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleteInProgress}
           >
-            <div className="p-3 sm:p-4 md:p-6">
-              <PrivacySettings settings={settings} onChange={onChange} />
-            </div>
-          </div>
-        </div>
+            {deleteInProgress ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
+            {deleteInProgress ? 'Deleting…' : 'Delete account'}
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
-        {/* Account Connections Section */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Account Connections
-            </h3>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            {/* Roblox Account */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <SiRoblox className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      Roblox Account
-                    </h4>
-                    {user?.robloxUsername ? (
-                      <div className="flex items-center space-x-1 sm:space-x-2 mt-0.5 sm:mt-1">
-                        <span className="text-green-400 text-xs sm:text-sm font-medium">
-                          Connected
-                        </span>
-                        <span className="text-zinc-500 hidden sm:inline">
-                          •
-                        </span>
-                        <span className="text-zinc-300 text-xs sm:text-sm truncate">
-                          @{user.robloxUsername}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-1">
-                        Link your Roblox account
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0">
-                  {user?.robloxUsername ? (
-                    <Button
-                      onClick={() => setShowRobloxConfirm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="ring-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 text-xs whitespace-nowrap"
-                    >
-                      <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Unlink</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleLinkRoblox}
-                      variant="primary"
-                      size="sm"
-                      className="text-xs whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Link Account</span>
-                      <span className="sm:hidden">Link</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* VATSIM Account */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <img
-                      src="/assets/images/vatsim.webp"
-                      alt="VATSIM"
-                      className="w-6 h-6 sm:w-8 sm:h-8"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      VATSIM Account
-                    </h4>
-                    {isVatsimLinked ? (
-                      <div className="flex items-center space-x-1 sm:space-x-2 mt-0.5 sm:mt-1">
-                        <span className="text-green-400 text-xs sm:text-sm font-medium">
-                          Connected
-                        </span>
-                        <span className="text-zinc-500 hidden sm:inline">
-                          •
-                        </span>
-                        <span className="text-zinc-300 text-xs sm:text-sm truncate">
-                          {user?.vatsimCid}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                        Link your VATSIM account to show controller rating on
-                        your profile
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  {isVatsimLinked ? (
-                    <Button
-                      onClick={() => setShowVatsimConfirm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="ring-red-700/50 text-red-400 hover:bg-none hover:bg-red-900/20 text-xs whitespace-nowrap"
-                    >
-                      <UserX className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Unlink</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleLinkVatsim}
-                      variant="primary"
-                      size="sm"
-                      className="bg-none bg-emerald-600 hover:bg-none hover:bg-emerald-700 border-emerald-600 text-xs whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Link Account</span>
-                      <span className="sm:hidden">Link</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Danger Zone */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
-              Support
-            </h3>
-          </div>
-
-          <div className="space-y-3 sm:space-y-4">
-            {/* Join Discord */}
-            <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <SiDiscord className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-white font-semibold text-sm sm:text-base truncate">
-                      Join Our Discord
-                    </h4>
-                    <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                      Get support, report bugs, or suggest new features to
-                      improve PFControl.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleJoinDiscord}
-                  variant="primary"
-                  size="sm"
-                  className="bg-none bg-indigo-600 hover:bg-none hover:bg-indigo-700 border-indigo-600 text-sm whitespace-nowrap flex-shrink-0"
-                >
-                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Join Discord</span>
-                  <span className="sm:hidden">Join</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Delete Account */}
-          <div className="bg-zinc-800/50 rounded-lg sm:rounded-xl border-2 border-zinc-700/50 p-3 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 sm:w-7 sm:h-7 text-red-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-red-400 font-semibold text-sm sm:text-base truncate">
-                    Delete Account
-                  </h4>
-                  <p className="text-zinc-400 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">
-                    Permanently delete your account and all associated data.
-                    This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowDeleteConfirm(true)}
-                variant="danger"
-                size="sm"
-                disabled={deleteInProgress}
-                className="text-sm whitespace-nowrap flex-shrink-0"
-              >
-                {deleteInProgress ? (
-                  <>
-                    <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Delete Account</span>
-                    <span className="sm:hidden">Delete</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Confirmation Dialogs */}
-      <ConfirmationDialog
-        isOpen={showVatsimConfirm}
-        onConfirm={handleUnlinkVatsim}
-        onCancel={() => setShowVatsimConfirm(false)}
-        title="Unlink VATSIM Account"
-        description="Are you sure you want to unlink your VATSIM account? Your controller rating will no longer be displayed on your profile."
+      <ConfirmDialog
+        open={showRobloxConfirm}
+        onOpenChange={setShowRobloxConfirm}
+        title="Unlink Roblox account?"
+        description="You will need to link it again to use Roblox-related features."
         confirmText="Unlink"
-        cancelText="Cancel"
-        variant="danger"
-        icon={<AlertTriangle size={24} />}
-      />
-
-      <ConfirmationDialog
-        isOpen={showRobloxConfirm}
         onConfirm={handleUnlinkRoblox}
-        onCancel={() => setShowRobloxConfirm(false)}
-        title="Unlink Roblox Account"
-        description="Are you sure you want to unlink your Roblox account? You will need to link it again to use Roblox-related features."
-        confirmText="Unlink"
-        cancelText="Cancel"
-        variant="danger"
-        icon={<AlertTriangle size={24} />}
       />
 
-      <ConfirmationDialog
-        isOpen={showDeleteConfirm}
-        onConfirm={handleDeleteAccount}
-        onCancel={() => setShowDeleteConfirm(false)}
-        title="Delete Account"
-        description="Are you sure you want to permanently delete your account? This will delete all your sessions, settings, and data. This action cannot be undone."
-        confirmText="Delete My Account"
-        cancelText="Cancel"
-        variant="danger"
-        icon={<AlertTriangle size={24} />}
+      <ConfirmDialog
+        open={showVatsimConfirm}
+        onOpenChange={setShowVatsimConfirm}
+        title="Unlink VATSIM account?"
+        description="Your controller rating will no longer be shown on your profile."
+        confirmText="Unlink"
+        onConfirm={handleUnlinkVatsim}
       />
-    </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete account?"
+        description="This permanently deletes all your sessions, settings and data. This cannot be undone."
+        confirmText="Delete my account"
+        onConfirm={handleDeleteAccount}
+      />
+    </SettingsSection>
   );
 }

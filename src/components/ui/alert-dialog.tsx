@@ -42,12 +42,20 @@ function AlertDialogOverlay({
   );
 }
 
+const ALERT_DIALOG_BORDER = {
+  primary: 'border-blue-600',
+  danger: 'border-red-600',
+  success: 'border-green-600',
+} as const;
+
 function AlertDialogContent({
   className,
   size = 'default',
+  variant = 'primary',
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
   size?: 'default' | 'sm';
+  variant?: keyof typeof ALERT_DIALOG_BORDER;
 }) {
   return (
     <AlertDialogPortal>
@@ -55,8 +63,10 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         data-size={size}
+        data-variant={variant}
         className={cn(
-          'group/alert-dialog-content fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border bg-background p-6 shadow-lg duration-200 data-[size=sm]:max-w-xs data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[size=default]:sm:max-w-lg',
+          'group/alert-dialog-content fixed top-[42%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border-2 bg-background p-5 shadow-lg duration-200 data-[size=sm]:max-w-xs data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[size=default]:sm:max-w-lg',
+          ALERT_DIALOG_BORDER[variant],
           className
         )}
         {...props}

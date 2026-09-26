@@ -716,6 +716,7 @@ export default function AdminDevelopers() {
         onClose={closeReject}
         title="Reject application"
         size="sm"
+        variant="danger"
         footer={
           <>
             <Button type="button" variant="outline" onClick={closeReject}>
