@@ -165,7 +165,8 @@ export async function dismissDeveloperAdminNotice(userId: string) {
 export async function updateDeveloperProfilePermissions(
   userId: string,
   approvedScopes: string[],
-  allKeysScopes: string[]
+  allKeysScopes: string[],
+  appName: string | null
 ) {
   return mainDb.transaction().execute(async (trx) => {
     const profile = await trx
@@ -173,6 +174,7 @@ export async function updateDeveloperProfilePermissions(
       .set({
         approved_scopes: sql`CAST(${JSON.stringify(approvedScopes)} AS jsonb)`,
         all_keys_scopes: sql`CAST(${JSON.stringify(allKeysScopes)} AS jsonb)`,
+        app_name: appName,
         updated_at: new Date(),
       })
       .where('user_id', '=', userId)
@@ -656,6 +658,7 @@ export async function listApprovedDevelopersSummary() {
     allKeysScopes: parseStringArray(p.all_keys_scopes).filter((s) =>
       parseStringArray(p.approved_scopes).includes(s)
     ),
+    appName: p.app_name ?? null,
     keysActive: keyCounts.get(p.user_id)?.usable ?? 0,
     keysPending: keyCounts.get(p.user_id)?.pending ?? 0,
     keysTotal: keyCounts.get(p.user_id)?.total ?? 0,

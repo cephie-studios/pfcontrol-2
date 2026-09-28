@@ -18,6 +18,13 @@ import {
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { redisConnection } from '../db/connection.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
+import {
+  decideExternalAcarsClaimRequest,
+  getExternalAcarsClaim,
+  getExternalAcarsClaimRequest,
+  promoteDueExternalAcarsClaimRequest,
+  type ExternalAcarsClaimRequest,
+} from '../utils/externalAcarsClaims.js';
 
 interface SessionUser {
   id: string;
@@ -319,6 +326,67 @@ async function generateAutoATIS(
   }
 }
 
+export type SessionClaimUpdate =
+  | {
+      status: 'pending';
+      requestId: string;
+      requesterName: string;
+      decidesAt: string;
+      remainingMs: number;
+    }
+  | {
+      status: 'allowed' | 'declined';
+      requestId: string;
+      requesterName: string;
+      by: string | null;
+    }
+  | { status: 'none' };
+
+let sessionUsersIo: SocketServer | null = null;
+
+function pendingClaimUpdate(
+  request: ExternalAcarsClaimRequest
+): SessionClaimUpdate {
+  return {
+    status: 'pending',
+    requestId: request.requestId,
+    requesterName: request.requesterName,
+    decidesAt: request.decidesAt,
+    remainingMs: Math.max(0, Date.parse(request.decidesAt) - Date.now()),
+  };
+}
+
+export function emitSessionClaimUpdate(
+  sessionId: string,
+  update: SessionClaimUpdate
+) {
+  sessionUsersIo?.to(sessionId).emit('sessionClaimUpdate', update);
+}
+
+export function announceSessionClaimRequest(
+  request: ExternalAcarsClaimRequest
+) {
+  emitSessionClaimUpdate(request.sessionId, pendingClaimUpdate(request));
+  const delay = Math.max(0, Date.parse(request.decidesAt) - Date.now()) + 250;
+  setTimeout(async () => {
+    try {
+      const claim =
+        (await promoteDueExternalAcarsClaimRequest(request.sessionId)) ??
+        (await getExternalAcarsClaim(request.sessionId));
+      if (claim?.keyId === request.keyId) {
+        emitSessionClaimUpdate(request.sessionId, {
+          status: 'allowed',
+          requestId: request.requestId,
+          requesterName: request.requesterName,
+          by: null,
+        });
+      }
+    } catch (error) {
+      console.error('[SessionClaims] Failed to promote claim request:', error);
+    }
+  }, delay);
+}
+
 export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/session-users',
@@ -336,6 +404,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       threshold: 1024,
     },
   }) as SessionUsersServer;
+  sessionUsersIo = io;
 
   const scheduleATISGeneration = (sessionId: string, config: unknown) => {
     if (atisTimers.has(sessionId)) {
@@ -543,6 +612,53 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
           void onAtisChanged(sessionId);
         } catch (error) {
           console.error('Error handling ATIS update:', error);
+        }
+      });
+
+      try {
+        const pendingClaim = await getExternalAcarsClaimRequest(sessionId);
+        if (pendingClaim && Date.now() < Date.parse(pendingClaim.decidesAt)) {
+          socket.emit('sessionClaimUpdate', pendingClaimUpdate(pendingClaim));
+        }
+      } catch (error) {
+        console.error('Error sending pending session claim:', error);
+      }
+
+      socket.on('sessionClaimDecide', async (payload, ack) => {
+        const reply = typeof ack === 'function' ? ack : () => {};
+        const decision = payload?.decision;
+        if (decision !== 'allow' && decision !== 'decline') {
+          reply({ ok: false, error: 'Invalid decision' });
+          return;
+        }
+        try {
+          const result = await decideExternalAcarsClaimRequest(
+            sessionId,
+            decision
+          );
+          if (!result.ok) {
+            reply({
+              ok: false,
+              error:
+                result.reason === 'expired'
+                  ? 'The request already went through.'
+                  : 'There is no pending request anymore.',
+            });
+            return;
+          }
+          console.log(
+            `[SessionClaims] ${user.username} ${decision === 'allow' ? 'allowed' : 'declined'} claim on ${sessionId} (key ${result.request.keyId})`
+          );
+          emitSessionClaimUpdate(sessionId, {
+            status: decision === 'allow' ? 'allowed' : 'declined',
+            requestId: result.request.requestId,
+            requesterName: result.request.requesterName,
+            by: typeof user.username === 'string' ? user.username : null,
+          });
+          reply({ ok: true });
+        } catch (error) {
+          console.error('Error deciding session claim:', error);
+          reply({ ok: false, error: 'Failed to update the request.' });
         }
       });
 

@@ -9,6 +9,7 @@ import {
   Code,
   Database,
   FileText,
+  Flag,
   GitMerge,
   Image,
   MessageSquareWarning,
@@ -92,6 +93,12 @@ export const ADMIN_NAV: AdminNavSection[] = [
         label: 'Chat Reports',
         path: '/admin/chat-reports',
         permission: 'chat_reports',
+      },
+      {
+        icon: Flag,
+        label: 'Claim Reports',
+        path: '/admin/claim-reports',
+        permission: 'admin',
       },
       {
         icon: Plane,

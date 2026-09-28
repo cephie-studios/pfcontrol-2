@@ -192,7 +192,8 @@ export async function hasSurveyResponse(
 export async function insertSurveyResponse(
   surveyId: string,
   userId: string,
-  answers: SurveyAnswers
+  answers: SurveyAnswers,
+  durationMs: number | null
 ): Promise<boolean> {
   const result = await mainDb
     .insertInto('survey_responses')
@@ -200,6 +201,7 @@ export async function insertSurveyResponse(
       survey_id: surveyId,
       user_id: userId,
       answers: sql`CAST(${JSON.stringify(answers)} AS jsonb)`,
+      duration_ms: durationMs,
     })
     .onConflict((oc) => oc.columns(['survey_id', 'user_id']).doNothing())
     .executeTakeFirst();
@@ -218,6 +220,20 @@ export async function getSurveyAnswerCombinations(
   return rows
     .map((r) => ({ answers: parseAnswers(r.answers), count: Number(r.count) }))
     .sort((a, b) => b.count - a.count);
+}
+
+export async function listSurveyResponseTimings(
+  surveyId: string
+): Promise<{ answers: SurveyAnswers; durationMs: number | null }[]> {
+  const rows = await mainDb
+    .selectFrom('survey_responses')
+    .select(['answers', 'duration_ms'])
+    .where('survey_id', '=', surveyId)
+    .execute();
+  return rows.map((r) => ({
+    answers: parseAnswers(r.answers),
+    durationMs: r.duration_ms,
+  }));
 }
 
 export async function listSurveyResponses(
@@ -245,6 +261,7 @@ export async function listSurveyResponses(
       .select([
         'survey_responses.user_id',
         'survey_responses.answers',
+        'survey_responses.duration_ms',
         'survey_responses.created_at',
         'users.username',
         'users.avatar',
@@ -263,6 +280,7 @@ export async function listSurveyResponses(
       username: r.username,
       avatar: r.avatar ?? null,
       answers: parseAnswers(r.answers),
+      durationMs: r.duration_ms,
       createdAt: r.created_at,
     })),
     pagination: {

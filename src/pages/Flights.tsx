@@ -39,6 +39,7 @@ import AddCustomFlightModal from '../components/modals/AddCustomFlightModal';
 import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import ChartDrawer from '../components/tools/ChartDrawer';
+import SessionClaimBanner from '../components/tools/SessionClaimBanner';
 import Button from '../components/common/Button';
 import Loader from '../components/common/Loader';
 import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
@@ -1340,6 +1341,11 @@ export default function Flights() {
         settings={settings}
         departureAirport={session?.airportIcao}
         arrivalAirport={undefined}
+      />
+      <SessionClaimBanner
+        socket={sessionUsersSocket}
+        sessionId={sessionId}
+        accessId={accessId}
       />
       <Joyride
         steps={steps}

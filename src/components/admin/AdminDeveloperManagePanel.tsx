@@ -216,7 +216,8 @@ export default function AdminDeveloperManagePanel({
       await patchAdminDeveloperProfileScopes(
         developer.userId,
         [...ceiling],
-        developer.allKeysScopes
+        developer.allKeysScopes,
+        developer.appName
       );
       await onReload();
     } finally {

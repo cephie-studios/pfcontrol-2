@@ -5,5 +5,6 @@ export interface SurveyResponsesTable {
   survey_id: string;
   user_id: string;
   answers: unknown;
+  duration_ms: number | null;
   created_at: Generated<Date>;
 }

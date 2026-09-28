@@ -124,6 +124,13 @@ function pct(part: number, total: number) {
   return total > 0 ? Math.round((part / total) * 100) : 0;
 }
 
+function formatDuration(ms: number | null) {
+  if (ms == null) return '—';
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
 type EditorState =
   | { mode: 'create' }
   | { mode: 'edit'; initial: AdminSurveyInput; responseCount: number }
@@ -456,7 +463,7 @@ export default function AdminSurveys() {
         ) : (
           <>
             <AdminStatCards
-              columns={3}
+              columns={4}
               items={[
                 {
                   label: 'Responses',
@@ -472,16 +479,34 @@ export default function AdminSurveys() {
                       : 'No survey is active',
                 },
                 { label: 'Questions', value: questions.length },
+                {
+                  label: 'Median time',
+                  value: formatDuration(results.timing.medianDurationMs),
+                  sub:
+                    results.timing.timedResponses === 0
+                      ? 'No timed responses yet'
+                      : `${results.timing.reducedWeightResponses.toLocaleString()} fast response${results.timing.reducedWeightResponses === 1 ? '' : 's'} weighted down`,
+                },
               ]}
             />
 
             <section className="grid gap-4">
-              <h2 className="text-sm font-medium">Results per question</h2>
+              <div className="grid gap-1">
+                <h2 className="text-sm font-medium">Results per question</h2>
+                <p className="text-xs text-muted-foreground">
+                  The white marker shows the result weighted by answer time.
+                  Surveys finished faster than{' '}
+                  {(results.timing.fullWeightMsPerQuestion / 1000).toFixed(1)}s
+                  per question count less, down to 10% at instant clicks.
+                </p>
+              </div>
               <div className="grid gap-x-8 gap-y-6 lg:grid-cols-3">
                 {questions.map((q, i) => {
                   const answered = q.yes + q.no;
                   const yesPct = pct(q.yes, answered);
                   const noPct = answered > 0 ? 100 - yesPct : 0;
+                  const weightedTotal = q.weightedYes + q.weightedNo;
+                  const weightedYesPct = pct(q.weightedYes, weightedTotal);
                   return (
                     <div key={q.id} className="grid content-start gap-3">
                       <p className="text-sm text-zinc-300">
@@ -490,19 +515,29 @@ export default function AdminSurveys() {
                         </span>{' '}
                         {q.text}
                       </p>
-                      <div
-                        className="flex h-2.5 overflow-hidden rounded-full bg-zinc-800"
-                        role="img"
-                        aria-label={`${q.yes} yes, ${q.no} no`}
-                      >
+                      <div className="relative">
                         <div
-                          className="h-full bg-green-600"
-                          style={{ width: `${yesPct}%` }}
-                        />
-                        <div
-                          className="h-full bg-red-600"
-                          style={{ width: `${noPct}%` }}
-                        />
+                          className="flex h-2.5 overflow-hidden rounded-full bg-zinc-800"
+                          role="img"
+                          aria-label={`${q.yes} yes, ${q.no} no`}
+                        >
+                          <div
+                            className="h-full bg-green-600"
+                            style={{ width: `${yesPct}%` }}
+                          />
+                          <div
+                            className="h-full bg-red-600"
+                            style={{ width: `${noPct}%` }}
+                          />
+                        </div>
+                        {weightedTotal > 0 ? (
+                          <div
+                            className="absolute -top-1 h-[1.125rem] w-1 -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_2px_rgb(9_9_11)]"
+                            style={{ left: `${weightedYesPct}%` }}
+                            role="img"
+                            aria-label={`Weighted: ${weightedYesPct}% yes`}
+                          />
+                        ) : null}
                       </div>
                       <div className="flex items-center justify-between text-xs tabular-nums">
                         <span className="inline-flex items-center gap-1 text-green-500">
@@ -514,6 +549,12 @@ export default function AdminSurveys() {
                           No {q.no.toLocaleString()} ({noPct}%)
                         </span>
                       </div>
+                      {weightedTotal > 0 ? (
+                        <p className="text-xs text-zinc-400 tabular-nums">
+                          Weighted: {weightedYesPct}% yes ·{' '}
+                          {100 - weightedYesPct}% no
+                        </p>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -588,6 +629,7 @@ export default function AdminSurveys() {
                             <QuestionTag index={i} text={q.text} />
                           </TableHead>
                         ))}
+                        <TableHead className="text-right">Time</TableHead>
                         <TableHead>Submitted</TableHead>
                         <TableHead className="text-right">
                           <span className="sr-only">Actions</span>
@@ -605,6 +647,9 @@ export default function AdminSurveys() {
                               <Answer value={r.answers[q.id]} />
                             </TableCell>
                           ))}
+                          <TableCell className="text-right tabular-nums">
+                            {formatDuration(r.durationMs)}
+                          </TableCell>
                           <TableCell className="text-muted-foreground tabular-nums">
                             {new Date(r.createdAt).toLocaleString()}
                           </TableCell>
@@ -634,6 +679,10 @@ export default function AdminSurveys() {
                               </dd>
                             </div>
                           ))}
+                          <dt className="text-muted-foreground">Time</dt>
+                          <dd className="tabular-nums">
+                            {formatDuration(r.durationMs)}
+                          </dd>
                           <dt className="text-muted-foreground">Submitted</dt>
                           <dd className="tabular-nums">
                             {new Date(r.createdAt).toLocaleString()}

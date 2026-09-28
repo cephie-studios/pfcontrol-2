@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Check, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +71,7 @@ export default function SurveyModal({ survey, onSubmitted }: Props) {
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [pending, setPending] = useState<'yes' | 'no' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const startedAt = useRef<number | null>(null);
 
   const questionIndex = step - 1;
   const question = survey.questions[questionIndex];
@@ -87,9 +88,13 @@ export default function SurveyModal({ survey, onSubmitted }: Props) {
       return;
     }
 
+    const durationMs =
+      startedAt.current == null
+        ? null
+        : Math.round(performance.now() - startedAt.current);
     setPending(value);
     try {
-      await minDuration(submitSurveyResponse(survey.id, next));
+      await minDuration(submitSurveyResponse(survey.id, next, durationMs));
       setStep(total + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save your answers');
@@ -141,7 +146,10 @@ export default function SurveyModal({ survey, onSubmitted }: Props) {
                 type="button"
                 variant="ghost"
                 size="lg"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  startedAt.current ??= performance.now();
+                  setStep(1);
+                }}
                 className="mt-5 h-12 w-full cursor-pointer rounded-2xl border-2 border-blue-600 text-base text-blue-600 hover:bg-blue-600 hover:text-white focus-visible:bg-blue-600 dark:hover:bg-blue-600 focus-visible:text-white focus-visible:ring-0"
               >
                 Start

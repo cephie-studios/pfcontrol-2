@@ -24,6 +24,7 @@ import {
   getExternalAcarsClaims,
 } from '../../utils/externalAcarsClaims.js';
 import { broadcastFlightEvent } from '../../websockets/flightsWebsocket.js';
+import { emitSessionClaimUpdate } from '../../websockets/sessionUsersWebsocket.js';
 
 const router = express.Router();
 
@@ -299,6 +300,7 @@ router.delete(
       if (!released) {
         return res.status(404).json({ error: 'Session is not claimed' });
       }
+      emitSessionClaimUpdate(sessionId, { status: 'none' });
       res.json({ message: 'Claim released', sessionId });
     } catch (error) {
       console.error('Error releasing session claim:', error);

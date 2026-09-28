@@ -34,8 +34,8 @@ export async function createMainTables() {
     .addColumn('color', 'varchar(50)')
     .addColumn('icon', 'varchar(255)')
     .addColumn('priority', 'integer')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // users
@@ -61,8 +61,8 @@ export async function createMainTables() {
     .addColumn('vatsim_rating_id', 'integer')
     .addColumn('vatsim_rating_short', 'varchar(10)')
     .addColumn('vatsim_rating_long', 'varchar(255)')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addColumn('roblox_user_id', 'varchar(255)')
     .addColumn('roblox_username', 'varchar(255)')
     .addColumn('roblox_access_token', 'text')
@@ -102,7 +102,7 @@ export async function createMainTables() {
     .addColumn('access_id', 'varchar(255)', (col) => col.notNull())
     .addColumn('active_runway', 'varchar(10)')
     .addColumn('airport_icao', 'varchar(10)', (col) => col.notNull())
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addColumn('created_by', 'varchar(255)', (col) =>
       col.notNull().references('users.id').onDelete('cascade')
     )
@@ -142,7 +142,7 @@ export async function createMainTables() {
     .addColumn('role_id', 'integer', (col) =>
       col.references('roles.id').onDelete('cascade')
     )
-    .addColumn('assigned_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('assigned_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addPrimaryKeyConstraint('user_roles_pkey', ['user_id', 'role_id'])
     .execute();
 
@@ -159,7 +159,7 @@ export async function createMainTables() {
     .addColumn('details', 'jsonb')
     .addColumn('ip_address', 'text')
     .addColumn('user_agent', 'text')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await mainDb.schema
@@ -179,7 +179,7 @@ export async function createMainTables() {
     .addColumn('username', 'varchar(255)')
     .addColumn('reason', 'text')
     .addColumn('banned_by', 'varchar(255)', (col) => col.notNull())
-    .addColumn('banned_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('banned_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addColumn('expires_at', 'timestamptz')
     .addColumn('active', 'boolean', (col) => col.defaultTo(true))
     .addColumn('fingerprint_id', 'varchar(255)')
@@ -201,8 +201,8 @@ export async function createMainTables() {
     .addColumn('text', 'text', (col) => col.notNull())
     .addColumn('show', 'boolean', (col) => col.defaultTo(true))
     .addColumn('custom_color', 'varchar(50)')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // user_notifications
@@ -217,7 +217,7 @@ export async function createMainTables() {
     .addColumn('title', 'varchar(255)', (col) => col.notNull())
     .addColumn('message', 'text', (col) => col.notNull())
     .addColumn('read', 'boolean', (col) => col.defaultTo(false))
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await mainDb.schema
@@ -238,10 +238,10 @@ export async function createMainTables() {
     .addColumn('active', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('created_by', 'varchar(255)')
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .addColumn('updated_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -262,11 +262,39 @@ export async function createMainTables() {
     )
     .addColumn('answers', 'jsonb', (col) => col.notNull())
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .addUniqueConstraint('survey_responses_survey_user_unique', [
       'survey_id',
       'user_id',
+    ])
+    .execute();
+
+  await mainDb.schema
+    .createTable('session_claim_reports')
+    .ifNotExists()
+    .addColumn('id', 'bigserial', (col) => col.primaryKey())
+    .addColumn('request_id', 'varchar(32)', (col) => col.notNull())
+    .addColumn('session_id', 'varchar(16)', (col) => col.notNull())
+    .addColumn('key_id', 'varchar(32)', (col) => col.notNull())
+    .addColumn('developer_user_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('requester_name', 'varchar(120)', (col) => col.notNull())
+    .addColumn('attempts_24h', 'integer', (col) => col.notNull().defaultTo(1))
+    .addColumn('reporter_id', 'varchar(255)', (col) =>
+      col.references('users.id').onDelete('cascade').notNull()
+    )
+    .addColumn('status', 'varchar(16)', (col) =>
+      col.notNull().defaultTo('open')
+    )
+    .addColumn('admin_note', 'text')
+    .addColumn('reviewed_by', 'varchar(255)')
+    .addColumn('reviewed_at', 'timestamptz')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .addUniqueConstraint('session_claim_reports_request_reporter_unique', [
+      'request_id',
+      'reporter_id',
     ])
     .execute();
 
@@ -282,8 +310,8 @@ export async function createMainTables() {
     .addColumn('added_by', 'varchar(255)', (col) => col.notNull())
     .addColumn('added_by_username', 'varchar(255)', (col) => col.notNull())
     .addColumn('notes', 'text')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // tester_settings
@@ -293,7 +321,7 @@ export async function createMainTables() {
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('setting_key', 'varchar(255)', (col) => col.unique().notNull())
     .addColumn('setting_value', 'boolean', (col) => col.notNull())
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // daily_statistics
@@ -306,8 +334,8 @@ export async function createMainTables() {
     .addColumn('new_sessions_count', 'integer', (col) => col.defaultTo(0))
     .addColumn('new_flights_count', 'integer', (col) => col.defaultTo(0))
     .addColumn('new_users_count', 'integer', (col) => col.defaultTo(0))
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // chat_report
@@ -326,7 +354,7 @@ export async function createMainTables() {
     .addColumn('message', 'text', (col) => col.notNull())
     .addColumn('reason', 'text', (col) => col.notNull())
     .addColumn('status', 'varchar(50)', (col) => col.defaultTo('pending'))
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await mainDb.schema
@@ -346,8 +374,8 @@ export async function createMainTables() {
     .addColumn('banner_url', 'text')
     .addColumn('is_active', 'boolean', (col) => col.defaultTo(false).notNull())
     .addColumn('published_at', 'timestamptz')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // flight_logs
@@ -364,7 +392,7 @@ export async function createMainTables() {
     .addColumn('new_data', 'jsonb')
     .addColumn('ip_address', 'varchar(255)')
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -391,8 +419,8 @@ export async function createMainTables() {
     .addColumn('username', 'varchar(255)', (col) => col.notNull())
     .addColumn('rating', 'integer', (col) => col.notNull())
     .addColumn('comment', 'text')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // api_logs
@@ -412,7 +440,7 @@ export async function createMainTables() {
     .addColumn('response_body', 'text')
     .addColumn('error_message', 'text')
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -453,7 +481,7 @@ export async function createMainTables() {
     .addColumn('pilot_id', 'varchar(255)', (col) => col.notNull())
     .addColumn('rating', 'integer', (col) => col.notNull())
     .addColumn('flight_id', 'varchar(255)')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await mainDb.schema
@@ -494,8 +522,8 @@ export async function createMainTables() {
     .addColumn('hidden', 'boolean', (col) => col.defaultTo(false))
     .addColumn('acars_token', 'varchar(64)')
     .addColumn('pdc_remarks', 'text')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addColumn('notes', 'text')
     .addColumn('snap_images', 'jsonb')
     .addColumn('featured_on_profile', 'boolean', (col) => col.defaultTo(false))
@@ -527,7 +555,7 @@ export async function createMainTables() {
     .addColumn('avatar', 'varchar(255)')
     .addColumn('message', 'text', (col) => col.notNull())
     .addColumn('mentions', 'jsonb')
-    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await mainDb.schema
@@ -549,7 +577,7 @@ export async function createMainTables() {
     .addColumn('message', 'jsonb', (col) => col.notNull())
     .addColumn('airport_mentions', 'jsonb')
     .addColumn('user_mentions', 'jsonb')
-    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addColumn('deleted_at', 'timestamptz')
     .addColumn('network_kind', 'varchar(20)', (col) =>
       col.defaultTo('pfatc').notNull()
@@ -575,8 +603,8 @@ export async function createMainTables() {
     .addColumn('added_by', 'varchar(255)', (col) => col.notNull())
     .addColumn('added_by_username', 'varchar(255)', (col) => col.notNull())
     .addColumn('notes', 'text')
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // vpn_gate_settings
@@ -586,7 +614,7 @@ export async function createMainTables() {
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('setting_key', 'varchar(255)', (col) => col.unique().notNull())
     .addColumn('setting_value', 'boolean', (col) => col.notNull())
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   // developer_applications
@@ -608,10 +636,10 @@ export async function createMainTables() {
     .addColumn('reviewer_note', 'text')
     .addColumn('approved_scopes', 'jsonb')
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .addColumn('updated_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -647,10 +675,10 @@ export async function createMainTables() {
       col.notNull().defaultTo('active')
     )
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .addColumn('updated_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -667,7 +695,7 @@ export async function createMainTables() {
     .addColumn('secret_hash', 'varchar(64)', (col) => col.notNull())
     .addColumn('scopes', 'jsonb', (col) => col.notNull())
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .addColumn('last_used_at', 'timestamptz')
     .addColumn('revoked_at', 'timestamptz')
@@ -706,7 +734,7 @@ export async function createMainTables() {
     .addColumn('ip_hash', 'varchar(64)')
     .addColumn('client_ip', 'varchar(128)')
     .addColumn('created_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 
@@ -835,6 +863,10 @@ export async function ensureDeveloperApiPolicyColumns() {
   await sql`
     ALTER TABLE developer_profiles
     ADD COLUMN IF NOT EXISTS all_keys_scopes jsonb NOT NULL DEFAULT '[]'::jsonb
+  `.execute(mainDb);
+  await sql`
+    ALTER TABLE developer_profiles
+    ADD COLUMN IF NOT EXISTS app_name varchar(80)
   `.execute(mainDb);
 
   await sql`
@@ -967,6 +999,29 @@ export async function ensureSurveySeed() {
   }
 }
 
+export async function ensureTimestampDefaults() {
+  const frozen = await sql<{ table_name: string; column_name: string }>`
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND data_type = 'timestamp with time zone'
+      AND column_default LIKE '''%''::timestamp with time zone'
+  `.execute(mainDb);
+  for (const { table_name, column_name } of frozen.rows) {
+    await sql`
+      ALTER TABLE ${sql.id(table_name)}
+      ALTER COLUMN ${sql.id(column_name)} SET DEFAULT now()
+    `.execute(mainDb);
+  }
+}
+
+export async function ensureSurveyDurationColumn() {
+  await sql`
+    ALTER TABLE survey_responses
+    ADD COLUMN IF NOT EXISTS duration_ms integer
+  `.execute(mainDb);
+}
+
 export async function ensureFeedbackBannerColumn() {
   await sql`
     ALTER TABLE app_settings
@@ -1010,8 +1065,8 @@ export async function ensureDailyDatabaseMetricsTables() {
     .addColumn('rows_deleted', 'integer', (col) => col.notNull().defaultTo(0))
     .addColumn('table_bytes', 'bigint', (col) => col.notNull().defaultTo(0))
     .addColumn('row_count', 'bigint', (col) => col.notNull().defaultTo(0))
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
-    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .addColumn('updated_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .addPrimaryKeyConstraint('daily_table_activity_pkey', [
       'activity_date',
       'table_name',
@@ -1030,7 +1085,7 @@ export async function ensureDailyDatabaseMetricsTables() {
     .ifNotExists()
     .addColumn('activity_date', 'date', (col) => col.primaryKey())
     .addColumn('total_bytes', 'bigint', (col) => col.notNull())
-    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo('now()'))
+    .addColumn('created_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
     .execute();
 
   await ensureDailyTableActivityBigintColumns();
@@ -1054,7 +1109,7 @@ export async function ensureWebsocketSnapshotsTable() {
     .addColumn('namespace_id', 'varchar(64)', (col) => col.notNull())
     .addColumn('connected_count', 'integer', (col) => col.notNull())
     .addColumn('sampled_at', 'timestamptz', (col) =>
-      col.notNull().defaultTo('now()')
+      col.notNull().defaultTo(sql`now()`)
     )
     .execute();
 

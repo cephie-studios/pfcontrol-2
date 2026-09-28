@@ -169,7 +169,9 @@ router.get('/application', async (req, res) => {
       profile: profile
         ? {
             status: profile.status,
-            approvedScopes: normalizeScopes(profile.approved_scopes),
+            approvedScopes: normalizeScopes(profile.approved_scopes).filter(
+              (s) => !isHiddenScope(s)
+            ),
             defaultRateLimitPerMinute: (() => {
               const raw = (
                 profile as { default_rate_limit_per_minute?: number | null }
@@ -435,7 +437,7 @@ router.post('/keys', async (req, res) => {
         .status(400)
         .json({ error: 'scopes must be a non-empty array of valid scope ids' });
     }
-    if (scopes.some((s) => isHiddenScope(s) && !approved.includes(s))) {
+    if (scopes.some(isHiddenScope)) {
       return res
         .status(400)
         .json({ error: 'scopes must be a non-empty array of valid scope ids' });

@@ -104,9 +104,15 @@ describe('surveys routes', () => {
     vi.mocked(insertSurveyResponse).mockResolvedValue(true);
     const res = await appRequest(app, 'POST', `/${survey.id}/responses`, {
       answers: { ...allYes, extra: false },
+      durationMs: 4321.6,
     });
     expect(res.status).toBe(201);
-    expect(insertSurveyResponse).toHaveBeenCalledWith(survey.id, 'u1', allYes);
+    expect(insertSurveyResponse).toHaveBeenCalledWith(
+      survey.id,
+      'u1',
+      allYes,
+      4322
+    );
   });
 
   it('is idempotent when the user already answered', async () => {

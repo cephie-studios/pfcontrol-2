@@ -168,6 +168,12 @@ export default function AdminScopePermissions({
                       <p className="truncate font-mono text-xs text-muted-foreground">
                         {c.id}
                       </p>
+                      {c.hidden ? (
+                        <p className="text-xs text-muted-foreground">
+                          Developers can&apos;t turn this on. Add it per key on
+                          the Keys tab, or use All keys.
+                        </p>
+                      ) : null}
                       {losing > 0 ? (
                         <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                           <AlertTriangle className="size-3" aria-hidden />
@@ -194,7 +200,9 @@ export default function AdminScopePermissions({
                           value={a.value}
                           className={cn('text-xs', a.active)}
                         >
-                          {a.label}
+                          {c.hidden && a.value === 'allowed'
+                            ? 'Per key'
+                            : a.label}
                         </ToggleGroupItem>
                       ))}
                     </ToggleGroup>

@@ -8,6 +8,7 @@ import { BansTable } from './main/BansTable';
 import { NotificationsTable } from './main/NotificationsTable';
 import { UserNotificationsTable } from './main/UserNotificationsTable';
 import { SurveyResponsesTable } from './main/SurveyResponsesTable';
+import { SessionClaimReportsTable } from './main/SessionClaimReportsTable';
 import { SurveysTable } from './main/SurveysTable';
 import { TestersTable } from './main/TestersTable';
 import { TesterSettingsTable } from './main/TesterSettingsTable';
@@ -37,6 +38,7 @@ export interface MainDatabase {
   app_settings: AppSettingsTable;
   users: UsersTable;
   sessions: SessionsTable;
+  session_claim_reports: SessionClaimReportsTable;
   roles: RolesTable;
   user_roles: UserRolesTable;
   audit_log: AuditLogTable;

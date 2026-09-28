@@ -2,6 +2,7 @@ export interface DeveloperProfilesTable {
   user_id: string;
   approved_scopes: unknown;
   all_keys_scopes: unknown;
+  app_name: string | null;
   status: string;
   admin_notice_seq: number;
   notice_dismissed_seq: number;

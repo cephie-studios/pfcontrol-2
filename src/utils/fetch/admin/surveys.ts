@@ -21,8 +21,21 @@ export interface AdminSurveyInput {
 export interface AdminSurveyResults {
   survey: { id: string; title: string; description: string; active: boolean };
   totalResponses: number;
-  questions: { id: string; text: string; yes: number; no: number }[];
+  questions: {
+    id: string;
+    text: string;
+    yes: number;
+    no: number;
+    weightedYes: number;
+    weightedNo: number;
+  }[];
   combinations: { answers: Record<string, boolean>; count: number }[];
+  timing: {
+    timedResponses: number;
+    medianDurationMs: number | null;
+    reducedWeightResponses: number;
+    fullWeightMsPerQuestion: number;
+  };
 }
 
 export interface AdminSurveyResponse {
@@ -30,6 +43,7 @@ export interface AdminSurveyResponse {
   username: string;
   avatar: string | null;
   answers: Record<string, boolean>;
+  durationMs: number | null;
   createdAt: string;
 }
 
