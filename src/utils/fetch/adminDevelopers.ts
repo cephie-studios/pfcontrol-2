@@ -83,6 +83,7 @@ export interface AdminScopeCatalogEntry {
   label: string;
   description: string;
   hidden?: boolean;
+  requiresAppName?: boolean;
 }
 
 export async function fetchAdminDeveloperCatalog(): Promise<
@@ -103,6 +104,7 @@ export interface AdminDeveloperSummary {
   status: string;
   approvedScopes: string[];
   allKeysScopes: string[];
+  appName: string | null;
   keysActive: number;
   keysPending: number;
   keysTotal: number;
@@ -232,7 +234,8 @@ export async function revokeAdminDeveloperKey(
 export async function patchAdminDeveloperProfileScopes(
   userId: string,
   approvedScopes: string[],
-  allKeysScopes: string[]
+  allKeysScopes: string[],
+  appName: string | null
 ): Promise<{
   strippedKeys: { id: string; name: string; removed: string[] }[];
 }> {
@@ -242,7 +245,7 @@ export async function patchAdminDeveloperProfileScopes(
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approvedScopes, allKeysScopes }),
+      body: JSON.stringify({ approvedScopes, allKeysScopes, appName }),
     }
   );
   if (!res.ok) {

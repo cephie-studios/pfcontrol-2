@@ -51,6 +51,7 @@ const AdminProfileContent = lazy(
 const AdminUserAlerts = lazy(() => import('./pages/admin/AdminUserAlerts'));
 const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback'));
 const AdminSurveys = lazy(() => import('./pages/admin/AdminSurveys'));
+const AdminClaimReports = lazy(() => import('./pages/admin/AdminClaimReports'));
 const AdminApiLogs = lazy(() => import('./pages/admin/AdminApiLogs'));
 const AdminRatings = lazy(() => import('./pages/admin/AdminRatings'));
 const AdminAltDetection = lazy(() => import('./pages/admin/AdminAltDetection'));
@@ -292,6 +293,14 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="admin">
                           <AdminSurveys />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="claim-reports"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminClaimReports />
                         </ProtectedRoute>
                       }
                     />

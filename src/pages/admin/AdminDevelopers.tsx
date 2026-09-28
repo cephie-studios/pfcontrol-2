@@ -287,7 +287,8 @@ export default function AdminDevelopers() {
     return developers.filter(
       (d) =>
         d.username.toLowerCase().includes(q) ||
-        d.userId.toLowerCase().includes(q)
+        d.userId.toLowerCase().includes(q) ||
+        (d.appName ?? '').toLowerCase().includes(q)
     );
   }, [developers, devSearch]);
 
@@ -603,6 +604,12 @@ export default function AdminDevelopers() {
                               <div className="min-w-0">
                                 <p className="truncate font-medium">
                                   {d.username}
+                                  {d.appName ? (
+                                    <span className="font-normal text-muted-foreground">
+                                      {' '}
+                                      · {d.appName}
+                                    </span>
+                                  ) : null}
                                 </p>
                                 <p className="truncate font-mono text-xs text-muted-foreground">
                                   {d.userId}

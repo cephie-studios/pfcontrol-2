@@ -40,4 +40,12 @@ export const keys = {
     prefixKey(`external-acars:claim:${sessionId}`),
   externalAcarsClaimsByKey: (keyId: string) =>
     prefixKey(`external-acars:claims-by-key:${keyId}`),
+  externalAcarsClaimRequest: (sessionId: string) =>
+    prefixKey(`external-acars:claim-request:${sessionId}`),
+  externalAcarsClaimDeclined: (sessionId: string, keyId: string) =>
+    prefixKey(`external-acars:claim-declined:${sessionId}:${keyId}`),
+  externalAcarsClaimAttempts: (sessionId: string, keyId: string) =>
+    prefixKey(`external-acars:claim-attempts:${sessionId}:${keyId}`),
+  externalAcarsClaimRequestLog: (requestId: string) =>
+    prefixKey(`external-acars:claim-request-log:${requestId}`),
 } as const;

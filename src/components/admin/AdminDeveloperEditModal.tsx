@@ -137,6 +137,8 @@ export default function AdminDeveloperEditModal({
   );
   const [allowed, setAllowed] = useState<Set<string>>(savedAllowed);
   const [allKeys, setAllKeys] = useState<Set<string>>(savedAllKeys);
+  const savedAppName = developer.appName ?? '';
+  const [appName, setAppName] = useState(savedAppName);
   const [permissionsBusy, setPermissionsBusy] = useState(false);
   const [permissionsSaved, setPermissionsSaved] = useState(false);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
@@ -157,13 +159,24 @@ export default function AdminDeveloperEditModal({
   useEffect(() => {
     setAllowed(new Set(savedAllowed));
     setAllKeys(new Set(savedAllKeys));
-  }, [developer.userId, savedAllowed, savedAllKeys]);
+    setAppName(savedAppName);
+  }, [developer.userId, savedAllowed, savedAllKeys, savedAppName]);
 
   const permissionsDirty = useMemo(() => {
     const same = (a: Set<string>, b: Set<string>) =>
       a.size === b.size && [...a].every((x) => b.has(x));
-    return !same(allowed, savedAllowed) || !same(allKeys, savedAllKeys);
-  }, [allowed, allKeys, savedAllowed, savedAllKeys]);
+    return (
+      !same(allowed, savedAllowed) ||
+      !same(allKeys, savedAllKeys) ||
+      appName.trim() !== savedAppName
+    );
+  }, [allowed, allKeys, savedAllowed, savedAllKeys, appName, savedAppName]);
+
+  const appNameScopes = useMemo(
+    () => catalog.filter((c) => c.requiresAppName && allowed.has(c.id)),
+    [catalog, allowed]
+  );
+  const appNameMissing = appNameScopes.length > 0 && !appName.trim();
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +218,8 @@ export default function AdminDeveloperEditModal({
       const { strippedKeys } = await patchAdminDeveloperProfileScopes(
         developer.userId,
         [...allowed],
-        [...allKeys]
+        [...allKeys],
+        appName.trim() || null
       );
       setPermissionsSaved(true);
       setTimeout(() => setPermissionsSaved(false), 2000);
@@ -411,7 +425,10 @@ export default function AdminDeveloperEditModal({
               <Button
                 type="button"
                 disabled={
-                  permissionsBusy || !permissionsDirty || allowed.size === 0
+                  permissionsBusy ||
+                  !permissionsDirty ||
+                  allowed.size === 0 ||
+                  appNameMissing
                 }
                 onClick={() => void savePermissions()}
               >
@@ -485,19 +502,48 @@ export default function AdminDeveloperEditModal({
             {catalog.length === 0 ? (
               <AdminLoading label="Loading scopes…" className="py-12" />
             ) : (
-              <AdminScopePermissions
-                catalog={catalog}
-                allowed={allowed}
-                allKeys={allKeys}
-                savedAllowed={savedAllowed}
-                savedAllKeys={savedAllKeys}
-                keys={keys}
-                disabled={permissionsBusy}
-                onChange={(a, all) => {
-                  setAllowed(a);
-                  setAllKeys(all);
-                }}
-              />
+              <div className="flex flex-col gap-5">
+                {appNameScopes.length > 0 || savedAppName ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="developer-app-name">
+                      App name
+                      {appNameScopes.length > 0 ? (
+                        <span className="text-red-500">*</span>
+                      ) : null}
+                    </Label>
+                    <Input
+                      id="developer-app-name"
+                      value={appName}
+                      maxLength={80}
+                      placeholder="e.g. Veyra Scope"
+                      disabled={permissionsBusy}
+                      onChange={(e) => setAppName(e.target.value)}
+                      className="sm:max-w-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Shown to controllers when this developer asks to claim
+                      their session. Required for{' '}
+                      {appNameScopes.length > 0
+                        ? appNameScopes.map((c) => c.label).join(', ')
+                        : 'admin-only claim scopes'}
+                      . Only admins can change it.
+                    </p>
+                  </div>
+                ) : null}
+                <AdminScopePermissions
+                  catalog={catalog}
+                  allowed={allowed}
+                  allKeys={allKeys}
+                  savedAllowed={savedAllowed}
+                  savedAllKeys={savedAllKeys}
+                  keys={keys}
+                  disabled={permissionsBusy}
+                  onChange={(a, all) => {
+                    setAllowed(a);
+                    setAllKeys(all);
+                  }}
+                />
+              </div>
             )}
           </TabsContent>
 

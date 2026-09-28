@@ -127,6 +127,27 @@ export function validateSurveyAnswers(
   return answers;
 }
 
+export const SURVEY_DURATION_MAX_MS = 60 * 60 * 1000;
+export const SURVEY_FULL_WEIGHT_MS_PER_QUESTION = 1500;
+export const SURVEY_MIN_WEIGHT = 0.1;
+
+export function parseSurveyDuration(raw: unknown): number | null {
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) return null;
+  return Math.min(Math.round(raw), SURVEY_DURATION_MAX_MS);
+}
+
+export function surveyResponseWeight(
+  durationMs: number | null,
+  questionCount: number
+): number {
+  if (durationMs == null || questionCount <= 0) return 1;
+  const perQuestion = durationMs / questionCount;
+  return Math.max(
+    SURVEY_MIN_WEIGHT,
+    Math.min(1, perQuestion / SURVEY_FULL_WEIGHT_MS_PER_QUESTION)
+  );
+}
+
 export function publicSurvey(survey: SurveyDefinition) {
   return {
     id: survey.id,

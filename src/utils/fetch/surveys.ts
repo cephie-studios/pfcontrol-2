@@ -26,7 +26,8 @@ export async function fetchActiveSurvey(): Promise<Survey | null> {
 
 export async function submitSurveyResponse(
   surveyId: string,
-  answers: Record<string, boolean>
+  answers: Record<string, boolean>,
+  durationMs: number | null
 ): Promise<void> {
   const res = await apiFetch(
     `${API_BASE_URL}/api/surveys/${encodeURIComponent(surveyId)}/responses`,
@@ -34,7 +35,7 @@ export async function submitSurveyResponse(
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ answers, durationMs }),
     }
   );
   if (!res.ok) await apiError(res, 'Failed to save your answers');

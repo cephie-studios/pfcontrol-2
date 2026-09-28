@@ -30,13 +30,16 @@ import {
 } from '../../db/developerDashboard.js';
 import { buildNewDeveloperKeyCredentials } from '../../developer/apiKeySecret.js';
 import {
+  APP_NAME_MAX_LENGTH,
   DEVELOPER_SCOPE_CATALOG,
   isScopeSubset,
   isValidScopeList,
+  scopesRequiringAppName,
 } from '../../developer/scopeRegistry.js';
 import { mainDb } from '../../db/connection.js';
 import { getDeveloperApiDefaultRateLimitPerMinute } from '../../middleware/developerExtApi.js';
 import { sendDeveloperAdminNoticeEmail } from '../../developer/sendDeveloperAdminNoticeEmail.js';
+import { resolveOpenReportsForKey } from '../../db/sessionClaimReports.js';
 
 const SCOPE_LABEL = new Map(
   DEVELOPER_SCOPE_CATALOG.map((s) => [s.id, s.label])
@@ -398,7 +401,7 @@ router.patch(
   async (req, res) => {
     try {
       const { userId } = req.params;
-      const { approvedScopes, allKeysScopes = [] } = req.body ?? {};
+      const { approvedScopes, allKeysScopes = [], appName } = req.body ?? {};
       if (!isValidScopeList(approvedScopes)) {
         return res.status(400).json({
           error: 'approvedScopes must be a non-empty array of valid scope ids',
@@ -409,15 +412,34 @@ router.patch(
           error: 'allKeysScopes must be an array of valid scope ids',
         });
       }
+      if (appName != null && typeof appName !== 'string') {
+        return res.status(400).json({ error: 'appName must be a string' });
+      }
       const allKeys = [...new Set(allKeysScopes)];
       const approved = [...new Set([...approvedScopes, ...allKeys])];
       const prior = await getDeveloperProfile(userId);
+      const nextAppName =
+        appName === undefined
+          ? (prior?.app_name ?? null)
+          : appName.trim() || null;
+      if (nextAppName && nextAppName.length > APP_NAME_MAX_LENGTH) {
+        return res.status(400).json({
+          error: `App name must be at most ${APP_NAME_MAX_LENGTH} characters.`,
+        });
+      }
+      const needsAppName = scopesRequiringAppName(approved);
+      if (needsAppName.length > 0 && !nextAppName) {
+        return res.status(400).json({
+          error: `An app name is required for: ${labelScopes(needsAppName)}.`,
+        });
+      }
       const prevApproved = prior ? normalizeScopes(prior.approved_scopes) : [];
       const prevAllKeys = prior ? normalizeScopes(prior.all_keys_scopes) : [];
       const result = await updateDeveloperProfilePermissions(
         userId,
         approved,
-        allKeys
+        allKeys,
+        nextAppName
       );
       if (!result)
         return res.status(404).json({ error: 'Developer profile not found' });
@@ -436,6 +458,7 @@ router.patch(
         ok: true,
         approvedScopes: approved,
         allKeysScopes: allKeys,
+        appName: nextAppName,
         strippedKeys: result.strippedKeys,
       });
     } catch (e) {
@@ -763,6 +786,7 @@ router.post(
         return res
           .status(404)
           .json({ error: 'Key not found or already revoked' });
+      await resolveOpenReportsForKey(keyId, req.user?.userId ?? 'unknown');
       await notifyDeveloperInAppAndEmail(
         userId,
         `An administrator revoked your API key "${row.name}".`

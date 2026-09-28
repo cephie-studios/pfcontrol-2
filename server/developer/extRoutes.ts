@@ -182,7 +182,20 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
     method: 'GET',
     pattern: { kind: 'exact', path: '/sessions/network/claims' },
     responseSummary:
-      'Active session claims held by this API key: [{ sessionId, claimedAt, expiresAt }].',
+      'Claims held or requested by this API key: [{ sessionId, status: "active", claimedAt, expiresAt } | { sessionId, status: "pending", requestedAt, decidesAt }].',
+    minVersion: 2,
+    hidden: true,
+  },
+  {
+    scopeId: 'sessions.network_claim',
+    method: 'GET',
+    pattern: {
+      kind: 'regex',
+      regex: /^\/sessions\/network\/claims\/[^/]+$/i,
+      pathTemplate: '/sessions/network/claims/{sessionId}',
+    },
+    responseSummary:
+      'Claim status for one session: { sessionId, status } where status is "active" (claimedAt, expiresAt), "pending" (requestedAt, decidesAt), "declined" (retryAt), "taken" (held by another key) or "none".',
     minVersion: 2,
     hidden: true,
   },
@@ -195,7 +208,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/network/claims/{sessionId}',
     },
     responseSummary:
-      'Claims (or renews) a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC.',
+      'Requests (or renews) a claim on a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. A new claim returns 202 with status "pending": the session controllers get 60 seconds to decline, then it becomes active on its own (poll GET /sessions/network/claims/{sessionId}). 200 on renewal of an active claim, 403 with retryAt if a controller declined (30 minute cooldown), 409 if another key holds or requested it, 400 if the session is not PFATC.',
     requestBodySummary:
       'Optional JSON object: { "ttlMinutes": 5-360 } (default 180). Renew before expiresAt to keep the claim.',
     requestBodyExampleJson: JSON.stringify({ ttlMinutes: 180 }),
@@ -211,7 +224,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/network/claims/{sessionId}',
     },
     responseSummary:
-      'Releases a claim held by this API key. 204 on success, 404 if this key holds no claim on the session.',
+      'Releases a claim held by this API key, or withdraws a pending request. 204 on success, 404 if this key holds no claim or request on the session.',
     minVersion: 2,
     hidden: true,
   },

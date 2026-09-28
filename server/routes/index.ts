@@ -20,6 +20,7 @@ import extV2Router from './ext/v2.js';
 import ogImagesRouter from './ogImages.js';
 import userNotificationsRouter from './userNotifications.js';
 import surveysRouter from './surveys.js';
+import sessionClaimReportsRouter from './sessionClaimReports.js';
 import siteSettingsRouter from './siteSettings.js';
 import turnRouter from './turn.js';
 
@@ -45,6 +46,7 @@ router.use('/ext/v2', extV2Router);
 router.use('/og', ogImagesRouter);
 router.use('/user-notifications', userNotificationsRouter);
 router.use('/surveys', surveysRouter);
+router.use('/session-claim-reports', sessionClaimReportsRouter);
 router.use('/site-settings', siteSettingsRouter);
 router.use('/turn', turnRouter);
 

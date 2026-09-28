@@ -13,7 +13,30 @@ export interface FieldEditingState {
   timestamp: number;
 }
 
+export type SessionClaimUpdate =
+  | {
+      status: 'pending';
+      requestId: string;
+      requesterName: string;
+      decidesAt: string;
+      remainingMs: number;
+    }
+  | {
+      status: 'allowed' | 'declined';
+      requestId: string;
+      requesterName: string;
+      by: string | null;
+    }
+  | { status: 'none' };
+
+export type SessionClaimDecisionResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
 interface CustomSocket extends Socket {
+  emitSessionClaimDecision?: (
+    decision: 'allow' | 'decline'
+  ) => Promise<SessionClaimDecisionResult>;
   emitAtisGenerated?: (data: unknown) => void;
   emitFieldEditingStart?: (
     flightId: string | number,
@@ -93,6 +116,23 @@ export function createSessionUsersSocket(
   ) => {
     socket.emit('fieldEditingStop', { flightId, fieldName });
   };
+
+  socket.emitSessionClaimDecision = (decision) =>
+    new Promise((resolve) => {
+      socket
+        .timeout(8000)
+        .emit(
+          'sessionClaimDecide',
+          { decision },
+          (err: Error | null, res?: SessionClaimDecisionResult) => {
+            if (err || !res) {
+              resolve({ ok: false, error: 'The server did not respond.' });
+            } else {
+              resolve(res);
+            }
+          }
+        );
+    });
 
   socket.emitPositionChange = (position: string) => {
     socket.emit('positionChange', { position });

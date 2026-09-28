@@ -1,6 +1,10 @@
 import express from 'express';
 import requireAuth from '../middleware/auth.js';
-import { publicSurvey, validateSurveyAnswers } from '../surveys/definitions.js';
+import {
+  parseSurveyDuration,
+  publicSurvey,
+  validateSurveyAnswers,
+} from '../surveys/definitions.js';
 import {
   getActiveSurvey,
   hasSurveyResponse,
@@ -37,7 +41,8 @@ router.post('/:surveyId/responses', requireAuth, async (req, res) => {
     const inserted = await insertSurveyResponse(
       survey.id,
       req.user!.userId,
-      answers
+      answers,
+      parseSurveyDuration(req.body?.durationMs)
     );
     res.status(inserted ? 201 : 200).json({ ok: true });
   } catch (error) {

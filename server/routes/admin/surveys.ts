@@ -4,7 +4,12 @@ import { requirePermission } from '../../middleware/rolePermissions.js';
 import { logAdminAction } from '../../db/audit.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
 import { getUserById } from '../../db/users.js';
-import { newSurveyId, validateSurveyInput } from '../../surveys/definitions.js';
+import {
+  SURVEY_FULL_WEIGHT_MS_PER_QUESTION,
+  newSurveyId,
+  surveyResponseWeight,
+  validateSurveyInput,
+} from '../../surveys/definitions.js';
 import {
   countSurveyResponses,
   createSurvey,
@@ -13,6 +18,7 @@ import {
   getSurveyAnswerCombinations,
   getSurveyById,
   listSurveyResponses,
+  listSurveyResponseTimings,
   listSurveys,
   setSurveyActive,
   updateSurvey,
@@ -65,8 +71,14 @@ router.get('/:surveyId', async (req, res) => {
     const survey = await getSurveyById(req.params.surveyId);
     if (!survey) return res.status(404).json({ error: 'Survey not found' });
 
-    const combinations = await getSurveyAnswerCombinations(survey.id);
+    const [combinations, timings] = await Promise.all([
+      getSurveyAnswerCombinations(survey.id),
+      listSurveyResponseTimings(survey.id),
+    ]);
     const totalResponses = combinations.reduce((n, c) => n + c.count, 0);
+    const weights = timings.map((t) =>
+      surveyResponseWeight(t.durationMs, survey.questions.length)
+    );
     const questions = survey.questions.map((q) => {
       const yes = combinations
         .filter((c) => c.answers[q.id] === true)
@@ -74,8 +86,29 @@ router.get('/:surveyId', async (req, res) => {
       const no = combinations
         .filter((c) => c.answers[q.id] === false)
         .reduce((n, c) => n + c.count, 0);
-      return { id: q.id, text: q.text, yes, no };
+      let weightedYes = 0;
+      let weightedNo = 0;
+      timings.forEach((t, i) => {
+        if (t.answers[q.id] === true) weightedYes += weights[i];
+        else if (t.answers[q.id] === false) weightedNo += weights[i];
+      });
+      return { id: q.id, text: q.text, yes, no, weightedYes, weightedNo };
     });
+
+    const durations = timings
+      .map((t) => t.durationMs)
+      .filter((d): d is number => d != null)
+      .sort((a, b) => a - b);
+    const medianDurationMs =
+      durations.length === 0
+        ? null
+        : durations.length % 2
+          ? durations[(durations.length - 1) / 2]
+          : Math.round(
+              (durations[durations.length / 2 - 1] +
+                durations[durations.length / 2]) /
+                2
+            );
 
     res.json({
       survey: {
@@ -87,6 +120,12 @@ router.get('/:surveyId', async (req, res) => {
       totalResponses,
       questions,
       combinations,
+      timing: {
+        timedResponses: durations.length,
+        medianDurationMs,
+        reducedWeightResponses: weights.filter((w) => w < 1).length,
+        fullWeightMsPerQuestion: SURVEY_FULL_WEIGHT_MS_PER_QUESTION,
+      },
     });
   } catch (error) {
     console.error('Error fetching survey results:', error);

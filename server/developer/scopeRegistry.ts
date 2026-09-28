@@ -14,6 +14,7 @@ export interface DeveloperScopeCatalogEntry {
   label: string;
   description: string;
   hidden?: boolean;
+  requiresAppName?: boolean;
 }
 
 export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
@@ -170,8 +171,9 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'sessions.network_claim',
     label: 'Claim PFATC sessions (external ACARS)',
     description:
-      'POST/DELETE /sessions/network/claims/{sessionId}, GET /sessions/network/claims — claim a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. Claims expire (renewable) and stop working as soon as this key is revoked or loses the scope. Admin-granted only.',
+      'GET/POST/DELETE /sessions/network/claims/{sessionId}, GET /sessions/network/claims — claim a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. New claims wait 60 seconds for the session controllers to decline. Claims expire (renewable) and stop working as soon as this key is revoked or loses the scope. Admin-granted only.',
     hidden: true,
+    requiresAppName: true,
   },
   {
     id: 'flight_logs.read',
@@ -201,6 +203,15 @@ const HIDDEN_SCOPE_IDS = new Set(
 
 export function isHiddenScope(scopeId: string): boolean {
   return HIDDEN_SCOPE_IDS.has(scopeId);
+}
+
+export const APP_NAME_MAX_LENGTH = 80;
+
+export function scopesRequiringAppName(scopes: string[]): string[] {
+  const set = new Set(scopes);
+  return DEVELOPER_SCOPE_CATALOG.filter(
+    (s) => s.requiresAppName && set.has(s.id)
+  ).map((s) => s.id);
 }
 
 export function isValidPublicScopeList(scopes: unknown): scopes is string[] {

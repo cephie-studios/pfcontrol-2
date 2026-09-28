@@ -41,14 +41,20 @@ import {
 } from '../../utils/validation.js';
 import { broadcastFlightEvent } from '../../websockets/flightsWebsocket.js';
 import { sendServerError } from '../../utils/apiError.js';
+import { getDeveloperProfile } from '../../db/developer.js';
 import {
   CLAIM_TTL_DEFAULT_MINUTES,
   CLAIM_TTL_MAX_MINUTES,
   CLAIM_TTL_MIN_MINUTES,
+  getExternalAcarsClaimStatus,
   listExternalAcarsClaimsForKey,
   releaseExternalAcarsClaim,
-  setExternalAcarsClaim,
+  requestExternalAcarsClaim,
 } from '../../utils/externalAcarsClaims.js';
+import {
+  announceSessionClaimRequest,
+  emitSessionClaimUpdate,
+} from '../../websockets/sessionUsersWebsocket.js';
 import { fromCamelCaseFlightBody } from '../../utils/caseConversion.js';
 import {
   isValidAirportIcao,
@@ -457,19 +463,46 @@ router.put(
 router.get('/network/claims', async (req: Request, res: Response) => {
   try {
     const ext = extCtx(req);
-    const claims = await listExternalAcarsClaimsForKey(ext.keyId);
-    res.json(
-      claims.map((c) => ({
+    const { claims, pending } = await listExternalAcarsClaimsForKey(ext.keyId);
+    res.json([
+      ...claims.map((c) => ({
         sessionId: c.sessionId,
+        status: 'active' as const,
         claimedAt: c.claimedAt,
         expiresAt: c.expiresAt,
-      }))
-    );
+      })),
+      ...pending.map((r) => ({
+        sessionId: r.sessionId,
+        status: 'pending' as const,
+        requestedAt: r.requestedAt,
+        decidesAt: r.decidesAt,
+      })),
+    ]);
   } catch (e) {
     console.error('[ext/sessions] list claims:', e);
     sendServerError(res, 'Failed to list claims', e);
   }
 });
+
+router.get(
+  '/network/claims/:sessionId',
+  async (req: Request, res: Response) => {
+    try {
+      const ext = extCtx(req);
+      let sessionId: string;
+      try {
+        sessionId = validateSessionId(routeParamString(req.params.sessionId));
+      } catch {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      const status = await getExternalAcarsClaimStatus(sessionId, ext.keyId);
+      res.json({ sessionId, ...status });
+    } catch (e) {
+      console.error('[ext/sessions] claim status:', e);
+      sendServerError(res, 'Failed to load claim status', e);
+    }
+  }
+);
 
 router.post(
   '/network/claims/:sessionId',
@@ -507,23 +540,50 @@ router.post(
           .json({ error: 'Only PFATC sessions can be claimed.' });
       }
 
-      const result = await setExternalAcarsClaim({
+      const profile = await getDeveloperProfile(ext.userId);
+      const appName = profile?.app_name?.trim();
+      if (!appName) {
+        return res.status(403).json({
+          error:
+            'No app name is set for this developer account. Ask a PFControl admin to set one before claiming sessions.',
+        });
+      }
+
+      const result = await requestExternalAcarsClaim({
         sessionId,
         keyId: ext.keyId,
         userId: ext.userId,
+        requesterName: appName,
         ttlMinutes,
       });
-      if (!result.ok) {
-        return res
-          .status(409)
-          .json({ error: 'Session is already claimed by another API key.' });
-      }
 
-      res.status(result.renewed ? 200 : 201).json({
-        sessionId: result.claim.sessionId,
-        claimedAt: result.claim.claimedAt,
-        expiresAt: result.claim.expiresAt,
-      });
+      switch (result.status) {
+        case 'conflict':
+          return res
+            .status(409)
+            .json({ error: 'Session is already claimed by another API key.' });
+        case 'declined':
+          return res.status(403).json({
+            error: 'The controller declined this claim.',
+            status: 'declined',
+            retryAt: result.retryAt,
+          });
+        case 'renewed':
+          return res.status(200).json({
+            sessionId,
+            status: 'active',
+            claimedAt: result.claim.claimedAt,
+            expiresAt: result.claim.expiresAt,
+          });
+        case 'pending':
+          if (result.created) announceSessionClaimRequest(result.request);
+          return res.status(202).json({
+            sessionId,
+            status: 'pending',
+            requestedAt: result.request.requestedAt,
+            decidesAt: result.request.decidesAt,
+          });
+      }
     } catch (e) {
       console.error('[ext/sessions] claim:', e);
       sendServerError(res, 'Failed to claim session', e);
@@ -544,6 +604,7 @@ router.delete(
       }
       const released = await releaseExternalAcarsClaim(sessionId, ext.keyId);
       if (!released) return res.status(404).json({ error: 'Not found' });
+      emitSessionClaimUpdate(sessionId, { status: 'none' });
       res.status(204).end();
     } catch (e) {
       console.error('[ext/sessions] release claim:', e);

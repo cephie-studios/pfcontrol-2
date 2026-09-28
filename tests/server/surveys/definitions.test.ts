@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SURVEY_DURATION_MAX_MS,
+  SURVEY_FULL_WEIGHT_MS_PER_QUESTION,
   SURVEY_LIMITS,
+  SURVEY_MIN_WEIGHT,
+  parseSurveyDuration,
+  surveyResponseWeight,
   validateSurveyInput,
 } from '../../../server/surveys/definitions.js';
 
@@ -54,5 +59,36 @@ describe('validateSurveyInput', () => {
     [null],
   ])('rejects invalid input %#', (input) => {
     expect(validateSurveyInput(input).ok).toBe(false);
+  });
+});
+
+describe('parseSurveyDuration', () => {
+  it('rounds valid durations and caps them', () => {
+    expect(parseSurveyDuration(1234.4)).toBe(1234);
+    expect(parseSurveyDuration(SURVEY_DURATION_MAX_MS * 5)).toBe(
+      SURVEY_DURATION_MAX_MS
+    );
+  });
+
+  it('ignores missing or invalid values', () => {
+    expect(parseSurveyDuration(undefined)).toBeNull();
+    expect(parseSurveyDuration('500')).toBeNull();
+    expect(parseSurveyDuration(-1)).toBeNull();
+    expect(parseSurveyDuration(Number.NaN)).toBeNull();
+  });
+});
+
+describe('surveyResponseWeight', () => {
+  const full = SURVEY_FULL_WEIGHT_MS_PER_QUESTION;
+
+  it('gives full weight to untimed or unhurried responses', () => {
+    expect(surveyResponseWeight(null, 3)).toBe(1);
+    expect(surveyResponseWeight(full * 3, 3)).toBe(1);
+    expect(surveyResponseWeight(full * 30, 3)).toBe(1);
+  });
+
+  it('scales down fast responses with a floor', () => {
+    expect(surveyResponseWeight((full * 3) / 2, 3)).toBeCloseTo(0.5);
+    expect(surveyResponseWeight(0, 3)).toBe(SURVEY_MIN_WEIGHT);
   });
 });
