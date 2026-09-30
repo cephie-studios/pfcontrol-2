@@ -22,6 +22,7 @@ import userNotificationsRouter from './userNotifications.js';
 import surveysRouter from './surveys.js';
 import siteSettingsRouter from './siteSettings.js';
 import turnRouter from './turn.js';
+import chartsRouter from './charts.js';
 
 const router = express.Router();
 
@@ -47,5 +48,6 @@ router.use('/user-notifications', userNotificationsRouter);
 router.use('/surveys', surveysRouter);
 router.use('/site-settings', siteSettingsRouter);
 router.use('/turn', turnRouter);
+router.use('/charts', chartsRouter);
 
 export default router;

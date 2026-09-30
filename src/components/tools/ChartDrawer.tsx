@@ -16,14 +16,10 @@ import type { Settings } from '../../types/settings';
 import Button from '../common/Button';
 import { PanelHeader, panelInputClass } from '../common/SidePanel';
 import { cn } from '@/lib/utils';
-
-type ChartEntry = {
-  name: string;
-  path: string;
-  type: string;
-  credits?: string;
-  procedures?: string[];
-};
+import {
+  useAirportCharts,
+  type ChartEntry,
+} from '../../hooks/useAirportCharts';
 
 type Accent = 'green' | 'blue' | 'purple' | 'gray';
 
@@ -173,13 +169,6 @@ interface ChartDrawerProps {
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleResetZoom: () => void;
-  getChartsForAirport: (icao: string) => {
-    name: string;
-    path: string;
-    type: string;
-    credits?: string;
-    procedures?: string[];
-  }[];
   containerRef: React.RefObject<HTMLDivElement>;
   setImageSize: (size: { width: number; height: number }) => void;
   airports: Airport[];
@@ -208,7 +197,6 @@ export default function ChartDrawer({
   handleZoomIn,
   handleZoomOut,
   handleResetZoom,
-  getChartsForAirport,
   containerRef,
   setImageSize,
   settings,
@@ -221,6 +209,7 @@ export default function ChartDrawer({
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [mobileView, setMobileView] = useState<'chart' | 'sidebar'>('sidebar');
+  const { getChartsForAirport, availableAirports } = useAirportCharts();
 
   const viewMode = settings?.layout?.chartDrawerViewMode || 'legacy';
 
@@ -251,25 +240,6 @@ export default function ChartDrawer({
   const arrivalCharts = arrivalAirport
     ? getChartsForAirport(arrivalAirport)
     : [];
-
-  const availableAirports = [
-    'EGCK',
-    'EGFF',
-    'EGHC',
-    'EGHJ',
-    'EGKK',
-    'EGLC',
-    'LCLK',
-    'LCPH',
-    'LCRA',
-    'LPMA',
-    'MDAB',
-    'MDPC',
-    'MDST',
-    'MTCA',
-    'PAFA',
-    'X2BH',
-  ];
 
   const otherAirports = hasSectorAirports
     ? [
