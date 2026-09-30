@@ -13,7 +13,6 @@ import { useSettings } from '../hooks/settings/useSettings';
 import { toast } from 'sonner';
 import { steps } from '../components/tutorial/TutorialStepsFlights';
 import { updateTutorialStatus } from '../utils/fetch/auth';
-import { getChartsForAirport } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
 import { useData } from '../hooks/data/useData';
 import type { Flight } from '../types/flight';
@@ -1333,7 +1332,6 @@ export default function Flights() {
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleResetZoom={handleResetZoom}
-        getChartsForAirport={getChartsForAirport}
         containerRef={containerRef as React.RefObject<HTMLDivElement>}
         setImageSize={setImageSize}
         airports={airports}

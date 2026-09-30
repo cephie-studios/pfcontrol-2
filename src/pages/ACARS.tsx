@@ -19,7 +19,7 @@ import {
   type OverviewSession,
 } from '../sockets/overviewSocket';
 import { getAirportName, parseCallsign } from '../utils/callsignParser';
-import { getChartsForAirport, playNotificationSound } from '../utils/acars';
+import { playNotificationSound } from '../utils/acars';
 import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
@@ -828,7 +828,6 @@ NOTES:
               handleZoomIn={handleZoomIn}
               handleZoomOut={handleZoomOut}
               handleResetZoom={handleResetZoom}
-              getChartsForAirport={getChartsForAirport}
               containerRef={containerRef as React.RefObject<HTMLDivElement>}
               setImageSize={setImageSize}
               airports={airports}
@@ -859,7 +858,6 @@ NOTES:
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleResetZoom={handleResetZoom}
-        getChartsForAirport={getChartsForAirport}
         containerRef={containerRef as React.RefObject<HTMLDivElement>}
         setImageSize={setImageSize}
         airports={airports}

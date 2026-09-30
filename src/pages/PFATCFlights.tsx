@@ -23,7 +23,6 @@ import { useAuth } from '../hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
-import { getChartsForAirport } from '../utils/acars';
 import { parseCallsign } from '../utils/callsignParser';
 import { createChartHandlers } from '../utils/charts';
 import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
@@ -2042,7 +2041,6 @@ export default function PFATCFlights() {
         handleZoomIn={chartHandlers.handleZoomIn}
         handleZoomOut={chartHandlers.handleZoomOut}
         handleResetZoom={chartHandlers.handleResetZoom}
-        getChartsForAirport={getChartsForAirport}
         containerRef={containerRef}
         setImageSize={setImageSize}
         airports={[]}
