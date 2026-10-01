@@ -59,7 +59,15 @@ export function validateCallsign(callsign: unknown) {
     throw new Error('Callsign must contain at least one number');
   }
 
-  return trimmed.toUpperCase();
+  const upper = trimmed.toUpperCase();
+  const doubled = upper.match(/^([A-Z]{3})[\s-]?\1[\s-]?(\d.*)$/);
+  if (doubled) {
+    throw new Error(
+      `Callsign repeats the airline code. Use ${doubled[1]}${doubled[2]} instead of ${upper}`
+    );
+  }
+
+  return upper;
 }
 
 export function validateSquawk(squawk: unknown) {

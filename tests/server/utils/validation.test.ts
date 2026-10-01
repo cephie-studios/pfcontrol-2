@@ -83,6 +83,17 @@ describe('validateCallsign', () => {
       'Callsign must contain at least one number'
     );
   });
+
+  it('rejects a doubled airline code', () => {
+    expect(() => validateCallsign('UALUAL1735')).toThrow(
+      'Callsign repeats the airline code. Use UAL1735 instead of UALUAL1735'
+    );
+    expect(() => validateCallsign('ual ual1735')).toThrow(
+      'Callsign repeats the airline code'
+    );
+    expect(validateCallsign('UAL1735')).toBe('UAL1735');
+    expect(validateCallsign('N123UA')).toBe('N123UA');
+  });
 });
 
 describe('validateSquawk', () => {

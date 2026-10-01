@@ -331,9 +331,7 @@ export default function Submit({
         console.error('Flight error:', error);
         setRouteError('');
         if (error.error?.startsWith('Callsign')) {
-          setError(
-            `Callsign error: ${error.error}. Callsign must contain at least one number.`
-          );
+          setError(error.error);
         } else if (error.error?.startsWith('Route error')) {
           setRouteError(error.error);
         } else {
@@ -441,6 +439,14 @@ export default function Submit({
     return null;
   };
 
+  const flightNumberError = (() => {
+    const icao = form.airlineIcao.toUpperCase();
+    const num = form.flightNumber.trim().toUpperCase();
+    if (!icao || !num.startsWith(icao)) return '';
+    const rest = num.slice(icao.length).replace(/^[\s-]+/, '');
+    return `Enter only the number after ${icao}${rest ? `, e.g. ${rest}` : ''}`;
+  })();
+
   const needsRadarVectors = (arrival: string, flightType: string) =>
     flightType === 'VFR' ||
     (!!arrival &&
@@ -468,7 +474,7 @@ export default function Submit({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isSubmitting) return;
+    if (isSubmitting || flightNumberError) return;
 
     setError('');
     setRouteError('');
@@ -538,9 +544,7 @@ export default function Submit({
         setRouteError('');
         if (error instanceof Error) {
           if (error.message.includes('Callsign')) {
-            setError(
-              `Callsign error: ${error.message}. Callsign must contain at least one number.`
-            );
+            setError(error.message);
           } else if (error.message.includes('Route error')) {
             setRouteError(error.message);
           } else if (error.message.includes('Stand')) {
@@ -933,8 +937,18 @@ export default function Submit({
                       }
                       placeholder="1234"
                       maxLength={8}
-                      className="w-full pl-6 p-3 bg-gray-800 border-2 border-blue-600 rounded-full text-white font-semibold focus:outline-none focus:border-blue-400 transition-all"
+                      aria-invalid={!!flightNumberError}
+                      className={`w-full pl-6 p-3 bg-gray-800 border-2 rounded-full text-white font-semibold focus:outline-none transition-all ${
+                        flightNumberError
+                          ? 'border-red-600 focus:border-red-500'
+                          : 'border-blue-600 focus:border-blue-400'
+                      }`}
                     />
+                    {flightNumberError && (
+                      <p className="text-red-400 text-xs mt-1 ml-4">
+                        {flightNumberError}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {session?.externalSession && (
@@ -1138,7 +1152,7 @@ export default function Submit({
                 <Button
                   type="submit"
                   className="w-full flex justify-center items-center text-white py-3 px-6 rounded-full transition-colors disabled:opacity-50"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !!flightNumberError}
                 >
                   {isSubmitting ? (
                     <>
