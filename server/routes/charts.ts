@@ -11,13 +11,7 @@ import { applyPublicCache } from '../utils/httpCache.js';
 
 const router = express.Router();
 
-/**
- * A plate is marked with the person it was fetched for, so it is not a shared asset.
- *
- * Cached publicly, one user's marked chart would be served to everyone behind the edge -- and a
- * trace of a leak would then name whoever happened to warm the cache rather than whoever leaked.
- * The browser that asked may keep its own copy; nothing in between may.
- */
+// Each plate is marked for one user, so only the browser that asked may cache it.
 function applyPerUserCache(res: express.Response, maxAge: number): void {
   res.setHeader('Cache-Control', `private, max-age=${maxAge}`);
   res.setHeader('CDN-Cache-Control', 'no-store');
@@ -25,12 +19,10 @@ function applyPerUserCache(res: express.Response, maxAge: number): void {
 }
 
 // GET: /api/charts - Celesbit chart index
-// Signed in, because a plate is marked with whoever it was served to and a recipient we cannot
-// name is not one worth marking. Open, this is the whole pack to anyone who asks.
 router.get('/', requireAuth, async (req, res) => {
   const subject = chartSubjectFor(req);
   if (!subject) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(503).json({ error: 'Charts are unavailable' });
   }
 
   const charts = await getCelesbitCharts(subject);
@@ -50,8 +42,7 @@ router.get('/', requireAuth, async (req, res) => {
     ])
   );
 
-  // Which airports exist is the same for everyone, so the browser may still hold it -- but it is
-  // fetched with a per-user credential, so the edge must not.
+  // Same list for everyone, but fetched per user, so the edge must not hold it.
   applyPublicCache(res, {
     browserMaxAge: 60 * 60,
     edgeMaxAge: 0,
@@ -64,7 +55,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/plate/:icao/:file', requireAuth, async (req, res) => {
   const subject = chartSubjectFor(req);
   if (!subject) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(503).json({ error: 'Charts are unavailable' });
   }
 
   const image = await getCelesbitPlate(

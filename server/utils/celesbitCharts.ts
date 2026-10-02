@@ -3,9 +3,7 @@ import { prefixKey } from './cacheTtl.js';
 
 const CHARTS_URL = 'https://celesbit.dev/api/v1/charts/';
 
-// Keyed by subject, not shared. Celesbit marks each plate with whoever it was fetched for, so one
-// cache entry shared between users would hand everybody a chart marked with one person's name --
-// and a trace of a leak would then point at whoever happened to warm the cache.
+// Each plate is marked for one user, so cache entries can't be shared.
 const indexKey = (subject: string) =>
   prefixKey(`celesbit:charts:index:v2:${subject}`);
 const plateKey = (subject: string, icao: string, file: string) =>
@@ -103,7 +101,6 @@ async function fetchIndex(subject: string): Promise<CelesbitCharts | null> {
       headers: { Authorization: `ApiKey ${apiKey}` },
     });
     if (res.status === 403) {
-      // This recipient, or our key as a whole, has been barred upstream.
       console.warn('[Celesbit] Charts refused for this subject');
       return null;
     }
@@ -175,8 +172,7 @@ async function fetchPlate(
   try {
     const res = await fetchWithTimeout(plate.url);
     if (res.status === 403) {
-      // The link is minted for one subject and checked again when the image is fetched, so this is
-      // a subject barred since the index was cached. Dropping the index makes the next ask honest.
+      // Barred since the index was cached: drop it so links get re-minted.
       console.warn(`[Celesbit] Plate ${icao}/${file} refused for this subject`);
       await redisConnection.del(indexKey(subject)).catch(() => undefined);
       return null;
