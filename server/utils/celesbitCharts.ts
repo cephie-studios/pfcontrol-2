@@ -2,9 +2,14 @@ import { redisConnection } from '../db/connection.js';
 import { prefixKey } from './cacheTtl.js';
 
 const CHARTS_URL = 'https://celesbit.dev/api/v1/charts/';
-const INDEX_KEY = prefixKey('celesbit:charts:index:v1');
-const plateKey = (icao: string, file: string) =>
-  prefixKey(`celesbit:charts:plate:v1:${icao}:${file}`);
+
+// Keyed by subject, not shared. Celesbit marks each plate with whoever it was fetched for, so one
+// cache entry shared between users would hand everybody a chart marked with one person's name --
+// and a trace of a leak would then point at whoever happened to warm the cache.
+const indexKey = (subject: string) =>
+  prefixKey(`celesbit:charts:index:v2:${subject}`);
+const plateKey = (subject: string, icao: string, file: string) =>
+  prefixKey(`celesbit:charts:plate:v2:${subject}:${icao}:${file}`);
 export const CHART_CACHE_SEC = 24 * 60 * 60;
 const TOKEN_MARGIN_MS = 5 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 15000;
@@ -40,7 +45,7 @@ interface UpstreamResponse {
   expires_at?: string;
 }
 
-let indexInFlight: Promise<CelesbitCharts | null> | null = null;
+const indexInFlight = new Map<string, Promise<CelesbitCharts | null>>();
 const plateInFlight = new Map<string, Promise<CelesbitPlateImage | null>>();
 
 function parseUpstream(data: UpstreamResponse): CelesbitCharts {
@@ -75,9 +80,9 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}) {
   }
 }
 
-async function readIndex(): Promise<CelesbitCharts | null> {
+async function readIndex(subject: string): Promise<CelesbitCharts | null> {
   try {
-    const raw = await redisConnection.get(INDEX_KEY);
+    const raw = await redisConnection.get(indexKey(subject));
     return raw ? (JSON.parse(raw) as CelesbitCharts) : null;
   } catch (e) {
     console.warn('[Celesbit] Redis read failed:', e);
@@ -85,7 +90,7 @@ async function readIndex(): Promise<CelesbitCharts | null> {
   }
 }
 
-async function fetchIndex(): Promise<CelesbitCharts | null> {
+async function fetchIndex(subject: string): Promise<CelesbitCharts | null> {
   const apiKey = process.env.CELESBIT_API_KEY?.trim();
   if (!apiKey) {
     console.warn('[Celesbit] CELESBIT_API_KEY not set');
@@ -93,9 +98,15 @@ async function fetchIndex(): Promise<CelesbitCharts | null> {
   }
 
   try {
-    const res = await fetchWithTimeout(CHARTS_URL, {
+    const url = `${CHARTS_URL}?subject=${encodeURIComponent(subject)}`;
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: `ApiKey ${apiKey}` },
     });
+    if (res.status === 403) {
+      // This recipient, or our key as a whole, has been barred upstream.
+      console.warn('[Celesbit] Charts refused for this subject');
+      return null;
+    }
     if (!res.ok) {
       console.error(`[Celesbit] Charts request failed: HTTP ${res.status}`);
       return null;
@@ -103,7 +114,7 @@ async function fetchIndex(): Promise<CelesbitCharts | null> {
     const charts = parseUpstream((await res.json()) as UpstreamResponse);
     try {
       await redisConnection.set(
-        INDEX_KEY,
+        indexKey(subject),
         JSON.stringify(charts),
         'EX',
         CHART_CACHE_SEC
@@ -118,17 +129,19 @@ async function fetchIndex(): Promise<CelesbitCharts | null> {
   }
 }
 
-function refreshIndex(): Promise<CelesbitCharts | null> {
-  if (!indexInFlight) {
-    indexInFlight = fetchIndex().finally(() => {
-      indexInFlight = null;
-    });
+function refreshIndex(subject: string): Promise<CelesbitCharts | null> {
+  let pending = indexInFlight.get(subject);
+  if (!pending) {
+    pending = fetchIndex(subject).finally(() => indexInFlight.delete(subject));
+    indexInFlight.set(subject, pending);
   }
-  return indexInFlight;
+  return pending;
 }
 
-export async function getCelesbitCharts(): Promise<CelesbitCharts | null> {
-  return (await readIndex()) ?? refreshIndex();
+export async function getCelesbitCharts(
+  subject: string
+): Promise<CelesbitCharts | null> {
+  return (await readIndex(subject)) ?? refreshIndex(subject);
 }
 
 async function readPlate(key: string): Promise<CelesbitPlateImage | null> {
@@ -145,21 +158,29 @@ async function readPlate(key: string): Promise<CelesbitPlateImage | null> {
 }
 
 async function fetchPlate(
+  subject: string,
   icao: string,
   file: string
 ): Promise<CelesbitPlateImage | null> {
-  let charts = await getCelesbitCharts();
+  let charts = await getCelesbitCharts(subject);
   let plate = charts?.airports[icao]?.find((p) => p.file === file);
   if (!charts || !plate) return null;
 
   if (charts.tokensExpireAt <= Date.now()) {
-    charts = await refreshIndex();
+    charts = await refreshIndex(subject);
     plate = charts?.airports[icao]?.find((p) => p.file === file);
     if (!plate) return null;
   }
 
   try {
     const res = await fetchWithTimeout(plate.url);
+    if (res.status === 403) {
+      // The link is minted for one subject and checked again when the image is fetched, so this is
+      // a subject barred since the index was cached. Dropping the index makes the next ask honest.
+      console.warn(`[Celesbit] Plate ${icao}/${file} refused for this subject`);
+      await redisConnection.del(indexKey(subject)).catch(() => undefined);
+      return null;
+    }
     if (!res.ok) {
       console.error(
         `[Celesbit] Plate ${icao}/${file} request failed: HTTP ${res.status}`
@@ -171,7 +192,7 @@ async function fetchPlate(
       body: Buffer.from(await res.arrayBuffer()),
     };
 
-    const key = plateKey(icao, file);
+    const key = plateKey(subject, icao, file);
     try {
       await redisConnection
         .multi()
@@ -189,16 +210,19 @@ async function fetchPlate(
 }
 
 export async function getCelesbitPlate(
+  subject: string,
   icao: string,
   file: string
 ): Promise<CelesbitPlateImage | null> {
-  const key = plateKey(icao, file);
+  const key = plateKey(subject, icao, file);
   const cached = await readPlate(key);
   if (cached) return cached;
 
   let pending = plateInFlight.get(key);
   if (!pending) {
-    pending = fetchPlate(icao, file).finally(() => plateInFlight.delete(key));
+    pending = fetchPlate(subject, icao, file).finally(() =>
+      plateInFlight.delete(key)
+    );
     plateInFlight.set(key, pending);
   }
   return pending;
