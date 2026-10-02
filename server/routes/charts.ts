@@ -5,6 +5,7 @@ import {
   getCelesbitCharts,
   getCelesbitPlate,
 } from '../utils/celesbitCharts.js';
+import requireAuth from '../middleware/auth.js';
 import { chartSubjectFor } from '../utils/chartSubject.js';
 import { applyPublicCache } from '../utils/httpCache.js';
 
@@ -24,8 +25,15 @@ function applyPerUserCache(res: express.Response, maxAge: number): void {
 }
 
 // GET: /api/charts - Celesbit chart index
-router.get('/', async (req, res) => {
-  const charts = await getCelesbitCharts(chartSubjectFor(req, res));
+// Signed in, because a plate is marked with whoever it was served to and a recipient we cannot
+// name is not one worth marking. Open, this is the whole pack to anyone who asks.
+router.get('/', requireAuth, async (req, res) => {
+  const subject = chartSubjectFor(req);
+  if (!subject) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const charts = await getCelesbitCharts(subject);
   if (!charts) {
     return res.status(503).json({ error: 'Charts are unavailable' });
   }
@@ -43,7 +51,7 @@ router.get('/', async (req, res) => {
   );
 
   // Which airports exist is the same for everyone, so the browser may still hold it -- but it is
-  // fetched per user and may carry a Set-Cookie, so the edge must not.
+  // fetched with a per-user credential, so the edge must not.
   applyPublicCache(res, {
     browserMaxAge: 60 * 60,
     edgeMaxAge: 0,
@@ -53,9 +61,14 @@ router.get('/', async (req, res) => {
 });
 
 // GET: /api/charts/plate/:icao/:file - chart image
-router.get('/plate/:icao/:file', async (req, res) => {
+router.get('/plate/:icao/:file', requireAuth, async (req, res) => {
+  const subject = chartSubjectFor(req);
+  if (!subject) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
   const image = await getCelesbitPlate(
-    chartSubjectFor(req, res),
+    subject,
     req.params.icao.toUpperCase(),
     req.params.file
   );
