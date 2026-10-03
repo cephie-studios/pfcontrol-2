@@ -20,6 +20,7 @@ const securityMiddleware = [
   cspNonce,
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -45,6 +46,7 @@ const securityMiddleware = [
         workerSrc: ["'self'", 'blob:'],
         imgSrc: [
           "'self'",
+          'blob:',
           'https://cdn.discordapp.com',
           'https://api.cephie.app',
           'https://ui-avatars.com',

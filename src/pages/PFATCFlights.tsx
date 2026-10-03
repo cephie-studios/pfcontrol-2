@@ -24,7 +24,6 @@ import { toast } from 'sonner';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
 import { parseCallsign } from '../utils/callsignParser';
-import { createChartHandlers } from '../utils/charts';
 import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
 import { fetchBackgrounds } from '../utils/fetch/data';
 import type { OverviewData, OverviewSession } from '../types/overview';
@@ -190,14 +189,6 @@ export default function PFATCFlights() {
   const [selectedStation, setSelectedStation] = useState<string>('');
 
   const [isChartDrawerOpen, setIsChartDrawerOpen] = useState(false);
-  const [selectedChart, setSelectedChart] = useState<string | null>(null);
-  const [chartLoadError, setChartLoadError] = useState(false);
-  const [chartZoom, setChartZoom] = useState(1);
-  const [chartPan, setChartPan] = useState({ x: 0, y: 0 });
-  const [isChartDragging, setIsChartDragging] = useState(false);
-  const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const containerRef = useRef<HTMLDivElement>(null!);
 
   const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
   const [activeAcarsFlights, setActiveAcarsFlights] = useState<
@@ -246,23 +237,6 @@ export default function PFATCFlights() {
     // AATC disabled — if (isAATCSectorController && flight.sessionIsAdvancedATC) return true;
     return false;
   };
-
-  const chartHandlers = useMemo(
-    () =>
-      createChartHandlers(
-        chartZoom,
-        setChartZoom,
-        chartPan,
-        setChartPan,
-        isChartDragging,
-        setIsChartDragging,
-        chartDragStart,
-        setChartDragStart,
-        containerRef,
-        imageSize
-      ),
-    [chartZoom, chartPan, isChartDragging, chartDragStart, imageSize]
-  );
 
   const handleMentionReceived = useCallback(() => {
     setUnreadMentions((prev) => prev + 1);
@@ -2025,25 +1999,6 @@ export default function PFATCFlights() {
       <ChartDrawer
         isOpen={isChartDrawerOpen}
         onClose={() => setIsChartDrawerOpen(false)}
-        selectedChart={selectedChart}
-        setSelectedChart={setSelectedChart}
-        chartLoadError={chartLoadError}
-        setChartLoadError={setChartLoadError}
-        chartZoom={chartZoom}
-        chartPan={chartPan}
-        isChartDragging={isChartDragging}
-        handleChartMouseDown={chartHandlers.handleChartMouseDown}
-        handleChartMouseMove={chartHandlers.handleChartMouseMove}
-        handleChartMouseUp={chartHandlers.handleChartMouseUp}
-        handleTouchStart={chartHandlers.handleTouchStart}
-        handleTouchMove={chartHandlers.handleTouchMove}
-        handleTouchEnd={chartHandlers.handleTouchEnd}
-        handleZoomIn={chartHandlers.handleZoomIn}
-        handleZoomOut={chartHandlers.handleZoomOut}
-        handleResetZoom={chartHandlers.handleResetZoom}
-        containerRef={containerRef}
-        setImageSize={setImageSize}
-        airports={[]}
         settings={user?.settings || null}
         sectorStation={isEventController ? selectedStation : undefined}
       />

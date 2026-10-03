@@ -1290,6 +1290,28 @@ export async function ensurePlatformTokenColumn() {
   `.execute(mainDb);
 }
 
+export async function ensureChartfoxLinksTable() {
+  await mainDb.schema
+    .createTable('chartfox_links')
+    .ifNotExists()
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.primaryKey().references('users.id').onDelete('cascade')
+    )
+    .addColumn('chartfox_user_id', 'integer')
+    .addColumn('chartfox_name', 'varchar(255)')
+    .addColumn('access_token', 'jsonb', (col) => col.notNull())
+    .addColumn('refresh_token', 'jsonb')
+    .addColumn('expires_at', 'timestamptz', (col) => col.notNull())
+    .addColumn('scopes', 'text')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .addColumn('updated_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+}
+
 export async function ensureFlightLogsTrigramIndexes() {
   await sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`.execute(mainDb);
 
