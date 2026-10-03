@@ -12,7 +12,7 @@ export type CelesbitChartIndex = Record<string, CelesbitPlate[]>;
 export async function fetchCelesbitCharts(): Promise<CelesbitChartIndex | null> {
   try {
     const response = await fetch(clientApiUrl('/api/charts'), {
-      credentials: 'omit',
+      credentials: 'include',
     });
     if (!response.ok) return null;
     const data = (await response.json()) as { airports?: CelesbitChartIndex };

@@ -7,8 +7,6 @@ import {
   getCelesbitCharts,
   getCelesbitPlate,
 } from '../utils/celesbitCharts.js';
-import requireAuth from '../middleware/auth.js';
-import { chartSubjectFor } from '../utils/chartSubject.js';
 import {
   ChartfoxAuthError,
   chartfoxAuthorizeUrl,
@@ -20,8 +18,9 @@ import {
   linkChartfoxAccount,
   unlinkChartfoxAccount,
 } from '../utils/chartfox.js';
-import { applyPublicCache } from '../utils/httpCache.js';
 import requireAuth from '../middleware/auth.js';
+import { chartSubjectFor } from '../utils/chartSubject.js';
+import { applyPublicCache } from '../utils/httpCache.js';
 import { authLimiter } from '../middleware/security.js';
 
 const router = express.Router();
@@ -31,6 +30,8 @@ function applyPerUserCache(res: express.Response, maxAge: number): void {
   res.setHeader('Cache-Control', `private, max-age=${maxAge}`);
   res.setHeader('CDN-Cache-Control', 'no-store');
   res.setHeader('Vary', 'Cookie');
+}
+
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? '';
 const ICAO_PATTERN = /^[A-Z0-9]{2,7}$/;
