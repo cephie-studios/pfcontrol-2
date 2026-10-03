@@ -104,7 +104,7 @@ PFControl v2 is a hybrid frontend:
 ### Development workflow
 
 ```bash
-npm run dev              # Runs Vite (React SPA) + nodemon backend
+npm run dev              # Runs Vite (React SPA) + tsx watch backend
 npm run dev:astro       # Astro dev server (optional, for Astro-only work)
 npm run build:astro     # Build Astro SSR bundle
 npm run build           # Full production build (backend + Astro + React)

@@ -9,6 +9,8 @@ process.env.DB_ENCRYPTION_KEY =
 process.env.ADMIN_IDS = process.env.ADMIN_IDS ?? '';
 process.env.IP_HASH_SECRET =
   process.env.IP_HASH_SECRET || 'vitest-ip-hash-secret-for-testing-only';
+process.env.CHART_SUBJECT_SECRET =
+  process.env.CHART_SUBJECT_SECRET || 'vitest-chart-subject-secret-for-testing';
 
 vi.mock('../../server/websockets/sessionUsersWebsocket.js', () => ({
   getActiveUsersForSession: vi.fn().mockResolvedValue([]),

@@ -18,11 +18,19 @@ import {
   linkChartfoxAccount,
   unlinkChartfoxAccount,
 } from '../utils/chartfox.js';
-import { applyPublicCache } from '../utils/httpCache.js';
 import requireAuth from '../middleware/auth.js';
+import { chartSubjectFor } from '../utils/chartSubject.js';
+import { applyPublicCache } from '../utils/httpCache.js';
 import { authLimiter } from '../middleware/security.js';
 
 const router = express.Router();
+
+// Each plate is marked for one user, so only the browser that asked may cache it.
+function applyPerUserCache(res: express.Response, maxAge: number): void {
+  res.setHeader('Cache-Control', `private, max-age=${maxAge}`);
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vary', 'Cookie');
+}
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? '';
@@ -66,8 +74,13 @@ function sendChartfoxError(res: Response, error: unknown) {
 }
 
 // GET: /api/charts - Celesbit chart index
-router.get('/', async (_req, res) => {
-  const charts = await getCelesbitCharts();
+router.get('/', requireAuth, async (req, res) => {
+  const subject = chartSubjectFor(req);
+  if (!subject) {
+    return res.status(503).json({ error: 'Charts are unavailable' });
+  }
+
+  const charts = await getCelesbitCharts(subject);
   if (!charts) {
     return res.status(503).json({ error: 'Charts are unavailable' });
   }
@@ -84,13 +97,24 @@ router.get('/', async (_req, res) => {
     ])
   );
 
-  applyPublicCache(res, { browserMaxAge: 60 * 60 });
+  // Same list for everyone, but fetched per user, so the edge must not hold it.
+  applyPublicCache(res, {
+    browserMaxAge: 60 * 60,
+    edgeMaxAge: 0,
+    vary: 'Cookie',
+  });
   res.json({ airports });
 });
 
 // GET: /api/charts/plate/:icao/:file - chart image
-router.get('/plate/:icao/:file', async (req, res) => {
+router.get('/plate/:icao/:file', requireAuth, async (req, res) => {
+  const subject = chartSubjectFor(req);
+  if (!subject) {
+    return res.status(503).json({ error: 'Charts are unavailable' });
+  }
+
   const image = await getCelesbitPlate(
+    subject,
     req.params.icao.toUpperCase(),
     req.params.file
   );
@@ -98,10 +122,7 @@ router.get('/plate/:icao/:file', async (req, res) => {
     return res.status(404).json({ error: 'Chart not found' });
   }
 
-  applyPublicCache(res, {
-    browserMaxAge: 60 * 60,
-    edgeMaxAge: CHART_CACHE_SEC,
-  });
+  applyPerUserCache(res, CHART_CACHE_SEC);
   res.type(image.contentType).send(image.body);
 });
 

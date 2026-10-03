@@ -2,9 +2,9 @@ import { redisConnection } from '../db/connection.js';
 import { prefixKey } from './cacheTtl.js';
 
 const CHARTS_URL = 'https://celesbit.dev/api/v1/charts/';
-const INDEX_KEY = prefixKey('celesbit:charts:index:v1');
-const plateKey = (icao: string, file: string) =>
-  prefixKey(`celesbit:charts:plate:v1:${icao}:${file}`);
+
+const indexKey = (subject: string) =>
+  prefixKey(`celesbit:charts:index:v2:${subject}`);
 export const CHART_CACHE_SEC = 24 * 60 * 60;
 const TOKEN_MARGIN_MS = 5 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 15000;
@@ -40,7 +40,7 @@ interface UpstreamResponse {
   expires_at?: string;
 }
 
-let indexInFlight: Promise<CelesbitCharts | null> | null = null;
+const indexInFlight = new Map<string, Promise<CelesbitCharts | null>>();
 const plateInFlight = new Map<string, Promise<CelesbitPlateImage | null>>();
 
 function parseUpstream(data: UpstreamResponse): CelesbitCharts {
@@ -75,9 +75,9 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}) {
   }
 }
 
-async function readIndex(): Promise<CelesbitCharts | null> {
+async function readIndex(subject: string): Promise<CelesbitCharts | null> {
   try {
-    const raw = await redisConnection.get(INDEX_KEY);
+    const raw = await redisConnection.get(indexKey(subject));
     return raw ? (JSON.parse(raw) as CelesbitCharts) : null;
   } catch (e) {
     console.warn('[Celesbit] Redis read failed:', e);
@@ -85,7 +85,7 @@ async function readIndex(): Promise<CelesbitCharts | null> {
   }
 }
 
-async function fetchIndex(): Promise<CelesbitCharts | null> {
+async function fetchIndex(subject: string): Promise<CelesbitCharts | null> {
   const apiKey = process.env.CELESBIT_API_KEY?.trim();
   if (!apiKey) {
     console.warn('[Celesbit] CELESBIT_API_KEY not set');
@@ -93,23 +93,36 @@ async function fetchIndex(): Promise<CelesbitCharts | null> {
   }
 
   try {
-    const res = await fetchWithTimeout(CHARTS_URL, {
+    const url = `${CHARTS_URL}?subject=${encodeURIComponent(subject)}`;
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: `ApiKey ${apiKey}` },
     });
+    if (res.status === 403) {
+      console.warn('[Celesbit] Charts refused for this subject');
+      return null;
+    }
     if (!res.ok) {
       console.error(`[Celesbit] Charts request failed: HTTP ${res.status}`);
       return null;
     }
     const charts = parseUpstream((await res.json()) as UpstreamResponse);
-    try {
-      await redisConnection.set(
-        INDEX_KEY,
-        JSON.stringify(charts),
-        'EX',
-        CHART_CACHE_SEC
-      );
-    } catch (e) {
-      console.warn('[Celesbit] Redis write failed:', e);
+    const ttl = charts.tokensExpireAt
+      ? Math.min(
+          CHART_CACHE_SEC,
+          Math.floor((charts.tokensExpireAt - Date.now()) / 1000)
+        )
+      : CHART_CACHE_SEC;
+    if (ttl > 0) {
+      try {
+        await redisConnection.set(
+          indexKey(subject),
+          JSON.stringify(charts),
+          'EX',
+          ttl
+        );
+      } catch (e) {
+        console.warn('[Celesbit] Redis write failed:', e);
+      }
     }
     return charts;
   } catch (e) {
@@ -118,70 +131,54 @@ async function fetchIndex(): Promise<CelesbitCharts | null> {
   }
 }
 
-function refreshIndex(): Promise<CelesbitCharts | null> {
-  if (!indexInFlight) {
-    indexInFlight = fetchIndex().finally(() => {
-      indexInFlight = null;
-    });
+function refreshIndex(subject: string): Promise<CelesbitCharts | null> {
+  let pending = indexInFlight.get(subject);
+  if (!pending) {
+    pending = fetchIndex(subject).finally(() => indexInFlight.delete(subject));
+    indexInFlight.set(subject, pending);
   }
-  return indexInFlight;
+  return pending;
 }
 
-export async function getCelesbitCharts(): Promise<CelesbitCharts | null> {
-  return (await readIndex()) ?? refreshIndex();
-}
-
-async function readPlate(key: string): Promise<CelesbitPlateImage | null> {
-  try {
-    const [contentType, body] = await Promise.all([
-      redisConnection.hget(key, 'type'),
-      redisConnection.hgetBuffer(key, 'body'),
-    ]);
-    return contentType && body ? { contentType, body } : null;
-  } catch (e) {
-    console.warn('[Celesbit] Redis plate read failed:', e);
-    return null;
-  }
+export async function getCelesbitCharts(
+  subject: string
+): Promise<CelesbitCharts | null> {
+  return (await readIndex(subject)) ?? refreshIndex(subject);
 }
 
 async function fetchPlate(
+  subject: string,
   icao: string,
   file: string
 ): Promise<CelesbitPlateImage | null> {
-  let charts = await getCelesbitCharts();
+  let charts = await getCelesbitCharts(subject);
   let plate = charts?.airports[icao]?.find((p) => p.file === file);
   if (!charts || !plate) return null;
 
   if (charts.tokensExpireAt <= Date.now()) {
-    charts = await refreshIndex();
+    charts = await refreshIndex(subject);
     plate = charts?.airports[icao]?.find((p) => p.file === file);
     if (!plate) return null;
   }
 
   try {
     const res = await fetchWithTimeout(plate.url);
+    if (res.status === 403) {
+      // Barred since the index was cached: drop it so links get re-minted.
+      console.warn(`[Celesbit] Plate ${icao}/${file} refused for this subject`);
+      await redisConnection.del(indexKey(subject)).catch(() => undefined);
+      return null;
+    }
     if (!res.ok) {
       console.error(
         `[Celesbit] Plate ${icao}/${file} request failed: HTTP ${res.status}`
       );
       return null;
     }
-    const image: CelesbitPlateImage = {
+    return {
       contentType: res.headers.get('content-type') ?? 'image/webp',
       body: Buffer.from(await res.arrayBuffer()),
     };
-
-    const key = plateKey(icao, file);
-    try {
-      await redisConnection
-        .multi()
-        .hset(key, { type: image.contentType, body: image.body })
-        .expire(key, CHART_CACHE_SEC)
-        .exec();
-    } catch (e) {
-      console.warn('[Celesbit] Redis plate write failed:', e);
-    }
-    return image;
   } catch (e) {
     console.error(`[Celesbit] Plate ${icao}/${file} request failed:`, e);
     return null;
@@ -189,16 +186,16 @@ async function fetchPlate(
 }
 
 export async function getCelesbitPlate(
+  subject: string,
   icao: string,
   file: string
 ): Promise<CelesbitPlateImage | null> {
-  const key = plateKey(icao, file);
-  const cached = await readPlate(key);
-  if (cached) return cached;
-
+  const key = `${subject}:${icao}:${file}`;
   let pending = plateInFlight.get(key);
   if (!pending) {
-    pending = fetchPlate(icao, file).finally(() => plateInFlight.delete(key));
+    pending = fetchPlate(subject, icao, file).finally(() =>
+      plateInFlight.delete(key)
+    );
     plateInFlight.set(key, pending);
   }
   return pending;
