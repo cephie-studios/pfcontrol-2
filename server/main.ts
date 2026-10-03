@@ -226,12 +226,14 @@ if (astroClientDir && existsSync(astroClientDir)) {
 
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  if (!req.path.startsWith('/_astro/')) return next();
+  if (!req.path.startsWith('/_astro/') && !req.path.startsWith('/assets/'))
+    return next();
   res
     .status(404)
+    .setHeader('Cache-Control', 'no-store')
     .type('text/plain')
     .send(
-      'Astro client chunk not found. Try a hard refresh (Ctrl+Shift+R) or clear site data for this host — your page may reference an old deploy.'
+      'Client chunk not found. Try a hard refresh (Ctrl+Shift+R) or clear site data for this host — your page may reference an old deploy.'
     );
 });
 
@@ -292,8 +294,11 @@ if (astroHandler) {
 }
 
 app.get('/{*any}', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, '..', '..', 'dist', 'index.html'), {
+    etag: false,
+    lastModified: false,
+  });
 });
 
 setupExpressErrorHandler(posthogClient, app);
