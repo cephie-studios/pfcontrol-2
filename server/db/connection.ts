@@ -31,6 +31,7 @@ import {
   ensureUserNotificationsIssuerColumns,
   ensureUserNotificationsCreatedAtDefault,
   ensureFlightLogsTrigramIndexes,
+  ensureChartfoxLinksTable,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -114,6 +115,7 @@ try {
   await ensureUserNotificationsIssuerColumns();
   await ensureUserNotificationsCreatedAtDefault();
   await ensureFlightLogsTrigramIndexes();
+  await ensureChartfoxLinksTable();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

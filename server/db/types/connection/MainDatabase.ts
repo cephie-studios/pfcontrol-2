@@ -32,6 +32,7 @@ import {
   DailyTableActivityTable,
 } from './main/DailyTableActivityTable';
 import { WebsocketSnapshotsTable } from './main/WebsocketSnapshotsTable';
+import { ChartfoxLinksTable } from './main/ChartfoxLinksTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -66,4 +67,5 @@ export interface MainDatabase {
   daily_table_activity: DailyTableActivityTable;
   daily_database_totals: DailyDatabaseTotalsTable;
   websocket_snapshots: WebsocketSnapshotsTable;
+  chartfox_links: ChartfoxLinksTable;
 }

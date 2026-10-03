@@ -139,6 +139,10 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(securityMiddleware);
+app.use('/charts/chartfox/linked', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  next();
+});
 
 app.use('/api/auth/platform-identity', platformIdentityCors);
 

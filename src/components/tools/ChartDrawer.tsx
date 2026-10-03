@@ -1,177 +1,340 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Map,
-  ZoomIn,
-  ZoomOut,
-  PlaneLanding,
+  BookOpen,
+  Check,
   ChevronDown,
+  File,
+  FileText,
+  LandPlot,
+  Link2,
   Loader2,
+  Map,
+  PlaneLanding,
   PlaneTakeoff,
-  List,
+  Radar,
+  RefreshCw,
   Search,
+  SearchX,
+  Target,
+  Waypoints,
   type LucideIcon,
 } from 'lucide-react';
-import type { Airport } from '../../types/airports';
 import type { Settings } from '../../types/settings';
-import Button from '../common/Button';
-import { PanelHeader, panelInputClass } from '../common/SidePanel';
+import { PanelHeader } from '../common/SidePanel';
+import ChartViewer from '../charts/ChartViewer';
 import { cn } from '@/lib/utils';
+import { SIGNATURE_TONES } from '@/lib/signatureTones';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
-  useAirportCharts,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  FIELD_OPTION_CLASS,
+  FIELD_PANEL_CLASS,
+} from '../dropdowns/fieldStyles';
+import { useAirportCharts } from '../../hooks/useAirportCharts';
+import {
+  useChartfoxAirportCharts,
+  useChartfoxStatus,
+} from '../../hooks/useChartfox';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { useData } from '../../hooks/data/useData';
+import {
+  CATEGORY_LABELS,
+  CHARTFOX_LOGO_URL,
+  SOURCE_LABELS,
+  SOURCE_ORDER,
+  chartMatchesQuery,
+  groupByCategory,
+  type ChartCategory,
   type ChartEntry,
-} from '../../hooks/useAirportCharts';
+  type ChartSource,
+} from '../../utils/chartCatalog';
 
-type Accent = 'green' | 'blue' | 'purple' | 'gray';
+type AirportRole = 'departure' | 'arrival' | 'sector';
 
-const accentText: Record<Accent, string> = {
-  green: 'text-green-400',
-  blue: 'text-blue-400',
-  purple: 'text-purple-400',
-  gray: 'text-zinc-300',
+const ROLE_META: Record<
+  AirportRole,
+  { icon: LucideIcon; color: string; label: string }
+> = {
+  departure: {
+    icon: PlaneTakeoff,
+    color: 'text-green-400',
+    label: 'Departure',
+  },
+  arrival: { icon: PlaneLanding, color: 'text-blue-400', label: 'Arrival' },
+  sector: { icon: Radar, color: 'text-purple-400', label: 'Sector' },
 };
 
-const accentGridHover: Record<Accent, { border: string; text: string }> = {
-  green: {
-    border: 'hover:border-green-500/50',
-    text: 'group-hover:text-green-400',
-  },
-  blue: {
-    border: 'hover:border-blue-500/50',
-    text: 'group-hover:text-blue-400',
-  },
-  purple: {
-    border: 'hover:border-purple-500/50',
-    text: 'group-hover:text-purple-400',
-  },
-  gray: { border: 'hover:border-zinc-500', text: 'group-hover:text-zinc-300' },
+const CATEGORY_META: Record<
+  ChartCategory,
+  { icon: LucideIcon; color: string }
+> = {
+  ground: { icon: LandPlot, color: 'text-amber-400' },
+  sid: { icon: PlaneTakeoff, color: 'text-green-400' },
+  star: { icon: PlaneLanding, color: 'text-blue-400' },
+  approach: { icon: Target, color: 'text-purple-400' },
+  transition: { icon: Waypoints, color: 'text-cyan-400' },
+  general: { icon: FileText, color: 'text-zinc-400' },
+  briefing: { icon: BookOpen, color: 'text-zinc-400' },
+  other: { icon: File, color: 'text-zinc-500' },
 };
 
-function ChartListSection({
-  title,
-  charts,
-  selectedChart,
-  onSelect,
+const SECTOR_AIRPORTS: Record<string, string[]> = {
+  EGTT_CTR: ['EGKK', 'EGLC', 'EGFF', 'EGHC', 'EGHJ', 'EGCK', 'X2BH'],
+  EGPX_CTR: [],
+  LPPC_CTR: ['LPMA'],
+  ANC_CTR: ['PAFA'],
+  LCCC_CTR: ['LCLK', 'LCPH', 'LCRA'],
+  LCCC_E_CTR: ['LCLK', 'LCPH', 'LCRA'],
+  LCCC_W_CTR: ['LCLK', 'LCPH', 'LCRA'],
+  LCCC_S1_CTR: ['LCLK', 'LCPH', 'LCRA'],
+  LCCC_S2_CTR: ['LCLK', 'LCPH', 'LCRA'],
+  MDCS_N_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
+  MDCS_S_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
+};
+
+const ICAO_QUERY = /^[A-Z0-9]{3,4}$/;
+
+const AIRPORT_PILL_CLASS =
+  'box-border flex h-8 shrink-0 items-center gap-1.5 rounded-full border-2 px-3 text-sm leading-none font-medium transition-colors outline-none [&_svg]:size-3.5 [&_svg]:shrink-0';
+const AIRPORT_PILL_IDLE_CLASS =
+  'cursor-pointer border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/60';
+const AIRPORT_PILL_ACTIVE_CLASS = 'border-blue-600 bg-blue-600 text-white';
+
+function chartDetails(chart: ChartEntry) {
+  return [
+    chart.code,
+    chart.runways.length ? `RWY ${chart.runways.join(', ')}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+function CategoryHeading({
+  category,
+  count,
 }: {
-  title: string;
-  charts: ChartEntry[];
-  selectedChart: string | null;
-  onSelect: (path: string) => void;
+  category: ChartCategory;
+  count: number;
 }) {
+  const { icon: Icon, color } = CATEGORY_META[category];
   return (
-    <div>
-      <div className="px-4 pt-4 pb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-        {title}
-      </div>
-      <div className="space-y-1">
-        {charts.map((chart) => {
-          const active = selectedChart === chart.path;
-          return (
-            <button
-              key={chart.path}
-              type="button"
-              onClick={() => onSelect(chart.path)}
-              aria-current={active || undefined}
-              className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-full px-4 py-2.5 text-left text-sm transition-colors',
-                active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
-              )}
-            >
-              <span className="truncate">{chart.name}</span>
-              <span
-                className={cn(
-                  'shrink-0 text-xs',
-                  active ? 'text-blue-100' : 'text-zinc-500'
-                )}
-              >
-                {chart.type}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-2 px-3 pt-4 pb-1.5 text-xs font-semibold tracking-wide text-zinc-400 uppercase">
+      <Icon className={cn('size-3.5 shrink-0', color)} />
+      <span>{CATEGORY_LABELS[category]}</span>
+      <span className="ml-auto font-medium text-zinc-500 tabular-nums">
+        {count}
+      </span>
     </div>
   );
 }
 
-function ChartGridItem({
+function ChartRow({
   chart,
-  accent,
+  active,
+  showSource,
   onSelect,
 }: {
   chart: ChartEntry;
-  accent: Accent;
+  active: boolean;
+  showSource: boolean;
   onSelect: () => void;
 }) {
+  const details = chartDetails(chart);
   return (
     <button
       type="button"
       onClick={onSelect}
+      aria-current={active || undefined}
       className={cn(
-        'group rounded-xl border border-zinc-800 bg-zinc-800/40 p-3 text-left transition-colors hover:bg-zinc-800',
-        accentGridHover[accent].border
+        'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+        active
+          ? 'bg-blue-600 text-white'
+          : 'text-zinc-200 hover:bg-zinc-800 hover:text-white'
       )}
     >
-      <div
-        className={cn(
-          'line-clamp-1 text-sm font-medium text-white transition-colors',
-          accentGridHover[accent].text
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm">{chart.name}</span>
+        {details && (
+          <span
+            className={cn(
+              'block truncate text-xs',
+              active ? 'text-blue-100' : 'text-zinc-500'
+            )}
+          >
+            {details}
+          </span>
         )}
-      >
-        {chart.name}
-      </div>
-      <div className="mt-0.5 text-xs text-zinc-500">{chart.type}</div>
+      </span>
+      {showSource && (
+        <span
+          className={cn(
+            'shrink-0 text-xs',
+            active ? 'text-blue-100' : 'text-zinc-500'
+          )}
+        >
+          {SOURCE_LABELS[chart.source]}
+        </span>
+      )}
     </button>
   );
 }
 
-function ChartGroupLabel({
-  icon: Icon,
-  accent,
-  children,
-  count,
+function ChartCard({
+  chart,
+  showSource,
+  onSelect,
 }: {
-  icon: LucideIcon;
-  accent: Accent;
-  children: React.ReactNode;
-  count?: number;
+  chart: ChartEntry;
+  showSource: boolean;
+  onSelect: () => void;
 }) {
+  const details = chartDetails(chart);
   return (
-    <div className="flex items-center gap-2 px-2.5 pt-1 pb-1.5 text-xs font-semibold tracking-wide text-zinc-400 uppercase">
-      <Icon className={cn('size-3.5 shrink-0', accentText[accent])} />
-      <span className="truncate">{children}</span>
-      {count !== undefined && (
-        <span className="ml-auto font-medium text-zinc-500 tabular-nums">
-          {count}
-        </span>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={onSelect}
+      className="cursor-pointer rounded-2xl border-2 border-zinc-800 bg-zinc-900 p-3 text-left transition-colors outline-none hover:border-zinc-700 hover:bg-zinc-800/60 focus-visible:border-blue-600"
+    >
+      <span className="line-clamp-2 text-sm font-medium text-white">
+        {chart.name}
+      </span>
+      <span className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500">
+        <span className="truncate">{details}</span>
+        {showSource && (
+          <span className="shrink-0">{SOURCE_LABELS[chart.source]}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function AirportPicker({
+  airports,
+  active,
+  allowLookup,
+  onSelect,
+}: {
+  airports: { icao: string; name: string | null; count: number }[];
+  active: string | null;
+  allowLookup: boolean;
+  onSelect: (icao: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const lookup = query.trim().toUpperCase();
+  const canLookup =
+    allowLookup &&
+    ICAO_QUERY.test(lookup) &&
+    !airports.some((airport) => airport.icao === lookup);
+
+  const select = (icao: string) => {
+    onSelect(icao);
+    setOpen(false);
+    setQuery('');
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            AIRPORT_PILL_CLASS,
+            AIRPORT_PILL_IDLE_CLASS,
+            'focus-visible:border-blue-600 data-[state=open]:border-blue-600'
+          )}
+        >
+          <Search className="text-zinc-500" />
+          Airports
+          <ChevronDown className="text-zinc-500" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className={cn(
+          'shadcn-scope w-72 overflow-hidden p-0',
+          FIELD_PANEL_CLASS
+        )}
+      >
+        <Command>
+          <CommandInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder={
+              allowLookup ? 'ICAO or airport name' : 'Search airports'
+            }
+          />
+          <CommandList className="no-scrollbar max-h-72">
+            <CommandEmpty>No airports found.</CommandEmpty>
+            {canLookup && (
+              <CommandGroup heading="ChartFox">
+                <CommandItem
+                  value={`lookup ${lookup}`}
+                  onSelect={() => select(lookup)}
+                  className={FIELD_OPTION_CLASS}
+                >
+                  <img
+                    src={CHARTFOX_LOGO_URL}
+                    alt=""
+                    className="size-4 rounded"
+                  />
+                  <span>
+                    Show charts for{' '}
+                    <span className="font-mono font-medium">{lookup}</span>
+                  </span>
+                </CommandItem>
+              </CommandGroup>
+            )}
+            {airports.length > 0 && (
+              <CommandGroup heading="Airports">
+                {airports.map((airport) => (
+                  <CommandItem
+                    key={airport.icao}
+                    value={`${airport.icao} ${airport.name ?? ''}`}
+                    onSelect={() => select(airport.icao)}
+                    className={FIELD_OPTION_CLASS}
+                  >
+                    <span className="font-mono font-medium">
+                      {airport.icao}
+                    </span>
+                    <span className="truncate text-zinc-400 group-data-[selected=true]/option:text-blue-100">
+                      {airport.name}
+                    </span>
+                    {airport.icao === active ? (
+                      <Check className="ml-auto" />
+                    ) : (
+                      <span className="ml-auto text-xs text-zinc-500 tabular-nums group-data-[selected=true]/option:text-blue-100">
+                        {airport.count}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
 interface ChartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedChart: string | null;
-  setSelectedChart: (chart: string | null) => void;
-  chartLoadError: boolean;
-  setChartLoadError: (err: boolean) => void;
-  chartZoom: number;
-  chartPan: { x: number; y: number };
-  isChartDragging: boolean;
-  handleChartMouseDown: (e: React.MouseEvent) => void;
-  handleChartMouseMove: (e: React.MouseEvent) => void;
-  handleChartMouseUp: () => void;
-  handleTouchStart: (e: React.TouchEvent) => void;
-  handleTouchMove: (e: React.TouchEvent) => void;
-  handleTouchEnd: (e: React.TouchEvent) => void;
-  handleZoomIn: () => void;
-  handleZoomOut: () => void;
-  handleResetZoom: () => void;
-  containerRef: React.RefObject<HTMLDivElement>;
-  setImageSize: (size: { width: number; height: number }) => void;
-  airports: Airport[];
   settings: Settings | null;
   departureAirport?: string;
   arrivalAirport?: string;
@@ -181,251 +344,91 @@ interface ChartDrawerProps {
 export default function ChartDrawer({
   isOpen,
   onClose,
-  selectedChart,
-  setSelectedChart,
-  chartLoadError,
-  setChartLoadError,
-  chartZoom,
-  chartPan,
-  isChartDragging,
-  handleChartMouseDown,
-  handleChartMouseMove,
-  handleChartMouseUp,
-  handleTouchStart,
-  handleTouchMove,
-  handleTouchEnd,
-  handleZoomIn,
-  handleZoomOut,
-  handleResetZoom,
-  containerRef,
-  setImageSize,
   settings,
   departureAirport,
   arrivalAirport,
   sectorStation,
 }: ChartDrawerProps) {
-  const [showAllAirports, setShowAllAirports] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
+  const { user } = useAuth();
+  const { airports: airportData } = useData();
+  const { getLocalCharts } = useAirportCharts();
+  const chartfox = useChartfoxStatus(!!user && isOpen);
+  const [pickedAirport, setPickedAirport] = useState<string | null>(null);
+  const [selectedChart, setSelectedChart] = useState<ChartEntry | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<ChartSource | 'all'>('all');
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileView, setMobileView] = useState<'chart' | 'sidebar'>('sidebar');
-  const { getChartsForAirport, availableAirports } = useAirportCharts();
+  const [mobileView, setMobileView] = useState<'list' | 'chart'>('list');
 
-  const viewMode = settings?.layout?.chartDrawerViewMode || 'legacy';
+  const isListMode = settings?.layout?.chartDrawerViewMode === 'list';
 
-  const sectorAirportMap: Record<string, string[]> = {
-    EGTT_CTR: ['EGKK', 'EGLC', 'EGFF', 'EGHC', 'EGHJ', 'EGCK', 'X2BH'],
-    EGPX_CTR: [],
-    LPPC_CTR: ['LPMA'],
-    ANC_CTR: ['PAFA'],
-    LCCC_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    LCCC_E_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    LCCC_W_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    LCCC_S1_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    LCCC_S2_CTR: ['LCLK', 'LCPH', 'LCRA'],
-    MDCS_N_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
-    MDCS_S_CTR: ['MDPC', 'MDST', 'MDAB', 'MTCA'],
-  };
+  const relevantAirports = useMemo(() => {
+    const entries: { icao: string; role: AirportRole }[] = [];
+    const add = (icao: string | undefined, role: AirportRole) => {
+      const code = icao?.trim().toUpperCase();
+      if (code && !entries.some((entry) => entry.icao === code)) {
+        entries.push({ icao: code, role });
+      }
+    };
+    add(departureAirport, 'departure');
+    add(arrivalAirport, 'arrival');
+    (sectorStation ? (SECTOR_AIRPORTS[sectorStation] ?? []) : []).forEach(
+      (icao) => add(icao, 'sector')
+    );
+    return entries;
+  }, [departureAirport, arrivalAirport, sectorStation]);
 
-  const sectorAirports = sectorStation
-    ? sectorAirportMap[sectorStation] || []
-    : [];
+  const activeAirport = pickedAirport ?? relevantAirports[0]?.icao ?? null;
+  const pickedExtra =
+    activeAirport &&
+    !relevantAirports.some((entry) => entry.icao === activeAirport)
+      ? activeAirport
+      : null;
 
-  const isLegacyMode = viewMode === 'legacy';
-  const hasSectorAirports = sectorAirports.length > 0;
-
-  const departureCharts = departureAirport
-    ? getChartsForAirport(departureAirport)
-    : [];
-  const arrivalCharts = arrivalAirport
-    ? getChartsForAirport(arrivalAirport)
-    : [];
-
-  const otherAirports = hasSectorAirports
-    ? [
-        ...sectorAirports.filter(
-          (icao) => icao !== departureAirport && icao !== arrivalAirport
-        ),
-        ...availableAirports.filter(
-          (icao) =>
-            !sectorAirports.includes(icao) &&
-            icao !== departureAirport &&
-            icao !== arrivalAirport
-        ),
-      ]
-    : availableAirports.filter(
-        (icao) => icao !== departureAirport && icao !== arrivalAirport
-      );
-
-  const chartsToUse = [
-    ...departureCharts,
-    ...arrivalCharts,
-    ...otherAirports.flatMap((icao) => getChartsForAirport(icao)),
-  ];
-
-  const filteredDepartureCharts = departureCharts.filter(
-    (chart) =>
-      chart.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chart.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chart.credits &&
-        chart.credits.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      departureAirport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chart.procedures &&
-        chart.procedures.some((proc) =>
-          proc.toLowerCase().includes(searchQuery.toLowerCase())
-        ))
+  const chartfoxCharts = useChartfoxAirportCharts(
+    activeAirport,
+    isOpen && chartfox.linked
   );
-  const filteredArrivalCharts = arrivalCharts.filter(
-    (chart) =>
-      chart.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chart.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chart.credits &&
-        chart.credits.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      arrivalAirport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chart.procedures &&
-        chart.procedures.some((proc: string) =>
-          proc.toLowerCase().includes(searchQuery.toLowerCase())
-        ))
+
+  const allCharts = useMemo(
+    () => [
+      ...(activeAirport ? getLocalCharts(activeAirport) : []),
+      ...chartfoxCharts.charts,
+    ],
+    [activeAirport, getLocalCharts, chartfoxCharts.charts]
   );
-  const sectorAirportsList = hasSectorAirports
-    ? otherAirports
-        .filter((icao) => sectorAirports.includes(icao))
-        .map((icao) => {
-          const airportCharts = getChartsForAirport(icao);
-          const filteredCharts = airportCharts.filter(
-            (chart) =>
-              chart.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              chart.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (chart.credits &&
-                chart.credits
-                  .toLowerCase()
-                  .includes(searchQuery.toLowerCase())) ||
-              icao.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (chart.procedures &&
-                chart.procedures.some((proc: string) =>
-                  proc.toLowerCase().includes(searchQuery.toLowerCase())
-                ))
-          );
-          return { icao, charts: filteredCharts };
-        })
-        .filter(({ charts }) => charts.length > 0)
-    : [];
 
-  const filteredOtherAirports = otherAirports
-    .filter((icao) => !hasSectorAirports || !sectorAirports.includes(icao))
-    .map((icao) => {
-      const airportCharts = getChartsForAirport(icao);
-      const filteredCharts = airportCharts.filter(
-        (chart) =>
-          chart.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          chart.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (chart.credits &&
-            chart.credits.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          icao.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (chart.procedures &&
-            chart.procedures.some((proc: string) =>
-              proc.toLowerCase().includes(searchQuery.toLowerCase())
-            ))
-      );
-      return { icao, charts: filteredCharts };
-    })
-    .filter(({ charts }) => charts.length > 0);
+  const sourceCounts = SOURCE_ORDER.map((source) => ({
+    source,
+    count: allCharts.filter((chart) => chart.source === source).length,
+  })).filter(({ count }) => count > 0);
+  const effectiveSource =
+    sourceFilter !== 'all' &&
+    sourceCounts.some(({ source }) => source === sourceFilter)
+      ? sourceFilter
+      : 'all';
+  const showSource = effectiveSource === 'all' && sourceCounts.length > 1;
 
-  const matchedCategories = new Set<string>();
-  if (searchQuery) {
-    filteredDepartureCharts.forEach((chart) => {
-      if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Name');
-      if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Type');
-      if (
-        chart.credits &&
-        chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-        matchedCategories.add('Author');
-      if (departureAirport?.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Airport');
-      if (
-        chart.procedures &&
-        chart.procedures.some((proc: string) =>
-          proc.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      )
-        matchedCategories.add('Procedure');
-    });
-    filteredArrivalCharts.forEach((chart) => {
-      if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Name');
-      if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Type');
-      if (
-        chart.credits &&
-        chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-        matchedCategories.add('Author');
-      if (arrivalAirport?.toLowerCase().includes(searchQuery.toLowerCase()))
-        matchedCategories.add('Airport');
-      if (
-        chart.procedures &&
-        chart.procedures.some((proc: string) =>
-          proc.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      )
-        matchedCategories.add('Procedure');
-    });
-    sectorAirportsList.forEach(({ icao, charts }) => {
-      charts.forEach((chart) => {
-        if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Name');
-        if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Type');
-        if (
-          chart.credits &&
-          chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-          matchedCategories.add('Author');
-        if (icao.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Airport');
-        if (
-          chart.procedures &&
-          chart.procedures.some((proc: string) =>
-            proc.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        )
-          matchedCategories.add('Procedure');
-      });
-    });
-    filteredOtherAirports.forEach(({ icao, charts }) => {
-      charts.forEach((chart) => {
-        if (chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Name');
-        if (chart.type.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Type');
-        if (
-          chart.credits &&
-          chart.credits.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-          matchedCategories.add('Author');
-        if (icao.toLowerCase().includes(searchQuery.toLowerCase()))
-          matchedCategories.add('Airport');
-        if (
-          chart.procedures &&
-          chart.procedures.some((proc: string) =>
-            proc.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        )
-          matchedCategories.add('Procedure');
-      });
-    });
-  }
+  const groups = groupByCategory(
+    allCharts.filter(
+      (chart) =>
+        (effectiveSource === 'all' || chart.source === effectiveSource) &&
+        chartMatchesQuery(chart, searchQuery)
+    )
+  );
 
-  useEffect(() => {
-    if (selectedChart) {
-      setImageLoading(true);
-    }
-    handleResetZoom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChart]);
+  const pickerAirports = useMemo(
+    () =>
+      airportData
+        .filter((airport) => !airport.controlName?.includes('Center'))
+        .map((airport) => ({
+          icao: airport.icao,
+          name: airport.name,
+          count: getLocalCharts(airport.icao).length,
+        }))
+        .sort((a, b) => a.icao.localeCompare(b.icao)),
+    [airportData, getLocalCharts]
+  );
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -435,416 +438,374 @@ export default function ChartDrawer({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  const chooseAirport = (icao: string) => {
+    setPickedAirport(icao);
+    setSearchQuery('');
+  };
 
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (e.deltaY < 0) handleZoomIn();
-      else if (e.deltaY > 0) handleZoomOut();
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [containerRef, handleZoomIn, handleZoomOut]);
-
-  const selectChart = (path: string) => {
-    setSelectedChart(path);
+  const selectChart = (chart: ChartEntry) => {
+    setSelectedChart(chart);
     setMobileView('chart');
   };
 
-  const selectedCredits = chartsToUse.find(
-    (c) => c.path === selectedChart
-  )?.credits;
+  const chartfoxLoading =
+    chartfox.linked && chartfoxCharts.status === 'loading';
 
-  const hasNoResults =
-    !!searchQuery &&
-    filteredDepartureCharts.length === 0 &&
-    filteredArrivalCharts.length === 0 &&
-    sectorAirportsList.length === 0 &&
-    filteredOtherAirports.length === 0;
+  const airportTabs = (
+    <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
+      {relevantAirports.map(({ icao, role }) => {
+        const { icon: Icon, color, label } = ROLE_META[role];
+        const active = icao === activeAirport;
+        return (
+          <button
+            key={icao}
+            type="button"
+            onClick={() => chooseAirport(icao)}
+            aria-pressed={active}
+            aria-label={`${label} airport ${icao}`}
+            className={cn(
+              AIRPORT_PILL_CLASS,
+              'font-mono focus-visible:border-blue-400',
+              active ? AIRPORT_PILL_ACTIVE_CLASS : AIRPORT_PILL_IDLE_CLASS
+            )}
+          >
+            <Icon className={active ? 'text-white' : color} />
+            {icao}
+          </button>
+        );
+      })}
+      {pickedExtra && (
+        <span
+          className={cn(
+            AIRPORT_PILL_CLASS,
+            AIRPORT_PILL_ACTIVE_CLASS,
+            'font-mono'
+          )}
+        >
+          <Map />
+          {pickedExtra}
+        </span>
+      )}
+      <AirportPicker
+        airports={pickerAirports}
+        active={activeAirport}
+        allowLookup={chartfox.linked}
+        onSelect={chooseAirport}
+      />
+    </div>
+  );
 
   const searchField = (
-    <div>
-      <div className="relative">
-        <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={
-            isLegacyMode
-              ? 'Search charts...'
-              : 'Search charts by name, type, or airport...'
-          }
-          className={cn(panelInputClass, 'pl-10')}
-        />
-      </div>
-      {searchQuery && matchedCategories.size > 0 && (
-        <div className="mt-1.5 px-4 text-xs text-zinc-500">
-          Filtered by: {Array.from(matchedCategories).join(', ')}
-        </div>
-      )}
-    </div>
-  );
-
-  const allAirportsToggle = (
-    <button
-      type="button"
-      onClick={() => setShowAllAirports(!showAllAirports)}
-      aria-expanded={showAllAirports}
-      className="flex w-full items-center gap-2 rounded-full px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-    >
-      All Airports
-      <ChevronDown
-        className={cn(
-          'ml-auto size-4 transition-transform',
-          showAllAirports && 'rotate-180'
-        )}
+    <div className="relative">
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" />
+      <Input
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search name, procedure or runway"
+        aria-label="Search charts"
+        className="h-10 rounded-xl border-2 border-zinc-800 bg-zinc-950 pl-9 text-sm focus-visible:border-blue-600"
       />
-    </button>
-  );
-
-  const emptyState = (message: string) => (
-    <div className="py-12 text-center text-sm text-zinc-500">
-      <Map className="mx-auto mb-3 h-10 w-10 opacity-30" />
-      <p>{message}</p>
     </div>
   );
 
-  const icaoLabel = (icao: string, count?: number) => (
-    <div className="px-2.5 pt-2 pb-1 font-mono text-[11px] font-medium text-zinc-500">
-      {icao}
-      {count !== undefined && ` (${count})`}
-    </div>
-  );
-
-  const chartSidebar = (
-    <div className="p-3">
-      {searchField}
-      {departureAirport && filteredDepartureCharts.length > 0 && (
-        <ChartListSection
-          title={
-            arrivalAirport
-              ? `${departureAirport} · Departure`
-              : departureAirport
-          }
-          charts={filteredDepartureCharts}
-          selectedChart={selectedChart}
-          onSelect={selectChart}
-        />
-      )}
-      {arrivalAirport && filteredArrivalCharts.length > 0 && (
-        <ChartListSection
-          title={`${arrivalAirport} · Arrival`}
-          charts={filteredArrivalCharts}
-          selectedChart={selectedChart}
-          onSelect={selectChart}
-        />
-      )}
-      {sectorAirportsList.map(({ icao, charts }) => (
-        <ChartListSection
-          key={icao}
-          title={`${icao} · Sector`}
-          charts={charts}
-          selectedChart={selectedChart}
-          onSelect={selectChart}
-        />
-      ))}
-      {filteredOtherAirports.length > 0 && (
-        <div className="mt-3 border-t border-zinc-800 pt-3">
-          {allAirportsToggle}
-          {showAllAirports &&
-            filteredOtherAirports.map(({ icao, charts }) => (
-              <ChartListSection
-                key={icao}
-                title={icao}
-                charts={charts}
-                selectedChart={selectedChart}
-                onSelect={selectChart}
-              />
-            ))}
-        </div>
-      )}
-      {!departureAirport &&
-        !arrivalAirport &&
-        filteredOtherAirports.length === 0 &&
-        emptyState('No flight information available')}
-      {hasNoResults && emptyState('No charts match your search')}
-    </div>
-  );
-
-  const chartViewer = !selectedChart ? (
-    <div className="flex flex-1 items-center justify-center text-zinc-500">
-      Select a chart from the list
-    </div>
-  ) : chartLoadError ? (
-    <div className="flex flex-1 items-center justify-center text-zinc-500">
-      Chart not available
-    </div>
-  ) : (
-    <>
-      <div
-        ref={containerRef}
-        className="flex w-full flex-1 items-center justify-center overflow-hidden p-4"
-        onMouseDown={handleChartMouseDown}
-        onMouseMove={isChartDragging ? handleChartMouseMove : undefined}
-        onMouseUp={handleChartMouseUp}
-        onMouseLeave={handleChartMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          cursor: isChartDragging ? 'grabbing' : 'grab',
-          touchAction: 'none',
-        }}
-      >
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-          </div>
-        )}
-        <img
-          key={selectedChart}
-          src={selectedChart}
-          alt="Airport Chart"
-          className={`max-h-full max-w-full object-contain transition-opacity duration-200 select-none ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-          style={{
-            transform: `translate(${chartPan.x}px, ${chartPan.y}px) scale(${chartZoom})`,
-            transformOrigin: 'center',
-            transition: isChartDragging ? 'none' : 'transform 0.1s ease-out',
-            userSelect: 'none',
-            pointerEvents: 'auto',
-          }}
-          draggable={false}
-          onDragStart={(e) => e.preventDefault()}
-          onLoad={(e) => {
-            setChartLoadError(false);
-            setImageLoading(false);
-            setImageSize({
-              width: (e.target as HTMLImageElement).naturalWidth,
-              height: (e.target as HTMLImageElement).naturalHeight,
-            });
-          }}
-          onError={() => {
-            setChartLoadError(true);
-            setImageLoading(false);
-          }}
-        />
-      </div>
-      {selectedCredits && (
-        <div className="absolute right-4 bottom-4 max-w-52 rounded-xl bg-zinc-800/80 p-2 text-center text-xs text-zinc-300 backdrop-blur-sm">
-          Chart created by {selectedCredits}
-        </div>
-      )}
-      <div className="absolute bottom-4 left-4 max-w-xs rounded-xl bg-zinc-800/80 p-2 text-center text-xs text-zinc-300 backdrop-blur-sm">
-        Redistribution of this chart is prohibited.
-      </div>
-    </>
-  );
-
-  const chartGrid = (charts: ChartEntry[], accent: Accent) => (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-      {charts.map((chart) => (
-        <ChartGridItem
-          key={chart.path}
-          chart={chart}
-          accent={accent}
-          onSelect={() => setSelectedChart(chart.path)}
-        />
-      ))}
-    </div>
-  );
-
-  const showZoomControls =
-    !!selectedChart && (!isLegacyMode || !isMobile || mobileView === 'chart');
-
-  return (
+  const sourceTabs = sourceCounts.length > 1 && (
     <div
-      className={cn(
-        'fixed right-0 bottom-0 left-0 flex h-[85vh] flex-col rounded-t-3xl border-t-2 border-blue-800 bg-zinc-900 text-white transition-transform duration-300',
-        isOpen
-          ? 'translate-y-0 shadow-2xl shadow-black/60'
-          : 'pointer-events-none translate-y-full'
-      )}
-      style={{ zIndex: 48 }}
+      role="tablist"
+      aria-label="Chart source"
+      className="flex max-w-md items-center gap-1 rounded-xl border-2 border-zinc-800 p-1"
     >
-      <PanelHeader
-        icon={Map}
-        title={<span className="hidden sm:inline">Airport Charts</span>}
-        onClose={onClose}
-        center={
-          showZoomControls && (
-            <>
-              {!isLegacyMode && (
-                <Button
-                  onClick={() => setSelectedChart(null)}
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="Back to chart list"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              )}
-              <Button
-                onClick={handleZoomOut}
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                aria-label="Zoom out"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={handleResetZoom}
-                variant="outline"
-                size="sm"
-                className="h-9 min-w-16 px-3 py-0 tabular-nums"
-                aria-label="Reset zoom"
-              >
-                {Math.round(chartZoom * 100)}%
-              </Button>
-              <Button
-                onClick={handleZoomIn}
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                aria-label="Zoom in"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </>
-          )
-        }
-      />
+      {[
+        { source: 'all' as const, count: allCharts.length },
+        ...sourceCounts,
+      ].map(({ source, count }) => {
+        const active = effectiveSource === source;
+        return (
+          <button
+            key={source}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => setSourceFilter(source)}
+            className={cn(
+              'flex h-7 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+              active
+                ? 'bg-zinc-800 text-white'
+                : 'text-zinc-400 hover:text-white'
+            )}
+          >
+            {source === 'all' ? 'All' : SOURCE_LABELS[source]}
+            <span className="text-zinc-500 tabular-nums">{count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 
-      <div className="flex flex-1 overflow-hidden">
-        {isLegacyMode ? (
-          isMobile ? (
-            mobileView === 'sidebar' ? (
-              <div className="flex-1 overflow-y-auto">{chartSidebar}</div>
-            ) : (
-              <div className="relative flex flex-1 flex-col bg-black">
-                <Button
-                  onClick={() => setMobileView('sidebar')}
-                  variant="outline"
-                  size="sm"
-                  className="absolute top-4 left-4 z-10 gap-2 bg-zinc-900/80 backdrop-blur-sm"
-                >
-                  <List className="h-4 w-4" />
-                  List
-                </Button>
-                {chartViewer}
-              </div>
-            )
-          ) : (
-            <>
-              <div className="w-80 shrink-0 overflow-y-auto border-r border-zinc-800">
-                {chartSidebar}
-              </div>
-              <div className="relative flex flex-1 flex-col bg-black">
-                {chartViewer}
-              </div>
-            </>
-          )
-        ) : selectedChart ? (
-          <div className="relative flex h-full flex-1 flex-col bg-black">
-            {chartViewer}
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="mx-auto max-w-6xl space-y-5">
-              <div className="sticky top-0 z-10 bg-zinc-900 pb-1">
-                {searchField}
-              </div>
+  const canConnectChartfox =
+    !!user && chartfox.loaded && chartfox.configured && !chartfox.linked;
 
-              {chartsToUse.length > 0 ? (
-                <>
-                  {departureAirport && filteredDepartureCharts.length > 0 && (
-                    <section>
-                      <ChartGroupLabel
-                        icon={PlaneTakeoff}
-                        accent="green"
-                        count={filteredDepartureCharts.length}
-                      >
-                        {arrivalAirport ? 'Departure' : 'Airport'} ·{' '}
-                        {departureAirport}
-                      </ChartGroupLabel>
-                      {chartGrid(filteredDepartureCharts, 'green')}
-                    </section>
-                  )}
-
-                  {arrivalAirport && filteredArrivalCharts.length > 0 && (
-                    <section>
-                      <ChartGroupLabel
-                        icon={PlaneLanding}
-                        accent="blue"
-                        count={filteredArrivalCharts.length}
-                      >
-                        Arrival · {arrivalAirport}
-                      </ChartGroupLabel>
-                      {chartGrid(filteredArrivalCharts, 'blue')}
-                    </section>
-                  )}
-
-                  {sectorAirportsList.length > 0 && (
-                    <section>
-                      <ChartGroupLabel icon={Map} accent="purple">
-                        Sector Airports
-                      </ChartGroupLabel>
-                      <div className="space-y-2">
-                        {sectorAirportsList.map(({ icao, charts }) => (
-                          <div key={icao}>
-                            {icaoLabel(icao, charts.length)}
-                            {chartGrid(charts, 'purple')}
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {filteredOtherAirports.length > 0 && (
-                    <section>
-                      {allAirportsToggle}
-                      {showAllAirports && (
-                        <div className="space-y-2">
-                          {filteredOtherAirports.map(({ icao, charts }) => (
-                            <div key={icao}>
-                              {icaoLabel(icao, charts.length)}
-                              {chartGrid(charts, 'gray')}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  )}
-
-                  {!departureAirport &&
-                    !arrivalAirport &&
-                    filteredOtherAirports.length === 0 &&
-                    emptyState('No flight information available')}
-                  {hasNoResults && emptyState('No charts match your search')}
-                </>
-              ) : (
-                emptyState('No charts available for this airport')
-              )}
+  const chartfoxPanel = (() => {
+    if (!user || !chartfox.loaded || !chartfox.configured || !activeAirport) {
+      return null;
+    }
+    if (canConnectChartfox) {
+      return (
+        <div className="space-y-3 rounded-2xl border-2 border-zinc-800 bg-zinc-950 p-4">
+          <div className="flex items-start gap-3">
+            <img
+              src={CHARTFOX_LOGO_URL}
+              alt=""
+              className="size-9 shrink-0 rounded-lg"
+            />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-white">
+                Real-world charts
+              </p>
+              <p className="text-sm text-zinc-300">
+                {allCharts.length === 0
+                  ? `There are no ${SOURCE_LABELS.pfatc} charts for ${activeAirport} yet. Connect ChartFox to view its real-world charts.`
+                  : `Connect ChartFox to show real-world charts for ${activeAirport} alongside the ${SOURCE_LABELS.pfatc} charts.`}
+              </p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            onClick={chartfox.connect}
+            disabled={chartfox.connecting}
+            className={cn('w-full cursor-pointer', SIGNATURE_TONES.blue)}
+          >
+            {chartfox.connecting ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Link2 />
+            )}
+            {chartfox.connecting ? 'Waiting for ChartFox…' : 'Connect ChartFox'}
+          </Button>
+        </div>
+      );
+    }
+    if (chartfoxCharts.status === 'error') {
+      return (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-300">
+          <span>ChartFox charts could not be loaded.</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={chartfoxCharts.retry}
+            className={cn('cursor-pointer', SIGNATURE_TONES.blue)}
+          >
+            <RefreshCw />
+            Retry
+          </Button>
+        </div>
+      );
+    }
+    if (chartfoxCharts.status !== 'ready' || allCharts.length === 0) {
+      return null;
+    }
+    return (
+      <p className="px-3 text-xs text-zinc-500">
+        {chartfoxCharts.charts.length === 0
+          ? `ChartFox has no charts for ${activeAirport}. `
+          : ''}
+        Chart data powered by{' '}
+        <a
+          href="https://chartfox.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-zinc-300 underline-offset-2 hover:underline"
+        >
+          ChartFox
+        </a>
+        .
+      </p>
+    );
+  })();
+
+  const emptyState = (icon: LucideIcon, title: string, body?: string) => {
+    const Icon = icon;
+    return (
+      <div className="px-4 py-10 text-center">
+        <Icon className="mx-auto mb-3 size-9 text-zinc-600" />
+        <p className="text-sm font-medium text-zinc-300">{title}</p>
+        {body && <p className="mt-1 text-sm text-zinc-500">{body}</p>}
+      </div>
+    );
+  };
+
+  const listStatus = (() => {
+    if (!activeAirport) {
+      return emptyState(
+        Map,
+        'Choose an airport',
+        'Pick an airport from the list above to see its charts.'
+      );
+    }
+    if (groups.length > 0) return null;
+    if (chartfoxLoading && allCharts.length === 0) {
+      return (
+        <div className="flex items-center justify-center gap-2 py-10 text-sm text-zinc-400">
+          <Loader2 className="size-4 animate-spin text-blue-400" />
+          Loading charts…
+        </div>
+      );
+    }
+    if (allCharts.length > 0) {
+      return emptyState(
+        SearchX,
+        'No charts match your search',
+        'Try a procedure name, runway or chart type.'
+      );
+    }
+    if (canConnectChartfox) return null;
+    return emptyState(
+      Map,
+      `No charts available for ${activeAirport}`,
+      chartfox.linked && chartfoxCharts.status === 'ready'
+        ? 'ChartFox has no charts for this airport either.'
+        : undefined
+    );
+  })();
+
+  const chartfoxPending = chartfoxLoading && groups.length > 0 && (
+    <div className="flex items-center gap-2 px-3 pt-4 text-xs text-zinc-500">
+      <Loader2 className="size-3.5 animate-spin text-blue-400" />
+      Loading ChartFox charts…
+    </div>
+  );
+
+  const chartList = (
+    <div className="pb-4">
+      {groups.map(({ category, charts }) => (
+        <section key={category}>
+          <CategoryHeading category={category} count={charts.length} />
+          <div className="space-y-0.5">
+            {charts.map((chart) => (
+              <ChartRow
+                key={chart.id}
+                chart={chart}
+                active={selectedChart?.id === chart.id}
+                showSource={showSource}
+                onSelect={() => selectChart(chart)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+      {chartfoxPending}
+      {listStatus}
+    </div>
+  );
+
+  const chartGrid = (
+    <div className="space-y-6 pb-4">
+      {groups.map(({ category, charts }) => (
+        <section key={category}>
+          <CategoryHeading category={category} count={charts.length} />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {charts.map((chart) => (
+              <ChartCard
+                key={chart.id}
+                chart={chart}
+                showSource={showSource}
+                onSelect={() => selectChart(chart)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+      {chartfoxPending}
+      {listStatus}
+    </div>
+  );
+
+  const viewer = (onBack?: () => void) =>
+    selectedChart ? (
+      <ChartViewer
+        key={selectedChart.id}
+        chart={selectedChart}
+        active={isOpen}
+        onBack={onBack}
+        onReconnect={chartfox.connect}
+      />
+    ) : (
+      <div className="flex flex-1 items-center justify-center bg-zinc-950 p-6">
+        {emptyState(
+          Map,
+          'No chart selected',
+          'Select a chart from the list to view it here.'
         )}
       </div>
+    );
+
+  const controls = (
+    <div className="space-y-3">
+      {airportTabs}
+      {activeAirport && allCharts.length > 0 && searchField}
+      {activeAirport && sourceTabs}
     </div>
+  );
+
+  const sidebar = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 p-3 pb-0">{controls}</div>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pt-1">
+        {chartList}
+        {chartfoxPanel}
+      </div>
+    </div>
+  );
+
+  const body = (() => {
+    if (isListMode) {
+      if (selectedChart) return viewer(() => setSelectedChart(null));
+      return (
+        <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-950">
+          <div className="mx-auto max-w-6xl space-y-3 p-4">
+            {controls}
+            {chartGrid}
+            <div className="max-w-md">{chartfoxPanel}</div>
+          </div>
+        </div>
+      );
+    }
+    if (isMobile) {
+      return mobileView === 'chart' && selectedChart
+        ? viewer(() => setMobileView('list'))
+        : sidebar;
+    }
+    return (
+      <>
+        <div className="flex w-96 shrink-0 flex-col border-r border-zinc-800">
+          {sidebar}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">{viewer()}</div>
+      </>
+    );
+  })();
+
+  return (
+    <TooltipProvider>
+      <div
+        className={cn(
+          'shadcn-scope fixed right-0 bottom-0 left-0 flex h-[85vh] flex-col overflow-hidden rounded-t-3xl border-t-2 border-blue-800 bg-zinc-900 text-white transition-transform duration-300',
+          isOpen
+            ? 'translate-y-0 shadow-2xl shadow-black/60'
+            : 'pointer-events-none translate-y-full'
+        )}
+        style={{ zIndex: 48 }}
+        inert={!isOpen}
+      >
+        <PanelHeader icon={Map} title="Charts" onClose={onClose} />
+        <div className="flex min-h-0 flex-1">{body}</div>
+      </div>
+    </TooltipProvider>
   );
 }
