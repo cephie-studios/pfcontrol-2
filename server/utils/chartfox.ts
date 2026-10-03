@@ -8,6 +8,7 @@ import {
   type ChartfoxLink,
 } from '../db/chartfoxLinks.js';
 import { prefixKey } from './cacheTtl.js';
+import { fetchWithIssuer, isMissingIntermediate } from './tlsIntermediate.js';
 
 const API_BASE = 'https://api.chartfox.org';
 const SITE_BASE = 'https://chartfox.org';
@@ -523,6 +524,26 @@ function sniffContentType(body: Buffer, header: string | null): string {
   return (header ?? 'application/octet-stream').split(';')[0].trim();
 }
 
+async function fetchFile(url: URL, headers: Record<string, string>) {
+  try {
+    return await fetchWithTimeout(
+      url.toString(),
+      { headers, redirect: 'manual' },
+      FILE_TIMEOUT_MS
+    );
+  } catch (e) {
+    if (!isMissingIntermediate(e)) throw e;
+    const res = await fetchWithIssuer(
+      url,
+      headers,
+      FILE_TIMEOUT_MS,
+      parseRemoteUrl
+    );
+    if (!res) throw e;
+    return res;
+  }
+}
+
 async function downloadFile(
   raw: string,
   accessToken: string
@@ -538,11 +559,7 @@ async function downloadFile(
     };
     if (isChartfoxHost(url)) headers.Authorization = `Bearer ${accessToken}`;
 
-    res = await fetchWithTimeout(
-      url.toString(),
-      { headers, redirect: 'manual' },
-      FILE_TIMEOUT_MS
-    );
+    res = await fetchFile(url, headers);
     const location = res.headers.get('location');
     if (res.status < 300 || res.status >= 400 || !location) break;
     target = new URL(location, url).toString();
