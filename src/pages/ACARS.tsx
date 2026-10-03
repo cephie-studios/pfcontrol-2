@@ -20,7 +20,6 @@ import {
 } from '../sockets/overviewSocket';
 import { getAirportName, parseCallsign } from '../utils/callsignParser';
 import { playNotificationSound } from '../utils/acars';
-import { createChartHandlers } from '../utils/charts';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
 import type { SessionInfo } from '../types/session';
@@ -62,13 +61,6 @@ export default function ACARS() {
   );
   const [sessionAccessId, setSessionAccessId] = useState<string | null>(null);
   const [notes, setNotes] = useState<string>('');
-  const [selectedChart, setSelectedChart] = useState<string | null>(null);
-  const [chartLoadError, setChartLoadError] = useState(false);
-  const [chartZoom, setChartZoom] = useState(1);
-  const [chartPan, setChartPan] = useState({ x: 0, y: 0 });
-  const [isChartDragging, setIsChartDragging] = useState(false);
-  const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [showSidebar, setShowSidebar] = useState(true);
   const [mobileTab, setMobileTab] = useState<'terminal' | 'notes' | 'charts'>(
     'terminal'
@@ -80,43 +72,6 @@ export default function ACARS() {
   const initializedRef = useRef(false);
   const notesInitializedRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const chartHandlers = useMemo(
-    () =>
-      createChartHandlers(
-        chartZoom,
-        setChartZoom,
-        chartPan,
-        setChartPan,
-        isChartDragging,
-        setIsChartDragging,
-        chartDragStart,
-        setChartDragStart,
-        containerRef as React.RefObject<HTMLDivElement>,
-        imageSize
-      ),
-    [
-      chartZoom,
-      chartPan,
-      isChartDragging,
-      chartDragStart,
-      imageSize.width,
-      imageSize.height,
-    ]
-  );
-
-  const {
-    handleZoomIn,
-    handleZoomOut,
-    handleResetZoom,
-    handleChartMouseDown,
-    handleChartMouseMove,
-    handleChartMouseUp,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-  } = chartHandlers;
 
   const formattedCallsign = useMemo(() => {
     if (!flight?.callsign) return null;
@@ -223,11 +178,6 @@ NOTES:
       setShowChartsDrawer(true);
     }
   };
-
-  useEffect(() => {
-    setChartZoom(1);
-    setChartPan({ x: 0, y: 0 });
-  }, [selectedChart]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -812,25 +762,6 @@ NOTES:
             <ChartDrawer
               isOpen={true}
               onClose={() => {}}
-              selectedChart={selectedChart}
-              setSelectedChart={setSelectedChart}
-              chartLoadError={chartLoadError}
-              setChartLoadError={setChartLoadError}
-              chartZoom={chartZoom}
-              chartPan={chartPan}
-              isChartDragging={isChartDragging}
-              handleChartMouseDown={handleChartMouseDown}
-              handleChartMouseMove={handleChartMouseMove}
-              handleChartMouseUp={handleChartMouseUp}
-              handleTouchStart={handleTouchStart}
-              handleTouchMove={handleTouchMove}
-              handleTouchEnd={handleTouchEnd}
-              handleZoomIn={handleZoomIn}
-              handleZoomOut={handleZoomOut}
-              handleResetZoom={handleResetZoom}
-              containerRef={containerRef as React.RefObject<HTMLDivElement>}
-              setImageSize={setImageSize}
-              airports={airports}
               settings={settings}
               departureAirport={flight?.departure}
               arrivalAirport={flight?.arrival}
@@ -842,25 +773,6 @@ NOTES:
       <ChartDrawer
         isOpen={showChartsDrawer}
         onClose={() => setShowChartsDrawer(false)}
-        selectedChart={selectedChart}
-        setSelectedChart={setSelectedChart}
-        chartLoadError={chartLoadError}
-        setChartLoadError={setChartLoadError}
-        chartZoom={chartZoom}
-        chartPan={chartPan}
-        isChartDragging={isChartDragging}
-        handleChartMouseDown={handleChartMouseDown}
-        handleChartMouseMove={handleChartMouseMove}
-        handleChartMouseUp={handleChartMouseUp}
-        handleTouchStart={handleTouchStart}
-        handleTouchMove={handleTouchMove}
-        handleTouchEnd={handleTouchEnd}
-        handleZoomIn={handleZoomIn}
-        handleZoomOut={handleZoomOut}
-        handleResetZoom={handleResetZoom}
-        containerRef={containerRef as React.RefObject<HTMLDivElement>}
-        setImageSize={setImageSize}
-        airports={airports}
         settings={settings}
         departureAirport={flight?.departure}
         arrivalAirport={flight?.arrival}

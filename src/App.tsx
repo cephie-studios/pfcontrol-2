@@ -25,6 +25,7 @@ const PFATCFlights = lazy(() => import('./pages/PFATCFlights'));
 const ACARS = lazy(() => import('./pages/ACARS'));
 const PilotProfile = lazy(() => import('./pages/PilotProfile'));
 const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
+const ChartfoxLinked = lazy(() => import('./pages/ChartfoxLinked'));
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
 const Glossary = lazy(() => import('./pages/Glossary'));
@@ -93,6 +94,10 @@ export default function App() {
             <Route path="/overview" element={<PFATCFlights />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/vatsim/callback" element={<VatsimCallback />} />
+            <Route
+              path="/charts/chartfox/linked"
+              element={<ChartfoxLinked />}
+            />
             <Route path="/submit/:sessionId" element={<Submit />} />
             <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
             <Route path="flight/:flightId" element={<PublicFlightView />} />

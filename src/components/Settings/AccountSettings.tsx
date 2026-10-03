@@ -35,6 +35,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { minDuration } from '@/lib/minDuration';
+import { useChartfoxStatus } from '../../hooks/useChartfox';
+import { chartfoxConnectUrl } from '../../utils/fetch/charts';
+import { CHARTFOX_LOGO_URL } from '../../utils/chartCatalog';
 
 interface AccountSettingsProps {
   settings: Settings | null;
@@ -48,6 +51,7 @@ const LINK_ERROR_MESSAGES: Record<string, string> = {
   vatsim_link_failed: 'Failed to link VATSIM account',
   vatsim_missing_code: 'Failed to link VATSIM account',
   vatsim_not_configured: 'VATSIM linking is currently unavailable',
+  chartfox_auth_failed: 'Failed to connect ChartFox',
 };
 
 function LinkStatus({ linked, text }: { linked: boolean; text: string }) {
@@ -115,7 +119,12 @@ export default function AccountSettings({
   const [showRobloxConfirm, setShowRobloxConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
-  const [unlinking, setUnlinking] = useState<'vatsim' | 'roblox' | null>(null);
+  const [showChartfoxConfirm, setShowChartfoxConfirm] = useState(false);
+  const [unlinking, setUnlinking] = useState<
+    'vatsim' | 'roblox' | 'chartfox' | null
+  >(null);
+  const chartfox = useChartfoxStatus(!!user);
+  const { refresh: refreshChartfox } = chartfox;
   const [restartingTutorial, setRestartingTutorial] = useState(false);
   const isVatsimLinked = !!(
     user?.vatsimCid ||
@@ -126,13 +135,18 @@ export default function AccountSettings({
   useEffect(() => {
     if (handledLinkParams.current) return;
     const linked = searchParams.get('vatsim_linked') === 'true';
+    const chartfoxLinked = searchParams.get('chartfox_linked') === 'true';
     const error = searchParams.get('error');
-    if (!linked && !error) return;
+    if (!linked && !chartfoxLinked && !error) return;
     handledLinkParams.current = true;
 
     if (linked) {
       toast.success('VATSIM account linked');
       refreshUser();
+    }
+    if (chartfoxLinked) {
+      toast.success('ChartFox connected');
+      refreshChartfox();
     }
     if (error) {
       toast.error(LINK_ERROR_MESSAGES[error] ?? 'Failed to link account');
@@ -142,12 +156,13 @@ export default function AccountSettings({
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete('vatsim_linked');
+        next.delete('chartfox_linked');
         next.delete('error');
         return next;
       },
       { replace: true }
     );
-  }, [searchParams, setSearchParams, refreshUser]);
+  }, [searchParams, setSearchParams, refreshUser, refreshChartfox]);
 
   const handleLinkRoblox = () => {
     window.location.href = `${import.meta.env.VITE_SERVER_URL}/api/auth/roblox`;
@@ -230,6 +245,17 @@ export default function AccountSettings({
     } catch (error) {
       console.error('Error unlinking Roblox:', error);
       toast.error('Failed to unlink Roblox account');
+    } finally {
+      setUnlinking(null);
+    }
+  };
+
+  const handleUnlinkChartfox = async () => {
+    setShowChartfoxConfirm(false);
+    setUnlinking('chartfox');
+    try {
+      const ok = await minDuration(chartfox.disconnect());
+      if (!ok) toast.error('Failed to disconnect ChartFox');
     } finally {
       setUnlinking(null);
     }
@@ -404,6 +430,54 @@ export default function AccountSettings({
             </Button>
           )}
         </SettingsRow>
+        {user && chartfox.configured && (
+          <SettingsRow
+            icon={
+              <img
+                src={CHARTFOX_LOGO_URL}
+                alt=""
+                className="size-full rounded-lg object-cover"
+              />
+            }
+            label="ChartFox"
+            description={
+              <LinkStatus
+                linked={chartfox.linked}
+                text={
+                  chartfox.linked
+                    ? chartfox.name
+                      ? `Connected as ${chartfox.name}`
+                      : 'Connected'
+                    : 'Not connected'
+                }
+              />
+            }
+          >
+            {chartfox.linked ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowChartfoxConfirm(true)}
+                disabled={unlinking === 'chartfox'}
+              >
+                {unlinking === 'chartfox' ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Unlink />
+                )}
+                Disconnect
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  window.location.href = chartfoxConnectUrl('redirect');
+                }}
+              >
+                <Link2 />
+                Connect
+              </Button>
+            )}
+          </SettingsRow>
+        )}
       </SettingsGroup>
 
       <PrivacySettings settings={settings} onChange={onChange} />
@@ -476,6 +550,15 @@ export default function AccountSettings({
         description="Your controller rating will no longer be shown on your profile."
         confirmText="Unlink"
         onConfirm={handleUnlinkVatsim}
+      />
+
+      <ConfirmDialog
+        open={showChartfoxConfirm}
+        onOpenChange={setShowChartfoxConfirm}
+        title="Disconnect ChartFox?"
+        description="Real-world charts from ChartFox will no longer be shown in the chart viewer."
+        confirmText="Disconnect"
+        onConfirm={handleUnlinkChartfox}
       />
 
       <ConfirmDialog

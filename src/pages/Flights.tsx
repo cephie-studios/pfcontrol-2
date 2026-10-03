@@ -13,8 +13,6 @@ import { useSettings } from '../hooks/settings/useSettings';
 import { toast } from 'sonner';
 import { steps } from '../components/tutorial/TutorialStepsFlights';
 import { updateTutorialStatus } from '../utils/fetch/auth';
-import { createChartHandlers } from '../utils/charts';
-import { useData } from '../hooks/data/useData';
 import type { Flight } from '../types/flight';
 import type { Position } from '../types/session';
 import type {
@@ -90,7 +88,6 @@ export default function Flights() {
   const [startupSoundPlayed, setStartupSoundPlayed] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { airports } = useData();
   const [currentView, setCurrentView] = useState<'departures' | 'arrivals'>(
     'departures'
   );
@@ -122,17 +119,6 @@ export default function Flights() {
     []
   );
   const [showChartsDrawer, setShowChartsDrawer] = useState(false);
-  const [selectedChart, setSelectedChart] = useState<string | null>(null);
-  const [chartLoadError, setChartLoadError] = useState<boolean>(false);
-  const [chartZoom, setChartZoom] = useState<number>(1);
-  const [chartPan, setChartPan] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const [isChartDragging, setIsChartDragging] = useState(false);
-  const [chartDragStart, setChartDragStart] = useState({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const userRef = useRef(user);
   const settingsRef = useRef(settings);
   const flightsSocketConnectedRef = useRef(false);
@@ -1027,42 +1013,6 @@ export default function Flights() {
     }
   };
 
-  const chartHandlers = useMemo(
-    () =>
-      createChartHandlers(
-        chartZoom,
-        setChartZoom,
-        chartPan,
-        setChartPan,
-        isChartDragging,
-        setIsChartDragging,
-        chartDragStart,
-        setChartDragStart,
-        containerRef as React.RefObject<HTMLDivElement>,
-        imageSize
-      ),
-    [
-      chartZoom,
-      chartPan,
-      isChartDragging,
-      chartDragStart,
-      imageSize.width,
-      imageSize.height,
-    ]
-  );
-
-  const {
-    handleZoomIn,
-    handleZoomOut,
-    handleResetZoom,
-    handleChartMouseDown,
-    handleChartMouseMove,
-    handleChartMouseUp,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
-  } = chartHandlers;
-
   if (validatingAccess) {
     return (
       <div className="min-h-screen text-white relative">
@@ -1316,28 +1266,8 @@ export default function Flights() {
       <ChartDrawer
         isOpen={showChartsDrawer}
         onClose={() => setShowChartsDrawer(false)}
-        selectedChart={selectedChart}
-        setSelectedChart={setSelectedChart}
-        chartLoadError={chartLoadError}
-        setChartLoadError={setChartLoadError}
-        chartZoom={chartZoom}
-        chartPan={chartPan}
-        isChartDragging={isChartDragging}
-        handleChartMouseDown={handleChartMouseDown}
-        handleChartMouseMove={handleChartMouseMove}
-        handleChartMouseUp={handleChartMouseUp}
-        handleTouchStart={handleTouchStart}
-        handleTouchMove={handleTouchMove}
-        handleTouchEnd={handleTouchEnd}
-        handleZoomIn={handleZoomIn}
-        handleZoomOut={handleZoomOut}
-        handleResetZoom={handleResetZoom}
-        containerRef={containerRef as React.RefObject<HTMLDivElement>}
-        setImageSize={setImageSize}
-        airports={airports}
         settings={settings}
         departureAirport={session?.airportIcao}
-        arrivalAirport={undefined}
       />
       <Joyride
         steps={steps}
