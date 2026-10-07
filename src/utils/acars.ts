@@ -19,6 +19,7 @@ export interface BundledChart {
   type: string;
   credits?: string;
   procedures?: string[];
+  source?: 'cephie';
 }
 
 const BUNDLED_CHART_BASE_URL = '/assets/app/charts';
@@ -31,13 +32,14 @@ const availableCharts: Record<
     type: string;
     credits?: string;
     procedures?: string[];
+    source?: 'cephie';
   }[]
 > = {
   EFKT: [
     {
       file: 'EFKT_GND_1.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© PFATC',
     },
     {
@@ -71,20 +73,28 @@ const availableCharts: Record<
       ],
     },
   ],
+  EGFF: [
+    {
+      file: 'EGFF_GND_1.png',
+      name: 'Airport Diagram',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
+    },
+  ],
   EGHI: [
     {
       file: 'EGHI_GND.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© BABAHAXSON',
     },
   ],
   EGKK: [
     {
-      file: 'EGKK_GND_1.png',
+      file: 'EGKK_GND_3.png',
       name: 'Airport Diagram',
-      type: 'Ground',
-      credits: '© PFATC',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
     },
     {
       file: 'EGKK_GND_2.jpg',
@@ -93,25 +103,52 @@ const availableCharts: Record<
       credits: '© PFATC',
     },
     {
-      file: 'EGKK_DEP_1.jpg',
+      file: 'EGKK_DEP_1.png',
       name: 'SID Chart 1',
       type: 'Departure',
-      credits: '© PFATC',
-      procedures: ['BOGN1X', 'BOGNA', 'RWY26L'],
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'NOVM1X',
+        'BOGN1X',
+        'NOVMA1X',
+        'BOGNA1X',
+        'NOVMA',
+        'BOGNA',
+        'RWY26L',
+      ],
     },
     {
-      file: 'EGKK_DEP_2.jpg',
+      file: 'EGKK_DEP_2.png',
       name: 'SID Chart 2',
       type: 'Departure',
-      credits: '© PFATC',
-      procedures: ['NOVM1X', 'NOVMA', 'RWY26L'],
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'WIZA1X',
+        'SFD1X',
+        'LAM6M',
+        'WIZAD1X',
+        'WIZAD',
+        'SFD',
+        'LAM',
+        'RWY26L',
+      ],
     },
     {
-      file: 'EGKK_DEP_3.jpg',
+      file: 'EGKK_DEP_3.png',
       name: 'SID Chart 3',
       type: 'Departure',
-      credits: '© PFATC',
-      procedures: ['WIZA1X', 'WIZAD', 'RWY26L'],
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'IMVUR1Z',
+        'ODVIK2Z',
+        'SFD4Z',
+        'LAM1Z',
+        'IMVUR',
+        'ODVIK',
+        'SFD',
+        'LAM',
+        'RWY08R',
+      ],
     },
     {
       file: 'EGKK_ARR_1.jpg',
@@ -128,11 +165,33 @@ const availableCharts: Record<
       procedures: ['VASU1G', 'VASUX', 'RWY26L', 'RWY08R'],
     },
   ],
+  EGLC: [
+    {
+      file: 'EGLC_GND_1.png',
+      name: 'Airport Diagram',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
+    },
+    {
+      file: 'EGLC_DEP_1.png',
+      name: 'SID Chart 1',
+      type: 'Departure',
+      credits: '© .hykka & PFATC',
+      procedures: ['BPK1H', 'ODUK1H', 'ODUKU1H', 'BPK', 'ODUKU', 'RWY27'],
+    },
+    {
+      file: 'EGLC_DEP_2.png',
+      name: 'SID Chart 2',
+      type: 'Departure',
+      credits: '© .hykka & PFATC',
+      procedures: ['BPK1A', 'ODUK1A', 'ODUKU1A', 'BPK', 'ODUKU', 'RWY27'],
+    },
+  ],
   GCLP: [
     {
       file: 'GCLP_GND_1.jpg',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© BABAXSON',
     },
     {
@@ -223,7 +282,7 @@ const availableCharts: Record<
     {
       file: 'LCLK_GND_1.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© .hykka',
     },
     {
@@ -248,6 +307,10 @@ const availableCharts: Record<
         'KURS1W',
         'RUDE1D',
         'EMED1D',
+        'LUBES1W',
+        'KURSA1W',
+        'RUDER1D',
+        'EMEDA1D',
         'LUBES',
         'KURSA',
         'RUDER',
@@ -259,16 +322,59 @@ const availableCharts: Record<
       file: 'LCLK_DEP_2.png',
       name: 'SID Chart 2',
       type: 'Departure',
-      credits: '© .hykka',
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'RUDE1W',
+        'EMED1W',
+        'RUDER1W',
+        'EMEDA1W',
+        'RUDER',
+        'EMEDA',
+        'RWY04',
+      ],
+    },
+    {
+      file: 'LCLK_DEP_3.png',
+      name: 'SID Chart 3',
+      type: 'Departure',
+      credits: '© .hykka & PFATC',
       procedures: [
         'BONE2W',
         'NORD1W',
-        'RUDR1W',
-        'EMED1W',
+        'BONEK2W',
+        'NORDI1W',
         'BONEK',
         'NORDI',
+        'RWY04',
+      ],
+    },
+    {
+      file: 'LCLK_DEP_4.png',
+      name: 'SID Chart 4',
+      type: 'Departure',
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'RUDE1D',
+        'EMED1D',
+        'RUDER1D',
+        'EMEDA1D',
         'RUDER',
         'EMEDA',
+        'RWY22',
+      ],
+    },
+    {
+      file: 'LCLK_DEP_5.png',
+      name: 'SID Chart 5',
+      type: 'Departure',
+      credits: '© .hykka & PFATC',
+      procedures: [
+        'EMIL2C',
+        'RUDE2C',
+        'EMILI2C',
+        'RUDER2C',
+        'EMILI',
+        'RUDER',
         'RWY04',
       ],
     },
@@ -299,7 +405,7 @@ const availableCharts: Record<
     {
       file: 'LCPH_GND_3.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© vowray',
     },
     {
@@ -314,12 +420,24 @@ const availableCharts: Record<
       type: 'Ground',
       credits: '© vowray',
     },
+    {
+      file: 'LCPH_GND_4.png',
+      name: 'Airport Diagram',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
+    },
+    {
+      file: 'LCPH_GND_5.png',
+      name: 'Parking',
+      type: 'Ground',
+      credits: '© .hykka & PFATC',
+    },
   ],
   LCRA: [
     {
       file: 'LCRA_GND_1.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© vowray',
     },
   ],
@@ -327,7 +445,7 @@ const availableCharts: Record<
     {
       file: 'LEMH_GND_1.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© BABAHAXSON',
     },
     {
@@ -345,11 +463,25 @@ const availableCharts: Record<
       procedures: ['RWY01'],
     },
   ],
+  LPMA: [
+    {
+      file: 'LPMA_GND_1.png',
+      name: 'Airport Diagram',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
+    },
+    {
+      file: 'LPMA_GND_2.png',
+      name: 'Parking',
+      type: 'Ground',
+      credits: '© .hykka & PFATC',
+    },
+  ],
   MDAB: [
     {
       file: 'MDAB_GND.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© BABAHAXSON',
     },
   ],
@@ -357,7 +489,7 @@ const availableCharts: Record<
     {
       file: 'MDCR_GND.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© PFATC',
     },
   ],
@@ -367,11 +499,12 @@ const availableCharts: Record<
       name: 'Airport Diagram',
       type: 'Information',
       credits: '© iceit Cephie Studios',
+      source: 'cephie',
     },
     {
       file: 'MDPC_GND_1.jpg',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© CPTMILK',
     },
     {
@@ -473,7 +606,7 @@ const availableCharts: Record<
     {
       file: 'MDST_GND.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© PFATC',
     },
   ],
@@ -481,8 +614,16 @@ const availableCharts: Record<
     {
       file: 'MTCA_GND.png',
       name: 'Airport Diagram',
-      type: 'Ground',
+      type: 'Information',
       credits: '© PFATC',
+    },
+  ],
+  PAFA: [
+    {
+      file: 'PAFA_GND_1.png',
+      name: 'Airport Diagram',
+      type: 'Information',
+      credits: '© .hykka & PFATC',
     },
   ],
 };
@@ -490,12 +631,13 @@ const availableCharts: Record<
 export const getChartsForAirport = (icao: string): BundledChart[] => {
   const code = icao.toUpperCase();
   return (availableCharts[code] ?? []).map(
-    ({ file, name, type, credits, procedures }) => ({
+    ({ file, name, type, credits, procedures, source }) => ({
       name,
       path: `${BUNDLED_CHART_BASE_URL}/${code}/${file}`,
       type,
       credits,
       procedures,
+      source,
     })
   );
 };

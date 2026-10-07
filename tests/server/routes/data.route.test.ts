@@ -1,5 +1,5 @@
 import express from 'express';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vite-plus/test';
 
 import { appRequest } from '../helpers/appRequest.js';
 

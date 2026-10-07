@@ -15,8 +15,8 @@
     "build:astro": "cd astro && npm install && npx astro build",
     "build:dev": "npm run generate:developer-docs && vp build --mode development",
     "build-only": "vp build",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vp test run",
+    "test:watch": "vp test",
     "lint": "eslint .",
     "format:check": "vp fmt --check",
     "format": "vp fmt",
@@ -113,9 +113,9 @@
     "tsx": "^4.23.9",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.44.0",
-    "vite": "^8.0.8",
-    "vite-plus": "^0.1.16",
-    "vitest": "^4.1.11"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vite-plus": "1.0.0",
+    "vitest": "5.0.1"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "0.28.1",
@@ -145,6 +145,15 @@
     "react-floater": {
       "react": "$react",
       "react-dom": "$react-dom"
+    },
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vitest": "5.0.1"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.17.0",
+      "onFail": "download"
     }
   }
 }

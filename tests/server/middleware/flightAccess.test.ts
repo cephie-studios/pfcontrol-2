@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import type { Request, Response, NextFunction } from 'express';
 
 type Row = Record<string, unknown> | undefined;

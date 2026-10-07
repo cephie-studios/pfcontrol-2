@@ -519,7 +519,7 @@ export default function ChartDrawer({
     <div
       role="tablist"
       aria-label="Chart source"
-      className="flex max-w-md items-center gap-1 rounded-xl border-2 border-zinc-800 p-1"
+      className="flex max-w-md items-center gap-0.5 overflow-x-auto rounded-xl border-2 border-zinc-800 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {[
         { source: 'all' as const, count: allCharts.length },
@@ -532,16 +532,19 @@ export default function ChartDrawer({
             type="button"
             role="tab"
             aria-selected={active}
+            title={`${count} chart${count === 1 ? '' : 's'}`}
             onClick={() => setSourceFilter(source)}
             className={cn(
-              'flex h-7 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+              'flex h-7 flex-1 shrink-0 basis-auto cursor-pointer items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               active
                 ? 'bg-zinc-800 text-white'
                 : 'text-zinc-400 hover:text-white'
             )}
           >
             {source === 'all' ? 'All' : SOURCE_LABELS[source]}
-            <span className="text-zinc-500 tabular-nums">{count}</span>
+            {active && (
+              <span className="text-zinc-500 tabular-nums">{count}</span>
+            )}
           </button>
         );
       })}

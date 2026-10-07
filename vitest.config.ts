@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   resolve: {
@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    clearMocks: false,
     environment: 'node',
     setupFiles: ['tests/setup/vitestSetup.ts'],
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
