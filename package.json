@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "set NODE_ENV=development && npm run generate:developer-docs && concurrently \"vp dev\" \"tsx watch --clear-screen=false server/main.ts\"",
+    "dev": "set NODE_ENV=development && npm run generate:developer-docs && concurrently \"vp dev\" \"node --watch --watch-preserve-output --import tsx server/main.ts\"",
     "dev:astro": "cd astro && npx astro dev --port 4321",
     "prod": "cross-env NODE_ENV=production node server/dist/main.js",
     "generate:developer-docs": "tsx scripts/generate-developer-api-docs.ts",

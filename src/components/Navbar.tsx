@@ -537,6 +537,12 @@ export default function Navbar({
                     >
                       Network Flights
                     </a>
+                    <a
+                      href="/charts"
+                      className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
+                    >
+                      Charts
+                    </a>
                   </div>
                 )}
                 <CustomUserButton />

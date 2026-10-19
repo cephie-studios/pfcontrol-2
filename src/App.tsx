@@ -26,6 +26,7 @@ const ACARS = lazy(() => import('./pages/ACARS'));
 const PilotProfile = lazy(() => import('./pages/PilotProfile'));
 const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
 const ChartfoxLinked = lazy(() => import('./pages/ChartfoxLinked'));
+const Charts = lazy(() => import('./pages/Charts'));
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
 const Glossary = lazy(() => import('./pages/Glossary'));
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/user/:username" element={<PilotProfile />} />
             <Route path="/howtousepfcontrol" element={<HowToUsePFControl />} />
             <Route path="/glossary" element={<Glossary />} />
+            <Route path="/charts" element={<Charts />} />
             <Route path="/developers/docs" element={<DeveloperDocsPage />} />
 
             <Route

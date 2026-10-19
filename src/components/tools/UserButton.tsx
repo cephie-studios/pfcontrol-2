@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Code2,
   MessageSquare,
+  Map,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
@@ -204,6 +205,16 @@ export default function CustomUserButton({
           >
             <Plane className="w-4 h-4 shrink-0" />
             <span>My Flights</span>
+          </button>
+
+          <button
+            onClick={() =>
+              handleAction(() => (window.location.href = '/charts'))
+            }
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors duration-150 text-sm font-medium"
+          >
+            <Map className="w-4 h-4 shrink-0" />
+            <span>Charts</span>
           </button>
 
           <button

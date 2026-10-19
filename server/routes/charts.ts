@@ -18,9 +18,10 @@ import {
   linkChartfoxAccount,
   unlinkChartfoxAccount,
 } from '../utils/chartfox.js';
+import { fetchChartGen } from '../utils/chartGen.js';
 import requireAuth from '../middleware/auth.js';
 import { chartSubjectFor } from '../utils/chartSubject.js';
-import { applyPublicCache } from '../utils/httpCache.js';
+import { applyImmutableAsset, applyPublicCache } from '../utils/httpCache.js';
 import { authLimiter } from '../middleware/security.js';
 
 const router = express.Router();
@@ -36,6 +37,8 @@ const JWT_SECRET = process.env.JWT_SECRET ?? '';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? '';
 const ICAO_PATTERN = /^[A-Z0-9]{2,7}$/;
 const CHART_ID_PATTERN = /^[0-9a-f-]{36}$/i;
+const CHART_FILE_PATTERN = /^[a-z0-9-]{1,24}(\.preview)?\.webp$/;
+const CHART_VERSION_PATTERN = /^[0-9a-f]{12}$/;
 
 const chartfoxLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -124,6 +127,53 @@ router.get('/plate/:icao/:file', requireAuth, async (req, res) => {
 
   applyPerUserCache(res, CHART_CACHE_SEC);
   res.type(image.contentType).send(image.body);
+});
+
+// GET: /api/charts/cephie - generated chart index, with the version chart URLs carry
+router.get('/cephie', async (_req, res) => {
+  const upstream = await fetchChartGen('/cephie');
+  if (!upstream || upstream.status !== 200) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ version: null, airports: {} });
+  }
+  applyPublicCache(res, { browserMaxAge: 5 * 60, edgeMaxAge: 10 * 60 });
+  res.type('application/json').send(upstream.body);
+});
+
+// GET: /api/charts/cephie/:version/:icao/:file - chart image (<kind>.webp) or a
+// small preview (<kind>.preview.webp). A version only ever names one bundle, so
+// these responses never change.
+router.get('/cephie/:version/:icao/:file', async (req, res) => {
+  const { version } = req.params;
+  const icao = req.params.icao.toUpperCase();
+  const file = req.params.file.toLowerCase();
+  if (
+    !CHART_VERSION_PATTERN.test(version) ||
+    !ICAO_PATTERN.test(icao) ||
+    !CHART_FILE_PATTERN.test(file)
+  ) {
+    return res.status(404).json({ error: 'Chart not found' });
+  }
+
+  const upstream = await fetchChartGen(`/cephie/${version}/${icao}/${file}`);
+  if (!upstream || upstream.status >= 500) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(503).json({ error: 'Charts are unavailable' });
+  }
+  if (upstream.status === 409 && upstream.version) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.redirect(
+      302,
+      `${req.baseUrl}/cephie/${upstream.version}/${icao}/${file}`
+    );
+  }
+  if (upstream.status !== 200) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(404).json({ error: 'Chart not found' });
+  }
+
+  applyImmutableAsset(res);
+  res.type('image/webp').send(upstream.body);
 });
 
 // GET: /api/charts/chartfox/status - ChartFox link status for the current user

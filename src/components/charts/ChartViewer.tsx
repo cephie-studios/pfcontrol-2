@@ -778,7 +778,7 @@ export default function ChartViewer({
           ) : null}
         </p>
         <p className="shrink-0">
-          {isChartfox
+          {isChartfox || chart.source === 'cephie'
             ? 'Not for real-world navigation'
             : 'Redistribution of this chart is prohibited'}
         </p>
