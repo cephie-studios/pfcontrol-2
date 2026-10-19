@@ -141,7 +141,7 @@
     "lightningcss-linux-x64-musl": "1.32.0"
   },
   "overrides": {
-    "@jridgewell/sourcemap-codec": "1.5.5",
+    "@jridgewell/sourcemap-codec": "1.6.0",
     "react-floater": {
       "react": "$react",
       "react-dom": "$react-dom"
