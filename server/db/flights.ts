@@ -637,15 +637,13 @@ async function getExternalArrivalFlightsUncached(
       }
     }
 
-    return flights.map(
-      (f): ExternalArrivalFlight => ({
-        ...sanitizeFlightForClient(f),
-        user: f.user_id ? usersMap.get(f.user_id) : undefined,
-        sourceSessionId: f.source_session_id,
-        sourceAirport: f.source_airport,
-        isExternal: true,
-      })
-    );
+    return flights.map((f): ExternalArrivalFlight => ({
+      ...sanitizeFlightForClient(f),
+      user: f.user_id ? usersMap.get(f.user_id) : undefined,
+      sourceSessionId: f.source_session_id,
+      sourceAirport: f.source_airport,
+      isExternal: true,
+    }));
   } catch (error) {
     console.error('Error fetching external arrival flights:', error);
     return [];

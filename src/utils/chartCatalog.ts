@@ -2,7 +2,7 @@ import type { BundledChart } from './acars';
 import type { CelesbitPlate, ChartfoxChartSummary } from './fetch/charts';
 import { celesbitPlateUrl } from './fetch/charts';
 
-export type ChartSource = 'pfatc' | 'celesbit' | 'chartfox';
+export type ChartSource = 'pfatc' | 'cephie' | 'celesbit' | 'chartfox';
 
 export type ChartCategory =
   | 'ground'
@@ -30,12 +30,12 @@ export interface ChartEntry {
 }
 
 export const CATEGORY_ORDER: ChartCategory[] = [
+  'general',
   'ground',
   'sid',
   'star',
   'approach',
   'transition',
-  'general',
   'briefing',
   'other',
 ];
@@ -46,17 +46,23 @@ export const CATEGORY_LABELS: Record<ChartCategory, string> = {
   star: 'Arrival',
   approach: 'Approach',
   transition: 'Transition',
-  general: 'General',
+  general: 'Information',
   briefing: 'Briefing',
   other: 'Other',
 };
 
 export const CHARTFOX_LOGO_URL = '/assets/images/chartfox.webp';
 
-export const SOURCE_ORDER: ChartSource[] = ['pfatc', 'celesbit', 'chartfox'];
+export const SOURCE_ORDER: ChartSource[] = [
+  'cephie',
+  'pfatc',
+  'chartfox',
+  'celesbit',
+];
 
 export const SOURCE_LABELS: Record<ChartSource, string> = {
   pfatc: 'PFATC',
+  cephie: 'Cephie',
   celesbit: 'Celesbit',
   chartfox: 'ChartFox',
 };
@@ -77,7 +83,7 @@ const CELESBIT_KIND_CATEGORY: Record<string, ChartCategory> = {
 };
 
 const CHARTFOX_TYPE_CATEGORY: Record<number, ChartCategory> = {
-  0: 'other',
+  0: 'general',
   1: 'general',
   2: 'general',
   3: 'ground',
@@ -88,14 +94,28 @@ const CHARTFOX_TYPE_CATEGORY: Record<number, ChartCategory> = {
   99: 'briefing',
 };
 
+const GROUND_MOVEMENT_PATTERN =
+  /ground\s*movement|taxi|parking|\bstands?\b|apron|docking|de-?icing/i;
+
+function refineGroundCategory(
+  category: ChartCategory,
+  name: string
+): ChartCategory {
+  if (category !== 'ground') return category;
+  return GROUND_MOVEMENT_PATTERN.test(name) ? 'ground' : 'general';
+}
+
 export function fromBundled(icao: string, chart: BundledChart): ChartEntry {
   return {
-    id: `pfatc:${chart.path}`,
+    id: `${chart.source ?? 'pfatc'}:${chart.path}`,
     airport: icao,
     name: chart.name,
     code: null,
-    category: BUNDLED_TYPE_CATEGORY[chart.type.toLowerCase()] ?? 'other',
-    source: 'pfatc',
+    category: refineGroundCategory(
+      BUNDLED_TYPE_CATEGORY[chart.type.toLowerCase()] ?? 'other',
+      chart.name
+    ),
+    source: chart.source ?? 'pfatc',
     credits: chart.credits ?? null,
     procedures: chart.procedures ?? [],
     runways: [],
@@ -165,6 +185,11 @@ export function chartMatchesQuery(chart: ChartEntry, query: string): boolean {
 export function groupByCategory(charts: ChartEntry[]) {
   return CATEGORY_ORDER.map((category) => ({
     category,
-    charts: charts.filter((chart) => chart.category === category),
+    charts: charts
+      .filter((chart) => chart.category === category)
+      .sort(
+        (a, b) =>
+          SOURCE_ORDER.indexOf(a.source) - SOURCE_ORDER.indexOf(b.source)
+      ),
   })).filter((group) => group.charts.length > 0);
 }
