@@ -95,7 +95,7 @@ const CHARTFOX_TYPE_CATEGORY: Record<number, ChartCategory> = {
 };
 
 const GROUND_MOVEMENT_PATTERN =
-  /ground\s*movement|taxi|parking|stand|apron|docking|de-?icing/i;
+  /ground\s*movement|taxi|parking|\bstands?\b|apron|docking|de-?icing/i;
 
 function refineGroundCategory(
   category: ChartCategory,
@@ -107,7 +107,7 @@ function refineGroundCategory(
 
 export function fromBundled(icao: string, chart: BundledChart): ChartEntry {
   return {
-    id: `pfatc:${chart.path}`,
+    id: `${chart.source ?? 'pfatc'}:${chart.path}`,
     airport: icao,
     name: chart.name,
     code: null,
@@ -131,10 +131,7 @@ export function fromCelesbit(icao: string, plate: CelesbitPlate): ChartEntry {
     airport: icao,
     name: plate.label,
     code: null,
-    category: refineGroundCategory(
-      CELESBIT_KIND_CATEGORY[plate.kind] ?? 'other',
-      plate.label
-    ),
+    category: CELESBIT_KIND_CATEGORY[plate.kind] ?? 'other',
     source: 'celesbit',
     credits: '© Gavin Ostler',
     // Lets "BPK1H" match a plate labelled "BPK 1H".
@@ -155,10 +152,7 @@ export function fromChartfox(
     airport: icao,
     name: chart.name,
     code: chart.code,
-    category: refineGroundCategory(
-      CHARTFOX_TYPE_CATEGORY[chart.type] ?? 'other',
-      chart.name
-    ),
+    category: CHARTFOX_TYPE_CATEGORY[chart.type] ?? 'other',
     source: 'chartfox',
     credits: null,
     procedures: chart.procedures,
