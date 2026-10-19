@@ -1,15 +1,30 @@
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
+import rateLimit, {
+  type RateLimitExceededEventHandler,
+} from 'express-rate-limit';
 import helmet from 'helmet';
 import type { RequestHandler, Response } from 'express';
 
+const AUTH_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15min
+const AUTH_LIMIT_MAX = 15;
+
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15min
-  max: 15,
+  windowMs: AUTH_LIMIT_WINDOW_MS,
+  max: AUTH_LIMIT_MAX,
   message: 'Too many login attempts, try again later',
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+function createAuthLimiter(handler: RateLimitExceededEventHandler) {
+  return rateLimit({
+    windowMs: AUTH_LIMIT_WINDOW_MS,
+    max: AUTH_LIMIT_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler,
+  });
+}
 
 const cspNonce: RequestHandler = (_req, res, next) => {
   res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
@@ -56,4 +71,4 @@ const securityMiddleware = [
   }),
 ];
 
-export { authLimiter, securityMiddleware };
+export { authLimiter, createAuthLimiter, securityMiddleware };

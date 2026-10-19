@@ -11,7 +11,7 @@ import {
   updateUserFingerprint,
   ensureUserPlatformToken,
 } from '../db/users.js';
-import { authLimiter } from '../middleware/security.js';
+import { authLimiter, createAuthLimiter } from '../middleware/security.js';
 import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
 import { isAdmin } from '../middleware/admin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
@@ -95,6 +95,11 @@ function discordLoginErrorUrl(error: string, callback?: string): string {
   return `${FRONTEND_URL}/login?${params.toString()}`;
 }
 
+const discordCallbackLimiter = createAuthLimiter((req, res) => {
+  const { callback } = decodeDiscordState(req.query.state);
+  res.redirect(discordLoginErrorUrl('rate_limited', callback));
+});
+
 router.get('/discord', (req, res) => {
   if (!CLIENT_ID || !REDIRECT_URI) {
     return res.status(500).json({ error: 'Discord OAuth not configured' });
@@ -117,7 +122,7 @@ router.get('/discord', (req, res) => {
 });
 
 // GET: /api/auth/discord/callback - handle Discord OAuth2 callback
-router.get('/discord/callback', authLimiter, async (req, res) => {
+router.get('/discord/callback', discordCallbackLimiter, async (req, res) => {
   const { code, error: oauthError } = req.query;
   const { callback, consent } = decodeDiscordState(req.query.state);
 

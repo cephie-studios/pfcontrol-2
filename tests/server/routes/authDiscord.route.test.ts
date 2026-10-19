@@ -25,7 +25,10 @@ vi.mock('../../../server/utils/posthog.js', () => ({
   default: { identify: vi.fn() },
   capture: vi.fn(),
 }));
-vi.mock('../../../server/middleware/security.js', () => ({
+vi.mock('../../../server/middleware/security.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('../../../server/middleware/security.js')
+  >()),
   authLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
@@ -117,5 +120,19 @@ describe('Discord OAuth routes', () => {
     const url = await location('/api/auth/discord/callback');
     expect(url.origin + url.pathname).toBe('http://frontend.test/login');
     expect(url.searchParams.get('error')).toBe('missing_code');
+  });
+
+  it('redirects to /login with rate_limited once the limit is hit', async () => {
+    const state = encodeURIComponent(
+      encodeState({ callback: '/submit/x', consent: true })
+    );
+    let url: URL | undefined;
+    for (let i = 0; i < 20; i++) {
+      url = await location(`/api/auth/discord/callback?state=${state}`);
+      if (url.searchParams.get('error') === 'rate_limited') break;
+    }
+    expect(url?.origin + url!.pathname).toBe('http://frontend.test/login');
+    expect(url?.searchParams.get('error')).toBe('rate_limited');
+    expect(url?.searchParams.get('callback')).toBe('/submit/x');
   });
 });

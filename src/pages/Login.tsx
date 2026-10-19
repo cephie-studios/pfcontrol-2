@@ -15,6 +15,7 @@ const LOGIN_ERROR_MESSAGES: Record<string, string> = {
     'Discord did not return an authorization code. Please try again.',
   auth_failed: 'Sign-in failed. Please try again.',
   discord_error: 'Discord rejected the sign-in request. Please try again.',
+  rate_limited: 'Too many sign-in attempts. Please try again in a few minutes.',
 };
 
 export default function Login() {
