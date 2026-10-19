@@ -100,6 +100,7 @@ const discordCallbackLimiter = createAuthLimiter((req, res) => {
   res.redirect(discordLoginErrorUrl('rate_limited', callback));
 });
 
+// GET: /api/auth/discord
 router.get('/discord', (req, res) => {
   if (!CLIENT_ID || !REDIRECT_URI) {
     return res.status(500).json({ error: 'Discord OAuth not configured' });
