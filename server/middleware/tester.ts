@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { isTester as checkIsTester, getTesterSettings } from '../db/testers.js';
 import { Request, Response, NextFunction } from 'express';
 import type { JwtPayload } from '../types/JwtPayload.js';
+import { hasPlan } from '../billing/entitlements.js';
 import {
   resolveChannelFromHost,
   resolveChannelFromHostname,
@@ -40,9 +41,11 @@ export async function requireTester(
     }
 
     const decoded = jwt.verify(token, JWT_SECRET as string) as JwtPayload;
-    const userIsTester = await checkIsTester(decoded.userId);
+    const hasAccess =
+      (await checkIsTester(decoded.userId)) ||
+      (await hasPlan(decoded.userId, 'supporter'));
 
-    if (!userIsTester) {
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Tester access required' });
     }
 

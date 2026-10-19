@@ -27,6 +27,8 @@ const PilotProfile = lazy(() => import('./pages/PilotProfile'));
 const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
 const ChartfoxLinked = lazy(() => import('./pages/ChartfoxLinked'));
 const Charts = lazy(() => import('./pages/Charts'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Gift = lazy(() => import('./pages/Gift'));
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
 const Glossary = lazy(() => import('./pages/Glossary'));
@@ -59,6 +61,7 @@ const AdminAltDetection = lazy(() => import('./pages/admin/AdminAltDetection'));
 const AdminDevelopers = lazy(() => import('./pages/admin/AdminDevelopers'));
 const AdminWebsockets = lazy(() => import('./pages/admin/AdminWebsockets'));
 const AdminDatabase = lazy(() => import('./pages/admin/AdminDatabase'));
+const AdminBilling = lazy(() => import('./pages/admin/AdminBilling'));
 const DeveloperLayout = lazy(
   () => import('./pages/developers/DeveloperLayout')
 );
@@ -106,6 +109,8 @@ export default function App() {
             <Route path="/howtousepfcontrol" element={<HowToUsePFControl />} />
             <Route path="/glossary" element={<Glossary />} />
             <Route path="/charts" element={<Charts />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/gift/:username" element={<Gift />} />
             <Route path="/developers/docs" element={<DeveloperDocsPage />} />
 
             <Route
@@ -347,6 +352,14 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="admin">
                           <AdminDatabase />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="billing"
+                      element={
+                        <ProtectedRoute requirePermission="billing">
+                          <AdminBilling />
                         </ProtectedRoute>
                       }
                     />

@@ -23,6 +23,7 @@ import surveysRouter from './surveys.js';
 import siteSettingsRouter from './siteSettings.js';
 import turnRouter from './turn.js';
 import chartsRouter from './charts.js';
+import billingRouter from './billing.js';
 
 const router = express.Router();
 
@@ -49,5 +50,6 @@ router.use('/surveys', surveysRouter);
 router.use('/site-settings', siteSettingsRouter);
 router.use('/turn', turnRouter);
 router.use('/charts', chartsRouter);
+router.use('/billing', billingRouter);
 
 export default router;

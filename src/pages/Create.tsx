@@ -71,7 +71,7 @@ export default function Create() {
   } | null>(null);
   const { user } = useAuth();
   const { airports, frequencies } = useData();
-  const maxSessions = user?.isAdmin || user?.isTester ? 100 : 50;
+  const maxSessions = user?.limits?.maxSessions ?? 50;
 
   useEffect(() => {
     if (user) {

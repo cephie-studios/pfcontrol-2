@@ -282,3 +282,89 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@property --ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.supporter-ring {
+  container-type: inline-size;
+  border-radius: 9999px;
+  background: var(--ring-bg);
+}
+
+.supporter-ring > * {
+  border: max(3px, 6cqi) solid transparent;
+  background-clip: padding-box;
+}
+
+.supporter-ring-gold {
+  --ring-bg: linear-gradient(135deg, #fde68a, #f59e0b 45%, #b45309);
+}
+
+.supporter-ring-aurora {
+  --ring-bg: conic-gradient(
+    from var(--ring-angle),
+    #22d3ee,
+    #a78bfa,
+    #34d399,
+    #22d3ee
+  );
+  animation: supporter-ring-spin 4s linear infinite;
+}
+
+.supporter-ring-sunset {
+  --ring-bg: conic-gradient(
+    from var(--ring-angle),
+    #f97316,
+    #ec4899,
+    #facc15,
+    #f97316
+  );
+  animation: supporter-ring-spin 5s linear infinite;
+}
+
+.supporter-ring-radar {
+  --ring-bg: conic-gradient(
+    from var(--ring-angle),
+    #4ade80,
+    #15803d 20%,
+    #052e16 70%,
+    #4ade80
+  );
+  animation: supporter-ring-spin 2.5s linear infinite;
+}
+
+.supporter-ring-custom {
+  animation: supporter-ring-spin 4s linear infinite;
+}
+
+.supporter-name-gradient {
+  background: linear-gradient(90deg, #fbbf24, #f472b6, #a78bfa, #fbbf24);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: supporter-name-shimmer 6s linear infinite;
+}
+
+@keyframes supporter-ring-spin {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
+@keyframes supporter-name-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supporter-ring,
+  .supporter-name-gradient {
+    animation: none;
+  }
+}

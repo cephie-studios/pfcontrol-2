@@ -20,6 +20,7 @@ import {
   ThumbsUp,
   UserCog,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../../types/user';
@@ -45,6 +46,12 @@ export const ADMIN_NAV: AdminNavSection[] = [
         label: 'Overview',
         path: '/admin',
         permission: 'admin',
+      },
+      {
+        icon: Wallet,
+        label: 'Plans & revenue',
+        path: '/admin/billing',
+        permission: 'billing',
       },
       {
         icon: Users,

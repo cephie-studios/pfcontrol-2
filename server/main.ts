@@ -6,6 +6,7 @@ import type { RequestHandler, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import { stripeWebhookHandler } from './routes/billing.js';
 import sitemapXmlRouter from './routes/sitemapXml.js';
 import dotenv from 'dotenv';
 import http from 'http';
@@ -182,6 +183,11 @@ if (developerApiCorsOrigins.length > 0) {
   );
 }
 app.use(cookieParser());
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  stripeWebhookHandler
+);
 app.use(express.json());
 
 app.use(apiLogger());

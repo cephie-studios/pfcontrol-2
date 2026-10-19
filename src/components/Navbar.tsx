@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
@@ -510,7 +511,7 @@ export default function Navbar({
             {!isMobile && (
               <div className="flex items-center space-x-4">
                 {!sessionId && (
-                  <div className="space-x-6">
+                  <div className="flex items-center gap-6 whitespace-nowrap">
                     <a
                       href="/create"
                       className="text-white hover:text-blue-400 transition-colors duration-300 font-medium"
@@ -543,6 +544,15 @@ export default function Navbar({
                     >
                       Charts
                     </a>
+                    {(!user || !user.plan || user.plan === 'free') && (
+                      <a
+                        href="/pricing"
+                        className="hidden xl:inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors duration-300 font-medium"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Support
+                      </a>
+                    )}
                   </div>
                 )}
                 <CustomUserButton />

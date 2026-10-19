@@ -8,6 +8,7 @@ import {
   LandPlot,
   Link2,
   Loader2,
+  Lock,
   Map,
   PlaneLanding,
   PlaneTakeoff,
@@ -22,6 +23,7 @@ import {
 import type { Settings } from '../../types/settings';
 import { PanelHeader } from '../common/SidePanel';
 import ChartViewer from '../charts/ChartViewer';
+import { CephieUnlockStrip, useCephieLocked } from '../charts/CephieUnlock';
 import { cn } from '@/lib/utils';
 import { SIGNATURE_TONES } from '@/lib/signatureTones';
 import { Button } from '@/components/ui/button';
@@ -44,6 +46,8 @@ import {
   FIELD_OPTION_CLASS,
   FIELD_PANEL_CLASS,
 } from '../dropdowns/fieldStyles';
+import { useWheelScrollX } from '../../hooks/useWheelScrollX';
+import { useChartSources } from '../../hooks/useChartSources';
 import { useAirportCharts } from '../../hooks/useAirportCharts';
 import {
   useChartfoxAirportCharts,
@@ -146,11 +150,13 @@ function ChartRow({
   chart,
   active,
   showSource,
+  locked,
   onSelect,
 }: {
   chart: ChartEntry;
   active: boolean;
   showSource: boolean;
+  locked: boolean;
   onSelect: () => void;
 }) {
   const details = chartDetails(chart);
@@ -166,6 +172,15 @@ function ChartRow({
           : 'text-zinc-200 hover:bg-zinc-800 hover:text-white'
       )}
     >
+      {locked && (
+        <Lock
+          aria-label="Supporters only"
+          className={cn(
+            'size-3.5 shrink-0',
+            active ? 'text-white' : 'text-amber-500'
+          )}
+        />
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm">{chart.name}</span>
         {details && (
@@ -196,10 +211,12 @@ function ChartRow({
 function ChartCard({
   chart,
   showSource,
+  locked,
   onSelect,
 }: {
   chart: ChartEntry;
   showSource: boolean;
+  locked: boolean;
   onSelect: () => void;
 }) {
   const details = chartDetails(chart);
@@ -209,8 +226,16 @@ function ChartCard({
       onClick={onSelect}
       className="cursor-pointer rounded-2xl border-2 border-zinc-800 bg-zinc-900 p-3 text-left transition-colors outline-none hover:border-zinc-700 hover:bg-zinc-800/60 focus-visible:border-blue-600"
     >
-      <span className="line-clamp-2 text-sm font-medium text-white">
-        {chart.name}
+      <span className="flex items-start gap-2">
+        {locked && (
+          <Lock
+            aria-label="Supporters only"
+            className="mt-0.5 size-3.5 shrink-0 text-amber-500"
+          />
+        )}
+        <span className="line-clamp-2 text-sm font-medium text-white">
+          {chart.name}
+        </span>
       </span>
       <span className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500">
         <span className="truncate">{details}</span>
@@ -352,7 +377,10 @@ export default function ChartDrawer({
   const { user } = useAuth();
   const { airports: airportData } = useData();
   const { getLocalCharts } = useAirportCharts();
-  const chartfox = useChartfoxStatus(!!user && isOpen);
+  const airportStripRef = useWheelScrollX<HTMLDivElement>();
+  const sources = useChartSources();
+  const chartfoxOn = sources?.chartfox ?? false;
+  const chartfox = useChartfoxStatus(!!user && isOpen && chartfoxOn);
   const [pickedAirport, setPickedAirport] = useState<string | null>(null);
   const [selectedChart, setSelectedChart] = useState<ChartEntry | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -387,15 +415,27 @@ export default function ChartDrawer({
 
   const chartfoxCharts = useChartfoxAirportCharts(
     activeAirport,
-    isOpen && chartfox.linked
+    isOpen && chartfoxOn && chartfox.linked
   );
 
   const allCharts = useMemo(
     () => [
       ...(activeAirport ? getLocalCharts(activeAirport) : []),
-      ...chartfoxCharts.charts,
+      ...(chartfoxOn ? chartfoxCharts.charts : []),
     ],
-    [activeAirport, getLocalCharts, chartfoxCharts.charts]
+    [activeAirport, getLocalCharts, chartfoxOn, chartfoxCharts.charts]
+  );
+
+  const cephieLocked = useCephieLocked();
+  const lockedCount = cephieLocked
+    ? allCharts.filter((chart) => chart.source === 'cephie').length
+    : 0;
+  const unlockStrip = lockedCount > 0 && (
+    <CephieUnlockStrip
+      count={lockedCount}
+      airport={activeAirport}
+      className="mb-3"
+    />
   );
 
   const sourceCounts = SOURCE_ORDER.map((source) => ({
@@ -458,7 +498,10 @@ export default function ChartDrawer({
     chartfox.linked && chartfoxCharts.status === 'loading';
 
   const airportTabs = (
-    <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
+    <div
+      ref={airportStripRef}
+      className="no-scrollbar flex items-center gap-1.5 overflow-x-auto"
+    >
       {relevantAirports.map(({ icao, role }) => {
         const { icon: Icon, color, label } = ROLE_META[role];
         const active = icao === activeAirport;
@@ -549,10 +592,20 @@ export default function ChartDrawer({
   );
 
   const canConnectChartfox =
-    !!user && chartfox.loaded && chartfox.configured && !chartfox.linked;
+    chartfoxOn &&
+    !!user &&
+    chartfox.loaded &&
+    chartfox.configured &&
+    !chartfox.linked;
 
   const chartfoxPanel = (() => {
-    if (!user || !chartfox.loaded || !chartfox.configured || !activeAirport) {
+    if (
+      !chartfoxOn ||
+      !user ||
+      !chartfox.loaded ||
+      !chartfox.configured ||
+      !activeAirport
+    ) {
       return null;
     }
     if (canConnectChartfox) {
@@ -683,6 +736,7 @@ export default function ChartDrawer({
 
   const chartList = (
     <div className="pb-4">
+      {unlockStrip}
       {groups.map(({ category, charts }) => (
         <section key={category}>
           <CategoryHeading category={category} count={charts.length} />
@@ -693,6 +747,7 @@ export default function ChartDrawer({
                 chart={chart}
                 active={selectedChart?.id === chart.id}
                 showSource={showSource}
+                locked={cephieLocked && chart.source === 'cephie'}
                 onSelect={() => selectChart(chart)}
               />
             ))}
@@ -706,6 +761,7 @@ export default function ChartDrawer({
 
   const chartGrid = (
     <div className="space-y-6 pb-4">
+      {unlockStrip}
       {groups.map(({ category, charts }) => (
         <section key={category}>
           <CategoryHeading category={category} count={charts.length} />
@@ -715,6 +771,7 @@ export default function ChartDrawer({
                 key={chart.id}
                 chart={chart}
                 showSource={showSource}
+                locked={cephieLocked && chart.source === 'cephie'}
                 onSelect={() => selectChart(chart)}
               />
             ))}

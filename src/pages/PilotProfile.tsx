@@ -32,6 +32,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import { SiRoblox } from 'react-icons/si';
+import SupporterBadge from '../components/billing/SupporterBadge';
+import SupporterAvatar from '../components/billing/SupporterAvatar';
+import { nameStyle } from '@/lib/plans';
 import { fetchPilotProfile } from '../utils/fetch/pilot';
 import { parseCallsign } from '../utils/callsignParser';
 import { getCurrentUser } from '../utils/fetch/auth';
@@ -933,30 +936,44 @@ export default function PilotProfile({
                 <div className="flex flex-col md:flex-row md:items-start gap-6">
                   {/* Avatar */}
                   <div className="relative self-center md:self-auto">
-                    <div
-                      className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-blue-600 overflow-hidden bg-gray-800 shadow-xl"
-                      style={
-                        accentColor ? { borderColor: accentColor } : undefined
-                      }
-                    >
-                      <img
+                    {profile.avatarRing ? (
+                      <SupporterAvatar
                         src={getDiscordAvatar(
                           profile.user.id,
                           profile.user.avatar
                         )}
                         alt={profile.user.username}
-                        className="w-full h-full object-cover"
+                        plan={profile.avatarRing.plan}
+                        ring={profile.avatarRing.ring}
+                        colors={profile.avatarRing.colors}
+                        className="size-24 shadow-xl md:size-32"
                       />
-                      {hasCrown && (
-                        <Crown
-                          className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
-                          style={{
-                            color: '#fbbf24',
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
-                          }}
+                    ) : (
+                      <div
+                        className="size-24 overflow-hidden rounded-full border-2 border-blue-600 bg-gray-800 shadow-xl md:size-32"
+                        style={
+                          accentColor ? { borderColor: accentColor } : undefined
+                        }
+                      >
+                        <img
+                          src={getDiscordAvatar(
+                            profile.user.id,
+                            profile.user.avatar
+                          )}
+                          alt={profile.user.username}
+                          className="size-full object-cover"
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
+                    {hasCrown && (
+                      <Crown
+                        className="absolute -top-2 right-0 w-10 h-10 transform rotate-12 shadow-2xl"
+                        style={{
+                          color: '#fbbf24',
+                          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+                        }}
+                      />
+                    )}
                     {isOwnerEditing && (
                       <div className="absolute -bottom-1 -right-1">
                         <EditPencil
@@ -985,7 +1002,17 @@ export default function PilotProfile({
                   {/* User Info */}
                   <div className="flex-1 text-center md:text-left">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 justify-center md:justify-start">
-                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white">
+                      <h1
+                        className={`text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white ${profile.avatarRing ? 'supporter-name-gradient' : ''}`}
+                        style={
+                          profile.avatarRing
+                            ? nameStyle(
+                                profile.avatarRing.ring,
+                                profile.avatarRing.colors
+                              )
+                            : undefined
+                        }
+                      >
                         {profile.user.username}
                       </h1>
                     </div>
@@ -1157,7 +1184,9 @@ export default function PilotProfile({
                           )}
                         </div>
                       )}
-                      {(profile.user.is_admin || displayedRoles.length > 0) && (
+                      {(profile.user.is_admin ||
+                        profile.supporter ||
+                        displayedRoles.length > 0) && (
                         <div
                           className={
                             isOwnerEditing && profile.user.roles.length > 0
@@ -1170,6 +1199,12 @@ export default function PilotProfile({
                               <Braces className="h-5 w-5" />
                               Developer
                             </span>
+                          )}
+                          {profile.supporter && (
+                            <SupporterBadge
+                              badge={profile.supporter}
+                              className="text-base md:text-lg"
+                            />
                           )}
                           {displayedRoles.map((role) => {
                             const badge = getRoleBadge(role);

@@ -31,8 +31,7 @@ import {
   flightCreationLimiter,
   networkFlightBatchLimiter,
 } from '../../middleware/rateLimiting.js';
-import { getUserRoles } from '../../db/roles.js';
-import { isAdmin } from '../../middleware/admin.js';
+import { getPlanLimits } from '../../billing/limits.js';
 import { ExclusiveSessionNetworkFlagsError } from '../../utils/sessionNetworkFlags.js';
 import {
   validateSessionId,
@@ -696,14 +695,10 @@ router.post(
         });
       }
 
-      const userSessions = await getSessionsByUser(ext.userId);
-      const userRoles = await getUserRoles(ext.userId);
-      const isTester =
-        isAdmin(ext.userId) ||
-        userRoles.some(
-          (role) => role.name === 'Tester' || role.name === 'Event Controller'
-        );
-      const maxSessions = isTester ? 100 : 50;
+      const [userSessions, { maxSessions }] = await Promise.all([
+        getSessionsByUser(ext.userId),
+        getPlanLimits(ext.userId),
+      ]);
       if (userSessions.length >= maxSessions) {
         return res.status(400).json({
           error: 'Session limit reached',

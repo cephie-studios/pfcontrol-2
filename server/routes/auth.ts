@@ -18,6 +18,12 @@ import { recordLogin, recordNewUser } from '../db/statistics.js';
 import { isUserBanned, isIpBanned, BAN_CACHE_TTL } from '../db/ban.js';
 import { redisConnection } from '../db/connection.js';
 import { isTester } from '../db/testers.js';
+import { getPlanState } from '../billing/entitlements.js';
+import { planAtLeast } from '../billing/plans.js';
+import {
+  getPlanLimits,
+  hasLapsedAnimatedBackground,
+} from '../billing/limits.js';
 import { isVpnGateEnabled, isVpnException } from '../db/vpnExceptions.js';
 import { getClientIp } from '../utils/getIpAddress.js';
 import { getUserRank, STATS_KEYS } from '../db/leaderboard.js';
@@ -852,6 +858,21 @@ router.get('/me', requireAuthSoft, async (req, res) => {
       void refreshVatsimRatingIfStale(req.user.userId);
     }
 
+    const [planState, limits] = await Promise.all([
+      getPlanState(req.user.userId),
+      getPlanLimits(req.user.userId),
+    ]);
+    let settings = user.settings || {};
+    if (hasLapsedAnimatedBackground(settings, limits)) {
+      const reverted = await updateUserSettings(req.user.userId, {
+        backgroundImage: {
+          ...settings.backgroundImage,
+          selectedImage: null,
+          useCustomBackground: false,
+        },
+      });
+      settings = reverted?.settings ?? settings;
+    }
     const ranks: Record<string, number | null> = {};
     for (const key of STATS_KEYS) {
       ranks[key] = await getUserRank(req.user.userId, key);
@@ -864,13 +885,16 @@ router.get('/me', requireAuthSoft, async (req, res) => {
       avatar: req.user.avatar
         ? `https://cdn.discordapp.com/avatars/${req.user.userId}/${req.user.avatar}.png`
         : null,
-      settings: user.settings || {},
+      settings,
       lastLogin: user.lastLogin,
       totalSessionsCreated: user.totalSessionsCreated || 0,
       isAdmin: isAdmin(req.user.userId),
       isBanned,
       isVpnBlocked,
       isTester: await isTester(req.user.userId),
+      plan: planState.plan,
+      earlyAccess: planAtLeast(planState.plan, 'supporter'),
+      limits,
       roleId: user.roleId,
       roleName: user.roleName,
       rolePermissions: user.role_permissions || {},

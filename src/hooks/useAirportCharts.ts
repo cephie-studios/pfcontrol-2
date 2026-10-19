@@ -6,6 +6,7 @@ import {
   type CelesbitChartIndex,
   type CephieChartIndex,
 } from '../utils/fetch/charts';
+import { useChartSources } from './useChartSources';
 import {
   fromBundled,
   fromCelesbit,
@@ -32,6 +33,7 @@ const loadCephieIndex = cachedLoader<CephieChartIndex>(fetchCephieCharts);
 export function useAirportCharts() {
   const [index, setIndex] = useState<CelesbitChartIndex | null>(null);
   const [cephieIndex, setCephieIndex] = useState<CephieChartIndex | null>(null);
+  const sources = useChartSources();
 
   useEffect(() => {
     let cancelled = false;
@@ -48,14 +50,21 @@ export function useAirportCharts() {
 
   const getLocalCharts = useCallback(
     (icao: string): ChartEntry[] => {
+      if (!sources) return [];
       const code = icao.toUpperCase();
       return [
-        ...getBundledCharts(code).map((chart) => fromBundled(code, chart)),
-        ...(cephieIndex?.[code] ?? []).map((chart) => fromCephie(code, chart)),
-        ...(index?.[code] ?? []).map((plate) => fromCelesbit(code, plate)),
+        ...(sources.pfatc ? getBundledCharts(code) : []).map((chart) =>
+          fromBundled(code, chart)
+        ),
+        ...((sources.cephie && cephieIndex?.[code]) || []).map((chart) =>
+          fromCephie(code, chart)
+        ),
+        ...((sources.celesbit && index?.[code]) || []).map((plate) =>
+          fromCelesbit(code, plate)
+        ),
       ];
     },
-    [index, cephieIndex]
+    [index, cephieIndex, sources]
   );
 
   return { getLocalCharts };

@@ -23,6 +23,7 @@ import {
 } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../hooks/auth/useAuth';
 import PageHero from '../components/common/PageHero';
 import SessionTypeLabel from '../components/common/SessionTypeLabel';
 import { Button } from '@/components/ui/button';
@@ -124,6 +125,8 @@ function FlightCard({
   onFeaturedToggle: (id: string, featured: boolean) => void;
   onDelete: (id: string) => void;
 }) {
+  const { user } = useAuth();
+  const maxFeatured = user?.limits?.featuredFlights ?? 3;
   const [featured, setFeatured] = useState(flight.featured_on_profile ?? false);
   const [featuredLoading, setFeaturedLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -140,7 +143,7 @@ function FlightCard({
     : null;
 
   const callsign = flight.callsign?.toUpperCase() || 'Unknown';
-  const atCap = !featured && featuredCount >= 3;
+  const atCap = !featured && featuredCount >= maxFeatured;
 
   const handleShare = async () => {
     if (!publicFlightUrl) return;
@@ -155,7 +158,7 @@ function FlightCard({
   const handleToggleFeatured = async () => {
     if (featuredLoading) return;
     if (atCap) {
-      toast.error('You can feature up to 3 flights');
+      toast.error(`You can feature up to ${maxFeatured} flights`);
       return;
     }
     setFeaturedLoading(true);
@@ -249,7 +252,7 @@ function FlightCard({
             featured
               ? 'Remove from profile'
               : atCap
-                ? 'You can feature up to 3 flights'
+                ? `You can feature up to ${maxFeatured} flights`
                 : 'Feature on profile'
           }
           tone="amber"

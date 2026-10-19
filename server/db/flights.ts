@@ -1057,13 +1057,29 @@ export async function updateFlightNotes(
     .execute();
 }
 
+export async function countSnapImages(
+  userId: string,
+  flightId: string
+): Promise<number | null> {
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['snap_images'])
+    .where('id', '=', validateFlightId(flightId))
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  if (!flight) return null;
+  return ((flight.snap_images as unknown[] | null) ?? []).length;
+}
+
 export async function addSnapImage(
   userId: string,
   flightId: string,
   cephieId: string,
-  url: string
+  url: string,
+  maxSnaps: number
 ): Promise<{
   ok: boolean;
+  atCap?: boolean;
   snap_images?: Array<{ cephie_id: string; url: string }>;
 }> {
   const validFlightId = validateFlightId(flightId);
@@ -1080,6 +1096,7 @@ export async function addSnapImage(
   const existing =
     (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
     [];
+  if (existing.length >= maxSnaps) return { ok: false, atCap: true };
   const updated = [...existing, { cephie_id: cephieId, url }];
 
   await mainDb
@@ -1134,7 +1151,8 @@ export async function deleteSnapImage(
 
 export async function toggleFeaturedOnProfile(
   userId: string,
-  flightId: string
+  flightId: string,
+  maxFeatured: number
 ): Promise<{ ok: boolean; atCap?: boolean; featured?: boolean }> {
   const validFlightId = validateFlightId(flightId);
 
@@ -1156,7 +1174,9 @@ export async function toggleFeaturedOnProfile(
       .where('user_id', '=', userId)
       .where('featured_on_profile', '=', true)
       .executeTakeFirst();
-    if (Number(countRow?.count ?? 0) >= 3) return { ok: false, atCap: true };
+    if (Number(countRow?.count ?? 0) >= maxFeatured) {
+      return { ok: false, atCap: true };
+    }
   }
 
   await mainDb

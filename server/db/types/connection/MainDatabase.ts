@@ -33,6 +33,11 @@ import {
 } from './main/DailyTableActivityTable';
 import { WebsocketSnapshotsTable } from './main/WebsocketSnapshotsTable';
 import { ChartfoxLinksTable } from './main/ChartfoxLinksTable';
+import { PlanGrantsTable } from './main/PlanGrantsTable';
+import {
+  BillingExpensesTable,
+  ChartSourceSettingsTable,
+} from './main/AdminBillingTables';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -68,4 +73,7 @@ export interface MainDatabase {
   daily_database_totals: DailyDatabaseTotalsTable;
   websocket_snapshots: WebsocketSnapshotsTable;
   chartfox_links: ChartfoxLinksTable;
+  plan_grants: PlanGrantsTable;
+  chart_source_settings: ChartSourceSettingsTable;
+  billing_expenses: BillingExpensesTable;
 }

@@ -27,6 +27,7 @@ import LayoutSettings from '../components/Settings/LayoutSettings';
 import TableColumnSettings from '../components/Settings/TableColumnSettings';
 import AccountSettings from '../components/Settings/AccountSettings';
 import AcarsSettings from '../components/Settings/AcarsSettings';
+import PlanSettings from '../components/Settings/PlanSettings';
 import Navbar from '../components/Navbar';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import PageHero from '../components/common/PageHero';
@@ -43,6 +44,7 @@ import { cn } from '@/lib/utils';
 
 type SectionId =
   | 'account-settings'
+  | 'plan-settings'
   | 'table-column-settings'
   | 'layout-settings'
   | 'acars-settings'
@@ -290,6 +292,10 @@ export default function Settings() {
               settings={localSettings}
               onChange={handleLocalSettingsChange}
             />
+          </SectionAnchor>
+
+          <SectionAnchor id="plan-settings">
+            <PlanSettings />
           </SectionAnchor>
 
           <SectionAnchor id="table-column-settings">

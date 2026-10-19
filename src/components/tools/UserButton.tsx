@@ -10,6 +10,7 @@ import {
   Code2,
   MessageSquare,
   Map,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import ProtectedRoute from '../ProtectedRoute';
@@ -229,6 +230,18 @@ export default function CustomUserButton({
 
           <button
             onClick={() =>
+              handleAction(() => (window.location.href = '/pricing'))
+            }
+            className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-amber-400 hover:bg-zinc-800 transition-colors duration-150 text-sm font-medium"
+          >
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span>
+              {user.plan && user.plan !== 'free' ? 'Plan & gifts' : 'Upgrade'}
+            </span>
+          </button>
+
+          <button
+            onClick={() =>
               handleAction(() => (window.location.href = '/developers'))
             }
             className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-2xl text-blue-400 hover:bg-blue-800/20 transition-colors duration-150 text-sm font-medium"
@@ -383,6 +396,19 @@ export default function CustomUserButton({
             >
               <Settings className="w-4 h-4 shrink-0" />
               <span className="font-medium">Settings</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setIsDropdownOpen(false);
+                window.location.href = '/pricing';
+              }}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-2xl text-amber-400 hover:bg-zinc-800 transition-colors duration-150 text-sm"
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="font-medium">
+                {user.plan && user.plan !== 'free' ? 'Plan & gifts' : 'Upgrade'}
+              </span>
             </button>
 
             <button
