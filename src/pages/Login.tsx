@@ -1,20 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 import { fetchStatistics } from '../utils/fetch/data';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { TowerControl, Users } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa';
+import { toast } from 'sonner';
 import { useAuth } from '../hooks/auth/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
 import Button from '../components/common/Button';
 
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: 'Discord sign-in was cancelled.',
+  missing_code:
+    'Discord did not return an authorization code. Please try again.',
+  auth_failed: 'Sign-in failed. Please try again.',
+  discord_error: 'Discord rejected the sign-in request. Please try again.',
+};
+
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
   const [stats, setStats] = useState({ registeredUsers: 0 });
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const user = useAuth();
   const callback = searchParams.get('callback');
+  const handledErrorParam = useRef(false);
+
+  useEffect(() => {
+    if (handledErrorParam.current) return;
+    const error = searchParams.get('error');
+    if (!error) return;
+    handledErrorParam.current = true;
+
+    toast.error(
+      LOGIN_ERROR_MESSAGES[error] ?? LOGIN_ERROR_MESSAGES.auth_failed
+    );
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('error');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     fetchStatistics().then((data) => {
