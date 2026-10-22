@@ -538,6 +538,30 @@ export async function createMainTables() {
     .execute();
 
   await mainDb.schema
+    .createTable('pilot_chat')
+    .ifNotExists()
+    .addColumn('id', 'bigserial', (col) => col.primaryKey())
+    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('flight_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('sender', 'varchar(10)', (col) => col.notNull())
+    .addColumn('user_id', 'varchar(36)', (col) => col.notNull())
+    .addColumn('username', 'varchar(255)')
+    .addColumn('avatar', 'varchar(255)')
+    .addColumn('station', 'varchar(32)')
+    .addColumn('callsign', 'varchar(16)')
+    .addColumn('message', 'text', (col) => col.notNull())
+    .addColumn('blocked', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_pilot_chat_session_flight_sent')
+    .ifNotExists()
+    .on('pilot_chat')
+    .columns(['session_id', 'flight_id', 'sent_at'])
+    .execute();
+
+  await mainDb.schema
     .createTable('global_chat')
     .ifNotExists()
     .addColumn('id', 'bigserial', (col) => col.primaryKey())

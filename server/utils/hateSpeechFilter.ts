@@ -7,6 +7,9 @@ try {
 }
 const BAD_WORDS = leoProfanity.list().filter((w) => w.length >= 5);
 
+// Short slurs missing from the leo-profanity dictionary; matched as whole words only.
+const BLOCKED_WORDS = new Set(['fag', 'fags']);
+
 function normalizeForProfanity(s: string) {
   return s
     .toLowerCase()
@@ -119,7 +122,7 @@ export function containsProfanity(message: string): boolean {
     .filter(Boolean)
     .map(normalizeWordChars);
   for (const word of words) {
-    if (fuzzyMatchesBadWord(word)) return true;
+    if (BLOCKED_WORDS.has(word) || fuzzyMatchesBadWord(word)) return true;
   }
 
   return false;

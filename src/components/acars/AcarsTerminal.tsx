@@ -1,66 +1,297 @@
-import { Terminal as TerminalIcon } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  Check,
+  Copy,
+  Flag,
+  LogIn,
+  Send,
+  Terminal,
+  Trash2,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import type { AcarsMessage } from '../../types/acars';
-import Button from '../../components/common/Button';
+import AcarsPanel from './AcarsPanel';
+import {
+  COMPOSER_BAR_CLASS,
+  COMPOSER_INPUT_CLASS,
+  ComposerSendButton,
+} from '../chat/ComposerBar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { minDuration } from '@/lib/minDuration';
+import { SIGNATURE_TONES } from '@/lib/signatureTones';
+import { cn } from '@/lib/utils';
 
-interface TerminalProps {
-  flightCallsign?: string;
-  messages: AcarsMessage[];
-  getMessageColor: (type: AcarsMessage['type']) => string;
-  renderMessageText: (msg: AcarsMessage) => React.ReactNode;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  handleRequestPDC: () => void;
-  pdcRequested: boolean;
+export type PdcState = 'idle' | 'requested' | 'received';
+
+export interface AcarsChat {
+  canSend: boolean;
+  onSend: (text: string) => Promise<void>;
+  onSignIn: () => void;
+  onReport: (message: AcarsMessage) => void;
+  onDelete: (message: AcarsMessage) => void;
+}
+
+const MESSAGE_TONES: Record<AcarsMessage['type'], string> = {
+  system: 'text-zinc-200',
+  Success: 'text-emerald-400',
+  warning: 'text-amber-400',
+  pdc: 'text-cyan-400',
+  contact: 'text-orange-400',
+  atis: 'text-blue-400',
+  atc: 'text-sky-300',
+  pilot: 'text-zinc-400',
+};
+
+const formatZulu = (timestamp: string) =>
+  `${new Date(timestamp).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  })}Z`;
+
+function LineAction({
+  label,
+  className,
+  ...props
+}: React.ComponentProps<typeof Button> & { label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={label}
+          className={cn(
+            'ml-1.5 align-middle text-zinc-500 hover:bg-transparent hover:text-white dark:hover:bg-transparent',
+            className
+          )}
+          {...props}
+        />
+      </TooltipTrigger>
+      <TooltipContent className="shadcn-scope" sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [copied]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success('Clearance copied');
+    } catch {
+      toast.error('Could not copy the clearance');
+    }
+  };
+
+  return (
+    <LineAction
+      label={copied ? 'Copied!' : 'Copy clearance'}
+      onClick={copy}
+      className={copied ? 'text-emerald-400 hover:text-emerald-400' : undefined}
+    >
+      {copied ? <Check /> : <Copy />}
+    </LineAction>
+  );
+}
+
+const FLOATING_BAR = cn('absolute inset-x-3 bottom-3', COMPOSER_BAR_CLASS);
+
+function Composer({ chat }: { chat: AcarsChat }) {
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+
+  if (!chat.canSend) {
+    return (
+      <div
+        className={cn(FLOATING_BAR, 'justify-between text-sm text-zinc-400')}
+      >
+        Sign in to message ATC.
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn('rounded-full', SIGNATURE_TONES.blue)}
+          onClick={chat.onSignIn}
+        >
+          <LogIn />
+          Sign in
+        </Button>
+      </div>
+    );
+  }
+
+  const send = async () => {
+    const value = text.trim();
+    if (!value || sending) return;
+    setSending(true);
+    try {
+      await minDuration(chat.onSend(value));
+      setText('');
+    } catch (err) {
+      toast.error('Message not sent', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <form
+      className={FLOATING_BAR}
+      onSubmit={(e) => {
+        e.preventDefault();
+        send();
+      }}
+    >
+      <Input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Message ATC…"
+        aria-label="Message ATC"
+        maxLength={300}
+        className={COMPOSER_INPUT_CLASS}
+      />
+      <ComposerSendButton sending={sending} disabled={!text.trim()} />
+    </form>
+  );
 }
 
 export default function AcarsTerminal({
-  flightCallsign,
   messages,
-  getMessageColor,
-  renderMessageText,
-  messagesEndRef,
-  handleRequestPDC,
-  pdcRequested,
-}: TerminalProps) {
+  pdcState,
+  onRequestPDC,
+  connected,
+  chat,
+  className,
+  style,
+}: {
+  messages: AcarsMessage[];
+  pdcState: PdcState;
+  onRequestPDC: () => void;
+  connected: boolean;
+  chat: AcarsChat;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages]);
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-4 py-3 border-b border-zinc-700 flex items-center gap-2">
-        <TerminalIcon className="w-5 h-5 text-green-500" />
-        <span className="text-sm font-mono text-zinc-300">
-          {flightCallsign ? `${flightCallsign} ACARS` : 'ACARS Terminal'}
-        </span>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1.5 bg-black">
-        {messages.map((msg) => (
-          <div key={msg.id} className={getMessageColor(msg.type)}>
-            <div className="flex gap-2 mb-0.5">
-              <span className="text-zinc-500">
-                {new Date(msg.timestamp).toLocaleTimeString('en-US', {
-                  hour12: false,
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  timeZone: 'UTC',
-                })}
-                Z
-              </span>
-              <span className="text-zinc-400">[{msg.station}]:</span>
-              <div>{renderMessageText(msg)}</div>
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="bg-zinc-900 border-t border-zinc-800 p-3">
-        <div className="flex gap-2">
+    <AcarsPanel
+      icon={Terminal}
+      iconClassName="text-emerald-400"
+      title="ACARS"
+      className={cn('bg-black/40', className)}
+      style={style}
+      bodyClassName="relative flex flex-col overflow-hidden p-0"
+      actions={
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+            {connected ? (
+              <Wifi className="size-3.5 text-emerald-400" />
+            ) : (
+              <WifiOff className="size-3.5 text-red-400" />
+            )}
+            {connected ? 'Linked' : 'No link'}
+          </span>
           <Button
+            variant="ghost"
             size="sm"
-            variant="primary"
-            onClick={handleRequestPDC}
-            disabled={pdcRequested}
+            className={
+              pdcState === 'received'
+                ? SIGNATURE_TONES.emerald
+                : SIGNATURE_TONES.blue
+            }
+            onClick={onRequestPDC}
+            disabled={pdcState !== 'idle'}
           >
-            {pdcRequested ? 'PDC REQUESTED' : 'REQUEST PDC'}
+            {pdcState === 'idle' ? <Send /> : <Check />}
+            {pdcState === 'idle'
+              ? 'Request PDC'
+              : pdcState === 'requested'
+                ? 'PDC requested'
+                : 'PDC received'}
           </Button>
         </div>
+      }
+    >
+      <div
+        ref={scrollRef}
+        aria-live="polite"
+        className="min-h-0 flex-1 overflow-y-auto px-5 pt-1 pb-20 font-mono text-[13px] leading-relaxed"
+      >
+        <ol className="flex flex-col gap-2">
+          {messages.map((message) => (
+            <li key={message.id} className="group flex gap-3">
+              <span className="shrink-0 text-zinc-600 tabular-nums">
+                {formatZulu(message.timestamp)}
+              </span>
+              <p
+                className={cn(
+                  'min-w-0 flex-1 break-words whitespace-pre-wrap',
+                  MESSAGE_TONES[message.type]
+                )}
+              >
+                <span className="text-zinc-500">[{message.station}]</span>{' '}
+                {message.text}
+                {message.link && (
+                  <a
+                    href={message.link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-1 text-blue-400 underline underline-offset-4 hover:text-blue-300"
+                  >
+                    {message.link.text}
+                  </a>
+                )}
+                {message.type === 'pdc' && <CopyButton text={message.text} />}
+                {message.own && (
+                  <LineAction
+                    label="Delete message"
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 focus-visible:opacity-100"
+                    onClick={() => chat.onDelete(message)}
+                  >
+                    <Trash2 />
+                  </LineAction>
+                )}
+                {message.type === 'atc' && message.chatId !== undefined && (
+                  <LineAction
+                    label="Report message"
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 focus-visible:opacity-100"
+                    onClick={() => chat.onReport(message)}
+                  >
+                    <Flag />
+                  </LineAction>
+                )}
+              </p>
+            </li>
+          ))}
+        </ol>
       </div>
-    </div>
+      <Composer chat={chat} />
+    </AcarsPanel>
   );
 }

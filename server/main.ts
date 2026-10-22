@@ -22,6 +22,7 @@ import { setupExtNetworkFlightsWebsocket } from './websockets/extNetworkFlightsW
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
 import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
+import { setupPilotChatWebsocket } from './websockets/pilotChatWebsocket.js';
 import { setupNotificationsWebsocket } from './websockets/notificationsWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
@@ -370,6 +371,15 @@ registerAdminSocketNamespace(
   'Voice Chat',
   '/sockets/voice-chat',
   voiceChatIO
+);
+
+const pilotChatIO = setupPilotChatWebsocket(server);
+pilotChatIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  'pilot-chat',
+  'Pilot Chat',
+  '/sockets/pilot-chat',
+  pilotChatIO
 );
 
 const notificationsIO = setupNotificationsWebsocket(server);
