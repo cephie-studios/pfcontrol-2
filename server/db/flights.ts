@@ -928,6 +928,40 @@ export function dropUnchangedFlightFields(
   return changed;
 }
 
+const allowedFlightUpdateColumns = new Set([
+  'callsign',
+  'aircraft',
+  'departure',
+  'arrival',
+  'flight_type',
+  'stand',
+  'gate',
+  'runway',
+  'sid',
+  'star',
+  'cruisingfl',
+  'clearedfl',
+  'squawk',
+  'wtc',
+  'status',
+  'remark',
+  'clearance',
+  'pdc_remarks',
+  'hidden',
+  'route',
+  'req_at',
+  'req_phase',
+  'roblox_username',
+]);
+
+export function getRejectedFlightUpdateFields(
+  updates: Record<string, unknown>
+): string[] {
+  return Object.keys(updates).filter(
+    (field) => !allowedFlightUpdateColumns.has(field)
+  );
+}
+
 export async function updateFlight(
   sessionId: string,
   flightId: string,
@@ -936,36 +970,10 @@ export async function updateFlight(
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
 
-  const allowedColumns = [
-    'callsign',
-    'aircraft',
-    'departure',
-    'arrival',
-    'flight_type',
-    'stand',
-    'gate',
-    'runway',
-    'sid',
-    'star',
-    'cruisingfl',
-    'clearedfl',
-    'squawk',
-    'wtc',
-    'status',
-    'remark',
-    'clearance',
-    'pdc_remarks',
-    'hidden',
-    'route',
-    'req_at',
-    'req_phase',
-    'roblox_username',
-  ];
-
   const dbUpdates: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(updates)) {
     const dbKey = toFlightColumn(key);
-    if (allowedColumns.includes(dbKey)) {
+    if (allowedFlightUpdateColumns.has(dbKey)) {
       if (
         (dbKey === 'departure' || dbKey === 'arrival') &&
         typeof value === 'string'

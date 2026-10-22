@@ -242,20 +242,20 @@ export default function DeveloperDocs({
               {spec.legacyBaseUrlTemplate ? (
                 <SettingsRow
                   icon={<History className="text-muted-foreground" />}
-                  label="Legacy base URL"
+                  label="Previous base URL"
                   description={
                     <>
                       <code className="font-mono break-all text-foreground">
                         {spec.legacyBaseUrlTemplate}
                       </code>{' '}
-                      serves everything except endpoints marked{' '}
-                      <span className="text-emerald-400">v2+ only</span>.
+                      retains the v2 flight-update behavior. The API overview
+                      describes v1 compatibility.
                     </>
                   }
                 >
                   <CopyButton
                     text={spec.legacyBaseUrlTemplate}
-                    label="Copy legacy base URL"
+                    label="Copy previous base URL"
                   />
                 </SettingsRow>
               ) : null}

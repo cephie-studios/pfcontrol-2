@@ -20,6 +20,7 @@ import {
   sanitizeFlightForClient,
   updateFlight,
   dropUnchangedFlightFields,
+  getRejectedFlightUpdateFields,
 } from '../../db/flights.js';
 import { addSessionToUser, getUserById } from '../../db/users.js';
 import { logFlightAction } from '../../db/flightLogs.js';
@@ -1037,6 +1038,25 @@ router.put(
       if (!before) return res.status(404).json({ error: 'Not found' });
 
       const updateFields = fromCamelCaseFlightBody(req.body ?? {});
+      if (ext.apiVersion === 3) {
+        if (
+          !req.body ||
+          typeof req.body !== 'object' ||
+          Array.isArray(req.body)
+        ) {
+          return res
+            .status(400)
+            .json({ error: 'Request body must be a JSON object' });
+        }
+
+        const rejectedFields = getRejectedFlightUpdateFields(updateFields);
+        if (rejectedFields.length > 0) {
+          return res.status(400).json({
+            error: 'Unsupported flight update fields',
+            rejectedFields,
+          });
+        }
+      }
       const airportError = validateFlightAirportFields(
         updateFields,
         before.departure
@@ -1069,6 +1089,17 @@ router.put(
         return res.status(404).json({ error: 'Not found' });
       }
       if (msg === 'No valid fields to update') {
+        return res.status(400).json({ error: msg });
+      }
+      if (
+        extCtx(req).apiVersion === 3 &&
+        (msg.startsWith('Callsign must ') ||
+          msg.startsWith('Stand must ') ||
+          msg.startsWith('Squawk must ') ||
+          msg.startsWith('Remark must ') ||
+          msg.startsWith('Cruising FL must ') ||
+          msg.startsWith('Cleared FL must '))
+      ) {
         return res.status(400).json({ error: msg });
       }
       console.error('[ext/sessions] update flight:', e);

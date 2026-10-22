@@ -140,7 +140,7 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'flights.update',
     label: 'Update flight',
     description:
-      'PUT /sessions/:sessionId/flights/:flightId — update only for sessions created with this same API key.',
+      'PUT /sessions/:sessionId/flights/:flightId — v3 rejects unsupported or invalid fields with HTTP 400 and makes no partial write; updates are only allowed for sessions created with this same API key.',
   },
   {
     id: 'flights.delete',
