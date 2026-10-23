@@ -162,7 +162,7 @@ export function diffRoutes(
 
   const keptA = new Set<number>();
   const keptB = new Set<number>();
-  for (let i = 0, j = 0; i < a.length && j < b.length; ) {
+  for (let i = 0, j = 0; i < a.length && j < b.length;) {
     if (a[i] === b[j]) {
       keptA.add(i++);
       keptB.add(j++);
