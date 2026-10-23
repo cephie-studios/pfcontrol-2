@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   Check,
   Copy,
+  ExternalLink,
+  FlaskConical,
   Gift,
   Heart,
   Loader2,
@@ -429,6 +431,16 @@ export default function Pricing() {
               keep the servers running and get Cephie Charts, more room and some
               flair in return.
             </p>
+            <a
+              href="https://canary.pfcontrol.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex cursor-pointer items-center gap-2 text-sm font-medium text-sky-400 hover:text-sky-300"
+            >
+              <FlaskConical className="size-4" />
+              Supporters get early access on canary.pfcontrol.com
+              <ExternalLink className="size-3.5" />
+            </a>
             {catalog && catalog.supporters.count > 0 && (
               <span className="flex items-center gap-2 text-sm text-zinc-300">
                 <Heart className="size-4 text-sky-500" />

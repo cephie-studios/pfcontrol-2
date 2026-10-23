@@ -10,7 +10,11 @@ function shouldBypassTesterGate() {
 }
 
 export function useActiveUpdateModal(
-  user: { isTester?: boolean; isAdmin?: boolean } | null
+  user: {
+    isTester?: boolean;
+    isAdmin?: boolean;
+    earlyAccess?: boolean;
+  } | null
 ) {
   const [testerGateEnabled, setTesterGateEnabled] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -89,7 +93,7 @@ export function useActiveUpdateModal(
     !!activeModal &&
     (!testerGateEnabled ||
       shouldBypassTesterGate() ||
-      (testerGateEnabled && !!user?.isTester) ||
+      (testerGateEnabled && (!!user?.isTester || !!user?.earlyAccess)) ||
       !!user?.isAdmin);
 
   return {
