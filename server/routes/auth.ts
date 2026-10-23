@@ -11,7 +11,7 @@ import {
   updateUserFingerprint,
   ensureUserPlatformToken,
 } from '../db/users.js';
-import { authLimiter } from '../middleware/security.js';
+import { authLimiter, createAuthLimiter } from '../middleware/security.js';
 import { detectVPN, isVpnRequest } from '../utils/detectVPN.js';
 import { isAdmin } from '../middleware/admin.js';
 import { recordLogin, recordNewUser } from '../db/statistics.js';
@@ -66,54 +66,89 @@ const platformTokenCookieOptions = {
   domain: process.env.COOKIE_DOMAIN || undefined,
 };
 
-// GET: /api/auth/discord - redirect to Discord for authentication
+interface DiscordAuthState {
+  callback?: string;
+  consent?: boolean;
+}
+
+const DISCORD_LOGIN_ERRORS = new Set(['access_denied']);
+
+function encodeDiscordState(state: DiscordAuthState): string {
+  return Buffer.from(JSON.stringify(state)).toString('base64');
+}
+
+function decodeDiscordState(raw: unknown): DiscordAuthState {
+  if (typeof raw !== 'string' || !raw) return {};
+  try {
+    const decoded = JSON.parse(Buffer.from(raw, 'base64').toString());
+    if (!decoded || typeof decoded !== 'object') return {};
+    return {
+      callback:
+        typeof decoded.callback === 'string' ? decoded.callback : undefined,
+      consent: decoded.consent === true,
+    };
+  } catch (err) {
+    console.error('Error decoding state:', err);
+    return {};
+  }
+}
+
+function discordLoginErrorUrl(error: string, callback?: string): string {
+  const params = new URLSearchParams({ error });
+  if (callback && callback.startsWith('/')) {
+    params.set('callback', callback);
+  }
+  return `${FRONTEND_URL}/login?${params.toString()}`;
+}
+
+const discordCallbackLimiter = createAuthLimiter((req, res) => {
+  const { callback } = decodeDiscordState(req.query.state);
+  res.redirect(discordLoginErrorUrl('rate_limited', callback));
+});
+
+// GET: /api/auth/discord
 router.get('/discord', (req, res) => {
   if (!CLIENT_ID || !REDIRECT_URI) {
     return res.status(500).json({ error: 'Discord OAuth not configured' });
   }
   const callback =
     typeof req.query.callback === 'string' ? req.query.callback : undefined;
-  const state = callback
-    ? Buffer.from(JSON.stringify({ callback })).toString('base64')
-    : undefined;
+  const consent = req.query.consent === '1';
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
     scope: 'identify',
+    prompt: consent ? 'consent' : 'none',
+    state: encodeDiscordState({ callback, consent }),
   });
-
-  if (state) {
-    params.set('state', state);
-  }
 
   const discordAuthUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
   res.redirect(discordAuthUrl);
 });
 
 // GET: /api/auth/discord/callback - handle Discord OAuth2 callback
-router.get('/discord/callback', authLimiter, async (req, res) => {
-  const { code, state } = req.query;
+router.get('/discord/callback', discordCallbackLimiter, async (req, res) => {
+  const { code, error: oauthError } = req.query;
+  const { callback, consent } = decodeDiscordState(req.query.state);
 
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code missing' });
+  if (typeof oauthError === 'string' && oauthError) {
+    if (!consent) {
+      const params = new URLSearchParams({ consent: '1' });
+      if (callback) params.set('callback', callback);
+      return res.redirect(`${req.baseUrl}/discord?${params.toString()}`);
+    }
+    return res.redirect(
+      discordLoginErrorUrl(
+        DISCORD_LOGIN_ERRORS.has(oauthError) ? oauthError : 'discord_error',
+        callback
+      )
+    );
   }
 
-  let callback: string | undefined;
-  if (state && typeof state === 'string') {
-    try {
-      const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
-      if (
-        decoded &&
-        typeof decoded === 'object' &&
-        typeof decoded.callback === 'string'
-      ) {
-        callback = decoded.callback;
-      }
-    } catch (err) {
-      console.error('Error decoding state:', err);
-    }
+  if (!code) {
+    return res.redirect(discordLoginErrorUrl('missing_code', callback));
   }
 
   try {
@@ -223,7 +258,7 @@ router.get('/discord/callback', authLimiter, async (req, res) => {
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Discord auth error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
+    res.redirect(discordLoginErrorUrl('auth_failed', callback));
   }
 });
 

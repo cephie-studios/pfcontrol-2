@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from 'vite-plus/test';
 
 // Tests do not require a .env file or GitHub Actions secrets.
 process.env.JWT_SECRET =

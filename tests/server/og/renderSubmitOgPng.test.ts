@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import type { PublicSubmitSession } from '../../../server/services/publicSubmitSession.js';
 import { buildSubmitOgCardProps } from '../../../server/og/renderSubmitOgPng.js';
 
