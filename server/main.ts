@@ -187,7 +187,7 @@ if (developerApiCorsOrigins.length > 0) {
 app.use(cookieParser());
 app.post(
   '/api/billing/webhook',
-  express.raw({ type: 'application/json' }),
+  express.raw({ type: 'application/json', limit: '1mb' }),
   stripeWebhookHandler
 );
 app.use(express.json());

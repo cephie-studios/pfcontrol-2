@@ -1,5 +1,6 @@
 import type Stripe from 'stripe';
 import {
+  getStripeCustomerId,
   insertQueuedPass,
   revokeGrantsForPayment,
   upsertSubscriptionGrant,
@@ -15,8 +16,10 @@ import {
   isPassMonths,
 } from './plans.js';
 import { stripe } from './stripe.js';
+import { subscriptionWindow } from './subscriptionWindow.js';
 
-const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
+const idOf = (value: string | { id: string } | null | undefined) =>
+  typeof value === 'string' ? value : (value?.id ?? null);
 
 export async function syncSubscription(sub: Stripe.Subscription) {
   const userId = sub.metadata.userId;
@@ -27,13 +30,15 @@ export async function syncSubscription(sub: Stripe.Subscription) {
     return;
   }
 
-  const startsAt = new Date(sub.start_date * 1000);
-  let endsAt = new Date(item.current_period_end * 1000);
-  if (sub.status === 'incomplete') endsAt = startsAt;
-  else if (!LIVE_STATUSES.has(sub.status)) {
-    endsAt = sub.ended_at ? new Date(sub.ended_at * 1000) : new Date();
+  const customerId = idOf(sub.customer);
+  if (!customerId || customerId !== (await getStripeCustomerId(userId))) {
+    console.error(
+      `[Billing] Subscription ${sub.id} does not belong to the customer of user ${userId}`
+    );
+    return;
   }
 
+  const { startsAt, endsAt } = subscriptionWindow(sub, item, new Date());
   await upsertSubscriptionGrant({
     userId,
     plan,
@@ -47,6 +52,11 @@ export async function syncSubscription(sub: Stripe.Subscription) {
   await invalidatePlan(userId);
 }
 
+async function syncSubscriptionById(id: string) {
+  if (!stripe) return;
+  await syncSubscription(await stripe.subscriptions.retrieve(id));
+}
+
 async function fulfillPass(session: Stripe.Checkout.Session) {
   const { recipientId, buyerId, plan } = session.metadata ?? {};
   const months = Number(session.metadata?.months);
@@ -54,12 +64,14 @@ async function fulfillPass(session: Stripe.Checkout.Session) {
     console.warn(`[Billing] Checkout ${session.id} has no pass metadata`);
     return;
   }
+  if (!(await getUserById(recipientId))) {
+    console.error(
+      `[Billing] Checkout ${session.id} was paid for ${recipientId}, who no longer exists; refund it`
+    );
+    return;
+  }
 
   const isGift = buyerId !== recipientId;
-  const paymentIntent =
-    typeof session.payment_intent === 'string'
-      ? session.payment_intent
-      : (session.payment_intent?.id ?? null);
 
   const granted = await insertQueuedPass({
     userId: recipientId,
@@ -68,8 +80,8 @@ async function fulfillPass(session: Stripe.Checkout.Session) {
     window: (queued) =>
       passWindow(queued, plan, months as PassMonths, new Date()),
     checkoutSessionId: session.id,
-    paymentIntentId: paymentIntent,
-    giftedBy: isGift ? (buyerId ?? null) : null,
+    paymentIntentId: idOf(session.payment_intent),
+    giftedBy: isGift ? buyerId || null : null,
   });
   if (!granted) return;
   await invalidatePlan(recipientId);
@@ -89,6 +101,36 @@ async function fulfillPass(session: Stripe.Checkout.Session) {
   });
 }
 
+async function subscriptionBehindPayment(intent: string) {
+  if (!stripe) return null;
+  const { data } = await stripe.invoicePayments.list({
+    payment: { type: 'payment_intent', payment_intent: intent },
+    expand: ['data.invoice'],
+    limit: 1,
+  });
+  const invoice = data[0]?.invoice;
+  if (!invoice || typeof invoice === 'string' || invoice.deleted) return null;
+  const id = idOf(invoice.parent?.subscription_details?.subscription);
+  return id ? { id, invoiceId: invoice.id } : null;
+}
+
+// Subscription grants carry no payment intent, so a refunded or disputed
+// renewal is cut off by cancelling the subscription itself. A refund only
+// counts when it is for the latest invoice; a dispute always does.
+async function revokePayment(intent: string, requireLatestInvoice: boolean) {
+  for (const userId of await revokeGrantsForPayment(intent)) {
+    await invalidatePlan(userId);
+  }
+  const behind = await subscriptionBehindPayment(intent);
+  if (!behind || !stripe) return;
+  const sub = await stripe.subscriptions.retrieve(behind.id);
+  if (sub.status === 'canceled') return;
+  if (requireLatestInvoice && idOf(sub.latest_invoice) !== behind.invoiceId) {
+    return;
+  }
+  await syncSubscription(await stripe.subscriptions.cancel(behind.id));
+}
+
 export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
   switch (event.type) {
     case 'checkout.session.completed':
@@ -97,33 +139,28 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<void> {
       if (session.mode === 'payment' && session.payment_status === 'paid') {
         await fulfillPass(session);
       }
-      if (session.mode === 'subscription' && session.subscription && stripe) {
-        const id =
-          typeof session.subscription === 'string'
-            ? session.subscription
-            : session.subscription.id;
-        await syncSubscription(await stripe.subscriptions.retrieve(id));
+      const subscription = idOf(session.subscription);
+      if (session.mode === 'subscription' && subscription) {
+        await syncSubscriptionById(subscription);
       }
       return;
     }
+    // The event payload can be stale or out of order across retries, so the
+    // subscription is always re-read from Stripe.
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted':
-      await syncSubscription(event.data.object);
+      await syncSubscriptionById(event.data.object.id);
       return;
-    case 'charge.refunded':
+    case 'charge.refunded': {
+      const charge = event.data.object;
+      const intent = idOf(charge.payment_intent);
+      if (charge.refunded && intent) await revokePayment(intent, true);
+      return;
+    }
     case 'charge.dispute.created': {
-      const object = event.data.object;
-      if (event.type === 'charge.refunded' && !event.data.object.refunded)
-        return;
-      const intent =
-        typeof object.payment_intent === 'string'
-          ? object.payment_intent
-          : object.payment_intent?.id;
-      if (!intent) return;
-      for (const userId of await revokeGrantsForPayment(intent)) {
-        await invalidatePlan(userId);
-      }
+      const intent = idOf(event.data.object.payment_intent);
+      if (intent) await revokePayment(intent, false);
       return;
     }
     default:

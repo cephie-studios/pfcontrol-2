@@ -163,7 +163,11 @@ export async function revokeGrantsForPayment(
 ): Promise<string[]> {
   const rows = await mainDb
     .updateTable('plan_grants')
-    .set({ ends_at: sql`LEAST(ends_at, now())`, updated_at: sql`now()` })
+    .set({
+      starts_at: sql`LEAST(starts_at, now())`,
+      ends_at: sql`LEAST(ends_at, now())`,
+      updated_at: sql`now()`,
+    })
     .where('stripe_payment_intent_id', '=', paymentIntentId)
     .returning('user_id')
     .execute();
@@ -181,15 +185,18 @@ export async function getStripeCustomerId(
   return row?.stripe_customer_id ?? null;
 }
 
-export async function setStripeCustomerId(
+export async function claimStripeCustomerId(
   userId: string,
   customerId: string
-): Promise<void> {
-  await mainDb
+): Promise<string> {
+  const claimed = await mainDb
     .updateTable('users')
     .set({ stripe_customer_id: customerId })
     .where('id', '=', userId)
-    .execute();
+    .where('stripe_customer_id', 'is', null)
+    .returning('stripe_customer_id')
+    .executeTakeFirst();
+  return claimed?.stripe_customer_id ?? (await getStripeCustomerId(userId))!;
 }
 
 export async function getSupporterPrefs(

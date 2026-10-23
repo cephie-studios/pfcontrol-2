@@ -19,7 +19,15 @@ import {
   summarizeMonths,
   type BalanceTransaction,
 } from '../../billing/finance.js';
-import { CURRENCY } from '../../billing/plans.js';
+import { getUserById } from '../../db/users.js';
+import { insertQueuedPass } from '../../db/billing.js';
+import { invalidatePlan } from '../../billing/entitlements.js';
+import {
+  CURRENCY,
+  isPaidPlan,
+  isPassMonths,
+  passWindow,
+} from '../../billing/plans.js';
 import { stripe } from '../../billing/stripe.js';
 import { prefixKey } from '../../utils/cacheTtl.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
@@ -158,6 +166,37 @@ router.get('/', async (req, res) => {
     ),
     chartSources: sources,
   });
+});
+
+// POST: /api/admin/billing/grant - give someone a plan for free (staff, giveaways)
+router.post('/grant', async (req, res) => {
+  const { userId, plan, months } = (req.body ?? {}) as {
+    userId?: unknown;
+    plan?: unknown;
+    months?: unknown;
+  };
+  if (
+    typeof userId !== 'string' ||
+    !isPaidPlan(plan) ||
+    !isPassMonths(months)
+  ) {
+    return res.status(400).json({ error: 'userId, plan and months required' });
+  }
+  if (!(await getUserById(userId))) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  await insertQueuedPass({
+    userId,
+    plan,
+    source: 'admin',
+    window: (queued) => passWindow(queued, plan, months, new Date()),
+    checkoutSessionId: null,
+    paymentIntentId: null,
+    giftedBy: req.user!.userId,
+  });
+  await invalidatePlan(userId);
+  await audit(req, 'PLAN_GRANTED', { userId, plan, months });
+  res.json({ success: true });
 });
 
 // PUT: /api/admin/billing/chart-sources/:source - turn a chart source on or off

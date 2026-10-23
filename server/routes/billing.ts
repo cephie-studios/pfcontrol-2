@@ -3,16 +3,14 @@ import rateLimit from 'express-rate-limit';
 import type Stripe from 'stripe';
 
 import requireAuth, { optionalAuth } from '../middleware/auth.js';
-import { requireAdmin } from '../middleware/admin.js';
 import {
+  claimStripeCustomerId,
   getStripeCustomerId,
   getSupporterPrefs,
-  insertQueuedPass,
-  setStripeCustomerId,
   setSupporterPrefs,
 } from '../db/billing.js';
 import { getUserById, getUserByUsername } from '../db/users.js';
-import { getPlanState, invalidatePlan } from '../billing/entitlements.js';
+import { getPlanState } from '../billing/entitlements.js';
 import { handleStripeEvent } from '../billing/fulfillment.js';
 import {
   getSupporterWall,
@@ -32,7 +30,6 @@ import {
   isPassMonths,
   passAmount,
   passLookupKey,
-  passWindow,
   planAtLeast,
   subscriptionLookupKey,
   type SupporterRing,
@@ -57,6 +54,22 @@ const checkoutLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const recipientLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many lookups. Please wait a minute.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const portalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Too many requests. Please wait a minute.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 function formatAmount(cents: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -72,8 +85,22 @@ async function ensureCustomer(userId: string): Promise<string> {
     name: user?.username,
     metadata: { userId },
   });
-  await setStripeCustomerId(userId, customer.id);
-  return customer.id;
+  const claimed = await claimStripeCustomerId(userId, customer.id);
+  if (claimed !== customer.id) {
+    await stripe!.customers.del(customer.id).catch(() => {});
+  }
+  return claimed;
+}
+
+async function hasLiveStripeSubscription(customerId: string) {
+  const { data } = await stripe!.subscriptions.list({
+    customer: customerId,
+    status: 'all',
+    limit: 20,
+  });
+  return data.some((sub) =>
+    ['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(sub.status)
+  );
 }
 
 // POST: /api/billing/webhook - Stripe events. Mounted before express.json()
@@ -200,7 +227,7 @@ router.put('/me/prefs', requireAuth, async (req, res) => {
 });
 
 // GET: /api/billing/recipient/:username - who a gift link is for
-router.get('/recipient/:username', async (req, res) => {
+router.get('/recipient/:username', recipientLimiter, async (req, res) => {
   const { username } = req.params;
   if (!USERNAME_PATTERN.test(username)) {
     return res.status(404).json({ error: 'Pilot not found' });
@@ -273,8 +300,14 @@ router.post('/checkout', checkoutLimiter, optionalAuth, async (req, res) => {
           .json({ error: 'Gifts are prepaid passes, not subscriptions' });
       }
       const interval = body.interval === 'year' ? 'year' : 'month';
-      const state = await getPlanState(recipientId);
-      if (state.subscription) {
+      const [state, customerId] = await Promise.all([
+        getPlanState(recipientId),
+        getStripeCustomerId(recipientId),
+      ]);
+      if (
+        state.subscription ||
+        (customerId && (await hasLiveStripeSubscription(customerId)))
+      ) {
         return res.status(409).json({
           error:
             'You already have a subscription. Change or cancel it from Manage billing.',
@@ -343,7 +376,7 @@ router.post('/checkout', checkoutLimiter, optionalAuth, async (req, res) => {
 });
 
 // POST: /api/billing/portal - Stripe customer portal (cancel, invoices, card)
-router.post('/portal', requireAuth, async (req, res) => {
+router.post('/portal', portalLimiter, requireAuth, async (req, res) => {
   if (!stripe) {
     return res.status(503).json({ error: 'Payments are not available yet' });
   }
@@ -361,37 +394,6 @@ router.post('/portal', requireAuth, async (req, res) => {
     console.error('[Billing] Failed to open portal:', error);
     res.status(502).json({ error: 'Could not open billing' });
   }
-});
-
-// POST: /api/billing/admin/grant - give someone a plan for free (staff, giveaways)
-router.post('/admin/grant', requireAdmin, async (req, res) => {
-  const { userId, plan, months } = (req.body ?? {}) as {
-    userId?: unknown;
-    plan?: unknown;
-    months?: unknown;
-  };
-  if (
-    typeof userId !== 'string' ||
-    !isPaidPlan(plan) ||
-    !isPassMonths(Number(months))
-  ) {
-    return res.status(400).json({ error: 'userId, plan and months required' });
-  }
-  if (!(await getUserById(userId))) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-  await insertQueuedPass({
-    userId,
-    plan,
-    source: 'admin',
-    window: (queued) =>
-      passWindow(queued, plan, Number(months) as 1 | 3 | 12, new Date()),
-    checkoutSessionId: null,
-    paymentIntentId: null,
-    giftedBy: req.user?.userId ?? null,
-  });
-  await invalidatePlan(userId);
-  res.json({ success: true });
 });
 
 export default router;

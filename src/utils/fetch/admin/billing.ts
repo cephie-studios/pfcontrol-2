@@ -106,7 +106,7 @@ export async function grantPlan(
   plan: PaidPlan,
   months: PassMonths
 ) {
-  await request('/api/billing/admin/grant', {
+  await request('/api/admin/billing/grant', {
     method: 'POST',
     body: JSON.stringify({ userId, plan, months }),
   });
