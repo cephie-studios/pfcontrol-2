@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { PLAN_NAMES, PLAN_TEXT, monthsLabel, supporterRank } from '@/lib/plans';
+import { monthsLabel, supporterRank } from '@/lib/plans';
 import type { SupporterBadge as Badge } from '../../types/billing';
 
 export default function SupporterBadge({
@@ -25,16 +25,16 @@ export default function SupporterBadge({
             href="/pricing"
             className={cn(
               'inline-flex cursor-pointer items-center gap-1.5 font-semibold',
-              PLAN_TEXT[badge.plan],
+              rank.text,
               className
             )}
           >
             <SupporterIcon className="size-5" />
-            {PLAN_NAMES[badge.plan]}
+            {rank.name}
           </a>
         </TooltipTrigger>
         <TooltipContent className="shadcn-scope" sideOffset={6}>
-          {rank.name} supporter
+          Supporter
           {badge.months > 0 ? ` · ${monthsLabel(badge.months)}` : ''}
         </TooltipContent>
       </Tooltip>

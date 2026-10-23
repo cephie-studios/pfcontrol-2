@@ -49,6 +49,7 @@ import {
   releaseExternalAcarsClaim,
   setExternalAcarsClaim,
 } from '../../utils/externalAcarsClaims.js';
+import { getExternalAcarsProvider } from '../../db/externalAcarsProviders.js';
 import { fromCamelCaseFlightBody } from '../../utils/caseConversion.js';
 import {
   isValidAirportIcao,
@@ -461,6 +462,7 @@ router.get('/network/claims', async (req: Request, res: Response) => {
     res.json(
       claims.map((c) => ({
         sessionId: c.sessionId,
+        providerId: c.providerId ?? null,
         claimedAt: c.claimedAt,
         expiresAt: c.expiresAt,
       }))
@@ -484,6 +486,7 @@ router.post(
       }
 
       const rawTtl = (req.body ?? {}).ttlMinutes;
+      const rawProviderId = (req.body ?? {}).providerId;
       let ttlMinutes = CLAIM_TTL_DEFAULT_MINUTES;
       if (rawTtl !== undefined) {
         const n = Number(rawTtl);
@@ -499,6 +502,16 @@ router.post(
         ttlMinutes = n;
       }
 
+      if (
+        rawProviderId !== undefined &&
+        (typeof rawProviderId !== 'string' ||
+          !(await getExternalAcarsProvider(rawProviderId)))
+      ) {
+        return res.status(400).json({
+          error: 'providerId must name an enabled external ACARS provider.',
+        });
+      }
+
       const session = await getSessionById(sessionId);
       if (!session) return res.status(404).json({ error: 'Not found' });
       if (!session.is_pfatc) {
@@ -512,6 +525,8 @@ router.post(
         keyId: ext.keyId,
         userId: ext.userId,
         ttlMinutes,
+        providerId:
+          typeof rawProviderId === 'string' ? rawProviderId : undefined,
       });
       if (!result.ok) {
         return res
@@ -523,6 +538,7 @@ router.post(
         sessionId: result.claim.sessionId,
         claimedAt: result.claim.claimedAt,
         expiresAt: result.claim.expiresAt,
+        providerId: result.claim.providerId ?? null,
       });
     } catch (e) {
       console.error('[ext/sessions] claim:', e);

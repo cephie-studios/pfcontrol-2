@@ -25,6 +25,7 @@ import siteSettingsRouter from './siteSettings.js';
 import turnRouter from './turn.js';
 import chartsRouter from './charts.js';
 import billingRouter from './billing.js';
+import externalAcarsRouter from './externalAcars.js';
 
 const router = express.Router();
 
@@ -53,5 +54,6 @@ router.use('/site-settings', siteSettingsRouter);
 router.use('/turn', turnRouter);
 router.use('/charts', chartsRouter);
 router.use('/billing', billingRouter);
+router.use('/external-acars', externalAcarsRouter);
 
 export default router;

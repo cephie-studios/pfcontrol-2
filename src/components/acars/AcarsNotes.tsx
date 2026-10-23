@@ -12,11 +12,11 @@ function readStoredNotes(notesKey: string, timestampKey: string) {
     if (savedAt && Date.now() - savedAt > NOTES_TTL_MS) {
       localStorage.removeItem(notesKey);
       localStorage.removeItem(timestampKey);
-      return '';
+      return null;
     }
-    return localStorage.getItem(notesKey) ?? '';
+    return localStorage.getItem(notesKey);
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -25,16 +25,18 @@ export default function AcarsNotes({
   flightId,
   className,
   style,
+  initialNotes = '',
 }: {
   sessionId: string;
   flightId: string;
   className?: string;
   style?: CSSProperties;
+  initialNotes?: string;
 }) {
   const notesKey = `acars-notes-${sessionId}-${flightId}`;
   const timestampKey = `acars-notes-timestamp-${sessionId}-${flightId}`;
-  const [notes, setNotes] = useState(() =>
-    readStoredNotes(notesKey, timestampKey)
+  const [notes, setNotes] = useState(
+    () => readStoredNotes(notesKey, timestampKey) ?? initialNotes
   );
 
   const handleChange = (value: string) => {

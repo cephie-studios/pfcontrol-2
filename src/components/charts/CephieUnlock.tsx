@@ -1,4 +1,3 @@
-import { Lock } from 'lucide-react';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -24,18 +23,20 @@ export function CephieUnlockStrip({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border-2 border-zinc-800 bg-zinc-900 px-4 py-3',
+        'flex flex-col gap-3 rounded-2xl border-2 border-zinc-800 bg-zinc-900 px-4 py-3',
         className
       )}
     >
-      <Lock className="size-4 shrink-0 text-amber-500" />
-      <p className="min-w-0 flex-1 text-sm text-zinc-300">
+      <p className="text-sm text-zinc-300">
         <span className="font-medium text-white">{label}</span>. Previews are
         free, Supporter unlocks the real thing.
       </p>
-      <Button size="sm" asChild>
-        <a href="/pricing">Unlock with Supporter</a>
-      </Button>
+      <div className="flex items-center justify-between gap-3">
+        <Button size="sm" asChild>
+          <a href="/pricing">Unlock with Supporter</a>
+        </Button>
+        <span className="text-sm font-medium text-zinc-300">$1/month</span>
+      </div>
     </div>
   );
 }

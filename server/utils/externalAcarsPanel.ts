@@ -1,52 +1,48 @@
-import { hasActiveExternalAcarsClaim } from './externalAcarsClaims.js';
+import {
+  getExternalAcarsClaim,
+  hasActiveExternalAcarsClaim,
+} from './externalAcarsClaims.js';
+import {
+  getDefaultExternalAcarsProvider,
+  getExternalAcarsProvider,
+  type ExternalAcarsProvider,
+} from '../db/externalAcarsProviders.js';
+import { createExternalAcarsAccess } from './externalAcarsAccess.js';
 
-const EXTERNAL_ACARS_PANEL_URL =
-  'https://pilot.pfcontrol.com/api/v1/pilot/acars-panel/';
-
-const ALLOWED_REDIRECT_HOSTS = new Set([
-  new URL(EXTERNAL_ACARS_PANEL_URL).hostname,
-]);
+const MAX_PROVIDER_TOKEN_LENGTH = 4096;
 
 interface ExternalAcarsPanelResult {
-  url: string;
+  callsign: string;
+  token: string;
   expiresAt: string | null;
 }
 
-function isAllowedRedirectUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    return u.protocol === 'https:' && ALLOWED_REDIRECT_HOSTS.has(u.hostname);
-  } catch {
-    return false;
-  }
+interface SessionRef {
+  session_id: string;
+  external_session?: boolean | null;
+  is_pfatc?: boolean | null;
 }
 
-export async function fetchExternalAcarsPanelUrl(
+export async function fetchExternalAcarsPanelAccess(
   callsign: string,
   acarsToken: string,
+  provider: ExternalAcarsProvider,
   timeoutMs = 5000
 ): Promise<ExternalAcarsPanelResult | null> {
-  const apiKey = process.env.PILOT_ACARS_PANEL_API_KEY;
-  if (!apiKey) {
-    console.error(
-      '[external-acars-panel] PILOT_ACARS_PANEL_API_KEY is not set, skipping'
-    );
-    return null;
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(EXTERNAL_ACARS_PANEL_URL, {
+    const response = await fetch(provider.handoffUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `ApiKey ${apiKey}`,
+        ...(provider.handoffApiKey
+          ? { Authorization: `ApiKey ${provider.handoffApiKey}` }
+          : {}),
       },
       body: JSON.stringify({ callsign, acars_token: acarsToken }),
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(
@@ -63,52 +59,102 @@ export async function fetchExternalAcarsPanelUrl(
       console.error('[external-acars-panel] response missing url field');
       return null;
     }
-    if (!isAllowedRedirectUrl(data.url)) {
+
+    const panelUrl = new URL(data.url);
+    if (panelUrl.protocol !== 'https:') {
+      console.error('[external-acars-panel] response URL is not HTTPS');
+      return null;
+    }
+
+    const handedCallsign = panelUrl.searchParams.get('callsign')?.trim();
+    const token = panelUrl.searchParams.get('token')?.trim();
+    if (
+      !handedCallsign ||
+      handedCallsign.toUpperCase() !== callsign.toUpperCase() ||
+      !token ||
+      token.length > MAX_PROVIDER_TOKEN_LENGTH
+    ) {
       console.error(
-        '[external-acars-panel] response url is not on an allowed host'
+        '[external-acars-panel] response URL is missing callsign or token'
       );
       return null;
     }
 
     return {
-      url: data.url,
+      callsign: handedCallsign.toUpperCase(),
+      token,
       expiresAt: typeof data.expires_at === 'string' ? data.expires_at : null,
     };
   } catch (err) {
-    clearTimeout(timeoutId);
     console.error('[external-acars-panel] request failed:', err);
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-async function sessionUsesExternalAcarsPanel(session: {
-  session_id: string;
-  external_session?: boolean | null;
-  is_pfatc?: boolean | null;
-}): Promise<boolean> {
-  if (session.external_session === true) return true;
-  if (!session.is_pfatc) return false;
-  try {
-    return await hasActiveExternalAcarsClaim(session.session_id);
-  } catch (err) {
-    console.error('[external-acars-panel] claim lookup failed:', err);
-    return false;
+export async function providerForExternalAcarsSession(
+  session: SessionRef
+): Promise<ExternalAcarsProvider | null> {
+  if (session.external_session === true) {
+    return getDefaultExternalAcarsProvider();
   }
+  if (!session.is_pfatc) return null;
+  if (!(await hasActiveExternalAcarsClaim(session.session_id))) return null;
+
+  const claim = await getExternalAcarsClaim(session.session_id);
+  return claim?.providerId
+    ? getExternalAcarsProvider(claim.providerId)
+    : getDefaultExternalAcarsProvider();
 }
 
 export async function resolveExternalAcarsRedirectUrl(
-  session: {
-    session_id: string;
-    external_session?: boolean | null;
-    is_pfatc?: boolean | null;
-  } | null,
-  flight: { callsign?: string | null; acars_token?: string | null } | null
+  session: SessionRef | null,
+  flight: {
+    id?: string | number | null;
+    callsign?: string | null;
+    acars_token?: string | null;
+  } | null
 ): Promise<string | undefined> {
-  if (!session || !flight?.callsign || !flight.acars_token) return undefined;
-  if (!(await sessionUsesExternalAcarsPanel(session))) return undefined;
-  const external = await fetchExternalAcarsPanelUrl(
-    flight.callsign,
-    flight.acars_token
-  );
-  return external?.url;
+  if (!session || !flight?.id || !flight.callsign || !flight.acars_token) {
+    return undefined;
+  }
+
+  try {
+    const provider = await providerForExternalAcarsSession(session);
+    if (!provider) return undefined;
+
+    const external = await fetchExternalAcarsPanelAccess(
+      flight.callsign,
+      flight.acars_token,
+      provider
+    );
+    if (!external) return undefined;
+
+    const flightId = String(flight.id);
+    const url = new URL(
+      `/acars/${encodeURIComponent(session.session_id)}/${encodeURIComponent(flightId)}`,
+      process.env.FRONTEND_URL ?? 'https://pfcontrol.com'
+    );
+    url.searchParams.set('external_acars', provider.id);
+    url.searchParams.set('callsign', external.callsign);
+    url.searchParams.set(
+      'token',
+      createExternalAcarsAccess(
+        {
+          sessionId: session.session_id,
+          flightId,
+          callsign: external.callsign,
+          providerId: provider.id,
+          providerToken: external.token,
+          acarsToken: flight.acars_token,
+        },
+        external.expiresAt
+      )
+    );
+    return url.toString();
+  } catch (err) {
+    console.error('[external-acars-panel] resolve failed:', err);
+    return undefined;
+  }
 }

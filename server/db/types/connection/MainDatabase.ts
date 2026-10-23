@@ -39,6 +39,7 @@ import {
   BillingExpensesTable,
   ChartSourceSettingsTable,
 } from './main/AdminBillingTables';
+import { ExternalAcarsProvidersTable } from './main/ExternalAcarsProvidersTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -78,4 +79,5 @@ export interface MainDatabase {
   plan_grants: PlanGrantsTable;
   chart_source_settings: ChartSourceSettingsTable;
   billing_expenses: BillingExpensesTable;
+  external_acars_providers: ExternalAcarsProvidersTable;
 }

@@ -36,3 +36,14 @@ export function getAirportName(
   const airport = airports.find((a) => a.icao === icao);
   return airport ? `${icao} ${airport.name}` : icao;
 }
+
+export function getAirportShortName(
+  icao: string | undefined,
+  airports: { icao: string; name: string }[]
+): string | undefined {
+  if (!icao) return undefined;
+  const name = getAirportName(icao, airports)
+    .replace(new RegExp(`^${icao}\\b[\\s\\-–]*`, 'i'), '')
+    .trim();
+  return name || undefined;
+}

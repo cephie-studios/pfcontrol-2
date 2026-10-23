@@ -170,7 +170,7 @@ export const DEVELOPER_SCOPE_CATALOG: DeveloperScopeCatalogEntry[] = [
     id: 'sessions.network_claim',
     label: 'Claim PFATC sessions (external ACARS)',
     description:
-      'POST/DELETE /sessions/network/claims/{sessionId}, GET /sessions/network/claims — claim a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. Claims expire (renewable) and stop working as soon as this key is revoked or loses the scope. Admin-granted only.',
+      'POST/DELETE /sessions/network/claims/{sessionId}, GET /sessions/network/claims — claim a PFATC session so pilots who file there afterwards open PFControl’s external ACARS page through a registered provider. Claims expire (renewable) and stop working as soon as this key is revoked or loses the scope. Admin-granted only.',
     hidden: true,
   },
   {

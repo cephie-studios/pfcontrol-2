@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SIGNATURE_TONES } from '@/lib/signatureTones';
 import {
+  fetchChartImage,
   fetchChartfoxChart,
   fetchChartfoxFile,
   type ChartfoxChartDetail,
@@ -41,6 +42,7 @@ import SupporterIcon from '../billing/SupporterIcon';
 
 type ChartDocument =
   | { kind: 'image'; url: string; width: number; height: number }
+  | { kind: 'bitmap'; bitmap: ImageBitmap; width: number; height: number }
   | { kind: 'pdf'; pdf: PDFDocumentProxy };
 
 type LoadError = 'unavailable' | 'unlinked';
@@ -249,17 +251,39 @@ function ChartView({
   const [inverted, setInverted] = useState(readInvert);
   const [dragging, setDragging] = useState(false);
 
+  const isProtected = chart.source === 'cephie' || chart.source === 'celesbit';
+
   const viewRef = useRef(view);
   viewRef.current = view;
 
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
+    let bitmap: ImageBitmap | null = null;
     let opened: OpenedPdf | null = null;
     const controller = new AbortController();
 
     const load = async () => {
       if (chart.imageUrl) {
+        if (isProtected) {
+          const image = await fetchChartImage(
+            chart.imageUrl,
+            controller.signal
+          );
+          if (cancelled) return;
+          bitmap = await createImageBitmap(image);
+          if (cancelled) {
+            bitmap.close();
+            return;
+          }
+          setChartDoc({
+            kind: 'bitmap',
+            bitmap,
+            width: bitmap.width,
+            height: bitmap.height,
+          });
+          return;
+        }
         const size = await loadImage(chart.imageUrl);
         if (!cancelled) {
           setChartDoc({ kind: 'image', url: chart.imageUrl, ...size });
@@ -305,9 +329,10 @@ function ChartView({
       cancelled = true;
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
+      bitmap?.close();
       opened?.destroy();
     };
-  }, [chart.imageUrl, chart.chartfoxId, attempt]);
+  }, [chart.imageUrl, chart.chartfoxId, isProtected, attempt]);
 
   useEffect(() => {
     if (chartDoc?.kind !== 'pdf') return;
@@ -331,6 +356,7 @@ function ChartView({
 
   const retry = () => {
     setError(null);
+    setCanvasReady(false);
     setChartDoc(null);
     setAttempt((n) => n + 1);
   };
@@ -349,7 +375,7 @@ function ChartView({
   }, []);
 
   const base =
-    chartDoc?.kind === 'image'
+    chartDoc?.kind === 'image' || chartDoc?.kind === 'bitmap'
       ? { w: chartDoc.width, h: chartDoc.height }
       : pageSize;
   const sideways = rotation % 180 !== 0;
@@ -619,11 +645,20 @@ function ChartView({
     };
   }, [chartDoc, page, pageSize, roundedFit, bucket]);
 
+  const hasFit = fit > 0;
+
+  useEffect(() => {
+    const target = canvasRef.current;
+    if (chartDoc?.kind !== 'bitmap' || !target || !hasFit) return;
+    target.width = chartDoc.width;
+    target.height = chartDoc.height;
+    target.getContext('2d')?.drawImage(chartDoc.bitmap, 0, 0);
+    setCanvasReady(true);
+  }, [chartDoc, hasFit]);
+
   const pageCount = chartDoc?.kind === 'pdf' ? chartDoc.pdf.numPages : 1;
   const ready =
-    !!base &&
-    fit > 0 &&
-    (chartDoc?.kind === 'image' || (chartDoc?.kind === 'pdf' && canvasReady));
+    !!base && fit > 0 && (chartDoc?.kind === 'image' || canvasReady);
   const loading = !error && !ready;
 
   const subtitle = [
@@ -744,6 +779,7 @@ function ChartView({
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
         onDoubleClick={ready ? onDoubleClick : undefined}
+        onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
       >
         {base && fit > 0 && (
           <div

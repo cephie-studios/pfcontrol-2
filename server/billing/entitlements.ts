@@ -2,6 +2,7 @@ import { redisConnection } from '../db/connection.js';
 import { getPlanGrants, type PlanGrant } from '../db/billing.js';
 import { isTester } from '../db/testers.js';
 import { isAdmin } from '../middleware/admin.js';
+import { invalidateSupporterWall } from './wall.js';
 import { DEPLOYMENT, prefixKey } from '../utils/cacheTtl.js';
 import {
   effectivePlan,
@@ -120,6 +121,7 @@ export async function hasPlan(userId: string, required: Plan) {
 }
 
 export async function invalidatePlan(userId: string): Promise<void> {
+  void invalidateSupporterWall();
   try {
     await redisConnection.del(cacheKey(userId));
   } catch {

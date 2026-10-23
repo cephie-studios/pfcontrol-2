@@ -1,6 +1,6 @@
 import express, { type RequestHandler, type Response } from 'express';
 import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import {
   CHART_CACHE_SEC,
@@ -27,6 +27,16 @@ import {
   type ChartSource,
 } from '../db/adminBilling.js';
 import { chartSubjectFor } from '../utils/chartSubject.js';
+import {
+  watermarkIdentity,
+  watermarkPlate,
+  type WatermarkIdentity,
+} from '../utils/chartWatermark.js';
+import {
+  createMarkedPlate,
+  markedPlateKey,
+  readMarkedPlate,
+} from '../utils/chartPlateCache.js';
 import { applyImmutableAsset, applyPublicCache } from '../utils/httpCache.js';
 import { authLimiter } from '../middleware/security.js';
 
@@ -53,6 +63,49 @@ const chartfoxLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const isCephieFullSize = (req: express.Request) =>
+  !req.params.file?.toLowerCase().endsWith('.preview.webp');
+
+const cephiePlateLimiter = (windowMs: number, limit: number) =>
+  rateLimit({
+    windowMs,
+    limit,
+    skip: (req) => !isCephieFullSize(req),
+    keyGenerator: (req) => req.user?.userId ?? ipKeyGenerator(req.ip ?? ''),
+    message: { error: 'Too many chart requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+const cephiePlateLimiters = [
+  cephiePlateLimiter(60 * 1000, 40),
+  cephiePlateLimiter(60 * 60 * 1000, 300),
+];
+
+// The viewer fetches full-size plates and shows them from a blob. Rejecting
+// navigations and embeds keeps the URL from being opened, shared or hotlinked.
+const BLOCKED_FETCH_DESTINATIONS = new Set([
+  'document',
+  'iframe',
+  'frame',
+  'embed',
+  'object',
+  'image',
+]);
+
+const requireFetchRequest: RequestHandler = (req, res, next) => {
+  const destination = req.get('Sec-Fetch-Dest');
+  if (
+    isCephieFullSize(req) &&
+    destination &&
+    BLOCKED_FETCH_DESTINATIONS.has(destination)
+  ) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(403).json({ error: 'Charts cannot be opened directly' });
+  }
+  next();
+};
 
 type LinkMode = 'popup' | 'redirect';
 
@@ -172,6 +225,8 @@ router.get(
   '/cephie/:version/:icao/:file',
   requireSource('cephie'),
   optionalAuth,
+  requireFetchRequest,
+  ...cephiePlateLimiters,
   async (req, res) => {
     const { version } = req.params;
     const icao = req.params.icao.toUpperCase();
@@ -197,6 +252,28 @@ router.get(
       }
     }
 
+    let identity: WatermarkIdentity | null = null;
+    let cacheKey = '';
+    if (!isPreview) {
+      identity = watermarkIdentity(req.user!.userId, req.user!.username ?? '');
+      if (!identity) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(503).json({ error: 'Charts are unavailable' });
+      }
+      cacheKey = markedPlateKey(
+        req.user!.userId,
+        identity.label,
+        version,
+        icao,
+        file
+      );
+      const cached = await readMarkedPlate(cacheKey);
+      if (cached) {
+        applyPerUserCache(res, 7 * 24 * 60 * 60);
+        return res.type('image/webp').send(cached);
+      }
+    }
+
     const upstream = await fetchChartGen(`/cephie/${version}/${icao}/${file}`);
     if (!upstream || upstream.status >= 500) {
       res.setHeader('Cache-Control', 'no-store');
@@ -214,9 +291,22 @@ router.get(
       return res.status(404).json({ error: 'Chart not found' });
     }
 
-    if (isPreview) applyImmutableAsset(res);
-    else applyPerUserCache(res, 7 * 24 * 60 * 60);
-    res.type('image/webp').send(upstream.body);
+    if (isPreview) {
+      applyImmutableAsset(res);
+      return res.type('image/webp').send(upstream.body);
+    }
+
+    try {
+      const marked = await createMarkedPlate(cacheKey, () =>
+        watermarkPlate(upstream.body, identity!)
+      );
+      applyPerUserCache(res, 7 * 24 * 60 * 60);
+      res.type('image/webp').send(marked);
+    } catch (error) {
+      console.error('[Charts] Watermarking failed:', error);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(503).json({ error: 'Charts are unavailable' });
+    }
   }
 );
 

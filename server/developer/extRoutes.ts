@@ -195,10 +195,13 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/network/claims/{sessionId}',
     },
     responseSummary:
-      'Claims (or renews) a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC.',
+      'Claims (or renews) a PFATC session so pilots who file there afterwards open PFControl’s external ACARS page. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC or providerId is not enabled.',
     requestBodySummary:
-      'Optional JSON object: { "ttlMinutes": 5-360 } (default 180). Renew before expiresAt to keep the claim.',
-    requestBodyExampleJson: JSON.stringify({ ttlMinutes: 180 }),
+      'Optional JSON object: { "ttlMinutes": 5-360, "providerId": "registered-provider" } (default 180). providerId selects an enabled provider; omitting it uses the admin-configured default. Renew before expiresAt to keep the claim.',
+    requestBodyExampleJson: JSON.stringify({
+      ttlMinutes: 180,
+      providerId: 'external-acars',
+    }),
     minVersion: 2,
     hidden: true,
   },

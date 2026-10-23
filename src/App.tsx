@@ -22,7 +22,7 @@ const MyFeedback = lazy(() => import('./pages/MyFeedback'));
 const MyFlightDetail = lazy(() => import('./pages/MyFlightDetail'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PFATCFlights = lazy(() => import('./pages/PFATCFlights'));
-const ACARS = lazy(() => import('./pages/ACARS'));
+const AcarsRoute = lazy(() => import('./pages/AcarsRoute'));
 const PilotProfile = lazy(() => import('./pages/PilotProfile'));
 const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
 const ChartfoxLinked = lazy(() => import('./pages/ChartfoxLinked'));
@@ -62,6 +62,12 @@ const AdminDevelopers = lazy(() => import('./pages/admin/AdminDevelopers'));
 const AdminWebsockets = lazy(() => import('./pages/admin/AdminWebsockets'));
 const AdminDatabase = lazy(() => import('./pages/admin/AdminDatabase'));
 const AdminBilling = lazy(() => import('./pages/admin/AdminBilling'));
+const AdminChartForensics = lazy(
+  () => import('./pages/admin/AdminChartForensics')
+);
+const AdminExternalAcars = lazy(
+  () => import('./pages/admin/AdminExternalAcars')
+);
 const DeveloperLayout = lazy(
   () => import('./pages/developers/DeveloperLayout')
 );
@@ -103,7 +109,7 @@ export default function App() {
               element={<ChartfoxLinked />}
             />
             <Route path="/submit/:sessionId" element={<Submit />} />
-            <Route path="acars/:sessionId/:flightId" element={<ACARS />} />
+            <Route path="acars/:sessionId/:flightId" element={<AcarsRoute />} />
             <Route path="flight/:flightId" element={<PublicFlightView />} />
             <Route path="/user/:username" element={<PilotProfile />} />
             <Route path="/howtousepfcontrol" element={<HowToUsePFControl />} />
@@ -360,6 +366,22 @@ export default function App() {
                       element={
                         <ProtectedRoute requirePermission="billing">
                           <AdminBilling />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="external-acars"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminExternalAcars />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="chart-forensics"
+                      element={
+                        <ProtectedRoute requirePermission="admin">
+                          <AdminChartForensics />
                         </ProtectedRoute>
                       }
                     />

@@ -34,6 +34,7 @@ import {
   ensureChartfoxLinksTable,
   ensureBillingTables,
   ensureAdminBillingTables,
+  ensureExternalAcarsProviderTables,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -120,6 +121,7 @@ try {
   await ensureChartfoxLinksTable();
   await ensureBillingTables();
   await ensureAdminBillingTables();
+  await ensureExternalAcarsProviderTables();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

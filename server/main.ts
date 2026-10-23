@@ -161,6 +161,7 @@ app.use(
       'Authorization',
       'X-Api-Key',
       'X-Requested-With',
+      'X-External-ACARS-Token',
       'Accept',
       'Origin',
       'Access-Control-Allow-Credentials',

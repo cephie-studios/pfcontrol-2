@@ -5,7 +5,6 @@ import type Stripe from 'stripe';
 import requireAuth, { optionalAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/admin.js';
 import {
-  getActiveSupporters,
   getStripeCustomerId,
   getSupporterPrefs,
   insertQueuedPass,
@@ -15,6 +14,11 @@ import {
 import { getUserById, getUserByUsername } from '../db/users.js';
 import { getPlanState, invalidatePlan } from '../billing/entitlements.js';
 import { handleStripeEvent } from '../billing/fulfillment.js';
+import {
+  getSupporterWall,
+  invalidateSupporterWall,
+  scheduleSupporterWallInvalidation,
+} from '../billing/wall.js';
 import { PLAN_LIMITS } from '../billing/limits.js';
 import {
   CURRENCY,
@@ -102,11 +106,11 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
 
 // GET: /api/billing/catalog - prices and the public supporter wall
 router.get('/catalog', async (_req, res) => {
-  const supporters = await getActiveSupporters(60).catch((error) => {
+  const supporters = await getSupporterWall().catch((error) => {
     console.error('[Billing] Failed to load supporters:', error);
-    return { count: 0, wall: [] };
+    return { count: 0, wall: [], admins: [] };
   });
-  applyPublicCache(res, { browserMaxAge: 60, edgeMaxAge: 300 });
+  applyPublicCache(res, { browserMaxAge: 15, edgeMaxAge: 30 });
   res.json({
     enabled: isBillingEnabled(),
     currency: CURRENCY,
@@ -153,6 +157,7 @@ router.put('/me/prefs', requireAuth, async (req, res) => {
     colors?: unknown;
   };
   const prefs = await getSupporterPrefs(userId);
+  const before = { ...prefs };
 
   if (wall !== undefined) {
     if (typeof wall !== 'boolean') {
@@ -184,6 +189,13 @@ router.put('/me/prefs', requireAuth, async (req, res) => {
   }
 
   await setSupporterPrefs(userId, prefs);
+  if (prefs.wall !== before.wall) void invalidateSupporterWall();
+  else if (
+    prefs.ring !== before.ring ||
+    prefs.colors.join() !== before.colors.join()
+  ) {
+    scheduleSupporterWallInvalidation();
+  }
   res.json({ prefs });
 });
 

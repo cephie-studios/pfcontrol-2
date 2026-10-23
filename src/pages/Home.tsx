@@ -12,7 +12,7 @@ import {
   fetchLeaderboard,
   fetchBackgrounds,
 } from '../utils/fetch/data';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useSettings } from '../hooks/settings/useSettings';
@@ -29,6 +29,12 @@ import Footer from '../components/Footer';
 import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
 import ProductShowcase from '../components/home/ProductShowcase';
+import SupporterWall from '../components/billing/SupporterWall';
+import { WALL_TITLE, wallMembers } from '@/lib/supporterWall';
+import SupporterIcon from '../components/billing/SupporterIcon';
+import { Button as ShadcnButton } from '@/components/ui/button';
+import { fetchBillingCatalog } from '../utils/fetch/billing';
+import type { BillingCatalog } from '../types/billing';
 import { useCountUp } from '../hooks/useCountUp';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -44,6 +50,7 @@ interface AvailableImage {
 }
 
 export default function Home({ standalone = true }: HomeProps) {
+  const [supporters, setSupporters] = useState<BillingCatalog['supporters']>();
   const [stats, setStats] = useState({
     sessionsCreated: 0,
     registeredUsers: 0,
@@ -64,6 +71,12 @@ export default function Home({ standalone = true }: HomeProps) {
   const [customLoaded, setCustomLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    fetchBillingCatalog()
+      .then((catalog) => setSupporters(catalog.supporters))
+      .catch(() => undefined);
+  }, []);
 
   const [searchParams] = useSearchParams();
   const startTutorial = searchParams.get('tutorial') === 'true';
@@ -479,6 +492,31 @@ export default function Home({ standalone = true }: HomeProps) {
           </div>
         </div>
       </section>
+
+      {wallMembers(supporters).length > 0 && (
+        <section className="relative bg-black px-4 py-24 sm:px-6">
+          <div className="max-w-4xl mx-auto px-2 sm:px-6 text-center mb-12">
+            <p className="text-zinc-400 text-lg">
+              PFControl is free for everyone. Supporters keep the servers
+              running.
+            </p>
+          </div>
+          <SupporterWall
+            supporters={supporters}
+            showHeading={false}
+            centered
+            className="mx-auto max-w-5xl"
+          />
+          <div className="shadcn-scope mt-12 flex justify-center">
+            <ShadcnButton asChild>
+              <Link to="/pricing">
+                <SupporterIcon />
+                Become a Supporter
+              </Link>
+            </ShadcnButton>
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="relative bg-[url('/assets/images/hero.webp')] bg-cover bg-center text-white min-h-[90vh] flex items-center px-4 sm:px-6">

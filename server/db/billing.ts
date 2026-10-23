@@ -11,6 +11,7 @@ import {
   DEFAULT_RING_COLORS,
   SUPPORTER_RINGS,
   isRingColors,
+  supporterMonths,
 } from '../billing/plans.js';
 
 export interface PlanGrant extends Grant {
@@ -213,11 +214,82 @@ export async function setSupporterPrefs(
     .execute();
 }
 
+async function getMonthsByUser(
+  userIds: string[]
+): Promise<Map<string, number>> {
+  if (!userIds.length) return new Map();
+  const rows = await mainDb
+    .selectFrom('plan_grants')
+    .select(['user_id', 'plan', 'starts_at', 'ends_at'])
+    .where('user_id', 'in', userIds)
+    .execute();
+  const grants = new Map<string, Grant[]>();
+  for (const row of rows) {
+    const list = grants.get(row.user_id) ?? [];
+    list.push({
+      plan: row.plan,
+      startsAt: new Date(row.starts_at),
+      endsAt: new Date(row.ends_at),
+    });
+    grants.set(row.user_id, list);
+  }
+  const now = new Date();
+  return new Map(
+    [...grants].map(([id, list]) => [id, supporterMonths(list, now)])
+  );
+}
+
 export interface WallSupporter {
   id: string;
   username: string;
   avatar: string | null;
   plan: PaidPlan;
+  months: number;
+  ring: SupporterRing;
+  colors: string[];
+}
+
+export interface WallAdmin {
+  id: string;
+  username: string;
+  avatar: string | null;
+  months: number | null;
+  ring: SupporterRing;
+  colors: string[];
+}
+
+export async function getWallAdmins(adminIds: string[]): Promise<WallAdmin[]> {
+  if (!adminIds.length) return [];
+  const rows = await mainDb
+    .selectFrom('users')
+    .select(['id', 'username', 'avatar', 'supporter_prefs'])
+    .where('id', 'in', adminIds)
+    .orderBy('username')
+    .execute();
+  const months = await getMonthsByUser(rows.map((row) => row.id));
+  return rows.map((row) => {
+    const { ring, colors } = readSupporterPrefs(row.supporter_prefs);
+    return {
+      id: row.id,
+      username: row.username,
+      avatar: row.avatar ?? null,
+      months: months.get(row.id) ?? null,
+      ring,
+      colors,
+    };
+  });
+}
+
+export async function getNextGrantChange(): Promise<Date | null> {
+  const row = await sql<{ next: Date | null }>`
+    SELECT min(t) AS next FROM (
+      SELECT ends_at AS t FROM plan_grants WHERE ends_at > now()
+      UNION ALL
+      SELECT starts_at AS t FROM plan_grants WHERE starts_at > now()
+    ) changes
+  `.execute(mainDb);
+  const next = row.rows[0]?.next;
+  return next ? new Date(next) : null;
 }
 
 export async function getActiveSupporters(limit: number): Promise<{
@@ -239,20 +311,27 @@ export async function getActiveSupporters(limit: number): Promise<{
     mainDb
       .selectFrom(active.as('a'))
       .innerJoin('users as u', 'u.id', 'a.user_id')
-      .select(['u.id', 'u.username', 'u.avatar', 'a.plan'])
+      .select(['u.id', 'u.username', 'u.avatar', 'u.supporter_prefs', 'a.plan'])
       .where(sql<boolean>`(u.supporter_prefs->>'wall')::boolean IS TRUE`)
       .orderBy('u.username')
       .limit(limit)
       .execute(),
   ]);
 
+  const months = await getMonthsByUser(wall.map((row) => row.id));
   return {
     count: Number(countRow?.count ?? 0),
-    wall: wall.map((row) => ({
-      id: row.id,
-      username: row.username,
-      avatar: row.avatar ?? null,
-      plan: row.plan,
-    })),
+    wall: wall.map((row) => {
+      const { ring, colors } = readSupporterPrefs(row.supporter_prefs);
+      return {
+        id: row.id,
+        username: row.username,
+        avatar: row.avatar ?? null,
+        plan: row.plan,
+        months: months.get(row.id) ?? 0,
+        ring,
+        colors,
+      };
+    }),
   };
 }

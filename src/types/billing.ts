@@ -15,6 +15,18 @@ export interface WallSupporter {
   username: string;
   avatar: string | null;
   plan: PaidPlan;
+  months: number;
+  ring: SupporterRing;
+  colors: string[];
+}
+
+export interface WallAdmin {
+  id: string;
+  username: string;
+  avatar: string | null;
+  months: number | null;
+  ring: SupporterRing;
+  colors: string[];
 }
 
 export interface PlanLimits {
@@ -29,7 +41,11 @@ export interface BillingCatalog {
   currency: string;
   plans: Record<PaidPlan, PlanPrices>;
   limits: Record<Plan, PlanLimits>;
-  supporters: { count: number; wall: WallSupporter[] };
+  supporters: {
+    count: number;
+    wall: WallSupporter[];
+    admins: WallAdmin[];
+  };
 }
 
 export interface SupporterPrefs {

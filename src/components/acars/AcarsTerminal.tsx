@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import {
   Check,
   Copy,
   Flag,
+  Loader2,
   LogIn,
   Send,
   Terminal,
@@ -181,6 +188,12 @@ export default function AcarsTerminal({
   onRequestPDC,
   connected,
   chat,
+  footer,
+  messageActions,
+  statusLabel,
+  headerActions,
+  pdcDisabled = false,
+  pdcPending = false,
   className,
   style,
 }: {
@@ -188,16 +201,33 @@ export default function AcarsTerminal({
   pdcState: PdcState;
   onRequestPDC: () => void;
   connected: boolean;
-  chat: AcarsChat;
+  chat?: AcarsChat;
+  footer?: ReactNode;
+  messageActions?: (message: AcarsMessage) => ReactNode;
+  statusLabel?: string;
+  headerActions?: ReactNode;
+  pdcDisabled?: boolean;
+  pdcPending?: boolean;
   className?: string;
   style?: CSSProperties;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const following = useRef(true);
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    if (el && following.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (following.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <AcarsPanel
@@ -208,14 +238,15 @@ export default function AcarsTerminal({
       style={style}
       bodyClassName="relative flex flex-col overflow-hidden p-0"
       actions={
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {headerActions}
           <span className="flex items-center gap-1.5 text-xs text-zinc-400">
             {connected ? (
               <Wifi className="size-3.5 text-emerald-400" />
             ) : (
               <WifiOff className="size-3.5 text-red-400" />
             )}
-            {connected ? 'Linked' : 'No link'}
+            {statusLabel ?? (connected ? 'Linked' : 'No link')}
           </span>
           <Button
             variant="ghost"
@@ -226,9 +257,15 @@ export default function AcarsTerminal({
                 : SIGNATURE_TONES.blue
             }
             onClick={onRequestPDC}
-            disabled={pdcState !== 'idle'}
+            disabled={pdcDisabled || pdcState !== 'idle'}
           >
-            {pdcState === 'idle' ? <Send /> : <Check />}
+            {pdcPending ? (
+              <Loader2 className="animate-spin" />
+            ) : pdcState === 'idle' ? (
+              <Send />
+            ) : (
+              <Check />
+            )}
             {pdcState === 'idle'
               ? 'Request PDC'
               : pdcState === 'requested'
@@ -240,8 +277,17 @@ export default function AcarsTerminal({
     >
       <div
         ref={scrollRef}
+        onScroll={() => {
+          const el = scrollRef.current;
+          if (el)
+            following.current =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+        }}
         aria-live="polite"
-        className="min-h-0 flex-1 overflow-y-auto px-5 pt-1 pb-20 font-mono text-[13px] leading-relaxed"
+        className={cn(
+          'min-h-0 flex-1 overflow-y-auto px-5 pt-1 font-mono text-[13px] leading-relaxed',
+          footer ? 'pb-5' : 'pb-20'
+        )}
       >
         <ol className="flex flex-col gap-2">
           {messages.map((message) => (
@@ -268,7 +314,7 @@ export default function AcarsTerminal({
                   </a>
                 )}
                 {message.type === 'pdc' && <CopyButton text={message.text} />}
-                {message.own && (
+                {message.own && chat && (
                   <LineAction
                     label="Delete message"
                     className="opacity-0 group-hover:opacity-100 hover:text-red-500 focus-visible:opacity-100"
@@ -277,21 +323,24 @@ export default function AcarsTerminal({
                     <Trash2 />
                   </LineAction>
                 )}
-                {message.type === 'atc' && message.chatId !== undefined && (
-                  <LineAction
-                    label="Report message"
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 focus-visible:opacity-100"
-                    onClick={() => chat.onReport(message)}
-                  >
-                    <Flag />
-                  </LineAction>
-                )}
+                {message.type === 'atc' &&
+                  message.chatId !== undefined &&
+                  chat && (
+                    <LineAction
+                      label="Report message"
+                      className="opacity-0 group-hover:opacity-100 hover:text-red-500 focus-visible:opacity-100"
+                      onClick={() => chat.onReport(message)}
+                    >
+                      <Flag />
+                    </LineAction>
+                  )}
+                {messageActions?.(message)}
               </p>
             </li>
           ))}
         </ol>
       </div>
-      <Composer chat={chat} />
+      {footer ?? (chat && <Composer chat={chat} />)}
     </AcarsPanel>
   );
 }

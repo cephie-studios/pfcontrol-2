@@ -587,7 +587,7 @@ export default function AdminBilling() {
                   >
                     <form
                       onSubmit={submitGrant}
-                      className="grid items-end gap-3 rounded-2xl border p-4 sm:grid-cols-[1fr_7rem_auto]"
+                      className="grid items-end gap-3 rounded-2xl border p-4 sm:grid-cols-[1fr_9rem_auto]"
                     >
                       <AdminTextInput
                         label="Username"
@@ -607,6 +607,7 @@ export default function AdminBilling() {
                           onChange={(v) =>
                             setGrantMonths(Number(v) as PassMonths)
                           }
+                          className="sm:w-full"
                         />
                       </div>
                       <Button

@@ -1452,3 +1452,31 @@ export async function ensureAdminBillingTables() {
     )
     .execute();
 }
+
+export async function ensureExternalAcarsProviderTables() {
+  await mainDb.schema
+    .createTable('external_acars_providers')
+    .ifNotExists()
+    .addColumn('id', 'varchar(32)', (col) => col.primaryKey())
+    .addColumn('display_name', 'varchar(80)', (col) => col.notNull())
+    .addColumn('api_base_url', 'text', (col) => col.notNull())
+    .addColumn('token_header', 'varchar(100)', (col) => col.notNull())
+    .addColumn('handoff_url', 'text', (col) => col.notNull())
+    .addColumn('handoff_api_key', 'jsonb')
+    .addColumn('enabled', 'boolean', (col) => col.notNull().defaultTo(true))
+    .addColumn('is_default', 'boolean', (col) => col.notNull().defaultTo(false))
+    .addColumn('created_by', 'varchar(255)')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .addColumn('updated_by', 'varchar(255)')
+    .addColumn('updated_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_external_acars_providers_default
+    ON external_acars_providers (is_default) WHERE is_default
+  `.execute(mainDb);
+}

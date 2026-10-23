@@ -49,19 +49,20 @@ export function nameStyle(
   };
 }
 
-const SUPPORTER_RANKS: { months: number; name: string }[] = [
-  { months: 24, name: 'Legend' },
-  { months: 12, name: 'Senior Captain' },
-  { months: 6, name: 'Captain' },
-  { months: 3, name: 'First Officer' },
-  { months: 0, name: 'Cadet' },
-];
+export const SUPPORTER_RANKS: { months: number; name: string; text: string }[] =
+  [
+    { months: 24, name: 'Legend', text: 'text-rose-500' },
+    { months: 12, name: 'Senior Captain', text: 'text-violet-500' },
+    { months: 6, name: 'Captain', text: 'text-sky-500' },
+    { months: 3, name: 'First Officer', text: 'text-emerald-500' },
+    { months: 0, name: 'Cadet', text: 'text-amber-500' },
+  ];
 
 export function supporterRank(months: number) {
   const index = SUPPORTER_RANKS.findIndex((r) => months >= r.months);
   const rank = SUPPORTER_RANKS[index];
   const next = index > 0 ? SUPPORTER_RANKS[index - 1] : null;
-  return { name: rank.name, next };
+  return { name: rank.name, text: rank.text, next };
 }
 
 export function formatPrice(cents: number, currency = 'usd') {

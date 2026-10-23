@@ -724,6 +724,10 @@ export default function Charts() {
           <DialogContent
             ref={setViewerEl}
             showCloseButton={false}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              viewerEl?.focus();
+            }}
             onEscapeKeyDown={(e) => {
               // Escape in the chart picker should close only the picker.
               if (document.querySelector('[data-slot="popover-content"]')) {

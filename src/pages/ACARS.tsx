@@ -26,11 +26,13 @@ import {
   createOverviewSocket,
   type OverviewSession,
 } from '../sockets/overviewSocket';
-import { getAirportName, parseCallsign } from '../utils/callsignParser';
+import { getAirportShortName, parseCallsign } from '../utils/callsignParser';
 import { playNotificationSound } from '../utils/acars';
-import { dragNotesDivider, dragSidebarDivider } from '../utils/acarsLayout';
 import { useAcarsLayout } from '../components/acars/useAcarsLayout';
-import AcarsDivider from '../components/acars/AcarsDivider';
+import AcarsSkeleton, {
+  AcarsActionsSkeleton,
+} from '../components/acars/AcarsSkeleton';
+import AcarsWorkspace from '../components/acars/AcarsWorkspace';
 import type { AcarsMessage } from '../types/acars';
 import type { Flight } from '../types/flight';
 import type { SessionInfo } from '../types/session';
@@ -40,7 +42,7 @@ import AcarsTerminal, {
 import AcarsFlightPlan from '../components/acars/AcarsFlightPlan';
 import AcarsNotes from '../components/acars/AcarsNotes';
 import AcarsStations from '../components/acars/AcarsStations';
-import AcarsCharts from '../components/acars/AcarsCharts';
+import ChartDrawer from '../components/tools/ChartDrawer';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 import { Button } from '@/components/ui/button';
@@ -78,8 +80,6 @@ const systemMessage = (
   type,
 });
 
-const panelWidth = (width: number) => ({ '--w': width }) as React.CSSProperties;
-
 const chatToAcars = (
   m: PilotChatMessage,
   userId: string | undefined
@@ -95,22 +95,6 @@ const chatToAcars = (
   text: m.message,
   type: m.sender,
 });
-
-function PanelSkeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'flex min-h-0 flex-col gap-4 border-zinc-800 p-5',
-        className
-      )}
-    >
-      <Skeleton className="h-4 w-28" />
-      <Skeleton className="h-3.5 w-3/4" />
-      <Skeleton className="h-3.5 w-1/2" />
-      <Skeleton className="h-3.5 w-2/3" />
-    </div>
-  );
-}
 
 export default function ACARS() {
   const { sessionId, flightId } = useParams<{
@@ -143,15 +127,8 @@ export default function ACARS() {
   const [reportTarget, setReportTarget] = useState<AcarsMessage | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AcarsMessage | null>(null);
   const chatRef = useRef<PilotChatClient | null>(null);
-  const {
-    layout,
-    notesEnabled,
-    notesWidth,
-    save: saveLayout,
-  } = useAcarsLayout();
-  const [dragging, setDragging] = useState<'sidebar' | 'notes' | null>(null);
-  const [draftLayout, setDraftLayout] = useState<typeof layout | null>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const layoutState = useAcarsLayout();
+  const { notesEnabled, save: saveLayout } = layoutState;
 
   const socketRef = useRef<ReturnType<typeof createAcarsFlightSocket> | null>(
     null
@@ -461,71 +438,14 @@ export default function ACARS() {
     window.location.href = getDiscordLoginUrl(callback);
   };
 
-  const airportName = (icao?: string) => {
-    if (!icao) return undefined;
-    const name = getAirportName(icao, airports)
-      .replace(new RegExp(`^${icao}\\b[\\s\\-–]*`, 'i'), '')
-      .trim();
-    return name || undefined;
-  };
-
-  const shownLayout = draftLayout ?? layout;
-
-  const pointerPct = (clientX: number) => {
-    const rect = mainRef.current?.getBoundingClientRect();
-    return rect && rect.width > 0
-      ? ((clientX - rect.left) / rect.width) * 100
-      : null;
-  };
-
-  const resize = (divider: 'sidebar' | 'notes', pct: number) =>
-    divider === 'sidebar'
-      ? dragSidebarDivider(shownLayout, pct, notesEnabled)
-      : dragNotesDivider(shownLayout, pct);
-
-  const commitLayout = (next: typeof layout) =>
-    saveLayout({
-      sidebarWidth: next.sidebar,
-      terminalWidth: next.terminal,
-      notesWidth: notesEnabled ? next.notes : notesWidth,
-    });
-
-  const startDrag =
-    (divider: 'sidebar' | 'notes') => (e: React.PointerEvent) => {
-      e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      setDragging(divider);
-      setDraftLayout(layout);
-    };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    const pct = pointerPct(e.clientX);
-    if (pct !== null) setDraftLayout(resize(dragging, pct));
-  };
-
-  const handlePointerUp = () => {
-    if (!dragging || !draftLayout) return;
-    commitLayout(draftLayout);
-    setDragging(null);
-    setDraftLayout(null);
-  };
-
-  const stepDivider = (divider: 'sidebar' | 'notes', delta: number) => {
-    const position =
-      divider === 'sidebar' ? layout.sidebar : 100 - layout.notes;
-    commitLayout(resize(divider, position + delta));
-  };
-  const panelTransition =
-    !dragging &&
-    'md:transition-[flex-grow] md:duration-300 md:ease-out motion-reduce:transition-none';
+  const airportName = (icao?: string) => getAirportShortName(icao, airports);
 
   const isLoading = loading || dataLoading || settingsLoading;
   const failed = !isLoading && (error || !flight || !sessionId || !flightId);
 
   return (
     <TooltipProvider>
-      <div className="shadcn-scope flex min-h-screen flex-col bg-background text-foreground md:h-screen">
+      <div className="shadcn-scope flex min-h-dvh flex-col bg-background text-foreground md:h-dvh">
         <Navbar />
 
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 pt-21 pb-3 sm:px-6">
@@ -539,6 +459,7 @@ export default function ACARS() {
               </span>
             </h1>
           )}
+          {isLoading && <AcarsActionsSkeleton />}
           {flight && !failed && (
             <div className="flex flex-wrap gap-2">
               <Tooltip>
@@ -587,11 +508,7 @@ export default function ACARS() {
         </header>
 
         {isLoading ? (
-          <main className="flex min-h-0 flex-1 flex-col border-t border-zinc-800 md:flex-row">
-            <PanelSkeleton className="border-b md:flex-[3_1_0%] md:border-r md:border-b-0" />
-            <div className="order-first h-[65vh] border-b border-zinc-800 bg-black/40 md:order-none md:h-auto md:flex-[5_1_0%] md:border-b-0" />
-            <PanelSkeleton className="md:flex-[2_1_0%] md:border-l" />
-          </main>
+          <AcarsSkeleton layoutState={layoutState} />
         ) : failed ? (
           <main className="flex flex-col items-center gap-4 px-4 pt-8 pb-16">
             <div
@@ -617,106 +534,69 @@ export default function ACARS() {
           flight &&
           sessionId &&
           flightId && (
-            <main
-              ref={mainRef}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className={cn(
-                'flex min-h-0 flex-1 flex-col border-t border-zinc-800 md:flex-row',
-                dragging && 'cursor-col-resize select-none'
-              )}
-            >
-              <div
-                style={panelWidth(shownLayout.sidebar)}
-                className={cn(
-                  'flex min-h-0 min-w-0 flex-col border-b border-zinc-800 md:flex-[var(--w)_1_0%] md:border-b-0',
-                  panelTransition
-                )}
-              >
-                <AcarsFlightPlan
-                  flight={flight}
-                  spokenCallsign={
-                    spokenCallsign !== flight.callsign
-                      ? (spokenCallsign ?? undefined)
-                      : undefined
-                  }
-                  departureName={airportName(flight.departure)}
-                  arrivalName={airportName(flight.arrival)}
-                  className="shrink-0 border-b border-zinc-800 md:max-h-[60%]"
-                />
-                <AcarsStations
-                  sessions={activeSessions}
-                  departure={flight.departure}
-                  arrival={flight.arrival}
-                  onShowAtis={handleShowAtis}
-                  className="md:flex-1"
-                />
-              </div>
-              <AcarsDivider
-                label="Resize flight panel"
-                value={shownLayout.sidebar}
-                active={dragging === 'sidebar'}
-                onPointerDown={startDrag('sidebar')}
-                onKeyStep={(delta) => stepDivider('sidebar', delta)}
-              />
-              <AcarsTerminal
-                messages={terminalMessages}
-                pdcState={pdcState}
-                onRequestPDC={handleRequestPDC}
-                connected={connected}
-                chat={{
-                  canSend: !!user,
-                  onSend: async (text) => {
-                    if (!chatRef.current) throw new Error('Chat is not ready');
-                    await chatRef.current.send(text);
-                  },
-                  onSignIn: handleCreateAccount,
-                  onReport: setReportTarget,
-                  onDelete: setDeleteTarget,
-                }}
-                className={cn(
-                  'order-first h-[65vh] border-b border-zinc-800 md:order-none md:h-auto md:flex-[var(--w)_1_0%] md:border-b-0',
-                  panelTransition
-                )}
-                style={panelWidth(shownLayout.terminal)}
-              />
-              {notesEnabled && (
-                <AcarsDivider
-                  label="Resize notes panel"
-                  value={100 - shownLayout.notes}
-                  active={dragging === 'notes'}
-                  onPointerDown={startDrag('notes')}
-                  onKeyStep={(delta) => stepDivider('notes', delta)}
+            <AcarsWorkspace
+              layoutState={layoutState}
+              sidebar={
+                <>
+                  <AcarsFlightPlan
+                    flight={flight}
+                    spokenCallsign={
+                      spokenCallsign !== flight.callsign
+                        ? (spokenCallsign ?? undefined)
+                        : undefined
+                    }
+                    departureName={airportName(flight.departure)}
+                    arrivalName={airportName(flight.arrival)}
+                    className="shrink-0 border-b border-zinc-800 md:max-h-[60%]"
+                  />
+                  <AcarsStations
+                    sessions={activeSessions}
+                    departure={flight.departure}
+                    arrival={flight.arrival}
+                    onShowAtis={handleShowAtis}
+                    className="md:flex-1"
+                  />
+                </>
+              }
+              terminal={(panelProps) => (
+                <AcarsTerminal
+                  {...panelProps}
+                  messages={terminalMessages}
+                  pdcState={pdcState}
+                  onRequestPDC={handleRequestPDC}
+                  connected={connected}
+                  chat={{
+                    canSend: !!user,
+                    onSend: async (text) => {
+                      if (!chatRef.current)
+                        throw new Error('Chat is not ready');
+                      await chatRef.current.send(text);
+                    },
+                    onSignIn: handleCreateAccount,
+                    onReport: setReportTarget,
+                    onDelete: setDeleteTarget,
+                  }}
                 />
               )}
-              <div
-                inert={!notesEnabled}
-                style={panelWidth(shownLayout.notes)}
-                className={cn(
-                  'min-h-0 min-w-0 overflow-hidden md:flex md:flex-[var(--w)_1_0%]',
-                  notesEnabled ? 'flex' : 'hidden',
-                  panelTransition
-                )}
-              >
+              notes={
                 <AcarsNotes
+                  key={sessionId + flightId}
                   sessionId={sessionId}
                   flightId={flightId}
                   className="w-full md:min-w-56"
                 />
-              </div>
-            </main>
+              }
+            />
           )
         )}
 
         {flight && (
-          <AcarsCharts
-            open={showCharts}
+          <ChartDrawer
+            isOpen={showCharts}
             onClose={() => setShowCharts(false)}
-            airports={airports}
             settings={settings}
-            departure={flight.departure}
-            arrival={flight.arrival}
+            departureAirport={flight.departure}
+            arrivalAirport={flight.arrival}
           />
         )}
 

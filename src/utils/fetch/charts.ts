@@ -74,6 +74,15 @@ export function cephieChartUrl(
   );
 }
 
+export async function fetchChartImage(
+  url: string,
+  signal?: AbortSignal
+): Promise<Blob> {
+  const response = await fetch(url, { credentials: 'include', signal });
+  if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
+  return response.blob();
+}
+
 export interface ChartfoxStatus {
   configured: boolean;
   linked: boolean;

@@ -17,6 +17,7 @@ import Navbar from '../components/Navbar';
 import PageHero from '../components/common/PageHero';
 import CheckoutDialog from '../components/billing/CheckoutDialog';
 import SupporterAvatar from '../components/billing/SupporterAvatar';
+import SupporterWall from '../components/billing/SupporterWall';
 import SupporterIcon from '../components/billing/SupporterIcon';
 import RingColorPicker from '../components/billing/RingColorPicker';
 import RingPicker from '../components/billing/RingPicker';
@@ -26,6 +27,7 @@ import {
   fetchBillingCatalog,
   fetchMyPlan,
   openBillingPortal,
+  updateSupporterPrefs,
 } from '../utils/fetch/billing';
 import type {
   BillingCatalog,
@@ -61,6 +63,8 @@ import {
   giftLink,
   monthsLabel,
   nameStyle,
+  SUPPORTER_RANKS,
+  supporterRank,
 } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
@@ -222,6 +226,74 @@ export default function Pricing() {
     refreshedFor.current = successPlan;
     void refreshUser();
   }, [successPlan, refreshUser]);
+
+  const canSaveRing = !!myPlan && myPlan.plan !== 'free';
+
+  useEffect(() => {
+    if (!myPlan || myPlan.plan === 'free') return;
+    setPreviewRing(myPlan.prefs.ring);
+    setPreviewColors(myPlan.prefs.colors);
+  }, [myPlan]);
+
+  const [ringSaving, setRingSaving] = useState(false);
+  const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingColors = useRef<string[] | null>(null);
+
+  const saveRingPrefs = async (prefs: {
+    ring?: SupporterRing;
+    colors?: string[];
+  }) => {
+    setRingSaving(true);
+    try {
+      await minDuration(updateSupporterPrefs(prefs));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save');
+    } finally {
+      setRingSaving(false);
+    }
+  };
+
+  const flushColors = () => {
+    if (colorTimer.current) clearTimeout(colorTimer.current);
+    colorTimer.current = null;
+    const colors = pendingColors.current;
+    pendingColors.current = null;
+    if (colors) void saveRingPrefs({ colors });
+  };
+
+  useEffect(
+    () => () => {
+      if (colorTimer.current) clearTimeout(colorTimer.current);
+      if (pendingColors.current)
+        void updateSupporterPrefs({ colors: pendingColors.current });
+    },
+    []
+  );
+
+  const chooseRing = (ring: SupporterRing) => {
+    setPreviewRing(ring);
+    if (canSaveRing) void saveRingPrefs({ ring });
+  };
+
+  const chooseColors = (colors: string[]) => {
+    setPreviewColors(colors);
+    if (!canSaveRing) return;
+    pendingColors.current = colors;
+    if (colorTimer.current) clearTimeout(colorTimer.current);
+    colorTimer.current = setTimeout(flushColors, 600);
+  };
+
+  const wallSupporters = useMemo(() => {
+    const supporters = catalog?.supporters;
+    if (!supporters || !user || !canSaveRing) return supporters;
+    const mine = <T extends { id: string }>(m: T) =>
+      m.id === user.id ? { ...m, ring: previewRing, colors: previewColors } : m;
+    return {
+      ...supporters,
+      wall: supporters.wall.map(mine),
+      admins: supporters.admins.map(mine),
+    };
+  }, [catalog, user, canSaveRing, previewRing, previewColors]);
 
   const currentPlan: Plan = myPlan?.supporterPlan ?? 'free';
   const loading = !catalog && !error;
@@ -387,7 +459,7 @@ export default function Pricing() {
                 <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <h2 className="flex items-center gap-3 text-3xl font-black sm:text-4xl">
                     <SupporterIcon className="size-9 text-amber-500" />
-                    Supporter
+                    <p className="mb-2">Supporter</p>
                   </h2>
                   {renderCurrent('supporter')}
                 </div>
@@ -465,18 +537,23 @@ export default function Pricing() {
                 <RingPicker
                   value={previewRing}
                   colors={previewColors}
-                  onChange={setPreviewRing}
+                  onChange={chooseRing}
                   className="mt-2"
                 />
                 {previewRing === 'custom' && (
                   <RingColorPicker
                     colors={previewColors}
-                    onChange={setPreviewColors}
+                    onChange={chooseColors}
                     className="mt-1"
                   />
                 )}
-                <span className="text-sm text-zinc-500">
-                  Try a ring on your avatar
+                <span className="flex items-center gap-1.5 text-sm text-zinc-500">
+                  {ringSaving && <Loader2 className="size-3.5 animate-spin" />}
+                  {canSaveRing
+                    ? ringSaving
+                      ? 'Saving your ring'
+                      : 'Your ring is saved automatically'
+                    : 'Try a ring on your avatar'}
                 </span>
               </div>
             </div>
@@ -484,64 +561,51 @@ export default function Pricing() {
             <PlanFeatures limits={supporterLimits} columns={4} tiles />
           </section>
 
-          <section className="flex flex-col gap-3">
-            <h2 className="text-2xl font-bold">Compare plans</h2>
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <table className="w-full min-w-[30rem] text-sm">
-                <thead>
-                  <tr>
-                    <th scope="col" className="py-3 pl-4 text-left">
-                      <span className="sr-only">Feature</span>
-                    </th>
-                    {PLANS.map((plan) => (
-                      <th
-                        key={plan}
-                        scope="col"
-                        className={cn(
-                          'w-24 px-3 py-3 text-center text-base font-bold sm:w-28',
-                          plan === 'free'
-                            ? 'text-zinc-400'
-                            : PLAN_TEXT[plan as PaidPlan]
-                        )}
-                      >
-                        {PLAN_NAMES[plan]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows
-                    ? rows.map((row) => (
-                        <tr
-                          key={row.label}
-                          className="transition-colors hover:bg-zinc-900 [&>*:first-child]:rounded-l-xl [&>*:last-child]:rounded-r-xl"
-                        >
-                          <th
-                            scope="row"
-                            className="py-2.5 pl-4 text-left font-normal text-zinc-300"
-                          >
-                            {row.label}
-                          </th>
-                          {row.values.map((value, i) => (
-                            <td
-                              key={PLANS[i]}
-                              className="px-3 py-2.5 text-center"
-                            >
-                              <CompareCell value={value} plan={PLANS[i]} />
-                            </td>
-                          ))}
-                        </tr>
-                      ))
-                    : Array.from({ length: 8 }).map((_, i) => (
-                        <tr key={i}>
-                          <td colSpan={3} className="py-2.5 pl-4">
-                            <Skeleton className="h-5 w-full" />
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
+          <SupporterWall supporters={wallSupporters} />
+
+          <section className="flex flex-col gap-6">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-bold">Supporter ranks</h2>
+              <p className="text-zinc-400">
+                Every month you support PFControl counts, prepaid and gifted
+                time included, and gaps never reset your progress.
+              </p>
             </div>
+            <ol className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+              {[...SUPPORTER_RANKS].reverse().map((rank) => {
+                const current =
+                  !!myPlan &&
+                  myPlan.supporterMonths > 0 &&
+                  supporterRank(myPlan.supporterMonths).name === rank.name;
+                return (
+                  <li key={rank.name} className="flex flex-col gap-1">
+                    <SupporterIcon className={cn('size-7', rank.text)} />
+                    <span className={cn('text-xl font-extrabold', rank.text)}>
+                      {rank.name}
+                    </span>
+                    <span className="text-sm text-zinc-500">
+                      {rank.months === 0
+                        ? 'From day one'
+                        : `After ${monthsLabel(rank.months)}`}
+                    </span>
+                    {current && (
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <Check className="size-4" />
+                        Your rank
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+            {!!myPlan && myPlan.supporterMonths > 0 && (
+              <p className="text-sm text-zinc-400">
+                {monthsLabel(myPlan.supporterMonths)} so far.{' '}
+                {supporterRank(myPlan.supporterMonths).next
+                  ? `${supporterRank(myPlan.supporterMonths).next!.name} at ${monthsLabel(supporterRank(myPlan.supporterMonths).next!.months)}.`
+                  : "That's the top rank. Thank you!"}
+              </p>
+            )}
           </section>
 
           <section className="flex flex-col gap-3">
@@ -624,43 +688,65 @@ export default function Pricing() {
             </div>
           </section>
 
-          {!!catalog?.supporters.wall.length && (
-            <section className="flex flex-col gap-5">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <h2 className="text-2xl font-bold">
-                  The pilots keeping us flying
-                </h2>
-                {user && (
-                  <Link
-                    to="/settings#plan-settings"
-                    className="flex cursor-pointer items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200"
-                  >
-                    <SettingsIcon className="size-4" />
-                    Choose whether you're shown
-                  </Link>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
-                {catalog.supporters.wall.map((s) => (
-                  <Link
-                    key={s.id}
-                    to={`/user/${encodeURIComponent(s.username)}`}
-                    className="flex cursor-pointer flex-col items-center gap-2 rounded-3xl border-2 border-zinc-800 bg-zinc-900 px-2 py-4 transition-colors outline-none hover:border-zinc-700 hover:bg-zinc-800/60 focus-visible:border-ring"
-                  >
-                    <SupporterAvatar
-                      src={discordAvatarUrl(s.id, s.avatar)}
-                      alt=""
-                      plan={s.plan}
-                      className="size-12"
-                    />
-                    <span className="w-full truncate text-center text-sm text-zinc-300">
-                      {s.username}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-2xl font-bold">Compare plans</h2>
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <table className="w-full min-w-[30rem] text-sm">
+                <thead>
+                  <tr>
+                    <th scope="col" className="py-3 pl-4 text-left">
+                      <span className="sr-only">Feature</span>
+                    </th>
+                    {PLANS.map((plan) => (
+                      <th
+                        key={plan}
+                        scope="col"
+                        className={cn(
+                          'w-24 px-3 py-3 text-center text-base font-bold sm:w-28',
+                          plan === 'free'
+                            ? 'text-zinc-400'
+                            : PLAN_TEXT[plan as PaidPlan]
+                        )}
+                      >
+                        {PLAN_NAMES[plan]}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows
+                    ? rows.map((row) => (
+                        <tr
+                          key={row.label}
+                          className="transition-colors hover:bg-zinc-900 [&>*:first-child]:rounded-l-xl [&>*:last-child]:rounded-r-xl"
+                        >
+                          <th
+                            scope="row"
+                            className="py-2.5 pl-4 text-left font-normal text-zinc-300"
+                          >
+                            {row.label}
+                          </th>
+                          {row.values.map((value, i) => (
+                            <td
+                              key={PLANS[i]}
+                              className="px-3 py-2.5 text-center"
+                            >
+                              <CompareCell value={value} plan={PLANS[i]} />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    : Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={i}>
+                          <td colSpan={3} className="py-2.5 pl-4">
+                            <Skeleton className="h-5 w-full" />
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           <section className="flex flex-col gap-6">
             <h2 className="text-2xl font-bold">Questions</h2>

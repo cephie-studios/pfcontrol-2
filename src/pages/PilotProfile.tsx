@@ -835,7 +835,7 @@ export default function PilotProfile({
       };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white relative">
+    <div className="min-h-screen bg-black text-white relative">
       {effectiveCustomization.backgroundColor && (
         <div
           className="fixed inset-0 pointer-events-none z-0"
