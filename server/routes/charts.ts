@@ -34,6 +34,7 @@ import {
 } from '../utils/chartWatermark.js';
 import {
   createMarkedPlate,
+  fetchCephiePlate,
   markedPlateKey,
   readMarkedPlate,
 } from '../utils/chartPlateCache.js';
@@ -274,7 +275,9 @@ router.get(
       }
     }
 
-    const upstream = await fetchChartGen(`/cephie/${version}/${icao}/${file}`);
+    const upstream = await fetchCephiePlate(
+      `/cephie/${version}/${icao}/${file}`
+    );
     if (!upstream || upstream.status >= 500) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(503).json({ error: 'Charts are unavailable' });

@@ -118,7 +118,16 @@ describe('GET /api/charts/cephie/:version/:icao/:file', () => {
     expect(first.body).toBe('marked');
     expect(second.body).toBe('marked');
     expect(mocks.watermarkPlate).toHaveBeenCalledTimes(1);
+  });
+
+  it('pulls a plate from the chart API once for every viewer', async () => {
+    const path = '/cephie/0123456789ab/EGLL/sid-2.webp';
+    mocks.user = { userId: 'u1', username: 'alice' };
+    await Promise.all([fetchAs(path), fetchAs(path)]);
+    mocks.user = { userId: 'u2', username: 'bob' };
+    await fetchAs(path);
     expect(mocks.fetchChartGen).toHaveBeenCalledTimes(1);
+    expect(mocks.watermarkPlate).toHaveBeenCalledTimes(2);
   });
 
   it('never serves one viewer a plate marked for another', async () => {

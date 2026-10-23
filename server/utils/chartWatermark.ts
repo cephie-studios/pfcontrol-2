@@ -17,13 +17,16 @@ const NOISE_MEAN = 3;
 const MIN_FONT_PX = 16;
 const MAX_FONT_PX = 44;
 const FONT_DIVISOR = 110;
+const MASK_THRESHOLD = 96;
 const WEBP_QUALITY = 95;
-const TILE_CACHE_LIMIT = 100;
+const WEBP_EFFORT = 1;
+const TILE_CACHE_LIMIT = 50;
+const CELL_ROWS_PER_SLICE = 64;
 
 interface Tile {
   width: number;
   height: number;
-  body: string;
+  mask: Uint8Array;
 }
 
 const tileCache = new Map<string, Tile>();
@@ -102,12 +105,20 @@ async function renderTile(
     ),
     { width, height, fonts: await getInterFontsForSatori() }
   );
-  const body = svg.slice(svg.indexOf('>') + 1, svg.lastIndexOf('</svg>'));
+  const { data } = await sharp(Buffer.from(svg))
+    .ensureAlpha()
+    .extractChannel(3)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const mask = new Uint8Array(width * height);
+  for (let i = 0; i < mask.length; i++) {
+    mask[i] = data[i] > MASK_THRESHOLD ? 1 : 0;
+  }
 
   if (tileCache.size >= TILE_CACHE_LIMIT) {
     tileCache.delete(tileCache.keys().next().value as string);
   }
-  const tile = { width, height, body };
+  const tile = { width, height, mask };
   tileCache.set(key, tile);
   return tile;
 }
@@ -127,82 +138,69 @@ export function cellColumns(width: number): number {
   return Math.ceil(width / CELL_PX);
 }
 
-function cellNoise(seedKey: string, width: number, height: number) {
-  const cols = cellColumns(width);
-  const rows = Math.ceil(height / CELL_PX);
-  const seed = seedFromKey(seedKey);
-  const noise = new Float32Array(cols * rows);
-  for (let i = 0; i < noise.length; i++) noise[i] = noiseValue(seed, i);
-  return { cols, rows, noise };
-}
-
-async function textMask(
-  label: string,
-  width: number,
-  height: number
-): Promise<Uint8Array> {
-  const fontSize = Math.min(
+function fontSizeFor(width: number): number {
+  return Math.min(
     MAX_FONT_PX,
     Math.max(MIN_FONT_PX, Math.round(width / FONT_DIVISOR))
   );
-  const tile = await renderTile(label, fontSize, width);
-  const tileImage = await sharp(
-    Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${tile.width}" height="${tile.height}">${tile.body}</svg>`
-    )
-  )
-    .png()
-    .toBuffer();
-  const { data } = await sharp({
-    create: {
-      width,
-      height,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: tileImage, tile: true, gravity: 'northwest' }])
-    .extractChannel(3)
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(width * height);
-  for (let i = 0; i < mask.length; i++) mask[i] = data[i] > 96 ? 1 : 0;
-  return mask;
 }
+
+const yieldToEventLoop = () =>
+  new Promise<void>((resolve) => setImmediate(resolve));
 
 export async function watermarkPlate(
   plate: Buffer,
   identity: WatermarkIdentity
 ): Promise<Buffer> {
-  const [{ data, info }, meta] = await Promise.all([
+  const [{ data, info }, tile] = await Promise.all([
     sharp(plate).removeAlpha().raw().toBuffer({ resolveWithObject: true }),
-    sharp(plate).metadata(),
+    sharp(plate)
+      .metadata()
+      .then((meta) =>
+        renderTile(identity.label, fontSizeFor(meta.width!), meta.width!)
+      ),
   ]);
-  const width = meta.width ?? info.width;
-  const height = meta.height ?? info.height;
-  const mask = await textMask(identity.label, width, height);
-  const { cols, noise } = cellNoise(identity.seedKey, width, height);
+  const { width, height } = info;
+  const pixels = new Uint8ClampedArray(
+    data.buffer,
+    data.byteOffset,
+    data.length
+  );
+  const seed = seedFromKey(identity.seedKey);
+  const cols = cellColumns(width);
+  const baseStrength = new Float64Array(cols);
+  const textStrength = new Float64Array(cols);
 
   for (let y = 0; y < height; y++) {
-    const cellRow = Math.floor(y / CELL_PX) * cols;
-    for (let x = 0; x < width; x++) {
-      const i = y * width + x;
-      const amplitude = mask[i] ? TEXT_AMPLITUDE : BASE_AMPLITUDE;
-      const strength =
-        NOISE_MEAN +
-        (noise[cellRow + Math.floor(x / CELL_PX)] - 0.5) * 2 * amplitude;
-      const offset = i * 3;
-      for (let channel = 0; channel < 3; channel++) {
-        const value = data[offset + channel];
-        data[offset + channel] = Math.min(
-          255,
-          Math.max(0, Math.round(value - (strength * value) / 255))
-        );
+    if (y % CELL_PX === 0) {
+      const cellRow = y / CELL_PX;
+      if (cellRow > 0 && cellRow % CELL_ROWS_PER_SLICE === 0) {
+        await yieldToEventLoop();
       }
+      // The original kept noise in a Float32Array; fround keeps output identical.
+      for (let col = 0, index = cellRow * cols; col < cols; col++, index++) {
+        const offset = (Math.fround(noiseValue(seed, index)) - 0.5) * 2;
+        baseStrength[col] = NOISE_MEAN + offset * BASE_AMPLITUDE;
+        textStrength[col] = NOISE_MEAN + offset * TEXT_AMPLITUDE;
+      }
+    }
+    const maskRow = (y % tile.height) * width;
+    let p = y * width * 3;
+    for (let x = 0; x < width; x++, p += 3) {
+      const col = (x / CELL_PX) | 0;
+      const strength = tile.mask[maskRow + x]
+        ? textStrength[col]
+        : baseStrength[col];
+      const r = pixels[p];
+      const g = pixels[p + 1];
+      const b = pixels[p + 2];
+      pixels[p] = Math.round(r - (strength * r) / 255);
+      pixels[p + 1] = Math.round(g - (strength * g) / 255);
+      pixels[p + 2] = Math.round(b - (strength * b) / 255);
     }
   }
 
   return sharp(data, { raw: { width, height, channels: 3 } })
-    .webp({ quality: WEBP_QUALITY })
+    .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
     .toBuffer();
 }

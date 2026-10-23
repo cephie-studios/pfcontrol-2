@@ -818,6 +818,20 @@ function ChartView({
           </div>
         )}
 
+        {loading && chart.previewUrl && (
+          <img
+            src={chart.previewUrl}
+            alt=""
+            draggable={false}
+            className="pointer-events-none absolute inset-0 size-full object-contain p-4 opacity-60 blur-[2px]"
+            style={{
+              filter: inverted
+                ? 'invert(0.92) hue-rotate(180deg) blur(2px)'
+                : undefined,
+            }}
+          />
+        )}
+
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-zinc-400">
             <Loader2 className="size-8 animate-spin text-blue-400" />

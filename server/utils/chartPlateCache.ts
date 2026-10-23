@@ -1,12 +1,56 @@
 import { createHash } from 'node:crypto';
 import { redisConnection } from '../db/connection.js';
 import { prefixKey } from './cacheTtl.js';
+import { fetchChartGen, type ChartGenResponse } from './chartGen.js';
 import { WATERMARK_VERSION } from './chartWatermark.js';
 
 const TTL_SEC = 12 * 60 * 60;
 const MAX_CACHED_BYTES = 4 * 1024 * 1024;
+const UPSTREAM_CACHE_BYTES = 192 * 1024 * 1024;
+const MAX_UPSTREAM_ENTRY_BYTES = 32 * 1024 * 1024;
 
 const inFlight = new Map<string, Promise<Buffer>>();
+const upstreamPlates = new Map<string, Buffer>();
+const upstreamInFlight = new Map<string, Promise<ChartGenResponse | null>>();
+let upstreamBytes = 0;
+
+function rememberUpstreamPlate(path: string, body: Buffer): void {
+  if (body.length > MAX_UPSTREAM_ENTRY_BYTES || upstreamPlates.has(path)) {
+    return;
+  }
+  upstreamPlates.set(path, body);
+  upstreamBytes += body.length;
+  for (const [oldest, old] of upstreamPlates) {
+    if (upstreamBytes <= UPSTREAM_CACHE_BYTES) break;
+    upstreamPlates.delete(oldest);
+    upstreamBytes -= old.length;
+  }
+}
+
+// A versioned path always names the same bytes, so one copy serves every viewer.
+export function fetchCephiePlate(
+  path: string
+): Promise<ChartGenResponse | null> {
+  const cached = upstreamPlates.get(path);
+  if (cached) {
+    upstreamPlates.delete(path);
+    upstreamPlates.set(path, cached);
+    return Promise.resolve({ status: 200, body: cached, version: null });
+  }
+  let pending = upstreamInFlight.get(path);
+  if (!pending) {
+    pending = fetchChartGen(path)
+      .then((response) => {
+        if (response?.status === 200) {
+          rememberUpstreamPlate(path, response.body);
+        }
+        return response;
+      })
+      .finally(() => upstreamInFlight.delete(path));
+    upstreamInFlight.set(path, pending);
+  }
+  return pending;
+}
 
 export function markedPlateKey(
   userId: string,
@@ -49,8 +93,8 @@ export function createMarkedPlate(
   let pending = inFlight.get(key);
   if (!pending) {
     pending = create()
-      .then(async (body) => {
-        await storeMarkedPlate(key, body);
+      .then((body) => {
+        void storeMarkedPlate(key, body);
         return body;
       })
       .finally(() => inFlight.delete(key));
