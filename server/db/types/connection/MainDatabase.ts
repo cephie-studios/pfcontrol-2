@@ -21,6 +21,7 @@ import { ControllerRatingsTable } from './main/ControllerRatingsTable';
 import { FlightsTable } from './main/FlightsTable';
 import { SessionChatTable } from './main/SessionChatTable';
 import { GlobalChatTable } from './main/GlobalChatTable';
+import { PilotChatTable } from './main/PilotChatTable';
 import { VpnExceptionsTable } from './main/VpnExceptionsTable';
 import { VpnGateSettingsTable } from './main/VpnGateSettingsTable';
 import { DeveloperApplicationsTable } from './main/DeveloperApplicationsTable';
@@ -33,6 +34,12 @@ import {
 } from './main/DailyTableActivityTable';
 import { WebsocketSnapshotsTable } from './main/WebsocketSnapshotsTable';
 import { ChartfoxLinksTable } from './main/ChartfoxLinksTable';
+import { PlanGrantsTable } from './main/PlanGrantsTable';
+import {
+  BillingExpensesTable,
+  ChartSourceSettingsTable,
+} from './main/AdminBillingTables';
+import { ExternalAcarsProvidersTable } from './main/ExternalAcarsProvidersTable';
 
 export interface MainDatabase {
   app_settings: AppSettingsTable;
@@ -58,6 +65,7 @@ export interface MainDatabase {
   flights: FlightsTable;
   session_chat: SessionChatTable;
   global_chat: GlobalChatTable;
+  pilot_chat: PilotChatTable;
   vpn_exceptions: VpnExceptionsTable;
   vpn_gate_settings: VpnGateSettingsTable;
   developer_applications: DeveloperApplicationsTable;
@@ -68,4 +76,8 @@ export interface MainDatabase {
   daily_database_totals: DailyDatabaseTotalsTable;
   websocket_snapshots: WebsocketSnapshotsTable;
   chartfox_links: ChartfoxLinksTable;
+  plan_grants: PlanGrantsTable;
+  chart_source_settings: ChartSourceSettingsTable;
+  billing_expenses: BillingExpensesTable;
+  external_acars_providers: ExternalAcarsProvidersTable;
 }

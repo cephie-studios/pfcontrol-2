@@ -1,6 +1,10 @@
 import type { BundledChart } from './acars';
-import type { CelesbitPlate, ChartfoxChartSummary } from './fetch/charts';
-import { celesbitPlateUrl } from './fetch/charts';
+import type {
+  CelesbitPlate,
+  CephieChart,
+  ChartfoxChartSummary,
+} from './fetch/charts';
+import { celesbitPlateUrl, cephieChartUrl } from './fetch/charts';
 
 export type ChartSource = 'pfatc' | 'cephie' | 'celesbit' | 'chartfox';
 
@@ -25,6 +29,7 @@ export interface ChartEntry {
   procedures: string[];
   runways: string[];
   imageUrl: string | null;
+  previewUrl?: string;
   chartfoxId: string | null;
   viewUrl: string | null;
 }
@@ -138,6 +143,27 @@ export function fromCelesbit(icao: string, plate: CelesbitPlate): ChartEntry {
     procedures: [plate.label.replace(/\s+/g, '')],
     runways: [],
     imageUrl: celesbitPlateUrl(icao, plate.file),
+    chartfoxId: null,
+    viewUrl: null,
+  };
+}
+
+export function fromCephie(icao: string, chart: CephieChart): ChartEntry {
+  return {
+    id: `cephie:${icao}:${chart.kind}`,
+    airport: icao,
+    name: chart.name,
+    code: chart.code || null,
+    category: chart.category ?? 'ground',
+    source: 'cephie',
+    credits:
+      chart.category && chart.category !== 'ground'
+        ? 'Cephie Charts'
+        : 'Cephie Charts, map data © OpenStreetMap contributors',
+    procedures: chart.procedures ?? [],
+    runways: chart.runways ?? [],
+    imageUrl: cephieChartUrl(icao, chart),
+    previewUrl: cephieChartUrl(icao, chart, 'preview'),
     chartfoxId: null,
     viewUrl: null,
   };

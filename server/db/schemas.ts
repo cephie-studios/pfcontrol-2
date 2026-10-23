@@ -538,6 +538,30 @@ export async function createMainTables() {
     .execute();
 
   await mainDb.schema
+    .createTable('pilot_chat')
+    .ifNotExists()
+    .addColumn('id', 'bigserial', (col) => col.primaryKey())
+    .addColumn('session_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('flight_id', 'varchar(255)', (col) => col.notNull())
+    .addColumn('sender', 'varchar(10)', (col) => col.notNull())
+    .addColumn('user_id', 'varchar(36)', (col) => col.notNull())
+    .addColumn('username', 'varchar(255)')
+    .addColumn('avatar', 'varchar(255)')
+    .addColumn('station', 'varchar(32)')
+    .addColumn('callsign', 'varchar(16)')
+    .addColumn('message', 'text', (col) => col.notNull())
+    .addColumn('blocked', 'boolean', (col) => col.defaultTo(false))
+    .addColumn('sent_at', 'timestamptz', (col) => col.defaultTo(sql`now()`))
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_pilot_chat_session_flight_sent')
+    .ifNotExists()
+    .on('pilot_chat')
+    .columns(['session_id', 'flight_id', 'sent_at'])
+    .execute();
+
+  await mainDb.schema
     .createTable('global_chat')
     .ifNotExists()
     .addColumn('id', 'bigserial', (col) => col.primaryKey())
@@ -1338,5 +1362,121 @@ export async function ensureFlightLogsTrigramIndexes() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_flight_logs_new_data_trgm
     ON flight_logs USING gin ((new_data::text) gin_trgm_ops)
+  `.execute(mainDb);
+}
+
+export async function ensureBillingTables() {
+  await sql`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS stripe_customer_id varchar(255),
+    ADD COLUMN IF NOT EXISTS supporter_prefs jsonb NOT NULL DEFAULT '{}'::jsonb
+  `.execute(mainDb);
+
+  await mainDb.schema
+    .createTable('plan_grants')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('user_id', 'varchar(255)', (col) =>
+      col.notNull().references('users.id').onDelete('cascade')
+    )
+    .addColumn('plan', 'varchar(16)', (col) => col.notNull())
+    .addColumn('source', 'varchar(16)', (col) => col.notNull())
+    .addColumn('starts_at', 'timestamptz', (col) => col.notNull())
+    .addColumn('ends_at', 'timestamptz', (col) => col.notNull())
+    .addColumn('stripe_subscription_id', 'varchar(255)', (col) => col.unique())
+    .addColumn('stripe_checkout_session_id', 'varchar(255)', (col) =>
+      col.unique()
+    )
+    .addColumn('stripe_payment_intent_id', 'varchar(255)')
+    .addColumn('subscription_status', 'varchar(32)')
+    .addColumn('billing_interval', 'varchar(8)')
+    .addColumn('cancel_at_period_end', 'boolean')
+    .addColumn('gifted_by', 'varchar(255)')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .addColumn('updated_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_plan_grants_user_id')
+    .ifNotExists()
+    .on('plan_grants')
+    .column('user_id')
+    .execute();
+
+  await mainDb.schema
+    .createIndex('idx_plan_grants_payment_intent')
+    .ifNotExists()
+    .on('plan_grants')
+    .column('stripe_payment_intent_id')
+    .execute();
+
+  // Basic and Ultimate were merged into Supporter.
+  await sql`
+    UPDATE plan_grants SET plan = 'supporter' WHERE plan IN ('basic', 'ultimate')
+  `.execute(mainDb);
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_stripe_customer_id
+    ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL
+  `.execute(mainDb);
+}
+
+export async function ensureAdminBillingTables() {
+  await mainDb.schema
+    .createTable('chart_source_settings')
+    .ifNotExists()
+    .addColumn('source', 'varchar(16)', (col) => col.primaryKey())
+    .addColumn('enabled', 'boolean', (col) => col.notNull())
+    .addColumn('updated_by', 'varchar(255)')
+    .addColumn('updated_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+
+  await mainDb.schema
+    .createTable('billing_expenses')
+    .ifNotExists()
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('label', 'varchar(120)', (col) => col.notNull())
+    .addColumn('amount_cents', 'integer', (col) => col.notNull())
+    .addColumn('cadence', 'varchar(8)', (col) => col.notNull())
+    .addColumn('starts_month', 'varchar(7)', (col) => col.notNull())
+    .addColumn('ends_month', 'varchar(7)')
+    .addColumn('created_by', 'varchar(255)')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+}
+
+export async function ensureExternalAcarsProviderTables() {
+  await mainDb.schema
+    .createTable('external_acars_providers')
+    .ifNotExists()
+    .addColumn('id', 'varchar(32)', (col) => col.primaryKey())
+    .addColumn('display_name', 'varchar(80)', (col) => col.notNull())
+    .addColumn('api_base_url', 'text', (col) => col.notNull())
+    .addColumn('token_header', 'varchar(100)', (col) => col.notNull())
+    .addColumn('handoff_url', 'text', (col) => col.notNull())
+    .addColumn('handoff_api_key', 'jsonb')
+    .addColumn('enabled', 'boolean', (col) => col.notNull().defaultTo(true))
+    .addColumn('is_default', 'boolean', (col) => col.notNull().defaultTo(false))
+    .addColumn('created_by', 'varchar(255)')
+    .addColumn('created_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .addColumn('updated_by', 'varchar(255)')
+    .addColumn('updated_at', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`)
+    )
+    .execute();
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_external_acars_providers_default
+    ON external_acars_providers (is_default) WHERE is_default
   `.execute(mainDb);
 }

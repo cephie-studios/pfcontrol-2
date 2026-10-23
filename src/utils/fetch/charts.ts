@@ -29,6 +29,60 @@ export function celesbitPlateUrl(icao: string, file: string): string {
   );
 }
 
+export interface CephieChart {
+  kind: string;
+  code: string;
+  name: string;
+  category: 'ground' | 'sid' | 'star' | 'approach';
+  procedures: string[];
+  runways: string[];
+  version: string;
+}
+
+export type CephieChartIndex = Record<string, CephieChart[]>;
+
+export async function fetchCephieCharts(): Promise<CephieChartIndex | null> {
+  try {
+    const response = await fetch(clientApiUrl('/api/charts/cephie'));
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      version?: string | null;
+      airports?: Record<string, Omit<CephieChart, 'version'>[]>;
+    };
+    const { version, airports } = data;
+    if (!version || !airports) return null;
+    return Object.fromEntries(
+      Object.entries(airports).map(([icao, charts]) => [
+        icao,
+        charts.map((chart) => ({ ...chart, version })),
+      ])
+    );
+  } catch (error) {
+    console.error('Error fetching Cephie charts:', error);
+    return null;
+  }
+}
+
+export function cephieChartUrl(
+  icao: string,
+  chart: Pick<CephieChart, 'kind' | 'version'>,
+  size: 'full' | 'preview' = 'full'
+): string {
+  const file = `${chart.kind}${size === 'preview' ? '.preview' : ''}.webp`;
+  return clientApiUrl(
+    `/api/charts/cephie/${encodeURIComponent(chart.version)}/${encodeURIComponent(icao)}/${encodeURIComponent(file)}`
+  );
+}
+
+export async function fetchChartImage(
+  url: string,
+  signal?: AbortSignal
+): Promise<Blob> {
+  const response = await fetch(url, { credentials: 'include', signal });
+  if (!response.ok) throw new Error(`Chart request failed: ${response.status}`);
+  return response.blob();
+}
+
 export interface ChartfoxStatus {
   configured: boolean;
   linked: boolean;

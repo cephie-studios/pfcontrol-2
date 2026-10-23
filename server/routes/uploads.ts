@@ -7,6 +7,8 @@ import { capture } from '../utils/posthog.js';
 import { requirePermission } from '../middleware/rolePermissions.js';
 import FormData from 'form-data';
 import axios from 'axios';
+import { getPlanLimits } from '../billing/limits.js';
+import { isAnimatedImage } from '../utils/animatedImage.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -97,6 +99,14 @@ router.post(
         return res.status(400).json({ error: 'Invalid or missing image file' });
       }
 
+      const animated = isAnimatedImage(file.buffer, file.mimetype);
+      if (animated && !(await getPlanLimits(userId)).animatedBackgrounds) {
+        return res.status(403).json({
+          error: 'Animated backgrounds are a Supporter perk',
+          requiredPlan: 'supporter',
+        });
+      }
+
       const dbUser = await getUserById(userId);
       if (!dbUser) {
         return res.status(404).json({ error: 'User not found' });
@@ -136,6 +146,7 @@ router.post(
           selectedImage: newImageUrl,
           useCustomBackground: true,
         },
+        animatedBackground: animated ? newImageUrl : null,
       };
       await updateUserSettings(userId, updatedSettings);
 
@@ -144,6 +155,7 @@ router.post(
       res.json({
         message: 'Background image uploaded successfully',
         url: newImageUrl,
+        animated,
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {

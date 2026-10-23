@@ -11,7 +11,8 @@ export async function appRequest(
   app: Application,
   method: 'GET' | 'POST',
   path: string,
-  jsonBody?: unknown
+  jsonBody?: unknown,
+  extraHeaders: Record<string, string> = {}
 ): Promise<AppHttpResult> {
   return await new Promise((resolve, reject) => {
     const server = http.createServer(app);
@@ -31,12 +32,15 @@ export async function appRequest(
         port,
         path,
         method,
-        headers: hasBody
-          ? {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(bodyStr!, 'utf8'),
-            }
-          : undefined,
+        headers: {
+          ...(hasBody
+            ? {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(bodyStr!, 'utf8'),
+              }
+            : {}),
+          ...extraHeaders,
+        },
       };
 
       const req = http.request(opts, (res) => {

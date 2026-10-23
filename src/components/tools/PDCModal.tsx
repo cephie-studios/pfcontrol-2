@@ -1,11 +1,25 @@
-import { useEffect, useState } from 'react';
-import { X, Copy, CheckCircle, Loader, Info, Plane } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Check, Copy, FileText, Loader2, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { useData } from '../../hooks/data/useData';
 import type { Flight } from '../../types/flight';
-import type { AirportFrequencies } from '../../types/airports';
-import Button from '../common/Button';
-import TextInput from '../common/TextInput';
-import { Checkbox } from '@/components/ui/checkbox';
+import { FIELD_INPUT_CLASS } from '../dropdowns/fieldStyles';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { minDuration } from '@/lib/minDuration';
+import { SIGNATURE_TONES } from '@/lib/signatureTones';
+import { cn } from '@/lib/utils';
 
 interface PDCModalProps {
   isOpen: boolean;
@@ -17,566 +31,343 @@ interface PDCModalProps {
   ) => Promise<void> | void;
 }
 
-const PDCModal: React.FC<PDCModalProps> = ({
+type PdcFormat = 'standard' | 'simplified';
+type SavedFrequencies = Record<
+  string,
+  { clearance?: string; departure?: string }
+>;
+
+const FALLBACK_FREQ = '122.800';
+const FREQ_STORAGE_KEY = 'pdcFrequencies';
+
+const EMERGENCY_SQUAWKS = new Set(['7500', '7600', '7700']);
+
+function randomSquawk(): string {
+  const code = Array.from({ length: 4 }, () =>
+    Math.floor(Math.random() * 8)
+  ).join('');
+  return EMERGENCY_SQUAWKS.has(code) ? randomSquawk() : code;
+}
+
+const identifierFor = (squawk: string, callsign?: string) =>
+  squawk.slice(0, 3) + (callsign?.match(/[A-Z]/i)?.[0].toUpperCase() ?? 'A');
+
+function defaultRemarks(flight: Flight) {
+  const sid = flight.sid || 'DCT';
+  const climb =
+    flight.flight_type === 'VFR' || sid === 'RADAR VECTORS'
+      ? `CLEARED ${sid}`
+      : `CLEARED ${sid} DEPARTURE CLIMB VIA SID`;
+  return `${climb} EXP ${flight.cruisingFL || flight.clearedFL || '030'} 10 MIN AFT DP`;
+}
+
+function readSavedFrequencies(): SavedFrequencies {
+  try {
+    return JSON.parse(localStorage.getItem(FREQ_STORAGE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function Field({
+  id,
+  label,
+  hint,
+  children,
+  className,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid gap-2', className)}>
+      <Label htmlFor={id} className="text-zinc-300">
+        {label}
+        {hint && <span className="font-normal text-zinc-500">{hint}</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+export default function PDCModal({
   isOpen,
   onClose,
   flight,
   onIssuePDC,
-}) => {
-  const { frequencies, fetchAirportData, fetchedAirports } = useData();
-  const [airportFreqs, setAirportFreqs] = useState<AirportFrequencies>({});
-  const [customFreqs, setCustomFreqs] = useState<AirportFrequencies>(() => {
-    const savedFreqs = localStorage.getItem('customPDCFrequencies');
-    return savedFreqs ? JSON.parse(savedFreqs) : {};
-  });
-  const [loading, setLoading] = useState(false);
-  const [useCustomFreqs, setUseCustomFreqs] = useState(false);
+}: PDCModalProps) {
+  const { frequencies } = useData();
+  const [format, setFormat] = useState<PdcFormat>('standard');
+  const [squawk, setSquawk] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [clearanceFreq, setClearanceFreq] = useState('');
+  const [departureFreq, setDepartureFreq] = useState('');
+  const [remarks, setRemarks] = useState('');
   const [copied, setCopied] = useState(false);
-  const [customSquawk, setCustomSquawk] = useState('');
-  const [customIdentifier, setCustomIdentifier] = useState('');
-  const [useCustomSquawk, setUseCustomSquawk] = useState(false);
-  const [useCustomIdentifier, setUseCustomIdentifier] = useState(false);
-  const [pdcFormat, setPdcFormat] = useState<'standard' | 'simplified'>(
-    'standard'
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [customRemarks, setCustomRemarks] = useState<string>('');
+  const [issuing, setIssuing] = useState(false);
+  const [autoSquawk] = useState(randomSquawk);
 
-  const generateRandomSquawk = (): string => {
-    return Array.from({ length: 4 }, () => Math.floor(Math.random() * 8)).join(
-      ''
-    );
-  };
-
-  const generateIdentifier = (squawk: string, callsign?: string): string => {
-    const firstThreeNumbers = squawk.substring(0, 3);
-
-    let firstLetter = 'A';
-    if (callsign) {
-      const letters = callsign.match(/[A-Z]/i);
-      if (letters && letters.length > 0) {
-        firstLetter = letters[0].toUpperCase();
-      }
-    }
-
-    return firstThreeNumbers + firstLetter;
-  };
-
-  const [autoSquawk] = useState(() => generateRandomSquawk());
+  const departure = flight?.departure?.toUpperCase() ?? '';
 
   useEffect(() => {
-    localStorage.setItem('customPDCFrequencies', JSON.stringify(customFreqs));
-  }, [customFreqs]);
+    if (!isOpen || !flight) return;
+    const saved = readSavedFrequencies()[departure] ?? {};
+    setSquawk('');
+    setIdentifier('');
+    setClearanceFreq(saved.clearance ?? '');
+    setDepartureFreq(saved.departure ?? '');
+    setRemarks(defaultRemarks(flight));
+    setCopied(false);
+  }, [isOpen, flight?.id]);
 
   useEffect(() => {
-    if (isOpen && flight?.departure) {
-      fetchAirportFrequencies(flight.departure);
-    }
-  }, [isOpen, flight]);
+    if (!copied) return;
+    const timeout = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [copied]);
 
-  useEffect(() => {
-    if (isOpen && flight) {
-      const sidText = flight.sid || 'DCT';
-      const isVFR = flight.flight_type === 'VFR';
-      const isRadarVectors = sidText === 'RADAR VECTORS';
-      const clearedAlt = flight.clearedFL || '030';
-
-      let climbInstruction;
-      if (isVFR || isRadarVectors) {
-        climbInstruction = `CLEARED ${sidText}`;
-      } else {
-        climbInstruction = `CLEARED ${sidText} DEPARTURE CLIMB VIA SID`;
-      }
-
-      const defaultRemarks = `${climbInstruction} EXP ${flight.cruisingFL || clearedAlt} 10 MIN AFT DP`;
-      setCustomRemarks(defaultRemarks);
-    }
-
-    if (!isOpen) {
-      setCustomRemarks('');
-    }
-  }, [isOpen, flight]);
-
-  const fetchAirportFrequencies = async (icao: string) => {
-    if (!icao) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (!fetchedAirports.has(icao)) {
-        await fetchAirportData(icao);
-      }
-
-      const airport = frequencies.find(
-        (freq) => freq.icao?.toUpperCase() === icao.toUpperCase()
-      );
-
-      if (!airport) {
-        setError('Airport frequencies not found');
-        return;
-      }
-
-      const freqMap: AirportFrequencies = {};
-      if (Array.isArray(airport.frequencies)) {
-        airport.frequencies.forEach((f) => {
-          const freqType = f.type?.toLowerCase();
-          if (freqType?.includes('del')) {
-            freqMap.clearanceDelivery = f.freq;
-          } else if (freqType?.includes('app')) {
-            freqMap.approach = f.freq;
-          } else if (freqType?.includes('gnd')) {
-            freqMap.ground = f.freq;
-          } else if (freqType?.includes('twr')) {
-            freqMap.tower = f.freq;
-          }
-        });
-      }
-
-      if (!freqMap.departure) {
-        freqMap.departure = freqMap.approach || freqMap.tower;
-      }
-
-      setAirportFreqs(freqMap);
-    } catch (error) {
-      console.error('Error fetching airport frequencies:', error);
-      setError('Failed to load airport frequencies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getSquawk = (): string => {
-    if (useCustomSquawk && customSquawk) return customSquawk;
-    return flight?.squawk || autoSquawk;
-  };
-
-  const getIdentifier = (squawk: string): string => {
-    if (useCustomIdentifier && customIdentifier) return customIdentifier;
-    return generateIdentifier(squawk, flight?.callsign);
-  };
-
-  const getEquipment = (): string => {
-    const acType = flight?.aircraft || 'UNKN';
-    return `${acType}/L`;
-  };
-
-  const getFrequencies = () => {
-    if (useCustomFreqs) {
-      return {
-        clearance: customFreqs.clearanceDelivery || '122.800',
-        departure: customFreqs.departure || '122.800',
-      };
-    }
-
-    const clearanceFreq =
-      airportFreqs.clearanceDelivery || airportFreqs.ground || '122.800';
-    const departureFreq =
-      airportFreqs.departure || airportFreqs.tower || '122.800';
-
+  const airportFreqs = useMemo(() => {
+    const entry = frequencies.find((f) => f.icao?.toUpperCase() === departure);
+    const list: { type?: string; freq: string }[] = Array.isArray(
+      entry?.frequencies
+    )
+      ? entry.frequencies
+      : [];
+    const find = (code: string) =>
+      list.find((f) => f.type?.toUpperCase().includes(code))?.freq;
     return {
-      clearance: clearanceFreq,
-      departure: departureFreq,
+      clearance: find('DEL') || find('GND') || FALLBACK_FREQ,
+      departure: find('APP') || find('TWR') || FALLBACK_FREQ,
     };
+  }, [frequencies, departure]);
+
+  const saveFrequency = (key: 'clearance' | 'departure', value: string) => {
+    if (!departure) return;
+    try {
+      const saved = readSavedFrequencies();
+      saved[departure] = { ...saved[departure], [key]: value || undefined };
+      localStorage.setItem(FREQ_STORAGE_KEY, JSON.stringify(saved));
+    } catch {
+      // storage unavailable; the value still applies to this PDC
+    }
   };
 
-  const generatePDCText = (): string => {
+  const effectiveSquawk = squawk || flight?.squawk || autoSquawk;
+  const effectiveIdentifier =
+    identifier || identifierFor(effectiveSquawk, flight?.callsign);
+  const effectiveClearance = clearanceFreq || airportFreqs.clearance;
+  const effectiveDeparture = departureFreq || airportFreqs.departure;
+
+  const pdcText = useMemo(() => {
     if (!flight) return '';
+    const sid = flight.sid || 'DCT';
+    const altitude = flight.clearedFL || '030';
 
-    const squawk = getSquawk();
-    const identifier = getIdentifier(squawk);
-    const equipment = getEquipment();
-    const sidText = flight.sid || 'DCT';
-    const freqs = getFrequencies();
-    const clearedAlt = flight.clearedFL || '030';
-
-    if (pdcFormat === 'simplified') {
+    if (format === 'simplified') {
       return `PDC FOR ${flight.callsign}
-CLEARED TO ${flight.arrival} VIA ${sidText}
-CLIMB AND MAINTAIN ${clearedAlt}
-SQUAWK ${squawk}
-DEPARTURE ${freqs.departure}
-CLEARANCE ${freqs.clearance}
-IDENTIFIER ${identifier}${customRemarks ? `\nREMARKS: ${customRemarks}` : ''}`;
+CLEARED TO ${flight.arrival} VIA ${sid}
+CLIMB AND MAINTAIN ${altitude}
+SQUAWK ${effectiveSquawk}
+DEPARTURE ${effectiveDeparture}
+CLEARANCE ${effectiveClearance}
+IDENTIFIER ${effectiveIdentifier}${remarks ? `\nREMARKS: ${remarks}` : ''}`;
     }
 
-    return `ACARS: PDC | CALLSIGN: ${
-      flight.callsign
-    } | EQUIPMENT: ${equipment} |
+    return `ACARS: PDC | CALLSIGN: ${flight.callsign} | EQUIPMENT: ${flight.aircraft || 'UNKN'}/L |
 DEPARTURE: ${flight.departure} | DESTINATION: ${flight.arrival} |
-ROUTE: ${flight.departure}.${sidText}..${flight.arrival} |
-ALTITUDE: ${clearedAlt} | TRANSPONDER: ${squawk} | REMARKS:
-${customRemarks}, DPFRQ ${freqs.departure} CTC ${freqs.clearance} TO PUSH
-IDENTIFIER: ${identifier}`;
-  };
+ROUTE: ${flight.departure}.${sid}..${flight.arrival} |
+ALTITUDE: ${altitude} | TRANSPONDER: ${effectiveSquawk} | REMARKS:
+${remarks}, DPFRQ ${effectiveDeparture} CTC ${effectiveClearance} TO PUSH
+IDENTIFIER: ${effectiveIdentifier}`;
+  }, [
+    flight,
+    format,
+    remarks,
+    effectiveSquawk,
+    effectiveIdentifier,
+    effectiveClearance,
+    effectiveDeparture,
+  ]);
 
-  const handleCustomFreqChange = (
-    type: keyof AirportFrequencies,
-    value: string
-  ) => {
-    const filtered = value.replace(/[^0-9.]/g, '');
-    setCustomFreqs((prev) => ({ ...prev, [type]: filtered }));
-    setUseCustomFreqs(true);
-  };
-
-  const handleSquawkChange = (value: string) => {
-    const filtered = value.replace(/[^0-7]/g, '').slice(0, 4);
-    setCustomSquawk(filtered);
-  };
-
-  const handleIdentifierChange = (value: string) => {
-    const filtered = value
-      .replace(/[^A-Z0-9]/gi, '')
-      .slice(0, 4)
-      .toUpperCase();
-    setCustomIdentifier(filtered);
-  };
-
-  const copyToClipboard = async () => {
-    if (!flight) return;
-
-    const pdcText = generatePDCText();
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(pdcText);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy PDC:', error);
-      setError('Failed to copy to clipboard');
+      toast.success('PDC copied');
+    } catch {
+      toast.error('Could not copy the PDC');
     }
   };
 
-  if (!isOpen || !flight) return null;
+  const handleIssue = async () => {
+    if (!flight || !onIssuePDC) return;
+    setIssuing(true);
+    try {
+      await minDuration(Promise.resolve(onIssuePDC(flight.id, pdcText)));
+      toast.success(`PDC sent to ${flight.callsign}`);
+      onClose();
+    } catch (err) {
+      toast.error('Failed to send the PDC', {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const squawkInvalid = squawk.length > 0 && squawk.length < 4;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-10000 p-4">
-      <div className="bg-zinc-900 text-white w-full max-w-2xl max-h-[90vh] rounded-3xl border-2 border-blue-800 flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-blue-800 rounded-t-3xl">
-          <div className="flex items-center gap-3">
-            <Plane className="h-6 w-6 text-blue-400" />
-            <span className="font-extrabold text-xl text-blue-300">
-              PDC Generator - {flight.callsign}
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-700 transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          {loading && (
-            <div className="flex items-center justify-center p-4">
-              <Loader className="animate-spin h-5 w-5 mr-2" />
-              <span className="text-sm text-gray-400">
-                Loading frequency data...
-              </span>
-            </div>
-          )}
-
-          {error && (
-            <div className="text-red-400 text-sm p-3 bg-red-900/20 rounded-lg border border-red-700 flex items-center">
-              <Info className="h-4 w-4 mr-2" />
-              {error}
-            </div>
-          )}
-
-          {/* Generated PDC */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">
-                Generated PDC
-              </h3>
-              <Button
-                onClick={copyToClipboard}
-                size="sm"
-                variant="outline"
-                className={`flex items-center gap-1 transition-all duration-300 ${
-                  copied
-                    ? 'bg-emerald-600 hover:bg-none hover:bg-emerald-600 border-emerald-600 text-white'
-                    : ''
-                }`}
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </Button>
-            </div>
-            <div className="bg-black p-4 rounded-lg border border-zinc-700 font-mono text-sm text-green-400 whitespace-pre-wrap max-h-48 overflow-y-auto">
-              {generatePDCText()}
-            </div>
-          </div>
-
-          {/* PDC Format */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">PDC Format</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPdcFormat('standard')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'standard'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
-                }`}
-              >
-                Standard ACARS
-              </button>
-              <button
-                onClick={() => setPdcFormat('simplified')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pdcFormat === 'simplified'
-                    ? 'bg-blue-600 text-white border border-blue-500'
-                    : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
-                }`}
-              >
-                Simplified
-              </button>
-            </div>
-          </div>
-
-          {/* Flight Information */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">
-              Flight Information
-            </h3>
-            <div className="grid grid-cols-2 gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
-              <div>
-                <span className="text-xs text-gray-400">Callsign</span>
-                <div className="font-mono font-bold">{flight.callsign}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Aircraft</span>
-                <div className="font-mono">{flight.aircraft || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Departure</span>
-                <div className="font-mono">{flight.departure || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Arrival</span>
-                <div className="font-mono">{flight.arrival || 'N/A'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">SID</span>
-                <div className="font-mono">{flight.sid || 'DCT'}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400">Cruising FL</span>
-                <div className="font-mono">{flight.cruisingFL || 'N/A'}</div>
-              </div>
-            </div>
-          </div>
-          {/* Remarks */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">Remarks</h3>
-            <div>
-              <textarea
-                value={customRemarks}
-                onChange={(e) => setCustomRemarks(e.target.value)}
-                placeholder="Enter PDC remarks..."
-                className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg p-3 font-mono text-sm min-h-[80px] resize-y focus:outline-none focus:border-blue-500"
-                maxLength={250}
-              />
-              <p className="text-xs text-gray-500 mt-1">Edit Remarks</p>
-            </div>
-          </div>
-
-          {/* Frequencies */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-blue-300">
-                Frequencies
-              </h3>
-              <div className="flex gap-2">
-                <label className="flex cursor-pointer items-center gap-3 text-sm">
-                  <Checkbox
-                    checked={useCustomFreqs}
-                    onCheckedChange={(checked) =>
-                      setUseCustomFreqs(checked === true)
-                    }
-                  />
-                  <span className="text-gray-200 select-none">
-                    Use Custom Frequencies
+    <Dialog
+      open={isOpen && !!flight}
+      onOpenChange={(open) => !open && !issuing && onClose()}
+    >
+      <DialogContent className="shadcn-scope z-10001 max-h-[90vh] gap-5 overflow-y-auto sm:max-w-2xl">
+        {flight && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2.5">
+                <FileText className="size-5 text-blue-400" />
+                PDC for {flight.callsign}
+              </DialogTitle>
+              <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="flex items-center gap-1.5 font-mono text-zinc-300">
+                  {flight.departure || '----'}
+                  <ArrowRight className="size-3.5 text-zinc-500" />
+                  {flight.arrival || '----'}
+                </span>
+                {flight.aircraft && (
+                  <span className="font-mono text-zinc-300">
+                    {flight.aircraft}
                   </span>
-                </label>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs block mb-1 text-gray-300">
-                  Clearance Delivery
-                </label>
-                <TextInput
-                  value={
-                    useCustomFreqs
-                      ? customFreqs.clearanceDelivery || ''
-                      : airportFreqs.clearanceDelivery || '122.800'
-                  }
-                  onChange={(value) =>
-                    handleCustomFreqChange('clearanceDelivery', value)
-                  }
-                  placeholder="e.g. 121.65"
-                  className="w-full bg-zinc-800 border border-zinc-700"
-                  disabled={!useCustomFreqs}
-                />
-              </div>
-              <div>
-                <label className="text-xs block mb-1 text-gray-300">
-                  Departure
-                </label>
-                <TextInput
-                  value={
-                    useCustomFreqs
-                      ? customFreqs.departure || ''
-                      : airportFreqs.departure || '122.800'
-                  }
-                  onChange={(value) =>
-                    handleCustomFreqChange('departure', value)
-                  }
-                  placeholder="e.g. 133.0"
-                  className="w-full bg-zinc-800 border border-zinc-700"
-                  disabled={!useCustomFreqs}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Transponder & Identifier */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-blue-300">
-              Transponder & Identifier
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-gray-300">Squawk Code</label>
-                  <button
-                    onClick={() => setUseCustomSquawk(!useCustomSquawk)}
-                    className={`text-xs px-2 py-1 rounded ${
-                      useCustomSquawk ? 'bg-blue-600' : 'bg-gray-700'
-                    }`}
-                  >
-                    {useCustomSquawk ? 'Custom' : 'Auto'}
-                  </button>
-                </div>
-                <TextInput
-                  value={
-                    useCustomSquawk ? customSquawk : flight.squawk || autoSquawk
-                  }
-                  onChange={handleSquawkChange}
-                  placeholder="e.g. 1234"
-                  className="w-full bg-zinc-800 border border-zinc-700 font-mono"
-                  maxLength={4}
-                  disabled={!useCustomSquawk}
-                />
-                {useCustomSquawk && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Only digits 0-7 allowed
-                  </p>
                 )}
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-gray-300">Identifier</label>
-                  <button
-                    onClick={() => setUseCustomIdentifier(!useCustomIdentifier)}
-                    className={`text-xs px-2 py-1 rounded ${
-                      useCustomIdentifier ? 'bg-blue-600' : 'bg-gray-700'
-                    }`}
-                  >
-                    {useCustomIdentifier ? 'Custom' : 'Auto'}
-                  </button>
-                </div>
-                <TextInput
-                  value={
-                    useCustomIdentifier
-                      ? customIdentifier
-                      : getIdentifier(getSquawk())
+                <span>Check the clearance before you send it.</span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <ToggleGroup
+                  type="single"
+                  value={format}
+                  onValueChange={(value) =>
+                    value && setFormat(value as PdcFormat)
                   }
-                  onChange={handleIdentifierChange}
-                  placeholder="e.g. AB12"
-                  className="w-full bg-zinc-800 border border-zinc-700 font-mono"
-                  maxLength={4}
-                  disabled={!useCustomIdentifier}
-                />
-                {useCustomIdentifier && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Letters and numbers only
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Warning */}
-          <div className="bg-amber-900/20 p-3 rounded-lg border border-amber-700 text-amber-300 text-xs">
-            <div className="flex items-start">
-              <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium mb-1">Verification Required</p>
-                <p>
-                  This is an automatically generated PDC. Verify all information
-                  before issuing to the pilot. Flight plan details may need
-                  additional verification.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-5 border-t border-blue-800 bg-zinc-900 rounded-b-3xl">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Generated at {new Date().toLocaleTimeString()}
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={copyToClipboard} disabled={loading} size="sm">
-                Copy PDC
-              </Button>
-
-              {/* NEW: Issue PDC to pilot via flights websocket */}
-              {typeof onIssuePDC === 'function' && (
-                <Button
-                  onClick={async () => {
-                    if (!flight) return;
-                    const pdcText = generatePDCText();
-                    try {
-                      await onIssuePDC(flight.id, pdcText);
-                      onClose();
-                    } catch (err) {
-                      console.error('Issue PDC failed', err);
-                      setError('Failed to issue PDC');
-                    }
-                  }}
-                  disabled={loading}
-                  size="sm"
+                  aria-label="PDC format"
                 >
-                  Issue PDC to Pilot
+                  <ToggleGroupItem value="standard">Standard</ToggleGroupItem>
+                  <ToggleGroupItem value="simplified">
+                    Simplified
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={SIGNATURE_TONES.blue}
+                  onClick={handleCopy}
+                >
+                  {copied ? <Check /> : <Copy />}
+                  {copied ? 'Copied' : 'Copy'}
                 </Button>
-              )}
+              </div>
+              <pre className="max-h-56 overflow-y-auto rounded-2xl border-2 border-zinc-800 bg-zinc-950 p-4 font-mono text-sm break-words whitespace-pre-wrap text-emerald-400">
+                {pdcText}
+              </pre>
+            </div>
 
-              <Button onClick={onClose} variant="outline" size="sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="pdc-squawk" label="Squawk" hint="(0–7, 4 digits)">
+                <Input
+                  id="pdc-squawk"
+                  inputMode="numeric"
+                  value={squawk}
+                  placeholder={flight.squawk || autoSquawk}
+                  onChange={(e) =>
+                    setSquawk(e.target.value.replace(/[^0-7]/g, '').slice(0, 4))
+                  }
+                  aria-invalid={squawkInvalid || undefined}
+                  className={cn(FIELD_INPUT_CLASS, 'font-mono')}
+                />
+              </Field>
+              <Field id="pdc-identifier" label="Identifier">
+                <Input
+                  id="pdc-identifier"
+                  value={identifier}
+                  placeholder={identifierFor(effectiveSquawk, flight.callsign)}
+                  onChange={(e) =>
+                    setIdentifier(
+                      e.target.value
+                        .replace(/[^A-Z0-9]/gi, '')
+                        .slice(0, 4)
+                        .toUpperCase()
+                    )
+                  }
+                  className={cn(FIELD_INPUT_CLASS, 'font-mono')}
+                />
+              </Field>
+              <Field id="pdc-clearance-freq" label="Clearance frequency">
+                <Input
+                  id="pdc-clearance-freq"
+                  inputMode="decimal"
+                  value={clearanceFreq}
+                  placeholder={airportFreqs.clearance}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setClearanceFreq(value);
+                    saveFrequency('clearance', value);
+                  }}
+                  className={cn(FIELD_INPUT_CLASS, 'font-mono')}
+                />
+              </Field>
+              <Field id="pdc-departure-freq" label="Departure frequency">
+                <Input
+                  id="pdc-departure-freq"
+                  inputMode="decimal"
+                  value={departureFreq}
+                  placeholder={airportFreqs.departure}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                    setDepartureFreq(value);
+                    saveFrequency('departure', value);
+                  }}
+                  className={cn(FIELD_INPUT_CLASS, 'font-mono')}
+                />
+              </Field>
+              <Field id="pdc-remarks" label="Remarks" className="sm:col-span-2">
+                <Textarea
+                  id="pdc-remarks"
+                  value={remarks}
+                  maxLength={250}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="Enter PDC remarks…"
+                  className="min-h-20 rounded-xl border-2 border-blue-600 bg-zinc-950 font-mono text-sm shadow-none hover:border-blue-500 focus-visible:border-blue-400 dark:bg-zinc-950"
+                />
+              </Field>
+            </div>
+            <p className="-mt-2 text-xs text-zinc-500">
+              Empty fields use the value shown in grey.
+            </p>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose} disabled={issuing}>
                 Close
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              {onIssuePDC && (
+                <Button
+                  onClick={handleIssue}
+                  disabled={issuing || squawkInvalid}
+                >
+                  {issuing ? <Loader2 className="animate-spin" /> : <Send />}
+                  {issuing ? 'Sending…' : 'Send to pilot'}
+                </Button>
+              )}
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
-};
-
-export default PDCModal;
+}

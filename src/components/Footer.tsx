@@ -8,6 +8,7 @@ import {
   Shield,
   Cookie,
   BookPlus,
+  Map,
 } from 'lucide-react';
 import { FaDiscord, FaYoutube } from 'react-icons/fa';
 import { SiGithub } from 'react-icons/si';
@@ -55,6 +56,7 @@ export default function Footer() {
     { href: '/create', label: 'Create Session', icon: BookPlus },
     { href: '/sessions', label: 'My Sessions', icon: FolderOpen },
     { href: '/pfatc', label: 'PFATC Overview', icon: TowerControl },
+    { href: '/charts', label: 'Charts', icon: Map },
   ];
 
   const legalLinks = [

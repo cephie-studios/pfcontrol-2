@@ -25,7 +25,7 @@ export interface DeveloperApiDocEndpoint {
   responseContentType: string;
   responseSummary: string;
   exampleCurl: string;
-  availableSince: 1 | 2;
+  availableSince: 1 | 2 | 3;
 }
 
 export interface DeveloperApiDocWebsocketEvent {

@@ -439,8 +439,7 @@ export async function validateAcarsAccess(
       return { valid: false };
     }
 
-    const session = await getSessionById(sessionId);
-    return { valid: true, accessId: session?.access_id || null };
+    return { valid: true };
   } catch (error) {
     console.error('Error validating ACARS access:', error);
     return { valid: false };
@@ -926,6 +925,40 @@ export function dropUnchangedFlightFields(
   return changed;
 }
 
+const allowedFlightUpdateColumns = new Set([
+  'callsign',
+  'aircraft',
+  'departure',
+  'arrival',
+  'flight_type',
+  'stand',
+  'gate',
+  'runway',
+  'sid',
+  'star',
+  'cruisingfl',
+  'clearedfl',
+  'squawk',
+  'wtc',
+  'status',
+  'remark',
+  'clearance',
+  'pdc_remarks',
+  'hidden',
+  'route',
+  'req_at',
+  'req_phase',
+  'roblox_username',
+]);
+
+export function getRejectedFlightUpdateFields(
+  updates: Record<string, unknown>
+): string[] {
+  return Object.keys(updates).filter(
+    (field) => !allowedFlightUpdateColumns.has(field)
+  );
+}
+
 export async function updateFlight(
   sessionId: string,
   flightId: string,
@@ -934,36 +967,10 @@ export async function updateFlight(
   const validSessionId = validateSessionId(sessionId);
   const validFlightId = validateFlightId(flightId);
 
-  const allowedColumns = [
-    'callsign',
-    'aircraft',
-    'departure',
-    'arrival',
-    'flight_type',
-    'stand',
-    'gate',
-    'runway',
-    'sid',
-    'star',
-    'cruisingfl',
-    'clearedfl',
-    'squawk',
-    'wtc',
-    'status',
-    'remark',
-    'clearance',
-    'pdc_remarks',
-    'hidden',
-    'route',
-    'req_at',
-    'req_phase',
-    'roblox_username',
-  ];
-
   const dbUpdates: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(updates)) {
     const dbKey = toFlightColumn(key);
-    if (allowedColumns.includes(dbKey)) {
+    if (allowedFlightUpdateColumns.has(dbKey)) {
       if (
         (dbKey === 'departure' || dbKey === 'arrival') &&
         typeof value === 'string'
@@ -1055,13 +1062,29 @@ export async function updateFlightNotes(
     .execute();
 }
 
+export async function countSnapImages(
+  userId: string,
+  flightId: string
+): Promise<number | null> {
+  const flight = await mainDb
+    .selectFrom('flights')
+    .select(['snap_images'])
+    .where('id', '=', validateFlightId(flightId))
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+  if (!flight) return null;
+  return ((flight.snap_images as unknown[] | null) ?? []).length;
+}
+
 export async function addSnapImage(
   userId: string,
   flightId: string,
   cephieId: string,
-  url: string
+  url: string,
+  maxSnaps: number
 ): Promise<{
   ok: boolean;
+  atCap?: boolean;
   snap_images?: Array<{ cephie_id: string; url: string }>;
 }> {
   const validFlightId = validateFlightId(flightId);
@@ -1078,6 +1101,7 @@ export async function addSnapImage(
   const existing =
     (flight.snap_images as Array<{ cephie_id: string; url: string }> | null) ??
     [];
+  if (existing.length >= maxSnaps) return { ok: false, atCap: true };
   const updated = [...existing, { cephie_id: cephieId, url }];
 
   await mainDb
@@ -1132,7 +1156,8 @@ export async function deleteSnapImage(
 
 export async function toggleFeaturedOnProfile(
   userId: string,
-  flightId: string
+  flightId: string,
+  maxFeatured: number
 ): Promise<{ ok: boolean; atCap?: boolean; featured?: boolean }> {
   const validFlightId = validateFlightId(flightId);
 
@@ -1154,7 +1179,9 @@ export async function toggleFeaturedOnProfile(
       .where('user_id', '=', userId)
       .where('featured_on_profile', '=', true)
       .executeTakeFirst();
-    if (Number(countRow?.count ?? 0) >= 3) return { ok: false, atCap: true };
+    if (Number(countRow?.count ?? 0) >= maxFeatured) {
+      return { ok: false, atCap: true };
+    }
   }
 
   await mainDb

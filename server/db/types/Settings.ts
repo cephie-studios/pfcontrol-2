@@ -83,6 +83,7 @@ export interface ProfileCustomization {
 
 export interface Settings {
   backgroundImage: BackgroundImageSettings;
+  animatedBackground?: string | null;
   sounds: {
     startupSound: SoundSettings;
     chatNotificationSound: SoundSettings;

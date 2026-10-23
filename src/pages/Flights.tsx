@@ -328,11 +328,40 @@ export default function Flights() {
     user?.username,
   ]);
   const handleIssuePDC = async (flightId: string | number, pdcText: string) => {
-    if (!flightsSocket?.socket) {
-      console.warn('handleIssuePDC: no flights socket available');
-      throw new Error('No flights socket');
+    const socket = flightsSocket?.socket;
+    if (!socket?.connected) {
+      throw new Error('Not connected to the session');
     }
-    flightsSocket.socket.emit('issuePDC', { flightId, pdcText });
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timeout);
+        socket.off('pdcIssued', onIssued);
+        socket.off('flightError', onError);
+      };
+      const onIssued = (payload: { flightId: string | number }) => {
+        if (String(payload.flightId) !== String(flightId)) return;
+        cleanup();
+        resolve();
+      };
+      const onError = (err: {
+        action: string;
+        flightId?: string | number;
+        error: string;
+      }) => {
+        if (err.action !== 'issuePDC') return;
+        if (err.flightId != null && String(err.flightId) !== String(flightId))
+          return;
+        cleanup();
+        reject(new Error(err.error));
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('The server did not confirm the PDC'));
+      }, 8000);
+      socket.on('pdcIssued', onIssued);
+      socket.on('flightError', onError);
+      socket.emit('issuePDC', { flightId, pdcText });
+    });
 
     setFlashingPDCIds((prev) => {
       const next = new Set(prev);

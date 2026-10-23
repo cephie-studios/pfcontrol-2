@@ -20,6 +20,7 @@ import {
   sanitizeFlightForClient,
   updateFlight,
   dropUnchangedFlightFields,
+  getRejectedFlightUpdateFields,
 } from '../../db/flights.js';
 import { addSessionToUser, getUserById } from '../../db/users.js';
 import { logFlightAction } from '../../db/flightLogs.js';
@@ -31,8 +32,7 @@ import {
   flightCreationLimiter,
   networkFlightBatchLimiter,
 } from '../../middleware/rateLimiting.js';
-import { getUserRoles } from '../../db/roles.js';
-import { isAdmin } from '../../middleware/admin.js';
+import { getPlanLimits } from '../../billing/limits.js';
 import { ExclusiveSessionNetworkFlagsError } from '../../utils/sessionNetworkFlags.js';
 import {
   validateSessionId,
@@ -49,6 +49,7 @@ import {
   releaseExternalAcarsClaim,
   setExternalAcarsClaim,
 } from '../../utils/externalAcarsClaims.js';
+import { getExternalAcarsProvider } from '../../db/externalAcarsProviders.js';
 import { fromCamelCaseFlightBody } from '../../utils/caseConversion.js';
 import {
   isValidAirportIcao,
@@ -461,6 +462,7 @@ router.get('/network/claims', async (req: Request, res: Response) => {
     res.json(
       claims.map((c) => ({
         sessionId: c.sessionId,
+        providerId: c.providerId ?? null,
         claimedAt: c.claimedAt,
         expiresAt: c.expiresAt,
       }))
@@ -484,6 +486,7 @@ router.post(
       }
 
       const rawTtl = (req.body ?? {}).ttlMinutes;
+      const rawProviderId = (req.body ?? {}).providerId;
       let ttlMinutes = CLAIM_TTL_DEFAULT_MINUTES;
       if (rawTtl !== undefined) {
         const n = Number(rawTtl);
@@ -499,6 +502,16 @@ router.post(
         ttlMinutes = n;
       }
 
+      if (
+        rawProviderId !== undefined &&
+        (typeof rawProviderId !== 'string' ||
+          !(await getExternalAcarsProvider(rawProviderId)))
+      ) {
+        return res.status(400).json({
+          error: 'providerId must name an enabled external ACARS provider.',
+        });
+      }
+
       const session = await getSessionById(sessionId);
       if (!session) return res.status(404).json({ error: 'Not found' });
       if (!session.is_pfatc) {
@@ -512,6 +525,8 @@ router.post(
         keyId: ext.keyId,
         userId: ext.userId,
         ttlMinutes,
+        providerId:
+          typeof rawProviderId === 'string' ? rawProviderId : undefined,
       });
       if (!result.ok) {
         return res
@@ -523,6 +538,7 @@ router.post(
         sessionId: result.claim.sessionId,
         claimedAt: result.claim.claimedAt,
         expiresAt: result.claim.expiresAt,
+        providerId: result.claim.providerId ?? null,
       });
     } catch (e) {
       console.error('[ext/sessions] claim:', e);
@@ -696,14 +712,10 @@ router.post(
         });
       }
 
-      const userSessions = await getSessionsByUser(ext.userId);
-      const userRoles = await getUserRoles(ext.userId);
-      const isTester =
-        isAdmin(ext.userId) ||
-        userRoles.some(
-          (role) => role.name === 'Tester' || role.name === 'Event Controller'
-        );
-      const maxSessions = isTester ? 100 : 50;
+      const [userSessions, { maxSessions }] = await Promise.all([
+        getSessionsByUser(ext.userId),
+        getPlanLimits(ext.userId),
+      ]);
       if (userSessions.length >= maxSessions) {
         return res.status(400).json({
           error: 'Session limit reached',
@@ -1042,6 +1054,25 @@ router.put(
       if (!before) return res.status(404).json({ error: 'Not found' });
 
       const updateFields = fromCamelCaseFlightBody(req.body ?? {});
+      if (ext.apiVersion === 3) {
+        if (
+          !req.body ||
+          typeof req.body !== 'object' ||
+          Array.isArray(req.body)
+        ) {
+          return res
+            .status(400)
+            .json({ error: 'Request body must be a JSON object' });
+        }
+
+        const rejectedFields = getRejectedFlightUpdateFields(updateFields);
+        if (rejectedFields.length > 0) {
+          return res.status(400).json({
+            error: 'Unsupported flight update fields',
+            rejectedFields,
+          });
+        }
+      }
       const airportError = validateFlightAirportFields(
         updateFields,
         before.departure
@@ -1074,6 +1105,17 @@ router.put(
         return res.status(404).json({ error: 'Not found' });
       }
       if (msg === 'No valid fields to update') {
+        return res.status(400).json({ error: msg });
+      }
+      if (
+        extCtx(req).apiVersion === 3 &&
+        (msg.startsWith('Callsign must ') ||
+          msg.startsWith('Stand must ') ||
+          msg.startsWith('Squawk must ') ||
+          msg.startsWith('Remark must ') ||
+          msg.startsWith('Cruising FL must ') ||
+          msg.startsWith('Cleared FL must '))
+      ) {
         return res.status(400).json({ error: msg });
       }
       console.error('[ext/sessions] update flight:', e);

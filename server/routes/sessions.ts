@@ -20,6 +20,7 @@ import { sessionCreationLimiter } from '../middleware/rateLimiting.js';
 import { sanitizeAlphanumeric } from '../utils/sanitization.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
+import { getPlanLimits } from '../billing/limits.js';
 import { DEPLOYMENT } from '../utils/cacheTtl.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { getPublicSubmitSession } from '../services/publicSubmitSession.js';
@@ -130,24 +131,10 @@ router.post(
         // }
       }
 
-      const userSessions = await getSessionsByUser(createdBy);
-
-      const userRoles = await getUserRoles(createdBy);
-      const isTester =
-        isAdmin(createdBy) ||
-        userRoles.some(
-          (role) =>
-            role.name === 'Tester' ||
-            role.name === 'Event Controller' ||
-            (() => {
-              const p =
-                typeof role.permissions === 'string'
-                  ? JSON.parse(role.permissions)
-                  : role.permissions;
-              return p?.pfatc_sector === true; // AATC disabled — was: || p?.aatc_sector === true
-            })()
-        );
-      const maxSessions = isTester ? 100 : 50;
+      const [userSessions, { maxSessions }] = await Promise.all([
+        getSessionsByUser(createdBy),
+        getPlanLimits(createdBy),
+      ]);
 
       if (userSessions.length >= maxSessions) {
         return res.status(400).json({

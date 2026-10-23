@@ -7,6 +7,8 @@ import {
   FileWarning,
   Link2,
   Loader2,
+  Lock,
+  LogIn,
   Moon,
   RefreshCw,
   RotateCw,
@@ -24,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SIGNATURE_TONES } from '@/lib/signatureTones';
 import {
+  fetchChartImage,
   fetchChartfoxChart,
   fetchChartfoxFile,
   type ChartfoxChartDetail,
@@ -34,9 +37,12 @@ import {
   type ChartEntry,
 } from '../../utils/chartCatalog';
 import { openPdf, type OpenedPdf, type PDFDocumentProxy } from './pdf';
+import { useAuth } from '../../hooks/auth/useAuth';
+import SupporterIcon from '../billing/SupporterIcon';
 
 type ChartDocument =
   | { kind: 'image'; url: string; width: number; height: number }
+  | { kind: 'bitmap'; bitmap: ImageBitmap; width: number; height: number }
   | { kind: 'pdf'; pdf: PDFDocumentProxy };
 
 type LoadError = 'unavailable' | 'unlinked';
@@ -131,7 +137,97 @@ interface ChartViewerProps {
   onReconnect?: () => void;
 }
 
-export default function ChartViewer({
+function LockedCephieChart({
+  chart,
+  onBack,
+  backLabel,
+  loggedIn,
+}: {
+  chart: ChartEntry;
+  onBack?: () => void;
+  backLabel: string;
+  loggedIn: boolean;
+}) {
+  const here = window.location.pathname + window.location.search;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col bg-zinc-950">
+      <div className="flex min-h-14 shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-3 py-2">
+        {onBack && (
+          <ToolbarButton icon={ArrowLeft} label={backLabel} onClick={onBack} />
+        )}
+        <p className="truncate text-sm font-semibold text-white">
+          {chart.name}
+        </p>
+      </div>
+      <div className="relative flex min-h-0 flex-1 items-end justify-center overflow-hidden p-4 sm:items-center sm:p-6">
+        {chart.previewUrl && (
+          <img
+            src={chart.previewUrl}
+            alt=""
+            className="pointer-events-none absolute inset-0 size-full object-contain p-4 opacity-70 blur-[2px] select-none"
+          />
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+        <div className="relative flex w-full max-w-md flex-col items-center gap-4 rounded-3xl border-2 border-zinc-800 bg-zinc-900 p-6 text-center shadow-2xl shadow-black/60">
+          <span className="flex size-12 items-center justify-center rounded-full border-2 border-amber-500 text-amber-500">
+            <Lock className="size-5" />
+          </span>
+          <div className="space-y-1.5">
+            <p className="text-lg font-semibold text-white">
+              Unlock {chart.name}
+            </p>
+            <p className="text-sm text-zinc-300">
+              Cephie Charts are full-size SIDs, STARs, approaches and ground
+              maps you can zoom, rotate and keep open during a session. They
+              come with Supporter for $1 a month or as a one-time pass.
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button asChild className="cursor-pointer">
+              <a href="/pricing">
+                <SupporterIcon />
+                Unlock with Supporter
+              </a>
+            </Button>
+            {!loggedIn && (
+              <Button variant="outline" asChild className="cursor-pointer">
+                <a href={`/login?callback=${encodeURIComponent(here)}`}>
+                  <LogIn />
+                  Log in
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ChartViewer(props: ChartViewerProps) {
+  const { user, isLoading } = useAuth();
+  if (props.chart.source !== 'cephie') return <ChartView {...props} />;
+  if (isLoading) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-zinc-950">
+        <Loader2 className="size-8 animate-spin text-blue-400" />
+      </div>
+    );
+  }
+  if (!user?.plan || user.plan === 'free') {
+    return (
+      <LockedCephieChart
+        chart={props.chart}
+        onBack={props.onBack}
+        backLabel={props.backLabel ?? 'Back to charts'}
+        loggedIn={!!user}
+      />
+    );
+  }
+  return <ChartView {...props} />;
+}
+
+function ChartView({
   chart,
   active,
   onBack,
@@ -155,17 +251,39 @@ export default function ChartViewer({
   const [inverted, setInverted] = useState(readInvert);
   const [dragging, setDragging] = useState(false);
 
+  const isProtected = chart.source === 'cephie' || chart.source === 'celesbit';
+
   const viewRef = useRef(view);
   viewRef.current = view;
 
   useEffect(() => {
     let cancelled = false;
     let objectUrl: string | null = null;
+    let bitmap: ImageBitmap | null = null;
     let opened: OpenedPdf | null = null;
     const controller = new AbortController();
 
     const load = async () => {
       if (chart.imageUrl) {
+        if (isProtected) {
+          const image = await fetchChartImage(
+            chart.imageUrl,
+            controller.signal
+          );
+          if (cancelled) return;
+          bitmap = await createImageBitmap(image);
+          if (cancelled) {
+            bitmap.close();
+            return;
+          }
+          setChartDoc({
+            kind: 'bitmap',
+            bitmap,
+            width: bitmap.width,
+            height: bitmap.height,
+          });
+          return;
+        }
         const size = await loadImage(chart.imageUrl);
         if (!cancelled) {
           setChartDoc({ kind: 'image', url: chart.imageUrl, ...size });
@@ -211,9 +329,10 @@ export default function ChartViewer({
       cancelled = true;
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
+      bitmap?.close();
       opened?.destroy();
     };
-  }, [chart.imageUrl, chart.chartfoxId, attempt]);
+  }, [chart.imageUrl, chart.chartfoxId, isProtected, attempt]);
 
   useEffect(() => {
     if (chartDoc?.kind !== 'pdf') return;
@@ -237,6 +356,7 @@ export default function ChartViewer({
 
   const retry = () => {
     setError(null);
+    setCanvasReady(false);
     setChartDoc(null);
     setAttempt((n) => n + 1);
   };
@@ -255,7 +375,7 @@ export default function ChartViewer({
   }, []);
 
   const base =
-    chartDoc?.kind === 'image'
+    chartDoc?.kind === 'image' || chartDoc?.kind === 'bitmap'
       ? { w: chartDoc.width, h: chartDoc.height }
       : pageSize;
   const sideways = rotation % 180 !== 0;
@@ -525,11 +645,20 @@ export default function ChartViewer({
     };
   }, [chartDoc, page, pageSize, roundedFit, bucket]);
 
+  const hasFit = fit > 0;
+
+  useEffect(() => {
+    const target = canvasRef.current;
+    if (chartDoc?.kind !== 'bitmap' || !target || !hasFit) return;
+    target.width = chartDoc.width;
+    target.height = chartDoc.height;
+    target.getContext('2d')?.drawImage(chartDoc.bitmap, 0, 0);
+    setCanvasReady(true);
+  }, [chartDoc, hasFit]);
+
   const pageCount = chartDoc?.kind === 'pdf' ? chartDoc.pdf.numPages : 1;
   const ready =
-    !!base &&
-    fit > 0 &&
-    (chartDoc?.kind === 'image' || (chartDoc?.kind === 'pdf' && canvasReady));
+    !!base && fit > 0 && (chartDoc?.kind === 'image' || canvasReady);
   const loading = !error && !ready;
 
   const subtitle = [
@@ -650,6 +779,7 @@ export default function ChartViewer({
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
         onDoubleClick={ready ? onDoubleClick : undefined}
+        onContextMenu={isProtected ? (e) => e.preventDefault() : undefined}
       >
         {base && fit > 0 && (
           <div
@@ -778,7 +908,7 @@ export default function ChartViewer({
           ) : null}
         </p>
         <p className="shrink-0">
-          {isChartfox
+          {isChartfox || chart.source === 'cephie'
             ? 'Not for real-world navigation'
             : 'Redistribution of this chart is prohibited'}
         </p>

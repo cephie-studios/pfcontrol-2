@@ -2,6 +2,12 @@ import { Server as SocketServer, Server } from 'socket.io';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
 import { getUserRoles } from '../db/roles.js';
+import {
+  getAvatarRing,
+  getSupporterBadge,
+  supporterRole,
+  type AvatarRing,
+} from '../billing/supporter.js';
 import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
@@ -32,6 +38,7 @@ interface SessionUser {
     icon: string;
     priority: number;
   }>;
+  avatarRing?: AvatarRing | null;
 }
 
 export const getActiveUsersForSession = async (
@@ -460,6 +467,13 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         console.error('Error fetching user roles:', error);
       }
 
+      const [badge, avatarRing] = await Promise.all([
+        getSupporterBadge(user.userId).catch(() => null),
+        getAvatarRing(user.userId).catch(() => null),
+      ]);
+      const supporter = supporterRole(badge);
+      if (supporter) userRoles.push(supporter);
+
       if (isAdmin(user.userId)) {
         userRoles.unshift({
           id: -1,
@@ -485,6 +499,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         joinedAt: Date.now(),
         position,
         roles: userRoles,
+        avatarRing,
       };
 
       await addUserToSession(sessionId, user.userId, sessionUser);

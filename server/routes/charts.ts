@@ -1,6 +1,6 @@
-import express, { type Response } from 'express';
+import express, { type RequestHandler, type Response } from 'express';
 import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import {
   CHART_CACHE_SEC,
@@ -18,9 +18,26 @@ import {
   linkChartfoxAccount,
   unlinkChartfoxAccount,
 } from '../utils/chartfox.js';
-import requireAuth from '../middleware/auth.js';
+import { fetchChartGen } from '../utils/chartGen.js';
+import requireAuth, { optionalAuth } from '../middleware/auth.js';
+import { hasPlan } from '../billing/entitlements.js';
+import {
+  getChartSources,
+  isChartSourceEnabled,
+  type ChartSource,
+} from '../db/adminBilling.js';
 import { chartSubjectFor } from '../utils/chartSubject.js';
-import { applyPublicCache } from '../utils/httpCache.js';
+import {
+  watermarkIdentity,
+  watermarkPlate,
+  type WatermarkIdentity,
+} from '../utils/chartWatermark.js';
+import {
+  createMarkedPlate,
+  markedPlateKey,
+  readMarkedPlate,
+} from '../utils/chartPlateCache.js';
+import { applyImmutableAsset, applyPublicCache } from '../utils/httpCache.js';
 import { authLimiter } from '../middleware/security.js';
 
 const router = express.Router();
@@ -36,6 +53,8 @@ const JWT_SECRET = process.env.JWT_SECRET ?? '';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? '';
 const ICAO_PATTERN = /^[A-Z0-9]{2,7}$/;
 const CHART_ID_PATTERN = /^[0-9a-f-]{36}$/i;
+const CHART_FILE_PATTERN = /^[a-z0-9-]{1,24}(\.preview)?\.webp$/;
+const CHART_VERSION_PATTERN = /^[0-9a-f]{12}$/;
 
 const chartfoxLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -44,6 +63,49 @@ const chartfoxLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const isCephieFullSize = (req: express.Request) =>
+  !req.params.file?.toLowerCase().endsWith('.preview.webp');
+
+const cephiePlateLimiter = (windowMs: number, limit: number) =>
+  rateLimit({
+    windowMs,
+    limit,
+    skip: (req) => !isCephieFullSize(req),
+    keyGenerator: (req) => req.user?.userId ?? ipKeyGenerator(req.ip ?? ''),
+    message: { error: 'Too many chart requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+const cephiePlateLimiters = [
+  cephiePlateLimiter(60 * 1000, 40),
+  cephiePlateLimiter(60 * 60 * 1000, 300),
+];
+
+// The viewer fetches full-size plates and shows them from a blob. Rejecting
+// navigations and embeds keeps the URL from being opened, shared or hotlinked.
+const BLOCKED_FETCH_DESTINATIONS = new Set([
+  'document',
+  'iframe',
+  'frame',
+  'embed',
+  'object',
+  'image',
+]);
+
+const requireFetchRequest: RequestHandler = (req, res, next) => {
+  const destination = req.get('Sec-Fetch-Dest');
+  if (
+    isCephieFullSize(req) &&
+    destination &&
+    BLOCKED_FETCH_DESTINATIONS.has(destination)
+  ) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(403).json({ error: 'Charts cannot be opened directly' });
+  }
+  next();
+};
 
 type LinkMode = 'popup' | 'redirect';
 
@@ -73,8 +135,22 @@ function sendChartfoxError(res: Response, error: unknown) {
   return res.status(502).json({ error: 'ChartFox is unavailable' });
 }
 
+function requireSource(source: ChartSource): RequestHandler {
+  return async (_req, res, next) => {
+    if (await isChartSourceEnabled(source)) return next();
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(404).json({ error: 'chart_source_disabled', source });
+  };
+}
+
+// GET: /api/charts/sources - which chart sources are switched on
+router.get('/sources', async (_req, res) => {
+  applyPublicCache(res, { browserMaxAge: 60, edgeMaxAge: 60 });
+  res.json({ sources: await getChartSources() });
+});
+
 // GET: /api/charts - Celesbit chart index
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, requireSource('celesbit'), async (req, res) => {
   const subject = chartSubjectFor(req);
   if (!subject) {
     return res.status(503).json({ error: 'Charts are unavailable' });
@@ -107,24 +183,132 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // GET: /api/charts/plate/:icao/:file - chart image
-router.get('/plate/:icao/:file', requireAuth, async (req, res) => {
-  const subject = chartSubjectFor(req);
-  if (!subject) {
-    return res.status(503).json({ error: 'Charts are unavailable' });
-  }
+router.get(
+  '/plate/:icao/:file',
+  requireAuth,
+  requireSource('celesbit'),
+  async (req, res) => {
+    const subject = chartSubjectFor(req);
+    if (!subject) {
+      return res.status(503).json({ error: 'Charts are unavailable' });
+    }
 
-  const image = await getCelesbitPlate(
-    subject,
-    req.params.icao.toUpperCase(),
-    req.params.file
-  );
-  if (!image) {
-    return res.status(404).json({ error: 'Chart not found' });
-  }
+    const image = await getCelesbitPlate(
+      subject,
+      req.params.icao.toUpperCase(),
+      req.params.file
+    );
+    if (!image) {
+      return res.status(404).json({ error: 'Chart not found' });
+    }
 
-  applyPerUserCache(res, CHART_CACHE_SEC);
-  res.type(image.contentType).send(image.body);
+    applyPerUserCache(res, CHART_CACHE_SEC);
+    res.type(image.contentType).send(image.body);
+  }
+);
+
+// GET: /api/charts/cephie - generated chart index, with the version chart URLs carry
+router.get('/cephie', requireSource('cephie'), async (_req, res) => {
+  const upstream = await fetchChartGen('/cephie');
+  if (!upstream || upstream.status !== 200) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ version: null, airports: {} });
+  }
+  applyPublicCache(res, { browserMaxAge: 5 * 60, edgeMaxAge: 10 * 60 });
+  res.type('application/json').send(upstream.body);
 });
+
+// GET: /api/charts/cephie/:version/:icao/:file - chart image (<kind>.webp, Basic
+// and up) or a small public preview (<kind>.preview.webp). A version only ever
+// names one bundle, so these responses never change.
+router.get(
+  '/cephie/:version/:icao/:file',
+  requireSource('cephie'),
+  optionalAuth,
+  requireFetchRequest,
+  ...cephiePlateLimiters,
+  async (req, res) => {
+    const { version } = req.params;
+    const icao = req.params.icao.toUpperCase();
+    const file = req.params.file.toLowerCase();
+    if (
+      !CHART_VERSION_PATTERN.test(version) ||
+      !ICAO_PATTERN.test(icao) ||
+      !CHART_FILE_PATTERN.test(file)
+    ) {
+      return res.status(404).json({ error: 'Chart not found' });
+    }
+
+    const isPreview = file.endsWith('.preview.webp');
+    if (!isPreview) {
+      res.setHeader('Cache-Control', 'private, no-store');
+      if (!req.user) {
+        return res.status(401).json({ error: 'Log in to open Cephie charts' });
+      }
+      if (!(await hasPlan(req.user.userId, 'supporter'))) {
+        return res
+          .status(402)
+          .json({ error: 'upgrade_required', requiredPlan: 'supporter' });
+      }
+    }
+
+    let identity: WatermarkIdentity | null = null;
+    let cacheKey = '';
+    if (!isPreview) {
+      identity = watermarkIdentity(req.user!.userId, req.user!.username ?? '');
+      if (!identity) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(503).json({ error: 'Charts are unavailable' });
+      }
+      cacheKey = markedPlateKey(
+        req.user!.userId,
+        identity.label,
+        version,
+        icao,
+        file
+      );
+      const cached = await readMarkedPlate(cacheKey);
+      if (cached) {
+        applyPerUserCache(res, 7 * 24 * 60 * 60);
+        return res.type('image/webp').send(cached);
+      }
+    }
+
+    const upstream = await fetchChartGen(`/cephie/${version}/${icao}/${file}`);
+    if (!upstream || upstream.status >= 500) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(503).json({ error: 'Charts are unavailable' });
+    }
+    if (upstream.status === 409 && upstream.version) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.redirect(
+        302,
+        `${req.baseUrl}/cephie/${upstream.version}/${icao}/${file}`
+      );
+    }
+    if (upstream.status !== 200) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(404).json({ error: 'Chart not found' });
+    }
+
+    if (isPreview) {
+      applyImmutableAsset(res);
+      return res.type('image/webp').send(upstream.body);
+    }
+
+    try {
+      const marked = await createMarkedPlate(cacheKey, () =>
+        watermarkPlate(upstream.body, identity!)
+      );
+      applyPerUserCache(res, 7 * 24 * 60 * 60);
+      res.type('image/webp').send(marked);
+    } catch (error) {
+      console.error('[Charts] Watermarking failed:', error);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(503).json({ error: 'Charts are unavailable' });
+    }
+  }
+);
 
 // GET: /api/charts/chartfox/status - ChartFox link status for the current user
 router.get('/chartfox/status', requireAuth, async (req, res) => {
@@ -184,6 +368,7 @@ router.delete('/chartfox', requireAuth, async (req, res) => {
 // GET: /api/charts/chartfox/airports/:icao - ChartFox charts for an airport
 router.get(
   '/chartfox/airports/:icao',
+  requireSource('chartfox'),
   requireAuth,
   chartfoxLimiter,
   async (req, res) => {
@@ -205,6 +390,7 @@ router.get(
 // GET: /api/charts/chartfox/charts/:id - ChartFox chart details
 router.get(
   '/chartfox/charts/:id',
+  requireSource('chartfox'),
   requireAuth,
   chartfoxLimiter,
   async (req, res) => {
@@ -226,6 +412,7 @@ router.get(
 // GET: /api/charts/chartfox/charts/:id/file - ChartFox chart file (PDF or image)
 router.get(
   '/chartfox/charts/:id/file',
+  requireSource('chartfox'),
   requireAuth,
   chartfoxLimiter,
   async (req, res) => {

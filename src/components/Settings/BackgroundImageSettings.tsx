@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { fetchBackgrounds } from '../../utils/fetch/data';
+import { useAuth } from '../../hooks/auth/useAuth';
 import type { Settings } from '../../types/settings';
 import SettingsSection from './SettingsSection';
 import SettingsGroup from './SettingsGroup';
@@ -165,6 +166,7 @@ export default function BackgroundImageSettings({
   settings,
   onChange,
 }: BackgroundImageSettingsProps) {
+  const { user } = useAuth();
   const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [cephieSnapImages, setCephieSnapImages] = useState<CephieSnapImage[]>(
     []
@@ -280,7 +282,10 @@ export default function BackgroundImageSettings({
         credentials: 'include',
         body: formData,
       });
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? 'Failed to upload image');
+      }
 
       const uploadResult = await res.json();
       const newImageUrl = uploadResult.url;
@@ -293,14 +298,15 @@ export default function BackgroundImageSettings({
             selectedImage: newImageUrl,
             useCustomBackground: true,
           },
+          animatedBackground: uploadResult.animated ? newImageUrl : null,
         };
         onChange(updatedSettings);
       }
 
       await loadAvailableImages();
       await loadCephieSnapImages();
-    } catch {
-      setError('Failed to upload image');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -534,7 +540,9 @@ export default function BackgroundImageSettings({
                     ? 'Uploading image…'
                     : dragActive
                       ? 'Drop the image to upload it.'
-                      : 'Click Upload or drop an image here. Uploads are public.'
+                      : user?.limits?.animatedBackgrounds
+                        ? 'Click Upload or drop an image or GIF here. Uploads are public.'
+                        : 'Click Upload or drop an image here. Uploads are public. GIFs and animated images need Supporter.'
                 }
               >
                 <input
