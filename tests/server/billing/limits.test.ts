@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   PLAN_LIMITS,
   hasLapsedAnimatedBackground,
 } from '../../../server/billing/limits.js';
 import { isAnimatedImage } from '../../../server/utils/animatedImage.js';
 import { isRingColors } from '../../../server/billing/plans.js';
+
+vi.mock('../../../server/db/connection.js', () => ({
+  mainDb: {},
+  redisConnection: {},
+}));
 
 const gif = 'https://api.cephie.app/img/abc';
 
