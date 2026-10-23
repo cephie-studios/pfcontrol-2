@@ -23,10 +23,8 @@ import {
 import Navbar from '../components/Navbar';
 import PageHero from '../components/common/PageHero';
 import ChartViewer from '../components/charts/ChartViewer';
-import {
-  CephieUnlockStrip,
-  useCephieLocked,
-} from '../components/charts/CephieUnlock';
+import { CephieUnlockStrip } from '../components/charts/CephieUnlock';
+import { useCephieLocked } from '../hooks/useCephieLocked';
 import {
   FIELD_OPTION_CLASS,
   FIELD_PANEL_CLASS,

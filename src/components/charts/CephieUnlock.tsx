@@ -1,11 +1,5 @@
-import { useAuth } from '../../hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-export function useCephieLocked() {
-  const { user, isLoading } = useAuth();
-  return !isLoading && (!user?.plan || user.plan === 'free');
-}
 
 export function CephieUnlockStrip({
   count,

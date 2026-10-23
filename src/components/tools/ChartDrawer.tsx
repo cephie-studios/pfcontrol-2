@@ -23,7 +23,8 @@ import {
 import type { Settings } from '../../types/settings';
 import { PanelHeader } from '../common/SidePanel';
 import ChartViewer from '../charts/ChartViewer';
-import { CephieUnlockStrip, useCephieLocked } from '../charts/CephieUnlock';
+import { CephieUnlockStrip } from '../charts/CephieUnlock';
+import { useCephieLocked } from '../../hooks/useCephieLocked';
 import { cn } from '@/lib/utils';
 import { SIGNATURE_TONES } from '@/lib/signatureTones';
 import { Button } from '@/components/ui/button';
