@@ -230,10 +230,8 @@ export function alignToOriginal(
     leaked.width === original.width && leaked.height === original.height;
   let dx = 0;
   let dy = 0;
-  let factor = 1;
-
   if (!whole) {
-    factor = Math.max(
+    const factor = Math.max(
       1,
       Math.ceil(Math.sqrt((leaked.width * leaked.height) / COARSE_TEMPLATE_PX))
     );

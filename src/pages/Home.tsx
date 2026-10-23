@@ -30,7 +30,7 @@ import Button from '../components/common/Button';
 import Navbar from '../components/Navbar';
 import ProductShowcase from '../components/home/ProductShowcase';
 import SupporterWall from '../components/billing/SupporterWall';
-import { WALL_TITLE, wallMembers } from '@/lib/supporterWall';
+import { wallMembers } from '@/lib/supporterWall';
 import SupporterIcon from '../components/billing/SupporterIcon';
 import { Button as ShadcnButton } from '@/components/ui/button';
 import { fetchBillingCatalog } from '../utils/fetch/billing';
