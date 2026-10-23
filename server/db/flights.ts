@@ -439,8 +439,7 @@ export async function validateAcarsAccess(
       return { valid: false };
     }
 
-    const session = await getSessionById(sessionId);
-    return { valid: true, accessId: session?.access_id || null };
+    return { valid: true };
   } catch (error) {
     console.error('Error validating ACARS access:', error);
     return { valid: false };

@@ -1,4 +1,5 @@
 export const SIGNATURE_TONES = {
+  emerald: 'border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white focus-visible:bg-emerald-600 focus-visible:text-white focus-visible:ring-0 dark:hover:bg-emerald-600',
   blue: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white focus-visible:bg-blue-600 focus-visible:text-white focus-visible:ring-0 dark:hover:bg-blue-600',
   green:
     'border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white focus-visible:bg-green-600 focus-visible:text-white focus-visible:ring-0 dark:hover:bg-green-600',
