@@ -93,7 +93,8 @@ export function useActiveUpdateModal(
     !!activeModal &&
     (!testerGateEnabled ||
       shouldBypassTesterGate() ||
-      (testerGateEnabled && (!!user?.isTester || !!user?.earlyAccess)) ||
+      !!user?.isTester ||
+      !!user?.earlyAccess ||
       !!user?.isAdmin);
 
   return {
