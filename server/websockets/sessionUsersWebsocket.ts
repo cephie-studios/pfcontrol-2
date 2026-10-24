@@ -16,6 +16,7 @@ import {
   onAtisChanged,
 } from '../realtime/invalidate.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
+import { generateAtis } from '../utils/atisGenerator.js';
 import { redisConnection } from '../db/connection.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
@@ -259,46 +260,13 @@ async function generateAutoATIS(
         : approachText
       : config.remarks;
 
-    const requestBody = {
-      ident: nextIdent,
+    const generatedAtis = await generateAtis({
       icao: config.icao,
-      remarks1: combinedRemarks,
-      remarks2: {},
-      landing_runways: config.landingRunways,
-      departing_runways: config.departingRunways,
-      'output-type': 'atis',
-      override_runways: false,
-    };
-
-    const response = await fetch(
-      `https://atisgenerator.com/api/v1/airports/${config.icao}/atis`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`External API responded with ${response.status}`);
-    }
-
-    const data = (await response.json()) as {
-      status: string;
-      message?: string;
-      data?: { text: string };
-    };
-
-    if (data.status !== 'success') {
-      throw new Error(data.message || 'Failed to generate ATIS');
-    }
-
-    const generatedAtis = data.data?.text;
-    if (!generatedAtis) {
-      throw new Error('No ATIS data in response');
-    }
+      ident: nextIdent,
+      landingRunways: config.landingRunways,
+      departingRunways: config.departingRunways,
+      remarks: combinedRemarks,
+    });
 
     const atisData = {
       letter: nextIdent,

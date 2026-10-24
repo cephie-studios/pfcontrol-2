@@ -3,6 +3,7 @@ import requireAuth from '../middleware/auth.js';
 import { updateSession } from '../db/sessions.js';
 import { encrypt } from '../utils/encryption.js';
 import { capture } from '../utils/posthog.js';
+import { generateAtis } from '../utils/atisGenerator.js';
 
 const router = express.Router();
 
@@ -11,18 +12,9 @@ interface ATISGenerateRequest {
   ident: string;
   icao: string;
   remarks1?: string;
-  remarks2?: Record<string, unknown>;
   landing_runways: string[];
   departing_runways: string[];
   metar?: string;
-}
-
-interface ExternalATISResponse {
-  status: string;
-  message?: string;
-  data?: {
-    text: string;
-  };
 }
 
 // POST: /api/atis/generate
@@ -35,7 +27,6 @@ router.post('/generate', requireAuth, async (req, res) => {
       ident,
       icao,
       remarks1,
-      remarks2 = {},
       landing_runways,
       departing_runways,
       metar,
@@ -52,83 +43,14 @@ router.post('/generate', requireAuth, async (req, res) => {
         .json({ error: 'Landing and departing runways must be arrays' });
     }
 
-    const requestBody = {
-      ident,
+    const generatedAtis = await generateAtis({
       icao,
-      remarks1,
-      remarks2,
-      landing_runways,
-      departing_runways,
-      'output-type': 'atis',
-      override_runways: false,
-      metar: metar || undefined,
-    };
-
-    let response;
-    try {
-      response = await fetch(
-        `https://atisgenerator.com/api/v1/airports/${icao}/atis`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
-    } catch (fetchError) {
-      console.error('Failed to fetch from ATIS generator API:', fetchError);
-      throw new Error('Unable to connect to ATIS generation service');
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`ATIS API error: ${response.status} - ${errorText}`);
-
-      if (metar && (response.status === 400 || response.status === 500)) {
-        console.warn('Retrying ATIS generation without METAR data');
-        try {
-          const retryBody = { ...requestBody, metar: undefined };
-          const retryResponse = await fetch(
-            `https://atisgenerator.com/api/v1/airports/${icao}/atis`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(retryBody),
-            }
-          );
-
-          if (retryResponse.ok) {
-            response = retryResponse;
-          } else {
-            throw new Error(
-              `External API responded with ${response.status}: ${errorText}`
-            );
-          }
-        } catch {
-          throw new Error(
-            `External API responded with ${response.status}: ${errorText}`
-          );
-        }
-      } else {
-        throw new Error(
-          `External API responded with ${response.status}: ${errorText}`
-        );
-      }
-    }
-
-    const data = (await response.json()) as ExternalATISResponse;
-
-    if (data.status !== 'success') {
-      throw new Error(data.message || 'Failed to generate ATIS');
-    }
-
-    const generatedAtis = data.data?.text;
-    if (!generatedAtis) {
-      throw new Error('No ATIS text in response');
-    }
+      ident,
+      landingRunways: landing_runways,
+      departingRunways: departing_runways,
+      remarks: remarks1,
+      metar,
+    });
 
     const atisTimestamp = new Date().toISOString();
 
