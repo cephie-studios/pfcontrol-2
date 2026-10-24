@@ -4,6 +4,8 @@ import {
   STANDBY,
   diffRoutes,
   isDelivered,
+  isSendableAcarsText,
+  normalizeAcarsText,
   providerFlight,
   providerMessages,
   repliesFor,
@@ -113,6 +115,49 @@ describe('providerFlight', () => {
   it('is null without a plan', () => {
     expect(providerFlight({}, 'S1', 'F1')).toBeNull();
   });
+
+  it('shows what the controller cleared, not what is being squawked', () => {
+    const plan = providerFlight(
+      {
+        flight: {
+          callsign: 'BAW123',
+          transponder: { squawk: '2000' },
+          clearance: {
+            assigned_squawk: '5271',
+            cleared_flight_level: 60,
+            stand: '512',
+            cleared: true,
+          },
+        },
+      },
+      'S1',
+      'F1'
+    );
+    expect(plan).toMatchObject({
+      squawk: '5271',
+      clearedFL: '60',
+      stand: '512',
+      clearance: true,
+    });
+  });
+});
+
+describe('isSendableAcarsText', () => {
+  it('accepts free text the datalink can carry', () => {
+    expect(isSendableAcarsText('request   descent fl240')).toBe(true);
+    expect(normalizeAcarsText(' request   descent\tfl240 ')).toBe(
+      'REQUEST DESCENT FL240'
+    );
+  });
+
+  it.each([
+    ['nothing', ''],
+    ['only punctuation', ' . ? '],
+    ['an underscore', 'NO_UNDERSCORES'],
+    ['too much text', 'A'.repeat(221)],
+  ])('refuses %s', (_name, text) => {
+    expect(isSendableAcarsText(text)).toBe(false);
+  });
 });
 
 describe('providerMessages', () => {
@@ -178,6 +223,22 @@ describe('providerMessages', () => {
         type: 'pilot',
       }),
     ]);
+  });
+
+  it('flags a downlink that never got through', () => {
+    const messages = providerMessages(
+      {
+        flight: { callsign: 'BAW123' },
+        datalink: {
+          state: 'connected',
+          messages: [
+            { id: 'd', direction: 'downlink', body: 'HELLO', state: 'error' },
+          ],
+        },
+      },
+      opened
+    );
+    expect(messages[2].text).toBe('HELLO\n[NOT DELIVERED]');
   });
 });
 

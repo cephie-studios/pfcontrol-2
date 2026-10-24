@@ -75,3 +75,11 @@ export function defaultAcarsUrl(
 ): string {
   return `/acars/${encodeURIComponent(sessionId)}/${encodeURIComponent(flightId)}?acars_token=${encodeURIComponent(acarsToken)}`;
 }
+
+export function nativeFallbackUrl(
+  sessionId: string,
+  flightId: string,
+  acarsToken: string
+): string {
+  return `${defaultAcarsUrl(sessionId, flightId, acarsToken)}&fallback=1`;
+}

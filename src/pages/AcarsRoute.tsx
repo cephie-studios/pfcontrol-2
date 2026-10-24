@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { Loader2, TriangleAlert } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import ACARS from './ACARS';
 import ExternalACARS from './ExternalACARS';
 import Navbar from '../components/Navbar';
 import { clientApiUrl } from '../utils/clientApiBase';
-import { Button } from '@/components/ui/button';
-import { SIGNATURE_TONES } from '@/lib/signatureTones';
 
 const RESOLVE_TIMEOUT_MS = 15_000;
 const RESOLVE_INTERVAL_MS = 30_000;
@@ -16,12 +14,11 @@ function DefaultAcarsRoute() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const acarsToken = params.get('acars_token') ?? '';
-  const [ready, setReady] = useState(!acarsToken);
-  const [error, setError] = useState('');
-  const [attempt, setAttempt] = useState(0);
+  const nativeOnly = params.get('fallback') === '1';
+  const [ready, setReady] = useState(!acarsToken || nativeOnly);
 
   useEffect(() => {
-    if (!acarsToken) return;
+    if (!acarsToken || nativeOnly) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
 
@@ -42,32 +39,20 @@ function DefaultAcarsRoute() {
           }
         );
         if (controller.signal.aborted) return;
-
-        if (response.status === 403 || response.status === 404) {
-          setReady(true);
-          return;
-        }
-        const data = await response.json().catch(() => null);
-        if (!response.ok) {
-          throw new Error(data?.error || 'Unable to open ACARS.');
-        }
-
-        if (data.mode === 'external') {
+        const data = response.ok
+          ? await response.json().catch(() => null)
+          : null;
+        if (data?.mode === 'external' && typeof data.redirectUrl === 'string') {
           const target = new URL(data.redirectUrl, window.location.origin);
-          if (!target.pathname.startsWith('/acars/')) {
-            throw new Error('Invalid ACARS handoff.');
+          if (target.pathname.startsWith('/acars/')) {
+            navigate(target.pathname + target.search, { replace: true });
+            return;
           }
-          navigate(target.pathname + target.search, { replace: true });
-          return;
         }
-        setReady(true);
-        setError('');
-      } catch (cause) {
+      } catch {
         if (controller.signal.aborted) return;
-        setError(
-          cause instanceof Error ? cause.message : 'Unable to open ACARS.'
-        );
       }
+      setReady(true);
       timer = setTimeout(resolve, RESOLVE_INTERVAL_MS);
     };
 
@@ -76,7 +61,7 @@ function DefaultAcarsRoute() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [sessionId, flightId, acarsToken, navigate, attempt]);
+  }, [sessionId, flightId, acarsToken, nativeOnly, navigate]);
 
   if (ready) return <ACARS />;
 
@@ -84,30 +69,8 @@ function DefaultAcarsRoute() {
     <div className="shadcn-scope min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="mx-auto flex max-w-lg flex-col items-center gap-4 px-5 pt-32 text-center">
-        {error ? (
-          <>
-            <TriangleAlert className="size-7 text-amber-400" />
-            <p role="alert" className="text-sm text-zinc-300">
-              {error}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={SIGNATURE_TONES.blue}
-              onClick={() => {
-                setError('');
-                setAttempt((value) => value + 1);
-              }}
-            >
-              Try again
-            </Button>
-          </>
-        ) : (
-          <>
-            <Loader2 className="size-6 animate-spin text-zinc-500" />
-            <p className="text-sm text-zinc-500">Opening ACARS…</p>
-          </>
-        )}
+        <Loader2 className="size-6 animate-spin text-zinc-500" />
+        <p className="text-sm text-zinc-500">Opening ACARS…</p>
       </main>
     </div>
   );

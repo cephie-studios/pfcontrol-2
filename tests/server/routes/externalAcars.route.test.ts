@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getSessionById: vi.fn(),
   providerForExternalAcarsSession: vi.fn(),
   resolveExternalAcarsRedirectUrl: vi.fn(),
+  fetchExternalAcarsPanelAccess: vi.fn(),
   fetch: vi.fn(),
 }));
 
@@ -24,6 +25,7 @@ vi.mock('../../../server/db/sessions.js', () => ({
 vi.mock('../../../server/utils/externalAcarsPanel.js', () => ({
   providerForExternalAcarsSession: mocks.providerForExternalAcarsSession,
   resolveExternalAcarsRedirectUrl: mocks.resolveExternalAcarsRedirectUrl,
+  fetchExternalAcarsPanelAccess: mocks.fetchExternalAcarsPanelAccess,
 }));
 
 import { createExternalAcarsAccess } from '../../../server/utils/externalAcarsAccess.js';
@@ -83,6 +85,7 @@ describe('external ACARS proxy', () => {
     mocks.providerForExternalAcarsSession
       .mockReset()
       .mockResolvedValue(provider);
+    mocks.fetchExternalAcarsPanelAccess.mockReset().mockResolvedValue(null);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -185,6 +188,113 @@ describe('external ACARS proxy', () => {
     expect(res.body).toEqual({ details: 'Wrong flight', requestId: 'req-1' });
   });
 
+  const fallbackUrl = '/acars/Ab12Cd34/Fl12Gh34?acars_token=tok&fallback=1';
+
+  it.each([
+    ['a server error', 503],
+    ['a client error', 400],
+  ])(
+    'points a failed status read at native ACARS on %s',
+    async (_name, status) => {
+      mocks.fetch.mockResolvedValue(
+        upstream(status, JSON.stringify({ type: 'WORLD_UNREACHABLE' }))
+      );
+      const res = await proxied('GET', '');
+      expect(res.status).toBe(status);
+      expect(res.body).toMatchObject({ fallbackUrl });
+    }
+  );
+
+  it('points an unreachable provider at native ACARS', async () => {
+    mocks.fetch.mockRejectedValue(new Error('ECONNREFUSED'));
+    const res = await proxied('GET', '');
+    expect(res.body).toMatchObject({
+      code: 'provider_unreachable',
+      fallbackUrl,
+    });
+  });
+
+  it('keeps command errors on the provider page', async () => {
+    mocks.fetch.mockResolvedValue(
+      upstream(409, JSON.stringify({ type: 'ACARS_NOT_CONNECTED' }))
+    );
+    const res = await proxied('POST', '/acars/', { text: 'HELLO' });
+    expect(res.body).not.toHaveProperty('fallbackUrl');
+  });
+
+  it('exposes the provider error type as the code', async () => {
+    mocks.fetch.mockResolvedValue(
+      upstream(
+        409,
+        JSON.stringify({
+          statusCode: 409,
+          type: 'PILOT_PANEL_IN_USE',
+          message: 'In use',
+        })
+      )
+    );
+    const res = await proxied('GET', '');
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'PILOT_PANEL_IN_USE' });
+  });
+
+  const rejectedToken = () =>
+    upstream(
+      403,
+      JSON.stringify({ statusCode: 403, type: 'NOT_AUTHENTICATED' })
+    );
+
+  it('renews a rejected flight token through the handoff and retries', async () => {
+    mocks.fetch
+      .mockResolvedValueOnce(rejectedToken())
+      .mockResolvedValueOnce(
+        upstream(200, JSON.stringify({ delivered: true }))
+      );
+    mocks.fetchExternalAcarsPanelAccess.mockResolvedValue({
+      callsign: 'BAW123',
+      token: 'tok',
+      expiresAt: null,
+    });
+
+    const res = await proxied('POST', '/acars/', { text: 'HELLO' });
+
+    expect(mocks.fetchExternalAcarsPanelAccess).toHaveBeenCalledWith(
+      'BAW123',
+      'tok',
+      provider
+    );
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+    expect(mocks.fetch.mock.calls[1][1].headers['X-Flight-Token']).toBe('tok');
+    expect(JSON.parse(mocks.fetch.mock.calls[1][1].body)).toEqual({
+      text: 'HELLO',
+    });
+    expect(res.body).toEqual({ delivered: true });
+  });
+
+  it('expires access when the flight token cannot be renewed', async () => {
+    mocks.fetch.mockResolvedValue(rejectedToken());
+    const res = await proxied('GET', '');
+    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ code: 'access_expired', fallbackUrl });
+    expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps other 403s as they are', async () => {
+    mocks.fetch.mockResolvedValue(
+      upstream(
+        403,
+        JSON.stringify({ type: 'ACARS_SUSPENDED', reason: 'Spamming' })
+      )
+    );
+    const res = await proxied('POST', '/acars/logon/', { station: 'EGLL' });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({
+      code: 'ACARS_SUSPENDED',
+      reason: 'Spamming',
+    });
+    expect(mocks.fetchExternalAcarsPanelAccess).not.toHaveBeenCalled();
+  });
+
   it('never relays a non-JSON provider response', async () => {
     mocks.fetch.mockResolvedValue(upstream(200, '<html><script>x</script>'));
     const res = await proxied('GET', '');
@@ -251,9 +361,11 @@ describe('POST /resolve/:sessionId/:flightId', () => {
     });
   });
 
-  it('reports a failed handoff so the client can retry', async () => {
+  it('opens native ACARS when the provider handoff fails', async () => {
     mocks.providerForExternalAcarsSession.mockResolvedValue(provider);
     mocks.resolveExternalAcarsRedirectUrl.mockResolvedValue(undefined);
-    expect((await resolve('tok')).status).toBe(502);
+    const res = await resolve('tok');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ mode: 'default' });
   });
 });

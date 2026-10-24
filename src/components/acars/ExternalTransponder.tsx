@@ -34,6 +34,7 @@ export default function ExternalTransponder({
   className?: string;
 }) {
   const squawking = flight?.transponder?.squawk ?? null;
+  const assigned = flight?.clearance?.assigned_squawk || null;
   const [entry, setEntry] = useState('');
   const [awaiting, setAwaiting] = useState<string | null>(null);
   const [identLit, setIdentLit] = useState(false);
@@ -118,11 +119,19 @@ export default function ExternalTransponder({
         <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900 p-3">
           <div className="flex items-center justify-between text-xs font-semibold tracking-wider text-zinc-500 uppercase">
             <span>{typing ? 'Entering' : 'Squawking'}</span>
-            {awaiting && !typing && (
-              <span className="text-amber-400 normal-case">
-                Awaiting readback
-              </span>
-            )}
+            {!typing &&
+              (awaiting ? (
+                <span className="text-amber-400 normal-case">
+                  Awaiting readback
+                </span>
+              ) : (
+                assigned &&
+                assigned !== squawking && (
+                  <span className="text-amber-400 normal-case">
+                    Assigned {assigned}
+                  </span>
+                )
+              ))}
           </div>
           <div aria-live="polite" className="mt-2 grid grid-cols-4 gap-2">
             {cells.map((digit, index) => (

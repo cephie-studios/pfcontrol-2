@@ -19,7 +19,7 @@ import type {
   ProviderStatus,
 } from '../../types/externalAcars';
 
-type Advice = { filed: string; check: ProviderRoute };
+type Advice = { filed: string; check: ProviderRoute | null };
 type Amendment = { before: string; after: string };
 
 function RouteBox({
@@ -119,20 +119,23 @@ export default function ExternalRouteAdvisory({
       .then((check) => {
         if (!controller.signal.aborted) setAdvice({ filed, check });
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!controller.signal.aborted) setAdvice({ filed, check: null });
+      });
     return () => controller.abort();
-  }, [hasPlan, filed, advice?.filed, request, status]);
+  }, [hasPlan, filed, advice?.filed, request]);
 
   const check = advice?.filed === filed ? advice.check : null;
   const advising = !!check && !check.valid && !dismissed.includes(filed);
+  const onFile = (check?.filed_route ?? filed).trim();
 
   const amend = async () => {
     setAmending(true);
     try {
       const result = await command('/route/', { body: {} });
       if (!result) return;
-      const after = result.route ?? check?.route ?? filed;
-      setAmendment({ before: filed, after });
+      const after = result.route || check?.route || onFile;
+      setAmendment({ before: onFile, after });
       setDismissed((current) => [...current, filed, after]);
     } finally {
       setAmending(false);
@@ -190,7 +193,7 @@ export default function ExternalRouteAdvisory({
 
         {check?.route && (
           <RouteChange
-            from={filed}
+            from={onFile}
             to={check.route}
             fromLabel="Your route"
             toLabel="Suggested route"
@@ -201,7 +204,7 @@ export default function ExternalRouteAdvisory({
         <p className="text-xs text-zinc-500">
           {check?.amendable
             ? 'You can amend your route once per flight.'
-            : 'This flight has already used its one route amendment.'}
+            : 'This route can no longer be amended from here.'}
         </p>
 
         <DialogFooter>

@@ -9,7 +9,11 @@ import {
 } from '../db/externalAcarsProviders.js';
 import { createExternalAcarsAccess } from './externalAcarsAccess.js';
 
-const MAX_PROVIDER_TOKEN_LENGTH = 4096;
+const MAX_PROVIDER_TOKEN_LENGTH = 128;
+
+const sameCallsign = (a: string, b: string) =>
+  a.toUpperCase().replace(/[^A-Z0-9]/g, '') ===
+  b.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 interface ExternalAcarsPanelResult {
   callsign: string;
@@ -45,8 +49,12 @@ export async function fetchExternalAcarsPanelAccess(
     });
 
     if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as {
+        type?: unknown;
+      } | null;
       console.error(
-        `[external-acars-panel] non-OK response: ${response.status}`
+        `[external-acars-panel] non-OK response: ${response.status} ${typeof error?.type === 'string' ? error.type : ''}`.trim(),
+        response.headers?.get('X-Request-ID') ?? ''
       );
       return null;
     }
@@ -70,7 +78,7 @@ export async function fetchExternalAcarsPanelAccess(
     const token = panelUrl.searchParams.get('token')?.trim();
     if (
       !handedCallsign ||
-      handedCallsign.toUpperCase() !== callsign.toUpperCase() ||
+      !sameCallsign(handedCallsign, callsign) ||
       !token ||
       token.length > MAX_PROVIDER_TOKEN_LENGTH
     ) {

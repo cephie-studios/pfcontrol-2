@@ -4,9 +4,11 @@ import { getFlightById, validateAcarsAccess } from '../db/flights.js';
 import { getSessionById } from '../db/sessions.js';
 import {
   defaultAcarsUrl,
+  nativeFallbackUrl,
   readExternalAcarsAccess,
 } from '../utils/externalAcarsAccess.js';
 import {
+  fetchExternalAcarsPanelAccess,
   providerForExternalAcarsSession,
   resolveExternalAcarsRedirectUrl,
 } from '../utils/externalAcarsPanel.js';
@@ -71,11 +73,7 @@ router.post('/resolve/:sessionId/:flightId', async (req, res) => {
     ...flight,
     acars_token: acarsToken,
   });
-  if (!redirectUrl) {
-    return res.status(502).json({
-      error: 'The ACARS provider could not open your flight. Please retry.',
-    });
-  }
+  if (!redirectUrl) return res.json({ mode: 'default' });
   return res.json({ mode: 'external', redirectUrl });
 });
 
@@ -143,14 +141,21 @@ async function proxyExternalAcars(req: Request, res: Response) {
     });
   }
 
+  const fallbackUrl =
+    req.method === 'GET' && suffix === '/'
+      ? nativeFallbackUrl(access.sessionId, access.flightId, access.acarsToken)
+      : undefined;
+  const failed = (status: number, body: Record<string, unknown>) =>
+    res.status(status).json(fallbackUrl ? { ...body, fallbackUrl } : body);
+
   const hasBody = req.method !== 'GET';
-  try {
+  const call = async (providerToken: string) => {
     const upstream = await fetch(
       `${provider.apiBaseUrl}/api/v1/pilot/flights/${encodeURIComponent(callsign)}${suffix}`,
       {
         method: req.method,
         headers: {
-          [provider.tokenHeader]: access.providerToken,
+          [provider.tokenHeader]: providerToken,
           ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         },
         body: hasBody ? JSON.stringify(req.body ?? {}) : undefined,
@@ -158,28 +163,58 @@ async function proxyExternalAcars(req: Request, res: Response) {
         signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       }
     );
-
     const text = await upstream.text();
-    let data: Record<string, unknown> = {};
+    let data: Record<string, unknown> | null = {};
     if (text) {
       try {
         const parsed: unknown = JSON.parse(text);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          data = parsed as Record<string, unknown>;
-        }
+        data =
+          parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? (parsed as Record<string, unknown>)
+            : {};
       } catch {
-        return res.status(502).json({
-          code: 'provider_invalid_response',
-          error: 'The ACARS provider returned an unreadable response.',
+        data = null;
+      }
+    }
+    return { upstream, data };
+  };
+
+  try {
+    let { upstream, data } = await call(access.providerToken);
+    const tokenRejected = () =>
+      upstream.status === 403 && data?.type === 'NOT_AUTHENTICATED';
+
+    if (tokenRejected()) {
+      const renewed = await fetchExternalAcarsPanelAccess(
+        callsign,
+        access.acarsToken,
+        provider
+      );
+      if (renewed) ({ upstream, data } = await call(renewed.token));
+      if (!renewed || tokenRejected()) {
+        return failed(401, {
+          code: 'access_expired',
+          error:
+            'ACARS access expired. Reopen ACARS from your submitted flight.',
         });
       }
     }
 
+    if (!data) {
+      return failed(502, {
+        code: 'provider_invalid_response',
+        error: 'The ACARS provider returned an unreadable response.',
+      });
+    }
+
     if (!upstream.ok) {
       const requestId = upstream.headers.get('X-Request-ID');
-      return res
-        .status(upstream.status)
-        .json(requestId ? { ...data, requestId } : data);
+      const code = typeof data.type === 'string' ? data.type : data.code;
+      return failed(upstream.status, {
+        ...data,
+        code,
+        ...(requestId ? { requestId } : {}),
+      });
     }
     if (suffix === '/') {
       return res.json({
@@ -195,7 +230,7 @@ async function proxyExternalAcars(req: Request, res: Response) {
     }
     return res.json(data);
   } catch {
-    return res.status(502).json({
+    return failed(502, {
       code: 'provider_unreachable',
       error:
         'The ACARS provider could not be reached. Your command is not confirmed.',

@@ -11,6 +11,18 @@ export const ACARS_CHARACTERS = /^[A-Z0-9 .,\-/+:'()?]*$/;
 export const DATALINK_STATION = /^[A-Z0-9]{4}$/;
 export const SQUAWK = /^[0-7]{4}$/;
 
+export const normalizeAcarsText = (text: string) =>
+  text.toUpperCase().replace(/\s+/g, ' ').trim();
+
+export const isSendableAcarsText = (text: string) => {
+  const normalized = normalizeAcarsText(text);
+  return (
+    normalized.length <= MAX_ACARS_MESSAGE &&
+    ACARS_CHARACTERS.test(normalized) &&
+    /[A-Z0-9]/.test(normalized)
+  );
+};
+
 export interface AcarsReply {
   element: string;
   label: string;
@@ -61,6 +73,7 @@ export function providerFlight(
 ): Flight | null {
   const plan = status.flight ?? status.filing;
   if (!plan) return null;
+  const clearance = plan.clearance;
   return {
     id: flightId,
     session_id: sessionId,
@@ -78,10 +91,19 @@ export function providerFlight(
     runway: plan.runway ?? undefined,
     sid: plan.sid ?? undefined,
     star: plan.star ?? undefined,
-    squawk: plan.transponder?.squawk ?? undefined,
-    clearance: plan.clearance?.cleared,
+    squawk: clearance?.assigned_squawk || undefined,
+    stand: clearance?.stand || undefined,
+    clearedFL: clearance?.cleared_flight_level
+      ? String(clearance.cleared_flight_level)
+      : undefined,
+    clearance: clearance?.cleared,
   };
 }
+
+const MESSAGE_OUTCOME: Record<string, string> = {
+  timeout: '[NO RESPONSE]',
+  error: '[NOT DELIVERED]',
+};
 
 export function providerMessages(
   status: ProviderStatus,
@@ -122,15 +144,17 @@ export function providerMessages(
   const datalink = (status.datalink?.messages ?? []).map(
     (message): AcarsMessage => {
       const uplink = message.direction === 'uplink';
+      const text = message.lines?.length
+        ? message.lines.join('\n')
+        : (message.body ?? '');
+      const outcome = MESSAGE_OUTCOME[message.state ?? ''];
       return {
         id: message.id,
         timestamp: message.created_at ?? opened,
         station: uplink
           ? (message.sender ?? 'ATC')
           : (plan?.callsign ?? 'PILOT'),
-        text: message.lines?.length
-          ? message.lines.join('\n')
-          : (message.body ?? ''),
+        text: outcome ? `${text}\n${outcome}` : text,
         type: uplink ? 'pdc' : 'pilot',
       };
     }

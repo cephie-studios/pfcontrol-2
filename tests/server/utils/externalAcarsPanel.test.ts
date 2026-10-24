@@ -177,6 +177,30 @@ describe('resolveExternalAcarsRedirectUrl', () => {
     expect(url).toBeUndefined();
   });
 
+  it('accepts the callsign in the ICAO form the provider normalises to', async () => {
+    mocks.fetch.mockResolvedValue(
+      panelResponse('https://p.example/acars/?callsign=BAW123&token=t')
+    );
+    const url = await resolveExternalAcarsRedirectUrl(
+      { session_id: 'Ab12Cd34', external_session: true },
+      { ...flight, callsign: 'BAW-123' }
+    );
+    expect(expectLocalPanelUrl(url)?.callsign).toBe('BAW123');
+  });
+
+  it('rejects a token longer than the provider accepts', async () => {
+    mocks.fetch.mockResolvedValue(
+      panelResponse(
+        `https://p.example/acars/?callsign=BAW123&token=${'t'.repeat(129)}`
+      )
+    );
+    const url = await resolveExternalAcarsRedirectUrl(
+      { session_id: 'Ab12Cd34', external_session: true },
+      flight
+    );
+    expect(url).toBeUndefined();
+  });
+
   it('rejects a handoff that has already expired', async () => {
     mocks.fetch.mockResolvedValue(
       panelResponse(panelUrl, { expires_at: '2000-01-01T00:00:00Z' })

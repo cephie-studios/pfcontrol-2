@@ -112,7 +112,9 @@ export default function ExternalACARS() {
     [status, sessionId, flightId]
   );
   const flight = status?.flight;
+  const flying = !!flight && !flight.stale;
   const datalink = status?.datalink;
+  const down = offline || status?.online === false;
   const connected = datalink?.state === 'connected' && !datalink.suspended;
   const claimUrl = status?.pfcontrol?.claimUrl;
   const showAccountPrompt =
@@ -177,10 +179,10 @@ export default function ExternalACARS() {
     const sent = await command('/acars/logon/', {
       body: {
         station,
-        departure: flight?.departure_airport,
-        destination: flight?.destination_airport,
+        departure: plan?.departure,
+        destination: plan?.arrival,
       },
-      success: `Connected to the ${station} datalink.`,
+      success: `Logon sent to ${station}.`,
     });
     if (sent) print('SYSTEM', `DATALINK CONNECT SENT TO ${station}`, 'Success');
     return !!sent;
@@ -226,7 +228,7 @@ export default function ExternalACARS() {
       success: 'IDENT sent.',
     }));
 
-  const statusLabel = offline
+  const statusLabel = down
     ? 'Offline'
     : datalink?.suspended
       ? 'Suspended'
@@ -348,9 +350,9 @@ export default function ExternalACARS() {
                 {...panelProps}
                 messages={messages}
                 pdcState={pdcState}
-                connected={connected && !offline}
+                connected={connected && !down}
                 statusLabel={statusLabel}
-                pdcDisabled={busy || !connected}
+                pdcDisabled={busy || down || !connected}
                 pdcPending={requestingPdc}
                 onRequestPDC={() => void requestPdc()}
                 messageActions={(message) => {
@@ -360,7 +362,7 @@ export default function ExternalACARS() {
                   return original ? (
                     <ExternalReplies
                       message={original}
-                      disabled={busy || !connected || offline}
+                      disabled={busy || !connected || down}
                       onRespond={respond}
                     />
                   ) : null;
@@ -368,8 +370,9 @@ export default function ExternalACARS() {
                 footer={
                   <ExternalComposer
                     datalink={datalink}
-                    departure={flight?.departure_airport}
-                    busy={busy || offline}
+                    departure={plan.departure}
+                    flying={flying}
+                    busy={busy || down}
                     onLogon={logon}
                     onLogoff={logoff}
                     onSend={sendText}
@@ -388,7 +391,7 @@ export default function ExternalACARS() {
                 />
                 <ExternalTransponder
                   flight={flight}
-                  busy={busy || offline}
+                  busy={busy || down}
                   onSquawk={setSquawk}
                   onIdent={ident}
                   className="shrink-0 border-t border-zinc-800"
@@ -413,7 +416,7 @@ export default function ExternalACARS() {
             status={status}
             request={request}
             command={command}
-            busy={busy || offline}
+            busy={busy || down}
             blocked={showAccountPrompt || showCharts}
           />
         )}
