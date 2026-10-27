@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { getDiscordLoginUrl } from '../utils/fetch/auth';
 import { fetchStatistics } from '../utils/fetch/data';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { TowerControl, Users } from 'lucide-react';
+import { Loader2, TowerControl, Users } from 'lucide-react';
 import { FaDiscord } from 'react-icons/fa';
 import { toast } from 'sonner';
 import { useAuth } from '../hooks/auth/useAuth';
+import PageHero from '../components/common/PageHero';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import Button from '../components/common/Button';
+import { SIGNATURE_TONES } from '@/lib/signatureTones';
+import { cn } from '@/lib/utils';
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   access_denied: 'Discord sign-in was cancelled.',
@@ -18,8 +21,12 @@ const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   rate_limited: 'Too many sign-in attempts. Please try again in a few minutes.',
 };
 
+const LEGAL_LINK_CLASS =
+  'cursor-pointer text-blue-400 underline underline-offset-2 transition-colors hover:text-blue-300';
+
 export default function Login() {
   const [agreed, setAgreed] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [stats, setStats] = useState({ registeredUsers: 0 });
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -60,10 +67,16 @@ export default function Login() {
     });
   }, []);
 
+  useEffect(() => {
+    const reset = () => setRedirecting(false);
+    window.addEventListener('pageshow', reset);
+    return () => window.removeEventListener('pageshow', reset);
+  }, []);
+
   const handleLogin = () => {
-    if (agreed) {
-      window.location.href = getDiscordLoginUrl(callback || undefined);
-    }
+    if (!agreed) return;
+    setRedirecting(true);
+    window.location.href = getDiscordLoginUrl(callback || undefined);
   };
 
   if (user.user) {
@@ -71,126 +84,98 @@ export default function Login() {
     return null;
   }
 
-  const buttonClass = agreed
-    ? 'w-full py-4 flex items-center justify-center gap-3'
-    : 'w-full py-4 flex items-center justify-center gap-3 pointer-events-none';
-
   return (
-    <div className="min-h-screen bg-zinc-950 text-white relative">
-      <div className="absolute top-5 left-4 md:left-60 z-20">
-        <div className="flex items-center space-x-4">
-          <a href="/" className="flex items-center space-x-2">
-            <TowerControl className="h-8 w-8 text-blue-400" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-              PFControl
-              {window.location.hostname === 'canary.pfcontrol.com' && (
-                <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent italic text-md">
-                  {' '}
-                  Canary
-                </span>
-              )}
-              {window.location.hostname === 'localhost' && (
-                <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent italic text-md">
-                  {' '}
-                  Developers
-                </span>
-              )}
-            </span>
-          </a>
-        </div>
+    <div className="shadcn-scope relative min-h-screen bg-background text-foreground">
+      <div className="absolute top-5 left-4 z-20 md:left-60">
+        <a href="/" className="flex cursor-pointer items-center gap-2">
+          <TowerControl className="size-8 text-blue-400" />
+          <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-2xl font-bold text-transparent">
+            PFControl
+            {window.location.hostname === 'canary.pfcontrol.com' && (
+              <span className="bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-md text-transparent italic">
+                {' '}
+                Canary
+              </span>
+            )}
+            {window.location.hostname === 'localhost' && (
+              <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-md text-transparent italic">
+                {' '}
+                Developers
+              </span>
+            )}
+          </span>
+        </a>
       </div>
 
-      <div className="relative w-full h-80 md:h-110 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="/assets/images/hero.webp"
-            alt="Banner"
-            className="object-cover w-full h-full scale-110"
-          />
-          <div className="absolute inset-0 bg-linear-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950"></div>
+      <PageHero
+        title="SIGN IN"
+        className="h-svh min-h-[36rem] md:h-svh"
+        overlayClassName="from-background/75 via-background/90 via-55% to-background to-85%"
+      >
+        <div className="flex items-center gap-2 text-sm font-medium text-zinc-200 tabular-nums">
+          <Users className="size-4 text-blue-400" />
+          {stats.registeredUsers.toLocaleString()} registered users
         </div>
 
-        <div className="relative h-full flex flex-col items-center justify-center px-6 md:px-10">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
-            SIGN IN
-          </h1>
-          <div className="flex items-center gap-1.5 px-6 py-2 bg-blue-900 backdrop-blur-md border border-blue-900 rounded-full shadow-lg">
-            <Users className="h-4 w-4 text-blue-200" />
-            <span className="text-blue-200 text-sm font-semibold tracking-wider">
-              {stats.registeredUsers.toLocaleString()} REGISTERED USERS
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto max-w-md px-4 pb-8 relative z-10">
-        <div className="bg-zinc-900/70 backdrop-blur-md border border-zinc-800 rounded-[3rem] p-6 space-y-6 animate-fade-in">
+        <div className="mt-4 flex w-full max-w-sm flex-col gap-6">
           <Button
-            onClick={handleLogin}
-            disabled={!agreed}
-            variant="primary"
+            variant="ghost"
             size="lg"
-            className={buttonClass}
+            onClick={handleLogin}
+            disabled={!agreed || redirecting}
+            className={cn(
+              'h-12 w-full text-base',
+              SIGNATURE_TONES.blue,
+              '[&_svg]:size-5'
+            )}
           >
-            <FaDiscord className="w-6 h-6" />
-            Sign In with Discord
+            {redirecting ? <Loader2 className="animate-spin" /> : <FaDiscord />}
+            Sign in with Discord
           </Button>
 
-          <hr className="w-full border-zinc-700" />
+          <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-300">
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={(checked) => setAgreed(checked === true)}
+              className="mt-0.5 cursor-pointer"
+            />
+            <span className="select-none">
+              I agree to the{' '}
+              <Link
+                to="https://cephie.app/legal/terms"
+                target="_blank"
+                rel="noreferrer"
+                className={LEGAL_LINK_CLASS}
+              >
+                Terms of Use
+              </Link>
+              ,{' '}
+              <Link
+                to="https://cephie.app/legal/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className={LEGAL_LINK_CLASS}
+              >
+                Privacy Policy
+              </Link>
+              , and{' '}
+              <Link
+                to="https://cephie.app/legal/cookies"
+                target="_blank"
+                rel="noreferrer"
+                className={LEGAL_LINK_CLASS}
+              >
+                Cookies Policy
+              </Link>
+            </span>
+          </label>
 
-          <div
-            className={`w-full flex items-center border-2 rounded-3xl px-5 py-4 gap-3 transition-all duration-200 shadow-sm
-                      ${agreed ? 'bg-blue-600/30 border-blue-600' : 'bg-blue-600/10 border-blue-800'}
-                      hover:shadow-blue-700/20 focus-within:shadow-blue-700/30`}
-          >
-            <label className="flex flex-1 cursor-pointer items-center gap-3">
-              <Checkbox
-                checked={agreed}
-                onCheckedChange={(checked) => setAgreed(checked === true)}
-              />
-              <span className="text-sm text-gray-200 select-none">
-                I agree to the{' '}
-                <Link
-                  to="https://cephie.app/legal/terms"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-400 underline hover:text-blue-300 transition-colors"
-                  tabIndex={0}
-                >
-                  Terms of Use
-                </Link>
-                ,{' '}
-                <Link
-                  to="https://cephie.app/legal/privacy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-400 underline hover:text-blue-300 transition-colors"
-                  tabIndex={0}
-                >
-                  Privacy Policy
-                </Link>
-                , and{' '}
-                <Link
-                  to="https://cephie.app/legal/cookies"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-400 underline hover:text-blue-300 transition-colors"
-                  tabIndex={0}
-                >
-                  Cookies Policy
-                </Link>
-              </span>
-            </label>
-          </div>
-
-          <div className="flex w-full justify-center">
-            <p className="text-xs text-zinc-500 text-center max-w-xs">
-              PFControl is an independent service created by Cephie Studios and
-              is not in any way affiliated with Project Flight.
-            </p>
-          </div>
+          <p className="text-center text-xs text-zinc-500">
+            PFControl is an independent service created by Cephie Studios and is
+            not in any way affiliated with Project Flight.
+          </p>
         </div>
-      </div>
+      </PageHero>
     </div>
   );
 }

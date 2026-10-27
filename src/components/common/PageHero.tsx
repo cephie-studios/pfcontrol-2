@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSettings } from '../../hooks/settings/useSettings';
 import { fetchBackgrounds } from '../../utils/fetch/data';
+import { cn } from '@/lib/utils';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 const DEFAULT_BACKGROUND = 'url("/assets/images/hero.webp")';
@@ -23,9 +24,13 @@ function getImageUrl(filename: string | null): string | null {
 
 export default function PageHero({
   title,
+  className,
+  overlayClassName,
   children,
 }: {
   title: string;
+  className?: string;
+  overlayClassName?: string;
   children?: ReactNode;
 }) {
   const { settings } = useSettings();
@@ -72,7 +77,9 @@ export default function PageHero({
   }, [backgroundImage]);
 
   return (
-    <div className="relative h-80 w-full overflow-hidden md:h-96">
+    <div
+      className={cn('relative h-80 w-full overflow-hidden md:h-96', className)}
+    >
       <div className="absolute inset-0">
         <img
           src="/assets/images/hero.webp"
@@ -83,7 +90,12 @@ export default function PageHero({
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500"
           style={{ backgroundImage, opacity: customLoaded ? 1 : 0 }}
         />
-        <div className="absolute inset-0 bg-linear-to-b from-background/40 via-background/70 to-background" />
+        <div
+          className={cn(
+            'absolute inset-0 bg-linear-to-b from-background/40 via-background/70 to-background',
+            overlayClassName
+          )}
+        />
       </div>
       <div className="relative flex h-full flex-col items-center justify-center gap-6 px-4 sm:px-6 md:px-10">
         <h1 className="text-center text-3xl font-black tracking-tight sm:text-5xl md:text-6xl">
