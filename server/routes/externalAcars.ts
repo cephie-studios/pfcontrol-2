@@ -61,14 +61,6 @@ router.post('/resolve/:sessionId/:flightId', async (req, res) => {
   if (!session || !flight) {
     return res.status(404).json({ error: 'Flight not found' });
   }
-  const provider = await providerForExternalAcarsSession(session).catch(
-    (err) => {
-      console.error('[external-acars] provider lookup failed:', err);
-      return null;
-    }
-  );
-  if (!provider) return res.json({ mode: 'default' });
-
   const redirectUrl = await resolveExternalAcarsRedirectUrl(session, {
     ...flight,
     acars_token: acarsToken,

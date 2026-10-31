@@ -12,7 +12,12 @@ const mocks = vi.hoisted(() => ({
   getExternalAcarsClaim: vi.fn(),
   getDefaultExternalAcarsProvider: vi.fn(),
   getExternalAcarsProvider: vi.fn(),
+  getSiteSettings: vi.fn(),
   fetch: vi.fn(),
+}));
+
+vi.mock('../../../server/db/siteSettings.js', () => ({
+  getSiteSettings: mocks.getSiteSettings,
 }));
 
 vi.mock('../../../server/utils/externalAcarsClaims.js', () => ({
@@ -26,7 +31,11 @@ vi.mock('../../../server/db/externalAcarsProviders.js', () => ({
 }));
 
 import { readExternalAcarsAccess } from '../../../server/utils/externalAcarsAccess.js';
-import { resolveExternalAcarsRedirectUrl } from '../../../server/utils/externalAcarsPanel.js';
+import {
+  providerForExternalAcarsSession,
+  resetLegacyExternalAcarsRedirectCache,
+  resolveExternalAcarsRedirectUrl,
+} from '../../../server/utils/externalAcarsPanel.js';
 
 const flight = { id: 'Fl12Gh34', callsign: 'BAW123', acars_token: 'tok' };
 const panelUrl =
@@ -64,6 +73,11 @@ describe('resolveExternalAcarsRedirectUrl', () => {
     mocks.getExternalAcarsClaim.mockReset();
     mocks.getDefaultExternalAcarsProvider.mockResolvedValue(provider);
     mocks.getExternalAcarsProvider.mockResolvedValue(provider);
+    mocks.getSiteSettings.mockResolvedValue({
+      feedbackBannerEnabled: false,
+      externalAcarsLegacyRedirect: false,
+    });
+    resetLegacyExternalAcarsRedirectCache();
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -230,5 +244,84 @@ describe('resolveExternalAcarsRedirectUrl', () => {
       flight
     );
     expect(url).toBeUndefined();
+  });
+
+  describe('legacy v2 redirect', () => {
+    const legacyUrl = 'https://pilot.pfcontrol.com/panel/abc?t=1';
+
+    beforeEach(() => {
+      mocks.getSiteSettings.mockResolvedValue({
+        feedbackBannerEnabled: false,
+        externalAcarsLegacyRedirect: true,
+      });
+      vi.stubEnv('PILOT_ACARS_PANEL_API_KEY', 'legacy-key');
+      mocks.getDefaultExternalAcarsProvider.mockClear();
+    });
+
+    it('redirects claimed PFATC sessions straight to pilot.pfcontrol.com', async () => {
+      mocks.hasActiveExternalAcarsClaim.mockResolvedValue(true);
+      mocks.fetch.mockResolvedValue(panelResponse(legacyUrl));
+      const url = await resolveExternalAcarsRedirectUrl(
+        { session_id: 'Ab12Cd34', is_pfatc: true },
+        flight
+      );
+      expect(url).toBe(legacyUrl);
+      const [target, init] = mocks.fetch.mock.calls[0];
+      expect(target).toBe(
+        'https://pilot.pfcontrol.com/api/v1/pilot/acars-panel/'
+      );
+      expect(init.headers.Authorization).toBe('ApiKey legacy-key');
+      expect(mocks.getDefaultExternalAcarsProvider).not.toHaveBeenCalled();
+    });
+
+    it('redirects external sessions without checking claims', async () => {
+      mocks.fetch.mockResolvedValue(panelResponse(legacyUrl));
+      const url = await resolveExternalAcarsRedirectUrl(
+        { session_id: 'Ab12Cd34', external_session: true },
+        flight
+      );
+      expect(url).toBe(legacyUrl);
+      expect(mocks.hasActiveExternalAcarsClaim).not.toHaveBeenCalled();
+    });
+
+    it('ignores unclaimed PFATC sessions', async () => {
+      mocks.hasActiveExternalAcarsClaim.mockResolvedValue(false);
+      const url = await resolveExternalAcarsRedirectUrl(
+        { session_id: 'Ab12Cd34', is_pfatc: true },
+        flight
+      );
+      expect(url).toBeUndefined();
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    });
+
+    it('rejects a panel url on another host', async () => {
+      mocks.fetch.mockResolvedValue(
+        panelResponse('https://evil.example/panel')
+      );
+      const url = await resolveExternalAcarsRedirectUrl(
+        { session_id: 'Ab12Cd34', external_session: true },
+        flight
+      );
+      expect(url).toBeUndefined();
+    });
+
+    it('skips the redirect when the api key is missing', async () => {
+      vi.stubEnv('PILOT_ACARS_PANEL_API_KEY', '');
+      const url = await resolveExternalAcarsRedirectUrl(
+        { session_id: 'Ab12Cd34', external_session: true },
+        flight
+      );
+      expect(url).toBeUndefined();
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    });
+
+    it('hides v3 providers so the ACARS page falls back to the redirect', async () => {
+      expect(
+        await providerForExternalAcarsSession({
+          session_id: 'Ab12Cd34',
+          external_session: true,
+        })
+      ).toBeNull();
+    });
   });
 });

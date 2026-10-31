@@ -9,4 +9,5 @@ export interface AppSettingsTable {
   pfatc_event_mode: boolean | null;
   aatc_event_mode: boolean | null;
   feedback_banner_enabled: Generated<boolean>;
+  external_acars_legacy_redirect: Generated<boolean>;
 }

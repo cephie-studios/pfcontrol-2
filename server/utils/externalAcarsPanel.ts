@@ -8,8 +8,28 @@ import {
   type ExternalAcarsProvider,
 } from '../db/externalAcarsProviders.js';
 import { createExternalAcarsAccess } from './externalAcarsAccess.js';
+import { getSiteSettings } from '../db/siteSettings.js';
 
 const MAX_PROVIDER_TOKEN_LENGTH = 128;
+const LEGACY_PANEL_URL =
+  'https://pilot.pfcontrol.com/api/v1/pilot/acars-panel/';
+const LEGACY_PANEL_HOST = new URL(LEGACY_PANEL_URL).hostname;
+const LEGACY_FLAG_CACHE_MS = 10_000;
+
+let legacyFlagCache: { value: boolean; expiresAt: number } | null = null;
+
+export async function usesLegacyExternalAcarsRedirect(): Promise<boolean> {
+  if (legacyFlagCache && legacyFlagCache.expiresAt > Date.now()) {
+    return legacyFlagCache.value;
+  }
+  const value = (await getSiteSettings()).externalAcarsLegacyRedirect;
+  legacyFlagCache = { value, expiresAt: Date.now() + LEGACY_FLAG_CACHE_MS };
+  return value;
+}
+
+export function resetLegacyExternalAcarsRedirectCache() {
+  legacyFlagCache = null;
+}
 
 const sameCallsign = (a: string, b: string) =>
   a.toUpperCase().replace(/[^A-Z0-9]/g, '') ===
@@ -101,9 +121,65 @@ export async function fetchExternalAcarsPanelAccess(
   }
 }
 
+export async function fetchLegacyExternalAcarsPanelUrl(
+  callsign: string,
+  acarsToken: string,
+  timeoutMs = 5000
+): Promise<string | null> {
+  const apiKey = process.env.PILOT_ACARS_PANEL_API_KEY;
+  if (!apiKey) {
+    console.error(
+      '[external-acars-panel] PILOT_ACARS_PANEL_API_KEY is not set, skipping'
+    );
+    return null;
+  }
+
+  try {
+    const response = await fetch(LEGACY_PANEL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `ApiKey ${apiKey}`,
+      },
+      body: JSON.stringify({ callsign, acars_token: acarsToken }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) {
+      console.error(
+        `[external-acars-panel] legacy non-OK response: ${response.status}`
+      );
+      return null;
+    }
+
+    const data = (await response.json()) as { url?: unknown };
+    if (typeof data?.url !== 'string' || !data.url) {
+      console.error('[external-acars-panel] legacy response missing url field');
+      return null;
+    }
+    const url = new URL(data.url);
+    if (url.protocol !== 'https:' || url.hostname !== LEGACY_PANEL_HOST) {
+      console.error(
+        '[external-acars-panel] legacy response url is not on an allowed host'
+      );
+      return null;
+    }
+    return url.toString();
+  } catch (err) {
+    console.error('[external-acars-panel] legacy request failed:', err);
+    return null;
+  }
+}
+
+async function isExternalAcarsSession(session: SessionRef): Promise<boolean> {
+  if (session.external_session === true) return true;
+  if (!session.is_pfatc) return false;
+  return hasActiveExternalAcarsClaim(session.session_id);
+}
+
 export async function providerForExternalAcarsSession(
   session: SessionRef
 ): Promise<ExternalAcarsProvider | null> {
+  if (await usesLegacyExternalAcarsRedirect()) return null;
   if (session.external_session === true) {
     return getDefaultExternalAcarsProvider();
   }
@@ -129,6 +205,16 @@ export async function resolveExternalAcarsRedirectUrl(
   }
 
   try {
+    if (await usesLegacyExternalAcarsRedirect()) {
+      if (!(await isExternalAcarsSession(session))) return undefined;
+      return (
+        (await fetchLegacyExternalAcarsPanelUrl(
+          flight.callsign,
+          flight.acars_token
+        )) ?? undefined
+      );
+    }
+
     const provider = await providerForExternalAcarsSession(session);
     if (!provider) return undefined;
 

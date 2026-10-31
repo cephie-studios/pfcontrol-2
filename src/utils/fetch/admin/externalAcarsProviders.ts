@@ -29,8 +29,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchExternalAcarsProviders() {
-  return request<{ providers: ExternalAcarsProvider[] }>(
-    '/api/admin/external-acars-providers'
+  return request<{
+    providers: ExternalAcarsProvider[];
+    legacyRedirect: boolean;
+  }>('/api/admin/external-acars-providers');
+}
+
+export async function setExternalAcarsLegacyRedirect(enabled: boolean) {
+  return request<{ legacyRedirect: boolean }>(
+    '/api/admin/external-acars-providers/legacy-redirect',
+    { method: 'PATCH', body: JSON.stringify({ enabled }) }
   );
 }
 

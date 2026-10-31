@@ -11,6 +11,7 @@ import {
   ensureUserHistoryColumns,
   ensureAppSettingsChannelColumn,
   ensureFeedbackBannerColumn,
+  ensureExternalAcarsLegacyRedirectColumn,
   ensureSurveySeed,
   ensureSurveyDurationColumn,
   ensureTimestampDefaults,
@@ -100,6 +101,7 @@ try {
   await ensureTesterSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFeedbackBannerColumn();
+  await ensureExternalAcarsLegacyRedirectColumn();
   await ensureSurveySeed();
   await ensureSurveyDurationColumn();
   await ensureTimestampDefaults();
