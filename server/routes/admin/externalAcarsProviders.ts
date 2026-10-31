@@ -8,6 +8,8 @@ import {
   type ExternalAcarsProvider,
 } from '../../db/externalAcarsProviders.js';
 import { getClientIp } from '../../utils/getIpAddress.js';
+import { getSiteSettings, updateSiteSettings } from '../../db/siteSettings.js';
+import { resetLegacyExternalAcarsRedirectCache } from '../../utils/externalAcarsPanel.js';
 
 const router = express.Router();
 router.use(requirePermission('admin'));
@@ -76,7 +78,26 @@ function audit(req: Request, actionType: string, details: object) {
 
 router.get('/', async (_req, res) => {
   res.setHeader('Cache-Control', 'private, no-store');
-  res.json({ providers: await listExternalAcarsProviders() });
+  const [providers, settings] = await Promise.all([
+    listExternalAcarsProviders(),
+    getSiteSettings(),
+  ]);
+  res.json({ providers, legacyRedirect: settings.externalAcarsLegacyRedirect });
+});
+
+router.patch('/legacy-redirect', async (req, res) => {
+  const { enabled } = req.body ?? {};
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled must be a boolean' });
+  }
+  const settings = await updateSiteSettings({
+    externalAcarsLegacyRedirect: enabled,
+  });
+  resetLegacyExternalAcarsRedirectCache();
+  await audit(req, 'EXTERNAL_ACARS_MODE_UPDATED', {
+    legacyRedirect: settings.externalAcarsLegacyRedirect,
+  });
+  res.json({ legacyRedirect: settings.externalAcarsLegacyRedirect });
 });
 
 router.put('/:id', async (req, res) => {

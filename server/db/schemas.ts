@@ -1014,6 +1014,13 @@ export async function ensureSurveyDurationColumn() {
   `.execute(mainDb);
 }
 
+export async function ensureExternalAcarsLegacyRedirectColumn() {
+  await sql`
+    ALTER TABLE app_settings
+    ADD COLUMN IF NOT EXISTS external_acars_legacy_redirect boolean NOT NULL DEFAULT true
+  `.execute(mainDb);
+}
+
 export async function ensureFeedbackBannerColumn() {
   await sql`
     ALTER TABLE app_settings

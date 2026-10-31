@@ -9,12 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { minDuration } from '@/lib/minDuration';
 import { SIGNATURE_TONES } from '@/lib/signatureTones';
 import {
   deleteExternalAcarsProvider,
   fetchExternalAcarsProviders,
   saveExternalAcarsProvider,
+  setExternalAcarsLegacyRedirect,
   type ExternalAcarsProvider,
 } from '../../utils/fetch/admin/externalAcarsProviders';
 
@@ -89,13 +96,17 @@ export default function AdminExternalAcars() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [legacyRedirect, setLegacyRedirect] = useState(true);
+  const [modeSaving, setModeSaving] = useState(false);
   const { confirm, confirmDialog } = useAdminConfirm();
 
   const editing = providers.some((item) => item.id === form.id);
 
   const load = useCallback(async () => {
     try {
-      setProviders((await fetchExternalAcarsProviders()).providers);
+      const data = await fetchExternalAcarsProviders();
+      setProviders(data.providers);
+      setLegacyRedirect(data.legacyRedirect);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not load providers'
@@ -133,6 +144,25 @@ export default function AdminExternalAcars() {
     }
   };
 
+  const changeMode = async (enabled: boolean) => {
+    setModeSaving(true);
+    try {
+      const data = await minDuration(setExternalAcarsLegacyRedirect(enabled));
+      setLegacyRedirect(data.legacyRedirect);
+      toast.success(
+        data.legacyRedirect
+          ? 'Pilots are redirected to pilot.pfcontrol.com (v2)'
+          : 'Pilots use the PFControl ACARS page with providers (v3)'
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not change the mode'
+      );
+    } finally {
+      setModeSaving(false);
+    }
+  };
+
   const remove = async (provider: ExternalAcarsProvider) => {
     const deleted = await confirm({
       title: `Delete ${provider.displayName}?`,
@@ -162,6 +192,34 @@ export default function AdminExternalAcars() {
         title="External ACARS"
         icon={Radio}
         description="Register trusted ACARS providers. PFControl proxies pilot requests to the selected provider, so no browser CORS setup is needed."
+        actions={
+          <TooltipProvider>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label
+                    htmlFor="legacy-redirect"
+                    className="cursor-pointer text-sm text-zinc-300"
+                  >
+                    v2 redirect
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent className="shadcn-scope max-w-xs">
+                  {legacyRedirect
+                    ? 'On: claimed and external sessions redirect pilots to pilot.pfcontrol.com (needs PILOT_ACARS_PANEL_API_KEY). Providers are ignored.'
+                    : 'Off: pilots stay on the PFControl ACARS page, which uses the default provider (v3).'}
+                </TooltipContent>
+              </Tooltip>
+              <Switch
+                id="legacy-redirect"
+                checked={legacyRedirect}
+                disabled={loading || modeSaving}
+                onCheckedChange={(checked) => void changeMode(checked)}
+                className="cursor-pointer"
+              />
+            </div>
+          </TooltipProvider>
+        }
       >
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_34rem]">
           <AdminSection

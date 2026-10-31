@@ -44,6 +44,13 @@ function DefaultAcarsRoute() {
           : null;
         if (data?.mode === 'external' && typeof data.redirectUrl === 'string') {
           const target = new URL(data.redirectUrl, window.location.origin);
+          if (
+            target.origin !== window.location.origin &&
+            target.protocol === 'https:'
+          ) {
+            window.location.replace(target.href);
+            return;
+          }
           if (target.pathname.startsWith('/acars/')) {
             navigate(target.pathname + target.search, { replace: true });
             return;
