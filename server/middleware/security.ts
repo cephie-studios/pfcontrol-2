@@ -45,14 +45,12 @@ const securityMiddleware = [
           (_req, res) =>
             `'nonce-${(res as unknown as Response).locals.cspNonce}'`,
           'https://tpfcu.pfcontrol.com',
-          'https://pilot.pfcontrol.com',
           'https://*.posthog.com',
           'https://static.cloudflareinsights.com',
         ],
         connectSrc: [
           "'self'",
           'https://tpfcu.pfcontrol.com',
-          'https://pilot.pfcontrol.com',
           'https://api.cephie.app',
           'https://*.posthog.com',
           'https://cloudflareinsights.com',

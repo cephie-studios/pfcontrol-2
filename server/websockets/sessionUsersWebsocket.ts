@@ -2,6 +2,12 @@ import { Server as SocketServer, Server } from 'socket.io';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById, updateSession } from '../db/sessions.js';
 import { getUserRoles } from '../db/roles.js';
+import {
+  getAvatarRing,
+  getSupporterBadge,
+  supporterRole,
+  type AvatarRing,
+} from '../billing/supporter.js';
 import { isAdmin } from '../middleware/admin.js';
 import { validateSessionId, validateAccessId } from '../utils/validation.js';
 import type { Server as HttpServer } from 'http';
@@ -33,6 +39,7 @@ interface SessionUser {
     icon: string;
     priority: number;
   }>;
+  avatarRing?: AvatarRing | null;
 }
 
 export const getActiveUsersForSession = async (
@@ -104,7 +111,17 @@ export interface SessionUsersServer extends Server {
 
 const sessionATISConfigs = new Map();
 const atisTimers = new Map<string, NodeJS.Timeout>();
-const fieldEditingStates = new Map();
+interface FieldEditingState {
+  userId: string;
+  socketId: string;
+  username: string;
+  avatar?: string | null;
+  flightId: string;
+  fieldName: string;
+  timestamp: number;
+}
+
+const fieldEditingStates = new Map<string, Map<string, FieldEditingState>>();
 
 // A user counts as inactive once this long passes with no mouse/keyboard
 // activity; time stops accruing while inactive.
@@ -116,6 +133,7 @@ interface UserActivityEntry {
   lastActive: number;
   lastAccrual: number;
   totalActive: number;
+  sockets: Set<string>;
 }
 
 const userActivity = new Map<string, UserActivityEntry>();
@@ -327,7 +345,9 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   const broadcastFieldEditingStates = (sessionId: string) => {
     const sessionEditingStates = fieldEditingStates.get(sessionId);
     if (sessionEditingStates) {
-      const editingArray = Array.from(sessionEditingStates.values());
+      const editingArray = Array.from(sessionEditingStates.values()).map(
+        ({ socketId: _socketId, ...state }) => state
+      );
       io.to(sessionId).emit('fieldEditingUpdate', editingArray);
     }
   };
@@ -341,18 +361,20 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
   const addFieldEditingState = (
     sessionId: string,
     user: User,
+    socketId: string,
     flightId: string,
     fieldName: string
   ): void => {
-    if (!fieldEditingStates.has(sessionId)) {
-      fieldEditingStates.set(sessionId, new Map());
+    let sessionStates = fieldEditingStates.get(sessionId);
+    if (!sessionStates) {
+      sessionStates = new Map();
+      fieldEditingStates.set(sessionId, sessionStates);
     }
-
-    const sessionStates = fieldEditingStates.get(sessionId);
     const fieldKey = `${flightId}-${fieldName}`;
 
     sessionStates.set(fieldKey, {
       userId: user.userId,
+      socketId,
       username: user.username,
       avatar: user.avatar,
       flightId,
@@ -407,6 +429,12 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         return;
       }
 
+      // Per-user room so a disconnect can tell whether the same user still
+      // has the session open in another tab, possibly on another instance.
+      // Joined before presence is written so a concurrent disconnect sees it.
+      const userSessionRoom = `session-${sessionId}-user-${user.userId}`;
+      socket.join(userSessionRoom);
+
       let users = await getActiveUsersForSession(sessionId);
 
       let userRoles: Array<{
@@ -428,6 +456,13 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
         console.error('Error fetching user roles:', error);
       }
 
+      const [badge, avatarRing] = await Promise.all([
+        getSupporterBadge(user.userId).catch(() => null),
+        getAvatarRing(user.userId).catch(() => null),
+      ]);
+      const supporter = supporterRole(badge);
+      if (supporter) userRoles.push(supporter);
+
       if (isAdmin(user.userId)) {
         userRoles.unshift({
           id: -1,
@@ -446,13 +481,15 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
           ? rawPosition
           : 'POSITION';
 
+      const existingUser = users.find((u) => u.id === user.userId);
       const sessionUser = {
         id: user.userId,
         username: user.username,
         avatar: user.avatar || null,
-        joinedAt: Date.now(),
+        joinedAt: existingUser?.joinedAt ?? Date.now(),
         position,
         roles: userRoles,
+        avatarRing,
       };
 
       await addUserToSession(sessionId, user.userId, sessionUser);
@@ -515,7 +552,7 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       });
 
       socket.on('fieldEditingStart', ({ flightId, fieldName }) => {
-        addFieldEditingState(sessionId, user, flightId, fieldName);
+        addFieldEditingState(sessionId, user, socket.id, flightId, fieldName);
       });
 
       socket.on('fieldEditingStop', ({ flightId, fieldName }) => {
@@ -530,11 +567,18 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       });
 
       const userKey = `${user.userId}-${sessionId}`;
-      userActivity.set(userKey, {
-        lastActive: Date.now(),
-        lastAccrual: Date.now(),
-        totalActive: 0,
-      });
+      const existingActivity = userActivity.get(userKey);
+      if (existingActivity) {
+        existingActivity.sockets.add(socket.id);
+        existingActivity.lastActive = Date.now();
+      } else {
+        userActivity.set(userKey, {
+          lastActive: Date.now(),
+          lastAccrual: Date.now(),
+          totalActive: 0,
+          sockets: new Set([socket.id]),
+        });
+      }
 
       socket.on('activityPing', () => {
         const entry = userActivity.get(userKey);
@@ -544,25 +588,37 @@ export function setupSessionUsersWebsocket(httpServer: HttpServer) {
       socket.on('disconnect', async () => {
         const entry = userActivity.get(userKey);
         if (entry) {
-          flushActiveTime(userKey, entry);
-          userActivity.delete(userKey);
+          entry.sockets.delete(socket.id);
+          if (entry.sockets.size === 0) {
+            flushActiveTime(userKey, entry);
+            userActivity.delete(userKey);
+          }
         }
+
+        const sessionStates = fieldEditingStates.get(sessionId);
+        if (sessionStates) {
+          for (const [fieldKey, state] of sessionStates.entries()) {
+            if (state.socketId === socket.id) {
+              sessionStates.delete(fieldKey);
+            }
+          }
+          broadcastFieldEditingStates(sessionId);
+        }
+
+        let stillConnected = false;
+        try {
+          stillConnected =
+            (await io.in(userSessionRoom).fetchSockets()).length > 0;
+        } catch (error) {
+          console.error('Error checking remaining user sockets:', error);
+        }
+        if (stillConnected) return;
 
         await removeUserFromSession(sessionId, user.userId);
         const updatedUsers = await getActiveUsersForSession(sessionId);
         await syncActiveSessionRegistry(sessionId, updatedUsers.length);
         void onSessionUsersChangedInvalidate(sessionId, updatedUsers.length);
         io.to(sessionId).emit('sessionUsersUpdate', updatedUsers);
-
-        const sessionStates = fieldEditingStates.get(sessionId);
-        if (sessionStates) {
-          for (const [fieldKey, state] of sessionStates.entries()) {
-            if (state.userId === user.userId) {
-              sessionStates.delete(fieldKey);
-            }
-          }
-          broadcastFieldEditingStates(sessionId);
-        }
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : '';

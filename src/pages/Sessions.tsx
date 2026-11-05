@@ -234,7 +234,7 @@ export default function Sessions() {
   const [deleting, setDeleting] = useState(false);
   const [query, setQuery] = useState('');
 
-  const maxSessions = user?.isAdmin || user?.isTester ? 100 : 50;
+  const maxSessions = user?.limits?.maxSessions ?? 50;
   const atLimit = sessions.length >= maxSessions;
 
   const filteredSessions = useMemo(() => {
@@ -404,7 +404,20 @@ export default function Sessions() {
                   </p>
                   <p className="text-muted-foreground">
                     You have reached the maximum of {maxSessions} sessions.
-                    Delete an old session to create a new one.
+                    Delete an old session to create a new one
+                    {user?.plan !== 'supporter' && (
+                      <>
+                        , or{' '}
+                        <Link
+                          to="/pricing"
+                          className="cursor-pointer font-medium text-amber-400 hover:text-amber-300"
+                        >
+                          become a Supporter
+                        </Link>{' '}
+                        for twice the room
+                      </>
+                    )}
+                    .
                   </p>
                 </div>
               </div>

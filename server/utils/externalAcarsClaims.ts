@@ -14,6 +14,7 @@ export interface ExternalAcarsClaim {
   userId: string;
   claimedAt: string;
   expiresAt: string;
+  providerId?: string;
 }
 
 function parseClaim(raw: string | null): ExternalAcarsClaim | null {
@@ -52,6 +53,7 @@ export async function setExternalAcarsClaim(input: {
   keyId: string;
   userId: string;
   ttlMinutes: number;
+  providerId?: string;
 }): Promise<SetClaimResult> {
   const claimKey = keys.externalAcarsClaim(input.sessionId);
   const existing = parseClaim(await redisConnection.get(claimKey));
@@ -67,6 +69,7 @@ export async function setExternalAcarsClaim(input: {
     userId: input.userId,
     claimedAt: existing?.claimedAt ?? new Date(now).toISOString(),
     expiresAt: new Date(now + ttlSec * 1000).toISOString(),
+    providerId: input.providerId ?? existing?.providerId,
   };
 
   const json = JSON.stringify(claim);

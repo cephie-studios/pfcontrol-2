@@ -20,10 +20,12 @@ import {
   validateAcarsAccess,
   updateFlightNotes,
   addSnapImage,
+  countSnapImages,
   deleteSnapImage,
   toggleFeaturedOnProfile,
 } from '../db/flights.js';
 import { getAllFlightsForSession } from '../realtime/flightsRead.js';
+import { getPlanLimits } from '../billing/limits.js';
 import {
   broadcastFlightEvent,
   broadcastToArrivalSessions,
@@ -157,6 +159,22 @@ router.post(
         return res.status(400).json({ error: 'Invalid or missing image file' });
       }
 
+      const [snapCount, { snapsPerFlight }] = await Promise.all([
+        countSnapImages(userId, flightId),
+        getPlanLimits(userId),
+      ]);
+      if (snapCount === null) {
+        return res
+          .status(404)
+          .json({ error: 'Flight not found or not owned by you' });
+      }
+      if (snapCount >= snapsPerFlight) {
+        return res.status(409).json({
+          error: `You can add up to ${snapsPerFlight} photos per flight`,
+          limit: snapsPerFlight,
+        });
+      }
+
       const formData = new FormData();
       formData.append('image', file.buffer, file.originalname);
 
@@ -177,7 +195,13 @@ router.post(
       }
 
       const cephieId = getCephieIdFromUrl(imageUrl) ?? imageUrl;
-      const result = await addSnapImage(userId, flightId, cephieId, imageUrl);
+      const result = await addSnapImage(
+        userId,
+        flightId,
+        cephieId,
+        imageUrl,
+        snapsPerFlight
+      );
       if (!result.ok) {
         // Clean up uploaded image since DB update failed
         try {
@@ -191,9 +215,14 @@ router.post(
         } catch {
           /* best-effort */
         }
-        return res
-          .status(404)
-          .json({ error: 'Flight not found or not owned by you' });
+        return result.atCap
+          ? res.status(409).json({
+              error: `You can add up to ${snapsPerFlight} photos per flight`,
+              limit: snapsPerFlight,
+            })
+          : res
+              .status(404)
+              .json({ error: 'Flight not found or not owned by you' });
       }
 
       res.json({
@@ -255,14 +284,17 @@ router.delete('/me/:flightId/snap/:cephieId', requireAuth, async (req, res) => {
 router.patch('/me/:flightId/feature', requireAuth, async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { featuredFlights } = await getPlanLimits(req.user.userId);
     const result = await toggleFeaturedOnProfile(
       req.user.userId,
-      req.params.flightId
+      req.params.flightId,
+      featuredFlights
     );
     if (!result.ok) {
       if (result.atCap)
         return res.status(409).json({
-          error: 'You can only feature up to 3 flights on your profile',
+          error: `You can only feature up to ${featuredFlights} flights on your profile`,
+          limit: featuredFlights,
         });
       return res
         .status(404)

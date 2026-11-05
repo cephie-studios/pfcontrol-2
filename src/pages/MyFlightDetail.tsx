@@ -31,6 +31,7 @@ import {
 } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
 import { useSettings } from '../hooks/settings/useSettings';
+import { useAuth } from '../hooks/auth/useAuth';
 import { fetchBackgrounds } from '../utils/fetch/data';
 import { useData } from '../hooks/data/useData';
 import { parseCallsign } from '../utils/callsignParser';
@@ -57,6 +58,8 @@ interface SessionSubmitInfo {
 export default function MyFlightDetail() {
   const { id } = useParams<{ id: string }>();
   const { settings } = useSettings();
+  const { user } = useAuth();
+  const maxSnaps = user?.limits?.snapsPerFlight ?? 12;
   const { airlines } = useData();
   const [flight, setFlight] = useState<Flight | null>(null);
   const [logs, setLogs] = useState<FlightLogItem[]>([]);
@@ -508,7 +511,7 @@ export default function MyFlightDetail() {
               <div className="flex items-center justify-end mb-4">
                 <button
                   onClick={() => snapInputRef.current?.click()}
-                  disabled={snapUploading || snaps.length >= 12}
+                  disabled={snapUploading || snaps.length >= maxSnaps}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-500 bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {snapUploading ? (
@@ -572,9 +575,9 @@ export default function MyFlightDetail() {
                   )}
                 </div>
               )}
-              {snaps.length >= 12 && (
+              {snaps.length >= maxSnaps && (
                 <p className="text-xs text-zinc-600 mt-2 text-right font-mono">
-                  12/12 photos
+                  {snaps.length}/{maxSnaps} photos
                 </p>
               )}
             </div>

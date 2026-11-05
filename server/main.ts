@@ -6,6 +6,7 @@ import type { RequestHandler, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
+import { stripeWebhookHandler } from './routes/billing.js';
 import sitemapXmlRouter from './routes/sitemapXml.js';
 import dotenv from 'dotenv';
 import http from 'http';
@@ -22,6 +23,7 @@ import { setupExtNetworkFlightsWebsocket } from './websockets/extNetworkFlightsW
 import { setupArrivalsWebsocket } from './websockets/arrivalsWebsocket.js';
 import { setupSectorControllerWebsocket } from './websockets/sectorControllerWebsocket.js';
 import { setupVoiceChatWebsocket } from './websockets/voiceChatWebsocket.js';
+import { setupPilotChatWebsocket } from './websockets/pilotChatWebsocket.js';
 import { setupNotificationsWebsocket } from './websockets/notificationsWebsocket.js';
 
 import { startStatsFlushing } from './utils/statisticsCache.js';
@@ -159,6 +161,7 @@ app.use(
       'Authorization',
       'X-Api-Key',
       'X-Requested-With',
+      'X-External-ACARS-Token',
       'Accept',
       'Origin',
       'Access-Control-Allow-Credentials',
@@ -182,6 +185,11 @@ if (developerApiCorsOrigins.length > 0) {
   );
 }
 app.use(cookieParser());
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json', limit: '1mb' }),
+  stripeWebhookHandler
+);
 app.use(express.json());
 
 app.use(apiLogger());
@@ -379,6 +387,15 @@ registerAdminSocketNamespace(
   'Voice Chat',
   '/sockets/voice-chat',
   voiceChatIO
+);
+
+const pilotChatIO = setupPilotChatWebsocket(server);
+pilotChatIO.adapter(createAdapter(pubClient, subClient));
+registerAdminSocketNamespace(
+  'pilot-chat',
+  'Pilot Chat',
+  '/sockets/pilot-chat',
+  pilotChatIO
 );
 
 const notificationsIO = setupNotificationsWebsocket(server);

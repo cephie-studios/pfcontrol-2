@@ -4,6 +4,16 @@ import { mainDb } from '../db/connection.js';
 import { isAdmin } from '../middleware/admin.js';
 import { getControllerRatingStats } from '../db/ratings.js';
 import { getFeaturedFlightsByUser } from '../db/flights.js';
+import {
+  getPlanLimits,
+  hasLapsedAnimatedBackground,
+} from '../billing/limits.js';
+import {
+  getAvatarRing,
+  getSupporterBadge,
+  type AvatarRing,
+  type SupporterBadge,
+} from '../billing/supporter.js';
 
 export interface ProfileSectionConfig {
   key: 'stats' | 'featuredFlights';
@@ -55,6 +65,8 @@ export interface PublicPilotProfile {
     sectionOrder: ProfileSectionConfig[];
   };
   featuredFlights: unknown[];
+  supporter: SupporterBadge | null;
+  avatarRing: AvatarRing | null;
 }
 
 const KNOWN_SECTION_KEYS: ProfileSectionConfig['key'][] = [
@@ -157,11 +169,23 @@ export async function getPublicPilotProfile(
     ratingStats = await getControllerRatingStats(userResult.id);
   }
 
-  const featuredFlights = shouldIncludeFeaturedFlights
-    ? await getFeaturedFlightsByUser(userResult.id)
-    : [];
+  const [limits, allFeaturedFlights] = await Promise.all([
+    getPlanLimits(userResult.id),
+    shouldIncludeFeaturedFlights
+      ? getFeaturedFlightsByUser(userResult.id)
+      : Promise.resolve([]),
+  ]);
+  // A lapsed plan keeps its featured flags, so trim to what it allows now.
+  const featuredFlights = allFeaturedFlights.slice(0, limits.featuredFlights);
+  const showBackground =
+    shouldIncludeBackground &&
+    !hasLapsedAnimatedBackground(userResult.settings, limits);
 
   const customization = userResult.settings?.profileCustomization ?? {};
+  const [supporter, avatarRing] = await Promise.all([
+    getSupporterBadge(userResult.id).catch(() => null),
+    getAvatarRing(userResult.id).catch(() => null),
+  ]);
 
   return {
     user: {
@@ -190,7 +214,7 @@ export async function getPublicPilotProfile(
       bio: shouldIncludeBio ? (userResult.settings?.bio ?? '') : '',
       statistics: shouldIncludeStats ? userResult.statistics || {} : {},
       rating: ratingStats,
-      background_image: shouldIncludeBackground
+      background_image: showBackground
         ? userResult.settings?.backgroundImage
         : null,
     },
@@ -206,5 +230,7 @@ export async function getPublicPilotProfile(
       sectionOrder: resolvedSectionOrder,
     },
     featuredFlights,
+    supporter,
+    avatarRing,
   };
 }

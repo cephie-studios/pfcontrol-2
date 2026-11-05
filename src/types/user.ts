@@ -1,3 +1,4 @@
+import type { Plan, PlanLimits } from './billing';
 import type { Settings } from './settings';
 
 export interface User {
@@ -12,6 +13,9 @@ export interface User {
   isBanned: boolean;
   isVpnBlocked: boolean;
   isTester: boolean;
+  plan?: Plan;
+  earlyAccess?: boolean;
+  limits?: PlanLimits;
   roleId?: number;
   roleName?: string;
   rolePermissions: Record<string, boolean>;

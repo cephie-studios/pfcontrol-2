@@ -103,7 +103,8 @@ export default function ProtectedRoute({
     !shouldBypassTesterGate() &&
     user &&
     !user.isAdmin &&
-    !user.isTester
+    !user.isTester &&
+    !user.earlyAccess
   ) {
     return (
       <AccessDenied

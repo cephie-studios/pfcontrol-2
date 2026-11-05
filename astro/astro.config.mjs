@@ -30,7 +30,12 @@ const SITE = 'https://pfcontrol.com';
 // (server/routes/sitemapXml.ts, served at /sitemap-users.xml and
 // /sitemap-flights.xml and declared in robots.txt) rather than this
 // build-time one, since that data changes far more often than static pages.
-const customPages = [`${SITE}/create`, `${SITE}/overview`, `${SITE}/login`];
+const customPages = [
+  `${SITE}/create`,
+  `${SITE}/overview`,
+  `${SITE}/charts`,
+  `${SITE}/login`,
+];
 
 export default defineConfig({
   site: SITE,

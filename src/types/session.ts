@@ -1,3 +1,5 @@
+import type { AvatarRing } from './billing';
+
 export type Position = 'ALL' | 'DEL' | 'GND' | 'TWR' | 'APP';
 
 export interface SessionInfo {
@@ -34,6 +36,7 @@ export interface SessionUser {
     icon: string;
     priority: number;
   }[];
+  avatarRing?: AvatarRing | null;
 }
 
 export interface ChatMention {

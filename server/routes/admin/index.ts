@@ -26,6 +26,9 @@ import featuredFlightsRouter from './featuredFlights.js';
 import userAlertsRouter from './userAlerts.js';
 import profileContentRouter from './profileContent.js';
 import surveysRouter from './surveys.js';
+import billingRouter from './billing.js';
+import externalAcarsProvidersRouter from './externalAcarsProviders.js';
+import chartForensicsRouter from './chartForensics.js';
 
 const router = express.Router();
 
@@ -52,6 +55,9 @@ router.use('/featured-flights', featuredFlightsRouter);
 router.use('/user-alerts', userAlertsRouter);
 router.use('/profile-content', profileContentRouter);
 router.use('/surveys', surveysRouter);
+router.use('/billing', billingRouter);
+router.use('/external-acars-providers', externalAcarsProvidersRouter);
+router.use('/chart-forensics', chartForensicsRouter);
 
 // GET: /api/admin/statistics/forecast - 30-day activity forecast
 router.get(

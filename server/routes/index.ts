@@ -17,12 +17,15 @@ import ratingsRouter from './ratings.js';
 import developerRouter from './developer.js';
 import extV1Router from './ext/v1.js';
 import extV2Router from './ext/v2.js';
+import extV3Router from './ext/v3.js';
 import ogImagesRouter from './ogImages.js';
 import userNotificationsRouter from './userNotifications.js';
 import surveysRouter from './surveys.js';
 import siteSettingsRouter from './siteSettings.js';
 import turnRouter from './turn.js';
 import chartsRouter from './charts.js';
+import billingRouter from './billing.js';
+import externalAcarsRouter from './externalAcars.js';
 
 const router = express.Router();
 
@@ -43,11 +46,14 @@ router.use('/ratings', ratingsRouter);
 router.use('/developer', developerRouter);
 router.use('/ext/v1', extV1Router);
 router.use('/ext/v2', extV2Router);
+router.use('/ext/v3', extV3Router);
 router.use('/og', ogImagesRouter);
 router.use('/user-notifications', userNotificationsRouter);
 router.use('/surveys', surveysRouter);
 router.use('/site-settings', siteSettingsRouter);
 router.use('/turn', turnRouter);
 router.use('/charts', chartsRouter);
+router.use('/billing', billingRouter);
+router.use('/external-acars', externalAcarsRouter);
 
 export default router;

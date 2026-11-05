@@ -34,4 +34,6 @@ export interface UsersTable {
   bio_automod_flagged?: boolean;
   bio_automod_reason?: string | null;
   platform_token?: string | null;
+  stripe_customer_id?: string | null;
+  supporter_prefs?: unknown;
 }

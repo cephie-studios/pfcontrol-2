@@ -8,6 +8,8 @@ import {
   ClipboardList,
   Code,
   Database,
+  FileSearch,
+  Radio,
   FileText,
   GitMerge,
   Image,
@@ -20,6 +22,7 @@ import {
   ThumbsUp,
   UserCog,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import type { User } from '../../types/user';
@@ -45,6 +48,12 @@ export const ADMIN_NAV: AdminNavSection[] = [
         label: 'Overview',
         path: '/admin',
         permission: 'admin',
+      },
+      {
+        icon: Wallet,
+        label: 'Plans & revenue',
+        path: '/admin/billing',
+        permission: 'billing',
       },
       {
         icon: Users,
@@ -179,6 +188,18 @@ export const ADMIN_NAV: AdminNavSection[] = [
         icon: Database,
         label: 'Database',
         path: '/admin/database',
+        permission: 'admin',
+      },
+      {
+        icon: Radio,
+        label: 'External ACARS',
+        path: '/admin/external-acars',
+        permission: 'admin',
+      },
+      {
+        icon: FileSearch,
+        label: 'Chart forensics',
+        path: '/admin/chart-forensics',
         permission: 'admin',
       },
     ],

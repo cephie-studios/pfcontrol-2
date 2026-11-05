@@ -46,6 +46,10 @@ import FrequencyDisplay from './FrequencyDisplay';
 import { ChatSidebar } from '../chat';
 import ATIS from './ATIS';
 import DeveloperPillSegmentedControl from '../../pages/developers/DeveloperPillSegmentedControl';
+import SupporterAvatar from '../billing/SupporterAvatar';
+import SupporterIcon from '../billing/SupporterIcon';
+import { PLAN_NAMES, PLAN_TEXT } from '@/lib/plans';
+import { cn } from '@/lib/utils';
 
 interface ToolbarProps {
   sessionId?: string;
@@ -82,6 +86,7 @@ const getIconComponent = (iconName: string) => {
     Wrench,
     Award,
     Crown,
+    PilotWings: SupporterIcon,
     Trophy,
     Zap,
     Target,
@@ -444,17 +449,28 @@ export default function Toolbar({
                     zIndex: 40,
                   }}
                 >
-                  <img
-                    src={getAvatarUrl(user.avatar)}
-                    alt={user.username}
-                    className="w-8 h-8 rounded-full shadow-md cursor-pointer transition-all"
-                    onError={(e) => {
-                      e.currentTarget.src = '/assets/app/default/avatar.webp';
-                    }}
-                    style={{
-                      border: `2px solid ${highestRole?.color || '#ffffff'}`,
-                    }}
-                  />
+                  {user.avatarRing ? (
+                    <SupporterAvatar
+                      src={getAvatarUrl(user.avatar)}
+                      alt={user.username}
+                      plan={user.avatarRing.plan}
+                      ring={user.avatarRing.ring}
+                      colors={user.avatarRing.colors}
+                      className="size-8 cursor-pointer shadow-md"
+                    />
+                  ) : (
+                    <img
+                      src={getAvatarUrl(user.avatar)}
+                      alt={user.username}
+                      className="w-8 h-8 rounded-full shadow-md cursor-pointer transition-all"
+                      onError={(e) => {
+                        e.currentTarget.src = '/assets/app/default/avatar.webp';
+                      }}
+                      style={{
+                        border: `2px solid ${highestRole?.color || '#ffffff'}`,
+                      }}
+                    />
+                  )}
                   <div
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-0.5 bg-zinc-900/80 backdrop-blur-md border-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl"
                     style={{
@@ -482,6 +498,20 @@ export default function Toolbar({
                             }}
                           >
                             {highestRole.name}
+                          </span>
+                        </>
+                      )}
+                      {user.avatarRing && highestRole?.id !== -20 && (
+                        <>
+                          <span className="text-white/50">•</span>
+                          <span
+                            className={cn(
+                              'flex items-center gap-1 text-xs font-semibold',
+                              PLAN_TEXT[user.avatarRing.plan]
+                            )}
+                          >
+                            <SupporterIcon className="size-3" />
+                            {PLAN_NAMES[user.avatarRing.plan]}
                           </span>
                         </>
                       )}

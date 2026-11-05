@@ -42,15 +42,22 @@ export function PanelHeader({
   onClose,
   center,
   children,
+  className,
 }: {
   icon: LucideIcon;
   title: ReactNode;
   onClose: () => void;
   center?: ReactNode;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="relative flex h-16 shrink-0 items-center gap-3 border-b border-blue-800 px-5">
+    <div
+      className={cn(
+        'relative flex h-16 shrink-0 items-center gap-3 border-b border-blue-800 px-5',
+        className
+      )}
+    >
       <h2 className="flex min-w-0 items-center gap-2.5 text-lg font-semibold tracking-tight">
         <Icon className="size-5 shrink-0 text-blue-400" />
         <span className="truncate">{title}</span>

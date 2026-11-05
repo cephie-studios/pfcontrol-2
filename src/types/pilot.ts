@@ -1,3 +1,4 @@
+import type { AvatarRing, SupporterBadge } from './billing';
 import type { ProfileSectionConfig } from './settings';
 
 export interface Role {
@@ -56,6 +57,8 @@ export interface PilotProfile {
   };
   profileCustomization: ResolvedProfileCustomization | null;
   featuredFlights?: FeaturedFlight[];
+  supporter?: SupporterBadge | null;
+  avatarRing?: AvatarRing | null;
 }
 
 export interface FeaturedFlight {

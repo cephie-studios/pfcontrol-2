@@ -512,12 +512,18 @@ export default function AdminChatReports() {
               <DetailRow label="Status">
                 {renderStatus(selectedReport, true)}
               </DetailRow>
-              <DetailRow label="Session">
+              <DetailRow
+                label={
+                  selectedReport.session_id.startsWith('pilot-chat:')
+                    ? 'Session (pilot chat)'
+                    : 'Session'
+                }
+              >
                 <a
-                  href={`/admin/sessions?search=${selectedReport.session_id}`}
+                  href={`/admin/sessions?search=${selectedReport.session_id.replace(/^pilot-chat:/, '')}`}
                   className="inline-flex items-center gap-1 font-mono text-xs break-all underline-offset-4 hover:underline"
                 >
-                  {selectedReport.session_id}
+                  {selectedReport.session_id.replace(/^pilot-chat:/, '')}
                   <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
                 </a>
               </DetailRow>

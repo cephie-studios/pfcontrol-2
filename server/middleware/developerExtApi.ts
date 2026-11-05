@@ -124,7 +124,7 @@ export function getDeveloperExtPath(req: Request): string {
   return raw.startsWith('/') ? raw : `/${raw}`;
 }
 
-export function developerExtScopeGuard(version: 1 | 2) {
+export function developerExtScopeGuard(version: 1 | 2 | 3) {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
       const ext = req.developerExt;

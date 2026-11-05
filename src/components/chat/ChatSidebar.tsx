@@ -30,6 +30,7 @@ import {
   Wifi,
   WifiOff,
   Phone,
+  Plane,
 } from 'lucide-react';
 import type { ChatMessage, ChatMention } from '../../types/chats';
 import type { SessionUser } from '../../types/session';
@@ -42,6 +43,9 @@ import Button from '../common/Button';
 import Loader from '../common/Loader';
 import Modal from '../common/Modal';
 import VoiceChat from './VoiceChat';
+import PilotChatPanel from './PilotChatPanel';
+import { CHAT_PANEL_BG, CHAT_PANEL_FADE } from './ComposerBar';
+import { cn } from '@/lib/utils';
 import { ChatMessageRow, type ChatListMessage } from './ChatMessageRow';
 import { ChatTextComposer } from './ChatTextComposer';
 import { PanelHeader, SidePanel } from '../common/SidePanel';
@@ -113,8 +117,9 @@ export default function ChatSidebar({
 
   // AATC disabled — 'aatc' tab removed from type; isAdvancedATC always false
   const [activeTab, setActiveTab] = useState<
-    'session' | 'voice' | 'pfatc' /* | 'aatc' */
+    'session' | 'voice' | 'pfatc' | 'pilots' /* | 'aatc' */
   >(sessionId ? 'session' : 'pfatc');
+  const [unreadPilotCount, setUnreadPilotCount] = useState(0);
   const [globalMessages, setGlobalMessages] = useState<GlobalChatMessage[]>([]);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalInput, setGlobalInput] = useState('');
@@ -1006,7 +1011,7 @@ export default function ChatSidebar({
     }
   }, [userVolumes]);
 
-  type SidebarTabId = 'session' | 'voice' | 'pfatc'; // AATC disabled — was: | 'aatc'
+  type SidebarTabId = 'session' | 'voice' | 'pfatc' | 'pilots'; // AATC disabled — was: | 'aatc'
 
   const sidebarTabs = useMemo(() => {
     const items: SidebarTabId[] = [];
@@ -1015,8 +1020,9 @@ export default function ChatSidebar({
     }
     if (isPFATC) items.push('pfatc');
     // AATC disabled — if (isAdvancedATC) items.push('aatc');
+    if (sessionId && accessId) items.push('pilots');
     return items;
-  }, [sessionId, isPFATC]);
+  }, [sessionId, accessId, isPFATC]);
 
   const activeTabIndex = Math.max(
     0,
@@ -1053,23 +1059,31 @@ export default function ChatSidebar({
   const hiddenHeaderUsers = headerUsers.slice(MAX_HEADER_AVATARS);
 
   return (
-    <SidePanel open={open}>
+    <SidePanel
+      open={open}
+      className={cn('w-120 border-l border-zinc-800', CHAT_PANEL_BG)}
+    >
       <PanelHeader
         icon={
           activeTab === 'voice'
             ? Phone
             : activeTab === 'pfatc'
               ? Radio
-              : MessageCircle
+              : activeTab === 'pilots'
+                ? Plane
+                : MessageCircle
         }
         title={
           activeTab === 'session'
             ? 'Session Chat'
             : activeTab === 'voice'
               ? 'Voice Chat'
-              : 'PFATC Chat' /* AATC disabled — was: activeTab === 'aatc' ? 'AATC Chat' : 'PFATC Chat' */
+              : activeTab === 'pilots'
+                ? 'Pilot Chat'
+                : 'PFATC Chat' /* AATC disabled — was: activeTab === 'aatc' ? 'AATC Chat' : 'PFATC Chat' */
         }
         onClose={onClose}
+        className="border-zinc-800"
       >
         {headerUsers.length > 0 ? (
           <div className="flex items-center -space-x-2">
@@ -1105,7 +1119,7 @@ export default function ChatSidebar({
 
       {(isPFATC || /* isAdvancedATC || */ sessionId) &&
         tabCount > 0 /* AATC disabled */ && (
-          <div className="shrink-0 border-b border-blue-800 px-5 py-3">
+          <div className="shrink-0 border-b border-zinc-800 px-5 py-3">
             <div className="relative flex rounded-full bg-zinc-800/95 p-1 shadow-inner ring-1 ring-zinc-700/60">
               <div
                 className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-linear-to-b from-blue-500 to-blue-700 shadow-md transition-[left,width] duration-300 ease-out"
@@ -1167,6 +1181,17 @@ export default function ChatSidebar({
                         {unreadGlobalCount > 0 && activeTab !== 'pfatc' && (
                           <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
                             {unreadGlobalCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {tabId === 'pilots' && (
+                      <>
+                        <Plane className="h-4 w-4 shrink-0" />
+                        <span>Pilots</span>
+                        {unreadPilotCount > 0 && activeTab !== 'pilots' && (
+                          <span className="absolute right-1 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white sm:right-1.5">
+                            {unreadPilotCount}
                           </span>
                         )}
                       </>
@@ -1278,6 +1303,26 @@ export default function ChatSidebar({
         </div>
       )}
 
+      {sessionId && accessId && (
+        <div
+          className={
+            activeTab === 'pilots' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'
+          }
+        >
+          <PilotChatPanel
+            sessionId={sessionId}
+            accessId={accessId}
+            station={
+              station && position && !station.includes('_')
+                ? `${station}_${position === 'ALL' ? 'APP' : position}`
+                : station
+            }
+            active={open && activeTab === 'pilots'}
+            onUnreadChange={setUnreadPilotCount}
+          />
+        </div>
+      )}
+
       {/* Voice Chat Content */}
       {sessionId && activeTab === 'voice' && (
         <div className="flex-1 flex flex-col min-h-0">
@@ -1296,7 +1341,10 @@ export default function ChatSidebar({
           />
           <div className="shrink-0 relative mx-5 mb-5 mt-0 rounded-bl-3xl pt-8">
             <div
-              className="pointer-events-none absolute inset-0 rounded-bl-3xl bg-linear-to-t from-zinc-900 to-transparent"
+              className={cn(
+                'pointer-events-none absolute inset-0 rounded-bl-3xl bg-linear-to-t to-transparent',
+                CHAT_PANEL_FADE
+              )}
               aria-hidden
             />
             <div className="relative z-10 flex justify-center gap-2 w-full px-0 pb-0 pt-1">

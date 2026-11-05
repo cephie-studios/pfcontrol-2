@@ -4,6 +4,7 @@ import {
   updateFlight,
   dropUnchangedFlightFields,
   deleteFlight,
+  validateAcarsAccess,
   type AddFlightData,
   type ClientFlight,
 } from '../db/flights.js';
@@ -47,7 +48,6 @@ interface PDCData {
 
 interface PDCRequestData {
   flightId?: string | number;
-  callsign?: string;
   note?: string;
 }
 
@@ -112,6 +112,8 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   io.on('connection', async (socket: Socket) => {
     const sessionId = socket.handshake.query.sessionId as string;
     const accessId = socket.handshake.query.accessId as string;
+    const acarsToken = socket.handshake.query.acarsToken;
+    const acarsFlightId = socket.handshake.query.flightId;
     const isEventControllerFlag =
       socket.handshake.query.isEventController === 'true';
 
@@ -179,6 +181,24 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
         socket.data.networkKind = sessionRow
           ? getNetworkKind(sessionRow)
           : null;
+      } else if (acarsToken !== undefined) {
+        if (
+          typeof acarsToken !== 'string' ||
+          typeof acarsFlightId !== 'string'
+        ) {
+          socket.disconnect(true);
+          return;
+        }
+        const { valid } = await validateAcarsAccess(
+          validSessionId,
+          acarsFlightId,
+          acarsToken
+        );
+        if (!valid) {
+          socket.disconnect(true);
+          return;
+        }
+        socket.data.flightId = validateFlightId(acarsFlightId);
       }
 
       socket.data.role = role;
@@ -501,22 +521,33 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
       }
     );
 
-    socket.on('requestPDC', ({ flightId, callsign, note }: PDCRequestData) => {
+    socket.on('requestPDC', async ({ flightId, note }: PDCRequestData) => {
       const sessionId = socket.data.sessionId;
-      try {
-        if (flightId) {
-          validateFlightId(flightId);
-        }
-        const sanitizedCallsign = callsign ? sanitizeCallsign(callsign) : null;
-        const sanitizedNote = note ? sanitizeString(note, 200) : null;
-        io.to(sessionId).emit('pdcRequest', {
+      const ownFlightId = socket.data.flightId as string | undefined;
+      if (
+        !ownFlightId ||
+        (flightId !== undefined && String(flightId) !== ownFlightId)
+      ) {
+        socket.emit('flightError', {
+          action: 'requestPDC',
           flightId,
-          callsign: sanitizedCallsign,
-          note: sanitizedNote,
-          requestedBy:
-            socket.handshake.auth?.userId ??
-            socket.handshake.query?.username ??
-            null,
+          error: 'Not authorized',
+        });
+        return;
+      }
+      try {
+        const flight = await mainDb
+          .selectFrom('flights')
+          .select('callsign')
+          .where('session_id', '=', sessionId)
+          .where('id', '=', ownFlightId)
+          .executeTakeFirst();
+        if (!flight) throw new Error('Flight not found');
+        io.to(sessionId).emit('pdcRequest', {
+          flightId: ownFlightId,
+          callsign: flight.callsign ? sanitizeCallsign(flight.callsign) : null,
+          note: note ? sanitizeString(note, 200) : null,
+          requestedBy: userId ?? null,
           ts: new Date().toISOString(),
         });
       } catch {

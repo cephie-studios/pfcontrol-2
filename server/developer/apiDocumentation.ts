@@ -35,7 +35,7 @@ export interface DeveloperApiDocEndpoint {
   responseContentType: string;
   responseSummary: string;
   exampleCurl: string;
-  availableSince: 1 | 2;
+  availableSince: 1 | 2 | 3;
 }
 
 export interface DeveloperApiDocWebsocketEvent {
@@ -74,7 +74,7 @@ export interface DeveloperApiPublicSpec {
   websockets: DeveloperApiDocWebsocket[];
 }
 
-const DEFAULT_BASE = 'https://pfcontrol.com/api/ext/v2';
+const DEFAULT_BASE = 'https://pfcontrol.com/api/ext/v3';
 
 function catalogTitle(scopeId: string): string {
   if (scopeId === SELF_INFO_SCOPE_ID) return 'Your API key info';
@@ -188,13 +188,13 @@ export function buildDeveloperApiPublicSpec(): DeveloperApiPublicSpec {
       : 120;
 
   return {
-    specVersion: 2,
+    specVersion: 3,
     generatedAt: new Date().toISOString(),
     title: 'PFControl Developer API',
     description:
-      'HTTP JSON API at /api/ext/v2. Static /data/... routes mirror the public data API. /sessions and /sessions/{sessionId}/flights provide session and flight access when your key\'s scopes allow it. Join codes, client IP addresses, and ACARS tokens are never included in responses. Flight updates (PUT) and session/flight deletes (DELETE) are only allowed on sessions created with the same API key. Each key can only call the endpoints covered by its granted scopes. /api/ext/v1 remains available and serves every endpoint listed here except the two marked "v2+ only" (session and flight deletion).',
-    baseUrlTemplate: '/api/ext/v2',
-    legacyBaseUrlTemplate: '/api/ext/v1',
+      "HTTP JSON API at /api/ext/v3. Static /data/... routes mirror the public data API. /sessions and /sessions/{sessionId}/flights provide session and flight access when your key's scopes allow it. Join codes, client IP addresses, and ACARS tokens are never included in responses. v3 flight updates reject the entire request with HTTP 400 when any field is unsupported or invalid, so a successful response means every submitted field was applied. Flight updates (PUT) and session/flight deletes (DELETE) are only allowed on sessions created with the same API key. Each key can only call the endpoints covered by its granted scopes. /api/ext/v2 and /api/ext/v1 remain available with their existing behavior; those versions silently ignore unrecognized flight update fields.",
+    baseUrlTemplate: '/api/ext/v3',
+    legacyBaseUrlTemplate: '/api/ext/v2',
     authentication: {
       description:
         'Use a developer API key issued from the Developers portal after your application is approved. Keys start with `pfc_live_` (legacy `pf_live_` keys still work until rotated). Either header style works; do not send cookies for machine clients.',

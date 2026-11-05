@@ -1,9 +1,15 @@
 import type { KeyboardEventHandler, RefObject } from 'react';
-import { MapPin, Send } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { SessionUser } from '../../types/session';
 import type { ConnectedGlobalChatUser } from '../../sockets/globalChatSocket';
 import { formatStationDisplay, isUserInActiveChat } from '../../utils/chats';
-import Button from '../common/Button';
+import {
+  CHAT_PANEL_FADE,
+  COMPOSER_BOX_CLASS,
+  COMPOSER_TEXTAREA_CLASS,
+  ComposerSendButton,
+} from './ComposerBar';
+import { cn } from '@/lib/utils';
 
 export type GlobalChatSuggestion = {
   type: 'user' | 'airport';
@@ -11,7 +17,13 @@ export type GlobalChatSuggestion = {
 };
 
 const mentionListClass =
-  'absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 border border-blue-700 rounded-lg shadow-lg max-h-40 overflow-y-auto';
+  'absolute bottom-full left-0 right-0 mb-2 flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-[20px] border border-zinc-800 bg-zinc-950 p-1 shadow-2xl';
+
+const suggestionClass = (selected: boolean) =>
+  cn(
+    'flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition-colors',
+    selected ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800'
+  );
 
 function typingText(users: Map<string, string>): string | null {
   const names = Array.from(users.values());
@@ -66,9 +78,12 @@ export function ChatTextComposer({
   const typing = typingText(typingUsers);
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
-      <div className="relative px-5 pb-5 pt-14 rounded-bl-3xl">
+      <div className="relative rounded-bl-3xl px-4 pt-12 pb-4">
         <div
-          className="pointer-events-none absolute inset-0 rounded-bl-3xl bg-gradient-to-t from-zinc-900 to-transparent"
+          className={cn(
+            'pointer-events-none absolute inset-0 rounded-bl-3xl bg-gradient-to-t to-transparent',
+            CHAT_PANEL_FADE
+          )}
           aria-hidden
         />
         <div className="relative z-10 pointer-events-auto">
@@ -86,11 +101,9 @@ export function ChatTextComposer({
                         <button
                           key={`airport-${airport.icao}`}
                           type="button"
-                          className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
+                          className={suggestionClass(
                             index === selectedGlobalSuggestionIndex
-                              ? 'bg-blue-600/40'
-                              : ''
-                          }`}
+                          )}
                           onClick={() =>
                             insertGlobalMention(airport.icao.toLowerCase())
                           }
@@ -134,11 +147,9 @@ export function ChatTextComposer({
                       <button
                         key={`user-${userSuggestion.id}`}
                         type="button"
-                        className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
+                        className={suggestionClass(
                           index === selectedGlobalSuggestionIndex
-                            ? 'bg-blue-600/40'
-                            : ''
-                        }`}
+                        )}
                         onClick={() =>
                           insertGlobalMention(userSuggestion.username)
                         }
@@ -173,11 +184,9 @@ export function ChatTextComposer({
                     <button
                       key={suggestedUser.id}
                       type="button"
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-600/20 text-left ${
+                      className={suggestionClass(
                         index === selectedSuggestionIndex
-                          ? 'bg-blue-600/40'
-                          : ''
-                      }`}
+                      )}
                       onClick={() => insertMention(suggestedUser.username)}
                     >
                       <img
@@ -221,28 +230,25 @@ export function ChatTextComposer({
             </div>
           )}
 
-          <textarea
-            ref={textareaRef}
-            className="block w-full bg-zinc-800 text-white px-4 py-2 pr-14 rounded-3xl border border-blue-700 focus:outline-none focus:border-blue-500 resize-none"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            maxLength={500}
-            rows={3}
-            placeholder={placeholder}
-            aria-label={ariaLabel}
-          />
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-2 bottom-2 h-9 w-9"
-            onClick={onSend}
-            disabled={sendDisabled}
-            aria-label="Send message"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <div className={COMPOSER_BOX_CLASS}>
+            <textarea
+              ref={textareaRef}
+              className={COMPOSER_TEXTAREA_CLASS}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={onKeyDown}
+              maxLength={500}
+              rows={3}
+              placeholder={placeholder}
+              aria-label={ariaLabel}
+            />
+            <div className="flex items-center justify-between gap-2 pl-2">
+              <span className="text-xs text-zinc-600 tabular-nums">
+                {value.length}/500
+              </span>
+              <ComposerSendButton onClick={onSend} disabled={sendDisabled} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -26,7 +26,7 @@ export interface DeveloperExtRouteDefinition {
   queryParams?: DeveloperExtRouteQueryDoc[];
   requestBodySummary?: string;
   requestBodyExampleJson?: string;
-  minVersion?: 1 | 2;
+  minVersion?: 1 | 2 | 3;
   hidden?: boolean;
 }
 
@@ -195,10 +195,13 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/network/claims/{sessionId}',
     },
     responseSummary:
-      'Claims (or renews) a PFATC session so pilots who file there afterwards are redirected to the external ACARS panel. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC.',
+      'Claims (or renews) a PFATC session so pilots who file there afterwards open PFControl’s external ACARS page. 201 on a new claim, 200 on renewal, 409 if another key holds it, 400 if the session is not PFATC or providerId is not enabled.',
     requestBodySummary:
-      'Optional JSON object: { "ttlMinutes": 5-360 } (default 180). Renew before expiresAt to keep the claim.',
-    requestBodyExampleJson: JSON.stringify({ ttlMinutes: 180 }),
+      'Optional JSON object: { "ttlMinutes": 5-360, "providerId": "registered-provider" } (default 180). providerId selects an enabled provider; omitting it uses the admin-configured default. Renew before expiresAt to keep the claim.',
+    requestBodyExampleJson: JSON.stringify({
+      ttlMinutes: 180,
+      providerId: 'external-acars',
+    }),
     minVersion: 2,
     hidden: true,
   },
@@ -265,7 +268,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       pathTemplate: '/sessions/{sessionId}/flights/{flightId}',
     },
     responseSummary:
-      'Updated flight JSON (sanitized). Only allowed for sessions created with this same API key.',
+      'Updated flight JSON (sanitized). In v3, unsupported fields or invalid values return HTTP 400; unsupported fields are listed in rejectedFields and no fields are written. Only allowed for sessions created with this same API key.',
     pathParams: [
       {
         name: 'sessionId',
@@ -279,7 +282,7 @@ export const DEVELOPER_EXT_ROUTES: readonly DeveloperExtRouteDefinition[] = [
       },
     ],
     requestBodySummary:
-      "Every field is optional; send only what changed. Complete accepted field list: callsign, aircraft, departure, arrival (ICAO — see GET /data/airports; rejected with 400 if not a real airport), flightType (IFR/VFR), route, sid, star (see GET /data/airports/{icao}/sids and /stars), runway (see GET /data/airports/{icao}/runways — rejected with 400 if not a real runway at the flight's departure airport, using the new departure if you're also changing it in the same request), cruisingFL, clearedFL, squawk, wtc, status, remark, clearance (boolean), stand, gate, hidden (boolean), pdcRemarks, reqAt (ISO timestamp or null), reqPhase (one of C, P, T, G, or null). Unrecognized fields are silently ignored. This action is logged — see GET /flight-logs.",
+      "Every field is optional; send only what changed. Complete accepted field list: callsign, aircraft, departure, arrival (ICAO — see GET /data/airports; rejected with 400 if not a real airport), flightType (IFR/VFR), route, sid, star (see GET /data/airports/{icao}/sids and /stars), runway (see GET /data/airports/{icao}/runways — rejected with 400 if not a real runway at the flight's departure airport, using the new departure if you're also changing it in the same request), cruisingFL, clearedFL, squawk, wtc, status, remark, clearance (boolean), stand, gate, hidden (boolean), pdcRemarks, reqAt (ISO timestamp or null), reqPhase (one of C, P, T, G, or null), robloxUsername. In v3, an unrecognized field rejects the whole request with HTTP 400 and is returned in rejectedFields; no fields are written. This action is logged — see GET /flight-logs.",
     requestBodyExampleJson: JSON.stringify({
       status: 'ACTIVE',
       runway: '26L',
@@ -602,7 +605,7 @@ export function pathTemplateForRoute(r: DeveloperExtRouteDefinition): string {
 export function matchExtDeveloperRoute(
   method: string,
   pathNoQuery: string,
-  version: 1 | 2 = 1
+  version: 1 | 2 | 3 = 1
 ): string | null {
   const p = pathNoQuery.split('?')[0];
   for (const r of DEVELOPER_EXT_ROUTES) {

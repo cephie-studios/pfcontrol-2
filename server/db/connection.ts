@@ -11,6 +11,7 @@ import {
   ensureUserHistoryColumns,
   ensureAppSettingsChannelColumn,
   ensureFeedbackBannerColumn,
+  ensureExternalAcarsLegacyRedirectColumn,
   ensureSurveySeed,
   ensureSurveyDurationColumn,
   ensureTimestampDefaults,
@@ -32,6 +33,9 @@ import {
   ensureUserNotificationsCreatedAtDefault,
   ensureFlightLogsTrigramIndexes,
   ensureChartfoxLinksTable,
+  ensureBillingTables,
+  ensureAdminBillingTables,
+  ensureExternalAcarsProviderTables,
   syncVersionFromEnv,
 } from './schemas.js';
 import pg from 'pg';
@@ -97,6 +101,7 @@ try {
   await ensureTesterSettingsChannelColumn();
   await ensureEventModeColumns();
   await ensureFeedbackBannerColumn();
+  await ensureExternalAcarsLegacyRedirectColumn();
   await ensureSurveySeed();
   await ensureSurveyDurationColumn();
   await ensureTimestampDefaults();
@@ -116,6 +121,9 @@ try {
   await ensureUserNotificationsCreatedAtDefault();
   await ensureFlightLogsTrigramIndexes();
   await ensureChartfoxLinksTable();
+  await ensureBillingTables();
+  await ensureAdminBillingTables();
+  await ensureExternalAcarsProviderTables();
   await syncVersionFromEnv(redisConnection);
   console.log('[Database] Tables initialized successfully');
 } catch (err) {

@@ -3,7 +3,17 @@ export interface AcarsMessage {
   timestamp: string;
   station: string;
   text: string;
-  type: 'system' | 'pdc' | 'atis' | 'contact' | 'warning' | 'Success';
+  type:
+    | 'system'
+    | 'pdc'
+    | 'atis'
+    | 'contact'
+    | 'warning'
+    | 'Success'
+    | 'atc'
+    | 'pilot';
+  chatId?: number;
+  own?: boolean;
   link?: {
     text: string;
     url: string;
