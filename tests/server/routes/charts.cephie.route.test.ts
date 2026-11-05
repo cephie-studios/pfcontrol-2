@@ -112,7 +112,7 @@ describe('GET /api/charts/cephie/:version/:icao/:file', () => {
   });
 
   it('marks a plate once per viewer and serves repeats from the cache', async () => {
-    mocks.user = { userId: 'u9', username: 'pilot' };
+    mocks.user = { userId: 'repeat-viewer', username: 'pilot' };
     const first = await fetchAs(FULL);
     const second = await fetchAs(FULL);
     expect(first.body).toBe('marked');

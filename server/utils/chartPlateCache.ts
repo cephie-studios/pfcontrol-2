@@ -8,6 +8,23 @@ const TTL_SEC = 12 * 60 * 60;
 const MAX_CACHED_BYTES = 4 * 1024 * 1024;
 const UPSTREAM_CACHE_BYTES = 192 * 1024 * 1024;
 const MAX_UPSTREAM_ENTRY_BYTES = 32 * 1024 * 1024;
+const MARKED_CACHE_BYTES = 64 * 1024 * 1024;
+const markedPlates = new Map<string, { body: Buffer; expires: number }>();
+let markedBytes = 0;
+
+function rememberMarkedPlate(key: string, body: Buffer): void {
+  if (body.length > MAX_CACHED_BYTES) return;
+  const previous = markedPlates.get(key);
+  if (previous) markedBytes -= previous.body.length;
+  markedPlates.delete(key);
+  markedPlates.set(key, { body, expires: Date.now() + TTL_SEC * 1000 });
+  markedBytes += body.length;
+  for (const [oldest, entry] of markedPlates) {
+    if (markedBytes <= MARKED_CACHE_BYTES) break;
+    markedPlates.delete(oldest);
+    markedBytes -= entry.body.length;
+  }
+}
 
 const inFlight = new Map<string, Promise<Buffer>>();
 const upstreamPlates = new Map<string, Buffer>();
@@ -69,6 +86,15 @@ export function markedPlateKey(
 }
 
 export async function readMarkedPlate(key: string): Promise<Buffer | null> {
+  const cached = markedPlates.get(key);
+  if (cached) {
+    markedPlates.delete(key);
+    if (cached.expires > Date.now()) {
+      markedPlates.set(key, cached);
+      return cached.body;
+    }
+    markedBytes -= cached.body.length;
+  }
   try {
     return await redisConnection.getBuffer(key);
   } catch (error) {
@@ -94,6 +120,7 @@ export function createMarkedPlate(
   if (!pending) {
     pending = create()
       .then((body) => {
+        rememberMarkedPlate(key, body);
         void storeMarkedPlate(key, body);
         return body;
       })

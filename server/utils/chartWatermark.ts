@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { getInterFontsForSatori } from '../og/loadInterFonts.js';
 import { chartSubjectForUserId } from './chartSubject.js';
 
-export const WATERMARK_VERSION = 5;
+export const WATERMARK_VERSION = 6;
 export const CELL_PX = 3;
 export const BASE_AMPLITUDE = 2.5;
 
@@ -18,8 +18,8 @@ const MIN_FONT_PX = 16;
 const MAX_FONT_PX = 44;
 const FONT_DIVISOR = 110;
 const MASK_THRESHOLD = 96;
-const WEBP_QUALITY = 95;
-const WEBP_EFFORT = 1;
+const WEBP_QUALITY = 85;
+const WEBP_EFFORT = 0;
 const TILE_CACHE_LIMIT = 50;
 const CELL_ROWS_PER_SLICE = 64;
 

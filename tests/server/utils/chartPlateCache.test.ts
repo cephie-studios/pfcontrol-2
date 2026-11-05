@@ -62,6 +62,29 @@ describe('marked plate cache', () => {
     expect(a).toBe(b);
   });
 
+  it('serves a recently created plate without waiting for Redis', async () => {
+    const body = Buffer.from('local marked plate');
+    await createMarkedPlate('local-hit', async () => body);
+    redis.getBuffer.mockRejectedValue(new Error('Redis unavailable'));
+    expect(await readMarkedPlate('local-hit')).toBe(body);
+    expect(redis.getBuffer).not.toHaveBeenCalled();
+    expect(await readMarkedPlate('another-viewer')).toBeNull();
+  });
+
+  it('expires local plates', async () => {
+    const now = Date.now();
+    await createMarkedPlate('expired-local', async () => Buffer.from('old'));
+    const clock = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(now + 13 * 60 * 60 * 1000);
+    try {
+      expect(await readMarkedPlate('expired-local')).toBeNull();
+      expect(redis.getBuffer).toHaveBeenCalledWith('expired-local');
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   it('does not cache oversized plates', async () => {
     await createMarkedPlate('k3', async () => Buffer.alloc(5 * 1024 * 1024));
     expect(redis.set).not.toHaveBeenCalled();
