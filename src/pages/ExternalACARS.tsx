@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { Map as MapIcon, NotebookPen, Plane, Plus, Radar } from 'lucide-react';
+import {
+  Loader2,
+  Map as MapIcon,
+  NotebookPen,
+  Plane,
+  Plus,
+  Radar,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AcarsFlightPlan from '../components/acars/AcarsFlightPlan';
 import AcarsSkeleton, {
@@ -91,8 +98,16 @@ export default function ExternalACARS() {
     `external-acars:${sessionId}:${flightId}:${providerId}:${callsign}`
   );
 
-  const { status, loading, offline, deniedReason, busy, request, command } =
-    useExternalAcars({ providerId, callsign, token });
+  const {
+    status,
+    loading,
+    offline,
+    deniedReason,
+    notInGame,
+    busy,
+    request,
+    command,
+  } = useExternalAcars({ providerId, callsign, token });
   const { user, isLoading: accountLoading } = useAuth();
   const { airports, airlines } = useData();
   const { settings } = useSettings();
@@ -324,13 +339,19 @@ export default function ExternalACARS() {
             reason={deniedReason}
             sessionId={sessionId}
           />
-        ) : loading || !status ? (
-          <AcarsSkeleton layoutState={layoutState} transponder />
-        ) : !plan ? (
-          <main className="flex flex-1 flex-col items-center gap-4 border-t border-zinc-800 px-4 pt-10">
-            <p className="text-sm text-zinc-300">
-              No flight plan is on file for {callsign}.
-            </p>
+        ) : notInGame || (!loading && status && !plan) ? (
+          <main className="flex flex-1 flex-col items-center gap-4 border-t border-zinc-800 px-4 pt-10 text-center">
+            <Loader2 className="size-5 animate-spin text-zinc-500" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-zinc-200">
+                Waiting for {callsign} in game
+              </p>
+              <p className="max-w-md text-sm text-zinc-400">
+                {notInGame ||
+                  `We don't see ${callsign} in game yet. Check you have spawned with the callsign you filed.`}{' '}
+                This page updates on its own.
+              </p>
+            </div>
             <Button
               asChild
               variant="ghost"
@@ -343,6 +364,8 @@ export default function ExternalACARS() {
               </Link>
             </Button>
           </main>
+        ) : loading || !status || !plan ? (
+          <AcarsSkeleton layoutState={layoutState} transponder />
         ) : (
           <AcarsWorkspace
             layoutState={layoutState}

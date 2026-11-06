@@ -154,7 +154,13 @@ async function proxyExternalAcars(req: Request, res: Response) {
       ? nativeFallbackUrl(access.sessionId, access.flightId, access.acarsToken)
       : undefined;
   const failed = (status: number, body: Record<string, unknown>) =>
-    res.status(status).json(fallbackUrl ? { ...body, fallbackUrl } : body);
+    res
+      .status(status)
+      .json(
+        fallbackUrl && body.code !== 'NOT_IN_GAME'
+          ? { ...body, fallbackUrl }
+          : body
+      );
 
   const hasBody = req.method !== 'GET';
   const call = async (providerToken: string) => {
