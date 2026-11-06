@@ -212,33 +212,40 @@ export function PilotProfilePageSkeleton({
   return (
     <div className="min-h-screen bg-black text-white" role="status">
       {navbar && <Navbar />}
-      <div className="border-b border-zinc-700/50 py-8 md:py-12">
-        <div className="mx-auto max-w-7xl px-4 pt-24 pb-4">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start">
-            <Skeleton className="size-24 self-center rounded-full md:size-32 md:self-auto" />
-            <div className="flex flex-1 flex-col items-center gap-3 md:items-start">
-              <Skeleton className="h-9 w-56 md:h-12 md:w-72" />
-              <Skeleton className="h-5 w-48" />
-              <div className="flex gap-3">
-                <Skeleton className="h-7 w-24 rounded-full" />
-                <Skeleton className="h-7 w-24 rounded-full" />
+      <div
+        className="relative bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/assets/images/hero.webp)' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+        <div className="relative z-10 py-8 md:py-12">
+          <div className="mx-auto max-w-7xl px-4 pt-24 pb-4">
+            <div className="flex flex-col gap-6 md:flex-row md:items-start">
+              <Skeleton className="size-24 self-center rounded-full bg-zinc-800/80 md:size-32 md:self-auto" />
+              <div className="flex flex-1 flex-col items-center gap-3 md:items-start">
+                <Skeleton className="h-9 w-56 bg-zinc-800/80 md:h-12 md:w-72" />
+                <Skeleton className="h-6 w-60 bg-zinc-800/80" />
               </div>
+              <Skeleton className="hidden h-10 w-24 rounded-full bg-zinc-800/80 md:block" />
             </div>
           </div>
         </div>
       </div>
-      <div className="mx-auto mt-8 max-w-7xl space-y-8 px-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-28 rounded-3xl" />
+      <div className="mx-auto mt-8 max-w-7xl px-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-3xl border-2 border-white/10 p-8"
+            >
+              <Skeleton className="size-10 shrink-0 rounded-lg" />
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-3.5 w-32" />
+              </div>
+            </div>
           ))}
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {[0, 1].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-3xl" />
-          ))}
-        </div>
-        <Skeleton className="h-64 w-full rounded-3xl" />
       </div>
     </div>
   );
