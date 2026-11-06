@@ -8,8 +8,10 @@ import AdminStatCards from '../components/admin/AdminStatCards';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminChartSkeleton,
+  AdminStatCardsSkeleton,
 } from '../components/admin/AdminStates';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AdminAreaChart,
   AdminMultiSeriesAreaChart,
@@ -442,7 +444,11 @@ export default function Admin() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading statistics…" />
+          <>
+            <AdminStatCardsSkeleton count={4} columns={4} />
+            <AdminChartSkeleton height={200} />
+            {hasPermission('audit') && <AdminChartSkeleton height={160} />}
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading statistics"
@@ -592,7 +598,15 @@ export default function Admin() {
                 }
               >
                 {versionLoading ? (
-                  <AdminLoading className="py-4" />
+                  <div
+                    className="flex flex-wrap gap-x-6 gap-y-2"
+                    role="status"
+                    aria-label="Loading"
+                  >
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-5 w-28" />
+                  </div>
                 ) : appVersion ? (
                   <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                     <div className="flex gap-2">

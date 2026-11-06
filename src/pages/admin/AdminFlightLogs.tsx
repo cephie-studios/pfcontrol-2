@@ -26,7 +26,8 @@ import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import {
   ADMIN_NATIVE_TBODY,
@@ -410,7 +411,14 @@ export default function AdminFlightLogs() {
         </AdminToolbar>
 
         {loading ? (
-          <AdminLoading label="Loading flight logs…" />
+          <>
+            <AdminTableSkeleton
+              className="hidden lg:block"
+              columns={8}
+              avatar={false}
+            />
+            <AdminCardListSkeleton className="lg:hidden" />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading flight logs"

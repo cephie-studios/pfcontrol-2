@@ -19,7 +19,7 @@ import AdminSearchInput from '../../components/admin/AdminSearchInput';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
 } from '../../components/admin/AdminStates';
 import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
@@ -337,7 +337,7 @@ export default function AdminFeedback() {
         )}
 
         {loading ? (
-          <AdminLoading label="Loading feedback…" />
+          <AdminCardListSkeleton count={4} />
         ) : error ? (
           <AdminErrorState
             title="Error loading feedback"

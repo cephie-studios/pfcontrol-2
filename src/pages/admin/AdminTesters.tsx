@@ -26,7 +26,8 @@ import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import {
   fetchTesters,
@@ -303,7 +304,10 @@ export default function AdminTesters() {
           }
         >
           {loading ? (
-            <AdminLoading label="Loading testers…" />
+            <>
+              <AdminTableSkeleton className="hidden md:block" columns={5} />
+              <AdminCardListSkeleton className="md:hidden" />
+            </>
           ) : error ? (
             <AdminErrorState
               title="Error loading testers"

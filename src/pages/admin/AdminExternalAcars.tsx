@@ -8,6 +8,7 @@ import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import {
   Tooltip,
@@ -238,10 +239,26 @@ export default function AdminExternalAcars() {
             }
           >
             {loading ? (
-              <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading providers…
-              </div>
+              <ul
+                className="flex flex-col gap-3"
+                role="status"
+                aria-label="Loading"
+              >
+                {[0, 1].map((i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-3 rounded-3xl border-2 border-zinc-800 bg-zinc-900 px-4 py-3"
+                  >
+                    <Skeleton className="size-4 shrink-0 rounded-full" />
+                    <div className="grid min-w-0 flex-1 gap-1.5">
+                      <Skeleton className="h-4 w-36 max-w-full" />
+                      <Skeleton className="h-3 w-48 max-w-full" />
+                    </div>
+                    <Skeleton className="h-8 w-16 shrink-0" />
+                    <Skeleton className="size-8 shrink-0" />
+                  </li>
+                ))}
+              </ul>
             ) : providers.length === 0 ? (
               <p className="py-6 text-sm text-muted-foreground">
                 No provider is configured yet.

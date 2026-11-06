@@ -20,7 +20,8 @@ import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvata
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminStatCardsSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,10 @@ export default function AdminFeaturedFlights() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading featured flights…" />
+          <>
+            <AdminStatCardsSkeleton count={3} columns={3} />
+            <AdminCardListSkeleton count={3} />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading featured flights"

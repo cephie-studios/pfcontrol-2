@@ -31,7 +31,8 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
 import {
@@ -783,7 +784,13 @@ export default function AdminUsers() {
         </AdminToolbar>
 
         {loading ? (
-          <AdminLoading label="Loading users…" />
+          <>
+            <AdminTableSkeleton
+              className="hidden md:block"
+              columns={user?.isAdmin ? 8 : 7}
+            />
+            <AdminCardListSkeleton className="md:hidden" />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading users"

@@ -63,7 +63,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import {
   ADMIN_TONE_TEXT,
@@ -616,7 +616,7 @@ export default function AdminAudit() {
         </AdminToolbar>
 
         {loading ? (
-          <AdminLoading label="Loading audit logs…" />
+          <AdminTableSkeleton columns={6} avatar={false} />
         ) : error ? (
           <AdminErrorState
             title="Error loading audit logs"

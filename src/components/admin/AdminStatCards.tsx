@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ADMIN_STAT_COLUMNS } from './adminConstants';
 
 export type AdminStatItem = {
   label: string;
@@ -15,13 +16,6 @@ type AdminStatCardsProps = {
   className?: string;
 };
 
-const COLUMNS = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-2 sm:grid-cols-3',
-  4: 'grid-cols-2 lg:grid-cols-4',
-  6: 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-6',
-};
-
 export default function AdminStatCards({
   items,
   columns = 4,
@@ -31,7 +25,7 @@ export default function AdminStatCards({
     <div
       className={cn(
         'grid overflow-hidden rounded-2xl border',
-        COLUMNS[columns],
+        ADMIN_STAT_COLUMNS[columns],
         className
       )}
     >

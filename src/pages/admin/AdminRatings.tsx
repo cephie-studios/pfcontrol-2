@@ -33,7 +33,10 @@ import AdminToolbar from '../../components/admin/AdminToolbar';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminChartSkeleton,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
@@ -361,7 +364,25 @@ export default function AdminRatings() {
   }, [dailyStats]);
 
   const renderOverview = () => {
-    if (loading) return <AdminLoading label="Loading rating statistics…" />;
+    if (loading) {
+      return (
+        <>
+          <AdminStatCardsSkeleton count={2} columns={2} />
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AdminChartSkeleton height={200} />
+            <AdminChartSkeleton height={200} />
+          </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AdminSection title="Highest rated controllers">
+              <AdminTableSkeleton columns={4} rows={5} avatar={false} />
+            </AdminSection>
+            <AdminSection title="Most rated controllers">
+              <AdminTableSkeleton columns={3} rows={5} />
+            </AdminSection>
+          </div>
+        </>
+      );
+    }
     if (error) {
       return (
         <AdminErrorState
@@ -697,7 +718,7 @@ export default function AdminRatings() {
       </AdminToolbar>
 
       {ratingsLoading ? (
-        <AdminLoading label="Loading ratings…" />
+        <AdminCardListSkeleton count={5} />
       ) : ratingsError ? (
         <AdminErrorState
           title="Error loading ratings"

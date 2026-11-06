@@ -32,11 +32,12 @@ import AdminDurationPresets from '../../components/admin/AdminDurationPresets';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import type { AdminDurationPresetId } from '../../components/admin/adminDurationPresetConfig';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   TableBody,
   TableCell,
@@ -374,7 +375,7 @@ export default function AdminBan() {
           }
         >
           {bansLoading ? (
-            <AdminLoading label="Loading bans…" />
+            <AdminTableSkeleton columns={6} avatar={false} />
           ) : bansError ? (
             <AdminErrorState
               title="Error loading bans"
@@ -505,7 +506,34 @@ export default function AdminBan() {
           }
         >
           {vpnGateLoading ? (
-            <AdminLoading label="Loading VPN gate…" />
+            <div
+              className="grid grid-cols-1 gap-6 lg:grid-cols-2"
+              role="status"
+              aria-label="Loading"
+            >
+              <div className="grid content-start gap-4">
+                <Skeleton className="h-4 w-28" />
+                {[0, 1].map((i) => (
+                  <div key={i} className="grid gap-2">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+                <Skeleton className="h-9 w-full sm:w-32 sm:justify-self-end" />
+              </div>
+              <div className="grid content-start gap-4">
+                <Skeleton className="h-4 w-24" />
+                <div className="divide-y rounded-2xl border">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="grid gap-1.5 px-4 py-3">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-40" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : vpnGateError ? (
             <AdminErrorState
               title="Error loading VPN gate"
