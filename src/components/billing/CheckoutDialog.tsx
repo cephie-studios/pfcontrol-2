@@ -88,7 +88,13 @@ export default function CheckoutDialog({
     if (!request) return;
     setLoading(true);
     try {
-      window.location.href = await minDuration(startCheckout(request));
+      const { url, restored } = await minDuration(startCheckout(request));
+      if (restored) {
+        toast.success('Found your subscription. Your perks are active now.');
+        window.location.reload();
+        return;
+      }
+      if (url) window.location.href = url;
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not start checkout'

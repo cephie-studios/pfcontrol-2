@@ -52,7 +52,9 @@ export async function fetchGiftRecipient(
   return res.json();
 }
 
-export async function startCheckout(request: CheckoutRequest): Promise<string> {
+export async function startCheckout(
+  request: CheckoutRequest
+): Promise<{ url?: string; restored?: boolean }> {
   const res = await apiFetch(`${API_BASE_URL}/api/billing/checkout`, {
     method: 'POST',
     credentials: 'include',
@@ -60,7 +62,7 @@ export async function startCheckout(request: CheckoutRequest): Promise<string> {
     body: JSON.stringify({ ...request, consent: true }),
   });
   if (!res.ok) await apiError(res, 'Could not start checkout');
-  return (await res.json()).url;
+  return res.json();
 }
 
 export async function openBillingPortal(): Promise<string> {
