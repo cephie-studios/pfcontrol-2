@@ -202,13 +202,6 @@ export default function AddCustomFlightModal({
           { value: 'GATE', label: 'GATE' },
         ];
 
-  const wtcOptions = [
-    { value: 'L', label: 'L (Light)' },
-    { value: 'M', label: 'M (Medium)' },
-    { value: 'H', label: 'H (Heavy)' },
-    { value: 'J', label: 'J (Super)' },
-  ];
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div

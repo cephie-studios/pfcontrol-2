@@ -433,7 +433,6 @@ export async function createOrUpdateUser(userData: {
   const encryptedRefreshToken = encrypt(refreshToken);
   const encryptedIP = encrypt(ipAddress);
   const encryptedSettings = encrypt(defaultSettings);
-  const encryptedSessions = encrypt([]);
   const ipHash = ipAddress ? hashIp(ipAddress) : null;
 
   await mainDb

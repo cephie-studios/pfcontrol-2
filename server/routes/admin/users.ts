@@ -144,7 +144,7 @@ router.post('/:userId/reveal-ip-history', async (req, res) => {
 router.post(
   '/sync-session-counts',
   createAuditLogger('ADMIN_SYNC_SESSION_COUNTS'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const result = await syncUserSessionCounts();
       res.json(result);

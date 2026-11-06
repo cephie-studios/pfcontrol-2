@@ -53,7 +53,7 @@ router.get(
 );
 
 // GET: /api/admin/feedback/stats - Get feedback statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (_req, res) => {
   try {
     const stats = await getFeedbackStats();
     res.json(stats);

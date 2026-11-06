@@ -19,7 +19,7 @@ router.use(requirePermission('notifications'));
 router.get(
   '/',
   createAuditLogger('ADMIN_NOTIFICATIONS_ACCESSED'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const notifications = await getAllNotifications();
       res.json(notifications);

@@ -45,7 +45,7 @@ router.post('/global/:messageId/report', requireAuth, async (req, res) => {
 });
 
 // GET: /api/chats/global - Get global chat messages (last 30 minutes)
-router.get('/global/messages', requireAuth, async (req, res) => {
+router.get('/global/messages', requireAuth, async (_req, res) => {
   try {
     const messages = await mainDb
       .selectFrom('global_chat')
@@ -89,7 +89,7 @@ router.get('/global/messages', requireAuth, async (req, res) => {
         ) {
           try {
             airportMentions = JSON.parse(msg.airport_mentions);
-          } catch (e) {
+          } catch {
             airportMentions = null;
           }
         }
@@ -104,7 +104,7 @@ router.get('/global/messages', requireAuth, async (req, res) => {
         ) {
           try {
             userMentions = JSON.parse(msg.user_mentions);
-          } catch (e) {
+          } catch {
             userMentions = null;
           }
         }

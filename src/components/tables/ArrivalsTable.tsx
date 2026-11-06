@@ -27,7 +27,6 @@ interface ArrivalsTableProps {
     flightId: string | number,
     updates: Partial<Flight>
   ) => void;
-  onFlightDelete: (flightId: string | number) => void;
   backgroundStyle?: React.CSSProperties;
   arrivalsColumns?: ArrivalsTableColumnSettings;
   loading?: boolean;
@@ -36,7 +35,6 @@ interface ArrivalsTableProps {
 function ArrivalsTable({
   flights,
   onFlightChange,
-  onFlightDelete,
   backgroundStyle,
   loading = false,
   arrivalsColumns = {

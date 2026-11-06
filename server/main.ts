@@ -273,7 +273,6 @@ if (astroHandler) {
       return Buffer.from(String(chunk), 'utf8');
     };
 
-    const originalWrite = res.write.bind(res);
     res.write = ((chunk: unknown, ...rest: unknown[]) => {
       chunks.push(toChunkBuffer(chunk));
       const callback = rest.find((arg) => typeof arg === 'function') as
@@ -284,7 +283,7 @@ if (astroHandler) {
     }) as typeof res.write;
 
     const originalEnd = res.end.bind(res);
-    res.end = ((chunk?: unknown, ...rest: unknown[]) => {
+    res.end = ((chunk?: unknown) => {
       if (chunk !== undefined && typeof chunk !== 'function') {
         chunks.push(toChunkBuffer(chunk));
       }
@@ -332,7 +331,7 @@ const chatIO = setupChatWebsocket(server, sessionUsersIO);
 chatIO.adapter(createAdapter(pubClient, subClient));
 registerAdminSocketNamespace('chat', 'Session Chat', '/sockets/chat', chatIO);
 
-const globalChatIO = setupGlobalChatWebsocket(server, sessionUsersIO);
+const globalChatIO = setupGlobalChatWebsocket(server);
 globalChatIO.adapter(createAdapter(pubClient, subClient));
 registerAdminSocketNamespace(
   'global-chat',
@@ -368,10 +367,7 @@ registerAdminSocketNamespace(
   arrivalsIO
 );
 
-const sectorControllerIO = setupSectorControllerWebsocket(
-  server,
-  sessionUsersIO
-);
+const sectorControllerIO = setupSectorControllerWebsocket(server);
 sectorControllerIO.adapter(createAdapter(pubClient, subClient));
 registerAdminSocketNamespace(
   'sector-controller',

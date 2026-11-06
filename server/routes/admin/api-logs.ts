@@ -82,7 +82,7 @@ router.get(
 router.get(
   '/stats-24h',
   createAuditLogger('ADMIN_API_LOGS_STATS_24H_ACCESSED'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const stats = await getApiLogStatsLast24Hours();
       res.json(stats);

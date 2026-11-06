@@ -210,7 +210,7 @@ router.get('/airports/:icao', (req, res) => {
 });
 
 // GET: /api/data/aircrafts
-router.get('/aircrafts', async (req, res) => {
+router.get('/aircrafts', async (_req, res) => {
   const cacheKey = prefixKey('data:aircrafts');
 
   try {
@@ -269,7 +269,7 @@ router.get('/aircrafts', async (req, res) => {
 });
 
 // GET: /api/data/airlines
-router.get('/airlines', async (req, res) => {
+router.get('/airlines', async (_req, res) => {
   const cacheKey = prefixKey('data:airlines');
 
   try {
@@ -325,7 +325,7 @@ router.get('/airlines', async (req, res) => {
 });
 
 // GET: /api/data/waypoints
-router.get('/waypoints', async (req, res) => {
+router.get('/waypoints', async (_req, res) => {
   const cacheKey = prefixKey('data:waypoints');
 
   try {
@@ -384,7 +384,7 @@ router.get('/waypoints', async (req, res) => {
 });
 
 // GET: /api/data/islands
-router.get('/islands', async (req, res) => {
+router.get('/islands', async (_req, res) => {
   const cacheKey = prefixKey('data:islands');
 
   try {
@@ -437,7 +437,7 @@ router.get('/islands', async (req, res) => {
 });
 
 // GET: /api/data/frequencies
-router.get('/frequencies', async (req, res) => {
+router.get('/frequencies', async (_req, res) => {
   const cacheKey = prefixKey('data:frequencies');
 
   try {
@@ -545,7 +545,7 @@ router.get('/frequencies', async (req, res) => {
 });
 
 // GET: /api/data/backgrounds
-router.get('/backgrounds', (req, res) => {
+router.get('/backgrounds', (_req, res) => {
   try {
     if (!fs.existsSync(backgroundsPath)) {
       return res.status(404).json({ error: 'Backgrounds directory not found' });
@@ -663,7 +663,7 @@ router.get('/airports/:icao/stars', (req, res) => {
 });
 
 // GET: /api/data/statistics
-router.get('/statistics', async (req, res) => {
+router.get('/statistics', async (_req, res) => {
   const cacheKey = 'homepage:stats';
 
   try {
@@ -767,7 +767,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // GET: /api/data/notifications/active
-router.get('/notifications/active', async (req, res) => {
+router.get('/notifications/active', async (_req, res) => {
   try {
     const notifications = await getActiveNotifications();
     applyPublicCache(res, { browserMaxAge: 0, edgeMaxAge: 0 });
@@ -779,7 +779,7 @@ router.get('/notifications/active', async (req, res) => {
 });
 
 // GET: /api/data/leaderboard - Fetch top users for each stat (public)
-router.get('/leaderboard', async (req, res) => {
+router.get('/leaderboard', async (_req, res) => {
   try {
     const leaderboard: Record<
       string,

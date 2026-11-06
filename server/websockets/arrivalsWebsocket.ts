@@ -1,6 +1,6 @@
 import { Server as SocketServer, Socket } from 'socket.io';
 import type { Server as HttpServer } from 'http';
-import { updateFlight, type ClientFlight } from '../db/flights.js';
+import { updateFlight } from '../db/flights.js';
 import { validateSessionAccess } from '../middleware/sessionAccess.js';
 import { getSessionById } from '../db/sessions.js';
 import { getFlightsIO } from '../realtime/socketRegistry.js';

@@ -21,7 +21,7 @@ router.use(requirePermission('notifications'));
 router.get(
   '/',
   createAuditLogger('ADMIN_UPDATE_MODALS_ACCESSED'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const modals = await getAllUpdateModals();
       res.json(modals);

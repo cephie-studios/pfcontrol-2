@@ -97,7 +97,7 @@ router.get('/statistics', requirePermission('admin'), async (req, res) => {
 });
 
 // GET: /api/admin/version - Get app version (admin only)
-router.get('/version', requirePermission('admin'), async (req, res) => {
+router.get('/version', requirePermission('admin'), async (_req, res) => {
   try {
     const version = await getAppVersion();
     res.json(version);

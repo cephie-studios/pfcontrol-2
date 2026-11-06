@@ -12,7 +12,7 @@ import {
 const router = express.Router();
 
 // GET: /api/version - Get app version (cached)
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   const cacheKey = prefixKey('app:version');
 
   try {

@@ -1158,7 +1158,6 @@ export default function Flights() {
                       onFlightChange={handleFlightUpdate}
                       backgroundStyle={backgroundStyle}
                       arrivalsColumns={arrivalsColumns}
-                      onFlightDelete={handleFlightDelete}
                       loading={arrivalsLoading}
                     />
                     <div className="flex justify-center mt-4 mb-6">

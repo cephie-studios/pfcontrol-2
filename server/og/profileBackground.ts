@@ -42,10 +42,7 @@ type BackgroundImageJson = {
   useCustomBackground?: boolean;
 };
 
-function resolveFilename(
-  filename: string,
-  frontendBase: string
-): ResolvedBackground | null {
+function resolveFilename(filename: string): ResolvedBackground | null {
   if (!filename || filename === 'random' || filename === 'favorites') {
     return null;
   }
@@ -72,8 +69,7 @@ function resolveFilename(
 }
 
 export function resolveProfileBackground(
-  profile: PublicPilotProfile,
-  frontendBase: string
+  profile: PublicPilotProfile
 ): ResolvedBackground | null {
   if (!profile.privacySettings.displayBackgroundOnProfile) {
     return null;
@@ -91,7 +87,7 @@ export function resolveProfileBackground(
     const files = listBackgroundFilenames();
     if (!files.length) return null;
     const pick = files[stableIndex(seed, files.length)]!;
-    return resolveFilename(pick, frontendBase);
+    return resolveFilename(pick);
   }
 
   if (selected === 'favorites') {
@@ -103,8 +99,8 @@ export function resolveProfileBackground(
     if (!favs.length) return null;
     const sorted = [...favs].sort();
     const pick = sorted[stableIndex(seed, sorted.length)]!;
-    return resolveFilename(pick, frontendBase);
+    return resolveFilename(pick);
   }
 
-  return resolveFilename(selected, frontendBase);
+  return resolveFilename(selected);
 }

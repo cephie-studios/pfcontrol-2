@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  Plane,
-  Shield,
-  TowerControl,
-  Users,
-  Crown,
-} from 'lucide-react';
+import { ArrowRight, Plane, TowerControl, Users, Crown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { fetchStatistics, fetchLeaderboard } from '../utils/fetch/data';
 import { Link, useSearchParams } from 'react-router';

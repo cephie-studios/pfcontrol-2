@@ -275,8 +275,6 @@ export async function cleanupOldAuditLogs(daysToKeep = 14) {
   }
 }
 
-let _cleanupInterval: NodeJS.Timeout | null = null;
-
 function startAutomaticCleanup() {
   const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -288,7 +286,7 @@ function startAutomaticCleanup() {
     }
   }, 60 * 1000);
 
-  _cleanupInterval = setInterval(async () => {
+  setInterval(async () => {
     try {
       await cleanupOldAuditLogs(14);
     } catch (error) {

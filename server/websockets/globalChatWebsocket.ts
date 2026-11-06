@@ -33,7 +33,6 @@ const connectedGlobalChatUsers = new Map<
   ['pfatc', new Map()],
   // ['aatc', new Map()], // AATC disabled
 ]);
-let sessionUsersIO: SessionUsersWebsocketIO | null = null;
 
 // Cleanup inactive users from connectedGlobalChatUsers
 const cleanupInactiveGlobalUsers = () => {
@@ -60,24 +59,6 @@ const globalChatCleanupInterval = setInterval(
   2 * 60 * 1000
 );
 
-interface SessionUsersWebsocketIO {
-  getActiveUsersForSession?(
-    sessionId: string
-  ): Promise<Array<{ id: string; username: string; position?: string }>>;
-  sendMentionToUser(userId: string, mentionData: MentionData): void;
-}
-
-interface MentionData {
-  messageId: string;
-  mentionedUserId: string;
-  mentionerUsername: string;
-  message: string;
-  sessionId?: string;
-  airport?: string;
-  timestamp: string;
-  [key: string]: unknown;
-}
-
 interface GlobalChatMessage {
   id: number;
   user_id: string;
@@ -92,12 +73,7 @@ interface GlobalChatMessage {
   deleted_at: Date | null;
 }
 
-export function setupGlobalChatWebsocket(
-  httpServer: Server,
-  sessionUsersWebsocketIO: SessionUsersWebsocketIO
-) {
-  sessionUsersIO = sessionUsersWebsocketIO;
-
+export function setupGlobalChatWebsocket(httpServer: Server) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/global-chat',
     allowRequest: createHandshakeRateLimiter({
