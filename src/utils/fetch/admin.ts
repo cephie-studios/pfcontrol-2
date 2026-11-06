@@ -190,14 +190,18 @@ export interface RevealIPHistoryResponse {
 }
 
 export interface Ban {
-  id: string;
-  userId?: string;
-  ip?: string;
-  username: string;
+  id: number;
+  user_id?: string | null;
+  ip_address?: string | null;
+  username?: string | null;
+  target_username?: string | null;
   reason: string;
-  expiresAt?: string;
-  createdAt: string;
-  createdBy: string;
+  banned_by: string;
+  banned_by_username?: string | null;
+  banned_by_avatar?: string | null;
+  banned_at: string;
+  expires_at?: string | null;
+  active: boolean;
 }
 
 export interface Pagination {
