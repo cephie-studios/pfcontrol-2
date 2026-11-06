@@ -21,6 +21,7 @@ import CheckoutDialog from '../components/billing/CheckoutDialog';
 import SupporterAvatar from '../components/billing/SupporterAvatar';
 import SupporterWall from '../components/billing/SupporterWall';
 import SupporterIcon from '../components/billing/SupporterIcon';
+import SupporterLogo from '../components/billing/SupporterLogo';
 import RingColorPicker from '../components/billing/RingColorPicker';
 import RingPicker from '../components/billing/RingPicker';
 import PlanFeatures from '../components/billing/PlanFeatures';
@@ -470,7 +471,7 @@ export default function Pricing() {
               <div className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left">
                 <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <h2 className="flex items-center gap-3 text-3xl font-black sm:text-4xl">
-                    <SupporterIcon className="size-9 text-amber-500" />
+                    <SupporterLogo className="size-12" />
                     <p className="mb-2">Supporter</p>
                   </h2>
                   {renderCurrent('supporter')}
@@ -543,7 +544,7 @@ export default function Pricing() {
                   {previewName}
                 </span>
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-500">
-                  <SupporterIcon className="size-5" />
+                  <SupporterLogo className="size-7" />
                   Supporter
                 </span>
                 <RingPicker

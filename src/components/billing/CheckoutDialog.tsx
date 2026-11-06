@@ -31,7 +31,7 @@ import { useAuth } from '../../hooks/auth/useAuth';
 import { startCheckout } from '../../utils/fetch/billing';
 import type { BillingCatalog, CheckoutRequest } from '../../types/billing';
 import SupporterAvatar from './SupporterAvatar';
-import SupporterIcon from './SupporterIcon';
+import SupporterLogo from './SupporterLogo';
 import PlanFeatures from './PlanFeatures';
 
 interface CheckoutDialogProps {
@@ -150,7 +150,7 @@ export default function CheckoutDialog({
                   PLAN_TEXT[plan]
                 )}
               >
-                <SupporterIcon className="size-4" />
+                <SupporterLogo className="size-6" />
                 {PLAN_NAMES[plan]}
               </span>
             </div>

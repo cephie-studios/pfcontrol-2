@@ -17,6 +17,7 @@ import SettingsGroup from './SettingsGroup';
 import SettingsRow from './SettingsRow';
 import SupporterAvatar from '../billing/SupporterAvatar';
 import SupporterIcon from '../billing/SupporterIcon';
+import SupporterLogo from '../billing/SupporterLogo';
 import RingColorPicker from '../billing/RingColorPicker';
 import PlanFeatures from '../billing/PlanFeatures';
 import { useAuth } from '../../hooks/auth/useAuth';
@@ -39,7 +40,6 @@ import {
 import { minDuration } from '@/lib/minDuration';
 import {
   PLAN_NAMES,
-  PLAN_TEXT,
   SUPPORTER_RINGS,
   giftLink,
   monthsLabel,
@@ -157,7 +157,6 @@ export default function PlanSettings() {
 
   const paid = plan?.supporterPlan !== 'free' ? plan?.supporterPlan : null;
   const effective = plan && plan.plan !== 'free' ? plan.plan : null;
-  const PlanIcon = effective ? SupporterIcon : Plane;
   const rank = supporterRank(plan?.supporterMonths ?? 0);
 
   return (
@@ -201,11 +200,11 @@ export default function PlanSettings() {
             <div>
               <SettingsRow
                 icon={
-                  <PlanIcon
-                    className={
-                      effective ? PLAN_TEXT[effective] : 'text-zinc-500'
-                    }
-                  />
+                  effective ? (
+                    <SupporterLogo className="size-8" />
+                  ) : (
+                    <Plane className="text-zinc-500" />
+                  )
                 }
                 label={`PFControl ${PLAN_NAMES[plan.plan]}`}
                 description={planStatus(plan)}

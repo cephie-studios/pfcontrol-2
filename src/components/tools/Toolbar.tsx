@@ -48,6 +48,7 @@ import ATIS from './ATIS';
 import DeveloperPillSegmentedControl from '../../pages/developers/DeveloperPillSegmentedControl';
 import SupporterAvatar from '../billing/SupporterAvatar';
 import SupporterIcon from '../billing/SupporterIcon';
+import SupporterLogo from '../billing/SupporterLogo';
 import { PLAN_NAMES, PLAN_TEXT } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
@@ -510,7 +511,7 @@ export default function Toolbar({
                               PLAN_TEXT[user.avatarRing.plan]
                             )}
                           >
-                            <SupporterIcon className="size-3" />
+                            <SupporterLogo className="size-5" />
                             {PLAN_NAMES[user.avatarRing.plan]}
                           </span>
                         </>

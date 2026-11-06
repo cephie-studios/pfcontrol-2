@@ -32,7 +32,7 @@ import {
 } from '../../components/admin/adminConstants';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import SupporterAvatar from '../../components/billing/SupporterAvatar';
-import SupporterIcon from '../../components/billing/SupporterIcon';
+import SupporterLogo from '../../components/billing/SupporterLogo';
 import {
   addAdminExpense,
   deleteAdminExpense,
@@ -135,7 +135,7 @@ function PlanLabel({ plan }: { plan: PaidPlan }) {
         PLAN_TEXT[plan]
       )}
     >
-      <SupporterIcon className="size-4" />
+      <SupporterLogo className="size-6" />
       {PLAN_NAMES[plan]}
     </span>
   );

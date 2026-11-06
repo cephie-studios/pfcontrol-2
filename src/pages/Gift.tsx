@@ -10,7 +10,7 @@ import Navbar from '../components/Navbar';
 import PageHero from '../components/common/PageHero';
 import CheckoutDialog from '../components/billing/CheckoutDialog';
 import SupporterAvatar from '../components/billing/SupporterAvatar';
-import SupporterIcon from '../components/billing/SupporterIcon';
+import SupporterLogo from '../components/billing/SupporterLogo';
 import PlanFeatures from '../components/billing/PlanFeatures';
 import { useAuth } from '../hooks/auth/useAuth';
 import {
@@ -201,7 +201,7 @@ export default function Gift() {
                           PLAN_TEXT[plan]
                         )}
                       >
-                        <SupporterIcon className="size-5" />
+                        <SupporterLogo className="size-7" />
                         {PLAN_NAMES[plan]}
                       </span>
                     </>
