@@ -398,9 +398,9 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
           .where('id', '=', flightId as string)
           .executeTakeFirst();
         const {
-          acars_token,
+          acars_token: _acarsToken,
           user_id: flightOwnerUserId,
-          ip_address,
+          ip_address: _ipAddress,
           ...sanitizedOldData
         } = flightToDelete || {};
 
@@ -466,60 +466,57 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
-    socket.on(
-      'issuePDC',
-      async ({ flightId, pdcText, targetPilotUserId }: PDCData) => {
-        const sessionId = socket.data.sessionId;
-        if (socket.data.role !== 'controller') {
+    socket.on('issuePDC', async ({ flightId, pdcText }: PDCData) => {
+      const sessionId = socket.data.sessionId;
+      if (socket.data.role !== 'controller') {
+        socket.emit('flightError', {
+          action: 'issuePDC',
+          flightId,
+          error: 'Not authorized',
+        });
+        return;
+      }
+      try {
+        if (!flightId) {
           socket.emit('flightError', {
             action: 'issuePDC',
-            flightId,
-            error: 'Not authorized',
+            error: 'Missing flightId',
           });
           return;
         }
-        try {
-          if (!flightId) {
-            socket.emit('flightError', {
-              action: 'issuePDC',
-              error: 'Missing flightId',
-            });
-            return;
-          }
-          validateFlightId(flightId);
-          const sanitizedPDC = sanitizeString(pdcText, 1000);
-          const updates = {
-            pdc_remarks: sanitizedPDC,
-          };
+        validateFlightId(flightId);
+        const sanitizedPDC = sanitizeString(pdcText, 1000);
+        const updates = {
+          pdc_remarks: sanitizedPDC,
+        };
 
-          const updatedFlight = await updateFlight(
-            sessionId,
-            flightId as string,
-            updates
-          );
-          if (updatedFlight) {
-            io.to(sessionId).emit('flightUpdated', updatedFlight);
-            io.to(sessionId).emit('pdcIssued', {
-              flightId,
-              pdcText: sanitizedPDC,
-              updatedFlight,
-            });
-          } else {
-            socket.emit('flightError', {
-              action: 'issuePDC',
-              flightId,
-              error: 'Flight not found',
-            });
-          }
-        } catch {
+        const updatedFlight = await updateFlight(
+          sessionId,
+          flightId as string,
+          updates
+        );
+        if (updatedFlight) {
+          io.to(sessionId).emit('flightUpdated', updatedFlight);
+          io.to(sessionId).emit('pdcIssued', {
+            flightId,
+            pdcText: sanitizedPDC,
+            updatedFlight,
+          });
+        } else {
           socket.emit('flightError', {
             action: 'issuePDC',
             flightId,
-            error: 'Failed to issue PDC',
+            error: 'Flight not found',
           });
         }
+      } catch {
+        socket.emit('flightError', {
+          action: 'issuePDC',
+          flightId,
+          error: 'Failed to issue PDC',
+        });
       }
-    );
+    });
 
     socket.on('requestPDC', async ({ flightId, note }: PDCRequestData) => {
       const sessionId = socket.data.sessionId;

@@ -9,7 +9,7 @@ import {
 const router = express.Router();
 
 // GET: /api/update-modal/active - Get the active update modal
-router.get('/active', async (req, res) => {
+router.get('/active', async (_req, res) => {
   try {
     const modal = await getActiveUpdateModal();
     applyPublicCache(res, {

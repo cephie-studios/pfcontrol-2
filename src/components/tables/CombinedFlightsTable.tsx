@@ -72,7 +72,6 @@ export default function CombinedFlightsTable({
         </h2>
         <ArrivalsTable
           flights={arrivalFlights}
-          onFlightDelete={onFlightDelete}
           onFlightChange={onFlightChange}
           backgroundStyle={backgroundStyle}
           loading={arrivalsLoading}

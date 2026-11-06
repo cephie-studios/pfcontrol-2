@@ -185,7 +185,7 @@ router.delete('/:id', requirePermission('admin'), async (req, res) => {
 });
 
 // GET: /api/admin/ratings/stats - Get controller rating statistics
-router.get('/stats', requirePermission('admin'), async (req, res) => {
+router.get('/stats', requirePermission('admin'), async (_req, res) => {
   try {
     const stats = await getControllerRatingStats();
     res.json(stats);

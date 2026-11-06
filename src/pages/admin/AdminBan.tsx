@@ -20,6 +20,7 @@ import {
   addVpnException,
   removeVpnException,
   fetchIpLocation,
+  type Ban as BanRecord,
   type VpnException,
 } from '../../utils/fetch/admin';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -54,21 +55,6 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { minDuration } from '@/lib/minDuration';
-
-interface BanRecord {
-  id: number;
-  user_id?: string;
-  ip_address?: string;
-  username?: string;
-  target_username?: string;
-  reason: string;
-  banned_by: string;
-  banned_by_username?: string;
-  banned_by_avatar?: string;
-  banned_at: string;
-  expires_at?: string;
-  active: boolean;
-}
 
 interface IpLocation {
   country?: string;
@@ -141,9 +127,7 @@ export default function AdminBan() {
       setBansLoading(true);
       setBansError(null);
       const data = await fetchAllBans();
-      const activeBans = (data.bans as unknown as BanRecord[]).filter(
-        (ban) => ban.active
-      );
+      const activeBans = data.bans.filter((ban) => ban.active);
       setBans(activeBans);
       void lookupIpLocations(activeBans);
     } catch (err) {

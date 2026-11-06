@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlightDetailPageSkeleton } from '../components/skeletons/PageSkeletons';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
 import FlightTimingBlock from '../components/flight/FlightTimingBlock';
@@ -44,8 +44,6 @@ export default function PublicFlightView({
   const [flight, setFlight] = useState<Flight | null>(initialFlight ?? null);
   const [loading, setLoading] = useState(!initialFlight);
   const [error, setError] = useState('');
-  const [isPFATC, setIsPFATC] = useState(false);
-  const [isAdvancedATC, setIsAdvancedATC] = useState(false);
   const [activeTab, setActiveTab] = useState<FlightTab>('overview');
   const [logs, setLogs] = useState<FlightLogItem[]>([]);
   const [logsAvailable, setLogsAvailable] = useState(false);
@@ -71,14 +69,6 @@ export default function PublicFlightView({
     }
 
     const loadFollowUpData = (data: Flight) => {
-      fetch(`${API_BASE_URL}/api/sessions/${data.session_id}/submit`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((info) => {
-          if (info?.isPFATC) setIsPFATC(true);
-          if (info?.isAdvancedATC) setIsAdvancedATC(true);
-        })
-        .catch(() => {});
-
       fetch(`${API_BASE_URL}/api/flights/me/${flightId}/logs`, {
         credentials: 'include',
       })

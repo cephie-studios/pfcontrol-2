@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  MapPin,
   Plane,
   Search,
   Filter,
@@ -71,9 +70,6 @@ export default function PFATCFlights() {
   const [debounceTimers, setDebounceTimers] = useState<
     Map<string, NodeJS.Timeout>
   >(new Map());
-  const [pendingUpdates, setPendingUpdates] = useState<
-    Map<string, Partial<Flight>>
-  >(new Map());
   const [updatingFlights, setUpdatingFlights] = useState<Set<string>>(
     new Set()
   );
@@ -125,8 +121,7 @@ export default function PFATCFlights() {
   const [activeAcarsFlightsData, setActiveAcarsFlightsData] = useState<
     Flight[]
   >([]);
-  const [eventControllerViewEnabled, setEventControllerViewEnabled] =
-    useState(false);
+  const [eventControllerViewEnabled] = useState(false);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadMentions, setUnreadMentions] = useState(0);
@@ -150,9 +145,6 @@ export default function PFATCFlights() {
   const isPFATCSectorController = Boolean(
     user?.rolePermissions?.['pfatc_sector'] || user?.isAdmin
   );
-
-  // AATC disabled — isAATCSectorController always false
-  const isAATCSectorController = false; // was: Boolean(user?.rolePermissions?.['aatc_sector'] || user?.isAdmin)
 
   // Combined — used for showing toolbar controls and connecting the overview socket
   const isEventController = isPFATCSectorController; // AATC disabled — was: || isAATCSectorController
@@ -331,16 +323,6 @@ export default function PFATCFlights() {
             arrivalsByAirport: updatedArrivalsByAirport,
           };
         });
-
-        setPendingUpdates((prev) => {
-          const next = new Map(prev);
-          for (const [key] of prev.entries()) {
-            if (key.startsWith(`${flight.id}-`)) {
-              next.delete(key);
-            }
-          }
-          return next;
-        });
       },
       ({ flightId }) => {
         setUpdatingFlights((prev) => {
@@ -353,16 +335,6 @@ export default function PFATCFlights() {
         console.error('Flight operation error:', error);
         toast.error(error?.error || 'Flight operation failed');
         if (error.flightId) {
-          setPendingUpdates((prev) => {
-            const next = new Map(prev);
-            for (const [key] of prev.entries()) {
-              if (key.startsWith(`${error.flightId}-`)) {
-                next.delete(key);
-              }
-            }
-            return next;
-          });
-
           setUpdatingFlights((prev) => {
             const next = new Set(prev);
             next.delete(String(error.flightId));

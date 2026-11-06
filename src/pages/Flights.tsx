@@ -985,13 +985,7 @@ export default function Flights() {
   }
 
   if (accessError) {
-    return (
-      <AccessDenied
-        message={accessError}
-        sessionId={sessionId}
-        accessId={accessId}
-      />
-    );
+    return <AccessDenied message={accessError} />;
   }
 
   const handleCloseAllSidebars = () => {
@@ -1164,7 +1158,6 @@ export default function Flights() {
                       onFlightChange={handleFlightUpdate}
                       backgroundStyle={backgroundStyle}
                       arrivalsColumns={arrivalsColumns}
-                      onFlightDelete={handleFlightDelete}
                       loading={arrivalsLoading}
                     />
                     <div className="flex justify-center mt-4 mb-6">

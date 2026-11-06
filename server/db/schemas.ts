@@ -1,13 +1,8 @@
 import { sql } from 'kysely';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { mainDb } from './connection.js';
 import type Redis from 'ioredis';
 import { DEPLOYMENT, prefixKey } from '../utils/cacheTtl.js';
 import { SEED_SURVEYS } from '../surveys/definitions.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export async function createMainTables() {
   // app_settings

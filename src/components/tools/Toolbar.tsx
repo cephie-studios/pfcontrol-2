@@ -752,7 +752,6 @@ export default function Toolbar({
             station={icao ?? undefined}
             position={position as string}
             isPFATC={isPFATC}
-            isAdvancedATC={isAdvancedATC}
             unreadSessionCount={unreadSessionMentions.length}
             unreadGlobalCount={unreadGlobalMentions.length}
             onVoiceStateChange={setIsInVoice}

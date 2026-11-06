@@ -38,17 +38,6 @@ import { parseCallsign } from '../utils/callsignParser';
 import { toast } from 'sonner';
 import { minDuration } from '@/lib/minDuration';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface SessionSubmitInfo {
-  sessionId: string;
-  airportIcao: string;
-  activeRunway?: string;
-  isPFATC: boolean;
-  isAdvancedATC?: boolean;
-  createdBy: string;
-}
-
 export default function MyFlightDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -59,9 +48,6 @@ export default function MyFlightDetail() {
   const [logsDiscardedDueToAge, setLogsDiscardedDueToAge] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [sessionInfo, setSessionInfo] = useState<SessionSubmitInfo | null>(
-    null
-  );
   const [activeTab, setActiveTab] = useState<FlightTab>('overview');
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
@@ -88,12 +74,6 @@ export default function MyFlightDetail() {
         notesInitialized.current = true;
         setLogs(logsData.logs);
         setLogsDiscardedDueToAge(logsData.logsDiscardedDueToAge);
-        fetch(`${API_BASE_URL}/api/sessions/${flightData.session_id}/submit`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((data) => {
-            if (data) setSessionInfo(data);
-          })
-          .catch(() => {});
       })
       .catch(() => setError('Failed to load flight details.'))
       .finally(() => setLoading(false));
@@ -236,8 +216,6 @@ export default function MyFlightDetail() {
     );
   }
 
-  const isAdvancedATC = sessionInfo?.isAdvancedATC ?? false;
-  const isPFATC = sessionInfo?.isPFATC ?? false;
   const formattedCallsign = parseCallsign(flight.callsign || '', airlines);
   const hasSpokenName =
     formattedCallsign !== (flight.callsign || '').toUpperCase();

@@ -24,7 +24,7 @@ router.get(
   '/',
   requirePermission('users'),
   createAuditLogger('ADMIN_ROLES_ACCESSED'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const roles = await getAllRoles();
       res.json(roles);
@@ -40,7 +40,7 @@ router.get(
   '/users',
   requirePermission('users'),
   createAuditLogger('ADMIN_ROLE_USERS_ACCESSED'),
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const users = await getUsersWithRoles();
       res.json(users);

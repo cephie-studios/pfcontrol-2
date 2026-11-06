@@ -4,7 +4,6 @@ import { redisConnection } from '../db/connection.js';
 import { getUserRoles } from '../db/roles.js';
 import { isAdmin } from '../middleware/admin.js';
 import { scheduleOverviewRefresh } from '../realtime/overview.js';
-import type { SessionUsersServer } from './sessionUsersWebsocket.js';
 import { createHandshakeRateLimiter } from './handshakeRateLimit.js';
 
 interface SectorController {
@@ -127,10 +126,7 @@ const removeSectorController = async (userId: string): Promise<void> => {
   await redisConnection.hdel('activeSectorControllers', userId);
 };
 
-export function setupSectorControllerWebsocket(
-  httpServer: HttpServer,
-  sessionUsersIO: SessionUsersServer
-) {
+export function setupSectorControllerWebsocket(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     path: '/sockets/sector-controller',
     allowRequest: createHandshakeRateLimiter({ scope: 'sector-controller' }),

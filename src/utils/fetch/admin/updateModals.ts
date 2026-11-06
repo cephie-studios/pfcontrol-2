@@ -1,4 +1,6 @@
-export type { UpdateModal } from '../updateModal';
+import type { UpdateModal } from '../updateModal';
+
+export type { UpdateModal };
 
 import { apiError } from '../error.js';
 

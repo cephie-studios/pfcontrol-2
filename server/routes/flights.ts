@@ -639,7 +639,7 @@ router.delete('/acars/active/:sessionId/:flightId', async (req, res) => {
 });
 
 // GET: /api/flights/acars/active - get all active ACARS terminals
-router.get('/acars/active', async (req, res) => {
+router.get('/acars/active', async (_req, res) => {
   try {
     interface ActiveFlight {
       [key: string]: unknown;
@@ -703,7 +703,12 @@ router.get('/acars/active', async (req, res) => {
 
     const enrichedFlights = activeFlights.map(
       (flight: Record<string, unknown>) => {
-        const { user_id, ip_address, acars_token, ...sanitizedFlight } = flight;
+        const {
+          user_id,
+          ip_address: _ipAddress,
+          acars_token: _acarsToken,
+          ...sanitizedFlight
+        } = flight;
         if (user_id && usersMap.has(user_id)) {
           (sanitizedFlight as SanitizedFlight).user = usersMap.get(user_id);
         }
