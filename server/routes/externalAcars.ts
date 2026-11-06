@@ -12,6 +12,7 @@ import {
   providerForExternalAcarsSession,
   resolveExternalAcarsRedirectUrl,
 } from '../utils/externalAcarsPanel.js';
+import type { ExternalAcarsProvider } from '../db/externalAcarsProviders.js';
 
 const UPSTREAM_TIMEOUT_MS = 10_000;
 
@@ -73,6 +74,21 @@ function normalizeSuffix(raw: string | string[] | undefined): string {
   if (!raw) return '/';
   const path = (Array.isArray(raw) ? raw.join('/') : raw).replace(/\/+$/, '');
   return `/${path}/`.replace(/^\/\/$/, '/');
+}
+
+const CELESBIT_MAP_URL = 'https://celesbit.dev/map';
+
+function providerMapUrl(provider: ExternalAcarsProvider): string | undefined {
+  if (provider.id === 'veyra') return CELESBIT_MAP_URL;
+  try {
+    const host = new URL(provider.apiBaseUrl).hostname;
+    if (host === 'celesbit.dev' || host.endsWith('.celesbit.dev')) {
+      return CELESBIT_MAP_URL;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 function claimUrl(sessionId: string, flightId: string, acarsToken: string) {
@@ -217,6 +233,7 @@ async function proxyExternalAcars(req: Request, res: Response) {
             access.flightId,
             access.acarsToken
           ),
+          mapUrl: providerMapUrl(provider),
         },
       });
     }

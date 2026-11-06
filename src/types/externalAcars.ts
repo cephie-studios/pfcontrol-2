@@ -65,7 +65,7 @@ export interface ProviderAtis {
 }
 
 export interface ProviderStatus {
-  pfcontrol?: { claimUrl: string };
+  pfcontrol?: { claimUrl: string; mapUrl?: string };
   callsign?: string;
   online?: boolean;
   flight?: ProviderFlight | null;

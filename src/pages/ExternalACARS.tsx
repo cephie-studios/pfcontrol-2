@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { Map as MapIcon, NotebookPen, Plane, Plus } from 'lucide-react';
+import { Map as MapIcon, NotebookPen, Plane, Plus, Radar } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AcarsFlightPlan from '../components/acars/AcarsFlightPlan';
 import AcarsSkeleton, {
@@ -117,6 +117,7 @@ export default function ExternalACARS() {
   const down = offline || status?.online === false;
   const connected = datalink?.state === 'connected' && !datalink.suspended;
   const claimUrl = status?.pfcontrol?.claimUrl;
+  const mapUrl = status?.pfcontrol?.mapUrl;
   const showAccountPrompt =
     !user && !accountLoading && !!plan && !!claimUrl && !accountDismissed;
   const spokenCallsign = useMemo(
@@ -249,50 +250,70 @@ export default function ExternalACARS() {
             <span className="truncate">{callsign || 'ACARS'}</span>
           </h1>
           {loading && !deniedReason && <AcarsActionsSkeleton buttons={2} />}
-          {plan && (
+          {!deniedReason && (plan || mapUrl) && (
             <div className="flex flex-wrap gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {mapUrl && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className={SIGNATURE_TONES.blue}
+                >
+                  <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+                    <Radar />
+                    Map
+                  </a>
+                </Button>
+              )}
+              {plan && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={
+                          notesEnabled ? 'Hide side panel' : 'Show side panel'
+                        }
+                        aria-pressed={notesEnabled}
+                        className={cn(
+                          SIGNATURE_TONES.blue,
+                          notesEnabled &&
+                            'bg-blue-600 text-white dark:bg-blue-600'
+                        )}
+                        onClick={() =>
+                          saveLayout({ notesEnabled: !notesEnabled })
+                        }
+                      >
+                        <NotebookPen />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="shadcn-scope" sideOffset={6}>
+                      {notesEnabled ? 'Hide side panel' : 'Show side panel'}
+                    </TooltipContent>
+                  </Tooltip>
                   <Button
                     variant="ghost"
-                    size="icon-sm"
-                    aria-label={
-                      notesEnabled ? 'Hide side panel' : 'Show side panel'
-                    }
-                    aria-pressed={notesEnabled}
-                    className={cn(
-                      SIGNATURE_TONES.blue,
-                      notesEnabled && 'bg-blue-600 text-white dark:bg-blue-600'
-                    )}
-                    onClick={() => saveLayout({ notesEnabled: !notesEnabled })}
+                    size="sm"
+                    className={SIGNATURE_TONES.blue}
+                    onClick={() => setShowCharts(true)}
                   >
-                    <NotebookPen />
+                    <MapIcon />
+                    Charts
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent className="shadcn-scope" sideOffset={6}>
-                  {notesEnabled ? 'Hide side panel' : 'Show side panel'}
-                </TooltipContent>
-              </Tooltip>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={SIGNATURE_TONES.blue}
-                onClick={() => setShowCharts(true)}
-              >
-                <MapIcon />
-                Charts
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className={SIGNATURE_TONES.blue}
-              >
-                <Link to={`/submit/${sessionId}`}>
-                  <Plus />
-                  New flight
-                </Link>
-              </Button>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={SIGNATURE_TONES.blue}
+                  >
+                    <Link to={`/submit/${sessionId}`}>
+                      <Plus />
+                      New flight
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </header>
