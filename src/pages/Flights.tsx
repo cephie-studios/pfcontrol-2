@@ -37,7 +37,8 @@ import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import ChartDrawer from '../components/tools/ChartDrawer';
 import Button from '../components/common/Button';
-import Loader from '../components/common/Loader';
+import { Skeleton } from '@/components/ui/skeleton';
+import FlightTableSkeleton from '../components/tables/FlightTableSkeleton';
 import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
@@ -1047,7 +1048,22 @@ export default function Flights() {
       <div className="min-h-screen text-white relative">
         <div className="relative z-10">
           <Navbar sessionId={sessionId} accessId={accessId} />
-          <Loader />
+          <div className="pt-16">
+            <div className="flex items-center justify-between gap-4 px-4 py-2">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-9 w-32 rounded-lg" />
+                <Skeleton className="h-9 w-40 rounded-lg" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-24 rounded-lg" />
+                <Skeleton className="h-9 w-9 rounded-lg" />
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+            </div>
+            <div className="-mt-4">
+              <FlightTableSkeleton />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1115,9 +1131,7 @@ export default function Flights() {
           />
           <div className="-mt-4">
             {loading ? (
-              <div className="text-center py-12 text-gray-400">
-                Loading {currentView}...
-              </div>
+              <FlightTableSkeleton />
             ) : showCombinedView ? (
               <>
                 <CombinedFlightsTable

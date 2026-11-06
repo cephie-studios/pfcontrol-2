@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
+import FlightDetailSkeleton from '../components/flight/FlightDetailSkeleton';
 import FlightTimingBlock from '../components/flight/FlightTimingBlock';
 import FlightTabs, { type FlightTab } from '../components/flight/FlightTabs';
 import {
@@ -14,7 +15,6 @@ import {
   Pencil,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import Loader from '../components/common/Loader';
 import { fetchPublicFlight, type FlightLogItem } from '../utils/fetch/flights';
 import { fetchBackgrounds } from '../utils/fetch/data';
 import { useSettings } from '../hooks/settings/useSettings';
@@ -250,9 +250,9 @@ export default function PublicFlightView({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 text-white">
         {standalone && <Navbar />}
-        <Loader />
+        <FlightDetailSkeleton />
       </div>
     );
   }

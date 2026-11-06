@@ -62,7 +62,7 @@ import type {
 } from '../types/settings';
 import Button from '../components/common/Button';
 import ColorPicker from '../components/common/ColorPicker';
-import Loader from '../components/common/Loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import Navbar from '../components/Navbar';
 import AccessDenied from '../components/AccessDenied';
 import { minDuration } from '@/lib/minDuration';
@@ -727,9 +727,36 @@ export default function PilotProfile({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white" role="status">
         {standalone && <Navbar />}
-        <Loader />
+        <div className="border-b border-zinc-700/50 py-8 md:py-12">
+          <div className="mx-auto max-w-7xl px-4 pt-24 pb-4">
+            <div className="flex flex-col gap-6 md:flex-row md:items-start">
+              <Skeleton className="size-24 self-center rounded-full md:size-32 md:self-auto" />
+              <div className="flex flex-1 flex-col items-center gap-3 md:items-start">
+                <Skeleton className="h-9 w-56 md:h-12 md:w-72" />
+                <Skeleton className="h-5 w-48" />
+                <div className="flex gap-3">
+                  <Skeleton className="h-7 w-24 rounded-full" />
+                  <Skeleton className="h-7 w-24 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mx-auto mt-8 max-w-7xl space-y-8 px-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-28 rounded-3xl" />
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {[0, 1].map((i) => (
+              <Skeleton key={i} className="h-24 rounded-3xl" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full rounded-3xl" />
+        </div>
       </div>
     );
   }

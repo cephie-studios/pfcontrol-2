@@ -21,6 +21,7 @@ import {
 } from '../utils/fetch/ratings';
 import { toast } from 'sonner';
 import { minDuration } from '@/lib/minDuration';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MAX_REPORT_REASON_LENGTH = 500;
 
@@ -372,20 +373,42 @@ export default function MyFeedback() {
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
               MY FEEDBACK
             </h1>
-            <div className="flex gap-3 animate-pulse">
-              <div className="h-10 w-32 rounded-full bg-zinc-700/60" />
-              <div className="h-10 w-32 rounded-full bg-zinc-700/60" />
+            <div className="flex gap-3">
+              <Skeleton className="h-12 w-36 rounded-full" />
+              <Skeleton className="h-12 w-36 rounded-full" />
             </div>
           </div>
         </div>
         <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-24 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
-              <div className="h-24 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
+          <div className="p-6 space-y-6" role="status">
+            <div className="flex justify-end gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-8 w-20 rounded-full" />
+              ))}
             </div>
-            <div className="h-48 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
-            <div className="h-48 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-9 w-20" />
+                  </div>
+                ))}
+              </div>
+              {[0, 1].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                  <Skeleton className="h-[180px] w-full rounded-xl" />
+                </div>
+              ))}
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-24" />
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -482,7 +505,7 @@ export default function MyFeedback() {
                           How your stars break down in this range
                         </p>
                         {chartsLoading ? (
-                          <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
+                          <Skeleton className="h-[180px] w-full rounded-xl" />
                         ) : (
                           <RatingDistribution buckets={distribution} />
                         )}
@@ -495,7 +518,7 @@ export default function MyFeedback() {
                           Hover for daily values
                         </p>
                         {chartsLoading ? (
-                          <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
+                          <Skeleton className="h-[180px] w-full rounded-xl" />
                         ) : dailyStats.length < 3 ? (
                           <div className="h-[180px] rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center">
                             <p className="text-sm text-zinc-500">
@@ -520,9 +543,9 @@ export default function MyFeedback() {
                       {listLoading ? (
                         <div className="space-y-3">
                           {Array.from({ length: 3 }).map((_, i) => (
-                            <div
+                            <Skeleton
                               key={i}
-                              className="h-20 rounded-2xl bg-zinc-900/50 border border-zinc-800 animate-pulse"
+                              className="h-20 w-full rounded-2xl"
                             />
                           ))}
                         </div>

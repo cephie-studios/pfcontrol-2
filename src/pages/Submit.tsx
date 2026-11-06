@@ -35,7 +35,8 @@ import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
 import AircraftDropdown from '../components/dropdowns/AircraftDropdown';
-import Loader from '../components/common/Loader';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import AccessDenied from '../components/AccessDenied';
 import ControllerRatingPopup from '../components/tools/ControllerRatingPopup';
 import Modal from '../components/common/Modal';
@@ -638,9 +639,38 @@ export default function Submit({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 text-white" role="status">
         {standalone && <Navbar />}
-        <Loader />
+        <div className="relative flex h-96 w-full flex-col items-center justify-center gap-4 px-6 md:h-[32rem]">
+          <div className="flex gap-4">
+            <Skeleton className="h-9 w-24 rounded-full" />
+            <Skeleton className="h-9 w-28 rounded-full" />
+          </div>
+          <Skeleton className="h-10 w-72 sm:h-14 sm:w-[28rem]" />
+        </div>
+        <div className="relative z-10 container mx-auto -mt-32 max-w-3xl px-4 pb-8 md:-mt-40">
+          <Skeleton className="mb-6 h-20 w-full rounded-3xl" />
+          <div className="space-y-6 rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
+            {[3, 2, 2, 1].map((cols, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'grid grid-cols-1 gap-3',
+                  cols === 3 && 'sm:grid-cols-3',
+                  cols === 2 && 'sm:grid-cols-2'
+                )}
+              >
+                {Array.from({ length: cols }).map((_, j) => (
+                  <div key={j} className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-11 w-full rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ))}
+            <Skeleton className="h-12 w-full rounded-full" />
+          </div>
+        </div>
       </div>
     );
   }

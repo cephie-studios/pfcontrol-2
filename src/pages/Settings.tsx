@@ -40,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 type SectionId =
@@ -62,6 +63,31 @@ function SectionAnchor({
   return (
     <div id={id} className="scroll-mt-24">
       {children}
+    </div>
+  );
+}
+
+function SettingsSectionSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex min-h-9 items-center gap-2.5">
+        <Skeleton className="size-5 rounded-md" />
+        <Skeleton className="h-5 w-32" />
+      </div>
+      <div className="flex flex-col divide-y overflow-hidden rounded-2xl border bg-card">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between gap-6 px-5 py-4"
+          >
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3.5 w-full max-w-72" />
+            </div>
+            <Skeleton className="h-5 w-9 shrink-0 rounded-full" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -273,9 +299,16 @@ export default function Settings() {
 
   if (loading)
     return (
-      <div className="shadcn-scope flex min-h-screen items-center justify-center bg-background text-foreground">
+      <div className="shadcn-scope min-h-screen bg-background text-foreground">
         <Navbar />
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <PageHero title="YOUR SETTINGS" />
+        <div className="relative z-10 mx-auto -mt-6 w-full max-w-4xl min-w-0 px-4 pb-32 sm:px-6 md:-mt-8">
+          <div className="flex min-w-0 flex-col gap-12" role="status">
+            {[3, 2, 4].map((rows, i) => (
+              <SettingsSectionSkeleton key={i} rows={rows} />
+            ))}
+          </div>
+        </div>
       </div>
     );
 

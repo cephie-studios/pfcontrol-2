@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { Loader2 } from 'lucide-react';
 import ACARS from './ACARS';
 import ExternalACARS from './ExternalACARS';
 import Navbar from '../components/Navbar';
+import AcarsSkeleton, {
+  AcarsActionsSkeleton,
+} from '../components/acars/AcarsSkeleton';
+import { useAcarsLayout } from '../components/acars/useAcarsLayout';
+import { Skeleton } from '@/components/ui/skeleton';
 import { clientApiUrl } from '../utils/clientApiBase';
 
 const RESOLVE_TIMEOUT_MS = 15_000;
@@ -72,13 +76,19 @@ function DefaultAcarsRoute() {
 
   if (ready) return <ACARS />;
 
+  return <AcarsLoadingShell />;
+}
+
+function AcarsLoadingShell() {
+  const layoutState = useAcarsLayout();
   return (
-    <div className="shadcn-scope min-h-screen bg-background text-foreground">
+    <div className="shadcn-scope flex min-h-dvh flex-col bg-background text-foreground md:h-dvh">
       <Navbar />
-      <main className="mx-auto flex max-w-lg flex-col items-center gap-4 px-5 pt-32 text-center">
-        <Loader2 className="size-6 animate-spin text-zinc-500" />
-        <p className="text-sm text-zinc-500">Opening ACARS…</p>
-      </main>
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 pt-21 pb-3 sm:px-6">
+        <Skeleton className="h-7 w-36" />
+        <AcarsActionsSkeleton />
+      </header>
+      <AcarsSkeleton layoutState={layoutState} />
     </div>
   );
 }

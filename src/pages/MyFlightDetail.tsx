@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
+import FlightDetailSkeleton from '../components/flight/FlightDetailSkeleton';
 import FlightTimingBlock from '../components/flight/FlightTimingBlock';
 import FlightTabs, { type FlightTab } from '../components/flight/FlightTabs';
 import {
@@ -271,15 +272,7 @@ export default function MyFlightDetail() {
     return (
       <div className="min-h-screen bg-zinc-950 text-white">
         <Navbar />
-        <div className="relative w-full h-80 md:h-[400px] overflow-hidden animate-pulse">
-          <div className="absolute inset-0 bg-zinc-800" />
-        </div>
-        <div className="container mx-auto max-w-4xl px-4 pb-10 relative z-10 space-y-4">
-          <div className="h-20 rounded-2xl bg-zinc-800/60 -mt-4 animate-pulse" />
-          <div className="h-8 w-64 rounded-full bg-zinc-800 animate-pulse" />
-          <div className="h-44 rounded-2xl bg-zinc-800/60 animate-pulse" />
-          <div className="h-64 rounded-2xl bg-zinc-800/40 animate-pulse" />
-        </div>
+        <FlightDetailSkeleton />
       </div>
     );
   }
