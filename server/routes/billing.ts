@@ -11,7 +11,7 @@ import {
 } from '../db/billing.js';
 import { getUserById, getUserByUsername } from '../db/users.js';
 import { getPlanState } from '../billing/entitlements.js';
-import { handleStripeEvent } from '../billing/fulfillment.js';
+import { handleStripeEvent, syncSubscription } from '../billing/fulfillment.js';
 import {
   getSupporterWall,
   invalidateSupporterWall,
@@ -92,13 +92,13 @@ async function ensureCustomer(userId: string): Promise<string> {
   return claimed;
 }
 
-async function hasLiveStripeSubscription(customerId: string) {
+async function liveStripeSubscriptions(customerId: string) {
   const { data } = await stripe!.subscriptions.list({
     customer: customerId,
     status: 'all',
     limit: 20,
   });
-  return data.some((sub) =>
+  return data.filter((sub) =>
     ['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(sub.status)
   );
 }
@@ -304,14 +304,19 @@ router.post('/checkout', checkoutLimiter, optionalAuth, async (req, res) => {
         getPlanState(recipientId),
         getStripeCustomerId(recipientId),
       ]);
-      if (
-        state.subscription ||
-        (customerId && (await hasLiveStripeSubscription(customerId)))
-      ) {
-        return res.status(409).json({
-          error:
-            'You already have a subscription. Change or cancel it from Manage billing.',
-        });
+      const alreadySubscribed = {
+        error:
+          'You already have a subscription. Change or cancel it from Manage billing.',
+      };
+      if (state.subscription) return res.status(409).json(alreadySubscribed);
+      const live = customerId ? await liveStripeSubscriptions(customerId) : [];
+      if (live.length) {
+        // A paid subscription without a grant means its webhook never landed.
+        for (const sub of live) await syncSubscription(sub);
+        if ((await getPlanState(recipientId)).subscription) {
+          return res.json({ restored: true });
+        }
+        return res.status(409).json(alreadySubscribed);
       }
       session = await stripe!.checkout.sessions.create({
         mode: 'subscription',
