@@ -624,7 +624,9 @@ export default function PilotProfile({
     ? draft.displayBackgroundOnProfile
     : isCurrentUser ||
       (profile?.privacySettings.displayBackgroundOnProfile ?? true);
-  const backgroundImage = displayBackground ? resolvedBackgroundImage : null;
+  const backgroundImage =
+    (displayBackground && resolvedBackgroundImage) ||
+    '/assets/images/hero.webp';
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
@@ -758,19 +760,12 @@ export default function PilotProfile({
     onClear: () => updateCustomization({ cardColor: null }),
   };
 
-  const headerBaseStyle: React.CSSProperties = backgroundImage
-    ? {
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }
-    : {
-        background: effectiveCustomization.backgroundColor
-          ? `linear-gradient(to top, ${hexToRgba(effectiveCustomization.backgroundColor, 0.45)}, ${hexToRgba(effectiveCustomization.backgroundColor, 0)})`
-          : 'linear-gradient(to top, #27272a, #18181b)',
-        backgroundColor: '#18181b',
-      };
+  const headerBaseStyle: React.CSSProperties = {
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
 
   return (
     <div className="min-h-screen bg-black text-white relative">
@@ -788,27 +783,20 @@ export default function PilotProfile({
       <div className="relative z-10">
         {standalone && <Navbar />}
 
-        <div
-          className={`relative ${!backgroundImage ? 'border-b border-zinc-700/50' : ''}`}
-          style={headerBaseStyle}
-        >
-          {backgroundImage && (
-            <>
-              {effectiveCustomization.backgroundColor && (
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    backgroundColor: hexToRgba(
-                      effectiveCustomization.backgroundColor,
-                      0.45
-                    ),
-                  }}
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
-            </>
+        <div className="relative" style={headerBaseStyle}>
+          {effectiveCustomization.backgroundColor && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: hexToRgba(
+                  effectiveCustomization.backgroundColor,
+                  0.45
+                ),
+              }}
+            />
           )}
+          <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/70 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
           {effectiveCustomization.bannerTintColor &&
             effectiveCustomization.bannerTintOpacity > 0 && (
               <div
