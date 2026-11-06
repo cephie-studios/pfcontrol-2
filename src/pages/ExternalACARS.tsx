@@ -352,17 +352,6 @@ export default function ExternalACARS() {
                 This page updates on its own.
               </p>
             </div>
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className={SIGNATURE_TONES.blue}
-            >
-              <Link to={`/submit/${sessionId}`}>
-                <Plus />
-                File a flight plan
-              </Link>
-            </Button>
           </main>
         ) : loading || !status || !plan ? (
           <AcarsSkeleton layoutState={layoutState} transponder />
