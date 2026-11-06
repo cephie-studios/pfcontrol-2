@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Star, MessageSquare, Flag, Loader2 } from 'lucide-react';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import ErrorScreen from '../components/common/ErrorScreen';
 import Modal from '../components/common/Modal';
-import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import { AdminAreaChart } from '../components/admin/AdminChart';
 import {
   fetchMyRatings,
@@ -24,14 +23,6 @@ import { minDuration } from '@/lib/minDuration';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const MAX_REPORT_REASON_LENGTH = 500;
-
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
 
 function StarRow({ rating }: { rating: number }) {
   return (
@@ -138,7 +129,6 @@ function FeedbackEntry({
 }
 
 export default function MyFeedback() {
-  const { settings } = useSettings();
   const [stats, setStats] = useState<MyControllerRatingStats | null>(null);
   const [dailyStats, setDailyStats] = useState<MyDailyRatingStats[]>([]);
   const [distribution, setDistribution] = useState<
@@ -152,8 +142,6 @@ export default function MyFeedback() {
   const [chartsLoading, setChartsLoading] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [reportingId, setReportingId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
@@ -267,70 +255,10 @@ export default function MyFeedback() {
     };
   }, [page]);
 
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (fetchError) {
-        console.error('Error loading available images:', fetchError);
-      }
-    };
-    loadImages();
-  }, []);
-
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
-      setCustomLoaded(true);
-    }
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/images/hero.webp")';
 
   const avgRatingData = useMemo(
     () =>
@@ -355,7 +283,7 @@ export default function MyFeedback() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: customLoaded ? 1 : 0,
+          opacity: backgroundUrl ? 1 : 0,
           transition: 'opacity 0.5s ease-in-out',
         }}
       />

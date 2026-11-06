@@ -41,7 +41,7 @@ import { parseCallsign } from '../utils/callsignParser';
 import { getCurrentUser } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
 import { toast } from 'sonner';
-import { fetchBackgrounds, fetchUserRanks } from '../utils/fetch/data';
+import { fetchUserRanks } from '../utils/fetch/data';
 import { updateUserSettings } from '../utils/fetch/settings';
 import {
   containsProfanity,
@@ -63,6 +63,7 @@ import type {
 } from '../types/settings';
 import Button from '../components/common/Button';
 import ColorPicker from '../components/common/ColorPicker';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import AccessDenied from '../components/AccessDenied';
 import { minDuration } from '@/lib/minDuration';
@@ -349,12 +350,6 @@ interface UserStatistics {
   last_updated?: string;
 }
 
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
-
 interface PilotProfileProps {
   standalone?: boolean;
   usernameOverride?: string;
@@ -381,7 +376,6 @@ export default function PilotProfile({
   const [error, setError] = useState('');
   const [shareClicked, setShareClicked] = useState(false);
   const [ranks, setRanks] = useState<Ranks>(initialRanks ?? {});
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<ProfileEditDraft>(EMPTY_DRAFT);
@@ -396,7 +390,6 @@ export default function PilotProfile({
 
   const isCurrentUser = !!(user && profile && profile.user.id === user.userId);
   const isOwnerEditing = isCurrentUser && isEditing;
-  const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
   const bioHasContentViolation = useMemo(
     () =>
@@ -484,18 +477,6 @@ export default function PilotProfile({
       fetchUserStats();
     }
   }, [isCurrentUser, fetchUserStats]);
-
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
-  }, []);
 
   const handleShareProfile = () => {
     const profileUrl = `${window.location.origin}/user/${username}`;
@@ -635,47 +616,9 @@ export default function PilotProfile({
 
   const backgroundSettings = profile?.user.background_image;
 
-  const resolvedBackgroundImage = useMemo(() => {
-    if (!backgroundSettings) return null;
-
-    const selectedImage = backgroundSettings.selectedImage;
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random' && availableImages.length > 0) {
-      const randomIndex = Math.floor(Math.random() * availableImages.length);
-      return `${API_BASE_URL}${availableImages[randomIndex].path}`;
-    } else if (selectedImage === 'favorites') {
-      const favorites = backgroundSettings.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          return favImageUrl;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        return imageUrl;
-      }
-    }
-
-    return null;
-  }, [backgroundSettings, availableImages, API_BASE_URL]);
+  const resolvedBackgroundImage = useBackgroundImage(
+    backgroundSettings ?? null
+  );
 
   const displayBackground = isOwnerEditing
     ? draft.displayBackgroundOnProfile

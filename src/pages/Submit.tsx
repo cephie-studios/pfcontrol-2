@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import { SubmitPageSkeleton } from '../components/skeletons/PageSkeletons';
 import WindDisplay from '../components/tools/WindDisplay';
@@ -31,7 +32,6 @@ import { addFlight } from '../utils/fetch/flights';
 import { useAuth } from '../hooks/auth/useAuth';
 import { useData } from '../hooks/data/useData';
 import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import type { Flight } from '../types/flight';
 import AirportDropdown from '../components/dropdowns/AirportDropdown';
 import Dropdown from '../components/common/Dropdown';
@@ -59,12 +59,6 @@ interface SessionData {
   atisLetter?: string;
   controllerUsername?: string;
   externalSession?: boolean;
-}
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
 }
 
 interface SubmitProps {
@@ -109,8 +103,6 @@ export default function Submit({
   const [routeError, setRouteError] = useState('');
   const [success, setSuccess] = useState(false);
   const [submittedFlight, setSubmittedFlight] = useState<Flight | null>(null);
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [form, setForm] = useState({
     aircraft_type: '',
     departure: initialAirportIcao ?? '',
@@ -294,18 +286,6 @@ export default function Submit({
   }, [sessionId, initialLoadComplete]);
 
   useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
-  }, []);
-
-  useEffect(() => {
     if (!sessionId || !accessId || !initialLoadComplete || authLoading) return;
 
     const socket = createFlightsSocket(
@@ -357,58 +337,10 @@ export default function Submit({
     session?.feedbackEnabled,
   ]);
 
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/app/backgrounds/mdpc_01.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/app/backgrounds/mdpc_01.webp")') {
-      setCustomLoaded(true);
-    }
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/app/backgrounds/mdpc_01.webp")';
 
   const handleChange = (name: string) => (value: string) => {
     setForm((f) => ({ ...f, [name]: value }));
@@ -661,7 +593,7 @@ export default function Submit({
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              opacity: customLoaded ? 1 : 0,
+              opacity: backgroundUrl ? 1 : 0,
               transition: 'opacity 0.5s ease-in-out',
             }}
           />

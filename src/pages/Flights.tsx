@@ -4,7 +4,6 @@ import { useParams, useSearchParams } from 'react-router';
 import { useMediaQuery } from 'react-responsive';
 import { fetchFlights, addFlight } from '../utils/fetch/flights';
 import { fetchSession, updateSession } from '../utils/fetch/sessions';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import { createFlightsSocket } from '../sockets/flightsSocket';
 import { createArrivalsSocket } from '../sockets/arrivalsSocket';
 import { createSessionUsersSocket } from '../sockets/sessionUsersSocket';
@@ -27,6 +26,7 @@ import Joyride, {
 } from 'react-joyride-react19-compat';
 import { usePostHog } from '@posthog/react';
 import { trackTutorialEvent } from '../utils/tutorialTracking';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import Toolbar from '../components/tools/Toolbar';
 import DepartureTable from '../components/tables/DepartureTable';
@@ -41,8 +41,6 @@ import Button from '../components/common/Button';
 import FlightTableSkeleton from '../components/tables/FlightTableSkeleton';
 import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
 interface SessionData {
   sessionId: string;
   airportIcao: string;
@@ -55,12 +53,6 @@ interface SessionData {
   isPFATC: boolean;
   isAdvancedATC?: boolean;
   feedbackEnabled?: boolean;
-}
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
 }
 
 export default function Flights() {
@@ -85,7 +77,6 @@ export default function Flights() {
     typeof createArrivalsSocket
   > | null>(null);
   const [lastSessionId, setLastSessionId] = useState<string | null>(null);
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
   const [startupSoundPlayed, setStartupSoundPlayed] = useState(false);
   const { user } = useAuth();
   const { settings } = useSettings();
@@ -159,18 +150,6 @@ export default function Flights() {
       // ATIS update received
     }
   };
-
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
-  }, []);
 
   useEffect(() => {
     if (!sessionId) {
@@ -893,52 +872,10 @@ export default function Flights() {
     customArrivalFlights,
   ]);
 
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/app/backgrounds/mdpc_01.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/app/backgrounds/mdpc_01.webp")';
 
   const showCombinedView =
     !isMobile && settings?.layout?.showCombinedView && !startTutorial;
