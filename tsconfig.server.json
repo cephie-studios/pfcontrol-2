@@ -5,6 +5,7 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "jsx": "react-jsx",
     "outDir": "dist/server",
     "rootDir": "server",
     "esModuleInterop": true,

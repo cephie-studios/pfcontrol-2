@@ -985,13 +985,7 @@ export default function Flights() {
   }
 
   if (accessError) {
-    return (
-      <AccessDenied
-        message={accessError}
-        sessionId={sessionId}
-        accessId={accessId}
-      />
-    );
+    return <AccessDenied message={accessError} />;
   }
 
   const handleCloseAllSidebars = () => {
