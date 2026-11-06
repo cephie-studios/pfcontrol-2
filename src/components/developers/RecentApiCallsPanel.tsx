@@ -22,7 +22,7 @@ import SettingsRow from '../Settings/SettingsRow';
 import AdminSearchInput from '../admin/AdminSearchInput';
 import AdminStatusBadge from '../admin/AdminStatusBadge';
 import AdminTable from '../admin/AdminTable';
-import { AdminLoading } from '../admin/AdminStates';
+import { AdminTableSkeleton } from '../admin/AdminStates';
 import {
   ADMIN_TONE_TEXT,
   httpStatusTone,
@@ -229,9 +229,7 @@ export default function RecentApiCallsPanel({
         }
       >
         {loading && activeList.length === 0 ? (
-          <SettingsGroup>
-            <AdminLoading label="Loading calls…" />
-          </SettingsGroup>
+          <AdminTableSkeleton columns={7} rows={5} avatar={false} />
         ) : activeList.length === 0 ? (
           <SettingsGroup>
             <SettingsRow

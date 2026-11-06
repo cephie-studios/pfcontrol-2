@@ -20,7 +20,7 @@ import { fetchDeveloperApiDocs } from '../../utils/fetch/developer';
 import SettingsSection from '../../components/Settings/SettingsSection';
 import SettingsGroup from '../../components/Settings/SettingsGroup';
 import SettingsRow from '../../components/Settings/SettingsRow';
-import { AdminLoading } from '../../components/admin/AdminStates';
+import { DeveloperDocsSkeleton } from '../../components/developers/DeveloperSkeletons';
 import { Button } from '@/components/ui/button';
 import {
   endpointAnchorId,
@@ -178,7 +178,7 @@ export default function DeveloperDocs({
     return () => observer.disconnect();
   }, [observedIds]);
 
-  if (loading) return <AdminLoading label="Loading documentation…" />;
+  if (loading) return <DeveloperDocsSkeleton />;
 
   if (err || !spec) {
     return (

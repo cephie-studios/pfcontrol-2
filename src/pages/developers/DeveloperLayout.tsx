@@ -5,12 +5,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Code2,
-  Loader2,
   RefreshCw,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
+import { DeveloperPortalSkeleton } from '../../components/developers/DeveloperSkeletons';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -180,13 +180,7 @@ function DeveloperShell() {
               </DeveloperBanner>
             )}
 
-            <Suspense
-              fallback={
-                <div className="flex justify-center py-24">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                </div>
-              }
-            >
+            <Suspense fallback={<DeveloperPortalSkeleton />}>
               <Outlet />
             </Suspense>
           </div>

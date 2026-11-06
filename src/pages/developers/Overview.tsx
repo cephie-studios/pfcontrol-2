@@ -17,6 +17,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import DeveloperAccessRequestForm from '../../components/developers/DeveloperAccessRequestForm';
+import { DeveloperOverviewSkeleton } from '../../components/developers/DeveloperSkeletons';
 import SettingsSection from '../../components/Settings/SettingsSection';
 import SettingsGroup from '../../components/Settings/SettingsGroup';
 import SettingsRow from '../../components/Settings/SettingsRow';
@@ -99,11 +100,7 @@ export default function DeveloperOverview() {
   }, [notificationEmail]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DeveloperOverviewSkeleton />;
   }
 
   const adminNoticeParsed = parseAdminNoticeDetail(adminNoticeDetail);

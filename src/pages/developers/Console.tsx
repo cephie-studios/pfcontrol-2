@@ -1,11 +1,15 @@
 import { Link } from 'react-router';
 import { useMemo } from 'react';
-import { ChartLine, Hourglass, KeyRound, Layers, Loader2 } from 'lucide-react';
+import { ChartLine, Hourglass, KeyRound, Layers } from 'lucide-react';
 import {
   DeveloperRequestsAreaChart,
   DeveloperBreakdownDonutChart,
 } from '../../components/developers/DeveloperUsageCharts';
 import RecentApiCallsPanel from '../../components/developers/RecentApiCallsPanel';
+import {
+  DeveloperChartSkeleton,
+  DeveloperConsoleSkeleton,
+} from '../../components/developers/DeveloperSkeletons';
 import SettingsSection from '../../components/Settings/SettingsSection';
 import SettingsGroup from '../../components/Settings/SettingsGroup';
 import SettingsRow from '../../components/Settings/SettingsRow';
@@ -46,8 +50,8 @@ export default function DeveloperConsole() {
 
   if (loading) {
     return (
-      <div className="shadcn-scope flex justify-center py-24">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      <div className="shadcn-scope">
+        <DeveloperConsoleSkeleton chartHeight={CHART_HEIGHT} />
       </div>
     );
   }
@@ -108,12 +112,7 @@ export default function DeveloperConsole() {
         <SettingsGroup>
           <div className="px-5 py-4">
             {dashLoading ? (
-              <div
-                className="flex items-center justify-center"
-                style={{ height: CHART_HEIGHT }}
-              >
-                <Loader2 className="size-5 animate-spin text-muted-foreground" />
-              </div>
+              <DeveloperChartSkeleton height={CHART_HEIGHT} />
             ) : (
               <DeveloperRequestsAreaChart
                 data={summary?.daily ?? []}
