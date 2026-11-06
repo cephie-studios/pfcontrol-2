@@ -42,7 +42,8 @@ import AdminStatusBadge from '../../components/admin/AdminStatusBadge';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import type { AdminTone } from '../../components/admin/adminConstants';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -624,7 +625,10 @@ export default function AdminAltDetection() {
         }
       >
         {loading ? (
-          <AdminLoading label="Scanning for alt accounts…" />
+          <>
+            <AdminStatCardsSkeleton count={2} columns={2} />
+            <AdminTableSkeleton columns={5} avatar={false} />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Scan failed"

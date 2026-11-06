@@ -3,6 +3,7 @@ import { Navigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { getTesterSettings } from '../utils/fetch/data';
 import AccessDenied from './AccessDenied';
+import RouteFallback from './skeletons/RouteFallback';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -63,7 +64,7 @@ export default function ProtectedRoute({
   }, [requireTester, user]);
 
   if (isLoading || (requireTester && testerGateEnabled === null)) {
-    return null;
+    return <RouteFallback />;
   }
 
   if (requireAuth && !user) {

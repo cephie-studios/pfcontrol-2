@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlightDetailPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link, useNavigate, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
@@ -13,23 +14,15 @@ import {
   Share2,
   Pencil,
 } from 'lucide-react';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
-import Loader from '../components/common/Loader';
 import { fetchPublicFlight, type FlightLogItem } from '../utils/fetch/flights';
-import { fetchBackgrounds } from '../utils/fetch/data';
-import { useSettings } from '../hooks/settings/useSettings';
 import { useData } from '../hooks/data/useData';
 import type { Flight } from '../types/flight';
 import { parseCallsign } from '../utils/callsignParser';
 import { useAuth } from '../hooks/auth/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
 
 interface PublicFlightViewProps {
   standalone?: boolean;
@@ -45,15 +38,12 @@ export default function PublicFlightView({
   const navigate = useNavigate();
   const params = useParams<{ flightId: string }>();
   const flightId = flightIdOverride ?? params.flightId;
-  const { settings } = useSettings();
   const { airlines } = useData();
 
   const { user } = useAuth();
   const [flight, setFlight] = useState<Flight | null>(initialFlight ?? null);
   const [loading, setLoading] = useState(!initialFlight);
   const [error, setError] = useState('');
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [isPFATC, setIsPFATC] = useState(false);
   const [isAdvancedATC, setIsAdvancedATC] = useState(false);
   const [activeTab, setActiveTab] = useState<FlightTab>('overview');
@@ -71,12 +61,6 @@ export default function PublicFlightView({
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    fetchBackgrounds()
-      .then(setAvailableImages)
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -207,54 +191,16 @@ export default function PublicFlightView({
   };
   const snaps = useMemo(() => flight?.snap_images ?? [], [flight?.snap_images]);
 
-  const backgroundImage = useMemo(() => {
-    if (snaps.length > 0) return `url(${snaps[0].url})`;
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites')
-        return filename;
-      if (filename.startsWith('https://api.cephie.app/')) return filename;
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const i = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[i].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const fav = favorites[Math.floor(Math.random() * favorites.length)];
-        const url = getImageUrl(fav);
-        if (url && url !== 'random' && url !== 'favorites')
-          bgImage = `url(${url})`;
-      }
-    } else if (selectedImage) {
-      const url = getImageUrl(selectedImage);
-      if (url && url !== 'random' && url !== 'favorites')
-        bgImage = `url(${url})`;
-    }
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-    snaps,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")')
-      setCustomLoaded(true);
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage =
+    snaps.length > 0
+      ? `url(${snaps[0].url})`
+      : backgroundUrl
+        ? `url(${backgroundUrl})`
+        : 'url("/assets/images/hero.webp")';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
-        {standalone && <Navbar />}
-        <Loader />
-      </div>
-    );
+    return <FlightDetailPageSkeleton navbar={standalone} />;
   }
 
   if (error || !flight) {
@@ -316,7 +262,7 @@ export default function PublicFlightView({
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              opacity: customLoaded || snaps.length > 0 ? 1 : 0,
+              opacity: backgroundUrl || snaps.length > 0 ? 1 : 0,
               transition: 'opacity 0.5s ease-in-out',
             }}
           />

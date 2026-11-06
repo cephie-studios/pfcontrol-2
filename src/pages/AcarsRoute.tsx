@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
+import { AcarsPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { Loader2 } from 'lucide-react';
 import ACARS from './ACARS';
 import ExternalACARS from './ExternalACARS';
-import Navbar from '../components/Navbar';
 import { clientApiUrl } from '../utils/clientApiBase';
 
 const RESOLVE_TIMEOUT_MS = 15_000;
@@ -72,15 +71,7 @@ function DefaultAcarsRoute() {
 
   if (ready) return <ACARS />;
 
-  return (
-    <div className="shadcn-scope min-h-screen bg-background text-foreground">
-      <Navbar />
-      <main className="mx-auto flex max-w-lg flex-col items-center gap-4 px-5 pt-32 text-center">
-        <Loader2 className="size-6 animate-spin text-zinc-500" />
-        <p className="text-sm text-zinc-500">Opening ACARS…</p>
-      </main>
-    </div>
-  );
+  return <AcarsPageSkeleton />;
 }
 
 export default function AcarsRoute() {

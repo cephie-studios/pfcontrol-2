@@ -6,16 +6,11 @@ import {
   Users,
   Crown,
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import {
-  fetchStatistics,
-  fetchLeaderboard,
-  fetchBackgrounds,
-} from '../utils/fetch/data';
+import { useState, useEffect } from 'react';
+import { fetchStatistics, fetchLeaderboard } from '../utils/fetch/data';
 import { Link, useSearchParams } from 'react-router';
 import { updateTutorialStatus } from '../utils/fetch/auth';
 import { useAuth } from '../hooks/auth/useAuth';
-import { useSettings } from '../hooks/settings/useSettings';
 import { steps } from '../components/tutorial/TutorialStepsHome';
 import Joyride, {
   type CallBackProps,
@@ -27,6 +22,7 @@ import Modal from '../components/common/Modal';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import Footer from '../components/Footer';
 import Button from '../components/common/Button';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import ProductShowcase from '../components/home/ProductShowcase';
 import SupporterWall from '../components/billing/SupporterWall';
@@ -37,16 +33,8 @@ import { fetchBillingCatalog } from '../utils/fetch/billing';
 import type { BillingCatalog } from '../types/billing';
 import { useCountUp } from '../hooks/useCountUp';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
 interface HomeProps {
   standalone?: boolean;
-}
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
 }
 
 export default function Home({ standalone = true }: HomeProps) {
@@ -67,8 +55,6 @@ export default function Home({ standalone = true }: HomeProps) {
       }>
     >
   >({});
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -82,7 +68,6 @@ export default function Home({ standalone = true }: HomeProps) {
   const startTutorial = searchParams.get('tutorial') === 'true';
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const { user } = useAuth();
-  const { settings } = useSettings();
 
   const [sessionsCount, sessionsRef] = useCountUp(stats.sessionsCreated);
   const [usersCount, usersRef] = useCountUp(stats.registeredUsers);
@@ -137,70 +122,10 @@ export default function Home({ standalone = true }: HomeProps) {
     fetchLeaderboard().then(setLeaderboard).catch(console.error);
   }, []);
 
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
-  }, []);
-
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
-      setCustomLoaded(true);
-    }
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/images/hero.webp")';
 
   const getDiscordAvatar = (userId: string, avatarHash: string | null) => {
     if (!avatarHash) {
@@ -221,7 +146,7 @@ export default function Home({ standalone = true }: HomeProps) {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: customLoaded ? 1 : 0,
+            opacity: backgroundUrl ? 1 : 0,
             transition: 'opacity 0.5s ease-in-out',
           }}
         />
@@ -527,7 +452,7 @@ export default function Home({ standalone = true }: HomeProps) {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            opacity: customLoaded ? 1 : 0,
+            opacity: backgroundUrl ? 1 : 0,
             transition: 'opacity 0.5s ease-in-out',
           }}
         />

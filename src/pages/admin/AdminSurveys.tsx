@@ -26,7 +26,9 @@ import AdminToolbar from '../../components/admin/AdminToolbar';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import {
@@ -53,6 +55,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Tooltip,
@@ -453,7 +456,24 @@ export default function AdminSurveys() {
         ) : null}
 
         {!surveysLoaded || (loading && !results) ? (
-          <AdminLoading label="Loading surveys…" />
+          <>
+            <AdminStatCardsSkeleton count={4} columns={4} />
+            <section className="grid gap-4" role="status" aria-label="Loading">
+              <Skeleton className="h-4 w-40" />
+              <div className="grid gap-x-8 gap-y-6 lg:grid-cols-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="grid content-start gap-3">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-2.5 w-full rounded-full" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading surveys"
@@ -618,7 +638,14 @@ export default function AdminSurveys() {
               </AdminToolbar>
 
               {listLoading && responses.length === 0 ? (
-                <AdminLoading label="Loading responses…" />
+                <>
+                  <AdminTableSkeleton
+                    className="hidden md:block"
+                    columns={questions.length + 4}
+                    rows={5}
+                  />
+                  <AdminCardListSkeleton className="md:hidden" count={3} />
+                </>
               ) : responses.length === 0 ? (
                 <AdminEmptyState
                   icon={ClipboardList}

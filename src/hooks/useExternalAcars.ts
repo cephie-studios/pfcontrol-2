@@ -70,6 +70,7 @@ export function useExternalAcars({
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
   const [fatalReason, setFatalReason] = useState<string | null>(null);
+  const [notInGame, setNotInGame] = useState<string | null>(null);
   const deniedReason = token ? fatalReason : MISSING_TOKEN_REASON;
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
@@ -175,10 +176,18 @@ export function useExternalAcars({
         loaded.current = true;
         failures.current = 0;
         setStatus(next);
+        setNotInGame(null);
         setOffline(false);
         toast.dismiss(OFFLINE_TOAST_ID);
       } catch (cause) {
         if (signal?.aborted || isAbort(cause)) return;
+        if (cause instanceof ProviderError && cause.code === 'NOT_IN_GAME') {
+          failures.current = 0;
+          setNotInGame(cause.message);
+          setOffline(false);
+          toast.dismiss(OFFLINE_TOAST_ID);
+          return;
+        }
         failures.current += 1;
         const fallbackUrl =
           cause instanceof ProviderError ? cause.fallbackUrl : undefined;
@@ -301,5 +310,14 @@ export function useExternalAcars({
     [request, deniedReason]
   );
 
-  return { status, loading, offline, deniedReason, busy, request, command };
+  return {
+    status,
+    loading,
+    offline,
+    deniedReason,
+    notInGame,
+    busy,
+    request,
+    command,
+  };
 }

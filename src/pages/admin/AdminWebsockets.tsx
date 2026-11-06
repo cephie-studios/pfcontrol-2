@@ -6,8 +6,9 @@ import AdminRefreshButton from '../../components/admin/AdminRefreshButton';
 import AdminStatCards from '../../components/admin/AdminStatCards';
 import {
   AdminErrorState,
-  AdminLoading,
+  AdminStatCardsSkeleton,
 } from '../../components/admin/AdminStates';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AdminSparkline } from '../../components/admin/AdminChart';
 import {
   fetchAdminWebsocketStats,
@@ -81,7 +82,30 @@ export default function AdminWebsockets() {
         }
       >
         {loading && !data ? (
-          <AdminLoading />
+          <>
+            <AdminStatCardsSkeleton count={2} columns={2} />
+            <div
+              className="divide-y overflow-hidden rounded-2xl border"
+              role="status"
+              aria-label="Loading"
+            >
+              {Array.from({ length: Object.keys(NS_COLORS).length }).map(
+                (_, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_3rem]"
+                  >
+                    <div className="grid min-w-0 gap-1.5">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="order-last col-span-2 h-[140px] w-full sm:order-none sm:col-span-1" />
+                    <Skeleton className="h-6 w-8 justify-self-end" />
+                  </div>
+                )
+              )}
+            </div>
+          </>
         ) : error ? (
           <AdminErrorState
             title="Failed to load websocket stats"

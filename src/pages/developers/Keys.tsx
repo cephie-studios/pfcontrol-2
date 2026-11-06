@@ -18,12 +18,12 @@ import {
   X,
 } from 'lucide-react';
 import ScopeTagSelector from '../../components/developers/ScopeTagSelector';
+import { DeveloperKeysSkeleton } from '../../components/developers/DeveloperSkeletons';
 import SettingsSection from '../../components/Settings/SettingsSection';
 import SettingsGroup from '../../components/Settings/SettingsGroup';
 import SettingsRow from '../../components/Settings/SettingsRow';
 import AdminModal from '@/components/admin/AdminModal';
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
-import { AdminLoading } from '@/components/admin/AdminStates';
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -175,7 +175,7 @@ export default function DeveloperKeys() {
   if (loading) {
     return (
       <div className="shadcn-scope">
-        <AdminLoading className="py-24" />
+        <DeveloperKeysSkeleton />
       </div>
     );
   }

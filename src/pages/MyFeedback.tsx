@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Star, MessageSquare, Flag, Loader2 } from 'lucide-react';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import Button from '../components/common/Button';
 import ErrorScreen from '../components/common/ErrorScreen';
 import Modal from '../components/common/Modal';
-import { useSettings } from '../hooks/settings/useSettings';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import { AdminAreaChart } from '../components/admin/AdminChart';
 import {
   fetchMyRatings,
@@ -21,16 +20,9 @@ import {
 } from '../utils/fetch/ratings';
 import { toast } from 'sonner';
 import { minDuration } from '@/lib/minDuration';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MAX_REPORT_REASON_LENGTH = 500;
-
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
 
 function StarRow({ rating }: { rating: number }) {
   return (
@@ -137,7 +129,6 @@ function FeedbackEntry({
 }
 
 export default function MyFeedback() {
-  const { settings } = useSettings();
   const [stats, setStats] = useState<MyControllerRatingStats | null>(null);
   const [dailyStats, setDailyStats] = useState<MyDailyRatingStats[]>([]);
   const [distribution, setDistribution] = useState<
@@ -151,8 +142,6 @@ export default function MyFeedback() {
   const [chartsLoading, setChartsLoading] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [reportingId, setReportingId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
@@ -266,70 +255,10 @@ export default function MyFeedback() {
     };
   }, [page]);
 
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (fetchError) {
-        console.error('Error loading available images:', fetchError);
-      }
-    };
-    loadImages();
-  }, []);
-
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
-      setCustomLoaded(true);
-    }
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/images/hero.webp")';
 
   const avgRatingData = useMemo(
     () =>
@@ -354,7 +283,7 @@ export default function MyFeedback() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: customLoaded ? 1 : 0,
+          opacity: backgroundUrl ? 1 : 0,
           transition: 'opacity 0.5s ease-in-out',
         }}
       />
@@ -372,20 +301,42 @@ export default function MyFeedback() {
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight text-center mb-6">
               MY FEEDBACK
             </h1>
-            <div className="flex gap-3 animate-pulse">
-              <div className="h-10 w-32 rounded-full bg-zinc-700/60" />
-              <div className="h-10 w-32 rounded-full bg-zinc-700/60" />
+            <div className="flex gap-3">
+              <Skeleton className="h-12 w-36 rounded-full" />
+              <Skeleton className="h-12 w-36 rounded-full" />
             </div>
           </div>
         </div>
         <div className="container mx-auto max-w-7xl px-4 pb-8 -mt-6 md:-mt-8 relative z-10">
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-24 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
-              <div className="h-24 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
+          <div className="p-6 space-y-6" role="status">
+            <div className="flex justify-end gap-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-8 w-20 rounded-full" />
+              ))}
             </div>
-            <div className="h-48 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
-            <div className="h-48 rounded-2xl bg-zinc-800/50 border-2 border-zinc-700 animate-pulse" />
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-9 w-20" />
+                  </div>
+                ))}
+              </div>
+              {[0, 1].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                  <Skeleton className="h-[180px] w-full rounded-xl" />
+                </div>
+              ))}
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-24" />
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -482,7 +433,7 @@ export default function MyFeedback() {
                           How your stars break down in this range
                         </p>
                         {chartsLoading ? (
-                          <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
+                          <Skeleton className="h-[180px] w-full rounded-xl" />
                         ) : (
                           <RatingDistribution buckets={distribution} />
                         )}
@@ -495,7 +446,7 @@ export default function MyFeedback() {
                           Hover for daily values
                         </p>
                         {chartsLoading ? (
-                          <div className="h-[180px] rounded-xl bg-zinc-800/50 border border-zinc-800 animate-pulse" />
+                          <Skeleton className="h-[180px] w-full rounded-xl" />
                         ) : dailyStats.length < 3 ? (
                           <div className="h-[180px] rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center">
                             <p className="text-sm text-zinc-500">
@@ -520,9 +471,9 @@ export default function MyFeedback() {
                       {listLoading ? (
                         <div className="space-y-3">
                           {Array.from({ length: 3 }).map((_, i) => (
-                            <div
+                            <Skeleton
                               key={i}
-                              className="h-20 rounded-2xl bg-zinc-900/50 border border-zinc-800 animate-pulse"
+                              className="h-20 w-full rounded-2xl"
                             />
                           ))}
                         </div>

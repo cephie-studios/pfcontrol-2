@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlightDetailPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
@@ -18,6 +19,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import {
   fetchMyFlightById,
@@ -30,21 +32,13 @@ import {
   type SnapImage,
 } from '../utils/fetch/flights';
 import type { Flight } from '../types/flight';
-import { useSettings } from '../hooks/settings/useSettings';
 import { useAuth } from '../hooks/auth/useAuth';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import { useData } from '../hooks/data/useData';
 import { parseCallsign } from '../utils/callsignParser';
 import { toast } from 'sonner';
 import { minDuration } from '@/lib/minDuration';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
 
 interface SessionSubmitInfo {
   sessionId: string;
@@ -57,7 +51,6 @@ interface SessionSubmitInfo {
 
 export default function MyFlightDetail() {
   const { id } = useParams<{ id: string }>();
-  const { settings } = useSettings();
   const { user } = useAuth();
   const maxSnaps = user?.limits?.snapsPerFlight ?? 12;
   const { airlines } = useData();
@@ -66,8 +59,6 @@ export default function MyFlightDetail() {
   const [logsDiscardedDueToAge, setLogsDiscardedDueToAge] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<SessionSubmitInfo | null>(
     null
   );
@@ -85,12 +76,6 @@ export default function MyFlightDetail() {
   const snapInputRef = useRef<HTMLInputElement>(null);
   const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesInitialized = useRef(false);
-
-  useEffect(() => {
-    fetchBackgrounds()
-      .then(setAvailableImages)
-      .catch((err) => console.error('Error loading images:', err));
-  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -162,46 +147,13 @@ export default function MyFlightDetail() {
       .reverse();
   }, [logs]);
 
-  const backgroundImage = useMemo(() => {
-    if (snaps.length > 0) return `url(${snaps[0].url})`;
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites')
-        return filename;
-      if (filename.startsWith('https://api.cephie.app/')) return filename;
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const i = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[i].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const fav = favorites[Math.floor(Math.random() * favorites.length)];
-        const url = getImageUrl(fav);
-        if (url && url !== 'random' && url !== 'favorites')
-          bgImage = `url(${url})`;
-      }
-    } else if (selectedImage) {
-      const url = getImageUrl(selectedImage);
-      if (url && url !== 'random' && url !== 'favorites')
-        bgImage = `url(${url})`;
-    }
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-    snaps,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")')
-      setCustomLoaded(true);
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage =
+    snaps.length > 0
+      ? `url(${snaps[0].url})`
+      : backgroundUrl
+        ? `url(${backgroundUrl})`
+        : 'url("/assets/images/hero.webp")';
 
   const acarsUrl = flight?.acars_token
     ? `${window.location.origin}/acars/${flight.session_id}/${flight.id}?acars_token=${flight.acars_token}`
@@ -268,20 +220,7 @@ export default function MyFlightDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 text-white">
-        <Navbar />
-        <div className="relative w-full h-80 md:h-[400px] overflow-hidden animate-pulse">
-          <div className="absolute inset-0 bg-zinc-800" />
-        </div>
-        <div className="container mx-auto max-w-4xl px-4 pb-10 relative z-10 space-y-4">
-          <div className="h-20 rounded-2xl bg-zinc-800/60 -mt-4 animate-pulse" />
-          <div className="h-8 w-64 rounded-full bg-zinc-800 animate-pulse" />
-          <div className="h-44 rounded-2xl bg-zinc-800/60 animate-pulse" />
-          <div className="h-64 rounded-2xl bg-zinc-800/40 animate-pulse" />
-        </div>
-      </div>
-    );
+    return <FlightDetailPageSkeleton />;
   }
 
   if (error || !flight) {
@@ -342,7 +281,7 @@ export default function MyFlightDetail() {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              opacity: customLoaded ? 1 : 0,
+              opacity: backgroundUrl || snaps.length > 0 ? 1 : 0,
               transition: 'opacity 0.5s ease-in-out',
             }}
           />

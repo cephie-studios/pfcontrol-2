@@ -23,7 +23,8 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { Button } from '@/components/ui/button';
@@ -293,7 +294,10 @@ export default function AdminChatReports() {
         </AdminToolbar>
 
         {loading ? (
-          <AdminLoading label="Loading reports…" />
+          <>
+            <AdminTableSkeleton className="hidden lg:block" columns={7} />
+            <AdminCardListSkeleton className="lg:hidden" />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading reports"

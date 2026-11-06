@@ -12,7 +12,8 @@ import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvata
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminStatCardsSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { Button } from '@/components/ui/button';
@@ -126,7 +127,10 @@ export default function AdminProfileContent() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading profile content…" />
+          <>
+            <AdminStatCardsSkeleton count={2} columns={2} />
+            <AdminCardListSkeleton count={4} />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading profile content"

@@ -20,7 +20,8 @@ import AdminToggleSwitch from '../../components/admin/AdminToggleSwitch';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import {
   ADMIN_NATIVE_TBODY,
@@ -296,7 +297,15 @@ export default function AdminBilling() {
           }
         >
           {loading && !data ? (
-            <AdminLoading />
+            <>
+              <AdminStatCardsSkeleton count={4} columns={4} />
+              <AdminSection
+                title="Revenue"
+                description="From Stripe, last 12 months. Yearly costs are spread across months."
+              >
+                <AdminTableSkeleton columns={7} rows={6} avatar={false} />
+              </AdminSection>
+            </>
           ) : error ? (
             <AdminErrorState
               title="Failed to load billing"

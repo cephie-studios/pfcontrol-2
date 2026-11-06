@@ -20,7 +20,7 @@ import AdminToolbar from '../../components/admin/AdminToolbar';
 import DeveloperDiscordAvatar from '../../components/admin/DeveloperDiscordAvatar';
 import {
   AdminErrorState,
-  AdminLoading,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -223,7 +223,7 @@ export default function AdminUserAlerts() {
           </AdminToolbar>
 
           {loading ? (
-            <AdminLoading label="Loading alerts…" />
+            <AdminTableSkeleton columns={5} />
           ) : error ? (
             <AdminErrorState
               title="Error loading alerts"

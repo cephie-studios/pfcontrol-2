@@ -22,12 +22,11 @@ import { createOverviewSocket } from '../sockets/overviewSocket';
 import { useAuth } from '../hooks/auth/useAuth';
 import { toast } from 'sonner';
 import { useData } from '../hooks/data/useData';
-import { useSettings } from '../hooks/settings/useSettings';
 import { parseCallsign } from '../utils/callsignParser';
 import { createSectorControllerSocket } from '../sockets/sectorControllerSocket';
-import { fetchBackgrounds } from '../utils/fetch/data';
 import type { OverviewData, OverviewSession } from '../types/overview';
 import type { Flight } from '../types/flight';
+import { useBackgroundImage } from '../hooks/settings/useBackgroundImage';
 import Navbar from '../components/Navbar';
 import WindDisplay from '../components/tools/WindDisplay';
 import FrequencyDisplay from '../components/tools/FrequencyDisplay';
@@ -46,14 +45,6 @@ import StarDropdown from '../components/dropdowns/StarDropdown';
 import ErrorScreen from '../components/common/ErrorScreen';
 import FlightDetailsModal from '../components/tools/FlightDetailModal';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
-
-interface AvailableImage {
-  filename: string;
-  path: string;
-  extension: string;
-}
-
 interface FlightWithDetails extends Flight {
   sessionId: string;
   departureAirport: string;
@@ -63,7 +54,6 @@ interface FlightWithDetails extends Flight {
 
 export default function PFATCFlights() {
   const { user } = useAuth();
-  const { settings } = useSettings();
   const { airlines, loading: airlinesLoading } = useData();
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,8 +68,6 @@ export default function PFATCFlights() {
   const [expandedAirports, setExpandedAirports] = useState<Set<string>>(
     new Set()
   );
-  const [availableImages, setAvailableImages] = useState<AvailableImage[]>([]);
-  const [customLoaded, setCustomLoaded] = useState(false);
   const [debounceTimers, setDebounceTimers] = useState<
     Map<string, NodeJS.Timeout>
   >(new Map());
@@ -121,70 +109,10 @@ export default function PFATCFlights() {
     updatingFlightsRef.current = updatingFlights;
   }, [updatingFlights]);
 
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const data = await fetchBackgrounds();
-        setAvailableImages(data);
-      } catch (error) {
-        console.error('Error loading available images:', error);
-      }
-    };
-    loadImages();
-  }, []);
-
-  const backgroundImage = useMemo(() => {
-    const selectedImage = settings?.backgroundImage?.selectedImage;
-    let bgImage = 'url("/assets/images/hero.webp")';
-
-    const getImageUrl = (filename: string | null): string | null => {
-      if (!filename || filename === 'random' || filename === 'favorites') {
-        return filename;
-      }
-      if (filename.startsWith('https://api.cephie.app/')) {
-        return filename;
-      }
-      return `${API_BASE_URL}/assets/app/backgrounds/${filename}`;
-    };
-
-    if (selectedImage === 'random') {
-      if (availableImages.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bgImage = `url(${API_BASE_URL}${availableImages[randomIndex].path})`;
-      }
-    } else if (selectedImage === 'favorites') {
-      const favorites = settings?.backgroundImage?.favorites || [];
-      if (favorites.length > 0) {
-        const randomFav =
-          favorites[Math.floor(Math.random() * favorites.length)];
-        const favImageUrl = getImageUrl(randomFav);
-        if (
-          favImageUrl &&
-          favImageUrl !== 'random' &&
-          favImageUrl !== 'favorites'
-        ) {
-          bgImage = `url(${favImageUrl})`;
-        }
-      }
-    } else if (selectedImage) {
-      const imageUrl = getImageUrl(selectedImage);
-      if (imageUrl && imageUrl !== 'random' && imageUrl !== 'favorites') {
-        bgImage = `url(${imageUrl})`;
-      }
-    }
-
-    return bgImage;
-  }, [
-    settings?.backgroundImage?.selectedImage,
-    settings?.backgroundImage?.favorites,
-    availableImages,
-  ]);
-
-  useEffect(() => {
-    if (backgroundImage !== 'url("/assets/images/hero.webp")') {
-      setCustomLoaded(true);
-    }
-  }, [backgroundImage]);
+  const backgroundUrl = useBackgroundImage();
+  const backgroundImage = backgroundUrl
+    ? `url(${backgroundUrl})`
+    : 'url("/assets/images/hero.webp")';
 
   const [selectedStation, setSelectedStation] = useState<string>('');
 
@@ -1144,7 +1072,7 @@ export default function PFATCFlights() {
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
-                opacity: customLoaded ? 1 : 0,
+                opacity: backgroundUrl ? 1 : 0,
                 transition: 'opacity 0.5s ease-in-out',
               }}
             />
@@ -1270,7 +1198,7 @@ export default function PFATCFlights() {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
-              opacity: customLoaded ? 1 : 0,
+              opacity: backgroundUrl ? 1 : 0,
               transition: 'opacity 0.5s ease-in-out',
             }}
           />

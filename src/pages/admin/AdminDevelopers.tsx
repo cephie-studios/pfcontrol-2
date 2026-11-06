@@ -32,7 +32,8 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import AdminDeveloperEditModal from '../../components/admin/AdminDeveloperEditModal';
@@ -424,7 +425,10 @@ export default function AdminDevelopers() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading developers…" />
+          <>
+            <AdminStatCardsSkeleton count={3} columns={3} />
+            <AdminTableSkeleton columns={6} avatar={false} />
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading developers"

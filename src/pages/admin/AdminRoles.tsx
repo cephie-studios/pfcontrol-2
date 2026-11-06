@@ -27,7 +27,8 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminStatCardsSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -661,7 +662,12 @@ export default function AdminRoles() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading roles…" />
+          <>
+            <AdminStatCardsSkeleton count={4} columns={4} />
+            <AdminSection title="Roles">
+              <AdminTableSkeleton columns={6} rows={5} avatar={false} />
+            </AdminSection>
+          </>
         ) : error ? (
           <AdminErrorState
             title="Error loading roles"

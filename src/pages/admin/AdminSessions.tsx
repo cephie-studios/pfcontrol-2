@@ -34,7 +34,8 @@ import AdminTable from '../../components/admin/AdminTable';
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminCardListSkeleton,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import type { AdminTone } from '../../components/admin/adminConstants';
@@ -739,7 +740,15 @@ export default function AdminSessions() {
         </AdminToolbar>
 
         {loading ? (
-          <AdminLoading label="Loading sessions…" />
+          viewMode === 'grid' ? (
+            <AdminCardListSkeleton
+              count={6}
+              lines={3}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+            />
+          ) : (
+            <AdminTableSkeleton columns={6} avatar={false} />
+          )
         ) : error ? (
           <AdminErrorState
             title="Error loading sessions"

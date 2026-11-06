@@ -67,3 +67,10 @@ export const ADMIN_TABLE_FRAME = [
   '[&_th]:h-11 [&_th]:px-4 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground',
   '[&_td]:px-4 [&_td]:py-3 [&_tbody_tr:hover]:bg-muted/30',
 ].join(' ');
+
+export const ADMIN_STAT_COLUMNS = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-2 sm:grid-cols-3',
+  4: 'grid-cols-2 lg:grid-cols-4',
+  6: 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-6',
+};

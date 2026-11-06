@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useContext, type ReactNode } from 'react';
+import { SettingsPageSkeleton } from '../components/skeletons/PageSkeletons';
 import {
   UNSAFE_NavigationContext,
   useLocation,
@@ -271,13 +272,7 @@ export default function Settings() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="shadcn-scope flex min-h-screen items-center justify-center bg-background text-foreground">
-        <Navbar />
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+  if (loading) return <SettingsPageSkeleton />;
 
   return (
     <div className="shadcn-scope min-h-screen bg-background text-foreground">

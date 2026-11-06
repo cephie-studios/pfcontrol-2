@@ -21,7 +21,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminToggleSwitch from '../../components/admin/AdminToggleSwitch';
 import {
   AdminErrorState,
-  AdminLoading,
+  AdminTableSkeleton,
 } from '../../components/admin/AdminStates';
 import { useAdminConfirm } from '../../components/admin/useAdminConfirm';
 import type { AdminTone } from '../../components/admin/adminConstants';
@@ -203,7 +203,9 @@ export default function AdminNotifications() {
         }
       >
         {loading ? (
-          <AdminLoading label="Loading notifications…" />
+          <AdminSection title="Site notifications">
+            <AdminTableSkeleton columns={4} rows={4} avatar={false} />
+          </AdminSection>
         ) : error ? (
           <AdminErrorState
             title="Error"

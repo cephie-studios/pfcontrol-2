@@ -14,7 +14,8 @@ import {
 import {
   AdminEmptyState,
   AdminErrorState,
-  AdminLoading,
+  AdminChartSkeleton,
+  AdminStatCardsSkeleton,
 } from '../../components/admin/AdminStates';
 import { ADMIN_CHART_COLORS } from '../../components/admin/adminConstants';
 import {
@@ -227,7 +228,13 @@ export default function AdminDatabase() {
         }
       >
         {loading && !data ? (
-          <AdminLoading label="Loading database stats…" />
+          <>
+            <AdminStatCardsSkeleton count={4} columns={4} />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <AdminChartSkeleton height={CHART_HEIGHT} />
+              <AdminChartSkeleton height={CHART_HEIGHT} />
+            </div>
+          </>
         ) : error ? (
           <AdminErrorState
             title="Failed to load"
