@@ -369,7 +369,15 @@ export default function Navbar({
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <a href="/" className="flex items-center space-x-2">
-                <TowerControl className="h-8 w-8 text-blue-400" />
+                {user?.plan === 'supporter' ? (
+                  <img
+                    src="/assets/images/supporter-tower.webp"
+                    alt=""
+                    className="h-8 w-8 object-contain"
+                  />
+                ) : (
+                  <TowerControl className="h-8 w-8 text-blue-400" />
+                )}
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                   PFControl
                   {hostname === 'canary.pfcontrol.com' && (
