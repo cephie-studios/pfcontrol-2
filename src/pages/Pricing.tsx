@@ -441,16 +441,6 @@ export default function Pricing() {
               Supporters get early access on canary.pfcontrol.com
               <ExternalLink className="size-3.5" />
             </a>
-            {catalog && catalog.supporters.count > 0 && (
-              <span className="flex items-center gap-2 text-sm text-zinc-300">
-                <Heart className="size-4 text-sky-500" />
-                {catalog.supporters.count}{' '}
-                {catalog.supporters.count === 1
-                  ? 'pilot supports'
-                  : 'pilots support'}{' '}
-                PFControl right now
-              </span>
-            )}
           </div>
         </PageHero>
 
@@ -470,7 +460,7 @@ export default function Pricing() {
               <div className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left">
                 <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <h2 className="flex items-center gap-3 text-3xl font-black sm:text-4xl">
-                    <SupporterIcon className="size-9 text-amber-500" />
+                    <SupporterIcon className="size-12 text-amber-500" />
                     <p className="mb-2">Supporter</p>
                   </h2>
                   {renderCurrent('supporter')}
@@ -523,8 +513,12 @@ export default function Pricing() {
                     </ToggleGroup>
                   )}
                 </div>
-                {renderPrice('supporter')}
-                <div className="w-full sm:w-auto">{renderCta('supporter')}</div>
+                <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+                  {renderPrice('supporter')}
+                  <div className="w-full sm:w-auto">
+                    {renderCta('supporter')}
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-col items-center gap-3">
