@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
@@ -9,26 +10,94 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
-import Loader from './components/common/Loader';
+import Navbar from './components/Navbar';
 import AppOverlays from './components/AppOverlays';
 import PostHogPageView from './components/PostHogPageView';
 
-const Create = lazy(() => import('./pages/Create'));
-const Sessions = lazy(() => import('./pages/Sessions'));
-const Submit = lazy(() => import('./pages/Submit'));
-const Flights = lazy(() => import('./pages/Flights'));
-const MyFlights = lazy(() => import('./pages/MyFlights'));
+const loadCreate = () => import('./pages/Create');
+const loadSessions = () => import('./pages/Sessions');
+const loadSubmit = () => import('./pages/Submit');
+const loadFlights = () => import('./pages/Flights');
+const loadMyFlights = () => import('./pages/MyFlights');
+const loadMyFlightDetail = () => import('./pages/MyFlightDetail');
+const loadSettings = () => import('./pages/Settings');
+const loadPFATCFlights = () => import('./pages/PFATCFlights');
+const loadAcarsRoute = () => import('./pages/AcarsRoute');
+const loadPilotProfile = () => import('./pages/PilotProfile');
+const loadCharts = () => import('./pages/Charts');
+const loadPricing = () => import('./pages/Pricing');
+
+const PRELOADED_PAGES = [
+  loadSessions,
+  loadMyFlights,
+  loadSubmit,
+  loadAcarsRoute,
+  loadPFATCFlights,
+  loadCreate,
+  loadFlights,
+  loadMyFlightDetail,
+  loadSettings,
+  loadPilotProfile,
+  loadCharts,
+  loadPricing,
+];
+
+const Create = lazy(loadCreate);
+const Sessions = lazy(loadSessions);
+const Submit = lazy(loadSubmit);
+const Flights = lazy(loadFlights);
+const MyFlights = lazy(loadMyFlights);
 const MyFeedback = lazy(() => import('./pages/MyFeedback'));
-const MyFlightDetail = lazy(() => import('./pages/MyFlightDetail'));
-const Settings = lazy(() => import('./pages/Settings'));
-const PFATCFlights = lazy(() => import('./pages/PFATCFlights'));
-const AcarsRoute = lazy(() => import('./pages/AcarsRoute'));
-const PilotProfile = lazy(() => import('./pages/PilotProfile'));
+const MyFlightDetail = lazy(loadMyFlightDetail);
+const Settings = lazy(loadSettings);
+const PFATCFlights = lazy(loadPFATCFlights);
+const AcarsRoute = lazy(loadAcarsRoute);
+const PilotProfile = lazy(loadPilotProfile);
 const PublicFlightView = lazy(() => import('./pages/PublicFlightView'));
 const ChartfoxLinked = lazy(() => import('./pages/ChartfoxLinked'));
-const Charts = lazy(() => import('./pages/Charts'));
-const Pricing = lazy(() => import('./pages/Pricing'));
+const Charts = lazy(loadCharts);
+const Pricing = lazy(loadPricing);
 const Gift = lazy(() => import('./pages/Gift'));
+
+function usePreloadPages() {
+  useEffect(() => {
+    let cancelled = false;
+    let handle: number | undefined;
+    const idle = (cb: () => void) =>
+      typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(cb, { timeout: 3000 })
+        : window.setTimeout(cb, 1500);
+    const next = (index: number) => {
+      if (cancelled || index >= PRELOADED_PAGES.length) return;
+      handle = idle(() => {
+        PRELOADED_PAGES[index]()
+          .catch(() => undefined)
+          .finally(() => next(index + 1));
+      });
+    };
+    next(0);
+    return () => {
+      cancelled = true;
+      if (handle === undefined) return;
+      if (typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(handle);
+      } else {
+        window.clearTimeout(handle);
+      }
+    };
+  }, []);
+}
+
+function RouteFallback() {
+  return (
+    <div className="shadcn-scope min-h-screen bg-background text-foreground">
+      <Navbar />
+      <div className="flex justify-center pt-40">
+        <Loader2 className="size-6 animate-spin text-zinc-500" />
+      </div>
+    </div>
+  );
+}
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));
 const Glossary = lazy(() => import('./pages/Glossary'));
@@ -77,6 +146,7 @@ const DeveloperKeys = lazy(() => import('./pages/developers/Keys'));
 
 export default function App() {
   const { user } = useAuth();
+  usePreloadPages();
 
   return (
     <Router>
@@ -88,13 +158,7 @@ export default function App() {
       ) : user && user.isVpnBlocked ? (
         <AccessDenied errorType="vpn-blocked" />
       ) : (
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-              <Loader />
-            </div>
-          }
-        >
+        <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route
