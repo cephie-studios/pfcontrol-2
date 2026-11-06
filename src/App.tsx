@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router';
 import { lazy, Suspense, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import RouteFallback from './components/skeletons/RouteFallback';
 import { useAuth } from './hooks/auth/useAuth';
 
 import Home from './pages/Home';
@@ -10,7 +10,6 @@ import NotFound from './pages/NotFound';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AccessDenied from './components/AccessDenied';
-import Navbar from './components/Navbar';
 import AppOverlays from './components/AppOverlays';
 import PostHogPageView from './components/PostHogPageView';
 
@@ -86,17 +85,6 @@ function usePreloadPages() {
       }
     };
   }, []);
-}
-
-function RouteFallback() {
-  return (
-    <div className="shadcn-scope min-h-screen bg-background text-foreground">
-      <Navbar />
-      <div className="flex justify-center pt-40">
-        <Loader2 className="size-6 animate-spin text-zinc-500" />
-      </div>
-    </div>
-  );
 }
 
 const HowToUsePFControl = lazy(() => import('./pages/HowToUsePFControl'));

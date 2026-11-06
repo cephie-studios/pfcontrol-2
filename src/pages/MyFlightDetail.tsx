@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlightDetailPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link, useParams } from 'react-router';
 import RouteMapOrUnavailable from '../components/map/RouteMapOrUnavailable';
 import AircraftPhotoCard from '../components/flight/AircraftPhotoCard';
-import FlightDetailSkeleton from '../components/flight/FlightDetailSkeleton';
 import FlightTimingBlock from '../components/flight/FlightTimingBlock';
 import FlightTabs, { type FlightTab } from '../components/flight/FlightTabs';
 import {
@@ -269,12 +269,7 @@ export default function MyFlightDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 text-white">
-        <Navbar />
-        <FlightDetailSkeleton />
-      </div>
-    );
+    return <FlightDetailPageSkeleton />;
   }
 
   if (error || !flight) {

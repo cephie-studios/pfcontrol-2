@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { SessionCardSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link } from 'react-router';
 import {
   AlertTriangle,
@@ -72,26 +73,6 @@ function CountLabel({
     <div className="flex items-center gap-2 text-sm font-medium text-zinc-200 tabular-nums [&_svg]:size-4 [&_svg]:text-blue-400">
       {icon}
       {children}
-    </div>
-  );
-}
-
-function SessionCardSkeleton() {
-  return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-zinc-800 bg-zinc-900">
-      <div className="flex items-center gap-3 px-5 pt-4 pb-3">
-        <Skeleton className="size-5 rounded-md" />
-        <Skeleton className="h-4 w-36" />
-      </div>
-      <div className="flex flex-col gap-3 px-5 pb-4">
-        <Skeleton className="h-3.5 w-28" />
-        <Skeleton className="h-3.5 w-44" />
-        <Skeleton className="h-3.5 w-32" />
-      </div>
-      <div className="flex items-center justify-between px-5 pb-4">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-3.5 w-16" />
-      </div>
     </div>
   );
 }

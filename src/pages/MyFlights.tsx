@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FlightCardSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link, useSearchParams } from 'react-router';
 import {
   AlertTriangle,
@@ -54,25 +55,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-
-function FlightCardSkeleton() {
-  return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border-2 border-zinc-800 bg-zinc-900">
-      <div className="flex items-center gap-3 px-5 pt-4 pb-3">
-        <Skeleton className="size-5 rounded-md" />
-        <Skeleton className="h-4 w-28" />
-      </div>
-      <div className="flex flex-col gap-3 px-5 pb-4">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-3.5 w-40" />
-        <Skeleton className="h-3.5 w-24" />
-      </div>
-      <div className="px-5 pb-4">
-        <Skeleton className="h-4 w-24" />
-      </div>
-    </div>
-  );
-}
 
 const ACTION_TONES = {
   blue: 'border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white focus-visible:bg-blue-600 focus-visible:text-white dark:hover:bg-blue-600',

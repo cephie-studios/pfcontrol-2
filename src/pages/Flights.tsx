@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { FlightsPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { useParams, useSearchParams } from 'react-router';
 import { useMediaQuery } from 'react-responsive';
 import { fetchFlights, addFlight } from '../utils/fetch/flights';
@@ -37,7 +38,6 @@ import ContactAcarsSidebar from '../components/tools/ContactAcarsSidebar';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
 import ChartDrawer from '../components/tools/ChartDrawer';
 import Button from '../components/common/Button';
-import { Skeleton } from '@/components/ui/skeleton';
 import FlightTableSkeleton from '../components/tables/FlightTableSkeleton';
 import { hasAdvancedNetworkFeatures } from '../utils/sessionKind';
 
@@ -1044,29 +1044,7 @@ export default function Flights() {
   };
 
   if (validatingAccess) {
-    return (
-      <div className="min-h-screen text-white relative">
-        <div className="relative z-10">
-          <Navbar sessionId={sessionId} accessId={accessId} />
-          <div className="pt-16">
-            <div className="flex items-center justify-between gap-4 px-4 py-2">
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-9 w-32 rounded-lg" />
-                <Skeleton className="h-9 w-40 rounded-lg" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-9 w-24 rounded-lg" />
-                <Skeleton className="h-9 w-9 rounded-lg" />
-                <Skeleton className="h-9 w-9 rounded-lg" />
-              </div>
-            </div>
-            <div className="-mt-4">
-              <FlightTableSkeleton />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <FlightsPageSkeleton sessionId={sessionId} accessId={accessId} />;
   }
 
   if (accessError) {

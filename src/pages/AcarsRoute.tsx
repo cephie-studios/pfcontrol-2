@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react';
+import { AcarsPageSkeleton } from '../components/skeletons/PageSkeletons';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import ACARS from './ACARS';
 import ExternalACARS from './ExternalACARS';
-import Navbar from '../components/Navbar';
-import AcarsSkeleton, {
-  AcarsActionsSkeleton,
-} from '../components/acars/AcarsSkeleton';
-import { useAcarsLayout } from '../components/acars/useAcarsLayout';
-import { Skeleton } from '@/components/ui/skeleton';
 import { clientApiUrl } from '../utils/clientApiBase';
 
 const RESOLVE_TIMEOUT_MS = 15_000;
@@ -76,21 +71,7 @@ function DefaultAcarsRoute() {
 
   if (ready) return <ACARS />;
 
-  return <AcarsLoadingShell />;
-}
-
-function AcarsLoadingShell() {
-  const layoutState = useAcarsLayout();
-  return (
-    <div className="shadcn-scope flex min-h-dvh flex-col bg-background text-foreground md:h-dvh">
-      <Navbar />
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 pt-21 pb-3 sm:px-6">
-        <Skeleton className="h-7 w-36" />
-        <AcarsActionsSkeleton />
-      </header>
-      <AcarsSkeleton layoutState={layoutState} />
-    </div>
-  );
+  return <AcarsPageSkeleton />;
 }
 
 export default function AcarsRoute() {
