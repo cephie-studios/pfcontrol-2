@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { AlertTriangle, FolderOpen, Info, Loader2 } from 'lucide-react';
+import { AlertTriangle, FolderOpen, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../hooks/auth/useAuth';
 import { createSession, fetchMySessions } from '../utils/fetch/sessions';
@@ -20,11 +20,13 @@ import RunwaySelect from '../components/dropdowns/RunwaySelect';
 import WindDisplay from '../components/tools/WindDisplay';
 import AtisReminderModal from '../components/modals/AtisReminderModal';
 import CustomTooltip from '../components/tutorial/CustomTooltip';
+import SettingsGroup from '../components/Settings/SettingsGroup';
+import SettingsRow from '../components/Settings/SettingsRow';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { minDuration } from '@/lib/minDuration';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { SIGNATURE_TONES } from '@/lib/signatureTones';
 
 type NetworkSessionKind = 'standard' | 'pfatc' | 'advanced_atc';
 
@@ -190,9 +192,9 @@ export default function Create() {
         </div>
       </PageHero>
 
-      <div className="relative z-10 mx-auto -mt-6 w-full max-w-[34rem] px-4 pb-16 md:-mt-8">
+      <div className="relative z-10 mx-auto -mt-6 w-full max-w-3xl min-w-0 px-4 pb-16 sm:px-6 md:-mt-8">
         <form
-          className="flex flex-col gap-4 rounded-4xl border-2 border-zinc-800 bg-zinc-900 p-5 shadow-2xl"
+          className="flex flex-col gap-6"
           onSubmit={(e) => {
             e.preventDefault();
             handleCreateSession();
@@ -215,126 +217,158 @@ export default function Create() {
                 asChild
                 variant="ghost"
                 size="sm"
-                className="border-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white focus-visible:bg-amber-500 focus-visible:text-white focus-visible:ring-0 dark:hover:bg-amber-500"
+                className={SIGNATURE_TONES.amber}
               >
                 <Link to="/sessions">Manage sessions</Link>
               </Button>
             </div>
           )}
 
-          <div id="airport-dropdown" className="grid gap-2">
-            <Label htmlFor="create-airport" className="text-zinc-300">
-              Select airport <span className="-ml-1 text-red-400">*</span>
-            </Label>
-            <AirportCombobox
-              id="create-airport"
-              value={selectedAirport}
-              onChange={(airport) => {
-                setSelectedAirport(airport);
-                setSelectedRunway('');
-                setSelectedArrivalRunway('');
-              }}
-              disabled={isCreating}
-            />
-          </div>
-
-          <div id="runway-dropdown" className="grid gap-2">
-            <Label htmlFor="create-departure" className="text-zinc-300">
-              Select departure runway{' '}
-              <span className="-ml-1 text-red-400">*</span>
-            </Label>
-            <RunwaySelect
-              id="create-departure"
-              airportIcao={selectedAirport}
-              value={selectedRunway}
-              onChange={setSelectedRunway}
-              disabled={isCreating}
-            />
-          </div>
-
-          <div id="arrival-runway-dropdown" className="grid gap-2">
-            <Label htmlFor="create-arrival" className="text-zinc-300">
-              Select arrival runway
-              <span className="font-normal text-zinc-500">(optional)</span>
-            </Label>
-            <RunwaySelect
-              id="create-arrival"
-              airportIcao={selectedAirport}
-              value={selectedArrivalRunway}
-              onChange={setSelectedArrivalRunway}
-              disabled={isCreating}
-              placeholder="Same as departure"
-              noneLabel="Same as departure"
-            />
-          </div>
-
-          {selectedAirport && (
-            <WindDisplay
-              icao={selectedAirport}
-              className="rounded-2xl border-zinc-800 bg-zinc-950"
-            />
-          )}
-
-          <div
-            id="network-session-options"
-            className="flex flex-col gap-2 pt-1"
-          >
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              <span className="text-zinc-300">I am controlling on the</span>
-              <label
-                htmlFor="pfatc-checkbox"
-                className="flex cursor-pointer items-center gap-3 has-disabled:cursor-not-allowed"
-              >
-                <Checkbox
-                  id="pfatc-checkbox"
-                  checked={startTutorial || networkKind === 'pfatc'}
-                  onCheckedChange={(checked) =>
-                    setNetworkKind(checked === true ? 'pfatc' : 'standard')
+          <div className="flex flex-col gap-4">
+            <SettingsGroup>
+              <div id="airport-dropdown">
+                <SettingsRow
+                  htmlFor="create-airport"
+                  label={
+                    <>
+                      Airport <span className="text-red-400">*</span>
+                    </>
                   }
-                  disabled={startTutorial || isCreating}
-                />
-                <a
-                  href="https://discord.gg/pfatc"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-blue-400 underline underline-offset-4 hover:text-blue-300"
+                  description="The airport you'll be controlling."
                 >
-                  PFATC Network
-                </a>
-              </label>
-            </div>
-            {networkKind === 'pfatc' && !startTutorial && (
-              <div className="flex animate-in items-start gap-2 text-sm text-zinc-400 fade-in-0 slide-in-from-top-1">
-                <Info className="mt-0.5 size-4 shrink-0 text-blue-400" />
-                <p>
-                  All submitted flights will be publicly viewable on the Network
-                  Overview page. Flights are shared between sessions, allowing
-                  controllers to see the arrivals and traffic of other open
-                  sessions.
-                </p>
+                  <div className="w-full sm:w-72">
+                    <AirportCombobox
+                      id="create-airport"
+                      value={selectedAirport}
+                      onChange={(airport) => {
+                        setSelectedAirport(airport);
+                        setSelectedRunway('');
+                        setSelectedArrivalRunway('');
+                      }}
+                      disabled={isCreating}
+                    />
+                  </div>
+                </SettingsRow>
               </div>
+              <div id="runway-dropdown">
+                <SettingsRow
+                  htmlFor="create-departure"
+                  label={
+                    <>
+                      Departure runway <span className="text-red-400">*</span>
+                    </>
+                  }
+                  description="Used for departures and the ATIS."
+                >
+                  <div className="w-full sm:w-72">
+                    <RunwaySelect
+                      id="create-departure"
+                      airportIcao={selectedAirport}
+                      value={selectedRunway}
+                      onChange={setSelectedRunway}
+                      disabled={isCreating}
+                    />
+                  </div>
+                </SettingsRow>
+              </div>
+              <div id="arrival-runway-dropdown">
+                <SettingsRow
+                  htmlFor="create-arrival"
+                  label={
+                    <>
+                      Arrival runway{' '}
+                      <span className="font-normal text-zinc-500">
+                        (optional)
+                      </span>
+                    </>
+                  }
+                  description="Leave empty to land on the departure runway."
+                >
+                  <div className="w-full sm:w-72">
+                    <RunwaySelect
+                      id="create-arrival"
+                      airportIcao={selectedAirport}
+                      value={selectedArrivalRunway}
+                      onChange={setSelectedArrivalRunway}
+                      disabled={isCreating}
+                      placeholder="Same as departure"
+                      noneLabel="Same as departure"
+                    />
+                  </div>
+                </SettingsRow>
+              </div>
+            </SettingsGroup>
+
+            {selectedAirport && (
+              <WindDisplay
+                icao={selectedAirport}
+                className="rounded-2xl border-zinc-800 bg-zinc-950"
+              />
             )}
           </div>
 
-          <Button
-            id="create-session-btn"
-            type="submit"
-            size="lg"
-            className="h-11 w-full rounded-xl"
-            disabled={
-              isCreating ||
-              sessionLimitReached ||
-              !selectedAirport ||
-              !selectedRunway
-            }
-          >
-            {isCreating && <Loader2 className="animate-spin" />}
-            {isCreating
-              ? 'Creating session…'
-              : sessionLimitReached
-                ? 'Session limit reached'
-                : 'Create session'}
-          </Button>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <div id="network-session-options">
+                <SettingsRow
+                  htmlFor="pfatc-checkbox"
+                  className="sm:items-start"
+                  label={
+                    <span className="block text-base leading-6">
+                      I am controlling on the{' '}
+                      <a
+                        href="https://discord.gg/pfatc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-blue-400 underline underline-offset-4 hover:text-blue-300"
+                      >
+                        PFATC Network
+                      </a>
+                    </span>
+                  }
+                  description={
+                    networkKind === 'pfatc' && !startTutorial ? (
+                      <span className="text-[15px]">
+                        All submitted flights will be publicly viewable on the
+                        Network Overview page. Flights are shared between
+                        sessions, allowing controllers to see the arrivals and
+                        traffic of other open sessions.
+                      </span>
+                    ) : undefined
+                  }
+                >
+                  <Checkbox
+                    id="pfatc-checkbox"
+                    checked={startTutorial || networkKind === 'pfatc'}
+                    onCheckedChange={(checked) =>
+                      setNetworkKind(checked === true ? 'pfatc' : 'standard')
+                    }
+                    disabled={startTutorial || isCreating}
+                    className="mt-1"
+                  />
+                </SettingsRow>
+              </div>
+            </div>
+
+            <Button
+              id="create-session-btn"
+              type="submit"
+              className="h-10 w-full rounded-xl mt-3 sm:w-auto"
+              disabled={
+                isCreating ||
+                sessionLimitReached ||
+                !selectedAirport ||
+                !selectedRunway
+              }
+            >
+              {isCreating ? <Loader2 className="animate-spin" /> : <Plus />}
+              {isCreating
+                ? 'Creating session…'
+                : sessionLimitReached
+                  ? 'Session limit reached'
+                  : 'Create session'}
+            </Button>
+          </div>
         </form>
       </div>
 

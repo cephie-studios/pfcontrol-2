@@ -27,6 +27,7 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../hooks/auth/useAuth';
 import PageHero from '../components/common/PageHero';
 import SessionTypeLabel from '../components/common/SessionTypeLabel';
+import SettingsSection from '../components/Settings/SettingsSection';
 import { Button } from '@/components/ui/button';
 import { minDuration } from '@/lib/minDuration';
 import { Input } from '@/components/ui/input';
@@ -391,20 +392,23 @@ export default function MyFlights() {
       <div className="shadcn-scope min-h-screen bg-background text-foreground">
         <Navbar />
 
-        <PageHero title="MY FLIGHTS">
-          {loading ? (
-            <Skeleton className="h-5 w-24" />
-          ) : (
-            <div className="flex items-center gap-2 text-sm font-medium text-zinc-200 tabular-nums">
-              <Plane className="size-4 text-blue-400" />
-              {filteredFlights.length}{' '}
-              {filteredFlights.length === 1 ? 'flight' : 'flights'}
-            </div>
-          )}
-        </PageHero>
+        <PageHero title="MY FLIGHTS" />
 
         <div className="relative z-10 mx-auto -mt-6 w-full max-w-7xl px-4 pb-16 sm:px-6 md:-mt-8">
-          <div className="flex flex-col gap-6">
+          <SettingsSection
+            title="Flights"
+            icon={Plane}
+            actions={
+              loading ? (
+                <Skeleton className="h-5 w-24" />
+              ) : (
+                <span className="text-sm text-zinc-400 tabular-nums">
+                  {filteredFlights.length}{' '}
+                  {filteredFlights.length === 1 ? 'flight' : 'flights'}
+                </span>
+              )
+            }
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -473,7 +477,7 @@ export default function MyFlights() {
                 ))}
               </div>
             )}
-          </div>
+          </SettingsSection>
         </div>
       </div>
     </TooltipProvider>
