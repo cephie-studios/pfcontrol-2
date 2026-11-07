@@ -99,11 +99,11 @@ export default function ExternalComposer({
           <Label htmlFor="datalink-station" className="px-2 text-zinc-300">
             Datalink station
           </Label>
-          {!flying && (
-            <p className="px-2 text-sm text-zinc-500">
-              Datalink opens once your aircraft is spawned and on a strip.
-            </p>
-          )}
+          <p className="px-2 text-sm text-zinc-500">
+            {flying
+              ? 'Connect to your departure station to request a PDC or message ATC.'
+              : 'Datalink opens once your aircraft is spawned and on a strip. You need it to request a PDC.'}
+          </p>
           <div className={COMPOSER_BAR_CLASS}>
             <Input
               id="datalink-station"
