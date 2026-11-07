@@ -268,9 +268,54 @@ export default function ACARS() {
     const socket = createAcarsFlightSocket(sessionId, flightId, accessId);
     socketRef.current = socket;
     setConnected(socket.socket.connected);
-    socket.socket.on('connect', () => setConnected(true));
+    let wasConnected = false;
+    socket.socket.on('connect', () => {
+      setConnected(true);
+      if (wasConnected) void catchUpOnPdc();
+      wasConnected = true;
+    });
     socket.socket.on('disconnect', () => setConnected(false));
     socket.socket.on('connect_error', () => setConnected(false));
+
+    const catchUpOnPdc = async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/flights/${sessionId}/${flightId}/acars-flight?acars_token=${accessId}`
+        );
+        if (!response.ok) return;
+        const latest: Flight = await response.json();
+        if (!latest?.pdc_remarks) return;
+        setFlight((prev) => (prev ? { ...prev, ...latest } : prev));
+        setMessages((prev) =>
+          prev.some((m) => m.type === 'pdc' && m.text === latest.pdc_remarks)
+            ? prev
+            : [
+                ...prev,
+                {
+                  id: `${Date.now()}-pdc-missed`,
+                  timestamp: new Date().toISOString(),
+                  station: `${latest.departure}_DEL`,
+                  text: latest.pdc_remarks!,
+                  type: 'pdc',
+                },
+              ]
+        );
+      } catch {
+        // retried on the next reconnect
+      }
+    };
+
+    socket.socket.on(
+      'flightError',
+      (payload: { action: string; error?: string }) => {
+        if (payload.action !== 'requestPDC') return;
+        if (flightId) {
+          localStorage.removeItem(`${PDC_REQUESTED_KEY_PREFIX}${flightId}`);
+        }
+        setPdcRequested(false);
+        toast.error(payload.error || 'PDC request failed. Try again.');
+      }
+    );
 
     socket.socket.on(
       'pdcIssued',
