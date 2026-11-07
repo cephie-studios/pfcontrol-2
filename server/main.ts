@@ -317,6 +317,9 @@ server.setMaxListeners(25);
 // Redis pub/sub adapter to join sessions locally that are connected to different server instances e.g. production
 const pubClient = new Redis(process.env.REDIS_URL!);
 const subClient = pubClient.duplicate();
+// Every namespace's adapter adds its own listeners to these shared clients.
+pubClient.setMaxListeners(32);
+subClient.setMaxListeners(32);
 
 const sessionUsersIO = setupSessionUsersWebsocket(server);
 sessionUsersIO.adapter(createAdapter(pubClient, subClient));
