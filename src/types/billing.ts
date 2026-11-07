@@ -54,6 +54,12 @@ export interface SupporterPrefs {
   colors: string[];
 }
 
+export interface CheckoutNudge {
+  startedAt: string | null;
+  monthlyPrice: number;
+  currency: string;
+}
+
 export interface MyPlan {
   plan: Plan;
   supporterPlan: Plan;

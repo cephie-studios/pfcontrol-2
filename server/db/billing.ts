@@ -342,3 +342,43 @@ export async function getActiveSupporters(limit: number): Promise<{
     }),
   };
 }
+
+export async function markCheckoutStarted(
+  userId: string,
+  at: Date = new Date()
+): Promise<void> {
+  await mainDb
+    .updateTable('users')
+    .set({ checkout_started_at: at })
+    .where('id', '=', userId)
+    .where((eb) =>
+      eb.or([
+        eb('checkout_started_at', 'is', null),
+        eb('checkout_started_at', '<', at),
+      ])
+    )
+    .execute();
+}
+
+// A grant created after the checkout means it (or a later one) went through.
+export async function getAbandonedCheckoutAt(
+  userId: string
+): Promise<Date | null> {
+  const row = await mainDb
+    .selectFrom('users as u')
+    .select('u.checkout_started_at')
+    .where('u.id', '=', userId)
+    .where('u.checkout_started_at', 'is not', null)
+    .where(({ not, exists, selectFrom }) =>
+      not(
+        exists(
+          selectFrom('plan_grants as g')
+            .select('g.id')
+            .whereRef('g.user_id', '=', 'u.id')
+            .whereRef('g.created_at', '>=', 'u.checkout_started_at')
+        )
+      )
+    )
+    .executeTakeFirst();
+  return row?.checkout_started_at ? new Date(row.checkout_started_at) : null;
+}

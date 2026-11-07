@@ -1371,7 +1371,8 @@ export async function ensureBillingTables() {
   await sql`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS stripe_customer_id varchar(255),
-    ADD COLUMN IF NOT EXISTS supporter_prefs jsonb NOT NULL DEFAULT '{}'::jsonb
+    ADD COLUMN IF NOT EXISTS supporter_prefs jsonb NOT NULL DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS checkout_started_at timestamptz
   `.execute(mainDb);
 
   await mainDb.schema

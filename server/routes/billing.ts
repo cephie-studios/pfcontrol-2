@@ -7,8 +7,10 @@ import {
   claimStripeCustomerId,
   getStripeCustomerId,
   getSupporterPrefs,
+  markCheckoutStarted,
   setSupporterPrefs,
 } from '../db/billing.js';
+import { getCheckoutNudge } from '../billing/checkoutNudge.js';
 import { getUserById, getUserByUsername } from '../db/users.js';
 import { getPlanState } from '../billing/entitlements.js';
 import { handleStripeEvent, syncSubscription } from '../billing/fulfillment.js';
@@ -172,6 +174,18 @@ router.get('/me', requireAuth, async (req, res) => {
     prefs,
     billingEnabled: isBillingEnabled(),
     canManageBilling: !!customerId && !!stripe,
+  });
+});
+
+// GET: /api/billing/me/checkout-nudge - when the user left their own checkout
+// unpaid, once it has been long enough to remind them
+router.get('/me/checkout-nudge', requireAuth, async (req, res) => {
+  const startedAt = await getCheckoutNudge(req.user!.userId);
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.json({
+    startedAt: startedAt?.toISOString() ?? null,
+    monthlyPrice: PRICES.supporter.month,
+    currency: CURRENCY,
   });
 });
 
@@ -372,6 +386,11 @@ router.post('/checkout', checkoutLimiter, optionalAuth, async (req, res) => {
         success_url: `${back}?checkout=success&plan=${plan}`,
         cancel_url: back,
       });
+    }
+    if (!isGift) {
+      await markCheckoutStarted(recipientId).catch((error) =>
+        console.error('[Billing] Failed to record checkout start:', error)
+      );
     }
     res.json({ url: session.url });
   } catch (error) {
