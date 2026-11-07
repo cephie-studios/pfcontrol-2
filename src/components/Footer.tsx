@@ -1,24 +1,142 @@
 import {
-  TowerControl,
-  Settings,
-  Mail,
-  Home,
-  FolderOpen,
-  ScrollText,
-  Shield,
-  Cookie,
+  ArrowUpRight,
+  BookA,
+  BookOpen,
   BookPlus,
+  Cookie,
+  FolderOpen,
+  Home,
+  Mail,
   Map,
+  ScrollText,
+  Settings,
+  Shield,
+  TowerControl,
+  type LucideIcon,
 } from 'lucide-react';
 import { FaDiscord, FaYoutube } from 'react-icons/fa';
 import { SiGithub } from 'react-icons/si';
+import type { IconType } from 'react-icons';
 import { useAuth } from '../hooks/auth/useAuth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface VersionData {
   version: string;
   updated_at: string | null;
   updated_by: string;
+}
+
+type FooterLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon | IconType;
+  external?: boolean;
+};
+
+const quickLinks: FooterLink[] = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/create', label: 'Create Session', icon: BookPlus },
+  { href: '/sessions', label: 'My Sessions', icon: FolderOpen },
+  { href: '/pfatc', label: 'PFATC Overview', icon: TowerControl },
+  { href: '/charts', label: 'Charts', icon: Map },
+];
+
+const resourceLinks: FooterLink[] = [
+  { href: '/howToUsePFControl', label: 'Guide', icon: BookOpen },
+  { href: '/glossary', label: 'Glossary', icon: BookA },
+  {
+    href: 'mailto:support@cephie.app',
+    label: 'support@cephie.app',
+    icon: Mail,
+  },
+  {
+    href: 'https://cephie.app/discord',
+    label: 'Join our Discord',
+    icon: FaDiscord,
+    external: true,
+  },
+];
+
+const legalLinks: FooterLink[] = [
+  {
+    href: 'https://cephie.app/legal/terms',
+    label: 'Terms of Use',
+    icon: ScrollText,
+    external: true,
+  },
+  {
+    href: 'https://cephie.app/legal/privacy',
+    label: 'Privacy Policy',
+    icon: Shield,
+    external: true,
+  },
+  {
+    href: 'https://cephie.app/legal/cookies',
+    label: 'Cookies Policy',
+    icon: Cookie,
+    external: true,
+  },
+];
+
+const socialLinks: (FooterLink & { hover: string })[] = [
+  {
+    href: 'https://cephie.app/github',
+    label: 'GitHub',
+    icon: SiGithub,
+    hover: 'hover:text-white focus-visible:text-white',
+  },
+  {
+    href: 'https://cephie.app/discord',
+    label: 'Discord',
+    icon: FaDiscord,
+    hover: 'hover:text-[#5865F2] focus-visible:text-[#5865F2]',
+  },
+  {
+    href: 'https://www.youtube.com/@PFConnectStudios',
+    label: 'YouTube',
+    icon: FaYoutube,
+    hover: 'hover:text-[#FF0000] focus-visible:text-[#FF0000]',
+  },
+];
+
+const externalProps = { target: '_blank', rel: 'noopener noreferrer' };
+
+function LinkColumn({ title, links }: { title: string; links: FooterLink[] }) {
+  return (
+    <nav aria-label={title} className="flex flex-col gap-5">
+      <h3 className="text-base font-semibold text-white">{title}</h3>
+      <ul className="flex flex-col gap-4">
+        {links.map(({ href, label, icon: Icon, external }) => (
+          <li key={href}>
+            <a
+              href={href}
+              {...(external ? externalProps : {})}
+              className="group inline-flex cursor-pointer items-center gap-3 rounded-md text-base text-zinc-300 transition-colors outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Icon className="size-[18px] shrink-0 text-zinc-500 transition-colors group-hover:text-blue-400" />
+              {label}
+              {external && (
+                <ArrowUpRight className="size-3.5 text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100" />
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function Credit({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      {...externalProps}
+      className="cursor-pointer font-medium text-zinc-300 transition-colors hover:text-blue-400"
+    >
+      {children}
+    </a>
+  );
 }
 
 export default function Footer() {
@@ -51,239 +169,77 @@ export default function Footer() {
     fetchVersion();
   }, []);
 
-  const quickLinks = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/create', label: 'Create Session', icon: BookPlus },
-    { href: '/sessions', label: 'My Sessions', icon: FolderOpen },
-    { href: '/pfatc', label: 'PFATC Overview', icon: TowerControl },
-    { href: '/charts', label: 'Charts', icon: Map },
-  ];
-
-  const legalLinks = [
-    {
-      href: 'https://cephie.app/legal/terms',
-      label: 'Terms of Use',
-      icon: ScrollText,
-    },
-    {
-      href: 'https://cephie.app/legal/privacy',
-      label: 'Privacy Policy',
-      icon: Shield,
-    },
-    {
-      href: 'https://cephie.app/legal/cookies',
-      label: 'Cookies Policy',
-      icon: Cookie,
-    },
-  ];
+  const navLinks: FooterLink[] = user
+    ? [...quickLinks, { href: '/settings', label: 'Settings', icon: Settings }]
+    : quickLinks;
 
   return (
-    <footer className="bg-black border-t-2 border-zinc-800 pt-12 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          <div className="md:col-span-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <TowerControl className="h-8 w-8 text-blue-400" />
-              <div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                  PFControl
-                </span>
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm max-w-xs">
-              The next-generation flight strip platform built for real-time
-              coordination between air traffic controllers with outstanding
-              reliability.
-            </p>
-
-            <div className="flex items-center space-x-5 pt-2 flex-wrap">
-              <a
-                href="https://cephie.app/github"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="GitHub"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <SiGithub className="h-5 w-5 md:h-6 md:w-6" />
-              </a>
-              <a
-                href="https://cephie.app/discord"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Discord"
-                className="text-gray-400 hover:text-indigo-500 transition-colors"
-              >
-                <FaDiscord className="h-5 w-5 md:h-6 md:w-6" />
-              </a>
-              <a
-                href="https://www.youtube.com/@PFConnectStudios"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="YouTube"
-                className="text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <FaYoutube className="h-5 w-5 md:h-6 md:w-6" />
-              </a>
-            </div>
-
-            <div className="mt-8">
-              <iframe
-                src="https://status.cephie.app/badge?theme=dark"
-                width="250"
-                height="30"
-                frameBorder="0"
-                scrolling="no"
-              ></iframe>
-            </div>
-          </div>
-
-          <div className="hidden md:block md:col-span-2" />
-
-          {/* Quick links */}
-          <div className="md:col-span-3 col-span-1 w-full">
-            <div className="bg-black p-4 w-full">
-              <h3 className="text-white font-medium mb-3">Quick Links</h3>
-              <ul className="space-y-2">
-                {quickLinks.map((link) => {
-                  const IconComponent = link.icon;
-                  return (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        className="inline-flex items-center text-gray-300 hover:text-blue-400 transition-colors text-sm"
-                      >
-                        <IconComponent className="h-4 w-4 mr-2" />
-                        {link.label}
-                      </a>
-                    </li>
-                  );
-                })}
-                {user && (
-                  <li>
-                    <a
-                      href="/settings"
-                      className="inline-flex items-center text-gray-300 hover:text-blue-400 transition-colors text-sm"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </a>
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-
-          {/* Legal & Contact */}
-          <div className="md:col-span-3 col-span-1 w-full">
-            <div className="bg-black p-4 w-full">
-              <h3 className="text-white font-medium mb-3">Legal</h3>
-              <ul className="space-y-2 mb-3">
-                {legalLinks.map((link) => {
-                  const IconComponent = link.icon;
-                  return (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-gray-300 hover:text-blue-400 transition-colors text-sm"
-                      >
-                        <IconComponent className="h-4 w-4 mr-2" />
-                        {link.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <h3 className="text-white font-medium mb-2">Contact</h3>
-              <div className="space-y-2">
-                <a
-                  href="mailto:support@cephie.app"
-                  className="flex items-center text-gray-300 text-sm hover:text-blue-400 transition-colors"
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  support@cephie.app
-                </a>
-                <a
-                  href="https://cephie.app/discord"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-gray-300 text-sm hover:text-blue-400 transition-colors"
-                >
-                  <FaDiscord className="h-4 w-4 mr-2" />
-                  Join our Discord
-                </a>
-              </div>
-            </div>
+    <footer className="shadcn-scope border-t border-zinc-800 bg-background text-foreground">
+      <div className="mx-auto flex max-w-7xl flex-col gap-20 px-4 pt-20 pb-16 sm:px-6 md:pt-28 lg:px-8">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex items-center gap-3">
+            <TowerControl className="size-9 text-blue-400" />
+            <span className="text-3xl font-semibold tracking-tight">
+              PFControl
+            </span>
           </div>
         </div>
 
-        {/* Bottom row */}
-        <div className="mt-8 border-t border-zinc-700/50 pt-6 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-center">
-          <div className="text-gray-500 text-sm text-center md:text-left space-x-2">
-            METAR by{' '}
-            <a
-              href="https://aviationweather.gov"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              aviationweather.gov
-            </a>{' '}
-            ATIS by{' '}
-            <a
-              href="https://atisgenerator.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-              title="ATIS provider"
-            >
-              atisgenerator.com
-            </a>
-            Charts by{' '}
-            <a
-              href="https://discord.gg/pfatc"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              PFATC
-            </a>
-            {' · '}
-            <a
-              href="/howToUsePFControl"
-              className="text-gray-500 pl-2 hover:text-gray-400 underline"
-            >
-              Guide
-            </a>
-            {' · '}
-            <a
-              href="/glossary"
-              className="text-gray-500 pl-2 hover:text-gray-400 underline"
-            >
-              Glossary
-            </a>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center md:items-center justify-center md:justify-end gap-4 w-full">
-            <div className="text-gray-400 text-sm">
-              &copy; {year} PFControl by{' '}
-              <a
-                href="https://cephie.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                Cephie Studios
-              </a>
+        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+          <LinkColumn title="Product" links={navLinks} />
+          <LinkColumn title="Resources" links={resourceLinks} />
+          <LinkColumn title="Legal" links={legalLinks} />
+          <div className="flex flex-col gap-5">
+            <h3 className="text-base font-semibold text-white">Follow</h3>
+            <div className="flex flex-wrap items-center gap-6">
+              {socialLinks.map(({ href, label, icon: Icon, hover }) => (
+                <a
+                  key={href}
+                  href={href}
+                  {...externalProps}
+                  aria-label={label}
+                  title={label}
+                  className={cn(
+                    'cursor-pointer rounded-md text-zinc-400 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    hover
+                  )}
+                >
+                  <Icon className="size-8" />
+                </a>
+              ))}
             </div>
-
-            <div className="bg-zinc-900/40 p-3 flex items-center gap-4 whitespace-nowrap">
-              <div className="text-gray-400 text-sm">Version</div>
-              <div className="text-white font-mono text-sm truncate">
-                {isLoading ? '...' : versionData.version}
-              </div>
+            <iframe
+              src="https://status.cephie.app/badge?theme=dark"
+              title="Service status"
+              width="250"
+              height="30"
+              frameBorder="0"
+              scrolling="no"
+              className="mt-2"
+            />
+            <div className="mt-auto flex flex-col gap-1.5 pt-4 text-sm text-zinc-500">
+              <span className="font-mono text-zinc-400 tabular-nums">
+                v{isLoading ? '…' : versionData.version}
+              </span>
+              <p>
+                Charts by <Credit href="https://discord.gg/pfatc">PFATC</Credit>
+              </p>
+              <p>
+                ATIS by{' '}
+                <Credit href="https://atisgenerator.com">
+                  atisgenerator.com
+                </Credit>
+              </p>
+              <p>
+                METAR by{' '}
+                <Credit href="https://aviationweather.gov">
+                  aviationweather.gov
+                </Credit>
+              </p>
+              <span>
+                &copy; {year} PFControl by{' '}
+                <Credit href="https://cephie.app">Cephie Studios</Credit>
+              </span>
             </div>
           </div>
         </div>
