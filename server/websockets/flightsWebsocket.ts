@@ -110,6 +110,12 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
   });
 
   io.on('connection', async (socket: Socket) => {
+    // The client sees 'connect' before the async auth below has finished and
+    // the listeners exist; without this gate its first emits are dropped.
+    let markReady!: () => void;
+    const ready = new Promise<void>((resolve) => (markReady = resolve));
+    socket.use((_packet, next) => void ready.then(() => next()));
+
     const sessionId = socket.handshake.query.sessionId as string;
     const accessId = socket.handshake.query.accessId as string;
     const acarsToken = socket.handshake.query.acarsToken;
@@ -605,6 +611,7 @@ export function setupFlightsWebsocket(httpServer: HTTPServer): SocketIOServer {
     );
 
     socket.on('disconnect', () => {});
+    markReady();
   });
 
   registerFlightsIO(io);
