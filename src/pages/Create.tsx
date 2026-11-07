@@ -353,7 +353,7 @@ export default function Create() {
             <Button
               id="create-session-btn"
               type="submit"
-              className="h-10 w-full rounded-xl sm:mt-2 sm:w-auto"
+              className="h-10 w-full rounded-xl mt-3 sm:w-auto"
               disabled={
                 isCreating ||
                 sessionLimitReached ||
