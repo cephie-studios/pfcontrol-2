@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SessionCardSkeleton } from '../components/skeletons/PageSkeletons';
 import { Link } from 'react-router';
 import {
@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import PageHero from '../components/common/PageHero';
 import SessionTypeLabel from '../components/common/SessionTypeLabel';
+import SettingsSection from '../components/Settings/SettingsSection';
 import { useAuth } from '../hooks/auth/useAuth';
 import {
   fetchMySessions,
@@ -61,21 +62,6 @@ import {
 
 const sessionName = (session: SessionInfo | null) =>
   session?.customName || `${session?.airportIcao || 'Unknown'} Session`;
-
-function CountLabel({
-  icon,
-  children,
-}: {
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2 text-sm font-medium text-zinc-200 tabular-nums [&_svg]:size-4 [&_svg]:text-blue-400">
-      {icon}
-      {children}
-    </div>
-  );
-}
 
 function SessionCard({
   session,
@@ -323,37 +309,41 @@ export default function Sessions() {
       <div className="shadcn-scope min-h-screen bg-background text-foreground">
         <Navbar />
 
-        <PageHero title="MY SESSIONS">
-          {showSkeleton ? (
-            <div className="flex gap-3">
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-9 w-40 rounded-lg" />
-            </div>
-          ) : (
-            <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-              <CountLabel icon={<FolderOpen />}>
-                {sessions.length}/{maxSessions}{' '}
-                {sessions.length === 1 ? 'session' : 'sessions'}
-              </CountLabel>
-              {atLimit ? (
-                <Button disabled className="w-full sm:w-auto">
-                  <Plus />
-                  New session
-                </Button>
-              ) : (
-                <Button asChild className="w-full sm:w-auto">
-                  <Link to="/create">
-                    <Plus />
-                    New session
-                  </Link>
-                </Button>
-              )}
-            </div>
-          )}
-        </PageHero>
+        <PageHero title="MY SESSIONS" />
 
         <div className="relative z-10 mx-auto -mt-6 w-full max-w-7xl px-4 pb-16 sm:px-6 md:-mt-8">
-          <div className="flex flex-col gap-6">
+          <SettingsSection
+            title="Sessions"
+            icon={FolderOpen}
+            actions={
+              showSkeleton ? (
+                <>
+                  <Skeleton className="h-5 w-28" />
+                  <Skeleton className="h-9 w-36 rounded-lg" />
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-zinc-400 tabular-nums">
+                    {sessions.length}/{maxSessions}{' '}
+                    {sessions.length === 1 ? 'session' : 'sessions'}
+                  </span>
+                  {atLimit ? (
+                    <Button disabled>
+                      <Plus />
+                      New session
+                    </Button>
+                  ) : (
+                    <Button asChild>
+                      <Link to="/create">
+                        <Plus />
+                        New session
+                      </Link>
+                    </Button>
+                  )}
+                </>
+              )
+            }
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -450,7 +440,7 @@ export default function Sessions() {
                 ))}
               </div>
             )}
-          </div>
+          </SettingsSection>
         </div>
 
         <Dialog
