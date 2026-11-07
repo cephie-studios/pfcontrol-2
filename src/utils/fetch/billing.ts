@@ -2,6 +2,7 @@ import { apiFetch } from '../apiFetch.js';
 import { apiError } from './error.js';
 import type {
   BillingCatalog,
+  CheckoutNudge,
   CheckoutRequest,
   GiftRecipient,
   MyPlan,
@@ -26,6 +27,14 @@ export async function fetchMyPlan(): Promise<MyPlan> {
     credentials: 'include',
   });
   if (!res.ok) await apiError(res, 'Failed to load your plan');
+  return res.json();
+}
+
+export async function fetchCheckoutNudge(): Promise<CheckoutNudge> {
+  const res = await apiFetch(`${API_BASE_URL}/api/billing/me/checkout-nudge`, {
+    credentials: 'include',
+  });
+  if (!res.ok) await apiError(res, 'Failed to load checkout reminder');
   return res.json();
 }
 

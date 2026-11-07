@@ -21,6 +21,8 @@ import type { Notification as AdminNotification } from '../utils/fetch/admin';
 import CustomUserButton from './tools/UserButton';
 import Button from './common/Button';
 import FeedbackBanner from './tools/FeedbackBanner';
+import CheckoutNudgeBanner from './billing/CheckoutNudgeBanner';
+import { useCheckoutNudge } from '../hooks/useCheckoutNudge';
 import { fetchSiteSettings } from '../utils/fetch/siteSettings';
 
 type NavbarProps = {
@@ -44,6 +46,7 @@ export default function Navbar({
     currentNotificationIndex,
     hideNotification,
   } = useNotifications();
+  const checkoutNudge = useCheckoutNudge(user);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export default function Navbar({
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [showFeedbackBanner, setShowFeedbackBanner] = useState(false);
   const [feedbackBannerEnabled, setFeedbackBannerEnabled] = useState(false);
+  const hasCheckoutNudge = !!checkoutNudge;
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +94,7 @@ export default function Navbar({
       const shouldShow =
         feedbackBannerEnabled &&
         !hasNotifications &&
+        !hasCheckoutNudge &&
         !feedbackSubmitted &&
         !feedbackDismissed;
 
@@ -97,7 +102,7 @@ export default function Navbar({
     };
 
     checkFeedbackCookies();
-  }, [filteredNotifications.length, feedbackBannerEnabled]);
+  }, [filteredNotifications.length, feedbackBannerEnabled, hasCheckoutNudge]);
 
   useLayoutEffect(() => {
     const handleResize = () => {
@@ -704,6 +709,17 @@ export default function Navbar({
             )}
           </div>
         </div>
+      )}
+
+      {checkoutNudge && (
+        <CheckoutNudgeBanner
+          price={checkoutNudge.price}
+          onDismiss={checkoutNudge.dismiss}
+          isMobile={isMobile}
+          raised={
+            isMobile ? filteredNotifications.length > 0 : !!currentNotification
+          }
+        />
       )}
 
       {user && (

@@ -443,4 +443,9 @@ server.listen(PORT, () => {
     .catch((err) => {
       console.error('[activeSessions] startup rebuild failed:', err);
     });
+  void import('./billing/checkoutNudge.js')
+    .then((m) => m.backfillCheckoutStarts())
+    .catch((err) => {
+      console.error('[Billing] checkout backfill failed:', err);
+    });
 });

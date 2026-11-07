@@ -36,4 +36,5 @@ export interface UsersTable {
   platform_token?: string | null;
   stripe_customer_id?: string | null;
   supporter_prefs?: unknown;
+  checkout_started_at?: Date | null;
 }
